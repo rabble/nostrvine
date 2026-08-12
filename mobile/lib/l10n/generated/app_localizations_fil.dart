@@ -3540,6 +3540,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareSheetSave => 'I-save';
 
   @override
+  String get shareSheetSaved => 'Naka-save';
+
+  @override
   String get shareSheetSaveToGallery => 'I-save sa Gallery';
 
   @override

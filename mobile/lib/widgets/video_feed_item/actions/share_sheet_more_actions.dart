@@ -8,6 +8,7 @@ class _MoreActionsSection extends ConsumerWidget {
   const _MoreActionsSection({
     required this.video,
     required this.isOwnContent,
+    required this.bookmarkStatus,
     required this.onSave,
     required this.onSaveWithWatermark,
     required this.onAddToList,
@@ -28,6 +29,7 @@ class _MoreActionsSection extends ConsumerWidget {
 
   /// Whether the bookmark toggle is mid-flight (#7073).
   final bool isSavePending;
+  final ShareSheetBookmarkStatus bookmarkStatus;
   final VoidCallback onSave;
   final Future<void> Function()? onSaveOriginal;
   final Future<void> Function() onSaveWithWatermark;
@@ -46,6 +48,8 @@ class _MoreActionsSection extends ConsumerWidget {
     final showDebugTools = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.debugTools),
     );
+
+    final isSaved = bookmarkStatus == ShareSheetBookmarkStatus.saved;
 
     // The crosspost action only appears once the connections fetch
     // reports at least one connected platform.
@@ -69,11 +73,16 @@ class _MoreActionsSection extends ConsumerWidget {
           label: context.l10n.shareMenuDeleteVideo,
           onTap: onDeleteVideo!,
         ),
+      // `unknown` deliberately renders as "Save": an unresolved read must not
+      // claim the video is unsaved, and "Save" is the pre-existing wording.
       _ActionData(
         icon: DivineIconName.bookmarkSimple,
-        label: context.l10n.shareSheetSave,
+        label: isSaved
+            ? context.l10n.shareSheetSaved
+            : context.l10n.shareSheetSave,
         onTap: onSave,
         isPending: isSavePending,
+        isActive: isSaved,
       ),
       if (onSaveOriginal != null)
         _ActionData(
@@ -161,6 +170,7 @@ class _MoreActionsSection extends ConsumerWidget {
                   label: action.label,
                   onTap: action.onTap,
                   isPending: action.isPending,
+                  isActive: action.isActive,
                 );
               },
             ),
@@ -177,6 +187,7 @@ class _ActionData {
     required this.label,
     required this.onTap,
     this.isPending = false,
+    this.isActive = false,
   });
 
   final DivineIconName icon;
@@ -186,6 +197,10 @@ class _ActionData {
   /// Whether the action is mid-flight, so the circle shows a spinner and stops
   /// responding to taps.
   final bool isPending;
+
+  /// Renders the circle as an on-state. Used by Save to show the video is
+  /// already bookmarked, so the tap reads as a removal rather than an add.
+  final bool isActive;
 }
 
 class _ActionCircle extends StatelessWidget {
@@ -194,20 +209,31 @@ class _ActionCircle extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isPending = false,
+    this.isActive = false,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
   final bool isPending;
+  final bool isActive;
 
   static const double _circleSize = 48;
   static const double _iconSize = 22;
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = VineTheme.vineGreen.withValues(alpha: 0.15);
-    const iconColor = VineTheme.vineGreen;
+    // Every action already tints vineGreen, so an on-state cannot be another
+    // green tint. Inverting the fill — solid green with a surface-coloured
+    // glyph — is the same colour-swap idiom LikeActionButton uses, and needs
+    // no filled bookmark asset (none exists; bookmark_plus and bookmark_simple
+    // are byte-identical outlines).
+    final bgColor = isActive
+        ? VineTheme.vineGreen
+        : VineTheme.vineGreen.withValues(alpha: 0.15);
+    final iconColor = isActive
+        ? context.vineColors.surface
+        : VineTheme.vineGreen;
 
     return Semantics(
       button: true,

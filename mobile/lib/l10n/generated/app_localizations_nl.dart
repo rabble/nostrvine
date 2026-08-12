@@ -3499,6 +3499,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareSheetSave => 'Opslaan';
 
   @override
+  String get shareSheetSaved => 'Opgeslagen';
+
+  @override
   String get shareSheetSaveToGallery => 'Opslaan in galerij';
 
   @override

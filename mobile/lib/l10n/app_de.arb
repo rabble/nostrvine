@@ -1393,6 +1393,7 @@
     "authInviteErrorTemporary": "Wir konnten deine Einladung gerade nicht bestätigen. Geh zurück zu deinem Einladungscode und versuch es nochmal oder kontaktier den Support.",
     "authInviteErrorUnknown": "Wir konnten deine Einladung nicht aktivieren. Geh zurück zu deinem Einladungscode, tritt der Warteliste bei oder kontaktier den Support.",
     "shareSheetSave": "Speichern",
+    "shareSheetSaved": "Gespeichert",
     "shareSheetSaveToGallery": "In Galerie speichern",
     "shareSheetSaveWithWatermark": "Mit Wasserzeichen speichern",
     "shareSheetSaveVideo": "Video speichern",

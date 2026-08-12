@@ -1894,6 +1894,7 @@
   "authInviteErrorTemporary": "Kami tidak dapat mengesahkan jemputan anda sekarang. Kembali ke kod jemputan anda dan cuba lagi, atau hubungi sokongan.",
   "authInviteErrorUnknown": "Kami tidak dapat mengaktifkan jemputan anda. Kembali ke kod jemputan anda, sertai senarai menunggu, atau hubungi sokongan.",
   "shareSheetSave": "Simpan",
+  "shareSheetSaved": "Disimpan",
   "shareSheetSaveToGallery": "Simpan ke Galeri",
   "shareSheetSaveWithWatermark": "Simpan dengan Tera Air",
   "shareSheetSaveVideo": "Simpan Video",

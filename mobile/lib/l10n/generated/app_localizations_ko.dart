@@ -3318,6 +3318,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareSheetSave => '저장';
 
   @override
+  String get shareSheetSaved => '저장됨';
+
+  @override
   String get shareSheetSaveToGallery => '갤러리에 저장';
 
   @override

@@ -3298,6 +3298,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareSheetSave => '保存';
 
   @override
+  String get shareSheetSaved => '已保存';
+
+  @override
   String get shareSheetSaveToGallery => '保存到相册';
 
   @override

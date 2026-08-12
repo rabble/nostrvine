@@ -145,16 +145,19 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         eventId: widget.video.id,
       )..loadConnections();
     }
-    _shareSheetBloc = ShareSheetBloc(
-      video: widget.video,
-      relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
-      videoSharingService: widget.videoSharingService,
-      profileRepository: widget.profileRepository,
-      followRepository: ref.read(followRepositoryProvider),
-      bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
-      cacheManager: openVineImageCache,
-      videoClipImportService: ref.read(videoClipImportServiceProvider),
-    )..add(const ShareSheetContactsLoadRequested());
+    _shareSheetBloc =
+        ShareSheetBloc(
+            video: widget.video,
+            relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
+            videoSharingService: widget.videoSharingService,
+            profileRepository: widget.profileRepository,
+            followRepository: ref.read(followRepositoryProvider),
+            bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
+            cacheManager: openVineImageCache,
+            videoClipImportService: ref.read(videoClipImportServiceProvider),
+          )
+          ..add(const ShareSheetContactsLoadRequested())
+          ..add(const ShareSheetBookmarkStatusRequested());
   }
 
   @override
@@ -729,6 +732,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
                         video: video,
                         isOwnContent: isOwnContent,
                         isSavePending: state.isSaving,
+                        bookmarkStatus: state.bookmarkStatus,
                         onCrosspost: onCrosspost,
                         onSave: () => bloc.add(const ShareSheetSaveRequested()),
                         onSaveOriginal: onSaveOriginal,

@@ -1390,6 +1390,7 @@
     "authInviteErrorTemporary": "Kami tidak bisa mengkonfirmasi undanganmu sekarang. Kembali ke kode undanganmu dan coba lagi, atau hubungi dukungan.",
     "authInviteErrorUnknown": "Kami tidak bisa mengaktifkan undanganmu. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
     "shareSheetSave": "Simpan",
+    "shareSheetSaved": "Tersimpan",
     "shareSheetSaveToGallery": "Simpan ke Galeri",
     "shareSheetSaveWithWatermark": "Simpan dengan Watermark",
     "shareSheetSaveVideo": "Simpan Video",

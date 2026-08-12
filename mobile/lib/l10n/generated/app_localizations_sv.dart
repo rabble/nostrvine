@@ -3482,6 +3482,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareSheetSave => 'Spara';
 
   @override
+  String get shareSheetSaved => 'Sparad';
+
+  @override
   String get shareSheetSaveToGallery => 'Spara i galleriet';
 
   @override

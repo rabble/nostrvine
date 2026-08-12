@@ -3513,6 +3513,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareSheetSave => 'Salvar';
 
   @override
+  String get shareSheetSaved => 'Salvo';
+
+  @override
   String get shareSheetSaveToGallery => 'Salvar na galeria';
 
   @override

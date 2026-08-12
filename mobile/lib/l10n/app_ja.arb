@@ -1383,6 +1383,7 @@
     "authInviteErrorTemporary": "今は招待を確認できなかった。招待コードに戻ってもう一回試すか、サポートに連絡してね。",
     "authInviteErrorUnknown": "招待を有効にできなかった。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。",
     "shareSheetSave": "保存",
+    "shareSheetSaved": "保存済み",
     "shareSheetSaveToGallery": "ギャラリーに保存",
     "shareSheetSaveWithWatermark": "ウォーターマーク付きで保存",
     "shareSheetSaveVideo": "動画を保存",

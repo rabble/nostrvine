@@ -3486,6 +3486,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get shareSheetSave => 'محفوظ کریں';
 
   @override
+  String get shareSheetSaved => 'محفوظ';
+
+  @override
   String get shareSheetSaveToGallery => 'گیلری میں محفوظ کریں';
 
   @override

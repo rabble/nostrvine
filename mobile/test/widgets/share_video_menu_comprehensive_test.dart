@@ -203,6 +203,49 @@ void main() {
       expect(find.text('Save'), findsOneWidget);
     });
 
+    testWidgets(
+      'More actions row shows Saved once the reconciled read finds the video',
+      (tester) async {
+        when(
+          () => mockBookmarkService.syncGlobalBookmarks(),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        ).thenReturn(true);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.shareSheetSaved), findsOneWidget);
+        expect(find.text(l10n.shareSheetSave), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'More actions row keeps Save when the reconcile is inconclusive',
+      (tester) async {
+        // The stale local cache says "bookmarked", but the relay read failed.
+        // Believing the cache here is the #7072 mislabel, so the row must not
+        // claim a saved state it could not confirm.
+        when(
+          () => mockBookmarkService.syncGlobalBookmarks(),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        ).thenReturn(true);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.shareSheetSave), findsOneWidget);
+        expect(find.text(l10n.shareSheetSaved), findsNothing);
+      },
+    );
+
     testWidgets('More actions row shows Copy action', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));

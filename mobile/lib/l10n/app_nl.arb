@@ -1393,6 +1393,7 @@
     "authInviteErrorTemporary": "We konden je invite nu niet bevestigen. Ga terug naar je invite-code en probeer het opnieuw, of neem contact op met support.",
     "authInviteErrorUnknown": "We konden je invite niet activeren. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.",
     "shareSheetSave": "Opslaan",
+    "shareSheetSaved": "Opgeslagen",
     "shareSheetSaveToGallery": "Opslaan in galerij",
     "shareSheetSaveWithWatermark": "Opslaan met watermerk",
     "shareSheetSaveVideo": "Video opslaan",

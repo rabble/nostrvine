@@ -6062,6 +6062,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get shareSheetSave;
 
+  /// Share-sheet action label shown when the video is already in the user's global bookmarks; tapping it removes the bookmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get shareSheetSaved;
+
   /// No description provided for @shareSheetSaveToGallery.
   ///
   /// In en, this message translates to:

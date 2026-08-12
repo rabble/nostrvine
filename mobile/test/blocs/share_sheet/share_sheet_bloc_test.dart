@@ -147,6 +147,10 @@ void main() {
       expect(bloc.state.selectedRecipients, isEmpty);
       expect(bloc.state.isSending, isFalse);
       expect(bloc.state.actionResult, isNull);
+      expect(
+        bloc.state.bookmarkStatus,
+        equals(ShareSheetBookmarkStatus.unknown),
+      );
       bloc.close();
     });
 
@@ -1503,6 +1507,134 @@ void main() {
             (s) => s.actionResult,
             'actionResult',
             isA<ShareSheetActionFailure>(),
+          ),
+        ],
+      );
+    });
+
+    group('ShareSheetBookmarkStatusRequested', () {
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'resolves saved when the reconciled list contains the video',
+        setUp: () {
+          when(
+            () => mockBookmarkService.syncGlobalBookmarks(),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetBookmarkStatusRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.bookmarkStatus,
+            'bookmarkStatus',
+            ShareSheetBookmarkStatus.saved,
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'resolves notSaved when the reconciled list omits the video',
+        setUp: () {
+          when(
+            () => mockBookmarkService.syncGlobalBookmarks(),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(false);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetBookmarkStatusRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.bookmarkStatus,
+            'bookmarkStatus',
+            ShareSheetBookmarkStatus.notSaved,
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'stays unknown when the reconcile is inconclusive, and never reads '
+        'the stale local cache',
+        setUp: () {
+          when(
+            () => mockBookmarkService.syncGlobalBookmarks(),
+          ).thenAnswer((_) async => false);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetBookmarkStatusRequested()),
+        expect: () => <ShareSheetState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          );
+        },
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'stays unknown when the bookmark service is unavailable',
+        build: () =>
+            createBloc(bookmarkServiceFuture: Future<BookmarkService?>.value()),
+        act: (bloc) => bloc.add(const ShareSheetBookmarkStatusRequested()),
+        expect: () => <ShareSheetState>[],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'a successful remove flips the status to notSaved',
+        setUp: () {
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(true);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer(
+            (_) async => const BookmarkToggleResult(
+              succeeded: true,
+              wasBookmarked: true,
+              isBookmarked: false,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.bookmarkStatus,
+            'bookmarkStatus',
+            ShareSheetBookmarkStatus.notSaved,
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'a failed toggle leaves the status untouched rather than adopting the '
+        'pre-toggle guess',
+        seed: () => const ShareSheetState(
+          bookmarkStatus: ShareSheetBookmarkStatus.saved,
+        ),
+        setUp: () {
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(false);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer(
+            (_) async => const BookmarkToggleResult(
+              succeeded: false,
+              wasBookmarked: false,
+              isBookmarked: false,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.bookmarkStatus,
+            'bookmarkStatus',
+            ShareSheetBookmarkStatus.saved,
           ),
         ],
       );

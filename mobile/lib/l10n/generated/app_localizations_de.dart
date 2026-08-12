@@ -3525,6 +3525,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareSheetSave => 'Speichern';
 
   @override
+  String get shareSheetSaved => 'Gespeichert';
+
+  @override
   String get shareSheetSaveToGallery => 'In Galerie speichern';
 
   @override
