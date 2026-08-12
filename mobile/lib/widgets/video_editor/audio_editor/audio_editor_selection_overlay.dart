@@ -162,10 +162,14 @@ class _AudioPlaybackProgressButtonState
   double _resolveProgress(Duration? duration, Duration? position) {
     final durationMs = duration?.inMilliseconds ?? 0;
     final positionMs = position?.inMilliseconds ?? 0;
-    if (durationMs <= 0 || positionMs <= 0) return _progress = 0;
+    final next = durationMs <= 0 || positionMs <= 0
+        ? 0.0
+        : (positionMs / durationMs).clamp(0.0, 1.0);
 
-    final progress = (positionMs / durationMs).clamp(0.0, 1.0);
-    return progress > _progress ? _progress = progress : _progress;
+    if (next == 0 || next > _progress) {
+      _progress = next;
+    }
+    return _progress;
   }
 
   @override
