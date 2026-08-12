@@ -29,6 +29,8 @@ class LibraryToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showsSelectionExit =
+        isClipsTabActive && isLibrarySelectionMode && canExitSelectionMode;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -37,8 +39,8 @@ class LibraryToolbar extends StatelessWidget {
           DivineIconButton(
             size: .small,
             type: .secondary,
-            icon: isLibrarySelectionMode ? .x : .caretLeft,
-            semanticLabel: isLibrarySelectionMode && canExitSelectionMode
+            icon: showsSelectionExit ? .x : .caretLeft,
+            semanticLabel: showsSelectionExit
                 ? context.l10n.libraryStopSelectingClipsSemanticLabel
                 : context.l10n.libraryCloseSemanticLabel,
             onPressed: onLeadingPressed,

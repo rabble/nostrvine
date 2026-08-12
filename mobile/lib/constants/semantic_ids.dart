@@ -22,18 +22,34 @@ abstract class SemanticIds {
   static String cameraMode(String mode) => 'camera_mode_$mode';
   static const String cameraRecordButton = 'camera_record_button';
 
+  /// Classic mode's shutter. It has no record button — the square preview
+  /// itself is the tap target — so it gets its own id rather than reusing
+  /// [cameraRecordButton] for a different widget. The E2E asserts pin the
+  /// record button *absent* in classic and this one absent in every
+  /// capture-stack mode, which is what proves the right stack is up.
+  static const String cameraClassicShutter = 'camera_classic_shutter';
+
   /// Recorder chrome. Close, next and delete-clip come from the capture
-  /// stack, which capture, stop-motion and lip-sync all render; the library
-  /// button lives in the bottom bar, which every mode renders. Every label
-  /// behind these is localized, so the E2E capture flow drives them by id.
+  /// stack, which capture, stop-motion and lip-sync all render, and from
+  /// classic mode's own top bar and action row; the library button lives in
+  /// the bottom bar, which every mode renders. Every label behind these is
+  /// localized, so the E2E recorder flows drive them by id.
+  ///
+  /// The two stacks reveal next and delete differently, and the E2E asserts
+  /// have to match: capture fades them out of the semantics tree entirely
+  /// when the session is empty, while classic keeps next mounted and
+  /// disables it — so an empty classic session reads `enabled: false` there,
+  /// not `notVisible`.
   static const String cameraCloseButton = 'camera_close_button';
   static const String cameraNextButton = 'camera_next_button';
   static const String cameraDeleteClipButton = 'camera_delete_clip_button';
   static const String cameraLibraryButton = 'camera_library_button';
 
-  /// Capture-mode control rail, top to bottom. Lip-sync declares the same
-  /// countdown-timer and stabilization support, so it renders this rail
-  /// unchanged and drives it with the same E2E util.
+  /// Capture-mode control rail, top to bottom. Flash, aspect ratio and the
+  /// lens switch are unconditional, so every mode that renders the rail drives
+  /// them with the same three E2E utils. Timer and stabilization are rendered
+  /// only by the modes that declare them — capture and lip-sync, which share
+  /// the rail unchanged and drive all five with `driveCaptureRail`.
   static const String cameraFlashButton = 'camera_flash_button';
   static const String cameraTimerButton = 'camera_timer_button';
   static const String cameraAspectRatioButton = 'camera_aspect_ratio_button';
@@ -60,6 +76,22 @@ abstract class SemanticIds {
   /// Confirms the currently selected sound in the sound picker.
   static const String audioSelectionDoneButton = 'audio_selection_done_button';
 
+  /// What stop-motion adds to that rail (both gated on `capturesStills`), plus
+  /// the shot budget it puts in the top bar's center slot. Which viewfinder is
+  /// up is settled by the mode wheel's `selected` state, not by these — the
+  /// rest of the chrome is shared, since stop-motion is the capture stack. The
+  /// E2E asserts pin their absence in the modes that do not declare them, so a
+  /// control leaking across modes fails a run rather than passing quietly.
+  ///
+  /// Classic mode renders its own grid and ghost toggles in
+  /// `video_recorder_classic_actions_bottom.dart`, and its own lens switch
+  /// next to them. They drive the same bloc state and announce the same
+  /// `toggled` / `value`, so they carry the same ids and the E2E flow drives
+  /// them with the same per-control utils.
+  static const String cameraGhostFrameButton = 'camera_ghost_frame_button';
+  static const String cameraGridButton = 'camera_grid_button';
+  static const String cameraStopMotionBudget = 'camera_stop_motion_budget';
+
   /// Welcome screen. The fresh-install and returning-user branches show
   /// different buttons, so each action gets its own id rather than being
   /// disambiguated by position.
@@ -78,6 +110,26 @@ abstract class SemanticIds {
   /// teardown of every E2E flow, so this route has to stay addressable.
   static const String settingsNostrRow = 'nostr_settings_tile';
   static const String settingsRemoveKeysRow = 'remove_keys_tile';
+
+  /// Search. The results screen has no tabs and its rows are keyed by
+  /// pubkey, so E2E flows need an ordinal handle plus anchors for the
+  /// chrome — otherwise they fall back to matching translated copy or
+  /// tapping fixed screen coordinates.
+  static const String exploreSearchBar = 'explore_search_bar';
+  static const String searchField = 'search_field';
+  static const String searchBackButton = 'search_back_button';
+  static const String searchFilterPill = 'search_filter_pill';
+
+  static String searchSectionHeader(String section) =>
+      'search_section_header_$section';
+
+  /// Ordinal handle for a People result row, alongside the pubkey-keyed
+  /// `search_user_tile_<pubkey>` that the row itself carries.
+  static String searchUserTileAt(int index) => 'search_user_tile_$index';
+
+  /// Comments sheet title. Doubles as the drag anchor: the sheet has no
+  /// close button, so dismissing it means dragging the header down.
+  static const String commentsSheetTitle = 'comments_sheet_title';
 
   static const String profileStatsRow = 'profile_stats_row';
 
@@ -116,4 +168,10 @@ abstract class SemanticIds {
   static const String editorTimeline = 'editor_timeline';
 
   static const String videoDetailLoading = 'video_detail_loading';
+
+  /// Fullscreen pooled feed placeholders. Both states used to be the same
+  /// unlabelled spinner, so an E2E run could not tell "still loading" from
+  /// "this feed has nothing left" and simply timed out (#6949).
+  static const String fullscreenFeedLoading = 'fullscreen_feed_loading';
+  static const String fullscreenFeedEmpty = 'fullscreen_feed_empty';
 }

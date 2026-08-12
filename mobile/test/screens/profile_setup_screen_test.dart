@@ -20,10 +20,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
-import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../helpers/test_provider_overrides.dart';
-import '../helpers/url_launcher_test_double.dart';
 
 class _MockProfileEditorBloc
     extends MockBloc<ProfileEditorEvent, ProfileEditorState>
@@ -1095,52 +1093,6 @@ void main() {
       });
     });
 
-    testWidgets(
-      'refreshes profile on resume after native verifier launch',
-      (tester) async {
-        final originalPlatform = UrlLauncherPlatform.instance;
-        final launcher = UrlLauncherTestDouble();
-        UrlLauncherPlatform.instance = launcher;
-        addTearDown(() {
-          UrlLauncherPlatform.instance = originalPlatform;
-        });
-
-        whenListen(
-          mockEditorBloc,
-          Stream<ProfileEditorState>.fromIterable([
-            const ProfileEditorState(
-              verifierStatus: VerifierStatus.launchRequested,
-            ),
-          ]),
-          initialState: const ProfileEditorState(),
-        );
-
-        await pumpScreen(tester);
-        await tester.pump();
-
-        expect(launcher.launched, hasLength(1));
-        verify(
-          () => mockEditorBloc.add(const VerifierLaunchHandled()),
-        ).called(1);
-        verifyNever(
-          () => mockMyProfileBloc.add(const MyProfileFetchRequested()),
-        );
-
-        tester.binding.handleAppLifecycleStateChanged(
-          AppLifecycleState.inactive,
-        );
-        await tester.pump();
-        tester.binding.handleAppLifecycleStateChanged(
-          AppLifecycleState.resumed,
-        );
-        await tester.pump();
-
-        verify(
-          () => mockMyProfileBloc.add(const MyProfileFetchRequested()),
-        ).called(1);
-      },
-    );
-
     testWidgets('banner staged snackbar uses staged-save copy', (tester) async {
       whenListen(
         mockEditorBloc,
@@ -1715,145 +1667,6 @@ void main() {
           );
         },
       );
-    });
-  });
-
-  group('launchVerifierFlow', () {
-    late UrlLauncherPlatform originalPlatform;
-    late UrlLauncherTestDouble launcher;
-    late _MockProfileEditorBloc editorBloc;
-    late _MockMyProfileBloc myProfileBloc;
-
-    setUp(() {
-      originalPlatform = UrlLauncherPlatform.instance;
-      launcher = UrlLauncherTestDouble();
-      UrlLauncherPlatform.instance = launcher;
-      editorBloc = _MockProfileEditorBloc();
-      myProfileBloc = _MockMyProfileBloc();
-      when(() => editorBloc.isClosed).thenReturn(false);
-      when(() => myProfileBloc.isClosed).thenReturn(false);
-    });
-
-    tearDown(() {
-      UrlLauncherPlatform.instance = originalPlatform;
-    });
-
-    test(
-      'opens the verifier in the external browser without immediate refresh',
-      () async {
-        final launched = await launchVerifierFlow(
-          editorBloc: editorBloc,
-          myProfileBloc: myProfileBloc,
-          isWeb: false,
-        );
-
-        expect(launched, isTrue);
-        expect(launcher.launched, hasLength(1));
-        expect(launcher.launched.single.url, 'https://verifier.divine.video/');
-        expect(launcher.launched.single.useExternalApplication, isTrue);
-        verify(
-          () => editorBloc.add(const VerifierLaunchHandled()),
-        ).called(1);
-        verifyNever(
-          () => myProfileBloc.add(const MyProfileFetchRequested()),
-        );
-      },
-    );
-
-    test(
-      'keeps the existing web iframe route and refreshes profile',
-      () async {
-        final pushedRoutes = <({String location, Object? extra})>[];
-
-        final launched = await launchVerifierFlow(
-          editorBloc: editorBloc,
-          myProfileBloc: myProfileBloc,
-          isWeb: true,
-          pushVerifierRoute: (location, {extra}) async {
-            pushedRoutes.add((location: location, extra: extra));
-          },
-        );
-
-        expect(launched, isTrue);
-        expect(launcher.launched, isEmpty);
-        expect(pushedRoutes, hasLength(1));
-        expect(
-          pushedRoutes.single.location,
-          '/apps/bundled-verifier/web-sandbox',
-        );
-        verify(
-          () => editorBloc.add(const VerifierLaunchHandled()),
-        ).called(1);
-        verify(
-          () => myProfileBloc.add(const MyProfileFetchRequested()),
-        ).called(1);
-      },
-    );
-
-    test(
-      'resets the launch signal and skips refresh when native launch fails',
-      () async {
-        launcher = UrlLauncherTestDouble(launchResult: false);
-        UrlLauncherPlatform.instance = launcher;
-
-        final launched = await launchVerifierFlow(
-          editorBloc: editorBloc,
-          myProfileBloc: myProfileBloc,
-          isWeb: false,
-        );
-
-        expect(launched, isFalse);
-        expect(launcher.launched, hasLength(1));
-        expect(launcher.launched.single.url, 'https://verifier.divine.video/');
-        verify(
-          () => editorBloc.add(const VerifierLaunchHandled()),
-        ).called(1);
-        verifyNever(
-          () => myProfileBloc.add(const MyProfileFetchRequested()),
-        );
-      },
-    );
-
-    test(
-      'resets the launch signal and skips refresh when native launch throws',
-      () async {
-        launcher = UrlLauncherTestDouble(
-          launchError: PlatformException(code: 'launch_failed'),
-        );
-        UrlLauncherPlatform.instance = launcher;
-
-        final launched = await launchVerifierFlow(
-          editorBloc: editorBloc,
-          myProfileBloc: myProfileBloc,
-          isWeb: false,
-        );
-
-        expect(launched, isFalse);
-        expect(launcher.launched, hasLength(1));
-        expect(launcher.launched.single.url, 'https://verifier.divine.video/');
-        verify(
-          () => editorBloc.add(const VerifierLaunchHandled()),
-        ).called(1);
-        verifyNever(
-          () => myProfileBloc.add(const MyProfileFetchRequested()),
-        );
-      },
-    );
-
-    test('does not add events after verifier blocs close', () async {
-      when(() => editorBloc.isClosed).thenReturn(true);
-      when(() => myProfileBloc.isClosed).thenReturn(true);
-
-      final launched = await launchVerifierFlow(
-        editorBloc: editorBloc,
-        myProfileBloc: myProfileBloc,
-        isWeb: true,
-        pushVerifierRoute: (_, {extra}) async {},
-      );
-
-      expect(launched, isTrue);
-      verifyNever(() => editorBloc.add(const VerifierLaunchHandled()));
-      verifyNever(() => myProfileBloc.add(const MyProfileFetchRequested()));
     });
   });
 }

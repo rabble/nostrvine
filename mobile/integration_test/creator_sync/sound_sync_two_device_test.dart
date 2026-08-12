@@ -15,10 +15,13 @@
 // 'ws://localhost:$localRelayPort' for a local run.
 //
 // This file lives outside integration_test/e2e/ and carries no `service`
-// tag, so `mobile_service_integration_tests` (which runs
-// `flutter test integration_test/e2e/ --tags service`) never executes it.
+// tag, so `mobile_service_integration_tests` — which runs only the
+// `service`-tagged suites under integration_test/e2e/ — never executes it.
 // CI only `dart format`-checks and `flutter analyze`s this file — it never
-// runs it, because local_stack is not available there.
+// runs it, because local_stack is not available there. That is not just a
+// runner-configuration gap: local_stack cannot start on a GitHub runner at
+// all, because divine-invite-darshan:e2e is a private GHCR package and
+// `docker compose up` fails image resolution before starting any container.
 //
 // AS COMMITTED, THIS TEST HAS NEVER BEEN EXECUTED: it was authored in an
 // environment where the Docker daemon was unresponsive, so local_stack

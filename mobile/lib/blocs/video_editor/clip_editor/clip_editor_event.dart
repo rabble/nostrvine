@@ -353,6 +353,28 @@ class ClipEditorClipTransformRequested extends ClipEditorEvent {
   List<Object?> get props => [clipId, transform];
 }
 
+/// Request that the still at [frameIndex] of the stop-motion clip [clipId] be
+/// replaced by [imageBytes] — the crop / rotate / flip the image editor just
+/// rasterized.
+///
+/// The bytes travel through the bloc rather than being written by the screen
+/// that produced them: persisting them is data-layer work, and the UI reaches
+/// the file system through here (see `.claude/rules/architecture.md`).
+class ClipEditorStopMotionFrameTransformed extends ClipEditorEvent {
+  const ClipEditorStopMotionFrameTransformed({
+    required this.clipId,
+    required this.frameIndex,
+    required this.imageBytes,
+  });
+
+  final String clipId;
+  final int frameIndex;
+  final Uint8List imageBytes;
+
+  @override
+  List<Object?> get props => [clipId, frameIndex, imageBytes];
+}
+
 // === CHROMA KEY ===
 
 /// Request that the clip with [clipId] be re-rendered with [chromaKey] (its

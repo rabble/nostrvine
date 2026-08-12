@@ -2231,10 +2231,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => 'የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።';
-
-  @override
   String get nostrSettingsKeyManagement => 'የቁልፍ አስተዳደር';
 
   @override
@@ -3715,12 +3711,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'በኋላ ለማየት ያስቀምጡ';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'ወደ ዕልባት ስብስብ ያክሉ';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'በክምችቶች ውስጥ ያደራጁ';
-
-  @override
   String get shareMenuFollowSets => 'የሰዎች ዝርዝሮች';
 
   @override
@@ -4087,9 +4077,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuUnknown => 'ያልታወቀ';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'የዕልባት ስብስብ ይፍጠሩ';
-
-  @override
   String get shareMenuSetName => 'ስም አዘጋጅ';
 
   @override
@@ -4102,14 +4089,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => 'አዲስ የዕልባት ስብስብ ጀምር';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'እስካሁን ምንም ዕልባት አልተዘጋጀም። የመጀመሪያዎን ይፍጠሩ!';
-
-  @override
   String get shareMenuError => 'ስህተት';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'የዕልባቶች ስብስቦችን መጫን አልተሳካም።';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5752,6 +5732,25 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxFilterUnread => 'ያልተነበቡ';
 
   @override
+  String get dmBlockedThreadTitle => 'ይህን መለያ አግደዋል';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'መልእክቶቹ እዚህ ይቆያሉ፣ ስለዚህ ማንበብ ወይም ቅጽበታዊ ገጽ እይታ ማንሳት ይችላሉ። ለመመለስ እገዳውን ያንሱ።';
+
+  @override
+  String get inboxFilterBlocked => 'የታገዱ';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'የታገዱ ውይይቶች የሉም';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'የሚያግዷቸው መለያዎች እዚህ ይታያሉ።';
+
+  @override
+  String get inboxBlockedNoMessages => 'መልእክቶች የሉም';
+
+  @override
   String get inboxUnreadEmptyTitle => 'ሁሉንም አንብበሃል';
 
   @override
@@ -6093,6 +6092,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get discoverListsLoading => 'የህዝብ ዝርዝሮችን በመፈለግ ላይ...';
+
+  @override
+  String get discoverListsRelayTimeout => 'ሪሌው በጊዜው ዝርዝሮችን አልመለሰም። እንደገና ሞክር።';
+
+  @override
+  String get discoverListsServiceUnavailable => 'አገልግሎቱ አይገኝም።';
 
   @override
   String get discoverListsEmptyTitle => 'ምንም የህዝብ ዝርዝሮች አልተገኙም';
@@ -8159,12 +8164,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'ርዕስ አልባ';
 
   @override
@@ -9103,6 +9102,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorTransformNoLocalFile => 'መለወጥ አይቻልም፦ ክሊፑ በአካባቢው አይገኝም።';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'የተመረጠውን ፍሬም ቁረጥ፣ አሽከርክር ወይም ገልብጥ';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'ትንሽ ይቆዩ፣ ፍሬምዎን እየለወጥን ነው';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'ፍሬሙን መለወጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
   String get videoEditorTransformRotateLabel => 'አሽከርክር';
 
   @override
@@ -9662,6 +9673,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'ቪዲዮ ተወግዷል';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'እዚህ የሚጫወት ምንም አልቀረም';
+
+  @override
   String get settingsBadgesTitle => 'ባጆች';
 
   @override
@@ -9863,6 +9877,61 @@ class AppLocalizationsAm extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'ይህን ባጅ በDivine ተመልከት፦ $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction => 'የባጅ ጠያቂዎችን አግድ';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'የባጅ ጠያቂዎችን አግድ';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError => 'ይህን ባጅ የጠየቁትን መጫን አልተቻለም';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle => 'አሁን ይህን ባጅ የጠየቀ የለም';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody => 'ለማገድ የአሁን ጠያቂዎችን አላገኘንም።';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count መለያዎች ይታገዱ?',
+      one: '1 መለያ ይታገድ?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'ይህ አሁን ይህን ባጅ የጠየቁትን $count መለያዎች ያግዳል። ፖስቶቻቸው ከፊዶችህ ይጠፋሉ፣ ማሳወቂያም አይደርሳቸውም።',
+      one: 'ይህ አሁን ይህን ባጅ የጠየቀውን መለያ ያግዳል። ፖስቶቹ ከፊዶችህ ይጠፋሉ፣ ማሳወቂያም አይደርሰውም።',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count መለያዎች አግድ',
+      one: '1 መለያ አግድ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'የባጅ ጠያቂዎች ታግደዋል';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure => 'የባጅ ጠያቂዎችን ማገድ አልተቻለም';
 
   @override
   String get badgeDetailLoadError => 'ይህን ባጅ መጫን አልተቻለም';
@@ -10612,10 +10681,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'ይህን መስመር ያስወግዱ';
 
   @override
-  String get subtitleEditorStartLabel => 'መጀመሪያ';
+  String get subtitleEditorPreviewUnavailable =>
+      'ቪዲዮው አሁን ሊጫወት አልቻለም፣ ግን አሁንም መግለጫ ጽሑፎቹን ማስተካከል ይችላሉ።';
 
   @override
-  String get subtitleEditorEndLabel => 'መጨረሻ';
+  String get subtitleEditorPlayPreview => 'ቪዲዮውን ያጫውቱ';
+
+  @override
+  String get subtitleEditorPausePreview => 'ቪዲዮውን ያቁሙ';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11191,4 +11264,196 @@ class AppLocalizationsAm extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'የተረጋገጡ መለያዎች';
+
+  @override
+  String get verifySignedOutMessage => 'መለያዎችህን ለማገናኘት ግባ።';
+
+  @override
+  String get verifyIntro =>
+      'አስቀድመህ ያሉህን መለያዎች አገናኝ፣ ሰዎች በእርግጥ አንተ መሆንህን እንዲያውቁ።';
+
+  @override
+  String get verifyLoadFailed => 'ግንኙነቶችህን መጫን አልተቻለም።';
+
+  @override
+  String get verifyRetry => 'እንደገና ሞክር';
+
+  @override
+  String get verifyLinkedSectionTitle => 'የተገናኙ';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'አረጋጋጩ አልተገኘም፣ ስለዚህ ሁሉም ያልተመረመሩ ሆነው ይታያሉ።';
+
+  @override
+  String get verifyAddSectionTitle => 'መለያ ጨምር';
+
+  @override
+  String get verifyAllPlatformsLinked => 'የምንደግፈውን ሁሉ አገናኝተሃል።';
+
+  @override
+  String get verifyStatusVerified => 'የተረጋገጠ';
+
+  @override
+  String get verifyStatusUnverified => 'ያልተረጋገጠ';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'የ$platform መለያ $identity ግንኙነት አቋርጥ';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'የ$platform ግንኙነት ይቋረጥ?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity ከመገለጫህ ላይ መታየቱ ይቆማል። በኋላ እንደገና ማገናኘት ትችላለህ፣ ግን እንደገና መግባት ወይም አዲስ ማረጋገጫ መለጠፍ ይኖርብሃል።';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'ግንኙነት አቋርጥ';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'የ$platform መለያህን አገናኝ';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'አንድ ንክኪ';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'ወደ $platform ግባ፣ የቀረውን እኛ እንሠራዋለን። ምንም አይለጠፍም።';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'በ$platform ቀጥል';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'ወይም ማስረጃ ለጥፍ';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'npub ህን በመለያህ ላይ ለጥፍ፣ ከዚያ የዚያን ልጥፍ አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyNpubLabel => 'የአንተ npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'npub ህን ቅዳ';
+
+  @override
+  String get verifyNpubCopied => 'npub ተቀድቷል';
+
+  @override
+  String get verifyIdentityLabel => 'የመለያ ስም';
+
+  @override
+  String get verifyProofLabel => 'የልጥፍህ አገናኝ';
+
+  @override
+  String get verifyConnectProofCta => 'መርምር እና አገናኝ';
+
+  @override
+  String get verifyErrorProofRejected => 'በዚያ ልጥፍ ውስጥ npub ህን አላገኘንም።';
+
+  @override
+  String get verifyErrorVerifierUnreachable => 'አረጋጋጩ አልተገኘም። ትንሽ ቆይተህ ሞክር።';
+
+  @override
+  String get verifyErrorOauthFailed => 'አልተሳካም። እንደገና ሞክር።';
+
+  @override
+  String get verifyErrorHandleRequired => 'መጀመሪያ ሃንድልህን አስገባ።';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'ተረጋግጧል፣ ግን ማንኛውም ሪሌይ ዝማኔውን አልተቀበለም። እንደገና ሞክር።';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'የአንድ ንክኪ መግቢያ ለዚህ ገና አልተዘጋጀም። ከታች ያለውን ማስረጃ ተጠቀም።';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'npub ህ በመጀመሪያው ፋይል ውስጥ ያለበት ይፋዊ gist ፍጠር፣ ከዚያ የgist አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'ቦታችን ሊያነበው በሚችል የDiscord ቻናል ውስጥ npub ህን ለጥፍ፣ ከዚያ የመልእክቱን አገናኝ ለጥፍ። የአገልጋይ ግብዣ ምንም አያረጋግጥም።';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'npub ህን ከዚያ መለያ ለጥፍ፣ ከዚያ የtweet ኡን አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'npub ህን ከዚያ መለያ ለጥፍ፣ ከዚያ አገናኙን ለጥፍ። የመለያው ስም ኢንስታንሱን ይፈልጋል — alice ብቻ ሳይሆን mastodon.social/@alice።';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'የሚገናኘው ቻናሉ ነው፣ የቴሌግራም መለያህ አይደለም። ቻናሉ መጀመሪያ ይፋዊ አገናኝ ያስፈልገዋል (ቴሌግራም አዲሶቹን የግል ያደርጋቸዋል)። npub ህን እዚያ ለጥፍ እና የመልእክቱን አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'ከላይ ገብተሃል? ከዚያ ሌላ ምንም አያስፈልግም። ካልሆነ npub ህን ለጥፍ እና የዚያን ልጥፍ አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'npub ህን በቪዲዮ መግለጫ ውስጥ አስገባ፣ ከዚያ የዚያን ቪዲዮ አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'npub ህን በቪዲዮ መግለጫ ውስጥ አስገባ፣ ከዚያ የዚያን ቪዲዮ አገናኝ ለጥፍ።';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform ተገናኝቷል።';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'ያ የግል ቻናል ወይም ግብዣ ነው። ለቻናሉ ይፋዊ አገናኝ ስጠው፣ ከዚያ የመልእክቱን አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyErrorRemoveFailed => 'ግንኙነቱ አልተቋረጠም። እንደገና ሞክር።';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'አሁን ያሉህ ግንኙነቶች ሊነበቡ አልቻሉም፣ ስለዚህ ምንም አልተቀየረም። ግንኙነትህን አረጋግጠህ እንደገና ሞክር።';
+
+  @override
+  String get verifyChannelLabel => 'የቻናል ስም';
+
+  @override
+  String get verifyHowItWorksTitle => 'ይህ እንዴት ይሠራል?';
+
+  @override
+  String get verifyHowItWorksIntro => 'እንደ ሁለት መለያዎች መጨባበጥ አስበው፦';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'የDivine መገለጫህ „በTwitter ላይ @alice እኔ ነኝ“ ይላል።';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'የTwitter መለያህ „አዎ፣ ያ የDivine መገለጫ የእኔ ነው“ ብሎ ያረጋግጣል።';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'ሁለቱንም ወገን እንመረምራለን። ከተዛመዱ ተረጋግጠሃል። ማጭበርበር አይቻልም — ስምህንና ፎቶህን መቅዳት ይቻላል፣ ከእውነተኛ መለያህ መለጠፍ ግን አይቻልም።';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'ግንኙነቶቹ በራስህ የNostr ማንነት ላይ ናቸው፣ ስለዚህ በፈለግህ ጊዜ ከዚህ ማስወገድ ትችላለህ።';
+
+  @override
+  String get generalSettingsSectionIdentity => 'ማንነት';
 }

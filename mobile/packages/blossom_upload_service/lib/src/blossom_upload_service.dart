@@ -1446,10 +1446,22 @@ class BlossomUploadService {
           final xReason =
               response.headers.value('X-Reason') ??
               response.headers.value('x-reason'); // coverage:ignore-line
+          final statusCode = response.statusCode;
+          // A transient status leaves the session intact: the offset has not
+          // moved and the same chunk can be resent. Falling back to the
+          // legacy whole-file PUT would be strictly worse on a link that just
+          // failed to finish a single chunk. 5xx never lands here — it throws
+          // a DioException — so in practice this covers the edge timeout
+          // (408) and rate limiting (429). Retrying is left to the outer
+          // policy, whose exponential backoff suits a server that has already
+          // spent its own timeout waiting.
           throw BlossomResumableUploadException(
-            'Chunk upload failed: ${response.statusCode} '
+            'Chunk upload failed: $statusCode '
             '${xReason ?? response.data}', // coverage:ignore-line
-            statusCode: response.statusCode,
+            statusCode: statusCode,
+            isRecoverableResumableFailure:
+                statusCode != null &&
+                _retriableUploadStatusCodes.contains(statusCode),
           );
         }
 

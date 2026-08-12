@@ -2144,10 +2144,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => '環境スイッチャーとデバッグ設定';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'バグるかもしれない機能フラグを切り替える。';
-
-  @override
   String get nostrSettingsKeyManagement => '鍵の管理';
 
   @override
@@ -3588,12 +3584,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'あとで見るために保存';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'ブックマークセットに追加';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'コレクションに整理';
-
-  @override
   String get shareMenuFollowSets => 'フォローセット';
 
   @override
@@ -3954,9 +3944,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuUnknown => '不明';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'ブックマークセットを作る';
-
-  @override
   String get shareMenuSetName => 'セット名';
 
   @override
@@ -3969,13 +3956,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => '新しいブックマークコレクションを始めよう';
 
   @override
-  String get shareMenuNoBookmarkSets => 'ブックマークセットはまだないよ。最初のセットを作ろう！';
-
-  @override
   String get shareMenuError => 'エラー';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'ブックマークセットの読み込みがうまくいかなかった';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5606,6 +5587,25 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxFilterUnread => '未読';
 
   @override
+  String get dmBlockedThreadTitle => 'このアカウントをブロックしました';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'メッセージはここに残るので、読んだりスクリーンショットを撮ったりできます。返信するにはブロックを解除してください。';
+
+  @override
+  String get inboxFilterBlocked => 'ブロック済み';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'ブロックしたチャットはありません';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'ブロックしたアカウントがここに表示されます。';
+
+  @override
+  String get inboxBlockedNoMessages => 'メッセージなし';
+
+  @override
   String get inboxUnreadEmptyTitle => 'すべて既読です';
 
   @override
@@ -5947,6 +5947,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get discoverListsLoading => '公開リストを探してるよ...';
+
+  @override
+  String get discoverListsRelayTimeout => 'リレーが時間内にリストを返さなかったよ。もう一度試してね。';
+
+  @override
+  String get discoverListsServiceUnavailable => 'サービスを利用できません。';
 
   @override
   String get discoverListsEmptyTitle => '公開リストが見つからなかった';
@@ -7976,12 +7982,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => '無題';
 
   @override
@@ -8905,6 +8905,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTransformNoLocalFile => '変形できません：クリップがローカルに利用できません。';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      '選択したフレームをトリミング、回転、反転';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel => '少々お待ちください。フレームを変換しています';
+
+  @override
+  String get videoEditorTransformFrameFailed => 'フレームを変換できませんでした。もう一度お試しください。';
+
+  @override
   String get videoEditorTransformRotateLabel => '回転';
 
   @override
@@ -9457,6 +9467,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => '動画を削除しました';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'ここに再生できる動画はもうありません';
+
+  @override
   String get settingsBadgesTitle => 'バッジ';
 
   @override
@@ -9655,6 +9668,60 @@ class AppLocalizationsJa extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'Divine でこのバッジを見てみて: $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction => 'バッジの申請者をブロック';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'バッジの申請者をブロック';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError => 'このバッジの申請者を読み込めませんでした';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle => '今このバッジを申請している人はいません';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody => 'ブロックできる現在の申請者は見つかりませんでした。';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count人をブロックしますか？',
+      one: '1人をブロックしますか？',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'このバッジを今申請している$count件のアカウントをブロックします。投稿はあなたのフィードから消え、相手に通知は届きません。',
+      one: 'このバッジを今申請しているアカウントをブロックします。投稿はあなたのフィードから消え、相手に通知は届きません。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のアカウントをブロック',
+      one: '1件のアカウントをブロック',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'バッジ申請者をブロックしました';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure => 'バッジ申請者をブロックできませんでした';
 
   @override
   String get badgeDetailLoadError => 'このバッジを読み込めませんでした';
@@ -10398,10 +10465,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'この行を削除';
 
   @override
-  String get subtitleEditorStartLabel => '開始';
+  String get subtitleEditorPreviewUnavailable => 'いま動画を再生できないけど、字幕はこのまま直せるよ。';
 
   @override
-  String get subtitleEditorEndLabel => '終了';
+  String get subtitleEditorPlayPreview => '動画を再生';
+
+  @override
+  String get subtitleEditorPausePreview => '動画を一時停止';
 
   @override
   String get subtitleEditorInvalidHint => 'どの行にもテキストと、開始より後の終了時間が必要だよ。';
@@ -10970,4 +11040,193 @@ class AppLocalizationsJa extends AppLocalizations {
   ) {
     return '$picker、$color';
   }
+
+  @override
+  String get verifyTitle => '認証済みアカウント';
+
+  @override
+  String get verifySignedOutMessage => 'アカウントを連携するにはログインしてね。';
+
+  @override
+  String get verifyIntro => 'すでに持っているアカウントを連携すれば、本人だとひと目でわかるよ。';
+
+  @override
+  String get verifyLoadFailed => '連携を読み込めなかった。';
+
+  @override
+  String get verifyRetry => 'もう一度試す';
+
+  @override
+  String get verifyLinkedSectionTitle => '連携済み';
+
+  @override
+  String get verifyVerifierUnreachable => '認証サービスにつながらなかったから、すべて未確認と表示されてる。';
+
+  @override
+  String get verifyAddSectionTitle => 'アカウントを追加';
+
+  @override
+  String get verifyAllPlatformsLinked => '対応しているものは全部連携済みだよ。';
+
+  @override
+  String get verifyStatusVerified => '認証済み';
+
+  @override
+  String get verifyStatusUnverified => '未認証';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '$platform のアカウント $identity の連携を解除';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform の連携を解除する?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity はプロフィールに表示されなくなるよ。あとでまた連携できるけど、もう一度ログインするか、新しい証明を投稿する必要があるよ。';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => '連携を解除';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return '$platform のアカウントを連携';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'ワンタップ';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return '$platform にログインすれば、あとはこっちでやるよ。投稿は一切されない。';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return '$platform で続ける';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'または証明を投稿';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      '自分の npub をそのアカウントで投稿して、その投稿のリンクを貼ってね。';
+
+  @override
+  String get verifyNpubLabel => 'あなたの npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'npub をコピー';
+
+  @override
+  String get verifyNpubCopied => 'npub をコピーしたよ';
+
+  @override
+  String get verifyIdentityLabel => 'アカウント名';
+
+  @override
+  String get verifyProofLabel => '投稿のリンク';
+
+  @override
+  String get verifyConnectProofCta => '確認して連携';
+
+  @override
+  String get verifyErrorProofRejected => 'その投稿に npub が見つからなかった。';
+
+  @override
+  String get verifyErrorVerifierUnreachable => '認証サービスにつながらなかった。少ししてからもう一度。';
+
+  @override
+  String get verifyErrorOauthFailed => 'うまくいかなかった。もう一度試してみて。';
+
+  @override
+  String get verifyErrorHandleRequired => '先にハンドルを入力してね。';
+
+  @override
+  String get verifyErrorPublishFailed => '認証はできたけど、どのリレーも更新を受け取らなかった。もう一度試して。';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'ワンタップのログインはこれにはまだ用意されてない。下の証明投稿を使ってね。';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      '最初のファイルに npub を入れた公開 gist を作って、その gist のリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'うちのボットが読める Discord チャンネルに npub を投稿して、そのメッセージのリンクを貼ってね。サーバー招待では証明にならないよ。';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'そのアカウントから npub をツイートして、そのツイートのリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'そのアカウントから npub を投稿して、リンクを貼ってね。アカウント名にはインスタンスが必要だよ — alice ではなく mastodon.social/@alice。';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      '連携されるのはチャンネルで、Telegram アカウントじゃないよ。まず公開リンクが必要（Telegram は新規チャンネルを非公開で作る）。そこに npub を投稿して、メッセージのリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      '上でログインした？ならこれ以上は不要。していないなら npub を投稿して、その投稿のリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      '動画のキャプションに npub を入れて、その動画のリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      '動画の説明欄に npub を入れて、その動画のリンクを貼ってね。';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform を連携したよ。';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'それは非公開チャンネルか招待リンクだよ。チャンネルに公開リンクを設定してから、メッセージのリンクを貼ってね。';
+
+  @override
+  String get verifyErrorRemoveFailed => '連携を解除できなかった。もう一度試してね。';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'いまの連携を読み取れなかったから、何も変更していないよ。接続を確認してもう一度試してね。';
+
+  @override
+  String get verifyChannelLabel => 'チャンネル名';
+
+  @override
+  String get verifyHowItWorksTitle => 'これはどういう仕組み？';
+
+  @override
+  String get verifyHowItWorksIntro => 'ふたつのアカウントの握手だと思ってね：';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'きみの Divine プロフィールが「Twitter の @alice は私です」と言う。';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'きみの Twitter アカウントが「はい、その Divine プロフィールは私のものです」と認める。';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      '両方をこちらで照合するよ。一致すれば認証完了。偽装はできない — 名前や写真は真似できても、きみの本物のアカウントから投稿はできないからね。';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'リンクはきみ自身の Nostr アイデンティティ上にあるから、ここからいつでも外せるよ。';
+
+  @override
+  String get generalSettingsSectionIdentity => 'アイデンティティ';
 }

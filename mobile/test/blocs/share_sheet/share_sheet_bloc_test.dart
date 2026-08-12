@@ -108,6 +108,9 @@ void main() {
       );
 
       // Default stubs
+      when(
+        () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+      ).thenReturn(false);
       when(() => mockSharingService.recentlySharedWith).thenReturn([]);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
       when(
@@ -701,11 +704,14 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=true, removed=false when adding bookmark',
         setUp: () {
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
-          ).thenReturn(false);
-          when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (_) async => const BookmarkToggleResult(
+              succeeded: true,
+              wasBookmarked: false,
+              isBookmarked: true,
+            ),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -729,11 +735,14 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=true, removed=true when removing bookmark',
         setUp: () {
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
-          ).thenReturn(true);
-          when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (_) async => const BookmarkToggleResult(
+              succeeded: true,
+              wasBookmarked: true,
+              isBookmarked: false,
+            ),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -757,11 +766,14 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=false when bookmark fails',
         setUp: () {
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
-          ).thenReturn(false);
-          when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer(
+            (_) async => const BookmarkToggleResult(
+              succeeded: false,
+              wasBookmarked: false,
+              isBookmarked: false,
+            ),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -786,11 +798,14 @@ void main() {
         'bookmark fails',
         setUp: () {
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
-          ).thenReturn(true);
-          when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer(
+            (_) async => const BookmarkToggleResult(
+              succeeded: false,
+              wasBookmarked: true,
+              isBookmarked: true,
+            ),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -813,9 +828,6 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits $ShareSheetSaveResult with succeeded=false when bookmark throws',
         setUp: () {
-          when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
-          ).thenReturn(false);
           when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
           ).thenThrow(Exception('offline'));
@@ -895,13 +907,15 @@ void main() {
         setUp: () {
           var inGlobalBookmarks = false;
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
-          ).thenAnswer((_) => inGlobalBookmarks);
-          when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer((_) async {
+            final wasBookmarked = inGlobalBookmarks;
             inGlobalBookmarks = !inGlobalBookmarks;
-            return true;
+            return BookmarkToggleResult(
+              succeeded: true,
+              wasBookmarked: wasBookmarked,
+              isBookmarked: inGlobalBookmarks,
+            );
           });
         },
         build: createBloc,

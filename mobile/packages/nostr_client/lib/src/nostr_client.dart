@@ -59,7 +59,7 @@ typedef NostrClientInitializationObserver =
 /// Abstraction layer for Nostr communication
 ///
 /// This client wraps nostr_sdk and provides:
-/// - Subscription deduplication (prevents duplicate subscriptions)
+/// - Subscription lifecycle (relay REQ closed when the last listener cancels)
 /// - Local database caching for faster queries
 /// - Clean API for repositories to use
 /// - Proper resource management
@@ -618,11 +618,10 @@ class NostrClient {
   /// Number of active subscriptions
   int get activeSubscriptionCount => _subscriptionStreams.length;
 
-  /// Map of subscription IDs to their filter hashes (for deduplication)
-  final Map<String, String> _subscriptionFilters = {};
-
   /// Map of active subscriptions
   final Map<String, StreamController<Event>> _subscriptionStreams = {};
+
+  int _anonymousSubscriptionCounter = 0;
 
   /// Publishes an event to relays
   ///
@@ -824,6 +823,21 @@ class NostrClient {
   /// Calling this on a disposed client is a no-op that returns an empty
   /// list. If the client is disposed while a call is in flight, the
   /// network query is skipped and only cached results are returned.
+  ///
+  /// `timedOut: false` with an empty `events` normally means "the relays
+  /// answered and there is nothing", but only for a caller that is content to
+  /// be told about the relays that answered *first*: a relay that stays
+  /// connected and never sends a terminal frame is skipped past after
+  /// `RelayPool.querySettleWindow` and the result still reports
+  /// `timedOut: false`. Set [requireAllRelaysSettled] when that distinction
+  /// is load-bearing — a caller about to replace what it read cannot act on a
+  /// partial answer — and an incomplete answer arrives as `timedOut: true`
+  /// instead. That covers the answers nobody gave as well as the partial ones:
+  /// a fan-out no relay accepted, and a query skipped because the client is
+  /// being disposed, both report `timedOut: true` rather than an empty answer
+  /// (a client with no reachable relay at all reports `noRelays` instead).
+  /// Note this only bounds the WebSocket leg; cached rows are merged in either
+  /// way.
   Future<({List<Event> events, bool timedOut, bool noRelays})>
   queryEventsDetailed(
     List<Filter> filters, {
@@ -834,6 +848,7 @@ class NostrClient {
     bool useCache = true,
     bool useQueryPool = true,
     Duration timeout = const Duration(seconds: 5),
+    bool requireAllRelaysSettled = false,
   }) async {
     // A disposed client's query pool is closed; querying it is a no-op
     // rather than an error. This is the common case (checked upfront to
@@ -888,6 +903,7 @@ class NostrClient {
           relayTypes: relayTypes,
           sendAfterAuth: sendAfterAuth,
           timeout: timeout,
+          requireAllRelaysSettled: requireAllRelaysSettled,
         );
     // Throttle concurrent one-shot REQs so high fan-out (a profile with many
     // videos → per-item like-count/badge/profile/repost fetches) can't trip a
@@ -906,7 +922,14 @@ class NostrClient {
     // race rather than narrowing it. See #5952.
     final ({List<Event> events, bool timedOut}) websocketResult;
     if (_queryPool.isClosed) {
-      websocketResult = (events: <Event>[], timedOut: false);
+      // Nothing was asked of the relays here, which is a different thing from
+      // their having nothing. A display read is content to fall back on cache;
+      // a full-settlement caller is about to replace what it read, so it gets
+      // the same inconclusive answer a relay that never settled would give.
+      websocketResult = (
+        events: <Event>[],
+        timedOut: requireAllRelaysSettled,
+      );
     } else {
       websocketResult = useQueryPool
           ? await _queryPool.withResource(runWebSocketQuery)
@@ -1115,10 +1138,13 @@ class NostrClient {
     return null;
   }
 
-  /// Subscribes to events matching the given filters
+  /// Subscribes to events matching the given filters.
   ///
-  /// Returns a stream of events. Automatically deduplicates subscriptions
-  /// with identical filters to prevent duplicate WebSocket subscriptions.
+  /// Returns a broadcast stream of events. Anonymous subscriptions receive a
+  /// fresh relay subscription every call so bounded query screens can
+  /// re-enter safely after a previous listener was canceled. The returned
+  /// stream is closed when its last listener cancels; call [subscribe] again
+  /// instead of retaining and re-listening to the old stream.
   Stream<Event> subscribe(
     List<Filter> filters, {
     String? subscriptionId,
@@ -1130,12 +1156,15 @@ class NostrClient {
   }) {
     final effectiveTempRelays = _allowedRelays(tempRelays);
     final effectiveTargetRelays = _allowedRelays(targetRelays);
-    // Generate deterministic subscription ID based on filter content
     final filterHash = _generateFilterHash(filters);
-    final id = subscriptionId ?? 'sub_$filterHash';
+    final id =
+        subscriptionId ??
+        'sub_${filterHash}_${_anonymousSubscriptionCounter++}';
 
-    // Check if we already have this exact subscription
-    if (_subscriptionStreams.containsKey(id) &&
+    // Explicit subscription IDs are caller-owned. Preserve their sharing
+    // semantics so manual unsubscribe call sites keep working as before.
+    if (subscriptionId != null &&
+        _subscriptionStreams.containsKey(id) &&
         !_subscriptionStreams[id]!.isClosed) {
       return _subscriptionStreams[id]!.stream;
     }
@@ -1145,10 +1174,24 @@ class NostrClient {
       unawaited(retryDisconnectedRelays());
     }
 
+    late final StreamController<Event> controller;
+    var effectiveId = id;
+
+    void cleanupSubscription() {
+      if (!_subscriptionStreams.containsKey(effectiveId)) return;
+      _nostr.unsubscribe(effectiveId);
+      _subscriptionStreams.remove(effectiveId);
+      statisticsObserver?.onSubscriptionClosed(effectiveId);
+      if (!controller.isClosed) {
+        unawaited(controller.close());
+      }
+    }
+
     // Create new stream controller
-    final controller = StreamController<Event>.broadcast();
+    controller = StreamController<Event>.broadcast(
+      onCancel: cleanupSubscription,
+    );
     _subscriptionStreams[id] = controller;
-    _subscriptionFilters[id] = filterHash;
 
     // Convert filters to JSON format expected by nostr_sdk
     final filtersJson = filters.map((f) => f.toJson()).toList();
@@ -1184,11 +1227,10 @@ class NostrClient {
     );
 
     // If nostr_sdk generated a different ID, update our mapping
-    final effectiveId = (actualId != id && actualId.isNotEmpty) ? actualId : id;
+    effectiveId = (actualId != id && actualId.isNotEmpty) ? actualId : id;
     if (effectiveId != id) {
       _subscriptionStreams.remove(id);
       _subscriptionStreams[effectiveId] = controller;
-      _subscriptionFilters[effectiveId] = filterHash;
     }
 
     statisticsObserver?.onSubscriptionStarted(effectiveId);
@@ -1203,7 +1245,6 @@ class NostrClient {
     if (controller != null && !controller.isClosed) {
       await controller.close();
     }
-    _subscriptionFilters.remove(subscriptionId);
     statisticsObserver?.onSubscriptionClosed(subscriptionId);
   }
 
@@ -1738,7 +1779,6 @@ class NostrClient {
     _nostr.close();
     _verifyWorker?.close();
     _verifyWorker = null;
-    _subscriptionFilters.clear();
     _isDisposed = true;
   }
 

@@ -35,10 +35,16 @@ class BadgeAwardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repository = ref.watch(badgeRepositoryProvider);
+    final contentBlocklistRepository = ref.watch(
+      contentBlocklistRepositoryProvider,
+    );
     return BlocProvider(
       key: ValueKey((repository, coordinate)),
-      create: (_) =>
-          BadgeDetailCubit(repository: repository, coordinate: coordinate),
+      create: (_) => BadgeDetailCubit(
+        repository: repository,
+        contentBlocklistRepository: contentBlocklistRepository,
+        coordinate: coordinate,
+      ),
       child: const BadgeAwardView(),
     );
   }

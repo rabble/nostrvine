@@ -2312,10 +2312,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Превключвател на средата и настройки за дебъг';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Превключвай функции, които може да се държат странно.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Управление на ключове';
 
   @override
@@ -3835,12 +3831,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Запази за по-късен преглед';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Добави към набора с отметки';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Организирай в колекции';
-
-  @override
   String get shareMenuFollowSets => 'Списъци с хора';
 
   @override
@@ -4219,9 +4209,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuUnknown => 'Неизвестен';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Създай набор с отметки';
-
-  @override
   String get shareMenuSetName => 'Задай име';
 
   @override
@@ -4235,15 +4222,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Започни нова колекция от отметки';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Още няма набори с отметки. Създай първия си.';
-
-  @override
   String get shareMenuError => 'Грешка';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Неуспешно зареждане на набори от отметки';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5929,6 +5908,26 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxFilterUnread => 'Непрочетени';
 
   @override
+  String get dmBlockedThreadTitle => 'Блокирахте този акаунт';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Съобщенията остават тук, за да можете да ги прочетете или да направите екранна снимка. Отблокирайте, за да отговорите.';
+
+  @override
+  String get inboxFilterBlocked => 'Блокирани';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Няма блокирани чатове';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Акаунтите, които блокирате, се показват тук.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Няма съобщения';
+
+  @override
   String get inboxUnreadEmptyTitle => 'В крак си с всичко';
 
   @override
@@ -6276,6 +6275,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get discoverListsLoading => 'Откриваме публични списъци...';
+
+  @override
+  String get discoverListsRelayTimeout =>
+      'Релето не върна списъци навреме. Опитай пак.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Услугата не е налична.';
 
   @override
   String get discoverListsEmptyTitle => 'Не са намерени публични списъци';
@@ -8407,12 +8413,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'Без заглавие';
 
   @override
@@ -9386,6 +9386,18 @@ class AppLocalizationsBg extends AppLocalizations {
       'Преобразуването е невъзможно: клипът не е наличен локално.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Изрязване, завъртане или обръщане на избрания кадър';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Само момент, преобразуваме кадъра ти';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Кадърът не можа да бъде преобразуван. Опитай отново.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Завъртане';
 
   @override
@@ -9984,6 +9996,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Видеото е премахнато';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Тук няма какво повече да се пусне';
+
+  @override
   String get settingsBadgesTitle => 'Значки';
 
   @override
@@ -10192,6 +10207,67 @@ class AppLocalizationsBg extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'Виж този знак в Divine: $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction => 'Блокирай заявилите значката';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Блокирай заявилите значката';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Не можахме да заредим заявилите тази значка';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'В момента никой не заявява тази значка';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Не намерихме текущи заявили за блокиране.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Да блокираме $count акаунта?',
+      one: 'Да блокираме 1 акаунт?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Това блокира $count акаунта, които в момента заявяват тази значка. Публикациите им ще излязат от твоите фийдове и няма да получат известие.',
+      one:
+          'Това блокира акаунта, който в момента заявява тази значка. Публикациите му ще излязат от твоите фийдове и няма да получи известие.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Блокирай $count акаунта',
+      one: 'Блокирай 1 акаунт',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Заявилите значката са блокирани';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Не можахме да блокираме заявилите значката';
 
   @override
   String get badgeDetailLoadError => 'Този знак не можа да се зареди';
@@ -10951,10 +11027,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Премахни този ред';
 
   @override
-  String get subtitleEditorStartLabel => 'Начало';
+  String get subtitleEditorPreviewUnavailable =>
+      'Видеото не може да се пусне в момента, но пак можеш да оправиш субтитрите.';
 
   @override
-  String get subtitleEditorEndLabel => 'Край';
+  String get subtitleEditorPlayPreview => 'Пусни видеото';
+
+  @override
+  String get subtitleEditorPausePreview => 'Спри видеото';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11554,4 +11634,200 @@ class AppLocalizationsBg extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Потвърдени профили';
+
+  @override
+  String get verifySignedOutMessage => 'Влез, за да свържеш профилите си.';
+
+  @override
+  String get verifyIntro =>
+      'Свържи профилите, които вече имаш, за да се вижда, че наистина си ти.';
+
+  @override
+  String get verifyLoadFailed => 'Връзките ти не можаха да се заредят.';
+
+  @override
+  String get verifyRetry => 'Опитай пак';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Свързани';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Проверяващият не отговори, затова всичко излиза като непроверено.';
+
+  @override
+  String get verifyAddSectionTitle => 'Добави профил';
+
+  @override
+  String get verifyAllPlatformsLinked => 'Свърза всичко, което поддържаме.';
+
+  @override
+  String get verifyStatusVerified => 'Потвърден';
+
+  @override
+  String get verifyStatusUnverified => 'Непотвърден';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Премахни връзката с профила $identity в $platform';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Да премахнем ли връзката с $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity вече няма да се показва в профила ти. Можеш да го свържеш пак по-късно, но ще трябва да влезеш отново или да публикуваш нов линк за потвърждение.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Премахни връзката';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Свържи профила си в $platform';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Едно докосване';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Влез в $platform и ние поемаме останалото. Нищо не се публикува.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Продължи с $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Или публикувай доказателство';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Публикувай своя npub в профила си и после постави линка към публикацията.';
+
+  @override
+  String get verifyNpubLabel => 'Твоят npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Копирай своя npub';
+
+  @override
+  String get verifyNpubCopied => 'npub копиран';
+
+  @override
+  String get verifyIdentityLabel => 'Име на профила';
+
+  @override
+  String get verifyProofLabel => 'Линк към публикацията ти';
+
+  @override
+  String get verifyConnectProofCta => 'Провери и свържи';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Не намерихме твоя npub в тази публикация.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Проверяващият не отговаря. Опитай пак след малко.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Не се получи. Пробвай отново.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Първо въведи своя handle.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Потвърдено, но нито едно реле не прие промяната. Опитай пак.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Влизането с едно докосване още не е настроено тук. Използвай доказателството по-долу.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Направи публичен gist с твоя npub в първия файл и постави линка към gist-а.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Публикувай своя npub в Discord канал, който нашият бот може да чете, и постави линка към съобщението. Покана за сървър не доказва нищо.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Публикувай своя npub от този профил и постави линка към туита.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Публикувай своя npub от този профил и постави линка. Името на профила трябва да включва инстанцията — mastodon.social/@alice, не само alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Свързва се каналът, не твоят профил в Telegram. Първо му трябва публичен линк (Telegram създава новите като частни). Публикувай там своя npub и постави линка към съобщението.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Влезе ли горе? Тогава нищо повече. Иначе публикувай своя npub и постави линка към публикацията.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Сложи своя npub в описанието на видео и постави линка към това видео.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Сложи своя npub в описанието на видео и постави линка към това видео.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform е свързан.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Това е частен канал или покана. Дай на канала публичен линк и после постави линка към съобщението.';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'Връзката не можа да се премахне. Опитай пак.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Не успяхме да прочетем текущите ти връзки, затова нищо не е променено. Провери връзката си и опитай пак.';
+
+  @override
+  String get verifyChannelLabel => 'Име на канала';
+
+  @override
+  String get verifyHowItWorksTitle => 'Как работи?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Представи си го като ръкостискане между два профила:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Твоят Divine профил казва: „Аз съм @alice в Twitter“.';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Твоят Twitter профил потвърждава: „Да, този Divine профил е мой“.';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Проверяваме и двете страни. Съвпаднат ли, си потвърден. Не може да се подправи — име и снимка се копират, публикуване от истинския ти профил не.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Връзките стоят в твоята собствена Nostr идентичност, така че можеш да ги махнеш оттук когато поискаш.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Самоличност';
 }

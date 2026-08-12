@@ -1,0 +1,68 @@
+appId: co.openvine.app
+---
+# Stop-motion mode, idle: the viewfinder chrome is up and no still is captured
+# yet.
+#
+# Stop-motion renders the capture stack, so most of this is the same chrome
+# assertCaptureMode pins. The mode wheel's `selected` state below is what
+# settles which viewfinder is up; the rail blocks pin what this mode does and
+# does not render.
+
+# Mode wheel with Stop Motion armed. `selected` is load-bearing: the wheel
+# renders an entry for every mode in every mode, so a bare id assertion here
+# passes just as happily on the Capture tab.
+- assertVisible:
+    id: camera_mode_stopMotion
+    selected: true
+- assertVisible:
+    id: camera_record_button
+- assertVisible:
+    id: camera_close_button
+- assertVisible:
+    id: camera_library_button
+
+# The shot budget, in the top-bar slot capture mode leaves empty. Stop-motion
+# never enters the recording state, so the duration progress bar capture mode
+# shows while recording never appears; this counts stills instead. Its node
+# carries the remaining-shots count as its label.
+- assertVisible:
+    id: camera_stop_motion_budget
+
+# Control rail, top to bottom. Ghost frame and grid are rendered only by modes
+# that capture stills.
+- assertVisible:
+    id: camera_flash_button
+- assertVisible:
+    id: camera_ghost_frame_button
+- assertVisible:
+    id: camera_grid_button
+- assertVisible:
+    id: camera_aspect_ratio_button
+- assertVisible:
+    id: camera_switch_camera_button
+
+# And the two capture mode has that this mode does not: stop-motion declares
+# neither `supportsCountdownTimer` nor `supportsVideoStabilization`. This pair
+# is a leak guard, not what separates the two screens — the mode wheel above
+# already does that, and the two rails are disjoint rather than nested, so
+# assertCaptureMode fails here on `camera_timer_button` regardless. What it
+# catches is a control starting to render in a mode that does not declare it,
+# which nothing else in the suite would.
+- assertNotVisible:
+    id: camera_timer_button
+- assertNotVisible:
+    id: camera_stabilization_button
+
+# And classic's shutter, for the same reason assertCaptureMode pins it: the
+# record button is pinned absent in assertClassicMode and this one absent in
+# every capture-stack mode, so the pair is what proves which stack is up.
+- assertNotVisible:
+    id: camera_classic_shutter
+
+# Nothing captured yet. Both buttons sit inside an AnimatedOpacity, and
+# RenderAnimatedOpacity drops its child from the semantics tree at opacity 0 —
+# so "not visible" here means "no still in the session", not "scrolled away".
+- assertNotVisible:
+    id: camera_next_button
+- assertNotVisible:
+    id: camera_delete_clip_button

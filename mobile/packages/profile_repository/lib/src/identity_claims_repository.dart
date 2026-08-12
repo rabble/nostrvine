@@ -1,11 +1,84 @@
 // ABOUTME: IdentityClaimsRepository — composes VerifierClient with NIP-39
-// ABOUTME: i tag parsing and a persistent verified-claims cache (#3936).
+// ABOUTME: i tag parsing, a verified-claims cache (#3936) and the kind-10011
+// ABOUTME: write path that links and unlinks accounts.
 
 import 'dart:convert';
 import 'dart:math';
 
 import 'package:db_client/db_client.dart' hide Filter;
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
+import 'package:profile_repository/src/identity_event_selection.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:verifier_client/verifier_client.dart';
+
+/// Signs an event on behalf of the current user.
+///
+/// Returns null when the signer refuses or is unavailable. Mirrors the
+/// `AuthService.createAndSignEvent` shape the app wires in.
+typedef IdentityEventSigner =
+    Future<Event?> Function({
+      required int kind,
+      required String content,
+      required List<List<String>> tags,
+    });
+
+/// The claims already on the identity event could not be read, so a write
+/// would have replaced them with an incomplete set.
+///
+/// Recoverable and worth retrying: it means the relays did not answer, not
+/// that anything is wrong with the claim being written.
+class IdentityClaimReadException implements Exception {
+  /// Creates an [IdentityClaimReadException].
+  const IdentityClaimReadException(this.message);
+
+  /// Human-readable description of the failure.
+  final String message;
+
+  @override
+  String toString() => 'IdentityClaimReadException: $message';
+}
+
+/// The identity event could not be published to any relay.
+class IdentityClaimPublishException implements Exception {
+  /// Creates an [IdentityClaimPublishException].
+  const IdentityClaimPublishException(this.message);
+
+  /// Human-readable description of the failure.
+  final String message;
+
+  @override
+  String toString() => 'IdentityClaimPublishException: $message';
+}
+
+/// Every claim on a profile's identity event, with the verifier's verdict.
+///
+/// Unlike the rendering paths, this keeps unverified claims: the surface that
+/// manages links has to show the one that stopped verifying.
+class IdentityClaimStatus {
+  /// Creates an [IdentityClaimStatus].
+  const IdentityClaimStatus({
+    required this.claims,
+    required this.verifiedKeys,
+    required this.verifierReachable,
+  });
+
+  /// Every claim on the identity event, in tag order.
+  final List<IdentityClaim> claims;
+
+  /// Lowercased `platform:identity` keys the verifier confirmed.
+  final Set<String> verifiedKeys;
+
+  /// False when the verifier could not be reached, so [verifiedKeys] is empty
+  /// for lack of an answer rather than for lack of verified claims. UI should
+  /// say "could not check" rather than "not verified".
+  final bool verifierReachable;
+
+  /// Whether [claim] carries a positive verdict.
+  bool isVerified(IdentityClaim claim) => verifiedKeys.contains(
+    '${claim.platform.toLowerCase()}:${claim.identity.toLowerCase()}',
+  );
+}
 
 /// Verified claims read from the persistent snapshot cache.
 class CachedVerifiedClaims {
@@ -37,6 +110,25 @@ class _VerificationOutcome {
   final Set<String> confirmedNegativeKeys;
 }
 
+class _PublishedIdentityTags {
+  const _PublishedIdentityTags({
+    required this.tags,
+    required this.createdAt,
+    required this.id,
+  });
+
+  final List<List<String>> tags;
+  final int createdAt;
+  final String id;
+}
+
+class _IdentityEventBase {
+  const _IdentityEventBase({required this.tags, required this.content});
+
+  final List<List<String>> tags;
+  final String content;
+}
+
 /// Composes [VerifierClient] with NIP-39 `i` tag parsing off identity
 /// events (kind 10011, with kind-0 tags as the legacy fallback) and a
 /// persistent verified-claims cache.
@@ -46,11 +138,33 @@ class IdentityClaimsRepository {
   /// [identityVerificationsDao] enables the persistent verdict cache;
   /// when null, [cachedVerifiedClaims] returns null and [resolveClaims]
   /// skips persistence on its verify path.
+  ///
+  /// [nostrClient] and [signEvent] enable the write path ([publishClaim] /
+  /// [removeClaim]); without both, those methods throw [StateError]. Read-only
+  /// consumers — every profile that only renders someone else's chips — keep
+  /// constructing this without them. [identityEventsDao] lets a completed
+  /// write refresh the local `i` tag cache so the new link renders without
+  /// waiting on a relay reread.
   IdentityClaimsRepository({
     required VerifierClient verifierClient,
     IdentityVerificationsDao? identityVerificationsDao,
+    NostrClient? nostrClient,
+    IdentityEventSigner? signEvent,
+    IdentityEventsDao? identityEventsDao,
   }) : _verifierClient = verifierClient,
-       _verificationsDao = identityVerificationsDao;
+       _verificationsDao = identityVerificationsDao,
+       _nostrClient = nostrClient,
+       _signEvent = signEvent,
+       _identityEventsDao = identityEventsDao;
+
+  /// Event kind carrying NIP-39 identity claims since the 2026-02 spec
+  /// revision. Kind-0 `i` tags are the legacy source for profiles that
+  /// predate it, and are carried forward on the first write.
+  static const int identityEventKind = 10011;
+
+  /// NIP-98 HTTP auth event kind, used to prove ownership when asking the
+  /// verifier to drop a cached OAuth verification.
+  static const int _nip98EventKind = 27235;
 
   /// Client-side freshness window for verified verdicts, anchored on the
   /// verifier's `checked_at`. Mirrors the service's KV TTL for verified
@@ -72,6 +186,23 @@ class IdentityClaimsRepository {
 
   final VerifierClient _verifierClient;
   final IdentityVerificationsDao? _verificationsDao;
+  final NostrClient? _nostrClient;
+  final IdentityEventSigner? _signEvent;
+  final IdentityEventsDao? _identityEventsDao;
+
+  /// Tags this instance last published per pubkey.
+  ///
+  /// A relay confirms a write before it necessarily serves it back, so two
+  /// links added in quick succession would each read a base that predates the
+  /// other and publish it away. What this device published is the one thing
+  /// it can be sure of, so it is merged over a read that has not caught up.
+  final Map<String, _PublishedIdentityTags> _lastPublishedTags = {};
+
+  /// Claim keys this instance last unlinked per pubkey.
+  ///
+  /// The mirror image of [_lastPublishedTags]: without it, merging a stale
+  /// read back in would resurrect the claim that was just removed.
+  final Map<String, Set<String>> _lastRemovedKeys = {};
 
   /// Parses NIP-39 identity claims out of the given identity-event tag
   /// list (kind 10011, or kind 0 for pre-migration profiles).
@@ -190,6 +321,520 @@ class IdentityClaimsRepository {
     return outcome.verified;
   }
 
+  /// Reads [pubkey]'s claims together with the verifier's verdict on each.
+  ///
+  /// A verifier that cannot be reached is not a failure here: the links are
+  /// the user's own data and stay visible, flagged as unchecked through
+  /// [IdentityClaimStatus.verifierReachable]. Only the relay read can throw.
+  ///
+  /// Throws [StateError] if the repository was built without write
+  /// dependencies.
+  Future<IdentityClaimStatus> claimsWithVerdicts(String pubkey) async {
+    final tags = await _currentIdentityTags(pubkey, forWrite: false);
+    final claims = parseClaims(pubkey, tags);
+    try {
+      final verified = await resolveClaims(
+        pubkey: pubkey,
+        freshTags: tags,
+        cached: await cachedVerifiedClaims(pubkey: pubkey, tags: tags),
+      );
+      return IdentityClaimStatus(
+        claims: claims,
+        verifiedKeys: {for (final claim in verified) _identityKeyOf(claim)},
+        verifierReachable: true,
+      );
+    } on VerifierClientException {
+      return IdentityClaimStatus(
+        claims: claims,
+        verifiedKeys: const {},
+        verifierReachable: false,
+      );
+    }
+  }
+
+  /// Asks the verifier to check one claim, before it exists on any event.
+  ///
+  /// Deliberately does not touch the verdict snapshot: the claim is not on
+  /// the identity event yet, and caching a verdict for a link that is never
+  /// published would leave a snapshot entry nothing can ever match.
+  ///
+  /// Throws [VerifierClientException] subtypes.
+  Future<VerificationResult> verifyClaim(IdentityClaim claim) {
+    return _verifierClient.verifySingle(claim);
+  }
+
+  /// Lists the platforms the verifier currently accepts claims for.
+  ///
+  /// Platforms the service reports as unsupported are dropped: offering one
+  /// leads to a link that can never verify.
+  ///
+  /// Throws [VerifierClientException] subtypes.
+  Future<List<VerifierPlatform>> supportedPlatforms() async {
+    final platforms = await _verifierClient.fetchPlatforms();
+    return platforms.where((platform) => platform.supported).toList();
+  }
+
+  /// Starts [platform]'s OAuth flow and returns the URL to open in a browser.
+  ///
+  /// See `VerifierClient.resolveOAuthLaunchUri` for the contract, including
+  /// which return URLs the service accepts. A null result means this
+  /// deployment has no credentials for the platform and the caller has to
+  /// fall back to the proof post.
+  Future<Uri?> resolveOAuthLaunchUri({
+    required String platform,
+    required String pubkey,
+    required String returnUrl,
+    String? handle,
+  }) {
+    return _verifierClient.resolveOAuthLaunchUri(
+      platform: platform,
+      pubkey: pubkey,
+      returnUrl: returnUrl,
+      handle: handle,
+    );
+  }
+
+  /// Links [claim] by writing it into the signer's kind-10011 identity event,
+  /// and returns the `i` tags the published event carries.
+  ///
+  /// Any existing claim for the same `platform:identity` is replaced — that
+  /// is how a re-link with a fresh proof updates in place. Every other tag on
+  /// the event is carried through untouched, including claims for platforms
+  /// this app does not know about: the event is the user's, and a client that
+  /// cannot render a tag has no business dropping it. A profile whose claims
+  /// still live in kind-0 tags has them carried into this first kind-10011
+  /// write, matching what the verifier's web UI does.
+  ///
+  /// This publishes what it is told to. Confirming the claim with the
+  /// verifier first is the caller's job — an unverified `i` tag is valid
+  /// NIP-39 and simply renders unverified.
+  ///
+  /// Throws:
+  ///
+  /// * [StateError] if the repository was built without write dependencies.
+  /// * [IdentityClaimPublishException] if the event cannot be signed, or no
+  ///   relay confirms it.
+  Future<List<List<String>>> publishClaim(IdentityClaim claim) async {
+    final base = await _currentIdentityEventBase(claim.pubkey, forWrite: true);
+    final key = _identityKeyOf(claim);
+    // Linking again undoes an earlier unlink from this session.
+    _lastRemovedKeys[claim.pubkey]?.remove(key);
+    return _publishIdentityEvent(
+      claim.pubkey,
+      content: base.content,
+      tags: [
+        for (final tag in base.tags)
+          if (_tagIdentityKeyOrNull(tag) != key) tag,
+        ['i', '${claim.platform}:${claim.identity}', claim.proof],
+      ],
+    );
+  }
+
+  /// Unlinks the claim matching [claim]'s `platform:identity` and returns the
+  /// `i` tags left on the event.
+  ///
+  /// Proof-agnostic, so a claim whose proof was rotated elsewhere is still
+  /// removed. When the claim is not on the event, nothing is published and
+  /// the current tags are returned unchanged — re-publishing an identical
+  /// event would only churn relays.
+  ///
+  /// An OAuth-linked claim also asks the verifier to drop its cached OAuth
+  /// verification, so re-linking asks the provider again instead of passing
+  /// on a 24-hour-old login. That call is best-effort: the tag is already
+  /// gone, which is what the user asked for, and a verifier that refuses the
+  /// revoke must not turn a completed unlink into an error.
+  ///
+  /// Throws the same exceptions as [publishClaim].
+  Future<List<List<String>>> removeClaim(IdentityClaim claim) async {
+    final base = await _currentIdentityEventBase(claim.pubkey, forWrite: true);
+    final key = _identityKeyOf(claim);
+    final next = [
+      for (final tag in base.tags)
+        if (_tagIdentityKeyOrNull(tag) != key) tag,
+    ];
+    if (next.length == base.tags.length) return identityTagsOf(base.tags);
+    final published = await _publishIdentityEvent(
+      claim.pubkey,
+      content: base.content,
+      tags: next,
+    );
+    (_lastRemovedKeys[claim.pubkey] ??= <String>{}).add(key);
+    await _revokeOAuthLink(claim);
+    return published;
+  }
+
+  /// Drops the verifier's cached OAuth verification for [claim].
+  ///
+  /// No-op unless the claim was actually OAuth-linked. Never throws.
+  Future<void> _revokeOAuthLink(IdentityClaim claim) async {
+    if (claim.proof != IdentityClaim.oauthProof) return;
+    if (!VerifierPlatform.oauthPlatforms.contains(claim.platform)) return;
+
+    try {
+      final url = _verifierClient.oauthRevokeUrl;
+      final event = await _writeDeps().sign(
+        kind: _nip98EventKind,
+        content: '',
+        tags: [
+          ['u', url],
+          ['method', 'POST'],
+        ],
+      );
+      if (event == null) return;
+      await _verifierClient.revokeOAuth(
+        platform: claim.platform,
+        identity: claim.identity,
+        pubkey: claim.pubkey,
+        nip98Event: event.toJson(),
+      );
+    } on Object catch (e) {
+      Log.warning(
+        'Verifier OAuth revoke failed for ${claim.platform}: $e',
+        name: 'IdentityClaimsRepository',
+      );
+    }
+  }
+
+  /// Reads the `i` tags currently on [pubkey]'s identity event.
+  ///
+  /// Uncached on purpose: the event is about to be replaced wholesale, and a
+  /// stale read would silently drop a claim linked on another device.
+  ///
+  /// [forWrite] decides what an unanswered read means. The query cannot say
+  /// whether an empty result is "no claims yet" or "no relay answered", and
+  /// the two need opposite handling:
+  ///
+  /// * Writing replaces the whole event, so publishing over an unanswered read
+  ///   would silently unlink everything else, and would make a removal a no-op
+  ///   that still reports success. There the local snapshot is treated as
+  ///   evidence the read was incomplete, and the write is refused.
+  /// * Reading has nothing to lose by showing the last known good set, and
+  ///   everything to lose by blanking the screen — a list that empties itself
+  ///   on a relay hiccup reads as "my links are gone".
+  ///
+  /// The kind-0 fallback needs the same suspicion as an empty read rather than
+  /// less: it answers for every profile, so reaching it is not evidence the
+  /// kind-10011 read worked. On the write path it goes through the same
+  /// lagging-read merge as the identity event, and the same refusal when the
+  /// local snapshot knows claims it does not carry.
+  Future<List<List<String>>> _currentIdentityTags(
+    String pubkey, {
+    required bool forWrite,
+  }) async {
+    final base = await _currentIdentityEventBase(pubkey, forWrite: forWrite);
+    return identityTagsOf(base.tags);
+  }
+
+  Future<_IdentityEventBase> _currentIdentityEventBase(
+    String pubkey, {
+    required bool forWrite,
+  }) async {
+    final client = _writeDeps().client;
+    // An OAuth link sends the app to the browser and back, and the relay pool
+    // does not survive that round trip. Reading against a pool that has not
+    // reconnected yet returns nothing, which on the write path is refused as
+    // an incomplete read — so the first attempt after returning would always
+    // fail and the second would work. Reconnect first, exactly as the publish
+    // path already does before sending.
+    if (client.connectedRelays.isEmpty) {
+      await client.retryDisconnectedRelays();
+    }
+    // With no relay connected, "the query returned nothing" carries no
+    // information at all — and a write acts on it by replacing the whole
+    // event. Refusing here is the only check that does not depend on local
+    // evidence being present, which is what makes it the one that holds on a
+    // device that has never completed a read.
+    if (forWrite && client.connectedRelays.isEmpty) {
+      throw const IdentityClaimReadException(
+        'No relay is connected, so the current links cannot be read',
+      );
+    }
+    final identityEvent = await _newestEventOfKind(
+      client,
+      pubkey,
+      identityEventKind,
+    );
+    if (identityEvent != null) {
+      final tags = _mergeWithLastPublished(
+        pubkey,
+        identityEvent.tags,
+        identityEventCreatedAt: identityEvent.createdAt,
+        identityEventId: identityEvent.id,
+      );
+      Log.info(
+        'Identity event for $pubkey carries '
+        '${identityTagsOf(tags).length} claim tag(s)',
+        name: 'IdentityClaimsRepository',
+      );
+      await _cacheIdentityTags(pubkey, identityTagsOf(tags));
+      return _IdentityEventBase(tags: tags, content: identityEvent.content);
+    }
+
+    final legacyEvent = await _newestEventOfKind(client, pubkey, 0);
+    if (legacyEvent != null) {
+      final tags = _mergeWithLastPublished(
+        pubkey,
+        identityTagsOf(legacyEvent.tags),
+      );
+      Log.info(
+        'No kind-$identityEventKind event for $pubkey; kind-0 carries '
+        '${tags.length} claim tag(s)',
+        name: 'IdentityClaimsRepository',
+      );
+      if (forWrite) await _refuseIfLocalEvidenceIsAhead(pubkey, tags);
+      return _IdentityEventBase(tags: tags, content: '');
+    }
+
+    final cached = await _cachedIdentityTags(pubkey);
+    Log.warning(
+      'No identity event returned for $pubkey; snapshot has '
+      '${cached?.length ?? 0} claim tag(s)',
+      name: 'IdentityClaimsRepository',
+    );
+    if (cached == null || cached.isEmpty) {
+      // The identity snapshot can be absent on a device that has never
+      // completed a read. The verdict snapshot is written by a different code
+      // path, so it is a second, independent witness that this profile does
+      // have claims worth not overwriting.
+      if (forWrite && await _hasVerdictSnapshot(pubkey)) {
+        throw const IdentityClaimReadException(
+          'Relays returned no identity event, but verified claims are on '
+          'record for this profile — refusing to publish over them',
+        );
+      }
+      return const _IdentityEventBase(tags: [], content: '');
+    }
+    if (forWrite) {
+      throw const IdentityClaimReadException(
+        'Relays returned no identity event, but this profile is known to have '
+        'claims — refusing to publish over them',
+      );
+    }
+    return _IdentityEventBase(tags: cached, content: '');
+  }
+
+  /// Refuses a write whose relay read is behind what this device already knows.
+  ///
+  /// Reaching the kind-0 fallback says nothing about whether the kind-10011
+  /// read succeeded: every profile has a kind-0 metadata event, so that query
+  /// answers even when the identity event does not come back — including right
+  /// after the OAuth browser round trip, when the pool has reconnected but has
+  /// not caught up. Publishing on it would replace the identity event with a
+  /// set that predates the claims this device has already seen, which is the
+  /// same silent unlink the empty-read branch refuses, reached through the one
+  /// branch that used to skip every guard.
+  ///
+  /// A claim unlinked in this session is not evidence of a lagging read, so
+  /// [_lastRemovedKeys] is excluded rather than counted as missing.
+  Future<void> _refuseIfLocalEvidenceIsAhead(
+    String pubkey,
+    List<List<String>> tags,
+  ) async {
+    final present = {for (final tag in tags) _tagIdentityKey(tag)};
+    final removed = _lastRemovedKeys[pubkey] ?? const <String>{};
+    final snapshot = identityTagsOf(
+      await _cachedIdentityTags(pubkey) ?? const [],
+    );
+    final missing = snapshot
+        .map(_tagIdentityKey)
+        .where((key) => !present.contains(key) && !removed.contains(key))
+        .length;
+    if (missing > 0) {
+      throw IdentityClaimReadException(
+        'No kind-$identityEventKind event came back and the kind-0 fallback '
+        'is missing $missing claim(s) this device has already seen — '
+        'refusing to publish over them',
+      );
+    }
+    if (tags.isEmpty && await _hasVerdictSnapshot(pubkey)) {
+      throw const IdentityClaimReadException(
+        'Only a kind-0 event with no claims came back, but verified claims '
+        'are on record for this profile — refusing to publish over them',
+      );
+    }
+  }
+
+  /// Whether the verdict snapshot has ever recorded a verified claim here.
+  Future<bool> _hasVerdictSnapshot(String pubkey) async {
+    final dao = _verificationsDao;
+    if (dao == null) return false;
+    try {
+      final row = await dao.getVerification(pubkey);
+      if (row == null) return false;
+      return _decodeSnapshot(row.verifiedClaimsJson)?.isNotEmpty ?? false;
+    } on Object catch (e) {
+      Log.warning(
+        'Verdict snapshot read failed for $pubkey: $e',
+        name: 'IdentityClaimsRepository',
+      );
+      return false;
+    }
+  }
+
+  /// Last known `i` tags from the local snapshot, or null when there is none
+  /// or it cannot be read.
+  ///
+  /// Any source kind counts: a kind-0 row still proves the profile had claims,
+  /// which is all this is asked for.
+  Future<List<List<String>>?> _cachedIdentityTags(String pubkey) async {
+    final dao = _identityEventsDao;
+    if (dao == null) return null;
+    try {
+      final row = await dao.getEvent(pubkey);
+      if (row == null) return null;
+      final decoded = jsonDecode(row.tagsJson) as List<dynamic>;
+      return [
+        for (final tag in decoded)
+          (tag as List<dynamic>).map((value) => value as String).toList(),
+      ];
+    } on Object catch (e) {
+      Log.warning(
+        'Identity-tags snapshot read failed for $pubkey: $e',
+        name: 'IdentityClaimsRepository',
+      );
+      return null;
+    }
+  }
+
+  Future<Event?> _newestEventOfKind(
+    NostrClient client,
+    String pubkey,
+    int kind,
+  ) async {
+    final events = await client.queryEvents([
+      Filter(kinds: [kind], authors: [pubkey], limit: 5),
+    ], useCache: false);
+    return newestIdentityEvent(events.where((e) => e.kind == kind).toList());
+  }
+
+  Future<List<List<String>>> _publishIdentityEvent(
+    String pubkey, {
+    required List<List<String>> tags,
+    required String content,
+  }) async {
+    final deps = _writeDeps();
+    final event = await deps.sign(
+      kind: identityEventKind,
+      content: content,
+      tags: tags,
+    );
+    if (event == null) {
+      throw const IdentityClaimPublishException(
+        'Could not sign the identity event',
+      );
+    }
+
+    final outcome = await deps.client.publishEventAwaitOk(event);
+    if (outcome.failed) {
+      throw IdentityClaimPublishException(
+        'No relay confirmed the identity event: ${outcome.summary}',
+      );
+    }
+
+    final identityTags = identityTagsOf(tags);
+    await _cacheIdentityTags(pubkey, identityTags);
+    _lastPublishedTags[pubkey] = _PublishedIdentityTags(
+      tags: identityTags,
+      createdAt: event.createdAt,
+      id: event.id,
+    );
+    return identityTags;
+  }
+
+  /// Adds back any claim this device published that [relayTags] does not carry
+  /// yet, so a relay that has not caught up cannot make the next write drop it.
+  List<List<String>> _mergeWithLastPublished(
+    String pubkey,
+    List<List<String>> relayTags, {
+    int? identityEventCreatedAt,
+    String? identityEventId,
+  }) {
+    final published = _lastPublishedTags[pubkey];
+    if (published == null) return relayTags;
+    if (_isAtLeastAsNewAsLastPublished(
+      published,
+      identityEventCreatedAt: identityEventCreatedAt,
+      identityEventId: identityEventId,
+    )) {
+      _lastPublishedTags.remove(pubkey);
+      _lastRemovedKeys.remove(pubkey);
+      return relayTags;
+    }
+
+    final removed = _lastRemovedKeys[pubkey] ?? const <String>{};
+    final kept = [
+      for (final tag in relayTags)
+        if (!removed.contains(_tagIdentityKeyOrNull(tag))) tag,
+    ];
+    final present = {
+      for (final tag in identityTagsOf(kept)) _tagIdentityKey(tag),
+    };
+    final missing = [
+      for (final tag in published.tags)
+        if (!present.contains(_tagIdentityKey(tag))) tag,
+    ];
+    if (missing.isEmpty && kept.length == relayTags.length) return relayTags;
+
+    Log.warning(
+      'Relay read for $pubkey lags this device: re-adding ${missing.length} '
+      'published claim(s), dropping ${relayTags.length - kept.length} removed',
+      name: 'IdentityClaimsRepository',
+    );
+    return [...kept, ...missing];
+  }
+
+  bool _isAtLeastAsNewAsLastPublished(
+    _PublishedIdentityTags published, {
+    required int? identityEventCreatedAt,
+    required String? identityEventId,
+  }) {
+    if (identityEventCreatedAt == null || identityEventId == null) return false;
+    if (identityEventCreatedAt != published.createdAt) {
+      return identityEventCreatedAt > published.createdAt;
+    }
+    return identityEventId.compareTo(published.id) <= 0;
+  }
+
+  /// Mirrors the published tags into the local identity cache so the new
+  /// link renders immediately. Best-effort: a storage failure must not turn
+  /// a landed publish into a thrown one.
+  Future<void> _cacheIdentityTags(
+    String pubkey,
+    List<List<String>> tags,
+  ) async {
+    try {
+      await _identityEventsDao?.upsertEvent(
+        pubkey: pubkey,
+        tagsJson: jsonEncode(tags),
+        sourceKind: identityEventKind,
+      );
+    } on Object catch (e) {
+      Log.warning(
+        'Identity-tags cache write after publish failed for $pubkey: $e',
+        name: 'IdentityClaimsRepository',
+      );
+    }
+  }
+
+  ({NostrClient client, IdentityEventSigner sign}) _writeDeps() {
+    final client = _nostrClient;
+    final sign = _signEvent;
+    if (client == null || sign == null) {
+      throw StateError(
+        'IdentityClaimsRepository was built without a NostrClient and signer, '
+        'so it cannot write identity claims',
+      );
+    }
+    return (client: client, sign: sign);
+  }
+
+  /// Normalized `platform:identity` key of a raw `i` tag.
+  static String _tagIdentityKey(List<String> tag) => tag[1].toLowerCase();
+
+  /// Normalized `platform:identity` key when [tag] is a raw `i` tag.
+  static String? _tagIdentityKeyOrNull(List<String> tag) =>
+      tag.length >= 3 && tag[0] == 'i' ? _tagIdentityKey(tag) : null;
+
   /// Asks the verifier to re-check [claims] and returns only the verified
   /// ones, preserving input order.
   ///
@@ -262,9 +907,7 @@ class IdentityClaimsRepository {
       for (final claim in freshClaims)
         if (verifiedKeys.contains(_identityKeyOf(claim)) ||
             (knownGoodKeys.contains(_identityKeyOf(claim)) &&
-                !outcome.confirmedNegativeKeys.contains(
-                  _identityKeyOf(claim),
-                )))
+                !outcome.confirmedNegativeKeys.contains(_identityKeyOf(claim))))
           claim,
     ];
   }

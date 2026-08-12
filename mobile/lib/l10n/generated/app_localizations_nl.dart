@@ -2282,10 +2282,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Omgevingswisselaar en debug-instellingen';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Zet feature flags aan die soms haperen.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Sleutelbeheer';
 
   @override
@@ -3801,12 +3797,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Bewaar om later te bekijken';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Toevoegen aan bladwijzerset';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Orden in collecties';
-
-  @override
   String get shareMenuFollowSets => 'Volgsets';
 
   @override
@@ -4187,9 +4177,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuUnknown => 'Onbekend';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Bladwijzerset maken';
-
-  @override
   String get shareMenuSetName => 'Setnaam';
 
   @override
@@ -4203,15 +4190,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begin een nieuwe bladwijzercollectie';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Nog geen bladwijzersets. Maak je eerste!';
-
-  @override
   String get shareMenuError => 'Fout';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Laden van bladwijzersets mislukt';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5896,6 +5875,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxFilterUnread => 'Ongelezen';
 
   @override
+  String get dmBlockedThreadTitle => 'Je hebt dit account geblokkeerd';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Berichten blijven hier staan zodat je ze kunt lezen of er een screenshot van kunt maken. Deblokkeer om te reageren.';
+
+  @override
+  String get inboxFilterBlocked => 'Geblokkeerd';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Geen geblokkeerde chats';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Accounts die je blokkeert verschijnen hier.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Geen berichten';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Je bent helemaal bij';
 
   @override
@@ -6247,6 +6246,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get discoverListsLoading => 'Publieke lijsten worden ontdekt...';
+
+  @override
+  String get discoverListsRelayTimeout =>
+      'De relay leverde niet op tijd lijsten. Probeer het opnieuw.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Service niet beschikbaar.';
 
   @override
   String get discoverListsEmptyTitle => 'Geen publieke lijsten gevonden';
@@ -8364,12 +8370,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'Naamloos';
 
   @override
@@ -9342,6 +9342,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'Transformeren niet mogelijk: clip is niet lokaal beschikbaar.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Geselecteerd frame bijsnijden, draaien of spiegelen';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Momentje, we transformeren je frame';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Frame kon niet worden getransformeerd. Probeer het opnieuw.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Draaien';
 
   @override
@@ -9931,6 +9943,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video verwijderd';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Hier is niets meer om af te spelen';
+
+  @override
   String get settingsBadgesTitle => 'Badges';
 
   @override
@@ -10139,6 +10154,69 @@ class AppLocalizationsNl extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'Kijk naar deze badge op Divine: $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction =>
+      'Iedereen met deze badge blokkeren';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle =>
+      'Iedereen met deze badge blokkeren';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Kan niet laden wie deze badge heeft';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Niemand heeft deze badge op dit moment';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'We vonden nu niemand om te blokkeren.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count accounts blokkeren?',
+      one: '1 account blokkeren?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Dit blokkeert de $count accounts die deze badge nu hebben. Hun posts verschijnen niet meer in jouw feeds en ze krijgen hiervan geen melding.',
+      one:
+          'Dit blokkeert het account dat deze badge nu heeft. Hun posts verschijnen niet meer in jouw feeds en ze krijgen hiervan geen melding.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count accounts blokkeren',
+      one: '1 account blokkeren',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Accounts met de badge geblokkeerd';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Kan de accounts met deze badge niet blokkeren';
 
   @override
   String get badgeDetailLoadError => 'Deze badge kon niet worden geladen';
@@ -10895,10 +10973,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Deze regel verwijderen';
 
   @override
-  String get subtitleEditorStartLabel => 'Start';
+  String get subtitleEditorPreviewUnavailable =>
+      'De video kan nu niet worden afgespeeld, maar je kunt de ondertitels nog steeds aanpassen.';
 
   @override
-  String get subtitleEditorEndLabel => 'Einde';
+  String get subtitleEditorPlayPreview => 'Video afspelen';
+
+  @override
+  String get subtitleEditorPausePreview => 'Video pauzeren';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11495,4 +11577,202 @@ class AppLocalizationsNl extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Geverifieerde accounts';
+
+  @override
+  String get verifySignedOutMessage => 'Log in om je accounts te koppelen.';
+
+  @override
+  String get verifyIntro =>
+      'Koppel accounts die je al hebt, zodat iedereen ziet dat jij het echt bent.';
+
+  @override
+  String get verifyLoadFailed => 'Je koppelingen konden niet worden geladen.';
+
+  @override
+  String get verifyRetry => 'Opnieuw proberen';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Gekoppeld';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'De verifier was niet bereikbaar, dus alles staat op ongecontroleerd.';
+
+  @override
+  String get verifyAddSectionTitle => 'Account toevoegen';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Je hebt alles gekoppeld wat we ondersteunen.';
+
+  @override
+  String get verifyStatusVerified => 'Geverifieerd';
+
+  @override
+  String get verifyStatusUnverified => 'Niet geverifieerd';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '$platform-account $identity ontkoppelen';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform ontkoppelen?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity wordt niet meer op je profiel getoond. Je kunt het later opnieuw koppelen, maar dan moet je opnieuw inloggen of een nieuw bewijs posten.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Ontkoppelen';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Je $platform-account koppelen';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Eén tik';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Log in bij $platform, de rest doen wij. Er wordt niets gepost.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Doorgaan met $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Of post een bewijs';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Post je npub op je account en plak daarna de link naar die post.';
+
+  @override
+  String get verifyNpubLabel => 'Je npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Je npub kopiëren';
+
+  @override
+  String get verifyNpubCopied => 'npub gekopieerd';
+
+  @override
+  String get verifyIdentityLabel => 'Accountnaam';
+
+  @override
+  String get verifyProofLabel => 'Link naar je post';
+
+  @override
+  String get verifyConnectProofCta => 'Controleren en koppelen';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'We konden je npub niet vinden in die post.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Verifier niet bereikbaar. Probeer het zo nog eens.';
+
+  @override
+  String get verifyErrorOauthFailed =>
+      'Dat ging niet door. Probeer het nog eens.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Vul eerst je handle in.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Geverifieerd, maar geen enkele relay nam de update aan. Probeer het nog eens.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Inloggen met één tik is hier nog niet ingesteld. Gebruik het bewijs hieronder.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Maak een openbare gist met je npub in het eerste bestand en plak de gist-link.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Post je npub in een Discord-kanaal dat onze bot kan lezen en plak de berichtlink. Een serveruitnodiging bewijst niets.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tweet je npub vanaf dat account en plak de link naar de tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Post je npub vanaf dat account en plak de link. De accountnaam heeft de instantie nodig — mastodon.social/@alice, niet alleen alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Het kanaal wordt gekoppeld, niet je Telegram-account. Het heeft eerst een openbare link nodig (Telegram maakt nieuwe kanalen privé). Post je npub daar en plak de berichtlink.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Hierboven ingelogd? Dan hoeft er niets meer. Zo niet, post je npub en plak de link naar die post.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Zet je npub in een videobijschrift en plak de link naar die video.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Zet je npub in een videobeschrijving en plak de link naar die video.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform is gekoppeld.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Dat is een privékanaal of een uitnodiging. Geef het kanaal een openbare link en plak dan de berichtlink.';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'Ontkoppelen lukte niet. Probeer het nog eens.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'We konden je huidige koppelingen niet lezen, dus er is niets gewijzigd. Controleer je verbinding en probeer het nog eens.';
+
+  @override
+  String get verifyChannelLabel => 'Kanaalnaam';
+
+  @override
+  String get verifyHowItWorksTitle => 'Hoe werkt het?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Zie het als een handdruk tussen twee accounts:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Je Divine-profiel zegt: “Ik ben @alice op Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Je Twitter-account bevestigt: “Ja, dat Divine-profiel is van mij.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'We checken beide kanten. Komt het overeen, dan ben je geverifieerd. Namaken kan niet: je naam en foto zijn te kopiëren, posten vanaf je echte account niet.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'De koppelingen staan op je eigen Nostr-identiteit, dus je haalt ze hier weg wanneer je wilt.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identiteit';
 }

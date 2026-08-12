@@ -1,14 +1,17 @@
 // ABOUTME: E2E test verifying fix for bug #2163: deleted video visibility
 // ABOUTME: After a kind 5 delete, re-navigating to the profile re-loads the
 // ABOUTME: feed via ProfileFeedCubit and the deleted video is excluded.
+// ABOUTME: Requires: the full local Docker stack (mise run local_up) — it
+// ABOUTME: drives Postgres, the Keycast API, and the relay directly.
 
+@Tags(['service'])
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:patrol/patrol.dart';
 
 import '../helpers/db_helpers.dart';
 import '../helpers/http_helpers.dart';
@@ -17,15 +20,16 @@ import '../helpers/relay_helpers.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
   group('Bug #2163: Other users see deleted videos', () {
     final testEmail =
         'e2e-${DateTime.now().millisecondsSinceEpoch}@test.divine.video';
     const testPassword = 'TestPass123!';
 
-    patrolTest(
+    testWidgets(
       'deleted video disappears after re-navigation',
-      ($) async {
-        final tester = $.tester;
+      (tester) async {
         final originalOnError = suppressSetStateErrors();
         addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
@@ -80,8 +84,17 @@ void main() {
         // ── Phase 2: Launch app as User B, register ──
         logPhase('── Phase 2: Launch app, register User B ──');
 
+        // pumpAndSettle never returns here: the app runs persistent polling
+        // timers, so the tree never reaches a quiescent frame. Poll for the
+        // app instead of pumping a fixed budget — a cold launch takes well
+        // over three seconds to mount MaterialApp.
         launchAppGuarded(app.main);
-        await tester.pumpAndSettle(const Duration(seconds: 3));
+        final appStarted = await waitForWidget(
+          tester,
+          find.byType(MaterialApp),
+          maxSeconds: 30,
+        );
+        expect(appStarted, isTrue, reason: 'App should start');
 
         await navigateToCreateAccount(tester);
         await registerNewUser(tester, testEmail, testPassword);

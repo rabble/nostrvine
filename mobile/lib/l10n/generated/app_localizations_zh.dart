@@ -2165,9 +2165,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => '环境切换和调试设置';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle => '开关一些可能会抽风的功能。';
-
-  @override
   String get nostrSettingsKeyManagement => '密钥管理';
 
   @override
@@ -3582,12 +3579,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => '存起来稍后看';
 
   @override
-  String get shareMenuAddToBookmarkSet => '加入收藏集';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => '按合集整理';
-
-  @override
   String get shareMenuFollowSets => '人物列表';
 
   @override
@@ -3947,9 +3938,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuUnknown => '未知';
 
   @override
-  String get shareMenuCreateBookmarkSet => '创建收藏集';
-
-  @override
   String get shareMenuSetName => '集合名称';
 
   @override
@@ -3962,13 +3950,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => '开始一个新的收藏合集';
 
   @override
-  String get shareMenuNoBookmarkSets => '还没有收藏集，创建第一个吧！';
-
-  @override
   String get shareMenuError => '错误';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => '加载收藏集失败';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5584,6 +5566,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get inboxFilterUnread => '未读';
 
   @override
+  String get dmBlockedThreadTitle => '你已屏蔽此账号';
+
+  @override
+  String get dmBlockedThreadBody => '消息会保留在这里，方便你查看或截图。解除屏蔽后即可回复。';
+
+  @override
+  String get inboxFilterBlocked => '已屏蔽';
+
+  @override
+  String get inboxBlockedEmptyTitle => '没有已屏蔽的聊天';
+
+  @override
+  String get inboxBlockedEmptySubtitle => '你屏蔽的账号会显示在这里。';
+
+  @override
+  String get inboxBlockedNoMessages => '暂无消息';
+
+  @override
   String get inboxUnreadEmptyTitle => '都看完啦';
 
   @override
@@ -5922,6 +5922,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get discoverListsLoading => '正在发现公开列表...';
+
+  @override
+  String get discoverListsRelayTimeout => '中继没有及时返回列表。再试一次。';
+
+  @override
+  String get discoverListsServiceUnavailable => '服务不可用。';
 
   @override
   String get discoverListsEmptyTitle => '没有找到公开列表';
@@ -7922,12 +7928,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commentsEmptySubtitle => '来开个头吧！';
 
   @override
-  String get commentsHeaderTitle => '评论';
-
-  @override
-  String get commentsHeaderCloseLabel => '关闭评论';
-
-  @override
   String get draftUntitled => '未命名';
 
   @override
@@ -8839,6 +8839,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorTransformNoLocalFile => '无法变换：片段不在本地。';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel => '裁剪、旋转或翻转选中帧';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel => '稍等，正在处理你的帧';
+
+  @override
+  String get videoEditorTransformFrameFailed => '无法处理该帧，请重试。';
+
+  @override
   String get videoEditorTransformRotateLabel => '旋转';
 
   @override
@@ -9382,6 +9391,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => '视频已移除';
 
   @override
+  String get fullscreenFeedEmptyMessage => '这里没有可播放的内容了';
+
+  @override
   String get settingsBadgesTitle => '徽章';
 
   @override
@@ -9579,6 +9591,60 @@ class AppLocalizationsZh extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return '来看看 Divine 上的这个徽章：$link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction => '屏蔽佩戴该徽章的人';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => '屏蔽佩戴该徽章的人';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError => '无法加载佩戴该徽章的人';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle => '目前没有人佩戴这个徽章';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody => '我们没有找到可以屏蔽的人。';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '屏蔽 $count 个账号？',
+      one: '屏蔽 1 个账号？',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '这会屏蔽目前佩戴该徽章的 $count 个账号。对方的帖子不会出现在你的信息流中，也不会收到此操作的通知。',
+      one: '这会屏蔽目前佩戴该徽章的账号。对方的帖子不会出现在你的信息流中，也不会收到此操作的通知。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '屏蔽 $count 个账号',
+      one: '屏蔽 1 个账号',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => '已屏蔽佩戴该徽章的人';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure => '无法屏蔽佩戴该徽章的人';
 
   @override
   String get badgeDetailLoadError => '无法加载这个徽章';
@@ -10271,10 +10337,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subtitleEditorRemoveCue => '删除这一行';
 
   @override
-  String get subtitleEditorStartLabel => '开始';
+  String get subtitleEditorPreviewUnavailable => '视频现在没法播放，但你仍然可以修改字幕。';
 
   @override
-  String get subtitleEditorEndLabel => '结束';
+  String get subtitleEditorPlayPreview => '播放视频';
+
+  @override
+  String get subtitleEditorPausePreview => '暂停视频';
 
   @override
   String get subtitleEditorInvalidHint => '每一行都需要文字，而且结束时间要晚于开始时间。';
@@ -10838,4 +10907,186 @@ class AppLocalizationsZh extends AppLocalizations {
   ) {
     return '$picker、$color';
   }
+
+  @override
+  String get verifyTitle => '已验证账号';
+
+  @override
+  String get verifySignedOutMessage => '登录后即可关联你的账号。';
+
+  @override
+  String get verifyIntro => '把你已经在用的账号关联起来，别人一眼就知道是你本人。';
+
+  @override
+  String get verifyLoadFailed => '没能加载你的关联。';
+
+  @override
+  String get verifyRetry => '再试一次';
+
+  @override
+  String get verifyLinkedSectionTitle => '已关联';
+
+  @override
+  String get verifyVerifierUnreachable => '连不上验证服务，所以这些都显示为未核查。';
+
+  @override
+  String get verifyAddSectionTitle => '添加账号';
+
+  @override
+  String get verifyAllPlatformsLinked => '我们支持的你都关联完了。';
+
+  @override
+  String get verifyStatusVerified => '已验证';
+
+  @override
+  String get verifyStatusUnverified => '未验证';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '解除关联 $platform 账号 $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '解除关联 $platform？';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity 将不再显示在你的资料页上。之后可以重新关联，但需要再登录一次，或者重新发一条证明帖。';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => '解除关联';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return '关联你的 $platform 账号';
+  }
+
+  @override
+  String get verifyOneTapBadge => '一键';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return '登录 $platform，剩下的交给我们。不会发布任何内容。';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return '使用 $platform 继续';
+  }
+
+  @override
+  String get verifyConnectProofTitle => '或者发一条证明';
+
+  @override
+  String get verifyConnectProofExplainer => '在你的账号上发布你的 npub，然后把那条帖子的链接贴进来。';
+
+  @override
+  String get verifyNpubLabel => '你的 npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => '复制你的 npub';
+
+  @override
+  String get verifyNpubCopied => '已复制 npub';
+
+  @override
+  String get verifyIdentityLabel => '账号名称';
+
+  @override
+  String get verifyProofLabel => '帖子链接';
+
+  @override
+  String get verifyConnectProofCta => '核查并关联';
+
+  @override
+  String get verifyErrorProofRejected => '我们在那条帖子里没找到你的 npub。';
+
+  @override
+  String get verifyErrorVerifierUnreachable => '连不上验证服务。过一会儿再试。';
+
+  @override
+  String get verifyErrorOauthFailed => '没成功。再试一次吧。';
+
+  @override
+  String get verifyErrorHandleRequired => '先填你的 handle。';
+
+  @override
+  String get verifyErrorPublishFailed => '验证通过了，但没有中继接受这次更新。再试一次。';
+
+  @override
+  String get verifyErrorOauthUnavailable => '这个还没接一键登录。用下面的证明帖吧。';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      '建一个公开 gist，把 npub 放在第一个文件里，然后贴上 gist 链接。';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      '在我们机器人能读到的 Discord 频道里发你的 npub，然后贴上那条消息的链接。服务器邀请证明不了什么。';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      '用那个账号发一条带 npub 的推文，然后贴上推文链接。';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      '用那个账号发一条带 npub 的嘟文，然后贴上链接。账号名要带实例 — mastodon.social/@alice，不是只写 alice。';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      '关联的是频道，不是你的 Telegram 账号。频道要先有公开链接（Telegram 新建的默认私密）。在那里发你的 npub，再贴上消息链接。';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      '上面登录过了？那就不用再做什么。没有的话，发一条带 npub 的帖子并贴上链接。';
+
+  @override
+  String get verifyConnectProofExplainerTiktok => '把 npub 写进视频文案，然后贴上那条视频的链接。';
+
+  @override
+  String get verifyConnectProofExplainerYoutube => '把 npub 写进视频简介，然后贴上那条视频的链接。';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform 已关联。';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic => '那是私密频道或邀请链接。先给频道设置公开链接，再贴消息链接。';
+
+  @override
+  String get verifyErrorRemoveFailed => '没能解除关联。再试一次。';
+
+  @override
+  String get verifyErrorLinksUnreadable => '读不到你现有的关联，所以什么都没改。检查网络后再试一次。';
+
+  @override
+  String get verifyChannelLabel => '频道名称';
+
+  @override
+  String get verifyHowItWorksTitle => '这是怎么运作的？';
+
+  @override
+  String get verifyHowItWorksIntro => '把它想成两个账号之间的握手：';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      '你的 Divine 资料说：“我是 Twitter 上的 @alice。”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      '你的 Twitter 账号确认：“是的，那个 Divine 资料是我的。”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      '我们两边都核对。对得上，你就通过了。这没法伪造——名字和照片可以抄，但没法从你真正的账号发帖。';
+
+  @override
+  String get verifyHowItWorksOwnership => '这些关联存在你自己的 Nostr 身份里，你随时可以在这里移除。';
+
+  @override
+  String get generalSettingsSectionIdentity => '身份';
 }

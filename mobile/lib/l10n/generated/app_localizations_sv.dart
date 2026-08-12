@@ -2267,10 +2267,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Miljöväxlare och felsökningsinställningar';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Slå på funktioner som kan hicka.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Nyckelhantering';
 
   @override
@@ -3781,12 +3777,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Spara för senare visning';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Lägg till i bokmärkessamling';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organisera i samlingar';
-
-  @override
   String get shareMenuFollowSets => 'Följsamlingar';
 
   @override
@@ -4168,9 +4158,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuUnknown => 'Okänd';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Skapa bokmärkessamling';
-
-  @override
   String get shareMenuSetName => 'Samlingsnamn';
 
   @override
@@ -4184,15 +4171,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Starta en ny bokmärkessamling';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Inga bokmärkessamlingar än. Skapa din första!';
-
-  @override
   String get shareMenuError => 'Fel';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Kunde inte läsa in bokmärkessamlingar';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5871,6 +5850,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxFilterUnread => 'Olästa';
 
   @override
+  String get dmBlockedThreadTitle => 'Du blockerade det här kontot';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Meddelandena stannar kvar så att du kan läsa dem eller ta en skärmbild. Häv blockeringen för att svara.';
+
+  @override
+  String get inboxFilterBlocked => 'Blockerade';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Inga blockerade chattar';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'Konton du blockerar visas här.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Inga meddelanden';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Du är helt ikapp';
 
   @override
@@ -6217,6 +6215,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get discoverListsLoading => 'Söker upp publika listor...';
+
+  @override
+  String get discoverListsRelayTimeout =>
+      'Relayen returnerade inga listor i tid. Försök igen.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Tjänsten är inte tillgänglig.';
 
   @override
   String get discoverListsEmptyTitle => 'Inga publika listor hittades';
@@ -8325,12 +8330,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'Namnlös';
 
   @override
@@ -9301,6 +9300,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kan inte transformera: klippet är inte tillgängligt lokalt.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Beskär, rotera eller spegelvänd markerad bildruta';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Ett ögonblick, vi transformerar din bildruta';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Det gick inte att transformera bildrutan. Försök igen.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Rotera';
 
   @override
@@ -9887,6 +9898,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video borttagen';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Det finns inget mer att spela upp här';
+
+  @override
   String get settingsBadgesTitle => 'Märken';
 
   @override
@@ -10094,6 +10109,68 @@ class AppLocalizationsSv extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'Kolla in den här badgen på Divine: $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction =>
+      'Blockera alla med den här badgen';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle =>
+      'Blockera alla med den här badgen';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Kunde inte ladda vilka som har den här badgen';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Ingen har den här badgen just nu';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Vi hittade ingen att blockera just nu.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blockera $count konton?',
+      one: 'Blockera 1 konto?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Det här blockerar de $count konton som har den här badgen just nu. Deras inlägg visas inte i dina flöden och de meddelas inte.',
+      one:
+          'Det här blockerar kontot som har den här badgen just nu. Deras inlägg visas inte i dina flöden och de meddelas inte.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blockera $count konton',
+      one: 'Blockera 1 konto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Konton med badgen blockerade';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Kunde inte blockera kontona med badgen';
 
   @override
   String get badgeDetailLoadError => 'Den här badgen kunde inte laddas';
@@ -10847,10 +10924,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Ta bort den här raden';
 
   @override
-  String get subtitleEditorStartLabel => 'Start';
+  String get subtitleEditorPreviewUnavailable =>
+      'Videon går inte att spela upp just nu, men du kan ändå fixa undertexterna.';
 
   @override
-  String get subtitleEditorEndLabel => 'Slut';
+  String get subtitleEditorPlayPreview => 'Spela upp videon';
+
+  @override
+  String get subtitleEditorPausePreview => 'Pausa videon';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11442,4 +11523,200 @@ class AppLocalizationsSv extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Verifierade konton';
+
+  @override
+  String get verifySignedOutMessage => 'Logga in för att länka dina konton.';
+
+  @override
+  String get verifyIntro =>
+      'Länka konton du redan har, så syns det att det verkligen är du.';
+
+  @override
+  String get verifyLoadFailed => 'Kunde inte ladda dina länkar.';
+
+  @override
+  String get verifyRetry => 'Försök igen';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Länkade';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Verifieraren gick inte att nå, så allt visas som okontrollerat.';
+
+  @override
+  String get verifyAddSectionTitle => 'Lägg till ett konto';
+
+  @override
+  String get verifyAllPlatformsLinked => 'Du har länkat allt vi stöder.';
+
+  @override
+  String get verifyStatusVerified => 'Verifierat';
+
+  @override
+  String get verifyStatusUnverified => 'Inte verifierat';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Ta bort länken till $platform-kontot $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Ta bort länken till $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity visas inte längre på din profil. Du kan länka kontot igen senare, men då behöver du logga in på nytt eller posta ett nytt bevis.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Ta bort länken';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Länka ditt $platform-konto';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Ett tryck';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Logga in på $platform så sköter vi resten. Inget publiceras.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Fortsätt med $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Eller posta ett bevis';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Posta din npub på ditt konto och klistra sedan in länken till inlägget.';
+
+  @override
+  String get verifyNpubLabel => 'Din npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Kopiera din npub';
+
+  @override
+  String get verifyNpubCopied => 'npub kopierad';
+
+  @override
+  String get verifyIdentityLabel => 'Kontonamn';
+
+  @override
+  String get verifyProofLabel => 'Länk till ditt inlägg';
+
+  @override
+  String get verifyConnectProofCta => 'Kolla och länka';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Vi hittade inte din npub i det inlägget.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Nådde inte verifieraren. Försök igen om en stund.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Det gick inte igenom. Testa igen.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Fyll i ditt handle först.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Verifierat, men ingen relä tog emot uppdateringen. Försök igen.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Inloggning med ett tryck är inte uppsatt för den här än. Använd beviset nedan.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Skapa en publik gist med din npub i första filen och klistra in gist-länken.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Posta din npub i en Discord-kanal som vår bot kan läsa och klistra in meddelandelänken. En serverinbjudan bevisar ingenting.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tweeta din npub från det kontot och klistra in länken till tweeten.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Posta din npub från det kontot och klistra in länken. Kontonamnet behöver instansen — mastodon.social/@alice, inte bara alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Det är kanalen som länkas, inte ditt Telegram-konto. Den behöver först en publik länk (Telegram gör nya kanaler privata). Posta din npub där och klistra in meddelandelänken.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Loggade du in ovanför? Då behövs inget mer. Annars postar du din npub och klistrar in länken till inlägget.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Skriv din npub i en videotext och klistra in länken till videon.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Skriv din npub i en videobeskrivning och klistra in länken till videon.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform är länkat.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Det där är en privat kanal eller en inbjudan. Ge kanalen en publik länk och klistra sedan in meddelandelänken.';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'Kunde inte ta bort länken. Försök igen.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Vi kunde inte läsa dina nuvarande länkar, så inget ändrades. Kolla anslutningen och försök igen.';
+
+  @override
+  String get verifyChannelLabel => 'Kanalnamn';
+
+  @override
+  String get verifyHowItWorksTitle => 'Hur funkar det?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Tänk på det som ett handslag mellan två konton:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Din Divine-profil säger: ”Jag är @alice på Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Ditt Twitter-konto bekräftar: ”Ja, den Divine-profilen är min.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Vi kollar båda sidorna. Stämmer de är du verifierad. Ingen kan fejka det – namn och bild går att kopiera, att posta från ditt riktiga konto gör det inte.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Länkarna ligger på din egen Nostr-identitet, så du kan ta bort dem härifrån när du vill.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identitet';
 }

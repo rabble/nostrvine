@@ -1,0 +1,59 @@
+appId: co.openvine.app
+---
+# Classic mode, idle: the viewfinder chrome is up and no clip is recorded yet.
+#
+# Classic is the one recording mode that is *not* the capture stack. It has its
+# own top bar, its own action rows, and no record button at all — the square
+# preview is the shutter. So unlike the other three asserts, most of this file
+# is pinning a different screen rather than the same one with a different rail.
+
+# Mode wheel with Classic armed. `selected` is load-bearing: the wheel renders
+# an entry for every mode in every mode, so a bare id assertion here passes
+# just as happily on the Lip Sync tab.
+- assertVisible:
+    id: camera_mode_classic
+    selected: true
+- assertVisible:
+    id: camera_classic_shutter
+- assertVisible:
+    id: camera_close_button
+- assertVisible:
+    id: camera_library_button
+
+# Action row under the preview, left to right.
+- assertVisible:
+    id: camera_switch_camera_button
+- assertVisible:
+    id: camera_grid_button
+- assertVisible:
+    id: camera_ghost_frame_button
+
+# Nothing recorded yet — and classic reports that differently from the capture
+# stack, which is the trap this file exists to pin. Next stays mounted and goes
+# *disabled* (`onPressed: null` while `!hasClips`), so `assertNotVisible` here
+# would fail on an empty session. Delete does drop out of the tree: its row
+# sits inside an AnimatedOpacity, and RenderAnimatedOpacity drops its child
+# from the semantics tree at opacity 0.
+- assertVisible:
+    id: camera_next_button
+    enabled: false
+- assertNotVisible:
+    id: camera_delete_clip_button
+
+# The capture stack, absent. Flash and aspect ratio are unconditional there —
+# every mode that renders that rail renders both — so their absence is what
+# proves the classic stack is up rather than capture's, and the record button's
+# absence proves the shutter really is the preview. Timer and stabilization are
+# the declared-only pair, the same leak guard assertStopMotionMode carries: a
+# control starting to render in a mode that does not declare it fails a run
+# rather than passing quietly.
+- assertNotVisible:
+    id: camera_record_button
+- assertNotVisible:
+    id: camera_flash_button
+- assertNotVisible:
+    id: camera_aspect_ratio_button
+- assertNotVisible:
+    id: camera_timer_button
+- assertNotVisible:
+    id: camera_stabilization_button

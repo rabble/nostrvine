@@ -2272,10 +2272,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Environment switcher and debug settings';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Toggle feature flags that may hiccup.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Key Management';
 
   @override
@@ -3784,12 +3780,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Save for later viewing';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Add to Bookmark Set';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organize in collections';
-
-  @override
   String get shareMenuFollowSets => 'People Lists';
 
   @override
@@ -4169,9 +4159,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuUnknown => 'Unknown';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Create Bookmark Set';
-
-  @override
   String get shareMenuSetName => 'Set Name';
 
   @override
@@ -4185,15 +4172,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start a new bookmark collection';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'No bookmark sets yet. Create your first one!';
-
-  @override
   String get shareMenuError => 'Error';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Failed to load bookmark sets';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5874,6 +5853,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxFilterUnread => 'Unread';
 
   @override
+  String get dmBlockedThreadTitle => 'You blocked this account';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+
+  @override
+  String get inboxFilterBlocked => 'Blocked';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'No blocked chats';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+
+  @override
+  String get inboxBlockedNoMessages => 'No messages';
+
+  @override
   String get inboxUnreadEmptyTitle => 'You\'re all caught up';
 
   @override
@@ -6217,6 +6215,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverListsLoading => 'Discovering public lists...';
+
+  @override
+  String get discoverListsRelayTimeout =>
+      'The relay did not return lists in time. Try again.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Service not available.';
 
   @override
   String get discoverListsEmptyTitle => 'No public lists found';
@@ -8318,12 +8323,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'Untitled';
 
   @override
@@ -9283,6 +9282,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cannot transform: clip is not locally available.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Crop, rotate, or flip selected frame';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'One moment, we\'re transforming your frame';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Could not transform frame. Please try again.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Rotate';
 
   @override
@@ -9861,6 +9872,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video removed';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Nothing left to play here';
+
+  @override
   String get settingsBadgesTitle => 'Badges';
 
   @override
@@ -10067,6 +10081,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'Check out this badge on Divine: $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction => 'Block badge claimants';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Block badge claimants';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Could not load claimants for this badge';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'No one claims this badge right now';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'We did not find any current claimants to block.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Block $count claimants?',
+      one: 'Block 1 claimant?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This blocks the $count accounts currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+      one:
+          'This blocks the account currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Block $count accounts',
+      one: 'Block 1 account',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Badge claimants blocked';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Could not block badge claimants';
 
   @override
   String get badgeDetailLoadError => 'Could not load this badge';
@@ -10820,10 +10894,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Remove this line';
 
   @override
-  String get subtitleEditorStartLabel => 'Start';
+  String get subtitleEditorPreviewUnavailable =>
+      'The video can\'t be played right now, but you can still fix the captions.';
 
   @override
-  String get subtitleEditorEndLabel => 'End';
+  String get subtitleEditorPlayPreview => 'Play the video';
+
+  @override
+  String get subtitleEditorPausePreview => 'Pause the video';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11412,4 +11490,201 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Verified accounts';
+
+  @override
+  String get verifySignedOutMessage => 'Sign in to link your accounts.';
+
+  @override
+  String get verifyIntro =>
+      'Link accounts you already have, so people can tell it\'s really you.';
+
+  @override
+  String get verifyLoadFailed => 'Couldn\'t load your links.';
+
+  @override
+  String get verifyRetry => 'Try again';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Linked';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Couldn\'t reach the verifier, so these show as unchecked.';
+
+  @override
+  String get verifyAddSectionTitle => 'Add an account';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'You\'ve linked everything we support.';
+
+  @override
+  String get verifyStatusVerified => 'Verified';
+
+  @override
+  String get verifyStatusUnverified => 'Not verified';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Unlink $platform account $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Unlink $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity stops showing on your profile. You can link it again later, but you will have to sign in or post a new proof.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Unlink';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Link your $platform account';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'One tap';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Sign in to $platform and we\'ll handle the rest. Nothing gets posted.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Continue with $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Or post a proof';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Post your npub on your account, then paste the link to that post.';
+
+  @override
+  String get verifyNpubLabel => 'Your npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Copy your npub';
+
+  @override
+  String get verifyNpubCopied => 'npub copied';
+
+  @override
+  String get verifyIdentityLabel => 'Account name';
+
+  @override
+  String get verifyProofLabel => 'Link to your post';
+
+  @override
+  String get verifyConnectProofCta => 'Check and link';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'We couldn\'t find your npub in that post.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Couldn\'t reach the verifier. Try again in a moment.';
+
+  @override
+  String get verifyErrorOauthFailed =>
+      'That didn\'t go through. Give it another go.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Enter your handle first.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Verified, but no relay took the update. Try again.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'One-tap sign-in isn\'t set up for this one yet. Use the proof post below.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Make a public gist with your npub in the first file, then paste the gist link.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Post your npub in a Discord channel our bot can read, then paste the message link. A server invite proves nothing.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tweet your npub from that account, then paste the link to the tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Post your npub from that account, then paste the link. The account name needs its instance — mastodon.social/@alice, not just alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'The channel gets linked, not your Telegram account. It needs a public link first (Telegram makes new ones private). Post your npub there and paste the message link.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Signed in above? Nothing else needed. Otherwise post your npub and paste the link to that post.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Put your npub in a video caption, then paste the link to that video.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Put your npub in a video description, then paste the link to that video.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform is linked.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'That\'s a private channel or an invite. Give the channel a public link, then paste the message link.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Couldn\'t unlink that. Try again.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Couldn\'t read your current links, so nothing was changed. Check your connection and try again.';
+
+  @override
+  String get verifyChannelLabel => 'Channel name';
+
+  @override
+  String get verifyHowItWorksTitle => 'How does it work?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Think of it as a handshake between two accounts:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Your Divine profile says: “I\'m @alice on Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Your Twitter account confirms: “Yes, that Divine profile is mine.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'We check both sides. If they match, you\'re verified. Nobody can fake it — someone can copy your name and photo, but they can\'t post from your real account.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'The links live on your own Nostr identity, so you can remove any of them here whenever you want.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identity';
 }

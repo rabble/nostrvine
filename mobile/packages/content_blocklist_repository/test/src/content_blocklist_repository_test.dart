@@ -55,6 +55,45 @@ void main() {
       expect(service.isBlocked(testPubkey2), isTrue);
     });
 
+    test(
+      'blockUsers blocks a batch and emits one change per new pubkey',
+      () async {
+        const pubkey1 = 'pubkey_to_block_1';
+        const pubkey2 = 'pubkey_to_block_2';
+        final emitted = <BlocklistChange>[];
+        final sub = service.changes.listen(emitted.add);
+
+        await service.blockUsers([pubkey1, pubkey2, pubkey1]);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(service.isBlocked(pubkey1), isTrue);
+        expect(service.isBlocked(pubkey2), isTrue);
+        expect(
+          emitted,
+          [
+            const BlocklistChange(pubkey: pubkey1, op: BlocklistOp.blocked),
+            const BlocklistChange(pubkey: pubkey2, op: BlocklistOp.blocked),
+          ],
+        );
+
+        await sub.cancel();
+      },
+    );
+
+    test('blockUsers skips self and already-blocked pubkeys', () async {
+      const ourPubkey = 'our_pubkey';
+      const otherPubkey = 'other_pubkey';
+
+      await service.blockUser(otherPubkey, ourPubkey: ourPubkey);
+      await service.blockUsers(
+        [ourPubkey, otherPubkey],
+        ourPubkey: ourPubkey,
+      );
+
+      expect(service.isBlocked(ourPubkey), isFalse);
+      expect(service.runtimeBlockedUsers, {otherPubkey});
+    });
+
     test('should filter blocked content from feeds', () async {
       const blockedPubkey = 'blocked_user_pubkey';
       const allowedPubkey = 'allowed_user_pubkey';
@@ -2271,6 +2310,78 @@ void main() {
               as List<List<String>>;
       expect(blockTags, contains(equals(['d', 'block'])));
       expect(blockTags, contains(equals(['p', 'pubkey1'])));
+
+      verify(() => mockClient.publishEvent(any())).called(2);
+    });
+
+    test('blockUsers publishes each Nostr list once for a batch', () async {
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (invocation) async => signedEventFromInvocation(invocation),
+      );
+      when(
+        () => mockClient.publishEvent(any()),
+      ).thenAnswer(
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.first as Event,
+        ),
+      );
+
+      final service = ContentBlocklistRepository();
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+
+      await service.blockUsers([
+        '00000000000000000000000000000000000000000000000000000000000000aa',
+        ourPubkey,
+        '00000000000000000000000000000000000000000000000000000000000000bb',
+        '00000000000000000000000000000000000000000000000000000000000000aa',
+      ]);
+
+      final muteTags =
+          verify(
+                () => mockSigner.createAndSignEvent(
+                  kind: 10000,
+                  content: '',
+                  tags: captureAny(named: 'tags'),
+                ),
+              ).captured.single
+              as List<List<String>>;
+      expect(
+        muteTags,
+        containsAll([
+          equals([
+            'p',
+            '00000000000000000000000000000000000000000000000000000000000000aa',
+          ]),
+          equals([
+            'p',
+            '00000000000000000000000000000000000000000000000000000000000000bb',
+          ]),
+        ]),
+      );
+      expect(muteTags, isNot(contains(equals(['p', ourPubkey]))));
+
+      final blockTags =
+          verify(
+                () => mockSigner.createAndSignEvent(
+                  kind: 30000,
+                  content: 'Block list',
+                  tags: captureAny(named: 'tags'),
+                ),
+              ).captured.single
+              as List<List<String>>;
+      expect(blockTags, contains(equals(['d', 'block'])));
+      expect(blockTags, isNot(contains(equals(['p', ourPubkey]))));
 
       verify(() => mockClient.publishEvent(any())).called(2);
     });

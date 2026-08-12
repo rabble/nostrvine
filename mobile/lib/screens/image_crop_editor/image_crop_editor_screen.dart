@@ -71,6 +71,10 @@ Uint8List? croppedBytesOrNull(Uint8List bytes) => bytes.isEmpty ? null : bytes;
 /// Exactly one of [file] / [bytes] must be supplied — [file] for native picks
 /// (real filesystem path), [bytes] for web picks (blob already read into
 /// memory).
+/// Deliberately imperative: this takes an in-memory [File] / [Uint8List] and
+/// returns the cropped bytes to its awaiting caller. Neither end can be
+/// expressed as a URL, and the launcher is a Riverpod seam so widget tests can
+/// swap in a fake. It is a modal, not a navigable destination — see #6481.
 Future<Uint8List?> showImageCropEditor(
   BuildContext context, {
   required ImageCropKind kind,

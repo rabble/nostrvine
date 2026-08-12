@@ -147,6 +147,7 @@ void main() {
       when(
         () => mockBlocklist.feedHiddenPubkeys,
       ).thenReturn(const <String>{});
+      when(() => mockBlocklist.isBlocked(any())).thenReturn(false);
 
       whenListen(
         mockReactionsCubit,
@@ -440,6 +441,118 @@ void main() {
           findsOneWidget,
         );
         expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+      });
+    });
+
+    // #7025. Reachable from the inbox's Blocked chip so a user asked for
+    // screenshots of abusive DMs can produce them without unblocking — which
+    // would re-expose them to the person they blocked. Readable, not writable.
+    group('blocked thread', () {
+      testWidgets('replaces the composer with the blocked notice', (
+        tester,
+      ) async {
+        when(() => mockBlocklist.isBlocked(otherPubkey)).thenReturn(true);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.byType(MessageInputBar), findsNothing);
+        expect(find.text(l10n.dmBlockedThreadTitle), findsOneWidget);
+        expect(find.text(l10n.dmBlockedThreadBody), findsOneWidget);
+      });
+
+      testWidgets('keeps the history on screen', (tester) async {
+        when(() => mockBlocklist.isBlocked(otherPubkey)).thenReturn(true);
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [
+                DmMessage(
+                  id:
+                      'dddddddddddddddddddddddddddddddd'
+                      'ddddddddddddddddddddddddddddddddd',
+                  conversationId:
+                      'cccccccccccccccccccccccccccccccc'
+                      'cccccccccccccccccccccccccccccccc',
+                  senderPubkey: otherPubkey,
+                  content: 'the abusive message',
+                  createdAt: now.millisecondsSinceEpoch ~/ 1000,
+                  giftWrapId:
+                      'aaaaaaaabbbbbbbbccccccccdddddddd'
+                      'aaaaaaaabbbbbbbbccccccccdddddddd',
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The whole point: removing the composer must not remove the evidence.
+        expect(find.text('the abusive message'), findsOneWidget);
+      });
+
+      testWidgets('an unblocked counterparty keeps its composer', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.byType(MessageInputBar), findsOneWidget);
+        expect(find.text(l10n.dmBlockedThreadTitle), findsNothing);
+      });
+
+      // Removing the composer is not the whole of "read-only": a send that
+      // hard-failed before the block is still on screen as a red bubble, and
+      // its tap opens the recovery sheet whose primary action republishes the
+      // rumor — a DM delivered to the account the viewer blocked, from the one
+      // screen built to make that impossible.
+      testWidgets('a failed own bubble cannot be resent', (tester) async {
+        when(() => mockBlocklist.isBlocked(otherPubkey)).thenReturn(true);
+
+        const content = 'a message that never got through';
+        final failedRow = OutgoingDm(
+          id: 'rumor-failed-id',
+          conversationId:
+              'cccccccccccccccccccccccccccccccc'
+              'cccccccccccccccccccccccccccccccc',
+          recipientPubkey: otherPubkey,
+          content: content,
+          createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          rumorEventJson: '{}',
+          recipientWrapStatus: OutgoingWrapStatus.failed,
+          selfWrapStatus: OutgoingWrapStatus.failed,
+          queuedAt: DateTime(2026),
+          ownerPubkey: currentPubkey,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              pendingOutgoing: [failedRow],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The bubble stays: it is the viewer's own record of the exchange.
+        expect(find.text(content), findsOneWidget);
+
+        await tester.tap(find.text(content));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.dmMessageActionRetrySend),
+          findsNothing,
+          reason: 'the recovery sheet must not open in a blocked thread',
+        );
+        verifyNever(
+          () => mockBloc.add(
+            any(that: isA<ConversationFullSendRecoveryRequested>()),
+          ),
+        );
       });
     });
 

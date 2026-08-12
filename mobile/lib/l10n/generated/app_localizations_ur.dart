@@ -2274,10 +2274,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => 'ماحول سوئچر اور ڈیبگ ترتیبات';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'ایسے فیچر فلیگز ٹوگل کریں جو کبھی کبھار لڑکھڑا سکتے ہیں۔';
-
-  @override
   String get nostrSettingsKeyManagement => 'کلید مینجمنٹ';
 
   @override
@@ -3787,12 +3783,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'بعد میں دیکھنے کے لیے محفوظ کریں';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'بک مارک سیٹ میں شامل کریں';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'مجموعوں میں ترتیب دیں';
-
-  @override
   String get shareMenuFollowSets => 'لوگوں کی فہرستیں';
 
   @override
@@ -4174,9 +4164,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get shareMenuUnknown => 'نامعلوم';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'بک مارک سیٹ بنائیں';
-
-  @override
   String get shareMenuSetName => 'سیٹ کا نام';
 
   @override
@@ -4190,15 +4177,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'نیا بک مارک مجموعہ شروع کریں';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'ابھی کوئی بک مارک سیٹ نہیں۔ اپنا پہلا بنائیں!';
-
-  @override
   String get shareMenuError => 'خرابی';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'بک مارک سیٹس لوڈ نہیں ہو سکے';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5880,6 +5859,26 @@ class AppLocalizationsUr extends AppLocalizations {
   String get inboxFilterUnread => 'غیر پڑھی ہوئی';
 
   @override
+  String get dmBlockedThreadTitle => 'آپ نے یہ اکاؤنٹ مسدود کیا ہے';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'پیغامات یہیں رہتے ہیں تاکہ آپ انہیں پڑھ سکیں یا اسکرین شاٹ لے سکیں۔ جواب دینے کے لیے بلاک ہٹائیں۔';
+
+  @override
+  String get inboxFilterBlocked => 'مسدود';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'کوئی مسدود چیٹ نہیں';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'آپ جن اکاؤنٹس کو مسدود کرتے ہیں وہ یہاں دکھائی دیتے ہیں۔';
+
+  @override
+  String get inboxBlockedNoMessages => 'کوئی پیغام نہیں';
+
+  @override
   String get inboxUnreadEmptyTitle => 'آپ سب پڑھ چکے ہیں';
 
   @override
@@ -6225,6 +6224,13 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get discoverListsLoading => 'عوامی فہرستیں دریافت ہو رہی ہیں...';
+
+  @override
+  String get discoverListsRelayTimeout =>
+      'ریلے نے وقت پر فہرستیں واپس نہیں کیں۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get discoverListsServiceUnavailable => 'سروس دستیاب نہیں ہے۔';
 
   @override
   String get discoverListsEmptyTitle => 'کوئی عوامی فہرست نہیں ملی';
@@ -8334,12 +8340,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get commentsEmptySubtitle => 'پارٹی شروع کریں!';
 
   @override
-  String get commentsHeaderTitle => 'تبصرے';
-
-  @override
-  String get commentsHeaderCloseLabel => 'تبصرے بند کریں';
-
-  @override
   String get draftUntitled => 'بلا عنوان';
 
   @override
@@ -9301,6 +9301,18 @@ class AppLocalizationsUr extends AppLocalizations {
       'ٹرانسفارم نہیں ہو سکتا: کلپ مقامی طور پر دستیاب نہیں ہے۔';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'منتخب فریم کو کراپ، گھمائیں یا پلٹیں';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'ایک لمحہ، ہم آپ کا فریم تبدیل کر رہے ہیں';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'فریم تبدیل نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔';
+
+  @override
   String get videoEditorTransformRotateLabel => 'گھمائیں';
 
   @override
@@ -9885,6 +9897,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'ویڈیو ہٹا دی گئی';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'یہاں چلانے کے لیے اب کچھ نہیں بچا';
+
+  @override
   String get settingsBadgesTitle => 'بیجز';
 
   @override
@@ -10091,6 +10106,67 @@ class AppLocalizationsUr extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'Divine پر یہ بیج دیکھیں: $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction => 'بیج رکھنے والوں کو بلاک کریں';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'بیج رکھنے والوں کو بلاک کریں';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'اس بیج کو رکھنے والوں کو لوڈ نہیں کیا جا سکا';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'ابھی کوئی یہ بیج نہیں رکھتا';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'ہمیں فی الحال بلاک کرنے کے لیے کوئی نہیں ملا۔';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اکاؤنٹس بلاک کریں؟',
+      one: '1 اکاؤنٹ بلاک کریں؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'اس سے وہ $count اکاؤنٹس بلاک ہو جائیں گے جو ابھی یہ بیج رکھتے ہیں۔ ان کی پوسٹیں آپ کے فیڈز میں نظر نہیں آئیں گی اور انہیں اطلاع نہیں دی جائے گی۔',
+      one:
+          'اس سے وہ اکاؤنٹ بلاک ہو جائے گا جو ابھی یہ بیج رکھتا ہے۔ ان کی پوسٹیں آپ کے فیڈز میں نظر نہیں آئیں گی اور انہیں اطلاع نہیں دی جائے گی۔',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اکاؤنٹس بلاک کریں',
+      one: '1 اکاؤنٹ بلاک کریں',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'بیج رکھنے والے بلاک کر دیے گئے';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'بیج رکھنے والوں کو بلاک نہیں کیا جا سکا';
 
   @override
   String get badgeDetailLoadError => 'یہ بیج لوڈ نہیں ہو سکا';
@@ -10846,10 +10922,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'یہ لائن ہٹائیں';
 
   @override
-  String get subtitleEditorStartLabel => 'شروع';
+  String get subtitleEditorPreviewUnavailable =>
+      'ویڈیو ابھی نہیں چل سکتی، لیکن آپ پھر بھی کیپشنز درست کر سکتے ہیں۔';
 
   @override
-  String get subtitleEditorEndLabel => 'اختتام';
+  String get subtitleEditorPlayPreview => 'ویڈیو چلائیں';
+
+  @override
+  String get subtitleEditorPausePreview => 'ویڈیو روکیں';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11444,4 +11524,202 @@ class AppLocalizationsUr extends AppLocalizations {
   ) {
     return '$picker، $color';
   }
+
+  @override
+  String get verifyTitle => 'تصدیق شدہ اکاؤنٹس';
+
+  @override
+  String get verifySignedOutMessage =>
+      'اپنے اکاؤنٹس جوڑنے کے لیے سائن اِن کریں۔';
+
+  @override
+  String get verifyIntro =>
+      'جو اکاؤنٹس آپ کے پاس پہلے سے ہیں انہیں جوڑیں، تاکہ لوگ جان سکیں کہ یہ واقعی آپ ہیں۔';
+
+  @override
+  String get verifyLoadFailed => 'آپ کے جوڑ لوڈ نہیں ہو سکے۔';
+
+  @override
+  String get verifyRetry => 'دوبارہ کوشش کریں';
+
+  @override
+  String get verifyLinkedSectionTitle => 'جُڑے ہوئے';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'تصدیقی سروس تک رسائی نہیں ہو سکی، اس لیے سب غیر جانچا ہوا دکھ رہا ہے۔';
+
+  @override
+  String get verifyAddSectionTitle => 'اکاؤنٹ شامل کریں';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'جو کچھ ہم سپورٹ کرتے ہیں، آپ سب جوڑ چکے ہیں۔';
+
+  @override
+  String get verifyStatusVerified => 'تصدیق شدہ';
+
+  @override
+  String get verifyStatusUnverified => 'غیر تصدیق شدہ';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '$platform اکاؤنٹ $identity کا جوڑ ختم کریں';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform کا جوڑ ختم کریں؟';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity اب آپ کے پروفائل پر نظر نہیں آئے گا۔ آپ بعد میں اسے دوبارہ جوڑ سکتے ہیں، لیکن پھر آپ کو دوبارہ سائن ان کرنا ہوگا یا نیا ثبوت پوسٹ کرنا ہوگا۔';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'جوڑ ختم کریں';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'اپنا $platform اکاؤنٹ جوڑیں';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'ایک ٹیپ';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return '$platform میں سائن اِن کریں، باقی ہم سنبھال لیں گے۔ کچھ پوسٹ نہیں ہوگا۔';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return '$platform کے ساتھ جاری رکھیں';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'یا ثبوت پوسٹ کریں';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'اپنا npub اپنے اکاؤنٹ پر پوسٹ کریں، پھر اس پوسٹ کا لنک یہاں چسپاں کریں۔';
+
+  @override
+  String get verifyNpubLabel => 'آپ کا npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'اپنا npub کاپی کریں';
+
+  @override
+  String get verifyNpubCopied => 'npub کاپی ہو گیا';
+
+  @override
+  String get verifyIdentityLabel => 'اکاؤنٹ کا نام';
+
+  @override
+  String get verifyProofLabel => 'آپ کی پوسٹ کا لنک';
+
+  @override
+  String get verifyConnectProofCta => 'جانچیں اور جوڑیں';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'ہمیں اس پوسٹ میں آپ کا npub نہیں ملا۔';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'تصدیقی سروس تک رسائی نہیں ہوئی۔ تھوڑی دیر بعد کوشش کریں۔';
+
+  @override
+  String get verifyErrorOauthFailed => 'بات نہیں بنی۔ ایک بار پھر کوشش کریں۔';
+
+  @override
+  String get verifyErrorHandleRequired => 'پہلے اپنا ہینڈل درج کریں۔';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'تصدیق ہو گئی، مگر کسی ریلے نے اپ ڈیٹ قبول نہیں کی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'ایک ٹیپ والا سائن اِن ابھی اس کے لیے تیار نہیں۔ نیچے والا ثبوت استعمال کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'ایک عوامی gist بنائیں جس کی پہلی فائل میں آپ کا npub ہو، پھر gist کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'اپنا npub ایسے Discord چینل میں پوسٹ کریں جسے ہمارا بوٹ پڑھ سکے، پھر پیغام کا لنک چسپاں کریں۔ سرور کی دعوت کچھ ثابت نہیں کرتی۔';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'اُس اکاؤنٹ سے اپنا npub ٹویٹ کریں، پھر ٹویٹ کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'اُس اکاؤنٹ سے اپنا npub پوسٹ کریں، پھر لنک چسپاں کریں۔ اکاؤنٹ کے نام میں انسٹنس بھی چاہیے — صرف alice نہیں بلکہ mastodon.social/@alice۔';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'جُڑتا چینل ہے، آپ کا ٹیلیگرام اکاؤنٹ نہیں۔ چینل کو پہلے عوامی لنک چاہیے (ٹیلیگرام نئے چینل نجی بناتا ہے)۔ وہاں اپنا npub پوسٹ کریں اور پیغام کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'اوپر سائن اِن کر لیا؟ تو اور کچھ درکار نہیں۔ ورنہ اپنا npub پوسٹ کریں اور اُس پوسٹ کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'اپنا npub ویڈیو کے کیپشن میں لکھیں، پھر اُس ویڈیو کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'اپنا npub ویڈیو کی تفصیل میں لکھیں، پھر اُس ویڈیو کا لنک چسپاں کریں۔';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform جُڑ گیا۔';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'یہ نجی چینل یا دعوت کا لنک ہے۔ چینل کو عوامی لنک دیں، پھر پیغام کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'جوڑ ختم نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'آپ کے موجودہ جوڑ پڑھے نہیں جا سکے، اس لیے کچھ تبدیل نہیں ہوا۔ اپنا کنکشن دیکھ کر دوبارہ کوشش کریں۔';
+
+  @override
+  String get verifyChannelLabel => 'چینل کا نام';
+
+  @override
+  String get verifyHowItWorksTitle => 'یہ کام کیسے کرتا ہے؟';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'اسے دو اکاؤنٹس کے درمیان ہاتھ ملانے کی طرح سمجھیں:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'آپ کا Divine پروفائل کہتا ہے: ”میں ٹوئٹر پر @alice ہوں۔“';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'آپ کا ٹوئٹر اکاؤنٹ تصدیق کرتا ہے: ”ہاں، وہ Divine پروفائل میرا ہے۔“';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'ہم دونوں طرف جانچتے ہیں۔ مطابقت ہو تو آپ تصدیق شدہ ہیں۔ اسے جعلی نہیں بنایا جا سکتا — نام اور تصویر نقل ہو سکتی ہے، آپ کے اصلی اکاؤنٹ سے پوسٹ کرنا نہیں۔';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'یہ جوڑ آپ کی اپنی Nostr شناخت پر رہتے ہیں، اس لیے آپ انہیں یہاں سے جب چاہیں ہٹا سکتے ہیں۔';
+
+  @override
+  String get generalSettingsSectionIdentity => 'شناخت';
 }

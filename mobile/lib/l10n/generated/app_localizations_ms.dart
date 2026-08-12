@@ -2288,10 +2288,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Penukar persekitaran dan tetapan nyahpepijat';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Togol bendera ciri yang mungkin tersandung.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Pengurusan Kunci';
 
   @override
@@ -3816,12 +3812,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Simpan untuk tontonan kemudian';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Tambah ke Set Penanda Buku';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Susun dalam koleksi';
-
-  @override
   String get shareMenuFollowSets => 'Senarai Orang';
 
   @override
@@ -4202,9 +4192,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get shareMenuUnknown => 'Tidak diketahui';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Cipta Set Penanda Buku';
-
-  @override
   String get shareMenuSetName => 'Nama Set';
 
   @override
@@ -4218,15 +4205,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Mulakan koleksi penanda buku baharu';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Belum ada set penanda buku. Cipta yang pertama!';
-
-  @override
   String get shareMenuError => 'Ralat';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Gagal memuatkan set penanda buku';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -5920,6 +5899,26 @@ class AppLocalizationsMs extends AppLocalizations {
   String get inboxFilterUnread => 'Belum dibaca';
 
   @override
+  String get dmBlockedThreadTitle => 'Anda menyekat akaun ini';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Mesej kekal di sini supaya anda boleh membacanya atau mengambil tangkap layar. Nyahsekat untuk membalas.';
+
+  @override
+  String get inboxFilterBlocked => 'Disekat';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Tiada sembang disekat';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Akaun yang anda sekat akan muncul di sini.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Tiada mesej';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Anda sudah baca semuanya';
 
   @override
@@ -6267,6 +6266,13 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get discoverListsLoading => 'Menemui senarai awam...';
+
+  @override
+  String get discoverListsRelayTimeout =>
+      'Relay tidak memulangkan senarai tepat pada masanya. Cuba lagi.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Perkhidmatan tidak tersedia.';
 
   @override
   String get discoverListsEmptyTitle => 'Tiada senarai awam ditemui';
@@ -8382,12 +8388,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get commentsEmptySubtitle => 'Mulakan parti!';
 
   @override
-  String get commentsHeaderTitle => 'Komen';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Tutup komen';
-
-  @override
   String get draftUntitled => 'Tanpa tajuk';
 
   @override
@@ -9355,6 +9355,18 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat mengubah bentuk: klip tidak tersedia secara setempat.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Pangkas, putar atau balikkan bingkai dipilih';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Sekejap, kami sedang mengubah bingkai anda';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Bingkai tidak dapat diubah. Sila cuba lagi.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Putar';
 
   @override
@@ -9940,6 +9952,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video dialih keluar';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Tiada apa-apa lagi untuk dimainkan di sini';
+
+  @override
   String get settingsBadgesTitle => 'Lencana';
 
   @override
@@ -10147,6 +10163,66 @@ class AppLocalizationsMs extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'Tengok lencana ini di Divine: $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction => 'Sekat pemegang lencana';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Sekat pemegang lencana';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Tidak dapat memuatkan pemegang lencana ini';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Tiada sesiapa memegang lencana ini sekarang';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Kami tidak menemui sesiapa untuk disekat buat masa ini.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sekat $count akaun?',
+      one: 'Sekat 1 akaun?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ini menyekat $count akaun yang sedang memegang lencana ini. Siaran mereka tidak akan muncul dalam suapan anda dan mereka tidak akan diberitahu.',
+      one:
+          'Ini menyekat akaun yang sedang memegang lencana ini. Siaran mereka tidak akan muncul dalam suapan anda dan mereka tidak akan diberitahu.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sekat $count akaun',
+      one: 'Sekat 1 akaun',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Pemegang lencana disekat';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Tidak dapat menyekat pemegang lencana';
 
   @override
   String get badgeDetailLoadError => 'Lencana ini gagal dimuatkan';
@@ -10906,10 +10982,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Buang baris ini';
 
   @override
-  String get subtitleEditorStartLabel => 'Mula';
+  String get subtitleEditorPreviewUnavailable =>
+      'Video tidak dapat dimainkan sekarang, tetapi anda masih boleh membetulkan kapsyen.';
 
   @override
-  String get subtitleEditorEndLabel => 'Tamat';
+  String get subtitleEditorPlayPreview => 'Main video';
+
+  @override
+  String get subtitleEditorPausePreview => 'Jeda video';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11508,4 +11588,200 @@ class AppLocalizationsMs extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Akaun disahkan';
+
+  @override
+  String get verifySignedOutMessage => 'Log masuk untuk memautkan akaun anda.';
+
+  @override
+  String get verifyIntro =>
+      'Pautkan akaun yang anda sudah ada, supaya orang tahu ini memang anda.';
+
+  @override
+  String get verifyLoadFailed => 'Pautan anda gagal dimuatkan.';
+
+  @override
+  String get verifyRetry => 'Cuba lagi';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Dipautkan';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Pengesah tidak dapat dihubungi, jadi semuanya dipaparkan belum disemak.';
+
+  @override
+  String get verifyAddSectionTitle => 'Tambah akaun';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Anda sudah memautkan semua yang kami sokong.';
+
+  @override
+  String get verifyStatusVerified => 'Disahkan';
+
+  @override
+  String get verifyStatusUnverified => 'Belum disahkan';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Nyahpaut akaun $platform $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Nyahpaut $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity tidak akan dipaparkan lagi pada profil anda. Anda boleh memautkannya semula kemudian, tetapi anda perlu log masuk atau menyiarkan bukti baharu.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Nyahpaut';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Pautkan akaun $platform anda';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Satu ketik';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Log masuk ke $platform, kami uruskan yang selebihnya. Tiada apa-apa disiarkan.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Teruskan dengan $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Atau siarkan bukti';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Siarkan npub anda pada akaun anda, kemudian tampal pautan ke siaran itu.';
+
+  @override
+  String get verifyNpubLabel => 'npub anda';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Salin npub anda';
+
+  @override
+  String get verifyNpubCopied => 'npub disalin';
+
+  @override
+  String get verifyIdentityLabel => 'Nama akaun';
+
+  @override
+  String get verifyProofLabel => 'Pautan ke siaran anda';
+
+  @override
+  String get verifyConnectProofCta => 'Semak dan pautkan';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Kami tidak jumpa npub anda dalam siaran itu.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Pengesah tidak dapat dihubungi. Cuba lagi sebentar.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Tak menjadi. Cuba sekali lagi.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Masukkan handle anda dahulu.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Disahkan, tetapi tiada geganti menerima kemas kini. Cuba lagi.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Log masuk satu ketik belum disediakan untuk yang ini. Gunakan bukti di bawah.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Buat gist awam dengan npub anda dalam fail pertama, kemudian tampal pautan gist.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Siarkan npub anda dalam saluran Discord yang boleh dibaca bot kami, kemudian tampal pautan mesej. Jemputan pelayan tidak membuktikan apa-apa.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tweet npub anda dari akaun itu, kemudian tampal pautan tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Siarkan npub anda dari akaun itu, kemudian tampal pautannya. Nama akaun perlu instance — mastodon.social/@alice, bukan alice sahaja.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Yang dipautkan ialah saluran, bukan akaun Telegram anda. Saluran perlu pautan awam dahulu (Telegram jadikan yang baharu peribadi). Siarkan npub anda di sana dan tampal pautan mesej.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Sudah log masuk di atas? Tiada apa lagi diperlukan. Jika tidak, siarkan npub anda dan tampal pautan siaran itu.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Letak npub anda dalam kapsyen video, kemudian tampal pautan video itu.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Letak npub anda dalam penerangan video, kemudian tampal pautan video itu.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform sudah dipautkan.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Itu saluran peribadi atau jemputan. Beri saluran itu pautan awam, kemudian tampal pautan mesej.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Gagal menyahpaut. Cuba lagi.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Kami tidak dapat membaca pautan semasa anda, jadi tiada apa yang diubah. Semak sambungan anda dan cuba lagi.';
+
+  @override
+  String get verifyChannelLabel => 'Nama saluran';
+
+  @override
+  String get verifyHowItWorksTitle => 'Bagaimana ia berfungsi?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Anggap ia sebagai jabat tangan antara dua akaun:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Profil Divine anda berkata: “Saya @alice di Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Akaun Twitter anda mengesahkan: “Ya, profil Divine itu milik saya.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Kami semak kedua-dua pihak. Jika sepadan, anda disahkan. Tiada siapa boleh memalsukannya — nama dan foto boleh disalin, menyiar dari akaun sebenar anda tidak.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Pautan ini berada pada identiti Nostr anda sendiri, jadi anda boleh membuangnya dari sini bila-bila masa.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identiti';
 }

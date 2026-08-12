@@ -202,22 +202,6 @@ enum UsernameValidationError {
   networkError,
 }
 
-/// Status of the verifier launch flow.
-///
-/// Used as a one-shot signal: the UI listens for [launchRequested], opens the
-/// verifier, and dispatches [VerifierLaunchHandled] after handling the request
-/// so future taps can emit another launch signal. The bloc never navigates.
-enum VerifierStatus {
-  /// No launch pending.
-  idle,
-
-  /// User tapped "Get verified" and the UI should open the verifier.
-  launchRequested,
-
-  /// UI has handled the verifier launch request.
-  handled,
-}
-
 /// Whether the profile editor is in divine.video username or external NIP-05
 /// mode.
 enum Nip05Mode {
@@ -283,7 +267,6 @@ final class ProfileEditorState extends Equatable {
     this.persistedBanner,
     this.bannerCleared = false,
     this.bannerUploadError,
-    this.verifierStatus = VerifierStatus.idle,
   });
 
   /// Current status of the operation.
@@ -420,9 +403,6 @@ final class ProfileEditorState extends Equatable {
   /// a new image or colour cancels it.
   final bool bannerCleared;
 
-  /// One-shot signal driving verifier launch handling in the UI.
-  final VerifierStatus verifierStatus;
-
   /// Whether the username state allows saving the profile (divine.video mode).
   bool get isUsernameSaveReady {
     if (usernameStatus == UsernameStatus.checking) return false;
@@ -516,7 +496,6 @@ final class ProfileEditorState extends Equatable {
     Object? persistedBanner = _kUnset,
     bool? bannerCleared,
     BannerUploadError? bannerUploadError,
-    VerifierStatus? verifierStatus,
   }) {
     return ProfileEditorState(
       status: status ?? this.status,
@@ -563,7 +542,6 @@ final class ProfileEditorState extends Equatable {
           : persistedBanner as String?,
       bannerCleared: bannerCleared ?? this.bannerCleared,
       bannerUploadError: bannerUploadError,
-      verifierStatus: verifierStatus ?? this.verifierStatus,
     );
   }
 
@@ -599,6 +577,5 @@ final class ProfileEditorState extends Equatable {
     persistedBanner,
     bannerCleared,
     bannerUploadError,
-    verifierStatus,
   ];
 }

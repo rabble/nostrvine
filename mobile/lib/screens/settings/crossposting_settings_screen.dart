@@ -9,7 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/crossposting_settings/crossposting_settings_cubit.dart';
-import 'package:openvine/features/crossposting/crossposting_oauth_launcher.dart';
+import 'package:openvine/features/oauth/app_oauth_callback.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/crossposting_providers.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
@@ -19,7 +19,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 class CrosspostingSettingsScreen extends ConsumerWidget {
   const CrosspostingSettingsScreen({
     super.key,
-    this.launchOAuth = launchCrosspostingOAuth,
+    this.launchOAuth = launchAppOAuth,
     this.nonceGenerator = generateCrosspostingOAuthNonce,
   });
 

@@ -1,0 +1,49 @@
+appId: co.openvine.app
+---
+#Utility: given the recorder is on a ready classic viewfinder with tap-to-toggle
+#recording enabled, record one clip and leave it in the session.
+#
+# Classic's shutter is the square preview, not a button, so this cannot reuse
+# recordCaptureClip.yaml — and it stops on the second tap rather than letting
+# the recording run out, which is what classicModeRecordingLimit covers.
+
+# The shutter reports its own readiness — the same gate the tap runs on: a
+# camera that is not up, or a session budget below 30ms. Without this the tap
+# lands on a dead target, does nothing, and the wait below burns its full 15s
+# before failing on a symptom instead of the precondition.
+- extendedWaitUntil:
+    visible:
+      id: camera_classic_shutter
+      enabled: true
+    timeout: 15000
+
+# The preview looks the same in both states, so it is the close button that
+# reports the transition: classic fades its whole top-bar row out while
+# recording.
+- tapOn:
+    id: camera_classic_shutter
+- extendedWaitUntil:
+    notVisible:
+      id: camera_close_button
+    timeout: 15000
+
+# Straight to the stop tap. No accumulate-footage wait, unlike the capture
+# util — classic cannot afford one, and the first device run is what proved it.
+#
+# Classic is the only mode that declares `hasRecordingLimit`, so the whole
+# session shares one 6.3s budget and everything this util spends comes out of
+# what classicModeRecordingLimit has left to work with. On the SM-S942B the two
+# taps alone span ~4.1s of it: Maestro dumps the view hierarchy around every
+# command, so the start tap took 3.5s wall-clock and the stop tap 2.0s. A
+# `waitForAnimationToEnd: 2000` between them measured 3.7s — the live camera
+# preview never settles, so it always runs its timeout out and then some — and
+# pushed the pair to ~7.9s. Past 6.3s the native auto-stop ends the recording
+# first, which cost both tests at once: this one stopped proving tap-to-stop,
+# and the limit test could not start at all against a spent budget.
+#
+# ~4.1s spent leaves ~2.1s, which is enough for the limit test to start a
+# recording and watch it end itself. Anything added here comes out of that
+# margin.
+- tapOn:
+    id: camera_classic_shutter
+- runFlow: ../asserts/assertClassicClipRecorded.yaml

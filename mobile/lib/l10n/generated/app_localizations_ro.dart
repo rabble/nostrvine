@@ -2334,10 +2334,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Comutator de mediu și setări de depanare';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Activează indicatoare de funcții care s-ar putea să sughițe.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gestionare chei';
 
   @override
@@ -3886,12 +3882,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Salvează pentru vizualizare ulterioară';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Adaugă la set de semne de carte';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organizează în colecții';
-
-  @override
   String get shareMenuFollowSets => 'Seturi de urmărire';
 
   @override
@@ -4289,9 +4279,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuUnknown => 'Necunoscut';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Creează un set de semne de carte';
-
-  @override
   String get shareMenuSetName => 'Numele setului';
 
   @override
@@ -4306,15 +4293,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Începe o colecție nouă de semne de carte';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Încă nu ai seturi de semne de carte. Creează-l pe primul!';
-
-  @override
   String get shareMenuError => 'Eroare';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'N-am putut încărca seturile de semne de carte';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -6028,6 +6007,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxFilterUnread => 'Necitite';
 
   @override
+  String get dmBlockedThreadTitle => 'Ai blocat acest cont';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Mesajele rămân aici ca să le poți citi sau captura. Deblochează pentru a răspunde.';
+
+  @override
+  String get inboxFilterBlocked => 'Blocate';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Nicio conversație blocată';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Conturile pe care le blochezi apar aici.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Niciun mesaj';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Ești la zi';
 
   @override
@@ -6374,6 +6373,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get discoverListsLoading => 'Se descoperă liste publice...';
+
+  @override
+  String get discoverListsRelayTimeout =>
+      'Releul nu a returnat liste la timp. Încearcă din nou.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Serviciul nu este disponibil.';
 
   @override
   String get discoverListsEmptyTitle => 'Nicio listă publică găsită';
@@ -8508,12 +8514,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'Fără titlu';
 
   @override
@@ -9497,6 +9497,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Transformare imposibilă: clipul nu este disponibil local.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Decupează, rotește sau oglindește cadrul selectat';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'O clipă, îți transformăm cadrul';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Cadrul nu a putut fi transformat. Încearcă din nou.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Rotește';
 
   @override
@@ -10091,6 +10103,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Videoclip eliminat';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Nu mai e nimic de redat aici';
+
+  @override
   String get settingsBadgesTitle => 'Insigne';
 
   @override
@@ -10299,6 +10314,71 @@ class AppLocalizationsRo extends AppLocalizations {
   String badgeDetailShareMessage(String link) {
     return 'Vezi insigna asta pe Divine: $link';
   }
+
+  @override
+  String get badgeDetailBlockClaimantsAction => 'Blochează cine poartă insigna';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Blochează cine poartă insigna';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Nu am putut încărca cine poartă această insignă';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Nimeni nu poartă această insignă acum';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Nu am găsit pe nimeni de blocat acum.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blochezi $count de conturi?',
+      few: 'Blochezi $count conturi?',
+      one: 'Blochezi 1 cont?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Asta blochează cele $count de conturi care poartă acum această insignă. Postările lor nu vor mai apărea în feedurile tale și nu vor fi notificate.',
+      few:
+          'Asta blochează cele $count conturi care poartă acum această insignă. Postările lor nu vor mai apărea în feedurile tale și nu vor fi notificate.',
+      one:
+          'Asta blochează contul care poartă acum această insignă. Postările lui nu vor mai apărea în feedurile tale și nu va fi notificat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blochează $count de conturi',
+      few: 'Blochează $count conturi',
+      one: 'Blochează 1 cont',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Am blocat cine poartă insigna';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Nu am putut bloca cine poartă insigna';
 
   @override
   String get badgeDetailLoadError => 'Această insignă nu a putut fi încărcată';
@@ -11058,10 +11138,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Șterge această linie';
 
   @override
-  String get subtitleEditorStartLabel => 'Început';
+  String get subtitleEditorPreviewUnavailable =>
+      'Videoclipul nu poate fi redat acum, dar tot poți corecta subtitrările.';
 
   @override
-  String get subtitleEditorEndLabel => 'Sfârșit';
+  String get subtitleEditorPlayPreview => 'Redă videoclipul';
+
+  @override
+  String get subtitleEditorPausePreview => 'Pune videoclipul pe pauză';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11660,4 +11744,200 @@ class AppLocalizationsRo extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Conturi verificate';
+
+  @override
+  String get verifySignedOutMessage =>
+      'Conectează-te ca să îți legi conturile.';
+
+  @override
+  String get verifyIntro =>
+      'Leagă conturile pe care le ai deja, ca lumea să vadă că ești chiar tu.';
+
+  @override
+  String get verifyLoadFailed => 'Nu am putut încărca legăturile tale.';
+
+  @override
+  String get verifyRetry => 'Încearcă din nou';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Legate';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Verificatorul nu a răspuns, așa că toate apar ca neverificate.';
+
+  @override
+  String get verifyAddSectionTitle => 'Adaugă un cont';
+
+  @override
+  String get verifyAllPlatformsLinked => 'Ai legat tot ce acceptăm.';
+
+  @override
+  String get verifyStatusVerified => 'Verificat';
+
+  @override
+  String get verifyStatusUnverified => 'Neverificat';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Dezleagă contul $platform $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Dezlegi $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity nu va mai apărea pe profilul tău. Îl poți lega din nou mai târziu, dar va trebui să te autentifici sau să postezi o dovadă nouă.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Dezleagă';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Leagă contul tău de $platform';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Un tap';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Conectează-te la $platform și ne ocupăm noi de rest. Nu se postează nimic.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Continuă cu $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Sau postează o dovadă';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Postează-ți npub-ul pe cont, apoi lipește linkul către acea postare.';
+
+  @override
+  String get verifyNpubLabel => 'npub-ul tău';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Copiază npub-ul tău';
+
+  @override
+  String get verifyNpubCopied => 'npub copiat';
+
+  @override
+  String get verifyIdentityLabel => 'Numele contului';
+
+  @override
+  String get verifyProofLabel => 'Linkul postării tale';
+
+  @override
+  String get verifyConnectProofCta => 'Verifică și leagă';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Nu am găsit npub-ul tău în postarea aia.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Verificatorul nu răspunde. Mai încearcă într-o clipă.';
+
+  @override
+  String get verifyErrorOauthFailed => 'N-a mers. Mai încearcă o dată.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Scrie mai întâi handle-ul tău.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Verificat, dar niciun releu nu a acceptat actualizarea. Mai încearcă.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Conectarea dintr-un tap nu e încă pregătită aici. Folosește dovada de mai jos.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Fă un gist public cu npub-ul tău în primul fișier și lipește linkul gist-ului.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Postează-ți npub-ul într-un canal Discord pe care botul nostru îl poate citi și lipește linkul mesajului. O invitație de server nu dovedește nimic.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Postează-ți npub-ul de pe acel cont și lipește linkul tweetului.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Postează-ți npub-ul de pe acel cont și lipește linkul. Numele contului are nevoie de instanță — mastodon.social/@alice, nu doar alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Se leagă canalul, nu contul tău de Telegram. Are nevoie întâi de un link public (Telegram le creează private). Postează-ți acolo npub-ul și lipește linkul mesajului.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Te-ai conectat mai sus? Nu mai e nevoie de nimic. Altfel postează-ți npub-ul și lipește linkul postării.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Pune-ți npub-ul în descrierea unui video și lipește linkul acelui video.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Pune-ți npub-ul în descrierea unui video și lipește linkul acelui video.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform este legat.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Acela e un canal privat sau o invitație. Dă-i canalului un link public, apoi lipește linkul mesajului.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Nu am putut dezlega. Mai încearcă.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Nu am putut citi legăturile tale actuale, așa că nu s-a schimbat nimic. Verifică-ți conexiunea și mai încearcă.';
+
+  @override
+  String get verifyChannelLabel => 'Numele canalului';
+
+  @override
+  String get verifyHowItWorksTitle => 'Cum funcționează?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Gândește-te la asta ca la o strângere de mână între două conturi:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Profilul tău Divine spune: „Sunt @alice pe Twitter”.';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Contul tău de Twitter confirmă: „Da, acel profil Divine e al meu”.';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Verificăm ambele părți. Dacă se potrivesc, ești verificat. Nu se poate falsifica: numele și poza se copiază, postarea de pe contul tău real nu.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Legăturile stau pe propria ta identitate Nostr, așa că le poți șterge de aici oricând.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identitate';
 }

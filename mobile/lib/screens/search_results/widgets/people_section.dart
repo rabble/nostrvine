@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
@@ -52,6 +53,7 @@ class PeopleSection extends StatelessWidget {
             child: SectionHeader(
               title: context.l10n.searchPeopleSectionHeader,
               onTap: onSeeAll,
+              semanticIdentifier: SemanticIds.searchSectionHeader('people'),
             ),
           ),
         _PeopleContent(showAll: showAll),
@@ -125,10 +127,17 @@ class _PeopleContent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (final profile in profiles)
-            SearchUserTile(
-              profile: profile,
-              onTap: () => _navigateToProfile(context, profile),
+          // The tile's own identifier is keyed by pubkey, which a UI test
+          // cannot know ahead of time; the ordinal wrapper gives flows a
+          // "tap the first result" handle without matching display names.
+          for (final (index, profile) in profiles.indexed)
+            Semantics(
+              identifier: SemanticIds.searchUserTileAt(index),
+              container: true,
+              child: SearchUserTile(
+                profile: profile,
+                onTap: () => _navigateToProfile(context, profile),
+              ),
             ),
         ],
       ),

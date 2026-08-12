@@ -37,9 +37,14 @@ class ConversationListNavigationConsumed extends ConversationListEvent {
   const ConversationListNavigationConsumed();
 }
 
-/// Toggle the unread-only filter on the Messages list.
-class ConversationListUnreadFilterToggled extends ConversationListEvent {
-  const ConversationListUnreadFilterToggled();
+/// The user selected a chip in the Messages filter row.
+class ConversationListFilterChanged extends ConversationListEvent {
+  const ConversationListFilterChanged(this.filter);
+
+  final InboxFilter filter;
+
+  @override
+  List<Object?> get props => [filter];
 }
 
 /// The inbox search query changed.

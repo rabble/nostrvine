@@ -4520,10 +4520,13 @@ void main() {
 
       /// Repository wired to a live cache, so the cache guards are load-bearing
       /// in every test rather than only in the ones that name the cache.
-      VideosRepository buildRepository({Random? random}) => VideosRepository(
+      VideosRepository buildRepository({
+        Random? random,
+        InMemoryFeedCache? feedCache,
+      }) => VideosRepository(
         nostrClient: mockNostrClient,
         funnelcakeApiClient: mockFunnelcakeClient,
-        inMemoryFeedCache: InMemoryFeedCache(),
+        inMemoryFeedCache: feedCache ?? InMemoryFeedCache(),
         random: random,
       );
 
@@ -4543,7 +4546,7 @@ void main() {
         await buildRepository(random: random).getClassicVideos(limit: 20);
 
         // The offset is drawn over the reachable page count, not a raw index.
-        expect(random.recordedMaxima.first, 21); // (400 ~/ 20) + 1
+        expect(random.recordedMaxima.first, 101); // (2000 ~/ 20) + 1
         verify(
           () => mockFunnelcakeClient.getClassicVines(
             sort: any(named: 'sort'),
@@ -4564,7 +4567,7 @@ void main() {
           final random = _StubRandom(firstOffsetDraw: 7);
           await buildRepository(random: random).getClassicVideos();
 
-          expect(random.recordedMaxima.first, 17); // (400 ~/ 25) + 1
+          expect(random.recordedMaxima.first, 81); // (2000 ~/ 25) + 1
           verify(
             () => mockFunnelcakeClient.getClassicVines(
               sort: any(named: 'sort'),
@@ -4747,6 +4750,37 @@ void main() {
             before: any(named: 'before'),
           ),
         ).called(1);
+      });
+
+      test('redraws the cached first page after its TTL expires', () async {
+        stubArchiveByOffset(
+          (offset) =>
+              offset == 0 ? archivePage(20) : archivePage(20, startIndex: 20),
+        );
+        var now = DateTime(2026, 8, 11, 12);
+        final random = _StubRandom();
+        final repository = buildRepository(
+          random: random,
+          feedCache: InMemoryFeedCache(now: () => now),
+        );
+
+        final first = await repository.getClassicVideos(limit: 20);
+        random.expectOffsetDraw(1);
+        now = now.add(const Duration(minutes: 15));
+        final reentry = await repository.getClassicVideos(limit: 20);
+
+        expect(
+          reentry.videos.map((v) => v.id),
+          isNot(first.videos.map((v) => v.id)),
+        );
+        verify(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).called(2);
       });
 
       test(

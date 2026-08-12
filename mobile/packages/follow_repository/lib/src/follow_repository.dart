@@ -94,18 +94,43 @@ class FollowRepository {
     required String pubkey,
     int fallbackTimeoutSeconds = 10,
   }) async {
+    final completer = Completer<Event?>();
+    StreamSubscription<Event>? subscription;
+    Timer? timeoutTimer;
     try {
-      return await eventStream
-          .where((e) => e.kind == EventKind.contactList && e.pubkey == pubkey)
-          .first
-          .timeout(Duration(seconds: fallbackTimeoutSeconds));
-    } on TimeoutException {
-      return null;
-      // Catching StateError is intentional: `.first` throws it when the
-      // stream closes without a matching event.
-      // ignore: avoid_catching_errors
-    } on StateError {
-      return null;
+      timeoutTimer = Timer(Duration(seconds: fallbackTimeoutSeconds), () {
+        if (!completer.isCompleted) {
+          final activeSubscription = subscription;
+          subscription = null;
+          unawaited(activeSubscription?.cancel());
+          completer.complete(null);
+        }
+      });
+
+      subscription = eventStream.listen(
+        (event) {
+          if (event.kind == EventKind.contactList && event.pubkey == pubkey) {
+            if (!completer.isCompleted) {
+              completer.complete(event);
+            }
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          if (!completer.isCompleted) {
+            completer.completeError(error, stackTrace);
+          }
+        },
+        onDone: () {
+          if (!completer.isCompleted) {
+            completer.complete(null);
+          }
+        },
+      );
+
+      return await completer.future;
+    } finally {
+      timeoutTimer?.cancel();
+      await subscription?.cancel();
     }
   }
 

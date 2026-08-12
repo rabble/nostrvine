@@ -1,0 +1,44 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to capture stills in stop-motion mode,
+# given the recorder is open on an idle stop-motion viewfinder,
+# validate a shutter tap adds a still to the session without ever entering the
+# recording state.
+#
+# Needs real camera hardware. Without it the bloc never reports
+# `isCameraInitialized`, the record button stays disabled, and the tap does
+# nothing — so this cannot pass on the iOS Simulator. Run it on an Android
+# emulator (which has a virtual scene camera) or on a device.
+#
+# Hold-to-record does not apply here: the record button disables long-press
+# whenever the mode captures stills, so the `HoldToRecordPreferenceService`
+# preference that captureModeRecordClip has to warn about cannot affect this
+# one either way.
+#Steps:
+# 1. Tap the shutter: a still lands in the session
+# 2. Tap it again: the session takes a second still
+
+# 1. One tap, one still.
+- tapOn:
+    id: camera_record_button
+- runFlow: ../asserts/assertStopMotionFrameCaptured.yaml
+
+# 2. A second still, which is what separates "the shutter works" from "the
+# session accumulates".
+#
+# There is nothing new to assert on this screen — next and undo are already
+# revealed by the first still, and the only element that moves with the count
+# is the budget label, whose value is a function of the maximum clip length and
+# the output frame rate. So the count is proven one layer down instead:
+# stopMotionModeUndoFrame has to undo *twice* to empty the session, and its
+# first undo asserts the chrome is still up. Shooting once here turns that
+# assertion red.
+#
+# The capture handler is `droppable()`, so a tap arriving while the native
+# capture is still in flight is discarded rather than queued. Waiting for the
+# first still to land above is what makes this tap count.
+- tapOn:
+    id: camera_record_button
+- runFlow: ../asserts/assertStopMotionFrameCaptured.yaml

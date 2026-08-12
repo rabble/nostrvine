@@ -1,21 +1,23 @@
 // ABOUTME: E2E regression for #4193 / PR #4234.
 // ABOUTME: After fix, the optimistic DM bubble must survive the empty
 // ABOUTME: initial watchMessages tick on a freshly-opened conversation.
-// ABOUTME: Requires: local Docker stack (mise run local_up).
+// ABOUTME: Requires: the full local Docker stack (mise run local_up), and
+// ABOUTME: POST_NOTIFICATIONS pre-granted so no native dialog blocks the UI.
 
+@Tags(['service'])
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
-import 'package:patrol/patrol.dart';
 
 import '../helpers/db_helpers.dart';
 import '../helpers/http_helpers.dart';
@@ -23,39 +25,18 @@ import '../helpers/navigation_helpers.dart';
 import '../helpers/relay_helpers.dart';
 import '../helpers/test_setup.dart';
 
-/// Dismiss the Android notification permission dialog if it appears.
-///
-/// After authentication the app requests POST_NOTIFICATIONS. This is a
-/// native system dialog that blocks Flutter widget interaction.
-Future<void> _dismissNotificationPermission(
-  PatrolIntegrationTester $,
-) async {
-  try {
-    await $.platformAutomator.tap(
-      Selector(textContains: 'Allow'),
-      timeout: const Duration(seconds: 3),
-    );
-    logPhase('notification permission dialog dismissed');
-  } catch (_) {
-    logPhase(
-      'notification permission dialog not shown — already granted or '
-      'not requested',
-    );
-  }
-}
-
 void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
   group('Bug #4193: DM sent to fresh user invisible until restart', () {
     final senderEmail =
         'dm-race-${DateTime.now().millisecondsSinceEpoch}@test.divine.video';
     const senderPassword = 'TestPass123!';
 
-    patrolTest(
+    testWidgets(
       'optimistic bubble survives the empty initial watchMessages tick '
       'on a freshly-opened conversation',
-      tags: ['service'],
-      ($) async {
-        final tester = $.tester;
+      (tester) async {
         final originalOnError = suppressSetStateErrors();
         addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
@@ -76,8 +57,17 @@ void main() {
 
         // ── Phase 2: Register sender + verify email ──
         logPhase('── Phase 2: Register sender + verify email ──');
+        // pumpAndSettle never returns here: the app runs persistent polling
+        // timers, so the tree never reaches a quiescent frame. Poll for the
+        // app instead of pumping a fixed budget — a cold launch takes well
+        // over three seconds to mount MaterialApp.
         launchAppGuarded(app.main);
-        await tester.pumpAndSettle(const Duration(seconds: 3));
+        final appStarted = await waitForWidget(
+          tester,
+          find.byType(MaterialApp),
+          maxSeconds: 30,
+        );
+        expect(appStarted, isTrue, reason: 'App should start');
 
         await navigateToCreateAccount(tester);
         await registerNewUser(tester, senderEmail, senderPassword);
@@ -96,10 +86,13 @@ void main() {
           'Complete your registration',
         );
         expect(leftVerify, isTrue);
-        await pumpUntilSettled(tester);
 
-        await _dismissNotificationPermission($);
-        await pumpUntilSettled(tester);
+        // The app requests POST_NOTIFICATIONS right after authentication. A
+        // native dialog blocks Flutter interaction and a plain
+        // integration_test cannot tap it, so the runner pre-grants the
+        // permission (see local_stack/profile.sh). Allow a doubled settle
+        // window for the grant to land before interacting again.
+        await pumpUntilSettled(tester, maxSeconds: 10);
 
         // Verify we landed on the main app shell (bottom nav present).
         final hasBottomNav = find

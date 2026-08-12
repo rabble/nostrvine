@@ -461,5 +461,89 @@ void main() {
 
       await expectLater(saveFuture, completes);
     });
+
+    group('selection', () {
+      test('addCue hands the creator the cue it just made', () {
+        final cubit = SubtitleEditorCubit(repository: repo, video: _video)
+          ..addCue()
+          ..addCue();
+        addTearDown(cubit.close);
+
+        expect(cubit.state.selectedCueIndex, 1);
+      });
+
+      test('removing an earlier cue keeps the selection on the same cue', () {
+        final cubit = SubtitleEditorCubit(repository: repo, video: _video)
+          ..addCue()
+          ..addCue()
+          ..addCue()
+          ..selectCue(2)
+          ..removeCue(0);
+        addTearDown(cubit.close);
+
+        // Cues are addressed positionally, so the third one is now second.
+        expect(cubit.state.selectedCueIndex, 1);
+      });
+
+      test('removing the selected cue clears the selection', () {
+        final cubit = SubtitleEditorCubit(repository: repo, video: _video)
+          ..addCue()
+          ..addCue()
+          ..selectCue(0)
+          ..removeCue(0);
+        addTearDown(cubit.close);
+
+        expect(cubit.state.selectedCueIndex, isNull);
+      });
+
+      test('an out-of-range selection is dropped, not stored', () {
+        final cubit = SubtitleEditorCubit(repository: repo, video: _video)
+          ..addCue()
+          ..selectCue(0)
+          ..selectCue(7);
+        addTearDown(cubit.close);
+
+        expect(cubit.state.selectedCueIndex, isNull);
+      });
+
+      test(
+        'a reload drops the selection with the cues it pointed at',
+        () async {
+          when(
+            () => repo.loadCues(any()),
+          ).thenAnswer((_) async => _availableResult);
+          final cubit = SubtitleEditorCubit(repository: repo, video: _video)
+            ..addCue()
+            ..selectCue(0);
+          addTearDown(cubit.close);
+
+          await cubit.load();
+
+          expect(cubit.state.selectedCueIndex, isNull);
+        },
+      );
+    });
+
+    group('timelineDurationMs', () {
+      test('uses the video duration when the event declares one', () {
+        final cubit = SubtitleEditorCubit(
+          repository: repo,
+          video: _video.copyWith(duration: 6),
+        );
+        addTearDown(cubit.close);
+
+        expect(cubit.state.timelineDurationMs, 6000);
+      });
+
+      test('leaves room past the last cue when the duration is unknown', () {
+        final cubit = SubtitleEditorCubit(repository: repo, video: _video)
+          ..addCue();
+        addTearDown(cubit.close);
+
+        // Without headroom the axis would end on the cue, leaving nothing to
+        // drag it into.
+        expect(cubit.state.timelineDurationMs, greaterThan(2000));
+      });
+    });
   });
 }

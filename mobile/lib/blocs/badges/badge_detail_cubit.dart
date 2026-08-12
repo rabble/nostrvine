@@ -2,6 +2,7 @@
 // ABOUTME: new recipients, and accepting or removing the viewer's own award.
 
 import 'package:badge_repository/badge_repository.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,11 +13,14 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
   /// Creates the cubit for the badge at [coordinate].
   BadgeDetailCubit({
     required BadgeRepository repository,
+    required ContentBlocklistRepository contentBlocklistRepository,
     required BadgeCoordinate coordinate,
   }) : _repository = repository,
+       _contentBlocklistRepository = contentBlocklistRepository,
        super(BadgeDetailState(coordinate: coordinate));
 
   final BadgeRepository _repository;
+  final ContentBlocklistRepository _contentBlocklistRepository;
 
   /// Loads the badge, showing the loading state.
   Future<void> load() async {
@@ -93,6 +97,21 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
     );
   }
 
+  /// Loads the current pubkeys claiming this badge.
+  Future<Set<String>> loadClaimantPubkeys() {
+    return _repository.loadClaimantPubkeys(state.coordinate);
+  }
+
+  /// Blocks the provided badge claimants in one blocklist update.
+  Future<void> blockClaimants(Set<String> pubkeys) {
+    if (pubkeys.isEmpty) return Future<void>.value();
+    return _runAction(
+      BadgeDetailActionStatus.blockingClaimants,
+      () => _contentBlocklistRepository.blockUsers(pubkeys),
+      reload: false,
+    );
+  }
+
   Future<void> _load() async {
     try {
       final detail = await _repository.loadBadgeDetail(state.coordinate);
@@ -129,9 +148,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
     try {
       await action();
       if (!reload) {
-        emit(
-          state.copyWith(actionStatus: BadgeDetailActionStatus.completed),
-        );
+        emit(state.copyWith(actionStatus: BadgeDetailActionStatus.completed));
         return;
       }
       final detail = await _repository.loadBadgeDetail(state.coordinate);

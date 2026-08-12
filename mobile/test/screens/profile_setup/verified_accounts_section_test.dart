@@ -1,17 +1,19 @@
 // ABOUTME: Widget tests for VerifiedAccountsSection in the profile-setup form.
-// ABOUTME: Covers title rendering and the "Get verified" dispatch.
+// ABOUTME: Covers title rendering and the "Get verified" navigation.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 import 'package:openvine/screens/profile_setup/widgets/verified_accounts_section.dart';
+import 'package:openvine/screens/verify/verify_screen.dart';
 
 class _MockProfileEditorBloc
     extends MockBloc<ProfileEditorEvent, ProfileEditorState>
@@ -32,23 +34,39 @@ void main() {
       when(() => editorBloc.state).thenReturn(const ProfileEditorState());
       myProfileBloc = _MockMyProfileBloc();
       when(() => myProfileBloc.state).thenReturn(const MyProfileInitial());
+      when(() => myProfileBloc.isClosed).thenReturn(false);
     });
 
     Future<void> pump(WidgetTester tester) {
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: MultiBlocProvider(
+                providers: [
+                  BlocProvider<ProfileEditorBloc>.value(value: editorBloc),
+                  BlocProvider<MyProfileBloc>.value(value: myProfileBloc),
+                ],
+                child: const VerifiedAccountsSection(),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: VerifyPage.path,
+            name: VerifyPage.routeName,
+            builder: (context, state) =>
+                const Scaffold(body: Text('verify screen')),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
       return tester.pumpWidget(
-        MaterialApp(
+        MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
-          home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<ProfileEditorBloc>.value(value: editorBloc),
-                BlocProvider<MyProfileBloc>.value(value: myProfileBloc),
-              ],
-              child: const VerifiedAccountsSection(),
-            ),
-          ),
+          routerConfig: router,
         ),
       );
     }
@@ -76,13 +94,33 @@ void main() {
       expect(find.text(l10n.profileEditGetVerifiedSubtitle), findsOneWidget);
     });
 
-    testWidgets('tapping get-verified dispatches VerifierLaunchRequested', (
+    testWidgets('tapping get-verified opens the verify screen', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await tester.tap(find.text(l10n.profileEditGetVerifiedCta));
+      await tester.pumpAndSettle();
+
+      expect(find.text('verify screen'), findsOneWidget);
+    });
+
+    testWidgets('re-reads the profile after the verify screen closes', (
       tester,
     ) async {
       await pump(tester);
       await tester.tap(find.text(l10n.profileEditGetVerifiedCta));
+      await tester.pumpAndSettle();
+
+      // The chip row renders from MyProfileBloc, so a link added in the flow
+      // only shows up here after a re-read.
+      verifyNever(() => myProfileBloc.add(const MyProfileFetchRequested()));
+
+      tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+      await tester.pumpAndSettle();
+
       verify(
-        () => editorBloc.add(const VerifierLaunchRequested()),
+        () => myProfileBloc.add(const MyProfileFetchRequested()),
       ).called(1);
     });
   });

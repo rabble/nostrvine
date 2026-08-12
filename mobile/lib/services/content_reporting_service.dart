@@ -10,6 +10,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_types.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -122,9 +123,6 @@ class ContentReport {
 /// Service for reporting inappropriate content
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class ContentReportingService {
-  static const String _reportLabelNamespace = 'social.nos.ontology';
-  static const String _reportLabelPrefix = 'NS-';
-
   ContentReportingService({
     required NostrClient nostrService,
     required AuthService authService,
@@ -432,6 +430,67 @@ class ContentReportingService {
     }
   }
 
+  /// The NIP-32 label pair identifying a report's reason on the wire.
+  ///
+  /// Built once here and emitted by both report channels — the kind-1984
+  /// event and the moderation DM — so the two can never resolve to different
+  /// report types. These label values are a cross-repo wire contract consumed
+  /// by divine-web and divine-relay-manager.
+  static List<List<String>> _nip32ReportLabelTags(ContentFilterReason reason) =>
+      [
+        ['L', kReportLabelNamespace],
+        ['l', contentFilterReasonToNip32Label(reason), kReportLabelNamespace],
+      ];
+
+  /// Machine-readable report data for divine-moderation-service's dm-reader,
+  /// carried as NIP-17 tags on the rumor rather than folded into the DM body —
+  /// the content stays plain human-readable prose, which NIP-17 mandates and
+  /// the admin Messages UI renders as-is (#6593).
+  ///
+  /// The `L`/`l` pair is the same one the kind-1984 report carries, so the
+  /// backend resolves both channels to one report type. Sending only the
+  /// NIP-56 value would let whichever channel ingested first pin a collapsed
+  /// type — `other` for an `aiGenerated` report — permanently, because
+  /// `user_reports` is written with `INSERT OR IGNORE` on
+  /// `(sha256, reporter_pubkey)`.
+  ///
+  /// `report_type` and [sha256] are DM-only: the kind-1984 event carries the
+  /// NIP-56 type as the third element of its `e`/`p` tags and carries no blob
+  /// hash.
+  ///
+  /// [sha256] and [videoUrl] identify the reported video's Blossom blob hash
+  /// where one resolves. [VideoEvent.sha256] is nullable because publishers can
+  /// omit the `imeta` `x` value; [videoUrl] is the canonical fallback because
+  /// Blossom URLs carry the content-addressed hash in their path. User reports
+  /// and DM-message reports pass neither. `user_reports.sha256` is `NOT NULL`
+  /// server-side, so omitting the tag degrades to no report row rather than a
+  /// malformed one — a blank tag must never ship.
+  ///
+  /// Resolution goes through [VideoModerationStatusService.resolveSha256],
+  /// matching the rest of the moderation paths. That normalizes a valid
+  /// explicit hash and falls back to extracting the hash from [videoUrl];
+  /// anything that is not 64 hex characters is dropped, which makes the
+  /// documented degrade explicit rather than something the backend has to
+  /// catch.
+  ///
+  /// Tag order is pinned by divine-moderation-service's
+  /// `dm-report-contract.test.mjs` fixture.
+  static List<List<String>> moderationDmTags({
+    required ContentFilterReason reason,
+    String? sha256,
+    String? videoUrl,
+  }) {
+    final blobHash = VideoModerationStatusService.resolveSha256(
+      explicitSha256: sha256,
+      videoUrl: videoUrl,
+    );
+    return [
+      ..._nip32ReportLabelTags(reason),
+      ['report_type', contentFilterReasonToNip56Type(reason)],
+      if (blobHash != null) ['sha256', blobHash],
+    ];
+  }
+
   /// Create NIP-56 reporting event (kind 1984) for Apple compliance
   Future<Event?> _createReportingEvent({
     required String reportId,
@@ -454,7 +513,7 @@ class ContentReportingService {
       }
 
       // NIP-56 requires the report type as the 3rd element of the e/p tags.
-      final nip56Type = _toNip56ReportType(reason);
+      final nip56Type = contentFilterReasonToNip56Type(reason);
       // Filter at the construction boundary so every report path avoids
       // emitting synthetic or malformed e tags, not just reportUser().
       final eventTagIds = (nip56EventIds ?? [eventId])
@@ -463,10 +522,7 @@ class ContentReportingService {
       final tags = <List<String>>[
         for (final nip56EventId in eventTagIds) ['e', nip56EventId, nip56Type],
         ['p', authorPubkey, nip56Type],
-        ['L', _reportLabelNamespace],
-        // These label values are a cross-repo wire contract consumed by
-        // divine-web and divine-relay-manager.
-        ['l', _toNip32ReportLabel(reason), _reportLabelNamespace],
+        ..._nip32ReportLabelTags(reason),
       ];
 
       // Add hashtags as 't' tags
@@ -529,46 +585,8 @@ class ContentReportingService {
     }
   }
 
-  /// Maps app-level [ContentFilterReason] to one of the NIP-56 standard
-  /// report type strings: nudity, malware, profanity, illegal, spam,
-  /// impersonation, other.
-  String _toNip56ReportType(ContentFilterReason reason) {
-    return switch (reason) {
-      ContentFilterReason.spam => 'spam',
-      ContentFilterReason.harassment => 'profanity',
-      ContentFilterReason.violence => 'illegal',
-      ContentFilterReason.sexualContent => 'nudity',
-      ContentFilterReason.copyright => 'illegal',
-      ContentFilterReason.falseInformation => 'other',
-      ContentFilterReason.childSafety => 'other',
-      ContentFilterReason.csam => 'illegal',
-      ContentFilterReason.underageUser => 'other',
-      ContentFilterReason.aiGenerated => 'other',
-      ContentFilterReason.other => 'other',
-    };
-  }
-
   static bool _isValidEventId(String eventId) =>
       NostrHexUtils.isValidEventId(eventId);
-
-  /// Maps app-level [ContentFilterReason] to the NIP-32 label value used by
-  /// downstream moderation UIs.
-  String _toNip32ReportLabel(ContentFilterReason reason) {
-    return switch (reason) {
-      ContentFilterReason.spam => '${_reportLabelPrefix}spam',
-      ContentFilterReason.harassment => '${_reportLabelPrefix}harassment',
-      ContentFilterReason.violence => '${_reportLabelPrefix}violence',
-      ContentFilterReason.sexualContent => '${_reportLabelPrefix}sexualContent',
-      ContentFilterReason.copyright => '${_reportLabelPrefix}copyright',
-      ContentFilterReason.falseInformation =>
-        '${_reportLabelPrefix}falseInformation',
-      ContentFilterReason.childSafety => '${_reportLabelPrefix}childSafety',
-      ContentFilterReason.csam => '${_reportLabelPrefix}csam',
-      ContentFilterReason.underageUser => '${_reportLabelPrefix}underageUser',
-      ContentFilterReason.aiGenerated => '${_reportLabelPrefix}aiGenerated',
-      ContentFilterReason.other => '${_reportLabelPrefix}other',
-    };
-  }
 
   /// Format report content for NIP-56 compliance (kind 1984)
   String _formatNip56ReportContent(

@@ -18,6 +18,7 @@ import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.d
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
 import 'package:openvine/blocs/comments/comments_surface_performance_telemetry.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -459,23 +460,16 @@ void main() {
       });
     });
 
+    testWidgets('anchors the sheet title for UI tests', (tester) async {
+      await tester.pumpWidget(buildTestWidget(initialCommentCount: 3));
+
+      expect(
+        find.bySemanticsIdentifier(SemanticIds.commentsSheetTitle),
+        findsOneWidget,
+      );
+    });
+
     group('widget structure', () {
-      testWidgets('renders CommentsDragHandle', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        expect(find.byType(CommentsDragHandle), findsOneWidget);
-      });
-
-      testWidgets('renders CommentsHeader', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.byType(CommentsHeader), findsOneWidget);
-        expect(find.text(l10n.commentsHeaderTitle), findsOneWidget);
-      });
-
       testWidgets('renders CommentsList', (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
@@ -951,7 +945,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
-        expect(find.byType(CommentsDragHandle), findsOneWidget);
+        expect(find.byType(CommentsList), findsOneWidget);
         expect(find.byType(SnackBar), findsNothing);
       });
     });
@@ -1117,9 +1111,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
       onCommentCountChanged: null,
       child: Column(
         children: [
-          const CommentsDragHandle(),
           _TestCommentsTitle(initialCount: initialCommentCount),
-          CommentsHeader(onClose: () => Navigator.pop(context)),
           const Divider(color: Colors.white24, height: 1),
           Expanded(
             child: CommentsList(
@@ -1151,7 +1143,11 @@ class _TestCommentsTitle extends StatelessWidget {
             ? state.commentsById.length
             : initialCount;
 
-        return Text(context.l10n.commentsHeaderCount(count));
+        return Semantics(
+          identifier: SemanticIds.commentsSheetTitle,
+          container: true,
+          child: Text(context.l10n.commentsHeaderCount(count)),
+        );
       },
     );
   }

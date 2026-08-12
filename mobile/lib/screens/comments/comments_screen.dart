@@ -17,6 +17,7 @@ import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
 import 'package:openvine/blocs/comments/comments_surface_performance_telemetry.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -116,32 +117,40 @@ class _CommentsTitle extends StatelessWidget {
             ? state.commentsById.length
             : initialCount;
 
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 8,
-          children: [
-            Flexible(
-              child: Text(
-                context.l10n.commentsHeaderCount(count),
-                style: VineTheme.titleMediumFont(
-                  color: context.vineColors.onSurface,
+        return Semantics(
+          // The sheet has no close button, so this is also the drag anchor
+          // a UI test grabs to pull the sheet down. Without its own node the
+          // title's text merges into the whole-sheet container and any
+          // gesture anchored on it starts from the middle of the list.
+          identifier: SemanticIds.commentsSheetTitle,
+          container: true,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 8,
+            children: [
+              Flexible(
+                child: Text(
+                  context.l10n.commentsHeaderCount(count),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.onSurface,
+                  ),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: .fade,
                 ),
-                maxLines: 1,
-                softWrap: false,
-                overflow: .fade,
               ),
-            ),
-            if (state.newCommentCount > 0)
-              NewCommentsPill(
-                count: state.newCommentCount,
-                onTap: () {
-                  onNewCommentsPillTap();
-                  context.read<CommentsListBloc>().add(
-                    const NewCommentsAcknowledged(),
-                  );
-                },
-              ),
-          ],
+              if (state.newCommentCount > 0)
+                NewCommentsPill(
+                  count: state.newCommentCount,
+                  onTap: () {
+                    onNewCommentsPillTap();
+                    context.read<CommentsListBloc>().add(
+                      const NewCommentsAcknowledged(),
+                    );
+                  },
+                ),
+            ],
+          ),
         );
       },
     );

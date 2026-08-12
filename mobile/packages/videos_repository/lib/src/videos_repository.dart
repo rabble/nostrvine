@@ -79,17 +79,19 @@ const String _popularCacheKey = 'popular';
 const String _popularLegacyBeforeCursorPrefix = 'before:';
 const String _classicsCacheKey = 'classics';
 const String _classicsOffsetCursorPrefix = 'classic-offset:';
+const Duration _classicsFirstPageCacheTtl = Duration(minutes: 15);
 
 /// Highest archive offset the Classics feed may open a session on.
 ///
-/// The archive holds roughly 10k videos; starting anywhere in the most-viewed
-/// few hundred keeps the feed varied between sessions without dropping the
-/// user into the unwatched long tail. (`sort=loops` orders by views first and
-/// loops as the tiebreak on this path, because the request carries a
+/// The imported Vine archive is much deeper than the old 10k estimate, but
+/// opening too deep can still bury users in the long tail. Starting anywhere
+/// in the first couple thousand most-viewed classics gives meaningful variety
+/// while keeping the opening slice recognizable. (`sort=loops` orders by views
+/// first and loops as the tiebreak on this path, because the request carries a
 /// `platform` filter and so misses Funnelcake's rank-ordered classic
 /// snapshot.) Shared with the Explore → Classics tab so both surfaces draw
 /// from the same window.
-const int classicsMaxRandomStartOffset = 400;
+const int classicsMaxRandomStartOffset = 2000;
 
 /// Archive pages one Classics fetch may read while trying to fill its page.
 ///
@@ -911,13 +913,13 @@ class VideosRepository {
   /// read, so trimming to [limit] would drop those videos rather than defer
   /// them.
   ///
-  /// The in-memory cache keeps the *first* page stable while the process
-  /// lives, so leaving and re-entering the feed resumes on the same opening
-  /// run instead of reshuffling under the user; later pages are re-drawn and
-  /// re-shuffled on re-entry. Pull-to-refresh ([skipCache] `true`) draws a
-  /// fresh slice, and a cold start begins from an empty cache. An empty page
-  /// is never cached, so a slice that filters down to nothing is redrawn on
-  /// the next entry rather than pinned for the session.
+  /// The in-memory cache keeps the *first* page stable for a short window, so
+  /// quick mode switches resume on the same opening run without pinning a
+  /// long-lived iOS process to the same classics for days. Later pages are
+  /// re-drawn and re-shuffled on re-entry. Pull-to-refresh ([skipCache] `true`)
+  /// draws a fresh slice, and a cold start begins from an empty cache. An
+  /// empty page is never cached, so a slice that filters down to nothing is
+  /// redrawn on the next entry rather than pinned for the session.
   ///
   /// Funnelcake-only: returns an empty result when no Funnelcake relay is
   /// connected (relays do not expose the server-side `platform` filter).
@@ -1050,7 +1052,11 @@ class VideosRepository {
     );
 
     if (!failed && isFirstPage && collected.isNotEmpty) {
-      _inMemoryFeedCache?.set(_classicsCacheKey, result);
+      _inMemoryFeedCache?.set(
+        _classicsCacheKey,
+        result,
+        ttl: _classicsFirstPageCacheTtl,
+      );
     }
     return result;
   }

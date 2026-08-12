@@ -1,43 +1,57 @@
 appId: co.openvine.app
 ---
 #TC to search for a user,
-# given the user is logged in in the app, in the Explore/New screen
-# input video description and validate its playback
+# given the user is logged in and on the Explore screen,
+# search for SEARCH_USER, open their profile, and come back.
 #Steps:
-# 1. Tap on Search: Validate search screen
-# 2. Input text SEARCH_USER: Validate user is found
-# 3. Tap on the Users tab: Validate user is listed
-# 4. Tap on the user listed: validate user profile is displayed
-# 5. Tap on back: Validate user is on the search screen
+# 1. Open search from Explore: Validate the search screen
+# 2. Type SEARCH_USER: Validate a People result appears
+# 3. Open the People section in full: Validate results still listed
+# 4. Tap the first result: Validate the profile is displayed
+# 5. Browse back twice: Validate search results, then Explore
 
-# 1. Tap on Search: Validate search screen
-- tapOn: Search
+# 1. Open search from Explore.
+#
+# The Explore search bar is read-only and only navigates, so it is tapped by
+# identifier: its placeholder is localized product copy ("Search...") and a
+# bare `tapOn: Search` does not match it -- Maestro matches the whole label.
+- tapOn:
+    id: "explore_search_bar"
 - runFlow: ../asserts/assertSearch.yaml
 
-# 2. Input text "SEARCH_USER": Validate user is found
-- tapOn: Find something cool...
-- inputText: ${SEARCH_USER}
-#Assert Users result
-- assertVisible: |-
-    Users \((?!0)\d+\)
-    Tab 2 of 3
-
-# 3. Tap on the Users tab: Validate user is listed
-- tapOn: |-
-    Users \((?!0)\d+\)
-    Tab 2 of 3
-- assertVisible:
-    text: ${SEARCH_USER}
-
-# 4. Tap on the user listed: validate user profile is displayed
+# 2. Type SEARCH_USER and wait for a People result.
+#
+# Result rows carry both a pubkey-keyed identifier, which a flow cannot know
+# in advance, and an ordinal one. The ordinal is what makes "the first
+# result" expressible without tapping a fixed screen coordinate.
 - tapOn:
-    point: 50%,32%
+    id: "search_field"
+- inputText: ${SEARCH_USER}
+- extendedWaitUntil:
+    visible:
+      id: "search_user_tile_0"
+    timeout: 30000
+
+# 3. Tap the People section header to switch to the People-only filter.
+# The header is the "see all" affordance; it disappears once the filter is
+# applied, so asserting it is gone proves the tap registered.
+- tapOn:
+    id: "search_section_header_people"
+- assertNotVisible:
+    id: "search_section_header_people"
+
+# 4. Open the first result.
+- tapOn:
+    id: "search_user_tile_0"
 - runFlow: ../asserts/assertUserProfile.yaml
 - runFlow: ../asserts/assertSpecificUserProfile.yaml
-- tapOn: Back
-- assertVisible:
-    text: ${SEARCH_USER}
-- assertVisible:
-    text: "Search.*"
+
+# 5. Back to the results, then back to Explore.
 - tapOn:
-    point: 6%,10%
+    id: "profile_back_button"
+- assertVisible:
+    id: "search_user_tile_0"
+- tapOn:
+    id: "search_back_button"
+- assertVisible:
+    id: "explore_search_bar"

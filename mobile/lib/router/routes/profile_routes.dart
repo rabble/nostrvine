@@ -10,10 +10,26 @@ import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/router/widgets/other_profile_screen_router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_setup/profile_setup.dart';
+import 'package:openvine/screens/verify/verify_connect_screen.dart';
+import 'package:openvine/screens/verify/verify_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 List<RouteBase> profileRoutes() {
   return [
+    GoRoute(
+      path: VerifyPage.path,
+      name: VerifyPage.routeName,
+      builder: (context, state) => const VerifyPage(),
+      routes: [
+        GoRoute(
+          path: VerifyConnectPage.path,
+          name: VerifyConnectPage.routeName,
+          builder: (context, state) => VerifyConnectPage(
+            platformKey: state.pathParameters['platform'] ?? '',
+          ),
+        ),
+      ],
+    ),
     GoRoute(
       path: ProfileSetupScreen.editPath,
       name: ProfileSetupScreen.editRouteName,

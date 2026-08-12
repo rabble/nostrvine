@@ -32,6 +32,9 @@ enum BadgeDetailActionStatus {
   /// A deletion request is publishing.
   deleting,
 
+  /// Badge claimants are being blocked.
+  blockingClaimants,
+
   /// The badge was deleted; the detail page has nothing left to show.
   deleted,
 
@@ -77,7 +80,8 @@ class BadgeDetailState extends Equatable {
       actionStatus == BadgeDetailActionStatus.awarding ||
       actionStatus == BadgeDetailActionStatus.accepting ||
       actionStatus == BadgeDetailActionStatus.removing ||
-      actionStatus == BadgeDetailActionStatus.deleting;
+      actionStatus == BadgeDetailActionStatus.deleting ||
+      actionStatus == BadgeDetailActionStatus.blockingClaimants;
 
   /// Whether [actionStatus] is a finished outcome a reload should clear.
   ///

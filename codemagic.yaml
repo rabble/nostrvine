@@ -39,6 +39,14 @@ definitions:
     - &check_ios_extension_signing_contract
       name: Check iOS extension signing contract
       script: ./scripts/check_ios_extension_signing_contract.sh
+    - &check_supporters_config
+      name: Check supporter subscription config
+      script: |
+        # Both variables below are interpolated unconditionally by every build
+        # step, so an unset one ships an empty --dart-define that overrides the
+        # in-app default. Empty fails safe here but fails silently; this rejects
+        # the combination that ships broken (flag on, no server).
+        ./scripts/check_supporters_config.sh
     - &check_signing_endpoint
       name: Check C2PA signing endpoint
       script: |
@@ -145,7 +153,9 @@ definitions:
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
     - &build_aab
       name: Build Android AAB
       script: |
@@ -168,7 +178,9 @@ definitions:
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
     - &build_macos
       name: Build macOS app
       script: |
@@ -181,7 +193,9 @@ definitions:
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
     - &package_macos_dmg
       name: Package macOS DMG
       script: |
@@ -273,6 +287,8 @@ definitions:
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS \
           --export-options-plist=/Users/builder/export_options.plist
     - &upload_dsyms_to_crashlytics
       name: Upload dSYMs to Firebase Crashlytics
@@ -344,7 +360,9 @@ definitions:
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
     # GH_ACTIONS_PR_PREVIEW sets forceOpenOnboarding on the invite client
     # (main.dart), so getClientConfig() reports OnboardingMode.open and the
     # invite gate self-redirects to account creation. Without it every flow
@@ -363,7 +381,9 @@ definitions:
           --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
           --dart-define=GH_ACTIONS_PR_PREVIEW=true \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
     - &build_android_e2e
       name: Build Android debug APK
       script: |
@@ -374,7 +394,9 @@ definitions:
           --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
           --dart-define=GH_ACTIONS_PR_PREVIEW=true \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
     - &install_maestro
       name: Install Maestro CLI
       script: |
@@ -398,7 +420,7 @@ definitions:
         # Credentials come from the `maestro_e2e_credentials` group, never the
         # repo. Fail here rather than letting Maestro resolve a missing
         # variable to `undefined` and report it as a selector failure.
-        for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD; do
+        for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
           if [ -z "$(eval echo \"\$$var\")" ]; then
             echo "Missing $var — add it to the maestro_e2e_credentials group." >&2
             echo "If this build is for a pull request from a FORK: Codemagic" >&2
@@ -419,6 +441,7 @@ definitions:
           --format junit --output report.xml \
           -e USER_EMAIL="$MAESTRO_USER_EMAIL" \
           -e USER_PWD="$MAESTRO_USER_PWD" \
+          -e SEARCH_USER="$MAESTRO_SEARCH_USER" \
           e2e/maestro/tests/loginFreshInstall.yaml \
           e2e/maestro/tests/removeKeys.yaml \
           e2e/maestro/flows/loginEmailPwd.yaml
@@ -550,6 +573,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - supporters_credentials
         - github_credentials
       vars:
         BUNDLE_ID: co.openvine.app
@@ -567,6 +591,7 @@ workflows:
       events: []
     scripts:
       - *check_signing_endpoint
+      - *check_supporters_config
       - *check_ios_extension_signing_contract
       - *setup_code_signing_xcode
       - *clean_ios_workspace_state
@@ -614,6 +639,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - supporters_credentials
     cache:
       cache_paths:
         - $HOME/Library/Caches/CocoaPods
@@ -622,6 +648,7 @@ workflows:
       events: []
     scripts:
       - *check_signing_endpoint
+      - *check_supporters_config
       - *clean_ios_workspace_state
       - *enable_spm
       - *flutter_pub_get
@@ -662,6 +689,7 @@ workflows:
         - zendesk_credentials
         - google_play_credentials
         - proofmode_credentials
+        - supporters_credentials
         - github_credentials
       android_signing:
         - divine_keystore
@@ -673,6 +701,7 @@ workflows:
       events: []
     scripts:
       - *check_signing_endpoint
+      - *check_supporters_config
       - *enable_spm
       - *setup_local_properties
       - *configure_gradle_memory
@@ -723,6 +752,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - supporters_credentials
         - github_credentials
     cache:
       cache_paths:
@@ -732,6 +762,7 @@ workflows:
       events: []
     scripts:
       - *check_signing_endpoint
+      - *check_supporters_config
       - *install_flutterfire
       - *enable_spm
       - *flutter_pub_get
@@ -766,6 +797,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - supporters_credentials
         # PREREQUISITE: this group must exist in Codemagic before any run —
         # the config validator rejects a workflow naming an unknown group
         # before a machine is provisioned (confirmed by triggering
@@ -806,6 +838,7 @@ workflows:
           - 'mobile/'
     scripts:
       - *check_signing_endpoint
+      - *check_supporters_config
       - *clean_ios_workspace_state
       - *enable_spm
       - *flutter_pub_get
@@ -834,6 +867,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - supporters_credentials
         - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
@@ -846,6 +880,7 @@ workflows:
       events: []
     scripts:
       - *check_signing_endpoint
+      - *check_supporters_config
       - *flutter_pub_get
       - *setup_local_properties
       - *build_android_e2e

@@ -173,9 +173,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     // surface them at the front so their selection tick is visible.
     // Existing contacts stay in place: reordering under the user's
     // finger while multi-selecting is disorienting.
-    final inContacts = state.contacts.any(
-      (c) => c.pubkey == recipient.pubkey,
-    );
+    final inContacts = state.contacts.any((c) => c.pubkey == recipient.pubkey);
     final updatedContacts = inContacts
         ? state.contacts
         : [recipient, ...state.contacts];
@@ -309,18 +307,24 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       return;
     }
 
-    var wasBookmarked = false;
+    // Best-effort guess, used only to word the message if the toggle throws
+    // before it can report the reconciled state.
+    var wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(_video.id);
     try {
-      wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(_video.id);
-      final succeeded = await bookmarkService.toggleVideoInGlobalBookmarks(
+      // On the success path the direction comes from the toggle's own
+      // reconciled read rather than the guess above — the two disagree when
+      // the video was bookmarked on another device, and the sheet would then
+      // claim the wrong outcome.
+      final result = await bookmarkService.toggleVideoInGlobalBookmarks(
         _video.id,
       );
+      wasBookmarked = result.wasBookmarked;
       emit(
         state.copyWith(
           actionResult: ShareSheetSaveResult(
-            succeeded: succeeded,
-            removed: succeeded && wasBookmarked,
-            wasBookmarkedBeforeToggle: wasBookmarked,
+            succeeded: result.succeeded,
+            removed: result.succeeded && result.wasBookmarked,
+            wasBookmarkedBeforeToggle: result.wasBookmarked,
           ),
         ),
       );

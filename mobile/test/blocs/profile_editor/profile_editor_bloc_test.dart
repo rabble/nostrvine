@@ -3852,46 +3852,5 @@ void main() {
         expect: () => const <ProfileEditorState>[],
       );
     });
-
-    group('verifier launch flow', () {
-      blocTest<ProfileEditorBloc, ProfileEditorState>(
-        'flips verifierStatus to launchRequested on VerifierLaunchRequested',
-        build: () => ProfileEditorBloc(
-          profileRepository: mockProfileRepository,
-          blossomUploadService: mockBlossomUploadService,
-          hasExistingProfile: true,
-          currentUserPubkey: testPubkey,
-        ),
-        act: (bloc) => bloc.add(const VerifierLaunchRequested()),
-        expect: () => [
-          isA<ProfileEditorState>().having(
-            (s) => s.verifierStatus,
-            'verifierStatus',
-            VerifierStatus.launchRequested,
-          ),
-        ],
-      );
-
-      blocTest<ProfileEditorBloc, ProfileEditorState>(
-        'flips verifierStatus to handled on VerifierLaunchHandled',
-        build: () => ProfileEditorBloc(
-          profileRepository: mockProfileRepository,
-          blossomUploadService: mockBlossomUploadService,
-          hasExistingProfile: true,
-          currentUserPubkey: testPubkey,
-        ),
-        seed: () => const ProfileEditorState(
-          verifierStatus: VerifierStatus.launchRequested,
-        ),
-        act: (bloc) => bloc.add(const VerifierLaunchHandled()),
-        expect: () => [
-          isA<ProfileEditorState>().having(
-            (s) => s.verifierStatus,
-            'verifierStatus',
-            VerifierStatus.handled,
-          ),
-        ],
-      );
-    });
   });
 }
