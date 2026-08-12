@@ -1,0 +1,61 @@
+appId: co.openvine.app
+---
+#Classic journey: create an account, open the recorder on classic, drive its
+#action row, record a clip by tapping the preview, prove a second recording
+#stops itself at the session's duration limit, delete both clips, and sign the
+#device back out.
+#
+# Account creation is a precondition, not part of what is under test. The
+# recorder route itself is public — appRouterRedirect exempts it — but the only
+# way into it is the feed's camera button, and the feed is not public: an
+# unauthenticated launch redirects to Welcome.
+#
+# Requires real camera hardware, for the lens switch in classicModeControls and
+# for both recordings.
+#
+# The two shutter tests run in this order and cannot be swapped.
+# classicModeRecordClip proves tap-to-start / tap-to-stop; classicModeRecordingLimit
+# then starts a recording and never stops it, so it needs a session that
+# already holds a clip to be spending a *partial* budget rather than the full
+# 6.3s. Between them they cover both ways a classic recording can end.
+#
+# The step after "next" — which skips the editor entirely, because classic is
+# the one mode that declares no `hasVideoEditor`, and goes straight to the
+# metadata screen with a render already started — is deliberately out of scope.
+# It leaves the recorder, and there is no E2E coverage on the other side to
+# hand off to yet.
+
+- runFlow: ../tests/loginFreshInstall.yaml
+
+# Relaunch with camera and microphone pre-granted. Otherwise the first camera
+# tap raises the native OS permission dialog, whose buttons are OS-localized
+# copy that no selector should depend on.
+#
+# Deliberately no clearState: on Android `pm clear` wipes the encrypted
+# preferences the Nostr key lives in, which would sign the account straight
+# back out. (The iOS keychain survives it — the platforms disagree here, so
+# the flow takes the option that works on both.)
+- launchApp:
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible:
+      id: camera_button
+    timeout: 60000
+
+- runFlow: ../tests/classicModeOpen.yaml
+
+# Selecting a mode persists it, so this second open finds Classic already
+# armed rather than Capture. openClassicMode guards its wheel hops on exactly
+# that, so it lands here either way.
+- runFlow: ../utils/openClassicMode.yaml
+- runFlow: ../tests/classicModeControls.yaml
+- runFlow: ../tests/classicModeRecordClip.yaml
+- runFlow: ../tests/classicModeRecordingLimit.yaml
+- runFlow: ../tests/classicModeDeleteClip.yaml
+
+# Leave the recorder before teardown: removeKeys drives Settings from the
+# profile tab, which the full-screen recorder covers.
+- tapOn:
+    id: camera_close_button
+- runFlow: ../tests/removeKeys.yaml

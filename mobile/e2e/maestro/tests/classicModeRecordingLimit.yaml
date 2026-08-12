@@ -1,0 +1,61 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC for classic mode's recording limit,
+# given the recorder is open on a classic viewfinder that already holds the
+# clip classicModeRecordClip recorded,
+# validate a recording started here stops on its own when the session's
+# remaining budget runs out, without a second tap.
+#
+# This is the behaviour classic alone declares. `hasRecordingLimit` is true
+# only for this mode, and it is what makes the recorder hand the native camera
+# a `maxDuration` — the session's remaining share of the 6.3s total. Capture
+# and lip-sync pass none and record until the user stops them; the editor
+# trims afterwards.
+#
+# Deliberately does not assert *how long* the recording ran. The budget left
+# here is whatever classicModeRecordClip did not spend, which depends on how
+# quickly the device started and finalized that clip, so the assertion is that
+# the recording ended without a second tap — not that it ended at a number.
+#
+# Needs real camera hardware, like every recording test.
+#Steps:
+# 1. Tap the preview once: recording starts
+# 2. Wait without touching anything: the recorder comes back on its own
+# 3. Validate the recorder is back on a live idle viewfinder
+
+# 1. Start. The readiness wait is load-bearing here in a way it is not in
+# recordClassicClip: this test needs budget left, and a session already holding
+# a clip is exactly where it can have run out. The shutter reports that gate,
+# so a spent budget fails here rather than 15s later on a tap that did nothing.
+- extendedWaitUntil:
+    visible:
+      id: camera_classic_shutter
+      enabled: true
+    timeout: 15000
+
+# Classic fades its whole top-bar row out while recording, so the close button
+# leaving is what reports that the recording actually started.
+- tapOn:
+    id: camera_classic_shutter
+- extendedWaitUntil:
+    notVisible:
+      id: camera_close_button
+    timeout: 15000
+
+# 2. No second tap. The close button coming back is the auto-stop: nothing else
+# in this mode restores the top bar. The timeout covers a full 6.3s budget plus
+# finalization, so it holds even if step 1 of the flow recorded almost nothing.
+- extendedWaitUntil:
+    visible:
+      id: camera_close_button
+    timeout: 20000
+
+# 3. And the recorder came back to a live idle viewfinder rather than a stuck
+# one. This cannot prove the auto-stop produced a *second* clip: both halves of
+# the assert are gated on `hasClips`, which the clip from classicModeRecordClip
+# already satisfies on the way in. classicModeDeleteClip is what pins the count
+# — it deletes once and re-runs this same assert, which only holds if there
+# were two.
+- runFlow: ../asserts/assertClassicClipRecorded.yaml
