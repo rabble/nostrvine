@@ -127,7 +127,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -162,6 +162,21 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await _migrateToV4ClipCategories(m);
+      }
+      if (from < 5) {
+        // Must be idempotent. A legacy v1 database has already run
+        // _normalizeLegacyV1Schema above, and that path CREATEs
+        // pending_view_events from the current definition — so the column can
+        // already exist by the time this step runs.
+        if (!await _hasColumn(
+          'pending_view_events',
+          'video_addressable_d_tag',
+        )) {
+          await m.addColumn(
+            pendingViewEvents,
+            pendingViewEvents.videoAddressableDTag,
+          );
+        }
       }
     },
     beforeOpen: (details) async {
@@ -806,6 +821,7 @@ class AppDatabase extends _$AppDatabase {
           video_id TEXT NOT NULL,
           video_pubkey TEXT NOT NULL,
           video_vine_id TEXT,
+          video_addressable_d_tag TEXT,
           user_pubkey TEXT NOT NULL,
           watch_duration_ms INTEGER NOT NULL,
           total_duration_ms INTEGER,
@@ -1081,6 +1097,12 @@ class AppDatabase extends _$AppDatabase {
   /// Returns true when a v2 database is missing schema that v1 normalization
   /// would have supplied. This is deliberately a recovery probe, not the
   /// primary migration mechanism for future schema changes.
+  /// Whether [table] already has [column], for idempotent migration steps.
+  Future<bool> _hasColumn(String table, String column) async {
+    final rows = await customSelect('PRAGMA table_info($table)').get();
+    return rows.any((row) => row.data['name'] == column);
+  }
+
   Future<bool> _needsSchemaRepair() async {
     for (final table in legacyV1NormalizationRepairTables) {
       if (!await _tableExists(table)) {

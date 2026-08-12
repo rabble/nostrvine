@@ -1385,6 +1385,15 @@ class PendingViewEvents extends Table {
 
   TextColumn get videoVineId => text().nullable().named('video_vine_id')();
 
+  /// The video's addressable `d` tag.
+  ///
+  /// A kind 22236 view event addresses its subject by `kind:pubkey:d-tag`, so
+  /// a queued row without this can never be published. Nullable only because
+  /// rows enqueued before this column existed have no value to backfill from;
+  /// the sweep discards those rather than retrying them forever.
+  TextColumn get videoAddressableDTag =>
+      text().nullable().named('video_addressable_d_tag')();
+
   TextColumn get userPubkey => text().named('user_pubkey')();
 
   IntColumn get watchDurationMs => integer().named('watch_duration_ms')();

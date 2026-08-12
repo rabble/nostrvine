@@ -13344,6 +13344,17 @@ class $PendingViewEventsTable extends PendingViewEvents
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _videoAddressableDTagMeta =
+      const VerificationMeta('videoAddressableDTag');
+  @override
+  late final GeneratedColumn<String> videoAddressableDTag =
+      GeneratedColumn<String>(
+        'video_addressable_d_tag',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _userPubkeyMeta = const VerificationMeta(
     'userPubkey',
   );
@@ -13471,6 +13482,7 @@ class $PendingViewEventsTable extends PendingViewEvents
     videoId,
     videoPubkey,
     videoVineId,
+    videoAddressableDTag,
     userPubkey,
     watchDurationMs,
     totalDurationMs,
@@ -13525,6 +13537,15 @@ class $PendingViewEventsTable extends PendingViewEvents
         videoVineId.isAcceptableOrUnknown(
           data['video_vine_id']!,
           _videoVineIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('video_addressable_d_tag')) {
+      context.handle(
+        _videoAddressableDTagMeta,
+        videoAddressableDTag.isAcceptableOrUnknown(
+          data['video_addressable_d_tag']!,
+          _videoAddressableDTagMeta,
         ),
       );
     }
@@ -13644,6 +13665,10 @@ class $PendingViewEventsTable extends PendingViewEvents
         DriftSqlType.string,
         data['${effectivePrefix}video_vine_id'],
       ),
+      videoAddressableDTag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_addressable_d_tag'],
+      ),
       userPubkey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}user_pubkey'],
@@ -13703,6 +13728,14 @@ class PendingViewEventRow extends DataClass
   final String videoId;
   final String videoPubkey;
   final String? videoVineId;
+
+  /// The video's addressable `d` tag.
+  ///
+  /// A kind 22236 view event addresses its subject by `kind:pubkey:d-tag`, so
+  /// a queued row without this can never be published. Nullable only because
+  /// rows enqueued before this column existed have no value to backfill from;
+  /// the sweep discards those rather than retrying them forever.
+  final String? videoAddressableDTag;
   final String userPubkey;
   final int watchDurationMs;
   final int? totalDurationMs;
@@ -13719,6 +13752,7 @@ class PendingViewEventRow extends DataClass
     required this.videoId,
     required this.videoPubkey,
     this.videoVineId,
+    this.videoAddressableDTag,
     required this.userPubkey,
     required this.watchDurationMs,
     this.totalDurationMs,
@@ -13739,6 +13773,9 @@ class PendingViewEventRow extends DataClass
     map['video_pubkey'] = Variable<String>(videoPubkey);
     if (!nullToAbsent || videoVineId != null) {
       map['video_vine_id'] = Variable<String>(videoVineId);
+    }
+    if (!nullToAbsent || videoAddressableDTag != null) {
+      map['video_addressable_d_tag'] = Variable<String>(videoAddressableDTag);
     }
     map['user_pubkey'] = Variable<String>(userPubkey);
     map['watch_duration_ms'] = Variable<int>(watchDurationMs);
@@ -13772,6 +13809,9 @@ class PendingViewEventRow extends DataClass
       videoVineId: videoVineId == null && nullToAbsent
           ? const Value.absent()
           : Value(videoVineId),
+      videoAddressableDTag: videoAddressableDTag == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoAddressableDTag),
       userPubkey: Value(userPubkey),
       watchDurationMs: Value(watchDurationMs),
       totalDurationMs: totalDurationMs == null && nullToAbsent
@@ -13806,6 +13846,9 @@ class PendingViewEventRow extends DataClass
       videoId: serializer.fromJson<String>(json['videoId']),
       videoPubkey: serializer.fromJson<String>(json['videoPubkey']),
       videoVineId: serializer.fromJson<String?>(json['videoVineId']),
+      videoAddressableDTag: serializer.fromJson<String?>(
+        json['videoAddressableDTag'],
+      ),
       userPubkey: serializer.fromJson<String>(json['userPubkey']),
       watchDurationMs: serializer.fromJson<int>(json['watchDurationMs']),
       totalDurationMs: serializer.fromJson<int?>(json['totalDurationMs']),
@@ -13827,6 +13870,7 @@ class PendingViewEventRow extends DataClass
       'videoId': serializer.toJson<String>(videoId),
       'videoPubkey': serializer.toJson<String>(videoPubkey),
       'videoVineId': serializer.toJson<String?>(videoVineId),
+      'videoAddressableDTag': serializer.toJson<String?>(videoAddressableDTag),
       'userPubkey': serializer.toJson<String>(userPubkey),
       'watchDurationMs': serializer.toJson<int>(watchDurationMs),
       'totalDurationMs': serializer.toJson<int?>(totalDurationMs),
@@ -13846,6 +13890,7 @@ class PendingViewEventRow extends DataClass
     String? videoId,
     String? videoPubkey,
     Value<String?> videoVineId = const Value.absent(),
+    Value<String?> videoAddressableDTag = const Value.absent(),
     String? userPubkey,
     int? watchDurationMs,
     Value<int?> totalDurationMs = const Value.absent(),
@@ -13862,6 +13907,9 @@ class PendingViewEventRow extends DataClass
     videoId: videoId ?? this.videoId,
     videoPubkey: videoPubkey ?? this.videoPubkey,
     videoVineId: videoVineId.present ? videoVineId.value : this.videoVineId,
+    videoAddressableDTag: videoAddressableDTag.present
+        ? videoAddressableDTag.value
+        : this.videoAddressableDTag,
     userPubkey: userPubkey ?? this.userPubkey,
     watchDurationMs: watchDurationMs ?? this.watchDurationMs,
     totalDurationMs: totalDurationMs.present
@@ -13888,6 +13936,9 @@ class PendingViewEventRow extends DataClass
       videoVineId: data.videoVineId.present
           ? data.videoVineId.value
           : this.videoVineId,
+      videoAddressableDTag: data.videoAddressableDTag.present
+          ? data.videoAddressableDTag.value
+          : this.videoAddressableDTag,
       userPubkey: data.userPubkey.present
           ? data.userPubkey.value
           : this.userPubkey,
@@ -13923,6 +13974,7 @@ class PendingViewEventRow extends DataClass
           ..write('videoId: $videoId, ')
           ..write('videoPubkey: $videoPubkey, ')
           ..write('videoVineId: $videoVineId, ')
+          ..write('videoAddressableDTag: $videoAddressableDTag, ')
           ..write('userPubkey: $userPubkey, ')
           ..write('watchDurationMs: $watchDurationMs, ')
           ..write('totalDurationMs: $totalDurationMs, ')
@@ -13944,6 +13996,7 @@ class PendingViewEventRow extends DataClass
     videoId,
     videoPubkey,
     videoVineId,
+    videoAddressableDTag,
     userPubkey,
     watchDurationMs,
     totalDurationMs,
@@ -13964,6 +14017,7 @@ class PendingViewEventRow extends DataClass
           other.videoId == this.videoId &&
           other.videoPubkey == this.videoPubkey &&
           other.videoVineId == this.videoVineId &&
+          other.videoAddressableDTag == this.videoAddressableDTag &&
           other.userPubkey == this.userPubkey &&
           other.watchDurationMs == this.watchDurationMs &&
           other.totalDurationMs == this.totalDurationMs &&
@@ -13982,6 +14036,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
   final Value<String> videoId;
   final Value<String> videoPubkey;
   final Value<String?> videoVineId;
+  final Value<String?> videoAddressableDTag;
   final Value<String> userPubkey;
   final Value<int> watchDurationMs;
   final Value<int?> totalDurationMs;
@@ -13999,6 +14054,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     this.videoId = const Value.absent(),
     this.videoPubkey = const Value.absent(),
     this.videoVineId = const Value.absent(),
+    this.videoAddressableDTag = const Value.absent(),
     this.userPubkey = const Value.absent(),
     this.watchDurationMs = const Value.absent(),
     this.totalDurationMs = const Value.absent(),
@@ -14017,6 +14073,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     required String videoId,
     required String videoPubkey,
     this.videoVineId = const Value.absent(),
+    this.videoAddressableDTag = const Value.absent(),
     required String userPubkey,
     required int watchDurationMs,
     this.totalDurationMs = const Value.absent(),
@@ -14042,6 +14099,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     Expression<String>? videoId,
     Expression<String>? videoPubkey,
     Expression<String>? videoVineId,
+    Expression<String>? videoAddressableDTag,
     Expression<String>? userPubkey,
     Expression<int>? watchDurationMs,
     Expression<int>? totalDurationMs,
@@ -14060,6 +14118,8 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
       if (videoId != null) 'video_id': videoId,
       if (videoPubkey != null) 'video_pubkey': videoPubkey,
       if (videoVineId != null) 'video_vine_id': videoVineId,
+      if (videoAddressableDTag != null)
+        'video_addressable_d_tag': videoAddressableDTag,
       if (userPubkey != null) 'user_pubkey': userPubkey,
       if (watchDurationMs != null) 'watch_duration_ms': watchDurationMs,
       if (totalDurationMs != null) 'total_duration_ms': totalDurationMs,
@@ -14080,6 +14140,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     Value<String>? videoId,
     Value<String>? videoPubkey,
     Value<String?>? videoVineId,
+    Value<String?>? videoAddressableDTag,
     Value<String>? userPubkey,
     Value<int>? watchDurationMs,
     Value<int?>? totalDurationMs,
@@ -14098,6 +14159,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
       videoId: videoId ?? this.videoId,
       videoPubkey: videoPubkey ?? this.videoPubkey,
       videoVineId: videoVineId ?? this.videoVineId,
+      videoAddressableDTag: videoAddressableDTag ?? this.videoAddressableDTag,
       userPubkey: userPubkey ?? this.userPubkey,
       watchDurationMs: watchDurationMs ?? this.watchDurationMs,
       totalDurationMs: totalDurationMs ?? this.totalDurationMs,
@@ -14127,6 +14189,11 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     }
     if (videoVineId.present) {
       map['video_vine_id'] = Variable<String>(videoVineId.value);
+    }
+    if (videoAddressableDTag.present) {
+      map['video_addressable_d_tag'] = Variable<String>(
+        videoAddressableDTag.value,
+      );
     }
     if (userPubkey.present) {
       map['user_pubkey'] = Variable<String>(userPubkey.value);
@@ -14174,6 +14241,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
           ..write('videoId: $videoId, ')
           ..write('videoPubkey: $videoPubkey, ')
           ..write('videoVineId: $videoVineId, ')
+          ..write('videoAddressableDTag: $videoAddressableDTag, ')
           ..write('userPubkey: $userPubkey, ')
           ..write('watchDurationMs: $watchDurationMs, ')
           ..write('totalDurationMs: $totalDurationMs, ')
@@ -23618,6 +23686,7 @@ typedef $$PendingViewEventsTableCreateCompanionBuilder =
       required String videoId,
       required String videoPubkey,
       Value<String?> videoVineId,
+      Value<String?> videoAddressableDTag,
       required String userPubkey,
       required int watchDurationMs,
       Value<int?> totalDurationMs,
@@ -23637,6 +23706,7 @@ typedef $$PendingViewEventsTableUpdateCompanionBuilder =
       Value<String> videoId,
       Value<String> videoPubkey,
       Value<String?> videoVineId,
+      Value<String?> videoAddressableDTag,
       Value<String> userPubkey,
       Value<int> watchDurationMs,
       Value<int?> totalDurationMs,
@@ -23677,6 +23747,11 @@ class $$PendingViewEventsTableFilterComposer
 
   ColumnFilters<String> get videoVineId => $composableBuilder(
     column: $table.videoVineId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoAddressableDTag => $composableBuilder(
+    column: $table.videoAddressableDTag,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -23765,6 +23840,11 @@ class $$PendingViewEventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get videoAddressableDTag => $composableBuilder(
+    column: $table.videoAddressableDTag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get userPubkey => $composableBuilder(
     column: $table.userPubkey,
     builder: (column) => ColumnOrderings(column),
@@ -23843,6 +23923,11 @@ class $$PendingViewEventsTableAnnotationComposer
 
   GeneratedColumn<String> get videoVineId => $composableBuilder(
     column: $table.videoVineId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get videoAddressableDTag => $composableBuilder(
+    column: $table.videoAddressableDTag,
     builder: (column) => column,
   );
 
@@ -23938,6 +24023,7 @@ class $$PendingViewEventsTableTableManager
                 Value<String> videoId = const Value.absent(),
                 Value<String> videoPubkey = const Value.absent(),
                 Value<String?> videoVineId = const Value.absent(),
+                Value<String?> videoAddressableDTag = const Value.absent(),
                 Value<String> userPubkey = const Value.absent(),
                 Value<int> watchDurationMs = const Value.absent(),
                 Value<int?> totalDurationMs = const Value.absent(),
@@ -23955,6 +24041,7 @@ class $$PendingViewEventsTableTableManager
                 videoId: videoId,
                 videoPubkey: videoPubkey,
                 videoVineId: videoVineId,
+                videoAddressableDTag: videoAddressableDTag,
                 userPubkey: userPubkey,
                 watchDurationMs: watchDurationMs,
                 totalDurationMs: totalDurationMs,
@@ -23974,6 +24061,7 @@ class $$PendingViewEventsTableTableManager
                 required String videoId,
                 required String videoPubkey,
                 Value<String?> videoVineId = const Value.absent(),
+                Value<String?> videoAddressableDTag = const Value.absent(),
                 required String userPubkey,
                 required int watchDurationMs,
                 Value<int?> totalDurationMs = const Value.absent(),
@@ -23991,6 +24079,7 @@ class $$PendingViewEventsTableTableManager
                 videoId: videoId,
                 videoPubkey: videoPubkey,
                 videoVineId: videoVineId,
+                videoAddressableDTag: videoAddressableDTag,
                 userPubkey: userPubkey,
                 watchDurationMs: watchDurationMs,
                 totalDurationMs: totalDurationMs,

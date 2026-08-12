@@ -7,7 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
+import 'generated/schema_v5.dart' as v5;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -163,5 +165,36 @@ void main() {
         await db.close();
       },
     );
+    test('v3 pending_view_events rows survive the v5 upgrade '
+        'without a d tag', () async {
+      await verifier.testWithDataIntegrity(
+        oldVersion: 3,
+        newVersion: 5,
+        createOld: v3.DatabaseAtV3.new,
+        createNew: v5.DatabaseAtV5.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) => batch.insert(
+          oldDb.pendingViewEvents,
+          v3.PendingViewEventsCompanion.insert(
+            id: 'queued-before-v5',
+            videoId: 'b' * 64,
+            videoPubkey: 'c' * 64,
+            userPubkey: 'd' * 64,
+            watchDurationMs: 4200,
+            trafficSource: 'feed',
+            status: 'pending',
+            createdAt: DateTime.utc(2026, 8, 12).millisecondsSinceEpoch ~/ 1000,
+          ),
+        ),
+        validateItems: (newDb) async {
+          final row = await newDb.select(newDb.pendingViewEvents).getSingle();
+          expect(row.watchDurationMs, 4200);
+          // There is nothing to backfill the tag from, so the row keeps a
+          // null one. The sweep discards those instead of retrying a publish
+          // that can never address its subject.
+          expect(row.videoAddressableDTag, null);
+        },
+      );
+    });
   });
 }
