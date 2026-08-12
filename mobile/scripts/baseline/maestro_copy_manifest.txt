@@ -7,9 +7,7 @@
 # Regenerate after intentional copy changes with UPDATE_BASELINE=1 and review
 # the printed diff — regeneration re-blesses whatever app_en.arb says today.
 
-analyticsVideos	e2e/maestro/asserts/assertUserProfile.yaml
 appTitle	e2e/maestro/asserts/assertSplash.yaml
-appsDirectoryRefresh	e2e/maestro/asserts/assertUserProfile.yaml
 appsDirectoryRefresh	e2e/maestro/tests/profileNavigation.yaml
 authClose	e2e/maestro/asserts/assertAccountDeletedModal.yaml
 authClose	e2e/maestro/tests/deleteAccountData.yaml
@@ -28,21 +26,16 @@ authSignInWithAmber	e2e/maestro/asserts/assertSignIn.yaml
 authTermsOfService	e2e/maestro/asserts/assertLogin.yaml
 authUseDivineNoBackup	e2e/maestro/tests/loginFreshInstall.yaml
 authUseThisDeviceOnly	e2e/maestro/tests/loginFreshInstall.yaml
-badgeDetailDeleteConfirm	e2e/maestro/asserts/assertDeleteCommentModal.yaml
 blossomSaveTooltip	e2e/maestro/asserts/assertEditProfileModal.yaml
 blossomSaveTooltip	e2e/maestro/asserts/assertEditYourProfile.yaml
 categoryHome	e2e/maestro/asserts/assertHome.yaml
-commentOptionsDeleteSemanticLabel	e2e/maestro/tests/deleteComment.yaml
 commentOptionsTitle	e2e/maestro/asserts/assertCommentsOptions.yaml
-commentsInputHint	e2e/maestro/asserts/assertCommentsModal.yaml
 commonBack	e2e/maestro/asserts/assertEditYourProfile.yaml
 commonBack	e2e/maestro/asserts/assertLibraryScreen.yaml
 commonBack	e2e/maestro/asserts/assertNostrKeys.yaml
 commonBack	e2e/maestro/asserts/assertUsersFollowing.yaml
 commonBack	e2e/maestro/tests/follow.yaml
 commonBack	e2e/maestro/tests/profileNavigation.yaml
-commonBack	e2e/maestro/tests/searchUsers.yaml
-commonCancel	e2e/maestro/asserts/assertDeleteCommentModal.yaml
 commonCancel	e2e/maestro/asserts/assertDeleteContentModal.yaml
 commonCancel	e2e/maestro/asserts/assertEditProfileModal.yaml
 commonCancel	e2e/maestro/asserts/assertEditYourProfile.yaml
@@ -55,9 +48,7 @@ commonCancel	e2e/maestro/tests/removeKeys.yaml
 deleteAccountRemoveKeysConfirm	e2e/maestro/tests/removeKeys.yaml
 devOptionsMinorReviewStateLoading	e2e/maestro/asserts/assertProfile.yaml
 devOptionsMinorReviewStateLoading	e2e/maestro/asserts/assertProfileFresh.yaml
-devOptionsMinorReviewStateLoading	e2e/maestro/asserts/assertVideoPlayback.yaml
 emojiPickerSearchHint	e2e/maestro/tests/searchTags.yaml
-emojiPickerSearchHint	e2e/maestro/tests/searchUsers.yaml
 emojiPickerSearchHint	e2e/maestro/tests/searchVideos.yaml
 emojiPickerSearchHint	e2e/maestro/utils/searchWorkaround.yaml
 feedExploreVideos	e2e/maestro/asserts/assertFreshHome.yaml
@@ -108,8 +99,6 @@ saveOriginalNotNow	e2e/maestro/flows/loginEmailPwd.yaml
 settingsTitle	e2e/maestro/asserts/assertMenu.yaml
 settingsTitle	e2e/maestro/tests/logout.yaml
 supportFaq	e2e/maestro/asserts/assertMenu.yaml
-userPickerGoBack	e2e/maestro/flows/commentFlow.yaml
 userPickerGoBack	e2e/maestro/tests/follow.yaml
 userPickerGoBack	e2e/maestro/tests/videoLike.yaml
-videoDetailCloseSemanticLabel	e2e/maestro/tests/deleteComment.yaml
 videoEditorCameraLabel	e2e/maestro/asserts/assertEditYourProfile.yaml
