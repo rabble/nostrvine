@@ -24,6 +24,13 @@ void main() {
       expect(_videoWithUrl(url).inlinePlayerVideoUrl, url);
     });
 
+    test('resolves a Divine raw blob to a progressive URL', () {
+      expect(
+        _videoWithUrl('https://media.divine.video/$hash').inlinePlayerVideoUrl,
+        'https://media.divine.video/$hash/720p.mp4',
+      );
+    });
+
     test('passes a non-Divine progressive URL through unchanged', () {
       const url = 'https://example.com/clip.mp4';
       expect(_videoWithUrl(url).inlinePlayerVideoUrl, url);

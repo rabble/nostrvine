@@ -143,6 +143,10 @@ extension VideoEventAppExtensions on VideoEvent {
       isFromDivineServer && videoFormatPreference.isHlsFormat;
 
   /// Whether background file caching should be skipped for this video.
+  ///
+  /// Classic Vine originals already dominate the cache through feed prefetching;
+  /// skip this single-file cache path so inline/background callers do not widen
+  /// storage use further.
   bool get shouldSkipFileCaching => isOriginalVine;
 
   /// Get HLS URL with optional quality override.
@@ -227,14 +231,24 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Older desktop Chrome (< 150) and Firefox lack native HLS, so an HLS
   /// `.m3u8` won't play there. Resolve HLS to the progressive variant — the
   /// same [getOptimalVideoUrlForPlatform] selection the feed already uses on
-  /// every platform. Progressive URLs pass through unchanged, so the common
-  /// case (and its transcode readiness) is never touched.
+  /// every platform. Resolve extensionless Divine raw blobs too, because iOS
+  /// AVURLAsset cannot parse them. Progressive URLs pass through unchanged, so
+  /// the common case (and its transcode readiness) is never touched.
   String? get inlinePlayerVideoUrl {
     final url = videoUrl;
     if (url == null) return null;
     final isHls = url.toLowerCase().contains('.m3u8');
-    if (!isHls) return url;
-    return getOptimalVideoUrlForPlatform() ?? url;
+    final uri = Uri.tryParse(url);
+    final pathSegments = uri?.pathSegments ?? const <String>[];
+    final lastSegment = pathSegments.isEmpty ? '' : pathSegments.last;
+    final isExtensionlessDivineBlob =
+        isFromDivineServer &&
+        _extractVideoHash(url) != null &&
+        !lastSegment.contains('.');
+    if (isHls || isExtensionlessDivineBlob) {
+      return getOptimalVideoUrlForPlatform() ?? url;
+    }
+    return url;
   }
 
   /// HLS URL selected by bandwidth tracker quality.

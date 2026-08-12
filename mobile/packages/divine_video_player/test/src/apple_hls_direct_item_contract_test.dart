@@ -57,6 +57,13 @@ void main() {
             'Only the composition can rescale a clip, so an off-speed clip '
             'must keep taking that path.',
       );
+      expect(
+        source,
+        contains('(clip["volume"] as? NSNumber)?.doubleValue ?? 1.0 == 1.0'),
+        reason:
+            'Only the composition can apply per-clip volume with an audio mix, '
+            'so a clip with custom volume must keep taking that path.',
+      );
 
       final dispatch = source.indexOf('Self.soleHlsClip(in: clipsRaw)');
       final compositionCall = source.indexOf(

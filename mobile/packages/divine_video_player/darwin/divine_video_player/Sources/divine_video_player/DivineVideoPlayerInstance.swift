@@ -367,6 +367,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let uri = clip["uri"] as? String,
             URL(string: uri)?.pathExtension.lowercased() == "m3u8",
             (clip["startMs"] as? NSNumber)?.int64Value ?? 0 == 0,
+            (clip["volume"] as? NSNumber)?.doubleValue ?? 1.0 == 1.0,
             (clip["playbackSpeed"] as? NSNumber)?.doubleValue ?? 1.0 == 1.0
         else { return nil }
         return clip
@@ -377,11 +378,11 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     ///
     /// Trimming is applied with `forwardPlaybackEndTime` rather than a
     /// composition time range. Orientation needs no video composition because
-    /// HLS renditions are already upright, and per-clip volume needs no audio
-    /// mix because there is exactly one clip — `volume` covers it. The cost is
-    /// that the audio-mix edge de-click fades do not apply, so an HLS loop
-    /// seam can click; HLS is only ever reached as a last-resort fallback
-    /// source, which does not justify rebuilding those ramps here.
+    /// HLS renditions are already upright. Per-clip volume changes stay on the
+    /// composition path because a direct item has no audio mix. The cost is that
+    /// the audio-mix edge de-click fades do not apply, so an HLS loop seam can
+    /// click; HLS is only ever reached as a last-resort fallback source, which
+    /// does not justify rebuilding those ramps here.
     private func makeHlsPlayerItem(
         from clipMap: [String: Any]
     ) async throws -> (AVPlayerItem, [Double], [Double]) {
@@ -397,17 +398,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
         // soleHlsClip guarantees startMs == 0, so the item's timeline is
         // [0, endTime] and the reported duration is endTime itself.
-        var endTime = assetDuration
-        if let endMs = clipMap["endMs"] as? NSNumber {
-            // Clamp to the asset the same way the composition path does: the
-            // feed caps every clip at maxFeedPlaybackDuration without knowing
-            // the source length up front.
-            let requestedEnd = CMTime(value: endMs.int64Value, timescale: 1000)
-            endTime =
-                (assetDuration.isNumeric && CMTimeCompare(requestedEnd, assetDuration) > 0)
-                ? assetDuration
-                : requestedEnd
-        }
+        let endTime = Self.clampedEndTime(
+            requestedEndMs: clipMap["endMs"] as? NSNumber,
+            assetDuration: assetDuration
+        )
         guard endTime.isNumeric, endTime.seconds > 0 else {
             throw CompositionError.noPlayableVideoTracks
         }
@@ -445,6 +439,22 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
         if let audioMix { playerItem.audioMix = audioMix }
         return (playerItem, offsets, durations)
+    }
+
+    /// Clamps a requested end time to the media that exists in the asset.
+    ///
+    /// `insertTimeRange` silently inserts only existing media, so an end past the
+    /// source would otherwise leave reported duration longer than playback. The
+    /// feed relies on this because it caps clips before knowing the source length.
+    private static func clampedEndTime(
+        requestedEndMs: NSNumber?,
+        assetDuration: CMTime
+    ) -> CMTime {
+        guard let requestedEndMs else { return assetDuration }
+        let requestedEnd = CMTime(value: requestedEndMs.int64Value, timescale: 1000)
+        return (assetDuration.isNumeric && CMTimeCompare(requestedEnd, assetDuration) > 0)
+            ? assetDuration
+            : requestedEnd
     }
 
     /// Builds an AVMutableComposition that stitches all clips into a
@@ -538,23 +548,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let standardizedTransform = transform.standardized(for: naturalSize)
 
             let startTime = CMTime(value: startMs, timescale: 1000)
-            var endTime: CMTime
-            if let endMs {
-                // Clamp to the asset: insertTimeRange silently inserts only the
-                // media that exists, so an endMs past the source would leave
-                // clipDuration (and therefore the reported totalDuration)
-                // longer than what actually plays. The feed relies on this —
-                // it caps every clip at maxFeedPlaybackDuration without knowing
-                // the source length up front. ExoPlayer clamps the equivalent
-                // ClippingConfiguration itself.
-                let requestedEnd = CMTime(value: endMs.int64Value, timescale: 1000)
-                endTime =
-                    (assetDuration.isNumeric && CMTimeCompare(requestedEnd, assetDuration) > 0)
-                    ? assetDuration
-                    : requestedEnd
-            } else {
-                endTime = assetDuration
-            }
+            var endTime = Self.clampedEndTime(
+                requestedEndMs: endMs,
+                assetDuration: assetDuration
+            )
             // The asset duration is the *longest* track, so ending there leaves
             // a stretch where the shorter track has already run out — silence,
             // or a frozen frame. On a looping player that stretch is the seam.

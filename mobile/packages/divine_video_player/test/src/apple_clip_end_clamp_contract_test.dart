@@ -20,16 +20,20 @@ void main() {
   group('Apple native clip-end clamp contract', () {
     test('clamps a requested clip end to the asset duration', () {
       final source = _appleSourceFile().readAsStringSync();
+      final helper = _functionBody(
+        source,
+        'private static func clampedEndTime(',
+      );
 
       expect(
-        source,
+        helper,
         contains('CMTimeCompare(requestedEnd, assetDuration) > 0'),
         reason:
             'A requested end past the asset must resolve to the asset '
             'duration, not to the requested value.',
       );
       expect(
-        source,
+        helper,
         contains('assetDuration.isNumeric'),
         reason:
             'A non-numeric asset duration (indefinite/unloaded) cannot be '
@@ -39,13 +43,10 @@ void main() {
 
     test('clamps before deriving the clip duration', () {
       final source = _appleSourceFile().readAsStringSync();
+      final body = _functionBody(source, 'private func buildComposition(');
 
-      final clamp = source.indexOf(
-        'CMTimeCompare(requestedEnd, assetDuration) > 0',
-      );
-      final clipDuration = source.indexOf(
-        'CMTimeSubtract(endTime, startTime)',
-      );
+      final clamp = body.indexOf('Self.clampedEndTime(');
+      final clipDuration = body.indexOf('CMTimeSubtract(endTime, startTime)');
 
       expect(clamp, greaterThanOrEqualTo(0));
       expect(clipDuration, greaterThanOrEqualTo(0));
@@ -58,6 +59,19 @@ void main() {
       );
     });
   });
+}
+
+/// Source text of the function opening at [signature], up to the next
+/// declaration at the same indentation.
+String _functionBody(String source, String signature) {
+  final start = source.indexOf(signature);
+  expect(
+    start,
+    greaterThanOrEqualTo(0),
+    reason: 'Expected to find `$signature` in the Apple player source.',
+  );
+  final next = source.indexOf('\n    private ', start + signature.length);
+  return source.substring(start, next == -1 ? source.length : next);
 }
 
 /// The iOS and macOS players share a single Darwin source tree
