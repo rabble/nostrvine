@@ -16,6 +16,7 @@ enum DeepLinkType {
   search,
   invite,
   list,
+  savedVideos,
   signerCallback,
   unknown,
 }
@@ -79,6 +80,8 @@ class DeepLink {
       case DeepLinkType.list:
         return 'DeepLink(type: list, listPubkey: $listPubkey, '
             'listId: $listId)';
+      case DeepLinkType.savedVideos:
+        return 'DeepLink(type: savedVideos)';
       case DeepLinkType.signerCallback:
         return 'DeepLink(type: signerCallback)';
       case DeepLinkType.unknown:
@@ -154,11 +157,30 @@ class DeepLinkService {
     try {
       final uri = Uri.parse(url);
 
-      // Handle divine:// callback from NIP-46 signer apps.
-      // The signer opens this scheme to bring our app back to foreground
-      // after the user approves the connection. We emit signerCallback so
-      // listeners can trigger relay reconnection for the nostrconnect session.
+      // The divine:// scheme splits on the authority. Every callback anyone
+      // emits carries one — Divine mints `divine://nostrconnect`, and NIP-46
+      // gives signers no say over the callback string beyond appending query
+      // parameters — so the empty authority is free to address app routes.
       if (uri.scheme == 'divine') {
+        if (uri.host.isEmpty) {
+          return _parseCustomSchemeAppRoute(uri);
+        }
+        if (uri.host != _signerCallbackHost) {
+          // Any app can open a custom scheme, so an authority we never mint
+          // is untrusted input rather than a callback — classifying it as one
+          // would hand a stranger the signer-callback side effects (#6733).
+          Log.warning(
+            'Ignoring divine:// URL with an unrecognised authority: '
+            '${_describeUriForLogs(uri)}',
+            name: 'DeepLinkService',
+            category: LogCategory.ui,
+          );
+          return const DeepLink(type: DeepLinkType.unknown);
+        }
+        // Signer apps open this scheme to bring our app back to foreground
+        // after the user approves the connection. We emit signerCallback so
+        // listeners can trigger relay reconnection for the nostrconnect
+        // session.
         Log.info(
           'Received NIP-46 signer callback: ${redactUriStringForLogs(url)}',
           name: 'DeepLinkService',
@@ -362,6 +384,46 @@ class DeepLinkService {
   /// the widget tree can handle it uniformly.
   void pushLink(DeepLink link) {
     _controller.add(link);
+  }
+
+  /// The only authority Divine mints on its NIP-46 callback.
+  ///
+  /// See `NostrConnectCoordinator`, which embeds `divine://nostrconnect`.
+  static const _signerCallbackHost = 'nostrconnect';
+
+  /// Routes the authority-less `divine:///<route>` form may open.
+  ///
+  /// Deny-by-default: any app on the device can open a custom scheme, so a
+  /// route is only reachable this way by being listed here.
+  static const _customSchemeAppRoutes = <String, DeepLinkType>{
+    'saved-videos': DeepLinkType.savedVideos,
+  };
+
+  static DeepLink _parseCustomSchemeAppRoute(Uri uri) {
+    final segments = uri.pathSegments;
+    final type = segments.length == 1
+        ? _customSchemeAppRoutes[segments.single]
+        : null;
+
+    if (type == null) {
+      // Not a warning, and not necessarily the end of the road: the router's
+      // allow-list resolves the universal-link claim paths that carry no
+      // DeepLinkType of their own. `AppRouter` logs the outcome either way.
+      Log.debug(
+        'No DeepLinkType for divine:// route, deferring to the router '
+        'allow-list: ${_describeUriForLogs(uri)}',
+        name: 'DeepLinkService',
+        category: LogCategory.ui,
+      );
+      return const DeepLink(type: DeepLinkType.unknown);
+    }
+
+    Log.info(
+      '📱 Parsed app-route deep link: /${segments.single}',
+      name: 'DeepLinkService',
+      category: LogCategory.ui,
+    );
+    return DeepLink(type: type);
   }
 
   static bool _isInternalAppRoute(Uri uri, String rawUrl) {

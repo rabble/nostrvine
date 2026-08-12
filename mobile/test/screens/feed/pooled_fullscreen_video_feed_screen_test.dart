@@ -33,6 +33,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
@@ -485,55 +486,65 @@ void main() {
         },
       );
 
+      // Was a test that built its own BackButton with the old
+      // `canPop ? pop : go('/')` inline and registered its own `/` route, so
+      // it asserted a reimplementation rather than _handleBack and could not
+      // fail. This pumps the real widget, and registers no `/` route — the
+      // app has none either.
       testWidgets(
-        'empty-state back button falls back to root when route cannot pop',
+        'empty-state back button lands on the feed when route cannot pop',
         (tester) async {
-          var sentinelBuilt = false;
+          when(() => mockBloc.state).thenReturn(
+            const FullscreenFeedState(
+              status: FullscreenFeedStatus.emptyAfterRemoval,
+            ),
+          );
+
           final router = GoRouter(
             initialLocation: '/empty-feed',
             routes: [
               GoRoute(
-                path: '/',
-                builder: (_, _) {
-                  sentinelBuilt = true;
-                  return const Scaffold(body: Text('home-sentinel'));
-                },
+                path: VideoFeedPage.pathForIndex(0),
+                builder: (_, _) => const Scaffold(body: Text('feed')),
               ),
               GoRoute(
                 path: '/empty-feed',
-                builder: (_, _) => Scaffold(
-                  appBar: AppBar(
-                    leading: Builder(
-                      builder: (context) => BackButton(
-                        onPressed: () =>
-                            context.canPop() ? context.pop() : context.go('/'),
-                      ),
-                    ),
-                  ),
-                  body: const Center(child: Text('empty-state-body')),
-                ),
+                builder: (_, _) => buildContent(contextTitle: 'Saved'),
               ),
             ],
           );
           addTearDown(router.dispose);
 
           await tester.pumpWidget(
-            MaterialApp.router(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: router,
+            testProviderScope(
+              mockProfileRepository: mockProfileRepository,
+              mockNip05VerificationService: mockNip05VerificationService,
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
             ),
           );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 100));
-          expect(find.text('empty-state-body'), findsOneWidget);
 
-          await tester.tap(find.byType(BackButton));
+          final removedText = lookupAppLocalizations(
+            const Locale('en'),
+          ).fullscreenFeedRemovedMessage;
+          expect(find.text(removedText), findsOneWidget);
+          expect(router.canPop(), isFalse);
+
+          tester
+              .widget<DivineAppBarIconButton>(
+                find.byType(DivineAppBarIconButton).first,
+              )
+              .onPressed
+              ?.call();
           await tester.pumpAndSettle();
 
-          expect(sentinelBuilt, isTrue);
-          expect(find.text('home-sentinel'), findsOneWidget);
-          expect(find.text('empty-state-body'), findsNothing);
+          expect(find.text('feed'), findsOneWidget);
+          expect(find.text(removedText), findsNothing);
         },
       );
 
@@ -645,8 +656,11 @@ void main() {
         expect(feedVideos.sourceDetail, 'npub-profile');
       });
 
+      // The fallback used to be `go('/')`, which matches no registered route
+      // in the app and rendered RouteErrorScreen. Only this test's own `/`
+      // route made it look like it worked, so the sentinel is the feed now.
       testWidgets(
-        'ready-state back button falls back to root when route cannot pop',
+        'ready-state back button lands on the feed when route cannot pop',
         (tester) async {
           final videos = createTestVideos(count: 1);
           final state = FullscreenFeedState(
@@ -662,7 +676,7 @@ void main() {
             initialLocation: '/shared-video',
             routes: [
               GoRoute(
-                path: '/',
+                path: VideoFeedPage.pathForIndex(0),
                 builder: (_, _) {
                   sentinelBuilt = true;
                   return const Scaffold(body: Text('home-sentinel'));

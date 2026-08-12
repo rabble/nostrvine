@@ -12,13 +12,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/inline_comment_composer/inline_comment_composer_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -461,11 +461,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       onBack();
       return;
     }
-    if (context.canPop()) {
-      context.pop();
-      return;
-    }
-    context.go('/');
+    // safePop: a /video/:id deep link renders this screen with a one-entry
+    // stack and no onBack, and the old `go('/')` fallback matched no route.
+    context.safePop();
   }
 
   void _resumeAutoAdvanceAfterSwipe() => _autoAdvanceCubit.resumeAfterSwipe();
@@ -706,8 +704,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                     showBackButton: true,
                     // The BlocListener above already tried `maybePop` and
                     // failed (otherwise we wouldn't be rendering this
-                    // branch). Keep the same root-route fallback here so
-                    // cold-start deep links never strand the user.
+                    // branch), so this back button is the only way out.
                     onBackPressed: () => _handleBack(context),
                     backgroundMode: DiVineAppBarBackgroundMode.transparent,
                     forceMaterialTransparency: true,

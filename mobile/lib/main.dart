@@ -92,6 +92,7 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/saved_videos_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -2347,6 +2348,44 @@ class _DivineAppState extends ConsumerState<DivineApp>
               } else {
                 Log.warning(
                   '⚠️ Invite deep link missing code',
+                  name: 'DeepLinkHandler',
+                  category: LogCategory.ui,
+                );
+              }
+            case DeepLinkType.savedVideos:
+              const targetPath = SavedVideosScreen.path;
+              Log.info(
+                '📱 Navigating to saved videos: $targetPath',
+                name: 'DeepLinkHandler',
+                category: LogCategory.ui,
+              );
+              try {
+                final action = resolveDeepLinkNavAction(
+                  currentLocation: currentLocation,
+                  targetPath: targetPath,
+                  isRouteFamilyLocation: (location) => location == targetPath,
+                );
+                switch (action) {
+                  case DeepLinkNavAction.skip:
+                  case DeepLinkNavAction.go:
+                    // Already on Saved Videos — GoRouter's custom-scheme
+                    // redirect got there first. Nothing to do: this family is
+                    // a single path, so `go` cannot mean "replace a sibling"
+                    // the way it does for /profile/*.
+                    break;
+                  case DeepLinkNavAction.push:
+                    // Keep the current route underneath so back returns to
+                    // wherever the user was instead of wiping the stack.
+                    router.push(targetPath);
+                }
+                Log.info(
+                  '✅ Navigation completed to: $targetPath',
+                  name: 'DeepLinkHandler',
+                  category: LogCategory.ui,
+                );
+              } catch (e) {
+                Log.error(
+                  '❌ Saved videos navigation failed: $e',
                   name: 'DeepLinkHandler',
                   category: LogCategory.ui,
                 );

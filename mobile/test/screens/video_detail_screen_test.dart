@@ -15,6 +15,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -203,6 +204,74 @@ void main() {
           expect(find.text('caller screen'), findsOneWidget);
         },
       );
+
+      // A divine:///video/<id> or https://divine.video/video/<id> deep link
+      // lands on this flat top-level route with a one-entry stack. The exit
+      // used to fall back to `go('/')`, and no `path: '/'` route is registered
+      // anywhere in the app, so leaving rendered RouteErrorScreen instead of
+      // the feed. Note this router deliberately has no `/` route either.
+      testWidgets('exit lands on the feed when there is nothing to pop', (
+        tester,
+      ) async {
+        final completer = Completer<VideoEvent?>();
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+        ).thenAnswer((_) => completer.future);
+        addTearDown(() => completer.complete(null));
+
+        final router = GoRouter(
+          initialLocation: VideoDetailScreen.pathForId('test_video_id'),
+          routes: [
+            GoRoute(
+              path: VideoFeedPage.pathForIndex(0),
+              builder: (_, _) => const Scaffold(body: Text('feed')),
+            ),
+            GoRoute(
+              path: VideoDetailScreen.path,
+              builder: (_, state) =>
+                  VideoDetailScreen(videoId: state.pathParameters['id']!),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          testProviderScope(
+            mockNostrService: mockNostrClient,
+            mockFollowRepository: mockFollowRepository,
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepository,
+              ),
+              videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            ],
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+
+        // The branded indicator animates forever, so settle would time out.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        // Precondition: cold entry really does leave a one-entry stack, so a
+        // raw context.pop() here would throw GoError.
+        expect(router.canPop(), isFalse);
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(find.text('feed'), findsOneWidget);
+      });
 
       testWidgets(
         'does not resume the lookup after leaving a deferred cold start',

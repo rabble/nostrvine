@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/services/deep_link_service.dart';
 
 const _divineAppId = 'GZCZBKH7MY.co.openvine.app';
@@ -60,7 +61,72 @@ const _allowlistedClaims = <String, String>{
       'Auth link path matches an internal GoRoute redirect directly; no DeepLinkType is emitted.',
 };
 
+// divine.video AASA claims the `divine://` scheme deliberately does NOT
+// mirror. Every other claim must resolve from both schemes so the two
+// contracts cannot drift (#6733).
+const _customSchemeExclusions = <String, String>{
+  '/app/callback':
+      'Keycast OAuth redirect consumed by the OAuth client, not routing.',
+  '/invite/*':
+      'No GoRoute to land on; invites are handled by the DeepLinkService '
+      'listener for https links only.',
+};
+
 void main() {
+  // GoRouter matches a custom-scheme location on uri.path alone, so this
+  // allow-list is what holds divine:// at parity with the https claim set
+  // instead of exposing every registered route (#6733).
+  group('divine:// custom scheme parity', () {
+    test('resolves every divine.video claim except documented exclusions', () {
+      for (final pattern in _claimPatternsForHost('divine.video')) {
+        final exclusionReason = _customSchemeExclusions[pattern];
+
+        for (final path in _representativePathsFor(pattern)) {
+          final target = customSchemeToRouterPath(Uri.parse('divine://$path'));
+
+          if (exclusionReason != null) {
+            expect(
+              target,
+              isNull,
+              reason:
+                  'divine://$path is excluded from custom-scheme routing '
+                  '($exclusionReason) and must not resolve.',
+            );
+          } else {
+            expect(
+              target,
+              isNotNull,
+              reason:
+                  'divine.video claims $pattern over https but divine://$path '
+                  'does not resolve. Add the prefix to the allow-list in '
+                  'universal_link_resolver.dart or document an exclusion.',
+            );
+          }
+        }
+      }
+    });
+
+    test('does not resolve routes the https contract never exposed', () {
+      for (final path in const <String>[
+        '/developer-options',
+        '/key-management',
+        '/import-key',
+        '/secure-account',
+        '/inbox',
+        '/inbox/message-requests',
+        '/settings',
+        '/relay-settings',
+        '/safety-settings',
+      ]) {
+        expect(
+          customSchemeToRouterPath(Uri.parse('divine://$path')),
+          isNull,
+          reason: '$path is not an AASA claim and must not be reachable.',
+        );
+      }
+    });
+  });
+
   group('AASA claim coverage', () {
     for (final host in _expectedClaimPatternsByHost.keys) {
       test('$host claimed paths are routed or explicitly allowlisted', () {
