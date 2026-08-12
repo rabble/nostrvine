@@ -1656,6 +1656,8 @@
     "libraryOpenTrashSemanticLabel": "Buksan ang mga kamakailang na-delete na clip",
     "librarySortClipsSemanticLabel": "Ayusin ang mga clip",
     "librarySelectClipsSemanticLabel": "Pumili ng mga clip",
+    "libraryGridSizeLabel": "Laki ng grid",
+    "libraryGridSizeColumns": "{count, plural, one{1 hanay} other{{count} na hanay}}",
     "librarySelect": "Piliin",
     "librarySortNewestCreation": "Pinakabagong ginawa",
     "librarySortOldestCreation": "Pinakalumang ginawa",

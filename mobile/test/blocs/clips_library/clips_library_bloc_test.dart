@@ -121,6 +121,78 @@ void main() {
       bloc.close();
     });
 
+    group('ClipsLibraryGridColumnsChanged', () {
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'emits the new column count and persists it',
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibraryGridColumnsChanged(5)),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.gridColumnCount,
+            'gridColumnCount',
+            5,
+          ),
+        ],
+        verify: (_) => expect(
+          sharedPreferences.getInt(ClipGridColumns.prefsKey),
+          equals(5),
+        ),
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'clamps a count outside the supported range',
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibraryGridColumnsChanged(42)),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.gridColumnCount,
+            'gridColumnCount',
+            ClipGridColumns.max,
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'emits nothing when the count is unchanged',
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ClipsLibraryGridColumnsChanged(ClipGridColumns.initial),
+        ),
+        expect: () => <ClipsLibraryState>[],
+      );
+
+      test('restores the persisted column count on construction', () async {
+        SharedPreferences.setMockInitialValues({
+          ClipGridColumns.prefsKey: 4,
+        });
+        final bloc = ClipsLibraryBloc(
+          clipLibraryService: mockClipLibraryService,
+          gallerySaveService: mockGallerySaveService,
+          sharedPreferences: await SharedPreferences.getInstance(),
+        );
+
+        expect(bloc.state.gridColumnCount, equals(4));
+        await bloc.close();
+      });
+
+      test(
+        'falls back to the default for an out-of-range stored value',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            ClipGridColumns.prefsKey: 0,
+          });
+          final bloc = ClipsLibraryBloc(
+            clipLibraryService: mockClipLibraryService,
+            gallerySaveService: mockGallerySaveService,
+            sharedPreferences: await SharedPreferences.getInstance(),
+          );
+
+          expect(bloc.state.gridColumnCount, equals(ClipGridColumns.min));
+          await bloc.close();
+        },
+      );
+    });
+
     group('ClipsLibraryLoadRequested', () {
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'emits [loading, loaded] with clips from service',

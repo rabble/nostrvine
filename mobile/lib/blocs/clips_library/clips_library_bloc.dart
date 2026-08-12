@@ -34,6 +34,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
        super(
          ClipsLibraryState(
            clipSort: _readPersistedSort(sharedPreferences),
+           gridColumnCount: _readPersistedGridColumns(sharedPreferences),
          ),
        ) {
     on<ClipsLibraryLoadRequested>(_onLoadRequested, transformer: droppable());
@@ -43,6 +44,10 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     on<ClipsLibraryDeleteClip>(_onDeleteClip, transformer: droppable());
     on<ClipsLibrarySaveToGallery>(_onSaveToGallery, transformer: droppable());
     on<ClipsLibrarySortChanged>(_onSortChanged);
+    on<ClipsLibraryGridColumnsChanged>(
+      _onGridColumnsChanged,
+      transformer: sequential(),
+    );
     on<ClipsLibraryEnterSelectionMode>(_onEnterSelectionMode);
     on<ClipsLibraryExitSelectionMode>(_onExitSelectionMode);
     on<ClipsLibraryAutoOpenSelectionMode>(_onAutoOpenSelectionMode);
@@ -80,6 +85,12 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     final saved = prefs.getString(_sortPrefsKey);
     if (saved == null) return ClipSort.newestCreation;
     return ClipSort.fromPersistenceKey(saved);
+  }
+
+  static int _readPersistedGridColumns(SharedPreferences prefs) {
+    final saved = prefs.getInt(ClipGridColumns.prefsKey);
+    if (saved == null) return ClipGridColumns.initial;
+    return ClipGridColumns.clamp(saved);
   }
 
   /// Returns [clips] sorted according to [sort]. Pure — does not
@@ -478,6 +489,26 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         sortedClips: _applySort(state.clips, event.sort),
       ),
     );
+  }
+
+  Future<void> _onGridColumnsChanged(
+    ClipsLibraryGridColumnsChanged event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    final columns = ClipGridColumns.clamp(event.columnCount);
+    if (columns == state.gridColumnCount) return;
+    try {
+      await _sharedPreferences.setInt(ClipGridColumns.prefsKey, columns);
+    } catch (e, stackTrace) {
+      Log.warning(
+        '📚 Failed to persist clip grid columns: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      // Matrix-NO: SharedPreferences.setInt is local platform-channel IO.
+      addError(e, stackTrace);
+    }
+    emit(state.copyWith(gridColumnCount: columns));
   }
 
   void _onEnterSelectionMode(

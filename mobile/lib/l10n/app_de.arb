@@ -2557,6 +2557,8 @@
     "libraryOpenTrashSemanticLabel": "Kürzlich gelöschte Clips öffnen",
     "librarySortClipsSemanticLabel": "Clips sortieren",
     "librarySelectClipsSemanticLabel": "Clips auswählen",
+    "libraryGridSizeLabel": "Rastergröße",
+    "libraryGridSizeColumns": "{count, plural, one{1 Spalte} other{{count} Spalten}}",
     "libraryDraftActionDelete": "Entwurf löschen",
     "libraryDraftActionEdit": "Bearbeiten",
     "libraryDraftActionPost": "Posten",

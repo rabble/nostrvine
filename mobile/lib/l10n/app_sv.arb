@@ -2550,6 +2550,8 @@
     "libraryOpenTrashSemanticLabel": "Öppna nyligen raderade klipp",
     "librarySortClipsSemanticLabel": "Sortera klipp",
     "librarySelectClipsSemanticLabel": "Välj klipp",
+    "libraryGridSizeLabel": "Rutnätets storlek",
+    "libraryGridSizeColumns": "{count, plural, one{1 kolumn} other{{count} kolumner}}",
     "librarySelect": "Välj",
     "librarySortNewestCreation": "Senast skapade",
     "librarySortOldestCreation": "Äldst skapade",

@@ -2704,6 +2704,8 @@
     "libraryOpenTrashSemanticLabel": "Отвори наскоро изтритите клипове",
     "librarySortClipsSemanticLabel": "Сортирай клиповете",
     "librarySelectClipsSemanticLabel": "Избери клипове",
+    "libraryGridSizeLabel": "Размер на мрежата",
+    "libraryGridSizeColumns": "{count, plural, one{1 колона} other{{count} колони}}",
     "librarySelect": "Избери",
     "librarySortNewestCreation": "Най-ново създадени",
     "librarySortOldestCreation": "Най-старо създадени",

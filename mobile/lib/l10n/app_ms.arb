@@ -3730,6 +3730,8 @@
   "libraryOpenTrashSemanticLabel": "Buka klip yang baru dipadam",
   "librarySortClipsSemanticLabel": "Isih klip",
   "librarySelectClipsSemanticLabel": "Pilih klip",
+  "libraryGridSizeLabel": "Saiz grid",
+  "libraryGridSizeColumns": "{count, plural, other{{count} lajur}}",
   "librarySelect": "Pilih",
   "librarySortNewestCreation": "Ciptaan Terbaharu",
   "librarySortOldestCreation": "Ciptaan Terlama",

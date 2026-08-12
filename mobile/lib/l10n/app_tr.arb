@@ -2549,6 +2549,8 @@
     "libraryOpenTrashSemanticLabel": "Yakın zamanda silinen klipleri aç",
     "librarySortClipsSemanticLabel": "Klipleri sırala",
     "librarySelectClipsSemanticLabel": "Klip seç",
+    "libraryGridSizeLabel": "Izgara boyutu",
+    "libraryGridSizeColumns": "{count, plural, other{{count} sütun}}",
     "librarySelect": "Seç",
     "librarySortNewestCreation": "En yeni oluşturulan",
     "librarySortOldestCreation": "En eski oluşturulan",

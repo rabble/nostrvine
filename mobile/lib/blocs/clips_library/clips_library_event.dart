@@ -80,6 +80,19 @@ final class ClipsLibrarySortChanged extends ClipsLibraryEvent {
   List<Object?> get props => [sort];
 }
 
+/// Event to change how many columns the clips grid renders, emitted when a
+/// pinch on the grid settles. The count is clamped to the
+/// [ClipGridColumns] range and persisted to [SharedPreferences].
+final class ClipsLibraryGridColumnsChanged extends ClipsLibraryEvent {
+  const ClipsLibraryGridColumnsChanged(this.columnCount);
+
+  /// The new column count.
+  final int columnCount;
+
+  @override
+  List<Object?> get props => [columnCount];
+}
+
 /// Event to manually enter multi-select mode (toolbar "Select" button).
 final class ClipsLibraryEnterSelectionMode extends ClipsLibraryEvent {
   const ClipsLibraryEnterSelectionMode();

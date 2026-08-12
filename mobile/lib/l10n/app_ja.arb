@@ -2542,6 +2542,8 @@
     "libraryOpenTrashSemanticLabel": "最近削除したクリップを開く",
     "librarySortClipsSemanticLabel": "クリップを並べ替える",
     "librarySelectClipsSemanticLabel": "クリップを選択",
+    "libraryGridSizeLabel": "グリッドのサイズ",
+    "libraryGridSizeColumns": "{count, plural, other{{count}列}}",
     "librarySelect": "選択",
     "librarySortNewestCreation": "作成日が新しい順",
     "librarySortOldestCreation": "作成日が古い順",

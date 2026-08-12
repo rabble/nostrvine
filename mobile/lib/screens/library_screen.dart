@@ -4,6 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -317,10 +319,16 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
     );
   }
 
+  /// Value of the sort-menu row that leads to the grid size options.
+  ///
+  /// Not a [ClipSort], so it can never collide with a sort key.
+  static const _gridSizeMenuValue = 'grid-size';
+
   Future<void> _openSortMenu(
     BuildContext context,
     ClipsLibraryBloc clipsBloc,
     ClipSort currentSort,
+    int currentColumns,
   ) async {
     final selected = await VineBottomSheetSelectionMenu.show(
       context: context,
@@ -356,12 +364,68 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
           value: ClipSort.verticalFirst.persistenceKey,
           leadingIcon: .cropPortrait,
         ),
+        // Sort order and grid density are both "how this grid is shown", so
+        // they share the one toolbar affordance. A button of its own would
+        // have to fit a row that already collapses its title to nothing.
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.libraryGridSizeLabel,
+          value: _gridSizeMenuValue,
+          leadingIcon: .gridNine,
+        ),
       ],
     );
 
     if (selected == null) return;
+    if (selected == _gridSizeMenuValue) {
+      if (!context.mounted) return;
+      await _openGridSizeMenu(context, clipsBloc, currentColumns);
+      return;
+    }
     clipsBloc.add(
       ClipsLibrarySortChanged(ClipSort.fromPersistenceKey(selected)),
+    );
+  }
+
+  /// The way to the column count that does not need a pinch.
+  ///
+  /// Pinching the grid is the primary gesture, but assistive technology
+  /// cannot perform it, and the count is a persisted preference rather than a
+  /// transient view state — without this it would be one a screen-reader user
+  /// could never set.
+  Future<void> _openGridSizeMenu(
+    BuildContext context,
+    ClipsLibraryBloc clipsBloc,
+    int currentColumns,
+  ) async {
+    final selected = await VineBottomSheetSelectionMenu.show(
+      context: context,
+      selectedValue: '$currentColumns',
+      options: [
+        for (
+          var columns = ClipGridColumns.min;
+          columns <= ClipGridColumns.max;
+          columns++
+        )
+          VineBottomSheetSelectionOptionData(
+            label: context.l10n.libraryGridSizeColumns(columns),
+            value: '$columns',
+            leadingIcon: .gridNine,
+          ),
+      ],
+    );
+
+    final columns = int.tryParse(selected ?? '');
+    if (columns == null) return;
+    if (!context.mounted) return;
+    clipsBloc.add(ClipsLibraryGridColumnsChanged(columns));
+    _announceGridColumns(context, columns);
+  }
+
+  void _announceGridColumns(BuildContext context, int columns) {
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      context.l10n.libraryGridSizeColumns(columns),
+      Directionality.of(context),
     );
   }
 
@@ -570,6 +634,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                               context,
                               clipsBloc,
                               clipsState.clipSort,
+                              clipsState.gridColumnCount,
                             ),
                             onEnterSelectionMode: () => clipsBloc.add(
                               const ClipsLibraryEnterSelectionMode(),
@@ -585,10 +650,16 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                             tabs: _tabs,
                             tabController: tabController,
                             selectionMode: widget.selectionMode,
+                            currentColumns: clipsState.gridColumnCount,
                             scrollController: widget.scrollController,
                             targetAspectRatio: targetAspectRatio,
                             sortedClips: sortedClips,
                             selectionEnabled: selectionEnabled,
+                            onOpenGridSizeMenu: () => _openGridSizeMenu(
+                              context,
+                              clipsBloc,
+                              clipsState.gridColumnCount,
+                            ),
                             onCreateVideo: () => _createVideoFromSelected(
                               context,
                               selectedClips: clipsState.selectedClips,
@@ -650,8 +721,10 @@ class _LibraryContent extends StatelessWidget {
     required this.tabs,
     required this.tabController,
     required this.selectionMode,
+    required this.currentColumns,
     required this.sortedClips,
     required this.selectionEnabled,
+    required this.onOpenGridSizeMenu,
     required this.onCreateVideo,
     this.scrollController,
     this.targetAspectRatio,
@@ -660,14 +733,17 @@ class _LibraryContent extends StatelessWidget {
   final List<_LibraryTab> tabs;
   final TabController tabController;
   final bool selectionMode;
+  final int currentColumns;
   final List<DivineVideoClip> sortedClips;
   final bool selectionEnabled;
+  final VoidCallback onOpenGridSizeMenu;
   final VoidCallback onCreateVideo;
   final ScrollController? scrollController;
   final double? targetAspectRatio;
 
   @override
   Widget build(BuildContext context) {
+    final tabBackgroundColor = context.vineColors.surfaceContainerHigh;
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -706,8 +782,10 @@ class _LibraryContent extends StatelessWidget {
         Expanded(
           child: selectionMode
               ? _SelectionBody(
+                  currentColumns: currentColumns,
                   scrollController: scrollController,
                   targetAspectRatio: targetAspectRatio,
+                  onOpenGridSizeMenu: onOpenGridSizeMenu,
                   onCreate: onCreateVideo,
                 )
               : _TabBody(
@@ -716,6 +794,7 @@ class _LibraryContent extends StatelessWidget {
                   tabs: tabs,
                   tabController: tabController,
                   targetAspectRatio: targetAspectRatio,
+                  backgroundColor: tabBackgroundColor,
                 ),
         ),
       ],
@@ -735,7 +814,7 @@ class _LibraryContent extends StatelessWidget {
         Radius.circular(VineTheme.shellInnerCornerRadius),
       ),
       child: Material(
-        color: context.vineColors.surfaceContainerHigh,
+        color: tabBackgroundColor,
         child: content,
       ),
     );
@@ -837,11 +916,15 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
 
 class _SelectionBody extends StatelessWidget {
   const _SelectionBody({
+    required this.currentColumns,
+    required this.onOpenGridSizeMenu,
     required this.onCreate,
     this.targetAspectRatio,
     this.scrollController,
   });
 
+  final int currentColumns;
+  final VoidCallback onOpenGridSizeMenu;
   final VoidCallback onCreate;
   final double? targetAspectRatio;
   final ScrollController? scrollController;
@@ -850,10 +933,29 @@ class _SelectionBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
+            child: DivineIconButton(
+              size: .small,
+              type: .secondary,
+              icon: .gridNine,
+              semanticLabel: context.l10n.libraryGridSizeLabel,
+              semanticValue: context.l10n.libraryGridSizeColumns(
+                currentColumns,
+              ),
+              onPressed: onOpenGridSizeMenu,
+            ),
+          ),
+        ),
         Expanded(
           child: ClipsTab(
             targetAspectRatio: targetAspectRatio,
             showRecordButton: true,
+            // Selection mode renders straight onto the bottom sheet's own
+            // surface; the library shell below is not in the tree here.
+            backgroundColor: context.vineColors.surface,
             scrollController: scrollController,
             gridTopPadding: 8,
           ),
@@ -864,12 +966,13 @@ class _SelectionBody extends StatelessWidget {
   }
 }
 
-class _TabBody extends StatelessWidget {
+class _TabBody extends StatefulWidget {
   const _TabBody({
     required this.tabController,
     required this.tabs,
     required this.clips,
     required this.selectionEnabled,
+    required this.backgroundColor,
     this.targetAspectRatio,
   });
 
@@ -877,25 +980,65 @@ class _TabBody extends StatelessWidget {
   final List<_LibraryTab> tabs;
   final List<DivineVideoClip> clips;
   final bool selectionEnabled;
+  final Color backgroundColor;
   final double? targetAspectRatio;
 
   @override
+  State<_TabBody> createState() => _TabBodyState();
+}
+
+class _TabBodyState extends State<_TabBody> {
+  /// Whether the clips grid is being pinched right now.
+  ///
+  /// A pinch and a page swipe compete for the same pointers, and the swipe
+  /// reads a two-finger spread as a horizontal drag. Suspending it for the
+  /// duration of the pinch keeps the tabs still while the grid zooms.
+  bool _isPinching = false;
+
+  void _setPinching(bool active) {
+    if (active == _isPinching || !mounted) return;
+
+    void apply() {
+      if (!mounted || active == _isPinching) return;
+      setState(() => _isPinching = active);
+    }
+
+    switch (SchedulerBinding.instance.schedulerPhase) {
+      case SchedulerPhase.idle:
+      case SchedulerPhase.postFrameCallbacks:
+        apply();
+      case SchedulerPhase.transientCallbacks:
+      case SchedulerPhase.midFrameMicrotasks:
+      case SchedulerPhase.persistentCallbacks:
+        WidgetsBinding.instance.addPostFrameCallback((_) => apply());
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return TabBarView(
-      controller: tabController,
-      children: [
-        for (final tab in tabs)
-          switch (tab) {
-            _LibraryTab.drafts => const DraftsTab(showRecordButton: false),
-            _LibraryTab.clips => ClipsTab(
-              clips: clips,
-              selectionEnabled: selectionEnabled,
-              targetAspectRatio: targetAspectRatio,
-              showRecordButton: false,
-            ),
-            _LibraryTab.sounds => const SoundsTab(),
-          },
-      ],
+    return NotificationListener<PinchZoomNotification>(
+      onNotification: (notification) {
+        _setPinching(notification.active);
+        return false;
+      },
+      child: TabBarView(
+        controller: widget.tabController,
+        physics: _isPinching ? const NeverScrollableScrollPhysics() : null,
+        children: [
+          for (final tab in widget.tabs)
+            switch (tab) {
+              _LibraryTab.drafts => const DraftsTab(showRecordButton: false),
+              _LibraryTab.clips => ClipsTab(
+                clips: widget.clips,
+                selectionEnabled: widget.selectionEnabled,
+                targetAspectRatio: widget.targetAspectRatio,
+                showRecordButton: false,
+                backgroundColor: widget.backgroundColor,
+              ),
+              _LibraryTab.sounds => const SoundsTab(),
+            },
+        ],
+      ),
     );
   }
 }

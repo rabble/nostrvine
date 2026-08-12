@@ -10,6 +10,8 @@ import 'package:openvine/widgets/library/library_toolbar.dart';
 
 void main() {
   final en = AppLocalizationsEn();
+  final displayOptionsLabel =
+      '${en.librarySortClipsSemanticLabel}. ${en.libraryGridSizeLabel}';
 
   group(LibraryToolbar, () {
     Finder iconButton(DivineIconName icon) => find.byWidgetPredicate(
@@ -57,9 +59,7 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget());
 
-        final title = tester.widget<Text>(
-          find.text(en.profileMyLibraryLabel),
-        );
+        final title = tester.widget<Text>(find.text(en.profileMyLibraryLabel));
         expect(title.maxLines, equals(1));
         expect(title.overflow, equals(TextOverflow.ellipsis));
       });
@@ -146,10 +146,7 @@ void main() {
           find.bySemanticsLabel(en.libraryOpenTrashSemanticLabel),
           findsOneWidget,
         );
-        expect(
-          find.bySemanticsLabel(en.librarySortClipsSemanticLabel),
-          findsOneWidget,
-        );
+        expect(find.bySemanticsLabel(displayOptionsLabel), findsOneWidget);
         expect(
           find.bySemanticsLabel(en.librarySelectClipsSemanticLabel),
           findsOneWidget,
@@ -202,9 +199,7 @@ void main() {
 
       testWidgets('trash button triggers onOpenTrash', (tester) async {
         var pressed = false;
-        await tester.pumpWidget(
-          buildWidget(onOpenTrash: () => pressed = true),
-        );
+        await tester.pumpWidget(buildWidget(onOpenTrash: () => pressed = true));
 
         await tester.tap(iconButton(DivineIconName.trash));
         expect(pressed, isTrue);

@@ -6392,6 +6392,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => 'تحديد المقاطع';
 
   @override
+  String get libraryGridSizeLabel => 'حجم الشبكة';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عمود',
+      many: '$count عمودًا',
+      few: '$count أعمدة',
+      two: 'عمودان',
+      one: 'عمود واحد',
+      zero: 'بلا أعمدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => 'تحديد';
 
   @override

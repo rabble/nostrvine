@@ -2558,6 +2558,8 @@
     "libraryOpenTrashSemanticLabel": "Abrir clips eliminados recientemente",
     "librarySortClipsSemanticLabel": "Ordenar clips",
     "librarySelectClipsSemanticLabel": "Seleccionar clips",
+    "libraryGridSizeLabel": "Tamaño de la cuadrícula",
+    "libraryGridSizeColumns": "{count, plural, one{1 columna} other{{count} columnas}}",
     "librarySelect": "Seleccionar",
     "librarySortNewestCreation": "Creación más reciente",
     "librarySortOldestCreation": "Creación más antigua",

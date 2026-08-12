@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/clips_tab.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:openvine/widgets/library/pinch_zoom_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,8 +72,31 @@ class _StubClipManagerNotifier extends ClipManagerNotifier {
   ClipManagerState build() => ClipManagerState(clips: _clips);
 }
 
+List<Object?> _captureAnnouncements(WidgetTester tester) {
+  final announced = <Object?>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (message) async {
+      if (message is Map && message['type'] == 'announce') {
+        announced.add((message['data'] as Map?)?['message']);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announced;
+}
+
 void main() {
   final en = AppLocalizationsEn();
+  final displayOptionsLabel =
+      '${en.librarySortClipsSemanticLabel}. ${en.libraryGridSizeLabel}';
 
   group(LibraryScreen, () {
     late _MockGallerySaveService mockGallerySaveService;
@@ -175,6 +200,77 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(ClipsTab), findsOneWidget);
+      });
+
+      // A pinch on the clips grid and a tab swipe compete for the same
+      // pointers, and the swipe reads a two-finger spread as a horizontal
+      // drag. Without this the tabs slide away instead of the grid zooming.
+      testWidgets('suspends the tab swipe while the clips grid is pinched', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(initialTabIndex: 1));
+        await tester.pumpAndSettle();
+
+        TabBarView tabBarView() =>
+            tester.widget<TabBarView>(find.byType(TabBarView));
+        expect(tabBarView().physics, isNull);
+
+        final grid = tester.element(find.byType(ClipsTab));
+        const PinchZoomNotification(active: true).dispatch(grid);
+        await tester.pump();
+
+        expect(tabBarView().physics, isA<NeverScrollableScrollPhysics>());
+
+        const PinchZoomNotification(active: false).dispatch(grid);
+        await tester.pump();
+
+        expect(tabBarView().physics, isNull);
+      });
+
+      // Pinching the grid is the primary way to the column count, but it is a
+      // gesture assistive technology cannot perform — and the count is a
+      // persisted preference, not transient view state. Without the toolbar
+      // route to it, a screen-reader user could never set it.
+      testWidgets('changes the grid size from the menu without a pinch', (
+        tester,
+      ) async {
+        final announcements = _captureAnnouncements(tester);
+        await tester.pumpWidget(buildWidget(initialTabIndex: 1));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.bySemanticsLabel(displayOptionsLabel));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryGridSizeLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryGridSizeColumns(2)), findsOneWidget);
+        expect(find.text(en.libraryGridSizeColumns(5)), findsOneWidget);
+
+        await tester.tap(find.text(en.libraryGridSizeColumns(2)));
+        await tester.pumpAndSettle();
+
+        expect(sharedPreferences.getInt(ClipGridColumns.prefsKey), equals(2));
+        expect(announcements, contains(en.libraryGridSizeColumns(2)));
+      });
+
+      testWidgets('changes the grid size from the selection sheet', (
+        tester,
+      ) async {
+        final announcements = _captureAnnouncements(tester);
+        await tester.pumpWidget(buildWidget(selectionMode: true));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.bySemanticsLabel(en.libraryGridSizeLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryGridSizeColumns(2)), findsOneWidget);
+        expect(find.text(en.libraryGridSizeColumns(5)), findsOneWidget);
+
+        await tester.tap(find.text(en.libraryGridSizeColumns(5)));
+        await tester.pumpAndSettle();
+
+        expect(sharedPreferences.getInt(ClipGridColumns.prefsKey), equals(5));
+        expect(announcements, contains(en.libraryGridSizeColumns(5)));
       });
 
       testWidgets('$ClipSelectionFooter in selection mode', (tester) async {

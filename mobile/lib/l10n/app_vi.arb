@@ -3730,6 +3730,8 @@
   "libraryOpenTrashSemanticLabel": "Mở các clip đã xóa gần đây",
   "librarySortClipsSemanticLabel": "Sắp xếp clip",
   "librarySelectClipsSemanticLabel": "Chọn clip",
+  "libraryGridSizeLabel": "Kích thước lưới",
+  "libraryGridSizeColumns": "{count, plural, other{{count} cột}}",
   "librarySelect": "Chọn",
   "librarySortNewestCreation": "Mới tạo nhất",
   "librarySortOldestCreation": "Cũ nhất",

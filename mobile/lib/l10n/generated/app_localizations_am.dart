@@ -6308,6 +6308,20 @@ class AppLocalizationsAm extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => 'ቅንጥቦችን ምረጥ';
 
   @override
+  String get libraryGridSizeLabel => 'የፍርግርግ መጠን';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count አምዶች',
+      one: '1 አምድ',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => 'ምረጥ';
 
   @override

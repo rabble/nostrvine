@@ -6134,6 +6134,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => '选择片段';
 
   @override
+  String get libraryGridSizeLabel => '网格大小';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count列',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => '选择';
 
   @override

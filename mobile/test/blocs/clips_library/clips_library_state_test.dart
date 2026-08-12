@@ -222,6 +222,7 @@ void main() {
         const <String>{},
         const Duration(seconds: 5),
         ClipSort.newestCreation,
+        ClipGridColumns.initial,
         false,
         false,
         const GallerySaveResultSuccess(successCount: 1, failureCount: 0),

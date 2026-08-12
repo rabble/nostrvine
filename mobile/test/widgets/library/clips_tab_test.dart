@@ -69,6 +69,7 @@ void main() {
             value: mockBloc,
             child: ClipsTab(
               showRecordButton: isSelectionMode,
+              backgroundColor: VineTheme.surfaceBackground,
               selectionEnabled: selectionEnabled,
               targetAspectRatio: targetAspectRatio,
             ),
@@ -137,6 +138,24 @@ void main() {
         expect(find.byType(VideoClipThumbnailCard), findsNWidgets(2));
       });
 
+      testWidgets('the grid at the persisted column count', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            clips: [clip1, clip2],
+            gridColumnCount: 2,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        // Two columns over the 800px test surface, less the 4px gutter.
+        expect(
+          tester.getSize(find.byType(VideoClipThumbnailCard).first).width,
+          closeTo(398, 0.5),
+        );
+      });
+
       testWidgets(
         'omits the selection position when the badge is not shown',
         (tester) async {
@@ -177,6 +196,35 @@ void main() {
 
         verify(
           () => mockBloc.add(ClipsLibraryToggleSelection(clip1)),
+        ).called(1);
+      });
+
+      testWidgets('pinching the grid open changes the column count', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            clips: [clip1, clip2],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        // Spreading 80px to 120px is a 1.5x zoom: 3 columns / 1.5 = 2.
+        final centre = tester.getCenter(find.byType(ClipsTab));
+        final first = await tester.startGesture(centre - const Offset(80, 0));
+        final second = await tester.startGesture(centre + const Offset(80, 0));
+        await tester.pump();
+        await first.moveTo(centre - const Offset(120, 0));
+        await second.moveTo(centre + const Offset(120, 0));
+        await tester.pump();
+        await first.up();
+        await second.up();
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(const ClipsLibraryGridColumnsChanged(2)),
         ).called(1);
       });
 

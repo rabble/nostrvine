@@ -2542,6 +2542,8 @@
     "libraryOpenTrashSemanticLabel": "فتح المقاطع المحذوفة مؤخرًا",
     "librarySortClipsSemanticLabel": "فرز المقاطع",
     "librarySelectClipsSemanticLabel": "تحديد المقاطع",
+    "libraryGridSizeLabel": "حجم الشبكة",
+    "libraryGridSizeColumns": "{count, plural, zero{بلا أعمدة} one{عمود واحد} two{عمودان} few{{count} أعمدة} many{{count} عمودًا} other{{count} عمود}}",
     "librarySelect": "تحديد",
     "librarySortNewestCreation": "الأحدث إنشاءً",
     "librarySortOldestCreation": "الأقدم إنشاءً",
