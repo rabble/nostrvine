@@ -2261,10 +2261,13 @@ void main() {
         'discards reverse result when source clip is removed in-flight',
         () async {
           final completer = Completer<EditorVideo>();
+          final queued = <String>[];
           final clip = _createClipWithFile();
           final bloc = buildBloc(
             reverseClip: ({required sourceClip, required renderId}) =>
                 completer.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
           );
 
           bloc.add(ClipEditorInitialized([clip]));
@@ -2285,6 +2288,8 @@ void main() {
           expect(bloc.state.reversingClipId, isNull);
           expect(bloc.state.clips, isEmpty);
           expect(bloc.state.lastReverseResult, isA<ClipReverseDiscarded>());
+          // Render never landed on a clip — session cleanup is the only reaper.
+          expect(queued, ['/reversed/discarded.mp4']);
 
           await bloc.close();
         },
@@ -2488,6 +2493,7 @@ void main() {
         },
       );
 
+      final discardedChromaPaths = <String>[];
       blocTest<ClipEditorBloc, ClipEditorState>(
         'discards the render when the clip is gone',
         build: () => buildBloc(
@@ -2503,6 +2509,8 @@ void main() {
                   source: '/path/clip-1.mp4',
                 );
               },
+          deferFileCleanup: (paths) =>
+              discardedChromaPaths.addAll(paths.whereType<String>()),
         ),
         seed: () => ClipEditorState(
           clips: [
@@ -2522,8 +2530,11 @@ void main() {
         },
         // Outlast the fake render so `verify` sees the settled state.
         wait: const Duration(milliseconds: 50),
-        verify: (bloc) =>
-            expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyDiscarded>()),
+        verify: (bloc) {
+          expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyDiscarded>());
+          // Queues the baked output only — not the pre-key source path.
+          expect(discardedChromaPaths, ['/path/keyed.mp4']);
+        },
       );
     });
 
@@ -2874,6 +2885,36 @@ void main() {
           await bloc.close();
         },
       );
+
+      test(
+        'discards the write when the whole clip is removed in-flight',
+        () async {
+          final queued = <String>[];
+          final gate = Completer<String>();
+          final bloc = buildBloc(
+            writeStopMotionFrame: (_) => gate.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
+          )..emit(ClipEditorState(clips: [_createStopMotionClip()]));
+
+          bloc.add(
+            ClipEditorStopMotionFrameTransformed(
+              clipId: 'sm',
+              frameIndex: 1,
+              imageBytes: bytes,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.emit(const ClipEditorState());
+          gate.complete('transformed.jpg');
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.clips, isEmpty);
+          expect(queued, ['transformed.jpg']);
+          await bloc.close();
+        },
+      );
     });
 
     group('ClipEditorClipTransformRequested', () {
@@ -3073,6 +3114,7 @@ void main() {
         'discards transform result when source clip is removed in-flight',
         () async {
           final completer = Completer<EditorVideo>();
+          final queued = <String>[];
           final clip = _createClipWithFile();
           final bloc = buildBloc(
             transformClip:
@@ -3081,6 +3123,8 @@ void main() {
                   required transform,
                   required renderId,
                 }) => completer.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
           );
 
           bloc.add(ClipEditorInitialized([clip]));
@@ -3106,6 +3150,7 @@ void main() {
           expect(bloc.state.transformingClipId, isNull);
           expect(bloc.state.clips, isEmpty);
           expect(bloc.state.lastTransformResult, isA<ClipTransformDiscarded>());
+          expect(queued, ['/transformed/discarded.mp4']);
 
           await bloc.close();
         },

@@ -1289,6 +1289,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           name: 'ClipEditorBloc',
           category: LogCategory.video,
         );
+        // The render never reached a clip, so nothing but this queue can name it.
+        _deferOrphanedPaths([reversedVideo.file?.path]);
         emit(
           state.copyWith(
             isReversing: false,
@@ -1464,6 +1466,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           name: 'ClipEditorBloc',
           category: LogCategory.video,
         );
+        // Baked output never landed on a clip. Keep `baked.source` — that is the
+        // pre-key file some other draft or the library may still play.
+        _deferOrphanedPaths([baked.video.file?.path]);
         emit(
           state.copyWith(
             isChromaKeying: false,
@@ -1661,7 +1666,17 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     final currentClips = state.clips;
     final currentIndex = currentClips.indexWhere((c) => c.id == event.clipId);
-    if (currentIndex == -1) return;
+    if (currentIndex == -1) {
+      // Whole clip gone while the still was writing — same leak class as a
+      // moved frame: the new file never became a reference anyone tracks.
+      Log.warning(
+        '⚠️ Transformed still discarded: clip ${event.clipId} no longer exists',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      _deferOrphanedPaths([path]);
+      return;
+    }
     final currentFrames = currentClips[currentIndex].stopMotionFrames;
     if (currentFrames == null ||
         event.frameIndex >= currentFrames.length ||
@@ -1740,6 +1755,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           name: 'ClipEditorBloc',
           category: LogCategory.video,
         );
+        // New render never swapped onto a clip — queue it the same way an
+        // abandoned stop-motion still is, so session end can reclaim it.
+        _deferOrphanedPaths([transformedVideo.file?.path]);
         emit(
           state.copyWith(
             isTransforming: false,
