@@ -32,13 +32,6 @@ class ClipCategoriesDao extends DatabaseAccessor<AppDatabase>
     return query.get();
   }
 
-  /// Get a single category by ID, or `null` when it no longer exists.
-  Future<ClipCategoryRow?> getCategoryById(String id) {
-    return (select(
-      clipCategories,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
-  }
-
   /// Insert a category, or update it when [id] already exists.
   Future<void> upsertCategory({
     required String id,
@@ -65,12 +58,8 @@ class ClipCategoriesDao extends DatabaseAccessor<AppDatabase>
     required String id,
     required String name,
   }) async {
-    final rows =
-        await (update(
-          clipCategories,
-        )..where((t) => t.id.equals(id))).write(
-          ClipCategoriesCompanion(name: Value(name)),
-        );
+    final rows = await (update(clipCategories)..where((t) => t.id.equals(id)))
+        .write(ClipCategoriesCompanion(name: Value(name)));
     return rows > 0;
   }
 

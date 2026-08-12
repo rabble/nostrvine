@@ -109,7 +109,8 @@ void main() {
         final renamed = await dao.renameCategory(id: 'cat-a', name: 'Trips');
 
         expect(renamed, isTrue);
-        expect((await dao.getCategoryById('cat-a'))?.name, 'Trips');
+        final categories = await dao.getCategories();
+        expect(categories.single.name, 'Trips');
       });
 
       test('reports false for an unknown category', () async {
@@ -126,7 +127,7 @@ void main() {
         final deleted = await dao.deleteCategory('cat-a');
 
         expect(deleted, isTrue);
-        expect(await dao.getCategoryById('cat-a'), null);
+        expect(await dao.getCategories(), isEmpty);
         final clips = await clipsDao.getLibraryClips();
         expect(clips, hasLength(2));
         expect(clips.every((c) => c.categoryId == null), isTrue);
@@ -175,10 +176,7 @@ void main() {
           final deleted = await dao.deleteAllForUser(ownerA);
 
           expect(deleted, 1);
-          expect(
-            (await dao.getCategories()).map((c) => c.id),
-            ['cat-legacy'],
-          );
+          expect((await dao.getCategories()).map((c) => c.id), ['cat-legacy']);
           final clips = await clipsDao.getLibraryClips();
           expect(clips.single.categoryId, null);
         },
@@ -193,8 +191,10 @@ void main() {
         final claimed = await dao.claimLegacyRows(ownerA);
 
         expect(claimed, 1);
-        expect((await dao.getCategoryById('cat-legacy'))?.ownerPubkey, ownerA);
-        expect((await dao.getCategoryById('cat-b'))?.ownerPubkey, ownerB);
+        final categories = await dao.getCategories();
+        final byId = {for (final category in categories) category.id: category};
+        expect(byId['cat-legacy']?.ownerPubkey, ownerA);
+        expect(byId['cat-b']?.ownerPubkey, ownerB);
       });
     });
   });

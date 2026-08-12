@@ -246,8 +246,9 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// File a clip under [categoryId], or pass `null` to remove it from its
   /// current category. Does not validate that the category exists.
   ///
-  /// Pass [clearArchived] to drop the archive marker in the same statement,
-  /// so a clip can never be left filed under a category *and* archived.
+  /// Pass [clearArchived] to drop the archive marker in the same statement
+  /// when filing an archived clip into a visible category. Unfiling leaves the
+  /// archive marker alone.
   ///
   /// Returns true if a row was updated.
   Future<bool> setClipCategory({

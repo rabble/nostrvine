@@ -41,15 +41,6 @@ class ClipCategory extends Equatable {
     return trimmed.characters.take(maxNameLength).toString();
   }
 
-  ClipCategory copyWith({String? name, int? orderIndex}) {
-    return ClipCategory(
-      id: id,
-      name: name ?? this.name,
-      createdAt: createdAt,
-      orderIndex: orderIndex ?? this.orderIndex,
-    );
-  }
-
   @override
   List<Object?> get props => [id, name, createdAt, orderIndex];
 }

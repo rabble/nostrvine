@@ -20284,163 +20284,163 @@ abstract class AppLocalizations {
   /// **'All'**
   String get libraryFilterAll;
 
-  /// No description provided for @libraryFilterArchive.
+  /// Clip library filter chip that shows archived clips. Noun label, not an imperative action.
   ///
   /// In en, this message translates to:
   /// **'Archive'**
   String get libraryFilterArchive;
 
-  /// No description provided for @libraryFilterDeleted.
+  /// Clip library filter chip that opens the trash view for recently deleted clips.
   ///
   /// In en, this message translates to:
   /// **'Deleted'**
   String get libraryFilterDeleted;
 
-  /// Label of the chip that creates a new clip-library category. Kept to one short word so the chip row stays scannable.
+  /// Short chip label that creates a new clip-library category.
   ///
   /// In en, this message translates to:
   /// **'New'**
   String get libraryCategoryNewChipLabel;
 
-  /// No description provided for @libraryCategoryCreateSemanticLabel.
+  /// Accessibility label for the chip that creates a new clip-library category.
   ///
   /// In en, this message translates to:
   /// **'Create a category'**
   String get libraryCategoryCreateSemanticLabel;
 
-  /// No description provided for @libraryCategoryCreateTitle.
+  /// Title of the bottom sheet for naming a new clip-library category.
   ///
   /// In en, this message translates to:
   /// **'New category'**
   String get libraryCategoryCreateTitle;
 
-  /// No description provided for @libraryCategoryCreateAction.
+  /// Button label that confirms creating a new clip-library category.
   ///
   /// In en, this message translates to:
   /// **'Create'**
   String get libraryCategoryCreateAction;
 
-  /// No description provided for @libraryCategoryRenameTitle.
+  /// Title of the bottom sheet for renaming a clip-library category.
   ///
   /// In en, this message translates to:
   /// **'Rename category'**
   String get libraryCategoryRenameTitle;
 
-  /// No description provided for @libraryCategoryRenameAction.
+  /// Button or menu label that starts or confirms renaming a clip-library category.
   ///
   /// In en, this message translates to:
   /// **'Rename'**
   String get libraryCategoryRenameAction;
 
-  /// No description provided for @libraryCategoryDeleteAction.
+  /// Destructive menu action that deletes only the category, not the clips inside it.
   ///
   /// In en, this message translates to:
   /// **'Delete category'**
   String get libraryCategoryDeleteAction;
 
-  /// No description provided for @libraryCategoryNameLabel.
+  /// Text-field label for the user's own clip-library category name.
   ///
   /// In en, this message translates to:
   /// **'Category name'**
   String get libraryCategoryNameLabel;
 
-  /// No description provided for @libraryCategoryDeleteConfirmTitle.
+  /// Confirmation title before deleting a user-created clip-library category.
   ///
   /// In en, this message translates to:
   /// **'Delete “{name}”?'**
   String libraryCategoryDeleteConfirmTitle(String name);
 
-  /// No description provided for @libraryCategoryDeleteConfirmMessage.
+  /// Explains that deleting a category keeps the clips and removes their category assignment.
   ///
   /// In en, this message translates to:
   /// **'Your clips stay put. They just move back to All.'**
   String get libraryCategoryDeleteConfirmMessage;
 
-  /// No description provided for @libraryCategoryManageSemanticLabel.
+  /// Accessibility label for the toolbar button that manages the active clip-library category.
   ///
   /// In en, this message translates to:
   /// **'Rename or delete this category'**
   String get libraryCategoryManageSemanticLabel;
 
-  /// No description provided for @libraryCategoryMoveTitle.
+  /// Title of the sheet for filing selected clips into a category, archiving them, or removing their category.
   ///
   /// In en, this message translates to:
   /// **'Move to'**
   String get libraryCategoryMoveTitle;
 
-  /// No description provided for @libraryCategoryMoveNone.
+  /// Move-sheet option that removes selected clips from any user-created category.
   ///
   /// In en, this message translates to:
   /// **'No category'**
   String get libraryCategoryMoveNone;
 
-  /// No description provided for @libraryCategoryMoveNewCategory.
+  /// Move-sheet option that creates a new category before filing the selected clips into it.
   ///
   /// In en, this message translates to:
   /// **'New category'**
   String get libraryCategoryMoveNewCategory;
 
-  /// No description provided for @libraryArchiveAction.
+  /// Move-sheet action that archives selected clips out of the main library view.
   ///
   /// In en, this message translates to:
   /// **'Archive'**
   String get libraryArchiveAction;
 
-  /// No description provided for @libraryUnarchiveAction.
+  /// Move-sheet action that brings selected archived clips back into the main library view.
   ///
   /// In en, this message translates to:
   /// **'Unarchive'**
   String get libraryUnarchiveAction;
 
-  /// No description provided for @libraryMoveSelectedClipsTooltip.
+  /// Accessibility label for the toolbar button that opens the selected-clips move sheet.
   ///
   /// In en, this message translates to:
   /// **'Move selected clips'**
   String get libraryMoveSelectedClipsTooltip;
 
-  /// No description provided for @libraryCategoryEmptyTitle.
+  /// Empty-state title for a user-created category that has no clips.
   ///
   /// In en, this message translates to:
   /// **'Nothing filed here yet'**
   String get libraryCategoryEmptyTitle;
 
-  /// No description provided for @libraryCategoryEmptySubtitle.
+  /// Empty-state subtitle for a user-created category that has no clips.
   ///
   /// In en, this message translates to:
   /// **'Select a few clips and move them into this category.'**
   String get libraryCategoryEmptySubtitle;
 
-  /// No description provided for @libraryArchiveEmptyTitle.
+  /// Empty-state title for the archive filter when no clips are archived.
   ///
   /// In en, this message translates to:
   /// **'Nothing archived'**
   String get libraryArchiveEmptyTitle;
 
-  /// No description provided for @libraryArchiveEmptySubtitle.
+  /// Empty-state subtitle for the archive filter when no clips are archived.
   ///
   /// In en, this message translates to:
   /// **'Archived clips wait here, out of the way of your main library.'**
   String get libraryArchiveEmptySubtitle;
 
-  /// No description provided for @libraryClipsMovedToCategory.
+  /// Snackbar after selected clips are filed into a user-created category.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 clip moved to {name}} other{{count} clips moved to {name}}}'**
   String libraryClipsMovedToCategory(int count, String name);
 
-  /// No description provided for @libraryClipsRemovedFromCategory.
+  /// Snackbar after selected clips are removed from their user-created category.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 clip removed from its category} other{{count} clips removed from their category}}'**
   String libraryClipsRemovedFromCategory(int count);
 
-  /// No description provided for @libraryClipsArchived.
+  /// Snackbar after selected clips are archived out of the main library view.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 clip archived} other{{count} clips archived}}'**
   String libraryClipsArchived(int count);
 
-  /// No description provided for @libraryClipsUnarchived.
+  /// Snackbar after selected archived clips are returned to the main library view.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 clip back in your library} other{{count} clips back in your library}}'**

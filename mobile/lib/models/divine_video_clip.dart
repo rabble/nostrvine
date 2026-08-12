@@ -398,9 +398,7 @@ class DivineVideoClip {
     bool clearProofManifestJson = false,
     DateTime? deletedAt,
     String? categoryId,
-    bool clearCategoryId = false,
     DateTime? archivedAt,
-    bool clearArchivedAt = false,
     ClipTransition? transition,
     bool clearTransition = false,
     ClipChromaKey? chromaKey,
@@ -459,8 +457,8 @@ class DivineVideoClip {
           ? null
           : (proofManifestJson ?? this.proofManifestJson),
       deletedAt: deletedAt ?? this.deletedAt,
-      categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
-      archivedAt: clearArchivedAt ? null : (archivedAt ?? this.archivedAt),
+      categoryId: categoryId ?? this.categoryId,
+      archivedAt: archivedAt ?? this.archivedAt,
       transition: clearTransition ? null : (transition ?? this.transition),
       chromaKey: isNewLogicalClip || clearChromaKey
           ? null
