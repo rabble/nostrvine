@@ -1978,6 +1978,46 @@ void main() {
         ],
       );
 
+      test('re-resolves the video after confirm if the list shifted', () async {
+        final started = Completer<void>();
+        final release = Completer<void>();
+        final bloc = createBloc(
+          confirmVideoUnavailable:
+              ({
+                required videoId,
+                required videoUrl,
+                explicitSha256,
+              }) async {
+                started.complete();
+                await release.future;
+                return FeedUnavailability.sessionOnly;
+              },
+        );
+        addTearDown(bloc.close);
+        bloc.add(const FullscreenFeedStarted());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        videosController.add([
+          createTestVideo('video1'),
+          createTestVideo('video2'),
+          createTestVideo('video3'),
+        ]);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        bloc.add(const FullscreenFeedVideoUnavailable('video2'));
+        await started.future;
+        videosController.add([
+          createTestVideo('video3'),
+          createTestVideo('video1'),
+          createTestVideo('video2'),
+        ]);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        release.complete();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(bloc.state.videos.map((v) => v.id), ['video3', 'video1']);
+        expect(bloc.state.removedVideoIds, equals({'video2'}));
+      });
+
       test(
         'session-only removal survives a source re-push of the same id',
         () async {

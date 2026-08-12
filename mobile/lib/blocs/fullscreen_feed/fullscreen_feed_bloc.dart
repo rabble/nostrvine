@@ -636,20 +636,27 @@ class FullscreenFeedBloc
       return;
     }
 
-    // Re-check dedupe in case another handler inserted the same id while
-    // our HEAD was in flight.
+    // Re-check dedupe and re-resolve the index after the await. A source
+    // re-push or hide-filter can shift the list while confirmation runs.
     if (state.removedVideoIds.contains(videoId)) return;
+    var currentIndex = state.videos.indexWhere((v) => v.id == videoId);
+    if (currentIndex < 0) return;
+    final currentVideo = state.videos[currentIndex];
 
     // Persist only a terminal (HEAD 404 + blocked) verdict. An API 404 is
     // session-only because funnelcake also 404s reversible states.
     if (unavailable.shouldPersist) {
-      _onVideoConfirmedUnavailable?.call(video);
+      _onVideoConfirmedUnavailable?.call(currentVideo);
     }
 
     _onRemoveVideo?.call(videoId);
 
+    if (state.removedVideoIds.contains(videoId)) return;
+    currentIndex = state.videos.indexWhere((v) => v.id == videoId);
+    if (currentIndex < 0) return;
+
     final updatedRemoved = {...state.removedVideoIds, videoId};
-    final updatedVideos = [...state.videos]..removeAt(index);
+    final updatedVideos = [...state.videos]..removeAt(currentIndex);
 
     if (updatedVideos.isEmpty) {
       emit(
@@ -663,7 +670,7 @@ class FullscreenFeedBloc
       return;
     }
 
-    final nextIndex = index.clamp(0, updatedVideos.length - 1);
+    final nextIndex = currentIndex.clamp(0, updatedVideos.length - 1);
     emit(
       state.copyWith(
         videos: updatedVideos,
