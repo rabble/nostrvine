@@ -1279,6 +1279,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'Altyazı kapalı';
 
   @override
+  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+
+  @override
+  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+
+  @override
   String get contentWarningLabel => 'İçerik Uyarısı';
 
   @override

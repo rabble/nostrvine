@@ -44,8 +44,9 @@ void main() {
       bool provideAutoAdvance = true,
       bool adaptiveMediaChrome = false,
       ThemeData? theme,
+      String? videoId,
     }) {
-      Widget pill = const Scaffold(body: FeedPlaybackTogglesPill());
+      Widget pill = Scaffold(body: FeedPlaybackTogglesPill(videoId: videoId));
 
       pill = provideAutoAdvance
           ? MultiBlocProvider(
@@ -113,20 +114,13 @@ void main() {
 
     testWidgets(
       'uses light media chrome when adaptive chrome flag is enabled',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await tester.pumpWidget(
-          buildSubject(
-            adaptiveMediaChrome: true,
-            theme: VineTheme.lightTheme,
-          ),
+          buildSubject(adaptiveMediaChrome: true, theme: VineTheme.lightTheme),
         );
 
         final chromeBox = tester
-            .widgetList<DecoratedBox>(
-              find.byType(DecoratedBox),
-            )
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
             .firstWhere(
               (box) =>
                   box.decoration is BoxDecoration &&
@@ -181,6 +175,69 @@ void main() {
       expect(container.read(subtitleVisibilityProvider), isFalse);
 
       expect(find.text(l10n.videoSettingsCaptionsOff), findsOneWidget);
+    });
+
+    testWidgets('scoped captions toggle leaves global preference untouched', (
+      tester,
+    ) async {
+      const videoId =
+          'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
+      const otherVideoId =
+          'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1';
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(subtitleVisibilityProvider), isTrue);
+      expect(
+        container.read(subtitleVisibilityForVideoProvider(videoId)),
+        isTrue,
+      );
+      expect(
+        container.read(subtitleVisibilityForVideoProvider(otherVideoId)),
+        isTrue,
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<FeedAutoAdvanceCubit>.value(
+                  value: autoAdvanceCubit,
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: volumeCubit),
+              ],
+              child: const Scaffold(
+                body: FeedPlaybackTogglesPill(videoId: videoId),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoSettingsCaptionsDisable),
+      );
+      await tester.pump();
+
+      expect(container.read(subtitleVisibilityProvider), isTrue);
+      expect(
+        container.read(subtitleVisibilityForVideoProvider(videoId)),
+        isFalse,
+      );
+      expect(
+        container.read(subtitleVisibilityForVideoProvider(otherVideoId)),
+        isTrue,
+      );
+      verifyNever(
+        () => mockPrefs.setBool('subtitle_visibility_enabled', any()),
+      );
+      expect(find.text(l10n.videoSettingsCaptionsOffForVideo), findsOneWidget);
     });
 
     testWidgets(

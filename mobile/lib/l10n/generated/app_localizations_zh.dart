@@ -1242,6 +1242,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoSettingsCaptionsOff => '字幕已关闭';
 
   @override
+  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+
+  @override
+  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+
+  @override
   String get contentWarningLabel => '内容警告';
 
   @override

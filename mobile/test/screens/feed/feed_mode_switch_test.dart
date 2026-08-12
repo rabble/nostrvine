@@ -10,22 +10,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 
+import '../../helpers/test_provider_overrides.dart';
+
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
+
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
 
 void main() {
   group(FeedModeSwitch, () {
     late _MockVideoFeedBloc mockBloc;
+    late _MockVideoVolumeCubit mockVolumeCubit;
     late AppLocalizations l10n;
 
     setUp(() {
       mockBloc = _MockVideoFeedBloc();
+      mockVolumeCubit = _MockVideoVolumeCubit();
+      when(() => mockVolumeCubit.state).thenReturn(const VideoVolumeState());
     });
 
     setUpAll(() {
@@ -37,18 +46,26 @@ void main() {
 
     tearDown(() {
       mockBloc.close();
+      mockVolumeCubit.close();
     });
 
-    Widget createTestWidget() {
+    // ignore: strict_raw_type
+    Widget createTestWidget({List overrides = const []}) {
       return ProviderScope(
+        overrides: overrides.cast(),
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Stack(
               children: [
-                BlocProvider<VideoFeedBloc>.value(
-                  value: mockBloc,
+                MultiBlocProvider(
+                  providers: [
+                    BlocProvider<VideoFeedBloc>.value(value: mockBloc),
+                    BlocProvider<VideoVolumeCubit>.value(
+                      value: mockVolumeCubit,
+                    ),
+                  ],
                   child: const FeedModeSwitch(),
                 ),
               ],
@@ -66,6 +83,18 @@ void main() {
         videoEventIds: const [],
         createdAt: now,
         updatedAt: now,
+      );
+    }
+
+    VideoEvent video({required String id}) {
+      return VideoEvent(
+        id: id,
+        pubkey:
+            'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3',
+        createdAt: 1700000000,
+        content: 'Test video',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+        videoUrl: 'https://example.com/video.mp4',
       );
     }
 
@@ -111,6 +140,40 @@ void main() {
         await tester.pumpWidget(createTestWidget());
 
         expect(find.text('Best Vines'), findsOneWidget);
+      });
+    });
+
+    group('Feed Settings', () {
+      testWidgets('does not show owner actions in the feed settings popover', (
+        tester,
+      ) async {
+        final firstVideo = video(
+          id: 'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+        );
+        final activeVideo = video(
+          id: 'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1',
+        );
+        when(() => mockBloc.state).thenReturn(
+          VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            videos: [firstVideo, activeVideo],
+            currentIndex: 1,
+          ),
+        );
+        final mockAuth = createMockAuthService();
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(activeVideo.pubkey);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            overrides: getStandardTestOverrides(mockAuthService: mockAuth),
+          ),
+        );
+
+        await tester.tap(find.bySemanticsLabel(l10n.videoSettingsMenuOpen));
+        await tester.pump();
+
+        expect(find.text(l10n.shareMenuEditVideo), findsNothing);
+        expect(find.text(l10n.shareMenuDeleteVideo), findsNothing);
       });
     });
 
@@ -439,10 +502,7 @@ void main() {
           final caretRect = tester.getRect(caretIcon);
 
           await tester.tapAt(
-            Offset(
-              (textRect.right + caretRect.left) / 2,
-              textRect.center.dy,
-            ),
+            Offset((textRect.right + caretRect.left) / 2, textRect.center.dy),
           );
           await tester.pumpAndSettle();
 
@@ -549,37 +609,34 @@ void main() {
         },
       );
 
-      testWidgets(
-        'semantics label updates when the feed source changes',
-        (tester) async {
-          whenListen(
-            mockBloc,
-            Stream.fromIterable([
-              const VideoFeedBlocState(
-                status: VideoFeedStatus.success,
-                source: VideoFeedSource.following(),
-              ),
-            ]),
-            initialState: const VideoFeedBlocState(
+      testWidgets('semantics label updates when the feed source changes', (
+        tester,
+      ) async {
+        whenListen(
+          mockBloc,
+          Stream.fromIterable([
+            const VideoFeedBlocState(
               status: VideoFeedStatus.success,
-              source: VideoFeedSource.forYou(),
+              source: VideoFeedSource.following(),
             ),
-          );
-          await tester.pumpWidget(createTestWidget());
-          await tester.pump();
+          ]),
+          initialState: const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
+        );
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
 
-          final semanticsWidget = findFeedModeSemanticsWidget(
-            tester,
-            l10n.feedModeFollowing,
-          );
-          expect(
-            semanticsWidget.properties.label,
-            equals(
-              l10n.feedModeSemanticLabel(l10n.feedModeFollowing),
-            ),
-          );
-        },
-      );
+        final semanticsWidget = findFeedModeSemanticsWidget(
+          tester,
+          l10n.feedModeFollowing,
+        );
+        expect(
+          semanticsWidget.properties.label,
+          equals(l10n.feedModeSemanticLabel(l10n.feedModeFollowing)),
+        );
+      });
 
       testWidgets(
         'opens bottom sheet when the Semantics button area is tapped',

@@ -43,7 +43,9 @@ class _SubtitleCueStreamPillState extends ConsumerState<SubtitleCueStreamPill> {
 
   @override
   Widget build(BuildContext context) {
-    final visible = ref.watch(subtitleVisibilityProvider);
+    final visible = ref.watch(
+      subtitleVisibilityForVideoProvider(widget.video.id),
+    );
     if (!visible || !widget.video.hasSubtitles) {
       _clearDisplayStream();
       return const SizedBox.shrink();

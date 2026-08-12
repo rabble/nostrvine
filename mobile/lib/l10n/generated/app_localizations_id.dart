@@ -1279,6 +1279,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'Teks nonaktif';
 
   @override
+  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+
+  @override
+  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+
+  @override
   String get contentWarningLabel => 'Peringatan Konten';
 
   @override

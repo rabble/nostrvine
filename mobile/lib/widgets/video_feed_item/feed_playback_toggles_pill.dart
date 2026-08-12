@@ -21,20 +21,19 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 /// Scrim-30 backdrop-blurred capsule housing the three playback toggles:
 /// auto-advance ("compilations"), audio mute, and closed-captions.
 ///
-/// Each toggle reads and writes app-wide state directly
-/// ([FeedAutoAdvanceCubit], [VideoVolumeCubit], `subtitleVisibilityProvider`),
-/// so the pill takes no constructor params and works as a drop-in child of
-/// any feed surface that provides those scopes.
+/// Auto-advance and audio mute are feed-wide controls. Captions are scoped to
+/// [videoId] when a feed surface has current-video context; otherwise the
+/// captions button falls back to the global Settings preference.
 class FeedPlaybackTogglesPill extends ConsumerWidget {
-  const FeedPlaybackTogglesPill({super.key});
+  const FeedPlaybackTogglesPill({super.key, this.videoId});
+
+  final String? videoId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.vineColors;
     final adaptiveMediaChrome =
-        ref.watch(
-          isFeatureEnabledProvider(FeatureFlag.adaptiveMediaChrome),
-        ) &&
+        ref.watch(isFeatureEnabledProvider(FeatureFlag.adaptiveMediaChrome)) &&
         Theme.of(context).brightness == Brightness.light;
     final chromeBackground = adaptiveMediaChrome
         ? colors.mediaChrome
@@ -63,7 +62,10 @@ class FeedPlaybackTogglesPill extends ConsumerWidget {
               children: [
                 _PlaybackModeToggle(foregroundColor: chromeForeground),
                 _AudioToggle(foregroundColor: chromeForeground),
-                _CaptionsToggle(foregroundColor: chromeForeground),
+                _CaptionsToggle(
+                  foregroundColor: chromeForeground,
+                  videoId: videoId,
+                ),
               ],
             ),
           ),
@@ -168,25 +170,39 @@ class _AudioToggle extends StatelessWidget {
 /// Closed-captions toggle. Active state means subtitles are visible.
 /// Confirms its new state in a snackbar.
 class _CaptionsToggle extends ConsumerWidget {
-  const _CaptionsToggle({required this.foregroundColor});
+  const _CaptionsToggle({required this.foregroundColor, this.videoId});
 
   final Color foregroundColor;
+  final String? videoId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = ref.watch(subtitleVisibilityProvider);
+    final videoId = this.videoId;
+    final enabled = videoId == null
+        ? ref.watch(subtitleVisibilityProvider)
+        : ref.watch(subtitleVisibilityForVideoProvider(videoId));
     return _PopoverToggle(
       isOn: enabled,
       semanticLabel: enabled
           ? context.l10n.videoSettingsCaptionsDisable
           : context.l10n.videoSettingsCaptionsEnable,
       onTap: () {
-        ref.read(subtitleVisibilityProvider.notifier).toggle();
+        if (videoId == null) {
+          ref.read(subtitleVisibilityProvider.notifier).toggle();
+        } else {
+          ref
+              .read(subtitleVisibilityOverrideProvider.notifier)
+              .toggleForVideo(videoId);
+        }
         _showToggleFeedback(
           context,
-          enabled
-              ? context.l10n.videoSettingsCaptionsOff
-              : context.l10n.videoSettingsCaptionsOn,
+          videoId == null
+              ? enabled
+                    ? context.l10n.videoSettingsCaptionsOff
+                    : context.l10n.videoSettingsCaptionsOn
+              : enabled
+              ? context.l10n.videoSettingsCaptionsOffForVideo
+              : context.l10n.videoSettingsCaptionsOnForVideo,
         );
       },
       child: DivineIcon(

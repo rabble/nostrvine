@@ -62,12 +62,21 @@ class FeedModeSwitch extends StatelessWidget {
                   : BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
                       buildWhen: (prev, curr) =>
                           prev.source != curr.source ||
-                          prev.subscribedLists != curr.subscribedLists,
-                      builder: (context, state) => _FeedModeContent(
-                        onTap: () => _showFeedModeBottomSheet(context, state),
-                        label: _labelForSource(state, context.l10n),
-                        trailing: const FeedSettingsMenu(),
-                      ),
+                          prev.subscribedLists != curr.subscribedLists ||
+                          prev.currentIndex != curr.currentIndex ||
+                          prev.videos != curr.videos,
+                      builder: (context, state) {
+                        final activeVideo =
+                            state.currentIndex >= 0 &&
+                                state.currentIndex < state.videos.length
+                            ? state.videos[state.currentIndex]
+                            : null;
+                        return _FeedModeContent(
+                          onTap: () => _showFeedModeBottomSheet(context, state),
+                          label: _labelForSource(state, context.l10n),
+                          trailing: FeedSettingsMenu(videoId: activeVideo?.id),
+                        );
+                      },
                     ),
             ),
           ),
@@ -202,12 +211,9 @@ class _FeedModeContent extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            VineTheme.headlineSmallFont(
-                              color: VineTheme.whiteText,
-                            ).copyWith(
-                              shadows: VineTheme.buttonShadows,
-                            ),
+                        style: VineTheme.headlineSmallFont(
+                          color: VineTheme.whiteText,
+                        ).copyWith(shadows: VineTheme.buttonShadows),
                       ),
                     ),
                     const _FeedModeCaret(),

@@ -26,15 +26,15 @@ import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart
 /// below the button's bottom-right corner with three scrim-toggled
 /// controls: playback mode (auto-advance), audio mute, and closed captions.
 ///
-/// The popover content is the shared [FeedPlaybackTogglesPill] widget, which
-/// reads and writes app-wide state (`FeedAutoAdvanceCubit`,
-/// `VideoVolumeCubit`, and the Riverpod `subtitleVisibilityProvider`) so the
-/// popover does not need any props from the page — it works as a drop-in
-/// child of any feed surface that provides those scopes.
+/// The popover content is the shared [FeedPlaybackTogglesPill] widget. Feed
+/// surfaces should pass [videoId] when they have current-video context so the
+/// captions toggle stays scoped to that video instead of mutating Settings.
+/// Pass [video] only on surfaces that should expose owner edit/delete actions.
 class FeedSettingsMenu extends ConsumerStatefulWidget {
-  const FeedSettingsMenu({super.key, this.video});
+  const FeedSettingsMenu({super.key, this.video, this.videoId});
 
   final VideoEvent? video;
+  final String? videoId;
 
   @override
   ConsumerState<FeedSettingsMenu> createState() => _FeedSettingsMenuState();
@@ -138,8 +138,6 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final isOwnVideo = _isOwnVideo;
-
     return CompositedTransformTarget(
       link: _link,
       child: OverlayPortal(
@@ -147,9 +145,10 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
         overlayChildBuilder: (_) => _FeedSettingsOverlay(
           link: _link,
           onClose: _close,
-          isOwnVideo: isOwnVideo,
+          isOwnVideo: _isOwnVideo,
           onEditVideo: _editVideo,
           onDeleteVideo: _confirmDeleteVideo,
+          videoId: widget.videoId ?? widget.video?.id,
         ),
         child: ValueListenableBuilder<bool>(
           valueListenable: _isShowing,
@@ -178,6 +177,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
     required this.isOwnVideo,
     required this.onEditVideo,
     required this.onDeleteVideo,
+    required this.videoId,
   });
 
   final LayerLink link;
@@ -185,6 +185,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
   final bool isOwnVideo;
   final VoidCallback onEditVideo;
   final VoidCallback onDeleteVideo;
+  final String? videoId;
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +226,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                   ],
-                  const FeedPlaybackTogglesPill(),
+                  FeedPlaybackTogglesPill(videoId: videoId),
                 ],
               ),
             ),
@@ -252,9 +253,7 @@ class _OwnerVideoActionsPill extends StatelessWidget {
         color: VineTheme.scrim30,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: VineTheme.scrim15),
-        boxShadow: const [
-          BoxShadow(color: VineTheme.shadow25, blurRadius: 4),
-        ],
+        boxShadow: const [BoxShadow(color: VineTheme.shadow25, blurRadius: 4)],
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -316,10 +315,7 @@ class _OwnerVideoAction extends StatelessWidget {
               spacing: 6,
               children: [
                 DivineIcon(icon: icon, color: color, size: 18),
-                Text(
-                  label,
-                  style: VineTheme.labelSmallFont(color: color),
-                ),
+                Text(label, style: VineTheme.labelSmallFont(color: color)),
               ],
             ),
           ),
