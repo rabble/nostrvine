@@ -7,7 +7,6 @@ account_label_service
 audio_sharing_preference_service
 auth_service # defer: #4339 oversized-file split
 back_button_handler
-bookmark_service
 broken_video_tracker
 bug_report_service_stub # noise: stub
 camera_base_service
@@ -26,7 +25,6 @@ nip07_interop # noise: web/io conditional-import
 nip07_interop_stub # noise: web/io shim
 nip07_interop_web # noise: web/io shim
 nip07_service # defer: #4338 C2 singleton-to-DI
-nostr_list_service_mixin # noise: mixin
 openvine_media_cache
 outgoing_dm_retry_service_reportable_sites # noise: reportable-sites constants
 push_notification_session_coordinator

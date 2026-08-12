@@ -1538,8 +1538,6 @@
     "shareMenuBookmarks": "Segnalibri",
     "shareMenuAddToBookmarks": "Aggiungi ai segnalibri",
     "shareMenuAddToBookmarksSubtitle": "Salva per guardare dopo",
-    "shareMenuAddToBookmarkSet": "Aggiungi al set di segnalibri",
-    "shareMenuAddToBookmarkSetSubtitle": "Organizza in collezioni",
     "shareMenuFollowSets": "Set di follow",
     "shareMenuCreateFollowSet": "Crea set di follow",
     "shareMenuCreateFollowSetSubtitle": "Inizia una nuova collezione con questo creator",
@@ -1651,14 +1649,11 @@
     "shareMenuAddInspirationCredit": "Aggiungi credito ispirazione",
     "shareMenuCreatorCannotBeReferenced": "Questo creator non può essere menzionato.",
     "shareMenuUnknown": "Sconosciuto",
-    "shareMenuCreateBookmarkSet": "Crea set di segnalibri",
     "shareMenuSetName": "Nome set",
     "shareMenuSetNameHint": "es. Preferiti, Guarda dopo, ecc.",
     "shareMenuCreateNewSet": "Crea nuovo set",
     "shareMenuStartNewBookmarkCollection": "Inizia una nuova collezione di segnalibri",
-    "shareMenuNoBookmarkSets": "Ancora nessun set di segnalibri. Crea il tuo primo!",
     "shareMenuError": "Errore",
-    "shareMenuFailedToLoadBookmarkSets": "Impossibile caricare i set di segnalibri",
     "shareMenuCreatedSetAndAddedVideo": "Creato \"{name}\" e aggiunto il video",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

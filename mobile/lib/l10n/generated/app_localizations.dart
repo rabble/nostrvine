@@ -6590,18 +6590,6 @@ abstract class AppLocalizations {
   /// **'Save for later viewing'**
   String get shareMenuAddToBookmarksSubtitle;
 
-  /// No description provided for @shareMenuAddToBookmarkSet.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to Bookmark Set'**
-  String get shareMenuAddToBookmarkSet;
-
-  /// No description provided for @shareMenuAddToBookmarkSetSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Organize in collections'**
-  String get shareMenuAddToBookmarkSetSubtitle;
-
   /// No description provided for @shareMenuFollowSets.
   ///
   /// In en, this message translates to:
@@ -7226,12 +7214,6 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get shareMenuUnknown;
 
-  /// No description provided for @shareMenuCreateBookmarkSet.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Bookmark Set'**
-  String get shareMenuCreateBookmarkSet;
-
   /// No description provided for @shareMenuSetName.
   ///
   /// In en, this message translates to:
@@ -7256,23 +7238,11 @@ abstract class AppLocalizations {
   /// **'Start a new bookmark collection'**
   String get shareMenuStartNewBookmarkCollection;
 
-  /// No description provided for @shareMenuNoBookmarkSets.
-  ///
-  /// In en, this message translates to:
-  /// **'No bookmark sets yet. Create your first one!'**
-  String get shareMenuNoBookmarkSets;
-
   /// No description provided for @shareMenuError.
   ///
   /// In en, this message translates to:
   /// **'Error'**
   String get shareMenuError;
-
-  /// No description provided for @shareMenuFailedToLoadBookmarkSets.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load bookmark sets'**
-  String get shareMenuFailedToLoadBookmarkSets;
 
   /// No description provided for @shareMenuCreatedSetAndAddedVideo.
   ///

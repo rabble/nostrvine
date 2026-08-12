@@ -1528,8 +1528,6 @@
     "shareMenuBookmarks": "ブックマーク",
     "shareMenuAddToBookmarks": "ブックマークに追加",
     "shareMenuAddToBookmarksSubtitle": "あとで見るために保存",
-    "shareMenuAddToBookmarkSet": "ブックマークセットに追加",
-    "shareMenuAddToBookmarkSetSubtitle": "コレクションに整理",
     "shareMenuFollowSets": "フォローセット",
     "shareMenuCreateFollowSet": "フォローセットを作る",
     "shareMenuCreateFollowSetSubtitle": "このクリエイターで新しいコレクションを始めよう",
@@ -1641,14 +1639,11 @@
     "shareMenuAddInspirationCredit": "インスピレーションクレジットを追加",
     "shareMenuCreatorCannotBeReferenced": "このクリエイターは参照できないよ。",
     "shareMenuUnknown": "不明",
-    "shareMenuCreateBookmarkSet": "ブックマークセットを作る",
     "shareMenuSetName": "セット名",
     "shareMenuSetNameHint": "例: お気に入り、あとで見るなど",
     "shareMenuCreateNewSet": "新しいセットを作る",
     "shareMenuStartNewBookmarkCollection": "新しいブックマークコレクションを始めよう",
-    "shareMenuNoBookmarkSets": "ブックマークセットはまだないよ。最初のセットを作ろう！",
     "shareMenuError": "エラー",
-    "shareMenuFailedToLoadBookmarkSets": "ブックマークセットの読み込みがうまくいかなかった",
     "shareMenuCreatedSetAndAddedVideo": "「{name}」を作って動画を追加したよ",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

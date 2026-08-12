@@ -1535,8 +1535,6 @@
     "shareMenuBookmarks": "Yer İmleri",
     "shareMenuAddToBookmarks": "Yer İmlerine Ekle",
     "shareMenuAddToBookmarksSubtitle": "Sonra izlemek için kaydet",
-    "shareMenuAddToBookmarkSet": "Yer İmi Setine Ekle",
-    "shareMenuAddToBookmarkSetSubtitle": "Koleksiyonlar halinde düzenle",
     "shareMenuFollowSets": "Takip Setleri",
     "shareMenuCreateFollowSet": "Takip Seti Oluştur",
     "shareMenuCreateFollowSetSubtitle": "Bu üretici ile yeni koleksiyon başlat",
@@ -1648,14 +1646,11 @@
     "shareMenuAddInspirationCredit": "İlham kaynağı ekle",
     "shareMenuCreatorCannotBeReferenced": "Bu üreticiye referans verilemez.",
     "shareMenuUnknown": "Bilinmeyen",
-    "shareMenuCreateBookmarkSet": "Yer İmi Seti Oluştur",
     "shareMenuSetName": "Set Adı",
     "shareMenuSetNameHint": "örn. Favoriler, Sonra İzle vb.",
     "shareMenuCreateNewSet": "Yeni Set Oluştur",
     "shareMenuStartNewBookmarkCollection": "Yeni bir yer imi koleksiyonu başlat",
-    "shareMenuNoBookmarkSets": "Henüz yer imi seti yok. İlk setini oluştur!",
     "shareMenuError": "Hata",
-    "shareMenuFailedToLoadBookmarkSets": "Yer imi setleri yüklenemedi",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" oluşturuldu ve video eklendi",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

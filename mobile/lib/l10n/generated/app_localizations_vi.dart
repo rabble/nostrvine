@@ -3789,12 +3789,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Lưu để xem sau';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Thêm vào bộ dấu trang';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Sắp xếp theo bộ sưu tập';
-
-  @override
   String get shareMenuFollowSets => 'Danh sách người';
 
   @override
@@ -4172,9 +4166,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuUnknown => 'Không xác định';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Tạo bộ dấu trang';
-
-  @override
   String get shareMenuSetName => 'Tên bộ';
 
   @override
@@ -4188,14 +4179,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bắt đầu bộ sưu tập dấu trang mới';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Chưa có bộ dấu trang nào. Tạo bộ đầu tiên của bạn!';
-
-  @override
   String get shareMenuError => 'Lỗi';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'Không tải được bộ dấu trang';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

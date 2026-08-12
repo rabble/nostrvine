@@ -3744,12 +3744,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Simpan untuk ditonton nanti';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Tambah ke Set Bookmark';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Susun dalam koleksi';
-
-  @override
   String get shareMenuFollowSets => 'Set Ikuti';
 
   @override
@@ -4128,9 +4122,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuUnknown => 'Tidak Dikenal';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Buat Set Bookmark';
-
-  @override
   String get shareMenuSetName => 'Nama Set';
 
   @override
@@ -4144,14 +4135,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Mulai koleksi bookmark baru';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Belum ada set bookmark. Buat yang pertama!';
-
-  @override
   String get shareMenuError => 'Kesalahan';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'Gagal memuat set bookmark';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

@@ -3711,12 +3711,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'በኋላ ለማየት ያስቀምጡ';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'ወደ ዕልባት ስብስብ ያክሉ';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'በክምችቶች ውስጥ ያደራጁ';
-
-  @override
   String get shareMenuFollowSets => 'የሰዎች ዝርዝሮች';
 
   @override
@@ -4083,9 +4077,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuUnknown => 'ያልታወቀ';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'የዕልባት ስብስብ ይፍጠሩ';
-
-  @override
   String get shareMenuSetName => 'ስም አዘጋጅ';
 
   @override
@@ -4098,14 +4089,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => 'አዲስ የዕልባት ስብስብ ጀምር';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'እስካሁን ምንም ዕልባት አልተዘጋጀም። የመጀመሪያዎን ይፍጠሩ!';
-
-  @override
   String get shareMenuError => 'ስህተት';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'የዕልባቶች ስብስቦችን መጫን አልተሳካም።';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

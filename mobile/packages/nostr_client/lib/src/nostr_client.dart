@@ -823,6 +823,21 @@ class NostrClient {
   /// Calling this on a disposed client is a no-op that returns an empty
   /// list. If the client is disposed while a call is in flight, the
   /// network query is skipped and only cached results are returned.
+  ///
+  /// `timedOut: false` with an empty `events` normally means "the relays
+  /// answered and there is nothing", but only for a caller that is content to
+  /// be told about the relays that answered *first*: a relay that stays
+  /// connected and never sends a terminal frame is skipped past after
+  /// `RelayPool.querySettleWindow` and the result still reports
+  /// `timedOut: false`. Set [requireAllRelaysSettled] when that distinction
+  /// is load-bearing — a caller about to replace what it read cannot act on a
+  /// partial answer — and an incomplete answer arrives as `timedOut: true`
+  /// instead. That covers the answers nobody gave as well as the partial ones:
+  /// a fan-out no relay accepted, and a query skipped because the client is
+  /// being disposed, both report `timedOut: true` rather than an empty answer
+  /// (a client with no reachable relay at all reports `noRelays` instead).
+  /// Note this only bounds the WebSocket leg; cached rows are merged in either
+  /// way.
   Future<({List<Event> events, bool timedOut, bool noRelays})>
   queryEventsDetailed(
     List<Filter> filters, {
@@ -833,6 +848,7 @@ class NostrClient {
     bool useCache = true,
     bool useQueryPool = true,
     Duration timeout = const Duration(seconds: 5),
+    bool requireAllRelaysSettled = false,
   }) async {
     // A disposed client's query pool is closed; querying it is a no-op
     // rather than an error. This is the common case (checked upfront to
@@ -887,6 +903,7 @@ class NostrClient {
           relayTypes: relayTypes,
           sendAfterAuth: sendAfterAuth,
           timeout: timeout,
+          requireAllRelaysSettled: requireAllRelaysSettled,
         );
     // Throttle concurrent one-shot REQs so high fan-out (a profile with many
     // videos → per-item like-count/badge/profile/repost fetches) can't trip a
@@ -905,7 +922,14 @@ class NostrClient {
     // race rather than narrowing it. See #5952.
     final ({List<Event> events, bool timedOut}) websocketResult;
     if (_queryPool.isClosed) {
-      websocketResult = (events: <Event>[], timedOut: false);
+      // Nothing was asked of the relays here, which is a different thing from
+      // their having nothing. A display read is content to fall back on cache;
+      // a full-settlement caller is about to replace what it read, so it gets
+      // the same inconclusive answer a relay that never settled would give.
+      websocketResult = (
+        events: <Event>[],
+        timedOut: requireAllRelaysSettled,
+      );
     } else {
       websocketResult = useQueryPool
           ? await _queryPool.withResource(runWebSocketQuery)

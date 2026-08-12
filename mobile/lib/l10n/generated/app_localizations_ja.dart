@@ -3584,12 +3584,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'あとで見るために保存';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'ブックマークセットに追加';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'コレクションに整理';
-
-  @override
   String get shareMenuFollowSets => 'フォローセット';
 
   @override
@@ -3950,9 +3944,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuUnknown => '不明';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'ブックマークセットを作る';
-
-  @override
   String get shareMenuSetName => 'セット名';
 
   @override
@@ -3965,13 +3956,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => '新しいブックマークコレクションを始めよう';
 
   @override
-  String get shareMenuNoBookmarkSets => 'ブックマークセットはまだないよ。最初のセットを作ろう！';
-
-  @override
   String get shareMenuError => 'エラー';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'ブックマークセットの読み込みがうまくいかなかった';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

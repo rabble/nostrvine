@@ -3882,12 +3882,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Salvează pentru vizualizare ulterioară';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Adaugă la set de semne de carte';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organizează în colecții';
-
-  @override
   String get shareMenuFollowSets => 'Seturi de urmărire';
 
   @override
@@ -4285,9 +4279,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuUnknown => 'Necunoscut';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Creează un set de semne de carte';
-
-  @override
   String get shareMenuSetName => 'Numele setului';
 
   @override
@@ -4302,15 +4293,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Începe o colecție nouă de semne de carte';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Încă nu ai seturi de semne de carte. Creează-l pe primul!';
-
-  @override
   String get shareMenuError => 'Eroare';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'N-am putut încărca seturile de semne de carte';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

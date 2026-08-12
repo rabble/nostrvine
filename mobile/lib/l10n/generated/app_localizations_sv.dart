@@ -3777,12 +3777,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Spara för senare visning';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Lägg till i bokmärkessamling';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organisera i samlingar';
-
-  @override
   String get shareMenuFollowSets => 'Följsamlingar';
 
   @override
@@ -4164,9 +4158,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuUnknown => 'Okänd';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Skapa bokmärkessamling';
-
-  @override
   String get shareMenuSetName => 'Samlingsnamn';
 
   @override
@@ -4180,15 +4171,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Starta en ny bokmärkessamling';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Inga bokmärkessamlingar än. Skapa din första!';
-
-  @override
   String get shareMenuError => 'Fel';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Kunde inte läsa in bokmärkessamlingar';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
