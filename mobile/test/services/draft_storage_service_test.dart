@@ -1800,24 +1800,29 @@ void main() {
         return file;
       }
 
-      DivineVideoDraft draftWithClip(String videoPath) =>
-          DivineVideoDraft.create(
-            id: 'draft_defer',
-            clips: [
-              DivineVideoClip(
-                id: 'clip_${p.basenameWithoutExtension(videoPath)}',
-                video: EditorVideo.file(videoPath),
-                duration: const Duration(seconds: 6),
-                recordedAt: DateTime(2025),
-                targetAspectRatio: AspectRatio.square,
-                originalAspectRatio: 9 / 16,
-              ),
-            ],
-            title: 'Defer draft',
-            description: '',
-            hashtags: const {},
-            selectedApproach: 'video',
-          );
+      DivineVideoDraft draftWithClip(
+        String videoPath, {
+        String? forwardVideoPath,
+        String? reversedVideoPath,
+      }) => DivineVideoDraft.create(
+        id: 'draft_defer',
+        clips: [
+          DivineVideoClip(
+            id: 'clip_${p.basenameWithoutExtension(videoPath)}',
+            video: EditorVideo.file(videoPath),
+            duration: const Duration(seconds: 6),
+            recordedAt: DateTime(2025),
+            targetAspectRatio: AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+            forwardVideoPath: forwardVideoPath,
+            reversedVideoPath: reversedVideoPath,
+          ),
+        ],
+        title: 'Defer draft',
+        description: '',
+        hashtags: const {},
+        selectedApproach: 'video',
+      );
 
       DivineVideoDraft draftWithKeyedClip({
         required String videoPath,
@@ -1893,6 +1898,42 @@ void main() {
           newVideo.existsSync(),
           isTrue,
           reason: 'the currently-referenced clip file must be kept',
+        );
+      });
+
+      test('reclaims a reverse cache the clip stopped pointing at', () async {
+        // A transform clears both reverse caches. Until this sweep read
+        // [DivineVideoClip.ownedFilePaths] it enumerated only the video, the
+        // stills, the thumbnail and the chroma-key pair — so the cached
+        // forward/reversed renders were invisible to every cleanup path and
+        // leaked one file per transform.
+        final video = writeVideo('clip.mp4');
+        final forward = writeVideo('forward.mp4');
+        final reversed = writeVideo('reversed.mp4');
+
+        await service.saveDraft(
+          draftWithClip(
+            video.path,
+            forwardVideoPath: forward.path,
+            reversedVideoPath: reversed.path,
+          ),
+        );
+        await service.saveDraft(draftWithClip(video.path));
+
+        expect(
+          forward.existsSync(),
+          isFalse,
+          reason: 'the cached forward render is unreachable once cleared',
+        );
+        expect(
+          reversed.existsSync(),
+          isFalse,
+          reason: 'the cached reversed render is unreachable once cleared',
+        );
+        expect(
+          video.existsSync(),
+          isTrue,
+          reason: 'the clip still plays its video — it must survive',
         );
       });
 

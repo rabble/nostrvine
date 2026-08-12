@@ -99,24 +99,27 @@ class FileCleanupService {
     }
   }
 
-  static List<String?> _recordingClipFilePaths(DivineVideoClip clip) => [
-    clip.video?.file?.path,
-    ...?clip.stopMotionFrames?.map((frame) => frame.path),
-    clip.thumbnailPath,
-    clip.chromaKeySourcePath,
-    clip.chromaKey?.backgroundImagePath,
-  ];
+  /// [DivineVideoClip.ownedFilePaths] minus the ghost frame, which the callers
+  /// hand to [deleteGhostFrameFiles] instead — that path additionally guards
+  /// against a sibling clip sharing the same ghost file, which the plain
+  /// reference check below cannot see.
+  static List<String?> _recordingClipFilePaths(DivineVideoClip clip) {
+    final ghostFramePath = clip.ghostFramePath;
+    return clip.ownedFilePaths
+        .where((path) => ghostFramePath == null || path != ghostFramePath)
+        .toList();
+  }
 
-  static Future<List<String?>> _savedClipFilePaths(
-    DivineVideoClip clip,
-  ) async => [
-    if (clip.video != null) await clip.video!.safeFilePath(),
-    ...?clip.stopMotionFrames?.map((frame) => frame.path),
-    clip.thumbnailPath,
-    clip.ghostFramePath,
-    clip.chromaKeySourcePath,
-    clip.chromaKey?.backgroundImagePath,
-  ];
+  /// [DivineVideoClip.ownedFilePaths] with the video resolved rather than read
+  /// raw: a library clip can carry an iOS container path from a previous
+  /// install, and `safeFilePath()` re-resolves it against the current one.
+  static Future<List<String?>> _savedClipFilePaths(DivineVideoClip clip) async {
+    final rawVideoPath = clip.video?.file?.path;
+    return [
+      if (clip.video != null) await clip.video!.safeFilePath(),
+      ...clip.ownedFilePaths.where((path) => path != rawVideoPath),
+    ];
+  }
 
   /// Deletes draft-local audio files in [audioFilePaths], skipping any still
   /// referenced elsewhere.
