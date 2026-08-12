@@ -2274,10 +2274,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => 'ماحول سوئچر اور ڈیبگ ترتیبات';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'ایسے فیچر فلیگز ٹوگل کریں جو کبھی کبھار لڑکھڑا سکتے ہیں۔';
-
-  @override
   String get nostrSettingsKeyManagement => 'کلید مینجمنٹ';
 
   @override
@@ -3799,12 +3795,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'بعد میں دیکھنے کے لیے محفوظ کریں';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'بک مارک سیٹ میں شامل کریں';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'مجموعوں میں ترتیب دیں';
-
-  @override
   String get shareMenuFollowSets => 'لوگوں کی فہرستیں';
 
   @override
@@ -4186,9 +4176,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get shareMenuUnknown => 'نامعلوم';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'بک مارک سیٹ بنائیں';
-
-  @override
   String get shareMenuSetName => 'سیٹ کا نام';
 
   @override
@@ -4202,15 +4189,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'نیا بک مارک مجموعہ شروع کریں';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'ابھی کوئی بک مارک سیٹ نہیں۔ اپنا پہلا بنائیں!';
-
-  @override
   String get shareMenuError => 'خرابی';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'بک مارک سیٹس لوڈ نہیں ہو سکے';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9332,6 +9311,18 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'ٹرانسفارم نہیں ہو سکتا: کلپ مقامی طور پر دستیاب نہیں ہے۔';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'منتخب فریم کو کراپ، گھمائیں یا پلٹیں';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'ایک لمحہ، ہم آپ کا فریم تبدیل کر رہے ہیں';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'فریم تبدیل نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get videoEditorTransformRotateLabel => 'گھمائیں';

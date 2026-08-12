@@ -246,14 +246,28 @@ class TimelineOverlayWaveformLoaded extends TimelineOverlayEvent {
     required this.itemId,
     required this.leftChannel,
     this.rightChannel,
+    this.sourceDuration,
   });
 
   final String itemId;
   final Float32List leftChannel;
   final Float32List? rightChannel;
 
+  /// Duration the extractor measured while reading the samples.
+  ///
+  /// Extraction always covers the whole source, so this is the source
+  /// duration — the basis the waveform painter maps samples to time against.
+  /// Supplied so a sound whose [AudioEvent.duration] never resolved still gets
+  /// one; ignored when the item already has a basis from the track.
+  final Duration? sourceDuration;
+
   @override
-  List<Object?> get props => [itemId, leftChannel, rightChannel];
+  List<Object?> get props => [
+    itemId,
+    leftChannel,
+    rightChannel,
+    sourceDuration,
+  ];
 }
 
 /// Update the volume of a custom audio track by its [AudioEvent.id].

@@ -131,14 +131,36 @@ class OutgoingDmRetryService {
   final DateTime Function() _now;
   final CrashReportingService _crashReporting;
 
+  /// Extra margin over [DmSendBudget.messagePublishTimeout] for the work a
+  /// send does OUTSIDE that backstop — chiefly recipient kind-10050 inbox
+  /// resolution, which runs before the publish is wrapped and is not itself
+  /// bounded end-to-end. It is a margin, not a guarantee; bounding those
+  /// segments is tracked separately.
+  static const Duration _inboxResolutionMargin = Duration(seconds: 30);
+
   /// Minimum age of a still-`pending` row before the interrupted-send arm
   /// may re-drive it. Must exceed the worst-case legitimately-in-flight
-  /// send (inbox resolution plus the 90s `_messagePublishTimeout` backstop
-  /// in `dm_repository`), or a foreground/connectivity trigger fired during
-  /// a live send dispatches a concurrent duplicate publish of the same
-  /// rumor. Receiver dedup makes that safe but wasteful; the old value
-  /// (the 2s `initialDelay`) made it the common case.
-  static const Duration _interruptedMinAge = Duration(seconds: 120);
+  /// send, or a foreground/connectivity trigger fired during a live send
+  /// dispatches a concurrent duplicate publish of the same rumor. Receiver
+  /// dedup makes that safe but wasteful; the old value (the 2s
+  /// `initialDelay`) made it the common case.
+  ///
+  /// Derived from the backstop rather than restated as a literal. It was
+  /// previously hardcoded to 120s against a 90s backstop, and #6586 showed why
+  /// that is fragile twice over: the backstop had itself drifted below the
+  /// chain it bounds, and `Future.timeout` does not cancel — so the abandoned
+  /// send keeps running past the cap and this guard has to outlive the
+  /// IN-FLIGHT send, not merely the cap.
+  static final Duration _interruptedMinAge =
+      DmSendBudget.messagePublishTimeout + _inboxResolutionMargin;
+
+  /// The interrupted-send guard, for tests that need to age a row across it.
+  ///
+  /// Exposed so tests derive their timings from the guard instead of restating
+  /// a literal — a hardcoded age silently stops testing the boundary the
+  /// moment the budget moves, which is how #6586 stayed invisible.
+  @visibleForTesting
+  static Duration get interruptedMinAge => _interruptedMinAge;
 
   /// Gap between a sweep that left retryable work behind and the follow-up
   /// sweep it schedules. Without an in-session heartbeat, a soft-unconfirmed
@@ -476,7 +498,7 @@ class OutgoingDmRetryService {
 
           // Min-age guard: if the row was recently enqueued, the
           // originating sendMessage call may still be in flight in this
-          // process (inbox resolution + the 90s publish backstop). Wait
+          // process (inbox resolution + the derived publish backstop). Wait
           // out that window before treating the row as interrupted, or a
           // trigger fired mid-send dispatches a concurrent duplicate
           // publish of the same rumor. Idempotent receiver dedup makes a

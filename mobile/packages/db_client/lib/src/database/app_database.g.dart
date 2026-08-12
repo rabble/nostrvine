@@ -15636,8 +15636,36 @@ class $IdentityEventsTable extends IdentityEvents
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sourceCreatedAtMeta = const VerificationMeta(
+    'sourceCreatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [pubkey, tagsJson, sourceKind];
+  late final GeneratedColumn<int> sourceCreatedAt = GeneratedColumn<int>(
+    'source_created_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceEventIdMeta = const VerificationMeta(
+    'sourceEventId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceEventId = GeneratedColumn<String>(
+    'source_event_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    pubkey,
+    tagsJson,
+    sourceKind,
+    sourceCreatedAt,
+    sourceEventId,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -15674,6 +15702,24 @@ class $IdentityEventsTable extends IdentityEvents
     } else if (isInserting) {
       context.missing(_sourceKindMeta);
     }
+    if (data.containsKey('source_created_at')) {
+      context.handle(
+        _sourceCreatedAtMeta,
+        sourceCreatedAt.isAcceptableOrUnknown(
+          data['source_created_at']!,
+          _sourceCreatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_event_id')) {
+      context.handle(
+        _sourceEventIdMeta,
+        sourceEventId.isAcceptableOrUnknown(
+          data['source_event_id']!,
+          _sourceEventIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -15695,6 +15741,14 @@ class $IdentityEventsTable extends IdentityEvents
         DriftSqlType.int,
         data['${effectivePrefix}source_kind'],
       )!,
+      sourceCreatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_created_at'],
+      ),
+      sourceEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_event_id'],
+      ),
     );
   }
 
@@ -15715,10 +15769,27 @@ class IdentityEventRow extends DataClass
   /// Which event kind the tags came from: 10011 (current spec) or 0
   /// (legacy fallback).
   final int sourceKind;
+
+  /// `created_at` of the kind-10011 event [tagsJson] was taken from.
+  ///
+  /// Null for a kind-0 fallback row and for rows written before this column
+  /// existed. Kind 10011 is replaceable, so this is what lets a later read be
+  /// recognised as behind: an event older than the one a row was built from
+  /// cannot be the current state of the profile, it is a relay that has not
+  /// caught up. The write path refuses to publish on such a base instead of
+  /// replacing the event with a set that predates what this device has
+  /// already seen (#7081).
+  final int? sourceCreatedAt;
+
+  /// Event id that goes with [sourceCreatedAt], for the NIP-01 same-second
+  /// tie (lowest id wins). Null under exactly the same conditions.
+  final String? sourceEventId;
   const IdentityEventRow({
     required this.pubkey,
     required this.tagsJson,
     required this.sourceKind,
+    this.sourceCreatedAt,
+    this.sourceEventId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -15726,6 +15797,12 @@ class IdentityEventRow extends DataClass
     map['pubkey'] = Variable<String>(pubkey);
     map['tags_json'] = Variable<String>(tagsJson);
     map['source_kind'] = Variable<int>(sourceKind);
+    if (!nullToAbsent || sourceCreatedAt != null) {
+      map['source_created_at'] = Variable<int>(sourceCreatedAt);
+    }
+    if (!nullToAbsent || sourceEventId != null) {
+      map['source_event_id'] = Variable<String>(sourceEventId);
+    }
     return map;
   }
 
@@ -15734,6 +15811,12 @@ class IdentityEventRow extends DataClass
       pubkey: Value(pubkey),
       tagsJson: Value(tagsJson),
       sourceKind: Value(sourceKind),
+      sourceCreatedAt: sourceCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceCreatedAt),
+      sourceEventId: sourceEventId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceEventId),
     );
   }
 
@@ -15746,6 +15829,8 @@ class IdentityEventRow extends DataClass
       pubkey: serializer.fromJson<String>(json['pubkey']),
       tagsJson: serializer.fromJson<String>(json['tagsJson']),
       sourceKind: serializer.fromJson<int>(json['sourceKind']),
+      sourceCreatedAt: serializer.fromJson<int?>(json['sourceCreatedAt']),
+      sourceEventId: serializer.fromJson<String?>(json['sourceEventId']),
     );
   }
   @override
@@ -15755,6 +15840,8 @@ class IdentityEventRow extends DataClass
       'pubkey': serializer.toJson<String>(pubkey),
       'tagsJson': serializer.toJson<String>(tagsJson),
       'sourceKind': serializer.toJson<int>(sourceKind),
+      'sourceCreatedAt': serializer.toJson<int?>(sourceCreatedAt),
+      'sourceEventId': serializer.toJson<String?>(sourceEventId),
     };
   }
 
@@ -15762,10 +15849,18 @@ class IdentityEventRow extends DataClass
     String? pubkey,
     String? tagsJson,
     int? sourceKind,
+    Value<int?> sourceCreatedAt = const Value.absent(),
+    Value<String?> sourceEventId = const Value.absent(),
   }) => IdentityEventRow(
     pubkey: pubkey ?? this.pubkey,
     tagsJson: tagsJson ?? this.tagsJson,
     sourceKind: sourceKind ?? this.sourceKind,
+    sourceCreatedAt: sourceCreatedAt.present
+        ? sourceCreatedAt.value
+        : this.sourceCreatedAt,
+    sourceEventId: sourceEventId.present
+        ? sourceEventId.value
+        : this.sourceEventId,
   );
   IdentityEventRow copyWithCompanion(IdentityEventsCompanion data) {
     return IdentityEventRow(
@@ -15774,6 +15869,12 @@ class IdentityEventRow extends DataClass
       sourceKind: data.sourceKind.present
           ? data.sourceKind.value
           : this.sourceKind,
+      sourceCreatedAt: data.sourceCreatedAt.present
+          ? data.sourceCreatedAt.value
+          : this.sourceCreatedAt,
+      sourceEventId: data.sourceEventId.present
+          ? data.sourceEventId.value
+          : this.sourceEventId,
     );
   }
 
@@ -15782,37 +15883,48 @@ class IdentityEventRow extends DataClass
     return (StringBuffer('IdentityEventRow(')
           ..write('pubkey: $pubkey, ')
           ..write('tagsJson: $tagsJson, ')
-          ..write('sourceKind: $sourceKind')
+          ..write('sourceKind: $sourceKind, ')
+          ..write('sourceCreatedAt: $sourceCreatedAt, ')
+          ..write('sourceEventId: $sourceEventId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(pubkey, tagsJson, sourceKind);
+  int get hashCode =>
+      Object.hash(pubkey, tagsJson, sourceKind, sourceCreatedAt, sourceEventId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is IdentityEventRow &&
           other.pubkey == this.pubkey &&
           other.tagsJson == this.tagsJson &&
-          other.sourceKind == this.sourceKind);
+          other.sourceKind == this.sourceKind &&
+          other.sourceCreatedAt == this.sourceCreatedAt &&
+          other.sourceEventId == this.sourceEventId);
 }
 
 class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
   final Value<String> pubkey;
   final Value<String> tagsJson;
   final Value<int> sourceKind;
+  final Value<int?> sourceCreatedAt;
+  final Value<String?> sourceEventId;
   final Value<int> rowid;
   const IdentityEventsCompanion({
     this.pubkey = const Value.absent(),
     this.tagsJson = const Value.absent(),
     this.sourceKind = const Value.absent(),
+    this.sourceCreatedAt = const Value.absent(),
+    this.sourceEventId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IdentityEventsCompanion.insert({
     required String pubkey,
     required String tagsJson,
     required int sourceKind,
+    this.sourceCreatedAt = const Value.absent(),
+    this.sourceEventId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : pubkey = Value(pubkey),
        tagsJson = Value(tagsJson),
@@ -15821,12 +15933,16 @@ class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
     Expression<String>? pubkey,
     Expression<String>? tagsJson,
     Expression<int>? sourceKind,
+    Expression<int>? sourceCreatedAt,
+    Expression<String>? sourceEventId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (pubkey != null) 'pubkey': pubkey,
       if (tagsJson != null) 'tags_json': tagsJson,
       if (sourceKind != null) 'source_kind': sourceKind,
+      if (sourceCreatedAt != null) 'source_created_at': sourceCreatedAt,
+      if (sourceEventId != null) 'source_event_id': sourceEventId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -15835,12 +15951,16 @@ class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
     Value<String>? pubkey,
     Value<String>? tagsJson,
     Value<int>? sourceKind,
+    Value<int?>? sourceCreatedAt,
+    Value<String?>? sourceEventId,
     Value<int>? rowid,
   }) {
     return IdentityEventsCompanion(
       pubkey: pubkey ?? this.pubkey,
       tagsJson: tagsJson ?? this.tagsJson,
       sourceKind: sourceKind ?? this.sourceKind,
+      sourceCreatedAt: sourceCreatedAt ?? this.sourceCreatedAt,
+      sourceEventId: sourceEventId ?? this.sourceEventId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -15857,6 +15977,12 @@ class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
     if (sourceKind.present) {
       map['source_kind'] = Variable<int>(sourceKind.value);
     }
+    if (sourceCreatedAt.present) {
+      map['source_created_at'] = Variable<int>(sourceCreatedAt.value);
+    }
+    if (sourceEventId.present) {
+      map['source_event_id'] = Variable<String>(sourceEventId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -15869,6 +15995,8 @@ class IdentityEventsCompanion extends UpdateCompanion<IdentityEventRow> {
           ..write('pubkey: $pubkey, ')
           ..write('tagsJson: $tagsJson, ')
           ..write('sourceKind: $sourceKind, ')
+          ..write('sourceCreatedAt: $sourceCreatedAt, ')
+          ..write('sourceEventId: $sourceEventId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -24101,6 +24229,8 @@ typedef $$IdentityEventsTableCreateCompanionBuilder =
       required String pubkey,
       required String tagsJson,
       required int sourceKind,
+      Value<int?> sourceCreatedAt,
+      Value<String?> sourceEventId,
       Value<int> rowid,
     });
 typedef $$IdentityEventsTableUpdateCompanionBuilder =
@@ -24108,6 +24238,8 @@ typedef $$IdentityEventsTableUpdateCompanionBuilder =
       Value<String> pubkey,
       Value<String> tagsJson,
       Value<int> sourceKind,
+      Value<int?> sourceCreatedAt,
+      Value<String?> sourceEventId,
       Value<int> rowid,
     });
 
@@ -24132,6 +24264,16 @@ class $$IdentityEventsTableFilterComposer
 
   ColumnFilters<int> get sourceKind => $composableBuilder(
     column: $table.sourceKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sourceCreatedAt => $composableBuilder(
+    column: $table.sourceCreatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceEventId => $composableBuilder(
+    column: $table.sourceEventId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -24159,6 +24301,16 @@ class $$IdentityEventsTableOrderingComposer
     column: $table.sourceKind,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get sourceCreatedAt => $composableBuilder(
+    column: $table.sourceCreatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceEventId => $composableBuilder(
+    column: $table.sourceEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$IdentityEventsTableAnnotationComposer
@@ -24178,6 +24330,16 @@ class $$IdentityEventsTableAnnotationComposer
 
   GeneratedColumn<int> get sourceKind => $composableBuilder(
     column: $table.sourceKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sourceCreatedAt => $composableBuilder(
+    column: $table.sourceCreatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceEventId => $composableBuilder(
+    column: $table.sourceEventId,
     builder: (column) => column,
   );
 }
@@ -24222,11 +24384,15 @@ class $$IdentityEventsTableTableManager
                 Value<String> pubkey = const Value.absent(),
                 Value<String> tagsJson = const Value.absent(),
                 Value<int> sourceKind = const Value.absent(),
+                Value<int?> sourceCreatedAt = const Value.absent(),
+                Value<String?> sourceEventId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IdentityEventsCompanion(
                 pubkey: pubkey,
                 tagsJson: tagsJson,
                 sourceKind: sourceKind,
+                sourceCreatedAt: sourceCreatedAt,
+                sourceEventId: sourceEventId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -24234,11 +24400,15 @@ class $$IdentityEventsTableTableManager
                 required String pubkey,
                 required String tagsJson,
                 required int sourceKind,
+                Value<int?> sourceCreatedAt = const Value.absent(),
+                Value<String?> sourceEventId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IdentityEventsCompanion.insert(
                 pubkey: pubkey,
                 tagsJson: tagsJson,
                 sourceKind: sourceKind,
+                sourceCreatedAt: sourceCreatedAt,
+                sourceEventId: sourceEventId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

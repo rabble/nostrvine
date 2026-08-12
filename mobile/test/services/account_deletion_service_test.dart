@@ -29,6 +29,7 @@ class _MockNostrClient extends Mock implements NostrClient {
     bool useCache = true,
     bool useQueryPool = true,
     Duration timeout = const Duration(seconds: 5),
+    bool requireAllRelaysSettled = false,
   }) async {
     final events = await queryEvents(filters);
     return (

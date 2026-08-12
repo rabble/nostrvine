@@ -1280,7 +1280,6 @@
   "nostrSettingsMediaServersSubtitle": "Blossom اپلوڈ سرورز کنفیگر کریں",
   "settingsDeveloperOptions": "ڈویلپر اختیارات",
   "settingsDeveloperOptionsSubtitle": "ماحول سوئچر اور ڈیبگ ترتیبات",
-  "nostrSettingsExperimentalFeaturesSubtitle": "ایسے فیچر فلیگز ٹوگل کریں جو کبھی کبھار لڑکھڑا سکتے ہیں۔",
   "nostrSettingsKeyManagement": "کلید مینجمنٹ",
   "nostrSettingsKeyManagementSubtitle": "اپنی Nostr کلیدیں ایکسپورٹ، بیک اپ اور بحال کریں",
   "nostrSettingsClientAttribution": "کلائنٹ انتساب",
@@ -2081,8 +2080,6 @@
   "shareMenuBookmarks": "بک مارکس",
   "shareMenuAddToBookmarks": "بک مارکس میں شامل کریں",
   "shareMenuAddToBookmarksSubtitle": "بعد میں دیکھنے کے لیے محفوظ کریں",
-  "shareMenuAddToBookmarkSet": "بک مارک سیٹ میں شامل کریں",
-  "shareMenuAddToBookmarkSetSubtitle": "مجموعوں میں ترتیب دیں",
   "shareMenuFollowSets": "لوگوں کی فہرستیں",
   "shareMenuCreateFollowSet": "فالو سیٹ بنائیں",
   "shareMenuCreateFollowSetSubtitle": "اس کریئیٹر کے ساتھ نیا مجموعہ شروع کریں",
@@ -2309,14 +2306,11 @@
   "shareMenuAddInspirationCredit": "متاثر ہونے کا کریڈٹ شامل کریں",
   "shareMenuCreatorCannotBeReferenced": "اس کریئیٹر کا حوالہ نہیں دیا جا سکتا۔",
   "shareMenuUnknown": "نامعلوم",
-  "shareMenuCreateBookmarkSet": "بک مارک سیٹ بنائیں",
   "shareMenuSetName": "سیٹ کا نام",
   "shareMenuSetNameHint": "مثلاً پسندیدہ، بعد میں دیکھیں وغیرہ",
   "shareMenuCreateNewSet": "نیا سیٹ بنائیں",
   "shareMenuStartNewBookmarkCollection": "نیا بک مارک مجموعہ شروع کریں",
-  "shareMenuNoBookmarkSets": "ابھی کوئی بک مارک سیٹ نہیں۔ اپنا پہلا بنائیں!",
   "shareMenuError": "خرابی",
-  "shareMenuFailedToLoadBookmarkSets": "بک مارک سیٹس لوڈ نہیں ہو سکے",
   "shareMenuCreatedSetAndAddedVideo": "\"{name}\" بنایا اور ویڈیو شامل کی",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {
@@ -5486,6 +5480,18 @@
   "videoEditorTransformNoLocalFile": "ٹرانسفارم نہیں ہو سکتا: کلپ مقامی طور پر دستیاب نہیں ہے۔",
   "@videoEditorTransformNoLocalFile": {
     "description": "Snackbar message shown when a transform is requested for a clip that has no locally available file."
+  },
+  "videoEditorTransformSelectedFrameSemanticLabel": "منتخب فریم کو کراپ، گھمائیں یا پلٹیں",
+  "@videoEditorTransformSelectedFrameSemanticLabel": {
+    "description": "Accessibility label for the Transform button in the stop-motion frame controls."
+  },
+  "videoEditorTransformFrameProgressLabel": "ایک لمحہ، ہم آپ کا فریم تبدیل کر رہے ہیں",
+  "@videoEditorTransformFrameProgressLabel": {
+    "description": "Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform."
+  },
+  "videoEditorTransformFrameFailed": "فریم تبدیل نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
+  "@videoEditorTransformFrameFailed": {
+    "description": "Snackbar message shown when saving a transformed stop-motion frame fails."
   },
   "videoEditorTransformRotateLabel": "گھمائیں",
   "@videoEditorTransformRotateLabel": {

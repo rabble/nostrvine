@@ -178,23 +178,24 @@ class DraftStorageService {
     final existingDraft = await _loadDraftAcrossAccounts(draft.id);
     var orphanedFiles = const <String?>[];
     if (existingDraft != null) {
+      // Both halves diff [DivineVideoClip.ownedFilePaths]. The local list this
+      // replaced had fallen behind the model — no reverse caches, no ghost
+      // frame — so a render a transform dropped was invisible to this sweep.
       final newFilePaths = <String?>{
-        for (final clip in draft.clips) ..._clipOwnedFilePaths(clip),
+        for (final clip in draft.clips) ...clip.ownedFilePaths,
         if (draft.finalRenderedClip != null)
-          ..._clipOwnedFilePaths(draft.finalRenderedClip!),
+          ...draft.finalRenderedClip!.ownedFilePaths,
         draft.customThumbnailPath,
       };
 
       orphanedFiles = <String?>[
         for (final clip in existingDraft.clips) ...[
-          ..._clipOwnedFilePaths(
-            clip,
-          ).where((path) => !newFilePaths.contains(path)),
+          ...clip.ownedFilePaths.where((path) => !newFilePaths.contains(path)),
         ],
         if (existingDraft.finalRenderedClip != null) ...[
-          ..._clipOwnedFilePaths(
-            existingDraft.finalRenderedClip!,
-          ).where((path) => !newFilePaths.contains(path)),
+          ...existingDraft.finalRenderedClip!.ownedFilePaths.where(
+            (path) => !newFilePaths.contains(path),
+          ),
         ],
         if (!newFilePaths.contains(existingDraft.customThumbnailPath))
           existingDraft.customThumbnailPath,
@@ -262,19 +263,6 @@ class DraftStorageService {
         clipsDao: _clipsDao,
       );
     }
-  }
-
-  static Iterable<String?> _clipOwnedFilePaths(DivineVideoClip clip) sync* {
-    yield clip.video?.file?.path;
-    // Stop-motion stills are clip-owned source files just like the video;
-    // include them so a still that survives the edit is not queued for deletion.
-    final stopMotionFrames = clip.stopMotionFrames;
-    if (stopMotionFrames != null) {
-      yield* stopMotionFrames.map((frame) => frame.path);
-    }
-    yield clip.thumbnailPath;
-    yield clip.chromaKeySourcePath;
-    yield clip.chromaKey?.backgroundImagePath;
   }
 
   /// Get total count of drafts without loading their data.

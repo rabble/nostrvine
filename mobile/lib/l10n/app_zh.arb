@@ -1280,7 +1280,6 @@
   "nostrSettingsMediaServersSubtitle": "配置 Blossom 上传服务器",
   "settingsDeveloperOptions": "开发者选项",
   "settingsDeveloperOptionsSubtitle": "环境切换和调试设置",
-  "nostrSettingsExperimentalFeaturesSubtitle": "开关一些可能会抽风的功能。",
   "nostrSettingsKeyManagement": "密钥管理",
   "nostrSettingsKeyManagementSubtitle": "导出、备份和恢复你的 Nostr 密钥",
   "nostrSettingsClientAttribution": "客户端署名",
@@ -2081,8 +2080,6 @@
   "shareMenuBookmarks": "收藏",
   "shareMenuAddToBookmarks": "加入收藏",
   "shareMenuAddToBookmarksSubtitle": "存起来稍后看",
-  "shareMenuAddToBookmarkSet": "加入收藏集",
-  "shareMenuAddToBookmarkSetSubtitle": "按合集整理",
   "shareMenuFollowSets": "人物列表",
   "shareMenuCreateFollowSet": "创建关注集合",
   "shareMenuCreateFollowSetSubtitle": "以这位创作者开始一个新合集",
@@ -2309,14 +2306,11 @@
   "shareMenuAddInspirationCredit": "添加灵感来源署名",
   "shareMenuCreatorCannotBeReferenced": "无法引用该创作者。",
   "shareMenuUnknown": "未知",
-  "shareMenuCreateBookmarkSet": "创建收藏集",
   "shareMenuSetName": "集合名称",
   "shareMenuSetNameHint": "例如：最爱、稍后再看等",
   "shareMenuCreateNewSet": "创建新集合",
   "shareMenuStartNewBookmarkCollection": "开始一个新的收藏合集",
-  "shareMenuNoBookmarkSets": "还没有收藏集，创建第一个吧！",
   "shareMenuError": "错误",
-  "shareMenuFailedToLoadBookmarkSets": "加载收藏集失败",
   "shareMenuCreatedSetAndAddedVideo": "已创建“{name}”并添加视频",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {
@@ -5486,6 +5480,18 @@
   "videoEditorTransformNoLocalFile": "无法变换：片段不在本地。",
   "@videoEditorTransformNoLocalFile": {
     "description": "Snackbar message shown when a transform is requested for a clip that has no locally available file."
+  },
+  "videoEditorTransformSelectedFrameSemanticLabel": "裁剪、旋转或翻转选中帧",
+  "@videoEditorTransformSelectedFrameSemanticLabel": {
+    "description": "Accessibility label for the Transform button in the stop-motion frame controls."
+  },
+  "videoEditorTransformFrameProgressLabel": "稍等，正在处理你的帧",
+  "@videoEditorTransformFrameProgressLabel": {
+    "description": "Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform."
+  },
+  "videoEditorTransformFrameFailed": "无法处理该帧，请重试。",
+  "@videoEditorTransformFrameFailed": {
+    "description": "Snackbar message shown when saving a transformed stop-motion frame fails."
   },
   "videoEditorTransformRotateLabel": "旋转",
   "@videoEditorTransformRotateLabel": {

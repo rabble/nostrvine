@@ -14,6 +14,10 @@ class _MockNostr extends Mock implements Nostr {
   /// Drives the `timedOut` field of the record synthesized below.
   bool timedOut = false;
 
+  /// What the client last asked for full relay settlement, so a test can pin
+  /// that the flag is threaded down rather than dropped on the floor.
+  bool? lastRequireAllRelaysSettled;
+
   /// Mirror of the real [Nostr.queryEvents]/[Nostr.queryEventsDetailed]
   /// relationship, inverted: the SDK delegates the list-returning method to
   /// the detailed one, so this double delegates the detailed one back to the
@@ -27,7 +31,9 @@ class _MockNostr extends Mock implements Nostr {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
     Duration timeout = const Duration(seconds: 5),
+    bool requireAllRelaysSettled = false,
   }) async {
+    lastRequireAllRelaysSettled = requireAllRelaysSettled;
     final events = await queryEvents(
       filters,
       id: id,
@@ -1468,6 +1474,84 @@ void main() {
           expect(result.events, equals(events));
           expect(result.timedOut, isFalse);
           expect(result.noRelays, isFalse);
+        },
+      );
+
+      test('does not demand full relay settlement by default', () async {
+        stubWebSocketEvents([]);
+
+        await client.queryEventsDetailed([textNoteFilter()]);
+
+        expect(mockNostr.lastRequireAllRelaysSettled, isFalse);
+      });
+
+      test('forwards a caller demand for full relay settlement', () async {
+        // Dropping this on the floor is silent: the query still succeeds, it
+        // just answers on the relays that replied first — which is what lets a
+        // replacing publish truncate a replaceable list.
+        stubWebSocketEvents([]);
+
+        await client.queryEventsDetailed(
+          [textNoteFilter()],
+          requireAllRelaysSettled: true,
+        );
+
+        expect(mockNostr.lastRequireAllRelaysSettled, isTrue);
+      });
+
+      test(
+        'reports a closed query pool as inconclusive for a full-settlement '
+        'caller',
+        () async {
+          // Same dispose race as the pooled-path test above: park at the cache
+          // await, dispose so the pool closes, then resume into the pre-query
+          // guard. The websocket leg is skipped there, so nothing asked the
+          // relays anything — and an answer nobody was asked for must not
+          // reach a caller that is about to replace what it read.
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final dao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(() => mockDatabase.nostrEventsDao).thenReturn(dao);
+
+          final cacheGate = Completer<List<Event>>();
+          when(
+            () => dao.getEventsByFilter(any()),
+          ).thenAnswer((_) => cacheGate.future);
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          final pending = clientWithCache.queryEventsDetailed(
+            [textNoteFilter()],
+            requireAllRelaysSettled: true,
+          );
+          await pumpEventQueue();
+          verify(() => dao.getEventsByFilter(any())).called(1);
+
+          await clientWithCache.dispose();
+          cacheGate.complete(const []);
+
+          final result = await pending;
+
+          expect(result.events, isEmpty);
+          expect(
+            result.noRelays,
+            isFalse,
+            reason: 'relays are connected, so nothing else flags this answer',
+          );
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'the skipped websocket leg otherwise reads as "the relays '
+                'answered and hold nothing", which is what lets the next '
+                'publish replace a kind 10003 it never read',
+          );
         },
       );
 

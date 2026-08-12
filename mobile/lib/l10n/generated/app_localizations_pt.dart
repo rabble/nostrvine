@@ -2293,10 +2293,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Seletor de ambiente e opções de depuração';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Ative flags de recursos que podem dar chilique.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gerenciamento de chaves';
 
   @override
@@ -3827,12 +3823,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Salvar para ver depois';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Adicionar a coleção de favoritos';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organize em coleções';
-
-  @override
   String get shareMenuFollowSets => 'Coleções de seguidos';
 
   @override
@@ -4212,9 +4202,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuUnknown => 'Desconhecido';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Criar coleção de favoritos';
-
-  @override
   String get shareMenuSetName => 'Nome da coleção';
 
   @override
@@ -4228,15 +4215,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Comece uma nova coleção de favoritos';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Ainda sem coleções de favoritos. Crie a primeira!';
-
-  @override
   String get shareMenuError => 'Erro';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Falha ao carregar coleções de favoritos';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9400,6 +9379,18 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Não é possível transformar: o clipe não está disponível localmente.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Cortar, girar ou espelhar o quadro selecionado';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Um momento, estamos transformando seu quadro';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Não foi possível transformar o quadro. Tente novamente.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Girar';

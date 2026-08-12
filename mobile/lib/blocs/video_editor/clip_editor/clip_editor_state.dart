@@ -520,6 +520,10 @@ final class ClipTransformDiscarded extends ClipTransformResult {}
 /// Transform render failed.
 final class ClipTransformFailure extends ClipTransformResult {}
 
+/// Writing the transformed stop-motion still to disk failed; the frame still
+/// points at its original image.
+final class ClipTransformFrameFailure extends ClipTransformResult {}
+
 // === MERGE RESULT ===
 
 /// One-shot signal describing the outcome of a merge-render operation.

@@ -1448,7 +1448,6 @@
   "nostrSettingsMediaServersSubtitle": "Configure Blossom upload servers",
   "settingsDeveloperOptions": "Developer Options",
   "settingsDeveloperOptionsSubtitle": "Environment switcher and debug settings",
-  "nostrSettingsExperimentalFeaturesSubtitle": "Toggle feature flags that may hiccup.",
   "nostrSettingsKeyManagement": "Key Management",
   "nostrSettingsKeyManagementSubtitle": "Export, backup, and restore your Nostr keys",
   "nostrSettingsClientAttribution": "Client Attribution",
@@ -2255,8 +2254,6 @@
   "shareMenuBookmarks": "Bookmarks",
   "shareMenuAddToBookmarks": "Add to Bookmarks",
   "shareMenuAddToBookmarksSubtitle": "Save for later viewing",
-  "shareMenuAddToBookmarkSet": "Add to Bookmark Set",
-  "shareMenuAddToBookmarkSetSubtitle": "Organize in collections",
   "shareMenuFollowSets": "People Lists",
   "shareMenuCreateFollowSet": "Create Follow Set",
   "shareMenuCreateFollowSetSubtitle": "Start new collection with this creator",
@@ -2483,14 +2480,11 @@
   "shareMenuAddInspirationCredit": "Add inspiration credit",
   "shareMenuCreatorCannotBeReferenced": "This creator cannot be referenced.",
   "shareMenuUnknown": "Unknown",
-  "shareMenuCreateBookmarkSet": "Create Bookmark Set",
   "shareMenuSetName": "Set Name",
   "shareMenuSetNameHint": "e.g., Favorites, Watch Later, etc.",
   "shareMenuCreateNewSet": "Create New Set",
   "shareMenuStartNewBookmarkCollection": "Start a new bookmark collection",
-  "shareMenuNoBookmarkSets": "No bookmark sets yet. Create your first one!",
   "shareMenuError": "Error",
-  "shareMenuFailedToLoadBookmarkSets": "Failed to load bookmark sets",
   "shareMenuCreatedSetAndAddedVideo": "Created \"{name}\" and added video",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {
@@ -5640,6 +5634,18 @@
   "videoEditorTransformNoLocalFile": "Cannot transform: clip is not locally available.",
   "@videoEditorTransformNoLocalFile": {
     "description": "Snackbar message shown when a transform is requested for a clip that has no locally available file."
+  },
+  "videoEditorTransformSelectedFrameSemanticLabel": "Crop, rotate, or flip selected frame",
+  "@videoEditorTransformSelectedFrameSemanticLabel": {
+    "description": "Accessibility label for the Transform button in the stop-motion frame controls."
+  },
+  "videoEditorTransformFrameProgressLabel": "One moment, we're transforming your frame",
+  "@videoEditorTransformFrameProgressLabel": {
+    "description": "Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform."
+  },
+  "videoEditorTransformFrameFailed": "Could not transform frame. Please try again.",
+  "@videoEditorTransformFrameFailed": {
+    "description": "Snackbar message shown when saving a transformed stop-motion frame fails."
   },
   "videoEditorTransformRotateLabel": "Rotate",
   "@videoEditorTransformRotateLabel": {

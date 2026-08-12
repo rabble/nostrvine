@@ -290,11 +290,17 @@ void main() {
     });
 
     test('budget file edits require app CI', () {
-      final workflow = File(
-        p.join(repoRoot, '.github', 'workflows', 'mobile_ci.yaml'),
+      final scopeDetector = File(
+        p.join(
+          repoRoot,
+          'mobile',
+          'scripts',
+          'ci',
+          'detect_mobile_ci_scope.sh',
+        ),
       ).readAsStringSync();
 
-      expect(workflow, contains('.github/ci-timing-budgets.json)'));
+      expect(scopeDetector, contains('.github/ci-timing-budgets.json)'));
     });
   });
 }

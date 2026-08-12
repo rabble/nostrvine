@@ -1,6 +1,7 @@
 // ABOUTME: Shared stereo waveform painter for audio visualization.
 // ABOUTME: Used by video recorder progress bar and audio timing screen.
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -31,6 +32,17 @@ abstract final class WaveformConstants {
   /// Scale factor for waveform amplitude (leaves headroom at edges).
   static const amplitudeScale = 0.9;
 
+  /// Lower bound for the peak the bars are normalized against. Audio whose
+  /// loudest sample sits below this stays quiet on screen rather than being
+  /// stretched to full scale — the difference between "quiet" and "silent"
+  /// survives. Mirrors `TimelineConstants.clipWaveformNormalizerFloor`.
+  static const amplitudeNormalizerFloor = 0.2;
+
+  /// Exponent applied to the normalized amplitude. Below 1 it lifts the quiet
+  /// body of the signal toward the peaks; 1 would be a linear (near-flat)
+  /// band. Mirrors `TimelineConstants.clipWaveformCurve`.
+  static const amplitudeCurve = 0.6;
+
   /// Duration for waveform entrance animation.
   static const animationDuration = Duration(milliseconds: 400);
 
@@ -49,6 +61,8 @@ abstract final class WaveformConstants {
 /// - Height animation via [heightFactor]
 /// - Automatic sample-to-bar mapping
 /// - Start offset for displaying a specific audio segment
+/// - Amplitude normalization against the source's own peak, so a quietly
+///   recorded track fills the band instead of reading as silence
 class StereoWaveformPainter extends CustomPainter {
   /// Creates a waveform progress painter.
   StereoWaveformPainter({
@@ -105,6 +119,39 @@ class StereoWaveformPainter extends CustomPainter {
 
   /// Computed step (width + spacing) for each bar.
   double get _barStep => barWidth + barSpacing;
+
+  /// The loudest sample across both channels, floored.
+  ///
+  /// Real recordings rarely approach full scale, so raw amplitudes mapped
+  /// straight onto the half-height draw as a barely-there ripple — a perfectly
+  /// audible track reads as silent. Normalizing against the whole source
+  /// rather than the visible window keeps a trim from restyling the bars.
+  late final double _normalizer = _computeNormalizer();
+
+  double _computeNormalizer() {
+    var peak = WaveformConstants.amplitudeNormalizerFloor;
+    for (final sample in leftChannel) {
+      final amplitude = sample.abs();
+      if (amplitude > peak) peak = amplitude;
+    }
+    for (final sample in rightChannel ?? const <double>[]) {
+      final amplitude = sample.abs();
+      if (amplitude > peak) peak = amplitude;
+    }
+    return peak;
+  }
+
+  /// Maps a raw sample to its share (0..1) of the available half-height.
+  ///
+  /// Audio spends most of its time far below its peak, so a linear map reads
+  /// as a flat line with occasional spikes. The curve lifts the body without
+  /// flattening the transients.
+  double _shape(double sample) => math
+      .pow(
+        (sample.abs() / _normalizer).clamp(0.0, 1.0),
+        WaveformConstants.amplitudeCurve,
+      )
+      .toDouble();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -251,12 +298,12 @@ class StereoWaveformPainter extends CustomPainter {
       final sampleIndex =
           sampleOffset + ((i / barCount) * visibleSampleCount).floor();
 
-      // Get amplitudes (0.0-1.0)
+      // Normalize and curve the raw samples into 0.0-1.0 display amplitudes.
       final leftAmp = sampleIndex < leftSamples.length
-          ? leftSamples[sampleIndex].abs().clamp(0.0, 1.0)
+          ? _shape(leftSamples[sampleIndex])
           : 0.0;
       final rightAmp = sampleIndex < rightSamples.length
-          ? rightSamples[sampleIndex].abs().clamp(0.0, 1.0)
+          ? _shape(rightSamples[sampleIndex])
           : 0.0;
 
       // Calculate bar heights (minimum for visibility), scaled by animation

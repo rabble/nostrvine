@@ -2281,10 +2281,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chuyển môi trường và cài đặt gỡ lỗi';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Bật/tắt các cờ tính năng có thể hơi \"khựng\".';
-
-  @override
   String get nostrSettingsKeyManagement => 'Quản lý khóa';
 
   @override
@@ -3805,12 +3801,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Lưu để xem sau';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Thêm vào bộ dấu trang';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Sắp xếp theo bộ sưu tập';
-
-  @override
   String get shareMenuFollowSets => 'Danh sách người';
 
   @override
@@ -4188,9 +4178,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuUnknown => 'Không xác định';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Tạo bộ dấu trang';
-
-  @override
   String get shareMenuSetName => 'Tên bộ';
 
   @override
@@ -4204,14 +4191,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bắt đầu bộ sưu tập dấu trang mới';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Chưa có bộ dấu trang nào. Tạo bộ đầu tiên của bạn!';
-
-  @override
   String get shareMenuError => 'Lỗi';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'Không tải được bộ dấu trang';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9336,6 +9316,18 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Không thể biến đổi: clip không có sẵn trên máy.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Cắt, xoay hoặc lật khung hình đã chọn';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Chờ chút, chúng tôi đang biến đổi khung hình của bạn';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Không thể biến đổi khung hình. Vui lòng thử lại.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Xoay';

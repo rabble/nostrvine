@@ -1239,20 +1239,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         return;
       }
 
-      if (result == null) {
-        // A user cancel bumps the generation and is caught above, so reaching
-        // here with a matching generation is a genuine render failure — surface
-        // the retry affordance (#6058).
-        tagOutcome('failed');
-        Log.warning(
-          '⚠️ Video render failed',
-          name: 'VideoEditorNotifier',
-          category: .video,
-        );
-        state = state.copyWith(isProcessing: false, renderFailed: true);
-        return;
-      }
-
       tagOutcome('success');
 
       final (finalRenderedClip, proofManifestJson) = result;
@@ -1285,6 +1271,28 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         proofManifestJson: proofManifestJson,
       );
       autosaveChanges();
+    } on VideoRenderFailedException catch (error) {
+      // A newer render owns the processing flag now — leave it alone.
+      if (generation != _renderGeneration) {
+        tagOutcome('incomplete');
+        return;
+      }
+      trace.putAttribute('failure_reason', error.traceValue);
+      // A cancel without a generation bump is teardown cancelling in-flight
+      // native tasks, not a render that could not produce a video — it belongs
+      // in the same bucket as a superseded render. The retry affordance still
+      // comes up, since the export genuinely did not finish.
+      tagOutcome(
+        error.reason == VideoRenderFailureReason.canceled
+            ? 'incomplete'
+            : 'failed',
+      );
+      Log.warning(
+        '⚠️ Video render produced no video: ${error.traceValue}',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+      state = state.copyWith(isProcessing: false, renderFailed: true);
     } catch (error, stackTrace) {
       // A newer render owns the processing flag now — leave it alone.
       if (generation != _renderGeneration) {
@@ -1292,6 +1300,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         return;
       }
       tagOutcome('error');
+      trace.putAttribute('failure_reason', error.runtimeType.toString());
       // Surface the failure (e.g. a hung/failed C2PA proof step) as an error +
       // retry so the user can restart the render instead of being stuck on the
       // processing overlay (#6058).

@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
-import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -265,7 +264,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   // HTTP origin rather than production's FunnelCake API host.
   final environmentConfig = ref.watch(currentEnvironmentProvider);
   final nip98AuthService = ref.watch(nip98AuthServiceProvider);
-  final eventApiHttpClient = http.Client();
+  final eventApiHttpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
   ref.onDispose(eventApiHttpClient.close);
   final eventApiClient = EventApiClient(
     httpClient: eventApiHttpClient,

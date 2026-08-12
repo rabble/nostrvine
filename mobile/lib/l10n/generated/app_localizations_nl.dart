@@ -2282,10 +2282,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Omgevingswisselaar en debug-instellingen';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Zet feature flags aan die soms haperen.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Sleutelbeheer';
 
   @override
@@ -3813,12 +3809,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Bewaar om later te bekijken';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Toevoegen aan bladwijzerset';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Orden in collecties';
-
-  @override
   String get shareMenuFollowSets => 'Volgsets';
 
   @override
@@ -4199,9 +4189,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuUnknown => 'Onbekend';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Bladwijzerset maken';
-
-  @override
   String get shareMenuSetName => 'Setnaam';
 
   @override
@@ -4215,15 +4202,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begin een nieuwe bladwijzercollectie';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Nog geen bladwijzersets. Maak je eerste!';
-
-  @override
   String get shareMenuError => 'Fout';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Laden van bladwijzersets mislukt';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9373,6 +9352,18 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Transformeren niet mogelijk: clip is niet lokaal beschikbaar.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Geselecteerd frame bijsnijden, draaien of spiegelen';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Momentje, we transformeren je frame';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Frame kon niet worden getransformeerd. Probeer het opnieuw.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Draaien';

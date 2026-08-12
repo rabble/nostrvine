@@ -9,12 +9,15 @@ import 'dart:typed_data';
 import 'dart:ui' show Offset, Size;
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' as pie;
 import 'package:pro_video_editor/pro_video_editor.dart'
@@ -22,6 +25,8 @@ import 'package:pro_video_editor/pro_video_editor.dart'
         ClipTransition,
         ClipTransitionType,
         EditorVideo,
+        ProVideoEditor,
+        ProgressModel,
         RenderCanceledException,
         RenderEncoderException,
         VideoQualityConfig,
@@ -503,4 +508,211 @@ void main() {
       });
     });
   });
+
+  group('render failure reporting (#7125)', () {
+    late ProVideoEditor originalProVideoEditor;
+
+    setUp(() {
+      originalProVideoEditor = ProVideoEditor.instance;
+      ProVideoEditor.instance = _StubProVideoEditor();
+    });
+
+    tearDown(() {
+      ProVideoEditor.instance = originalProVideoEditor;
+      VideoEditorRenderService.renderVideoOverride = null;
+      StopMotionRenderService.assembleOverride = null;
+    });
+
+    test('renderVideoToClip names an empty clip list as the reason', () async {
+      await expectLater(
+        VideoEditorRenderService.renderVideoToClip(
+          clips: const [],
+          editorStateHistory: const {},
+        ),
+        throwsA(
+          isA<VideoRenderFailedException>().having(
+            (e) => e.reason,
+            'reason',
+            VideoRenderFailureReason.emptyClips,
+          ),
+        ),
+      );
+    });
+
+    test('renderVideoToClip maps a cancelled stop-motion assembly to canceled, '
+        'not stop_motion_assembly', () async {
+      StopMotionRenderService.assembleOverride =
+          ({
+            required frames,
+            required aspectRatio,
+            frameRate = StopMotionRenderService.defaultFrameRate,
+            String? taskId,
+          }) async => throw const RenderCanceledException();
+
+      final stopMotionClip = DivineVideoClip(
+        id: 'sm-clip',
+        stopMotionFrames: const [
+          StopMotionClipFrame(
+            path: '/frames/f0.jpg',
+            duration: Duration(milliseconds: 83),
+          ),
+        ],
+        duration: const Duration(milliseconds: 83),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      await expectLater(
+        VideoEditorRenderService.renderVideoToClip(
+          clips: [stopMotionClip],
+          editorStateHistory: const {},
+        ),
+        throwsA(
+          isA<VideoRenderFailedException>()
+              .having(
+                (e) => e.reason,
+                'reason',
+                VideoRenderFailureReason.canceled,
+              )
+              .having(
+                (e) => e.cause,
+                'cause',
+                isA<RenderCanceledException>(),
+              ),
+        ),
+      );
+    });
+
+    test('renderVideo keeps returning null so callers that only need the '
+        'path are unaffected', () async {
+      VideoEditorRenderService.renderVideoOverride =
+          ({
+            required clips,
+            required usePersistentStorage,
+            aspectRatio,
+            parameters,
+            taskId,
+            maxOutputDuration,
+          }) async => null;
+
+      expect(
+        await VideoEditorRenderService.renderVideo(
+          clips: [clip('a', const Duration(seconds: 1))],
+        ),
+        isNull,
+      );
+    });
+
+    test('traceValue carries the cause type, never its message', () {
+      const failure = VideoRenderFailedException(
+        VideoRenderFailureReason.nativeRender,
+        cause: FormatException('/var/mobile/Containers/Data/x/clip.mp4'),
+      );
+
+      expect(failure.traceValue, 'native_render:FormatException');
+      expect(failure.toString(), contains('/var/mobile'));
+    });
+  });
+
+  // The invisibility #7125 reports: the native pipeline signals its failures as
+  // PlatformException, which is not an `Error`, so the old `e is Error` gate
+  // dropped the entire population before it reached Crashlytics. Widening it
+  // for the export must not drag in the recoverable callers of renderVideo —
+  // a failing transition seam falls back to a hard cut and is re-attempted on
+  // every timeline change, so reporting each attempt would bury the export
+  // failures this is meant to surface.
+  group('crash reporting gate (#7125)', () {
+    late List<Object> reported;
+    late ProVideoEditor originalProVideoEditor;
+
+    setUp(() {
+      reported = [];
+      originalProVideoEditor = ProVideoEditor.instance;
+      ProVideoEditor.instance = _StubProVideoEditor();
+      VideoEditorRenderService.crashReporterOverride = (error, _) =>
+          reported.add(error);
+    });
+
+    tearDown(() {
+      ProVideoEditor.instance = originalProVideoEditor;
+      VideoEditorRenderService.crashReporterOverride = null;
+      VideoEditorRenderService.renderVideoOverride = null;
+    });
+
+    void failRenderWith(Object error) {
+      VideoEditorRenderService.renderVideoOverride =
+          ({
+            required clips,
+            required usePersistentStorage,
+            aspectRatio,
+            parameters,
+            taskId,
+            maxOutputDuration,
+          }) async => throw error;
+    }
+
+    Future<void> exportClip() => expectLater(
+      VideoEditorRenderService.renderVideoToClip(
+        clips: [clip('a', const Duration(seconds: 1))],
+        editorStateHistory: const {},
+      ),
+      throwsA(isA<VideoRenderFailedException>()),
+    );
+
+    Future<String?> renderClipPath() => VideoEditorRenderService.renderVideo(
+      clips: [clip('a', const Duration(seconds: 1))],
+    );
+
+    test('the export reports a native failure that is not an Error', () async {
+      final failure = PlatformException(code: 'RENDER_ERROR');
+      failRenderWith(failure);
+
+      await exportClip();
+
+      expect(reported, [same(failure)]);
+    });
+
+    test('a recoverable caller does not report a native failure', () async {
+      failRenderWith(PlatformException(code: 'RENDER_ERROR'));
+
+      expect(await renderClipPath(), isNull);
+      expect(
+        reported,
+        isEmpty,
+        reason:
+            'a seam re-attempted on every timeline change would flood the '
+            'dashboard',
+      );
+    });
+
+    test('a recoverable caller still reports a programming-invariant '
+        'violation', () async {
+      final failure = StateError('boom');
+      failRenderWith(failure);
+
+      expect(await renderClipPath(), isNull);
+      expect(reported, [same(failure)]);
+    });
+
+    test('a cancellation is never reported', () async {
+      failRenderWith(const RenderCanceledException());
+
+      await exportClip();
+
+      expect(reported, isEmpty);
+    });
+  });
+}
+
+/// Satisfies the composite-progress subscription that
+/// [VideoEditorRenderService.renderVideoToClip] opens; the render itself is
+/// stubbed out through `renderVideoOverride`.
+class _StubProVideoEditor extends ProVideoEditor {
+  @override
+  void initializeStream() {}
+
+  @override
+  Stream<ProgressModel> progressStreamById(String taskId) =>
+      const Stream<ProgressModel>.empty();
 }

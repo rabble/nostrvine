@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
@@ -62,7 +63,14 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                   child: AspectRatio(
                     aspectRatio: 1,
                     child: Semantics(
+                      identifier: SemanticIds.cameraClassicShutter,
                       button: true,
+                      // Same value the gesture detector below is gated on, so
+                      // the node stops announcing a tappable button once the
+                      // shutter is dead — no camera, or the session's 6.3s
+                      // budget spent. Mirrors the capture stack's record
+                      // button, which has always reported it.
+                      enabled: isEnabled,
                       liveRegion: true,
                       label: state.isRecording
                           ? context.l10n.videoRecorderRecordingTapToStopLabel

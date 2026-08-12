@@ -5,11 +5,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/supporter/supporter_cubit.dart';
 import 'package:openvine/blocs/supporter/supporter_state.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/supporter_providers.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 
 class SupporterScreen extends ConsumerWidget {
   static const routeName = 'supporter';
@@ -52,7 +53,9 @@ class _SupporterScreenViewState extends State<SupporterScreenView> {
           appBar: DiVineAppBar(
             title: context.l10n.supporterTitle,
             showBackButton: true,
-            onBackPressed: context.pop,
+            // safePop: this screen has a registered path, so the back stack
+            // can be empty on a cold entry and a raw pop would throw GoError.
+            onBackPressed: () => context.safePop(fallback: SettingsScreen.path),
           ),
           backgroundColor: context.vineColors.surface,
           body: Align(

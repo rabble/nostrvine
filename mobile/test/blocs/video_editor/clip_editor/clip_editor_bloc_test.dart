@@ -306,11 +306,14 @@ void main() {
       MergeClipsFn? mergeClips,
       FlattenClipForLibraryFn? flattenClipForLibrary,
       CleanupFlattenedClipFn? cleanupFlattenedClip,
-      CleanupChromaKeyFilesFn? cleanupChromaKeyFiles,
+      DeferFileCleanupFn? deferFileCleanup,
       SaveClipToLibraryFn? saveClipToLibrary,
+      WriteStopMotionFrameFn? writeStopMotionFrame,
+      void Function()? onFinalClipInvalidated,
     }) {
       return ClipEditorBloc(
-        onFinalClipInvalidated: () {},
+        onFinalClipInvalidated: onFinalClipInvalidated ?? () {},
+        writeStopMotionFrame: writeStopMotionFrame,
         audioExtractionService: audioExtractionService,
         splitClip: splitClip,
         reverseClip: reverseClip,
@@ -322,7 +325,7 @@ void main() {
         // paths never touch the file system.
         cleanupFlattenedClip:
             cleanupFlattenedClip ?? (clip, {keepThumbnailPath}) async {},
-        cleanupChromaKeyFiles: cleanupChromaKeyFiles,
+        deferFileCleanup: deferFileCleanup,
         // Defaults to "the library rejected it" so a test that never opts in
         // can't silently pass a save it didn't wire up.
         saveClipToLibrary:
@@ -1881,7 +1884,7 @@ void main() {
         'bakes the visible window into a standalone reversed clip',
         build: () => buildBloc(
           reverseClip: _fakeReverseClip,
-          cleanupChromaKeyFiles: (paths) =>
+          deferFileCleanup: (paths) =>
               reversedCleanupPaths.addAll(paths.whereType<String>()),
         ),
         seed: () => ClipEditorState(
@@ -2258,10 +2261,13 @@ void main() {
         'discards reverse result when source clip is removed in-flight',
         () async {
           final completer = Completer<EditorVideo>();
+          final queued = <String>[];
           final clip = _createClipWithFile();
           final bloc = buildBloc(
             reverseClip: ({required sourceClip, required renderId}) =>
                 completer.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
           );
 
           bloc.add(ClipEditorInitialized([clip]));
@@ -2282,6 +2288,8 @@ void main() {
           expect(bloc.state.reversingClipId, isNull);
           expect(bloc.state.clips, isEmpty);
           expect(bloc.state.lastReverseResult, isA<ClipReverseDiscarded>());
+          // Render never landed on a clip — session cleanup is the only reaper.
+          expect(queued, ['/reversed/discarded.mp4']);
 
           await bloc.close();
         },
@@ -2485,6 +2493,7 @@ void main() {
         },
       );
 
+      final discardedChromaPaths = <String>[];
       blocTest<ClipEditorBloc, ClipEditorState>(
         'discards the render when the clip is gone',
         build: () => buildBloc(
@@ -2500,6 +2509,8 @@ void main() {
                   source: '/path/clip-1.mp4',
                 );
               },
+          deferFileCleanup: (paths) =>
+              discardedChromaPaths.addAll(paths.whereType<String>()),
         ),
         seed: () => ClipEditorState(
           clips: [
@@ -2519,8 +2530,11 @@ void main() {
         },
         // Outlast the fake render so `verify` sees the settled state.
         wait: const Duration(milliseconds: 50),
-        verify: (bloc) =>
-            expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyDiscarded>()),
+        verify: (bloc) {
+          expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyDiscarded>());
+          // Queues the baked output only — not the pre-key source path.
+          expect(discardedChromaPaths, ['/path/keyed.mp4']);
+        },
       );
     });
 
@@ -2554,7 +2568,7 @@ void main() {
                 required chromaKey,
                 required renderId,
               }) async => throw StateError('removal must not render'),
-          cleanupChromaKeyFiles: (paths) =>
+          deferFileCleanup: (paths) =>
               removeCleanupPaths.addAll(paths.whereType<String>()),
         ),
         seed: () => ClipEditorState(clips: [keyedClip()]),
@@ -2565,7 +2579,10 @@ void main() {
           expect(clip.chromaKey, isNull);
           expect(clip.chromaKeySourcePath, isNull);
           expect(bloc.state.lastChromaKeyResult, isA<ChromaKeySuccess>());
-          expect(removeCleanupPaths, contains(sourcePath));
+          // The keyed render is what this drops; the pre-key file is what the
+          // clip now plays, so queuing it would be queuing the live video.
+          expect(removeCleanupPaths, contains('/path/keyed.mp4'));
+          expect(removeCleanupPaths, isNot(contains(sourcePath)));
         },
       );
 
@@ -2596,6 +2613,310 @@ void main() {
       );
     });
 
+    group('ClipEditorStopMotionFrameTransformed', () {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'repoints only the edited still, keeping its hold and the others',
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async => 'transformed.jpg',
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 1,
+            imageBytes: bytes,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.clips.first.stopMotionFrames,
+            'frames',
+            [
+              isA<StopMotionClipFrame>().having(
+                (f) => f.path,
+                'path',
+                'sm-0.jpg',
+              ),
+              isA<StopMotionClipFrame>()
+                  .having((f) => f.path, 'path', 'transformed.jpg')
+                  .having(
+                    (f) => f.duration,
+                    'hold',
+                    StopMotionFrameOps.framesPerImageToDuration(1),
+                  ),
+              isA<StopMotionClipFrame>().having(
+                (f) => f.path,
+                'path',
+                'sm-2.jpg',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'leaves the composition length alone — only the pixels changed',
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async => 'transformed.jpg',
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 0,
+            imageBytes: bytes,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.clips.first.duration,
+            'duration',
+            _createStopMotionClip().duration,
+          ),
+        ],
+      );
+
+      test('writes the change to editor history so undo can reach the old '
+          'still', () async {
+        var invalidated = 0;
+        final bloc = buildBloc(
+          writeStopMotionFrame: (_) async => 'transformed.jpg',
+          onFinalClipInvalidated: () => invalidated++,
+        )..emit(ClipEditorState(clips: [_createStopMotionClip()]));
+
+        bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 0,
+            imageBytes: bytes,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(invalidated, 1);
+        await bloc.close();
+      });
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reports a failure instead of repointing when the write throws',
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async =>
+              throw const FileSystemException('disk full'),
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 0,
+            imageBytes: bytes,
+          ),
+        ),
+        errors: () => [isA<FileSystemException>()],
+        expect: () => [
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.lastTransformResult,
+                'result',
+                isA<ClipTransformFrameFailure>(),
+              )
+              .having(
+                (s) => s.clips.first.stopMotionFrames!.first.path,
+                'untouched still',
+                'sm-0.jpg',
+              ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'ignores an out-of-range still without writing anything',
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async =>
+              throw StateError('must not be called'),
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 9,
+            imageBytes: bytes,
+          ),
+        ),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reports a failure when the editor rasterized nothing',
+        // `CropRotateEditor.done` retries its screenshot, then closes with an
+        // empty list anyway. Writing it would point the frame at a broken
+        // image; dropping it silently would leave the user with an unchanged
+        // still and no explanation after a visible wait.
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async =>
+              throw StateError('must not be called'),
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 0,
+            imageBytes: Uint8List(0),
+          ),
+        ),
+        // Rejected before the write, not by it: reaching the writer and
+        // failing there would produce the same state off a thrown error.
+        errors: () => <Object>[],
+        expect: () => [
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.lastTransformResult,
+                'result',
+                isA<ClipTransformFrameFailure>(),
+              )
+              .having(
+                (s) => s.clips.first.stopMotionFrames!.first.path,
+                'untouched still',
+                'sm-0.jpg',
+              ),
+        ],
+      );
+
+      test('queues the still it replaced for cleanup', () async {
+        final queued = <String>[];
+        final bloc = buildBloc(
+          writeStopMotionFrame: (_) async => 'transformed.jpg',
+          deferFileCleanup: (paths) => queued.addAll(paths.whereType<String>()),
+        )..emit(ClipEditorState(clips: [_createStopMotionClip()]));
+
+        bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 1,
+            imageBytes: bytes,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(queued, ['sm-1.jpg']);
+        await bloc.close();
+      });
+
+      test('keeps the replaced still while a duplicate of it is on the '
+          'timeline', () async {
+        // Duplicating a still shares its file, so the copy is the only thing
+        // between "reclaim the superseded frame" and "delete a frame the user
+        // is still looking at".
+        final queued = <String>[];
+        final withDuplicate = StopMotionFrameOps.clipWithFrames(
+          _createStopMotionClip(),
+          [
+            ..._createStopMotionClip().stopMotionFrames!.take(2),
+            _createStopMotionClip().stopMotionFrames![1],
+          ],
+        );
+        final bloc = buildBloc(
+          writeStopMotionFrame: (_) async => 'transformed.jpg',
+          deferFileCleanup: (paths) => queued.addAll(paths.whereType<String>()),
+        )..emit(ClipEditorState(clips: [withDuplicate]));
+
+        bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 1,
+            imageBytes: bytes,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.clips.first.stopMotionFrames!.map((f) => f.path), [
+          'sm-0.jpg',
+          'transformed.jpg',
+          'sm-1.jpg',
+        ]);
+        expect(queued, isEmpty);
+        await bloc.close();
+      });
+
+      test(
+        'discards the write when the still moved out from under it',
+        () async {
+          // The write is awaited, so a frame delete can land in between. The
+          // index alone then names a different still, and repointing it would
+          // apply the crop to whatever moved in.
+          final queued = <String>[];
+          final gate = Completer<String>();
+          final bloc = buildBloc(
+            writeStopMotionFrame: (_) => gate.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
+          )..emit(ClipEditorState(clips: [_createStopMotionClip()]));
+
+          bloc.add(
+            ClipEditorStopMotionFrameTransformed(
+              clipId: 'sm',
+              frameIndex: 1,
+              imageBytes: bytes,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          // Frame 0 goes away, so the still the user transformed slides to 0 and
+          // index 1 now holds the one that was at 2.
+          final shifted = StopMotionFrameOps.clipWithFrames(
+            bloc.state.clips.first,
+            StopMotionFrameOps.removeFrame(
+              bloc.state.clips.first.stopMotionFrames!,
+              0,
+            ),
+          );
+          bloc.emit(ClipEditorState(clips: [shifted]));
+
+          gate.complete('transformed.jpg');
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            bloc.state.clips.first.stopMotionFrames!.map((f) => f.path),
+            ['sm-1.jpg', 'sm-2.jpg'],
+          );
+          // The abandoned render never reached a clip, so this queue is the
+          // only thing that can still name it.
+          expect(queued, ['transformed.jpg']);
+          await bloc.close();
+        },
+      );
+
+      test(
+        'discards the write when the whole clip is removed in-flight',
+        () async {
+          final queued = <String>[];
+          final gate = Completer<String>();
+          final bloc = buildBloc(
+            writeStopMotionFrame: (_) => gate.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
+          )..emit(ClipEditorState(clips: [_createStopMotionClip()]));
+
+          bloc.add(
+            ClipEditorStopMotionFrameTransformed(
+              clipId: 'sm',
+              frameIndex: 1,
+              imageBytes: bytes,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.emit(const ClipEditorState());
+          gate.complete('transformed.jpg');
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.clips, isEmpty);
+          expect(queued, ['transformed.jpg']);
+          await bloc.close();
+        },
+      );
+    });
+
     group('ClipEditorClipTransformRequested', () {
       blocTest<ClipEditorBloc, ClipEditorState>(
         'emits no-local-file result when clip has no local file',
@@ -2621,7 +2942,7 @@ void main() {
         'renders transformed clip, swaps the file, and clears reverse caches',
         build: () => buildBloc(
           transformClip: _fakeTransformClip,
-          cleanupChromaKeyFiles: (paths) =>
+          deferFileCleanup: (paths) =>
               transformCleanupPaths.addAll(paths.whereType<String>()),
         ),
         seed: () => ClipEditorState(
@@ -2685,6 +3006,75 @@ void main() {
         },
       );
 
+      final supersededPaths = <String>[];
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'queues the render it superseded, cached reverses included',
+        build: () => buildBloc(
+          transformClip: _fakeTransformClip,
+          deferFileCleanup: (paths) =>
+              supersededPaths.addAll(paths.whereType<String>()),
+        ),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile().copyWith(
+              // Distinct from `video` (`/path/clip-local.mp4`) so the
+              // forward-cache yield is what makes the expectation pass —
+              // a same-path seed would already be covered by the video yield.
+              forwardVideoPath: '/forward/clip-local-cache.mp4',
+              reversedVideoPath: '/reversed/clip-local.mp4',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipTransformRequested(
+            clipId: 'clip-local',
+            transform: ExportTransform(),
+          ),
+        ),
+        verify: (_) {
+          expect(
+            supersededPaths,
+            containsAll(<String>[
+              '/path/clip-local.mp4',
+              '/forward/clip-local-cache.mp4',
+              '/reversed/clip-local.mp4',
+            ]),
+          );
+          expect(
+            supersededPaths,
+            isNot(contains('/transformed/clip-local_clip-local_transform.mp4')),
+          );
+        },
+      );
+
+      final sharedFilePaths = <String>[];
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'keeps the superseded file when a second clip still plays it',
+        // Duplicating a clip shares its file. The database check the reaper
+        // runs lags the editor by an autosave, so the live clip list is what
+        // stands between reclaiming a render and deleting one still in use.
+        build: () => buildBloc(
+          transformClip: _fakeTransformClip,
+          deferFileCleanup: (paths) =>
+              sharedFilePaths.addAll(paths.whereType<String>()),
+        ),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile(),
+            _createClipWithFile(id: 'clip-copy').copyWith(
+              video: EditorVideo.file('/path/clip-local.mp4'),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipTransformRequested(
+            clipId: 'clip-local',
+            transform: ExportTransform(),
+          ),
+        ),
+        verify: (_) => expect(sharedFilePaths, isEmpty),
+      );
+
       blocTest<ClipEditorBloc, ClipEditorState>(
         'emits failure and reports a Reportable on a render error',
         build: () => buildBloc(
@@ -2728,6 +3118,7 @@ void main() {
         'discards transform result when source clip is removed in-flight',
         () async {
           final completer = Completer<EditorVideo>();
+          final queued = <String>[];
           final clip = _createClipWithFile();
           final bloc = buildBloc(
             transformClip:
@@ -2736,6 +3127,8 @@ void main() {
                   required transform,
                   required renderId,
                 }) => completer.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
           );
 
           bloc.add(ClipEditorInitialized([clip]));
@@ -2761,8 +3154,49 @@ void main() {
           expect(bloc.state.transformingClipId, isNull);
           expect(bloc.state.clips, isEmpty);
           expect(bloc.state.lastTransformResult, isA<ClipTransformDiscarded>());
+          expect(queued, ['/transformed/discarded.mp4']);
 
           await bloc.close();
+        },
+      );
+
+      test(
+        'queues the transform output when the bloc is closed mid-render',
+        () async {
+          // Screen dispose closes the bloc while a long encode can still finish.
+          // The new file is on disk either way and must still reach deferred
+          // cleanup — the path that used to drop on `if (!mounted) return`.
+          final completer = Completer<EditorVideo>();
+          final queued = <String>[];
+          final bloc = buildBloc(
+            transformClip:
+                ({
+                  required sourceClip,
+                  required transform,
+                  required renderId,
+                }) => completer.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
+          );
+
+          bloc.add(ClipEditorInitialized([_createClipWithFile()]));
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(
+            const ClipEditorClipTransformRequested(
+              clipId: 'clip-local',
+              transform: ExportTransform(),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.isTransforming, isTrue);
+
+          final closed = bloc.close();
+          completer.complete(EditorVideo.file('/transformed/after-close.mp4'));
+          await closed;
+          await Future<void>.delayed(Duration.zero);
+
+          expect(queued, ['/transformed/after-close.mp4']);
         },
       );
     });

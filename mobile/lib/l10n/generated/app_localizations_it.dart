@@ -2302,10 +2302,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Selettore ambiente e impostazioni di debug';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Attiva feature flag che potrebbero fare i capricci.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gestione chiavi';
 
   @override
@@ -3841,12 +3837,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Salva per guardare dopo';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Aggiungi al set di segnalibri';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organizza in collezioni';
-
-  @override
   String get shareMenuFollowSets => 'Set di follow';
 
   @override
@@ -4229,9 +4219,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareMenuUnknown => 'Sconosciuto';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Crea set di segnalibri';
-
-  @override
   String get shareMenuSetName => 'Nome set';
 
   @override
@@ -4245,15 +4232,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Inizia una nuova collezione di segnalibri';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Ancora nessun set di segnalibri. Crea il tuo primo!';
-
-  @override
   String get shareMenuError => 'Errore';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Impossibile caricare i set di segnalibri';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9426,6 +9405,18 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Impossibile trasformare: il clip non è disponibile localmente.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Ritaglia, ruota o capovolgi il fotogramma selezionato';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Un attimo, stiamo trasformando il tuo fotogramma';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Impossibile trasformare il fotogramma. Riprova.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Ruota';

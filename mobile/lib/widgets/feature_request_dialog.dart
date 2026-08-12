@@ -5,10 +5,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/feature_request/feature_request_cubit.dart';
 import 'package:openvine/blocs/feature_request/feature_request_state.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/widgets/support_form_actions.dart';
 import 'package:openvine/widgets/support_form_fields.dart';
 import 'package:openvine/widgets/support_public_submission_notice.dart';
@@ -88,7 +89,10 @@ class _FeatureRequestView extends StatelessWidget {
       appBar: DiVineAppBar(
         title: l10n.supportRequestFeature,
         showBackButton: true,
-        onBackPressed: context.pop,
+        // safePop: this screen has a registered path, so the back stack
+        // can be empty on a cold entry and a raw pop would throw GoError.
+        onBackPressed: () =>
+            context.safePop(fallback: SupportCenterScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: Column(

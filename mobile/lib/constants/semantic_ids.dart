@@ -22,10 +22,24 @@ abstract class SemanticIds {
   static String cameraMode(String mode) => 'camera_mode_$mode';
   static const String cameraRecordButton = 'camera_record_button';
 
+  /// Classic mode's shutter. It has no record button — the square preview
+  /// itself is the tap target — so it gets its own id rather than reusing
+  /// [cameraRecordButton] for a different widget. The E2E asserts pin the
+  /// record button *absent* in classic and this one absent in every
+  /// capture-stack mode, which is what proves the right stack is up.
+  static const String cameraClassicShutter = 'camera_classic_shutter';
+
   /// Recorder chrome. Close, next and delete-clip come from the capture
-  /// stack, which capture, stop-motion and lip-sync all render; the library
-  /// button lives in the bottom bar, which every mode renders. Every label
-  /// behind these is localized, so the E2E capture flow drives them by id.
+  /// stack, which capture, stop-motion and lip-sync all render, and from
+  /// classic mode's own top bar and action row; the library button lives in
+  /// the bottom bar, which every mode renders. Every label behind these is
+  /// localized, so the E2E recorder flows drive them by id.
+  ///
+  /// The two stacks reveal next and delete differently, and the E2E asserts
+  /// have to match: capture fades them out of the semantics tree entirely
+  /// when the session is empty, while classic keeps next mounted and
+  /// disables it — so an empty classic session reads `enabled: false` there,
+  /// not `notVisible`.
   static const String cameraCloseButton = 'camera_close_button';
   static const String cameraNextButton = 'camera_next_button';
   static const String cameraDeleteClipButton = 'camera_delete_clip_button';
@@ -69,10 +83,11 @@ abstract class SemanticIds {
   /// E2E asserts pin their absence in the modes that do not declare them, so a
   /// control leaking across modes fails a run rather than passing quietly.
   ///
-  /// Classic mode has its own grid and ghost toggles in
-  /// `video_recorder_classic_actions_bottom.dart`. They are deliberately
-  /// untagged: no flow drives them yet, and an identifier nothing asserts on
-  /// drifts silently.
+  /// Classic mode renders its own grid and ghost toggles in
+  /// `video_recorder_classic_actions_bottom.dart`, and its own lens switch
+  /// next to them. They drive the same bloc state and announce the same
+  /// `toggled` / `value`, so they carry the same ids and the E2E flow drives
+  /// them with the same per-control utils.
   static const String cameraGhostFrameButton = 'camera_ghost_frame_button';
   static const String cameraGridButton = 'camera_grid_button';
   static const String cameraStopMotionBudget = 'camera_stop_motion_budget';

@@ -2165,9 +2165,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => '环境切换和调试设置';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle => '开关一些可能会抽风的功能。';
-
-  @override
   String get nostrSettingsKeyManagement => '密钥管理';
 
   @override
@@ -3594,12 +3591,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => '存起来稍后看';
 
   @override
-  String get shareMenuAddToBookmarkSet => '加入收藏集';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => '按合集整理';
-
-  @override
   String get shareMenuFollowSets => '人物列表';
 
   @override
@@ -3959,9 +3950,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuUnknown => '未知';
 
   @override
-  String get shareMenuCreateBookmarkSet => '创建收藏集';
-
-  @override
   String get shareMenuSetName => '集合名称';
 
   @override
@@ -3974,13 +3962,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => '开始一个新的收藏合集';
 
   @override
-  String get shareMenuNoBookmarkSets => '还没有收藏集，创建第一个吧！';
-
-  @override
   String get shareMenuError => '错误';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => '加载收藏集失败';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -8867,6 +8849,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorTransformNoLocalFile => '无法变换：片段不在本地。';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel => '裁剪、旋转或翻转选中帧';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel => '稍等，正在处理你的帧';
+
+  @override
+  String get videoEditorTransformFrameFailed => '无法处理该帧，请重试。';
 
   @override
   String get videoEditorTransformRotateLabel => '旋转';

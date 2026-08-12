@@ -14,6 +14,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/screens/video_editor/stop_motion_frame_transform_screen.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/stop_motion/stop_motion_frame_commands.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -217,6 +218,63 @@ void main() {
         capturedAudio().single.endTime,
         const Duration(milliseconds: 200),
       );
+    });
+
+    group(transformStopMotionFrame, () {
+      Future<void> transform(
+        WidgetTester tester, {
+        required String targetClipId,
+        required int frameIndex,
+      }) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<ClipEditorBloc>.value(value: bloc),
+                BlocProvider<TimelineOverlayBloc>.value(value: overlayBloc),
+              ],
+              child: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () => transformStopMotionFrame(
+                    context,
+                    clipId: targetClipId,
+                    frameIndex: frameIndex,
+                  ),
+                  child: const Text('transform'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('transform'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('does not open the editor for an out-of-range still', (
+        tester,
+      ) async {
+        when(() => bloc.state).thenReturn(
+          ClipEditorState(clips: [clipWith(framesHeldFor(1))]),
+        );
+
+        await transform(tester, targetClipId: clipId, frameIndex: frameCount);
+
+        expect(find.byType(StopMotionFrameTransformScreen), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('does not open the editor for an unknown clip', (
+        tester,
+      ) async {
+        when(() => bloc.state).thenReturn(
+          ClipEditorState(clips: [clipWith(framesHeldFor(1))]),
+        );
+
+        await transform(tester, targetClipId: 'gone', frameIndex: 0);
+
+        expect(find.byType(StopMotionFrameTransformScreen), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 }

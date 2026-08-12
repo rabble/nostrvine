@@ -2334,10 +2334,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Comutator de mediu și setări de depanare';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Activează indicatoare de funcții care s-ar putea să sughițe.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gestionare chei';
 
   @override
@@ -3898,12 +3894,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Salvează pentru vizualizare ulterioară';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Adaugă la set de semne de carte';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organizează în colecții';
-
-  @override
   String get shareMenuFollowSets => 'Seturi de urmărire';
 
   @override
@@ -4301,9 +4291,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuUnknown => 'Necunoscut';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Creează un set de semne de carte';
-
-  @override
   String get shareMenuSetName => 'Numele setului';
 
   @override
@@ -4318,15 +4305,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Începe o colecție nouă de semne de carte';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Încă nu ai seturi de semne de carte. Creează-l pe primul!';
-
-  @override
   String get shareMenuError => 'Eroare';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'N-am putut încărca seturile de semne de carte';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9528,6 +9507,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Transformare imposibilă: clipul nu este disponibil local.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Decupează, rotește sau oglindește cadrul selectat';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'O clipă, îți transformăm cadrul';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Cadrul nu a putut fi transformat. Încearcă din nou.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Rotește';
