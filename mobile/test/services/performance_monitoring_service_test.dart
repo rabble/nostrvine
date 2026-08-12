@@ -1,9 +1,30 @@
 // ABOUTME: Tests for Firebase Performance Monitoring service
-// ABOUTME: Verifies trace creation, metrics, and attributes
+// ABOUTME: Verifies trace creation, metrics, attributes, and the native and
+// ABOUTME: Dart switches that keep developer builds out of the dataset
+
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+
+/// The value `FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED` resolves to in the
+/// xcconfig at [path], or `null` when it is never assigned.
+///
+/// Skips `//` comment lines and takes the last assignment, as xcconfig does.
+String? _deactivationSetting(String path) {
+  final assignment = RegExp(
+    r'^\s*FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED\s*=\s*(\S+)\s*$',
+  );
+
+  String? value;
+  for (final line in File(path).readAsLinesSync()) {
+    if (line.trimLeft().startsWith('//')) continue;
+    final match = assignment.firstMatch(line);
+    if (match != null) value = match.group(1);
+  }
+  return value;
+}
 
 void main() {
   group('PerformanceMonitoringService.collectionEnabled', () {
@@ -19,6 +40,70 @@ void main() {
       // manufacture a release-over-release regression that the release code
       // did not contain.
       expect(PerformanceMonitoringService.collectionEnabled, isFalse);
+    });
+  });
+
+  group('native performance collection config', () {
+    // The Dart gate above cannot suppress `_app_start` — that trace is
+    // captured natively before Dart runs — so these switches are what actually
+    // keep developer builds out of the dataset. They are also the fragile
+    // half: `Debug.xcconfig` and `Release.xcconfig` are Flutter template files
+    // that a scaffolding repair overwrites without saying so.
+    final deactivatesCollection = RegExp(
+      r'<meta-data\b'
+      r'(?=[^>]*\bandroid:name\s*=\s*'
+      '"firebase_performance_collection_deactivated")'
+      r'(?=[^>]*\bandroid:value\s*=\s*"true")'
+      r'[^>]*/\s*>',
+    );
+
+    for (final buildType in ['debug', 'profile']) {
+      test('deactivates collection in the Android $buildType manifest', () {
+        final manifest = File(
+          'android/app/src/$buildType/AndroidManifest.xml',
+        ).readAsStringSync();
+        final applicationBlock = RegExp(
+          r'<application\b[\s\S]*?</application>',
+        ).firstMatch(manifest);
+
+        expect(
+          applicationBlock,
+          isNotNull,
+          reason: 'meta-data is only read inside an <application> block.',
+        );
+        expect(applicationBlock!.group(0), matches(deactivatesCollection));
+      });
+    }
+
+    test('leaves the Android release manifest reporting', () {
+      final manifest = File(
+        'android/app/src/main/AndroidManifest.xml',
+      ).readAsStringSync();
+
+      expect(deactivatesCollection.hasMatch(manifest), isFalse);
+    });
+
+    test('reads the iOS switch from the build setting', () {
+      final plist = File('ios/Runner/Info.plist').readAsStringSync();
+
+      expect(
+        plist,
+        matches(
+          RegExp(
+            r'<key>\s*firebase_performance_collection_deactivated\s*</key>\s*'
+            r'<string>\s*\$\(FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED\)\s*'
+            '</string>',
+          ),
+        ),
+      );
+    });
+
+    test('sets that build setting per iOS configuration', () {
+      // Release.xcconfig also backs the Profile configuration —
+      // Profile.xcconfig is not referenced by Runner.xcodeproj — so an iOS
+      // profile build is covered by the release-only Dart gate instead.
+      expect(_deactivationSetting('ios/Flutter/Debug.xcconfig'), 'YES');
+      expect(_deactivationSetting('ios/Flutter/Release.xcconfig'), 'NO');
     });
   });
 
