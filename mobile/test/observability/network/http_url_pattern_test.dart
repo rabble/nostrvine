@@ -19,7 +19,7 @@ void main() {
         Uri.parse('https://api.divine.video/api/users/$eventId/videos'),
       );
 
-      expect(videos, 'https://api.divine.video/api/users/{id}/videos');
+      expect(videos, 'https://api.divine.video/api/users/:id/videos');
       expect(otherUser, videos);
     });
 
@@ -54,13 +54,13 @@ void main() {
     test('keeps a file extension while collapsing the sha256 stem', () {
       expect(
         httpMetricUrlPattern(Uri.parse('https://media.divine.video/$eventId')),
-        'https://media.divine.video/{id}',
+        'https://media.divine.video/:id',
       );
       expect(
         httpMetricUrlPattern(
           Uri.parse('https://media.divine.video/$eventId.MP4'),
         ),
-        'https://media.divine.video/{id}.mp4',
+        'https://media.divine.video/:id.mp4',
       );
     });
 
@@ -72,7 +72,7 @@ void main() {
             'npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6',
           ),
         ),
-        'https://names.divine.video/api/username/by-pubkey/{npub}',
+        'https://names.divine.video/api/username/by-pubkey/:npub',
       );
       expect(
         httpMetricUrlPattern(
@@ -81,7 +81,7 @@ void main() {
             'nevent1qqstna2yrezu5wghjvswqqwuzqqqqqqqzq3thd',
           ),
         ),
-        'https://api.divine.video/api/events/{nevent}',
+        'https://api.divine.video/api/events/:nevent',
       );
     });
 
@@ -90,7 +90,7 @@ void main() {
         httpMetricUrlPattern(
           Uri.parse('https://api.divine.video/api/leaderboard/2026/7'),
         ),
-        'https://api.divine.video/api/leaderboard/{n}/{n}',
+        'https://api.divine.video/api/leaderboard/:n/:n',
       );
       expect(
         httpMetricUrlPattern(
@@ -99,7 +99,7 @@ void main() {
             '4b2f9c1e-3a6d-4f80-9c1a-7e5b8d2f0a13',
           ),
         ),
-        'https://api.divine.video/api/uploads/{uuid}',
+        'https://api.divine.video/api/uploads/:uuid',
       );
     });
 
@@ -113,7 +113,7 @@ void main() {
 
       expect(
         alice,
-        'https://names.divine.video/api/username/check/{username}',
+        'https://names.divine.video/api/username/check/:username',
       );
       expect(bob, alice);
     });
@@ -131,7 +131,7 @@ void main() {
             'https://api.divine.video/api/users/$pubkey/notifications/read',
           ),
         ),
-        'https://api.divine.video/api/users/{id}/notifications/read',
+        'https://api.divine.video/api/users/:id/notifications/read',
       );
     });
 
@@ -147,6 +147,45 @@ void main() {
         httpMetricUrlPattern(Uri.parse('https://API.Divine.Video/api/videos')),
         'https://api.divine.video/api/videos',
       );
+    });
+
+    test('emits only characters a URI parser accepts', () {
+      // Both Firebase SDKs parse the reported URL before recording it, and
+      // neither is lenient: Android runs it through `java.net.URI.create`
+      // and drops the metric when that throws, iOS 16 gets nil from
+      // `NSURL(string:)`. A placeholder built from excluded characters —
+      // `{id}` was the first attempt — reports nothing at all, silently.
+      // Dart's own `Uri.parse` accepts braces, so it cannot stand in for
+      // this check.
+      const uuid = '4b2f9c1e-3a6d-4f80-9c1a-7e5b8d2f0a13';
+      const npub =
+          'npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6';
+      const opaque = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+      final patterns = [
+        for (final url in [
+          'https://api.divine.video/api/users/$pubkey/videos',
+          'https://api.divine.video/api/videos/$eventId/stats',
+          'https://media.divine.video/$eventId.mp4',
+          'https://api.divine.video/api/leaderboard/2026/7',
+          'https://api.divine.video/api/uploads/$uuid',
+          'https://names.divine.video/api/username/by-pubkey/$npub',
+          'https://names.divine.video/api/username/check/alice',
+          'https://api.divine.video/api/auth/$opaque',
+          'http://10.0.2.2:43001/api/users/$pubkey',
+        ])
+          httpMetricUrlPattern(Uri.parse(url)),
+      ];
+
+      // RFC 2396 + RFC 2732, the grammar `java.net.URI` enforces. Excludes
+      // `{`, `}`, space, `<`, `>`, `"`, `\`, `^`, `` ` `` and `|`.
+      final legal = RegExp(r"^[A-Za-z0-9\-._~!$&'()*+,;=:@/?#%\[\]]+$");
+      for (final pattern in patterns) {
+        expect(
+          legal.hasMatch(pattern),
+          isTrue,
+          reason: 'reported URL is not parseable by the SDKs: $pattern',
+        );
+      }
     });
   });
 

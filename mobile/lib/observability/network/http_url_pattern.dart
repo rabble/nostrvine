@@ -41,10 +41,13 @@ bool isInstrumentedHost(String host) {
 /// Add an entry when a new endpoint interpolates something arbitrary (a
 /// username, a slug, a search term) into its *path*. Query parameters need no
 /// entry — [httpMetricUrlPattern] drops the query entirely.
+///
+/// Placeholders use the `:name` form for the reason given on
+/// [_normalizeIdentifier] — braces would make the URL unparseable.
 const List<(String, String)> _freeTextRoutePatterns = [
   // names.divine.video/api/username/check/<username> — one pattern per
   // username typed into the claim field otherwise.
-  ('/api/username/check/', '/api/username/check/{username}'),
+  ('/api/username/check/', '/api/username/check/:username'),
 ];
 
 final RegExp _digits = RegExp(r'^\d+$');
@@ -53,7 +56,7 @@ final RegExp _uuid = RegExp(
   caseSensitive: false,
 );
 
-/// Nostr bech32 entities (NIP-19). Reported as `{npub}`, `{nevent}`, … so the
+/// Nostr bech32 entities (NIP-19). Reported as `:npub`, `:nevent`, … so the
 /// entity type stays readable in the console.
 final RegExp _bech32Entity = RegExp(
   r'^(npub|nsec|note|nevent|naddr|nprofile|nrelay|ncryptsec)1[a-z0-9]{6,}$',
@@ -78,9 +81,9 @@ final RegExp _fileExtension = RegExp(r'^[A-Za-z0-9]{1,5}$');
 ///
 /// ```
 /// https://api.divine.video/api/users/<64-hex>/videos?limit=20
-///   -> https://api.divine.video/api/users/{id}/videos
+///   -> https://api.divine.video/api/users/:id/videos
 /// https://media.divine.video/<sha256>.mp4
-///   -> https://media.divine.video/{id}.mp4
+///   -> https://media.divine.video/:id.mp4
 /// ```
 ///
 /// Identifiers are replaced whole, never shortened — a truncated Nostr id is
@@ -115,15 +118,28 @@ String _normalizeSegment(String segment) {
   return _normalizeIdentifier(segment);
 }
 
+/// Placeholders use `:name`, never `{name}`.
+///
+/// Both Firebase SDKs parse the reported URL before they will record it, and
+/// braces are excluded characters in RFC 2396/3986. Android's
+/// `FirebasePerfNetworkValidator` runs it through `java.net.URI.create`,
+/// which throws, and the metric is dropped at dispatch with "URL cannot be
+/// parsed" — so a braced pattern reports nothing at all. iOS 16's
+/// `NSURL(string:)` returns nil for the same reason and the plugin fails the
+/// call with `invalid-url`; newer Foundation percent-encodes it to
+/// `%7Bid%7D`. A colon is a legal `pchar`, so `:id` parses on both.
+///
+/// `http_url_pattern_test.dart` pins the character set. Do not "tidy" these
+/// back into braces.
 String _normalizeIdentifier(String value) {
   if (value.isEmpty) return value;
-  if (_digits.hasMatch(value)) return '{n}';
-  if (_uuid.hasMatch(value)) return '{uuid}';
+  if (_digits.hasMatch(value)) return ':n';
+  if (_uuid.hasMatch(value)) return ':uuid';
 
   final entity = _bech32Entity.firstMatch(value);
-  if (entity != null) return '{${entity.group(1)!.toLowerCase()}}';
+  if (entity != null) return ':${entity.group(1)!.toLowerCase()}';
 
-  if (_hexIdentifier.hasMatch(value)) return '{id}';
-  if (_opaqueIdentifier.hasMatch(value)) return '{id}';
+  if (_hexIdentifier.hasMatch(value)) return ':id';
+  if (_opaqueIdentifier.hasMatch(value)) return ':id';
   return value;
 }

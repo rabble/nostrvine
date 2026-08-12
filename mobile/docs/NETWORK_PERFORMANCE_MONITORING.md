@@ -95,17 +95,26 @@ identifier in a path would give one pattern per request and blow the cap.
 
 ```
 https://api.divine.video/api/users/<64-hex pubkey>/videos?limit=20
-  -> https://api.divine.video/api/users/{id}/videos
+  -> https://api.divine.video/api/users/:id/videos
 https://media.divine.video/<sha256>.mp4
-  -> https://media.divine.video/{id}.mp4
+  -> https://media.divine.video/:id.mp4
 https://names.divine.video/api/username/by-pubkey/npub1…
-  -> https://names.divine.video/api/username/by-pubkey/{npub}
+  -> https://names.divine.video/api/username/by-pubkey/:npub
 ```
 
 Collapsed automatically: long hex ids (pubkeys, event ids, sha256 hashes),
-NIP-19 bech32 entities (reported as `{npub}`, `{nevent}`, … so the type stays
+NIP-19 bech32 entities (reported as `:npub`, `:nevent`, … so the type stays
 readable), UUIDs, all-digit segments, and opaque base64url-ish tokens. Query
 strings, fragments and userinfo are dropped entirely.
+
+**Placeholders are `:name`, not `{name}`.** Both SDKs parse the reported URL
+before they will record it, and braces are excluded characters in RFC
+2396/3986. Android's `FirebasePerfNetworkValidator` calls
+`java.net.URI.create` on it and drops the metric at dispatch when that throws
+("URL cannot be parsed"); iOS 16's `NSURL(string:)` returns nil and the plugin
+fails the call with `invalid-url`. A braced pattern therefore reports nothing,
+with no error surfaced to the app. A colon is a legal `pchar`. The character
+set is pinned by `http_url_pattern_test.dart`.
 
 Identifiers are replaced **whole**, never shortened. A truncated Nostr id is
 still a Nostr id, and emitting one is banned repo-wide (AGENTS.md, "Nostr And

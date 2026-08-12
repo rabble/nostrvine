@@ -124,7 +124,7 @@ void main() {
 
       expect(
         recorder.only.urlPattern,
-        'https://api.divine.video/api/videos/{id}/stats',
+        'https://api.divine.video/api/videos/:id/stats',
       );
       expect(recorder.only.method, 'GET');
     });
