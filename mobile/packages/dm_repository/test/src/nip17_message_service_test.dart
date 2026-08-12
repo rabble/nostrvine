@@ -2230,17 +2230,18 @@ void main() {
       );
 
       test(
-        'a send with no outer cap also gets the wider rebuild bound',
+        'a send with no retry row leaves the self-wrap build uncapped',
         () {
           // `sendFileMessage` and the bug-report send reach sendRumor via
-          // sendPrivateMessage and impose NO outer cap, so the tight
-          // send-sized bound would fail a self-wrap the transport itself
-          // would have completed — permanently losing the sender's
-          // cross-device copy, since neither is queued for recoverSelfWrap.
-          // Only DmRepository's capped path opts into `selfWrapBuild`.
+          // sendPrivateMessage, impose NO outer cap, and own no outgoing_dms
+          // row. A self-wrap build timeout reports selfWrapPublished: false
+          // and leans on recoverSelfWrap to finish out of band — but that
+          // requires the queue row they never create, so ANY bound here drops
+          // the sender's cross-device copy for good. Drive the rebuild past
+          // even the widest bound to pin that it is uncapped, not just wide.
           final senderPublicKey = getPublicKey(_testPrivateKey);
           final slowRebuild =
-              DmSendBudget.selfWrapBuild + const Duration(seconds: 5);
+              DmSendBudget.selfWrapUncappedBuild + const Duration(seconds: 5);
 
           NIP17SendResult? result;
           fakeAsync((async) {
@@ -2281,7 +2282,7 @@ void main() {
 
             async
               ..flushMicrotasks()
-              ..elapse(DmSendBudget.selfWrapUncappedBuild)
+              ..elapse(slowRebuild)
               ..flushMicrotasks();
           });
 
@@ -2291,8 +2292,8 @@ void main() {
             result!.selfWrapPublished,
             isTrue,
             reason:
-                'a rebuild slower than selfWrapBuild must still land when '
-                'the caller imposes no cap of its own',
+                'a rebuild slower than every self-wrap bound must still land '
+                'for a caller with no row to recover from',
           );
         },
       );

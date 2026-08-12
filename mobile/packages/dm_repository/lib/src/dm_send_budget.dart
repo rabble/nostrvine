@@ -140,12 +140,17 @@ abstract final class DmSendBudget {
   /// callers have no outer budget to protect, so there a tight bound can only
   /// fail a build the transport itself would have completed.
   ///
-  /// This covers both out-of-band recovery
-  /// (`NIP17MessageService.publishSelfWrap`, driven by
-  /// `DmRepository.recoverSelfWrap`) and direct uncapped sends such as
-  /// `NIP17MessageService.sendPrivateMessage`. The build is the same two
-  /// round trips, so at [selfWrapBuild] it could never finish against a signer
-  /// running near its own 30s-per-op bound.
+  /// This covers out-of-band recovery (`NIP17MessageService.publishSelfWrap`,
+  /// driven by `DmRepository.recoverSelfWrap`) and
+  /// `NIP17MessageService.publishSelfApplicationMarker`. The build is the same
+  /// two round trips, so at [selfWrapBuild] it could never finish against a
+  /// signer running near its own 30s-per-op bound.
+  ///
+  /// It deliberately does **not** cover `sendPrivateMessage`, which builds its
+  /// self wrap uncapped. A bound only makes sense where a timed-out build can
+  /// still be finished later; that caller owns no `outgoing_dms` row, which
+  /// `DmRepository.recoverSelfWrap` requires, so for it even this wide bound
+  /// would drop the sender's cross-device copy permanently.
   ///
   /// Deliberately NOT part of [chainWorstCase]: callers that use this bound do
   /// not use the send-level [messagePublishTimeout] chain budget.

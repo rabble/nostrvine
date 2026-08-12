@@ -353,12 +353,15 @@ class NIP17MessageService {
   /// `DmRepository._sendRumorWithTimeout`; reactions keep their existing 15s
   /// `_publishTimeout`, which can fire before these internal build bounds.
   ///
-  /// A caller with NO outer cap must pass [DmSendBudget.selfWrapUncappedBuild]
-  /// instead — there the tight bound protects no budget and can only fail a
-  /// rebuild the transport itself would have completed, permanently losing the
-  /// sender's cross-device copy. [sendPrivateMessage] does exactly that, which
-  /// is what `DmRepository.sendFileMessage` and the bug-report send reach it
-  /// through; neither imposes a cap of its own.
+  /// Passing `null` leaves self-wrap construction uncapped, the same null
+  /// semantics [recipientWrapBuildTimeout] carries. Only callers with no outer
+  /// cap and no durable row should do that. A self-wrap build timeout is
+  /// reported as `selfWrapPublished: false`, and the arm that is supposed to
+  /// finish it out of band — `DmRepository.recoverSelfWrap` — requires an
+  /// `outgoing_dms` row that those callers never create, so any bound there
+  /// costs the sender their cross-device copy permanently and silently.
+  /// [sendPrivateMessage] is that caller, reached by
+  /// `DmRepository.sendFileMessage` and the bug-report send.
   @useResult
   Future<NIP17SendResult> sendRumor({
     required Event rumorEvent,
@@ -367,10 +370,10 @@ class NIP17MessageService {
     bool awaitRecipientOk = false,
     bool selfWrapOnSoftUnconfirmed = true,
     Duration? recipientWrapBuildTimeout = DmSendBudget.recipientWrapBuild,
-    Duration? selfWrapBuildTimeout,
+    Duration? selfWrapBuildTimeout = DmSendBudget.selfWrapBuild,
   }) async {
     final recipientWrapBound = recipientWrapBuildTimeout;
-    final selfWrapBound = selfWrapBuildTimeout ?? DmSendBudget.selfWrapBuild;
+    final selfWrapBound = selfWrapBuildTimeout;
     try {
       // Send gate (#176): the lowest recipient-delivering primitive, so every
       // publisher — direct send, group fan-out, drain replay, reactions,
@@ -752,7 +755,7 @@ class NIP17MessageService {
   Future<bool> _publishSelfWrap({
     required Nostr nostr,
     required Event rumorEvent,
-    required Duration wrapBuildTimeout,
+    required Duration? wrapBuildTimeout,
     Event? prebuiltSelfWrap,
   }) async {
     try {
@@ -763,20 +766,31 @@ class NIP17MessageService {
       // survives and the retry sweep's recoverSelfWrap arm finishes it out of
       // band (#4124).
       //
-      // The bound is the caller's, because the two callers are not paying for
-      // the same thing: inside a send it is the tight
+      // The bound is the caller's, because the callers are not paying for the
+      // same thing: inside a send it is the tight
       // [DmSendBudget.selfWrapBuild] that keeps the chain under the backstop,
       // while recovery runs with no outer cap and uses the wider
       // [DmSendBudget.selfWrapUncappedBuild] — bounding recovery at the tight
       // one would fail rebuilds against the same slow signer that left the
       // self-wrap outstanding.
-      final selfWrapEvent =
-          prebuiltSelfWrap ??
-          await _buildWrap(
-            nostr: nostr,
-            rumorEvent: rumorEvent,
-            receiverPublicKey: _senderPublicKey,
-          ).timeout(wrapBuildTimeout, onTimeout: () => null);
+      //
+      // A `null` bound means uncapped, for callers that own no `outgoing_dms`
+      // row: recoverSelfWrap needs one, so for them the "durable row survives
+      // and recovery finishes it" contract above does not hold and any bound
+      // loses the cross-device copy outright.
+      final Event? selfWrapEvent;
+      if (prebuiltSelfWrap != null) {
+        selfWrapEvent = prebuiltSelfWrap;
+      } else {
+        final build = _buildWrap(
+          nostr: nostr,
+          rumorEvent: rumorEvent,
+          receiverPublicKey: _senderPublicKey,
+        );
+        selfWrapEvent = wrapBuildTimeout == null
+            ? await build
+            : await build.timeout(wrapBuildTimeout, onTimeout: () => null);
+      }
       if (selfWrapEvent == null) {
         Log.warning(
           'Self-wrap creation returned null — the sender will not see '
@@ -894,10 +908,10 @@ class NIP17MessageService {
       // pre-publish Amber approval would return retryablePending with nowhere
       // to retry from. Preserve the pre-PR uncapped recipient-build contract.
       recipientWrapBuildTimeout: null,
-      // No caller of this method imposes an outer cap, so the tight
-      // send-sized bound would protect nothing and could only fail a
-      // self-wrap the transport would have completed.
-      selfWrapBuildTimeout: DmSendBudget.selfWrapUncappedBuild,
+      // Same reasoning on the self-wrap: with no outgoing_dms row there is no
+      // recoverSelfWrap arm to finish a timed-out build, so any bound here
+      // silently costs the sender their cross-device copy for good.
+      selfWrapBuildTimeout: null,
     );
   }
 
