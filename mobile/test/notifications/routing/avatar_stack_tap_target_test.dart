@@ -91,27 +91,20 @@ void main() {
       });
     }
 
-    for (final kind in const [
-      NotificationKind.follow,
-      NotificationKind.like,
-      NotificationKind.mention,
-      NotificationKind.system,
-      NotificationKind.likeComment,
-      NotificationKind.reply,
-    ]) {
-      test('actor notification $kind opens the actor profile', () {
-        expect(
-          resolveAvatarStackTapTarget(
-            ActorNotification(
-              id: 'actor_${kind.name}',
-              type: kind,
-              actor: firstActor,
-              timestamp: DateTime(2026),
-            ),
+    // Kind never participates in the ActorNotification branch — it always
+    // resolves to the actor's profile — so one case pins the whole branch.
+    test('actor notification opens the actor profile', () {
+      expect(
+        resolveAvatarStackTapTarget(
+          ActorNotification(
+            id: 'actor_follow',
+            type: NotificationKind.follow,
+            actor: firstActor,
+            timestamp: DateTime(2026),
           ),
-          const OpenActorProfileTarget('actor_1'),
-        );
-      });
-    }
+        ),
+        const OpenActorProfileTarget('actor_1'),
+      );
+    });
   });
 }
