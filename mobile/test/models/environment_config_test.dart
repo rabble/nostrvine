@@ -278,6 +278,25 @@ void main() {
       });
     });
 
+    group('nameServerBaseUrl', () {
+      test('production returns the divine-name-server host', () {
+        const config = EnvironmentConfig(
+          environment: AppEnvironment.production,
+        );
+        expect(config.nameServerBaseUrl, equals('https://names.divine.video'));
+      });
+
+      test('is the same across environments (no local stub)', () {
+        for (final env in AppEnvironment.values) {
+          final config = EnvironmentConfig(environment: env);
+          expect(
+            config.nameServerBaseUrl,
+            equals('https://names.divine.video'),
+          );
+        }
+      });
+    });
+
     group('inviteBaseUrl', () {
       // These exercise the no-define path. The
       // `bool.hasEnvironment('INVITE_SERVER_URL')` override branch cannot be

@@ -17,6 +17,11 @@ import 'package:profile_repository/profile_repository.dart';
 import 'package:profile_repository/src/identity_event_selection.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+// TODO(e2e): Add divine-name-server to local_stack Docker dependencies
+// so username check/claim flows can be tested against it in E2E tests.
+// Tracked by #3367 while this repository still uses the production name
+// server in local builds.
+
 // How long a Divine-identity determination is trusted before re-querying.
 //
 // Kept equal to ModerationLabelService._resolvedPubkeyTtl (24h) so the app
