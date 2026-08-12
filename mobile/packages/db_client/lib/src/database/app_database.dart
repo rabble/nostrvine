@@ -168,10 +168,9 @@ class AppDatabase extends _$AppDatabase {
         // _normalizeLegacyV1Schema above, and that path CREATEs
         // pending_view_events from the current definition — so the column can
         // already exist by the time this step runs.
-        if (!await _hasColumn(
+        if (!(await _columnNames(
           'pending_view_events',
-          'video_addressable_d_tag',
-        )) {
+        )).contains('video_addressable_d_tag')) {
           await m.addColumn(
             pendingViewEvents,
             pendingViewEvents.videoAddressableDTag,
@@ -1097,12 +1096,6 @@ class AppDatabase extends _$AppDatabase {
   /// Returns true when a v2 database is missing schema that v1 normalization
   /// would have supplied. This is deliberately a recovery probe, not the
   /// primary migration mechanism for future schema changes.
-  /// Whether [table] already has [column], for idempotent migration steps.
-  Future<bool> _hasColumn(String table, String column) async {
-    final rows = await customSelect('PRAGMA table_info($table)').get();
-    return rows.any((row) => row.data['name'] == column);
-  }
-
   Future<bool> _needsSchemaRepair() async {
     for (final table in legacyV1NormalizationRepairTables) {
       if (!await _tableExists(table)) {
