@@ -94,6 +94,29 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
+    // `scrollUntilVisible` stops once the row is *built*, which inside a
+    // ListView's cache extent can still leave it below the viewport edge, so
+    // the tap lands on nothing. How close the row gets to that edge is not
+    // stable: VineTheme's `GoogleFonts.inter` registers its asset
+    // process-globally, so the first widget test to render this screen lays it
+    // out with the wider fallback font and every later one with real Inter
+    // metrics. Randomized ordering picks which test pays that cost, so every
+    // tap here goes through `ensureVisible` first (#7179).
+    Future<void> tapNip05Tile(WidgetTester tester) async {
+      final nip05Tile = find.text(
+        lookupAppLocalizations(const Locale('en')).nostrSettingsNip05Address,
+      );
+      await tester.scrollUntilVisible(
+        nip05Tile,
+        250,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.ensureVisible(nip05Tile);
+      await tester.pumpAndSettle();
+      await tester.tap(nip05Tile);
+      await tester.pumpAndSettle();
+    }
+
     ProviderContainer buildContainer() {
       final container = ProviderContainer(
         overrides: [
@@ -139,18 +162,7 @@ void main() {
       router.go(NostrSettingsScreen.path);
       await tester.pumpAndSettle();
 
-      final nip05Tile = find.text(l10n.nostrSettingsNip05Address);
-      await tester.scrollUntilVisible(
-        nip05Tile,
-        250,
-        scrollable: find.byType(Scrollable),
-      );
-      // scrollUntilVisible stops once the row is built, which in a ListView
-      // can still leave it below the viewport edge.
-      await tester.ensureVisible(nip05Tile);
-      await tester.pumpAndSettle();
-      await tester.tap(nip05Tile);
-      await tester.pumpAndSettle();
+      await tapNip05Tile(tester);
 
       expect(find.text(l10n.nostrSettingsNip05Address), findsWidgets);
       expect(find.byType(Nip05SettingsView), findsOneWidget);
@@ -208,14 +220,7 @@ void main() {
         router.go(NostrSettingsScreen.path);
         await tester.pumpAndSettle();
 
-        final nip05Tile = find.text(l10n.nostrSettingsNip05Address);
-        await tester.scrollUntilVisible(
-          nip05Tile,
-          250,
-          scrollable: find.byType(Scrollable),
-        );
-        await tester.tap(nip05Tile);
-        await tester.pumpAndSettle();
+        await tapNip05Tile(tester);
 
         expect(find.byType(Nip05SettingsView), findsOneWidget);
         expect(router.canPop(), isTrue);
