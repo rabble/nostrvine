@@ -29,6 +29,12 @@
 # 9 - Android publishing reads the service account from environment variable
 #     group "google_play_credentials":
 #   - GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+# 10 - Create environment variable group "shorebird_credentials" with:
+#   - SHOREBIRD_TOKEN (mark as secure) — an API key from the Shorebird
+#     console under Account > API Keys. `shorebird login:ci` is removed;
+#     CI authenticates with API keys only.
+#   The key must belong to an account with access to the app_id in
+#   mobile/shorebird.yaml, which lives in the Divine organization.
 #
 # Every group named under a workflow's `groups:` key must appear in this
 # checklist. Codemagic validates this whole file before it provisions a machine,
@@ -153,9 +159,18 @@ definitions:
         } >> "$GRADLE_HOME/gradle.properties"
         echo "Effective $GRADLE_HOME/gradle.properties:"
         cat "$GRADLE_HOME/gradle.properties"
+    - &shorebird_install
+      name: Install Shorebird
+      script: |
+        curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
+        echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
     - &build_apk
       name: Build Android APK
       script: |
+        # Deliberately NOT a Shorebird release. Shorebird has no
+        # --split-per-abi; its Android artifact is either an AAB or one
+        # universal APK. These per-ABI APKs go to Zapstore / direct download,
+        # so those installs are not patchable. Play (the AAB below) is.
         flutter build apk --release --split-per-abi --build-number=$PROJECT_BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
@@ -166,7 +181,7 @@ definitions:
           --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
           --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
     - &build_aab
-      name: Build Android AAB
+      name: Build Android AAB (Shorebird release)
       script: |
         # Use the latest Play versionCode as the primary source of truth.
         LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "co.openvine.app" 2>/dev/null || true)
@@ -181,7 +196,28 @@ definitions:
             fi
             ;;
         esac
-        flutter build appbundle --release --build-number=$BUILD_NUMBER \
+        # Shorebird wraps `flutter build appbundle` with its own engine so the
+        # release carries the updater. A plain `flutter build` here would ship
+        # a permanently unpatchable version to Play.
+        shorebird release android --flutter-version=$FLUTTER_VERSION --build-number=$BUILD_NUMBER \
+          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
+          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
+    - &patch_android
+      name: Patch Android (Shorebird)
+      script: |
+        # No --flutter-version: a patch is compiled against the Flutter version
+        # its release was built with, which Shorebird resolves from the release.
+        # The dart-defines must match the release's or the patch changes app
+        # behaviour beyond the code fix. Shorebird refuses to patch when it
+        # detects native or asset diffs; do NOT add --allow-native-diffs or
+        # --allow-asset-diffs to force past that — cut a new release instead.
+        shorebird patch android --release-version=${{ inputs.RELEASE_VERSION }} \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
@@ -260,7 +296,7 @@ definitions:
             "${ARTIFACTS[@]}"
         fi
     - &build_ios
-      name: Build and sign iOS
+      name: Build and sign iOS (Shorebird release)
       script: |
         # App Store Connect is the source of truth, mirroring the Play lookup in
         # the AAB step. Apple rejects any upload whose build number does not
@@ -289,7 +325,25 @@ definitions:
             ;;
         esac
         echo "iOS build number: $BUILD_NUMBER (App Store Connect latest: ${LATEST_IOS_BUILD_NUMBER:-unknown})"
-        flutter build ipa --release --build-number=$BUILD_NUMBER \
+        # Shorebird wraps `flutter build ipa` with its own engine so the release
+        # carries the updater. A plain `flutter build` here would ship a
+        # permanently unpatchable version to TestFlight and the App Store.
+        shorebird release ios --flutter-version=$FLUTTER_VERSION --build-number=$BUILD_NUMBER \
+          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
+          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
+          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
+          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS \
+          --export-options-plist=/Users/builder/export_options.plist
+    - &patch_ios
+      name: Patch iOS (Shorebird)
+      script: |
+        # See the Android patch step for why there is no --flutter-version and
+        # why the dart-defines must match the release's.
+        shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
@@ -589,7 +643,12 @@ workflows:
         - zendesk_credentials
         - proofmode_credentials
         - github_credentials
+        - shorebird_credentials
       vars:
+        # Must match `flutter:` above. Shorebird ships its own Flutter, so the
+        # release is only reproducible if we pin it to the same version
+        # Codemagic provisioned.
+        FLUTTER_VERSION: 3.44.0
         BUNDLE_ID: co.openvine.app
         IOS_EXTENSION_BUNDLE_IDS: >-
           co.openvine.app.NotificationServiceExtension
@@ -612,6 +671,7 @@ workflows:
       - *enable_spm
       - *prepare_ios_spm_packages
       - *pod_install
+      - *shorebird_install
       - *build_ios
       - *upload_dsyms_to_crashlytics
       - *publish_github_release
@@ -703,6 +763,10 @@ workflows:
         - google_play_credentials
         - proofmode_credentials
         - github_credentials
+        - shorebird_credentials
+      vars:
+        # Must match `flutter:` above — see the iOS workflow for why.
+        FLUTTER_VERSION: 3.44.0
       android_signing:
         - divine_keystore
     cache:
@@ -717,6 +781,7 @@ workflows:
       - *enable_spm
       - *setup_local_properties
       - *configure_gradle_memory
+      - *shorebird_install
       - *build_apk
       - *build_aab
       - *publish_github_release
@@ -734,6 +799,120 @@ workflows:
         # on every track). A draft upload succeeds; promote it to a live
         # release in the Play Console after completing that declaration.
         submit_as_draft: true
+
+  # Patch workflows ship a Dart-only fix to an already-released build over the
+  # air. They publish to Shorebird, not to Play or the App Store, and are
+  # manual-trigger only — a patch reaches users within one app launch, so it
+  # should be a deliberate act, never a side effect of a push.
+  #
+  # A patch can only target a release that was cut by `shorebird release`
+  # (the AAB and IPA steps above). Per-ABI APKs from the Zapstore path are
+  # plain flutter builds and cannot be patched.
+  ios-patch:
+    name: iOS Patch (Shorebird)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    inputs:
+      RELEASE_VERSION:
+        description: >-
+          Release to patch, exactly as Shorebird lists it, including the build
+          number (e.g. 1.0.9+247). Get it from `shorebird releases list` or the
+          Shorebird console — a value with no matching release fails the build.
+        type: string
+      DEFAULT_ENV:
+        description: >-
+          Must match the value the target release was built with. A mismatch
+          silently repoints patched installs at a different environment.
+        type: choice
+        default: PRODUCTION
+        options:
+          - PRODUCTION
+          - STAGING
+          - TEST
+          - POC
+    environment:
+      flutter: 3.44.0
+      xcode: latest
+      cocoapods: default
+      groups:
+        - zendesk_credentials
+        - proofmode_credentials
+        - shorebird_credentials
+      vars:
+        FLUTTER_VERSION: 3.44.0
+        BUNDLE_ID: co.openvine.app
+        IOS_EXTENSION_BUNDLE_IDS: >-
+          co.openvine.app.NotificationServiceExtension
+          co.openvine.app.CameraQuickActionWidget
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: co.openvine.app
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *check_signing_endpoint
+      - *check_supporters_config
+      - *check_ios_extension_signing_contract
+      - *setup_code_signing_xcode
+      - *clean_ios_workspace_state
+      - *enable_spm
+      - *prepare_ios_spm_packages
+      - *pod_install
+      - *shorebird_install
+      - *patch_ios
+
+  android-patch:
+    name: Android Patch (Shorebird)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: mac_mini_m4
+    inputs:
+      RELEASE_VERSION:
+        description: >-
+          Release to patch, exactly as Shorebird lists it, including the build
+          number (e.g. 1.0.9+247). Get it from `shorebird releases list` or the
+          Shorebird console — a value with no matching release fails the build.
+        type: string
+      DEFAULT_ENV:
+        description: >-
+          Must match the value the target release was built with. A mismatch
+          silently repoints patched installs at a different environment.
+        type: choice
+        default: PRODUCTION
+        options:
+          - PRODUCTION
+          - STAGING
+          - TEST
+          - POC
+    environment:
+      flutter: 3.44.0
+      java: 17
+      groups:
+        - zendesk_credentials
+        - proofmode_credentials
+        - shorebird_credentials
+      vars:
+        FLUTTER_VERSION: 3.44.0
+      android_signing:
+        - divine_keystore
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *check_signing_endpoint
+      - *check_supporters_config
+      - *setup_local_properties
+      - *configure_gradle_memory
+      - *shorebird_install
+      - *patch_android
 
   macos-build:
     name: macOS Build
