@@ -4019,6 +4019,7 @@
     "soundsRemoveSavedSound": "Sound verwijderen",
     "savedSoundSaveAction": "Opslaan",
     "savedSoundPausePreviewAction": "Voorbeeld pauzeren",
+    "savedSoundResumePreviewAction": "Voorbeeld hervatten",
     "savedSoundDetailsSheetTitle": "Geluidsdetails",
     "savedSoundRemoveConfirmTitle": "Dit geluid verwijderen?",
     "savedSoundRemoveConfirmMessage": "Het verdwijnt uit je bibliotheek, maar je kunt het opnieuw opslaan vanuit elke video die het gebruikt.",

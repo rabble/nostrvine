@@ -4330,6 +4330,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Tạm dừng nghe thử';
 
   @override
+  String get savedSoundResumePreviewAction => 'Tiếp tục nghe thử';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Chi tiết âm thanh';
 
   @override

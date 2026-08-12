@@ -4332,6 +4332,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'پیش نظارہ روکیں';
 
   @override
+  String get savedSoundResumePreviewAction => 'پیش نظارہ دوبارہ چلائیں';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'آواز کی تفصیلات';
 
   @override

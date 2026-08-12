@@ -4019,6 +4019,7 @@
     "soundsRemoveSavedSound": "Elimină sunetul",
     "savedSoundSaveAction": "Salvează",
     "savedSoundPausePreviewAction": "Pune pauză la previzualizare",
+    "savedSoundResumePreviewAction": "Reia previzualizarea",
     "savedSoundDetailsSheetTitle": "Detalii despre sunet",
     "savedSoundRemoveConfirmTitle": "Elimini acest sunet?",
     "savedSoundRemoveConfirmMessage": "Dispare din biblioteca ta, dar îl poți salva din nou din orice videoclip care îl folosește.",

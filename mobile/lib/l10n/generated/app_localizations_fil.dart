@@ -4387,6 +4387,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'I-pause ang preview';
 
   @override
+  String get savedSoundResumePreviewAction => 'Ipagpatuloy ang preview';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Mga detalye ng sound';
 
   @override

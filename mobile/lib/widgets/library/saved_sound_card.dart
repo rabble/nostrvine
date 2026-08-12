@@ -22,6 +22,7 @@ class SavedSoundCard extends StatelessWidget {
     required this.onRemove,
     this.isPlaying = false,
     this.progress,
+    this.progressValue = 0,
     super.key,
   });
 
@@ -31,20 +32,31 @@ class SavedSoundCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onRemove;
 
-  /// Whether this sound is the one currently previewing.
+  /// Whether this sound is actively playing (not paused).
   final bool isPlaying;
 
   /// Playback position of the running preview as a 0–1 fraction.
   ///
   /// Null while this sound is not the one being previewed, which leaves the
-  /// waveform unfilled.
+  /// waveform unfilled. Non-null while paused still counts as the active
+  /// preview so the partial fill and resume affordance stay visible.
   final Stream<double>? progress;
+
+  /// Last known [progress] fraction, used when the waveform remounts while a
+  /// preview is still active and the position stream is quiet (e.g. paused).
+  final double progressValue;
 
   String _displayTitle(BuildContext context) =>
       sound.personalLabel ??
       sound.sourceContext?.title ??
       sound.audio.title ??
       context.l10n.savedSoundFallbackTitle;
+
+  String _previewSemanticLabel(BuildContext context) {
+    if (isPlaying) return context.l10n.savedSoundPausePreviewAction;
+    if (progress != null) return context.l10n.savedSoundResumePreviewAction;
+    return context.l10n.savedSoundPreviewAction;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +98,11 @@ class SavedSoundCard extends StatelessWidget {
                     ],
                   ),
                   if (sound.waveformSamples.isNotEmpty)
-                    _SavedSoundWaveform(sound: sound, progress: progress),
+                    _SavedSoundWaveform(
+                      sound: sound,
+                      progress: progress,
+                      progressValue: progressValue,
+                    ),
                   if (sound.personalHashtags.isNotEmpty ||
                       sound.catalogTags.isNotEmpty)
                     _SavedSoundTags(sound: sound),
@@ -99,9 +115,7 @@ class SavedSoundCard extends StatelessWidget {
                         icon: isPlaying
                             ? DivineIconName.pause
                             : DivineIconName.play,
-                        semanticLabel: isPlaying
-                            ? context.l10n.savedSoundPausePreviewAction
-                            : context.l10n.savedSoundPreviewAction,
+                        semanticLabel: _previewSemanticLabel(context),
                         size: DivineIconButtonSize.small,
                         type: DivineIconButtonType.secondary,
                         onPressed: onPreview,
@@ -238,20 +252,29 @@ class _SavedSoundText extends StatelessWidget {
 }
 
 class _SavedSoundWaveform extends StatelessWidget {
-  const _SavedSoundWaveform({required this.sound, required this.progress});
+  const _SavedSoundWaveform({
+    required this.sound,
+    required this.progress,
+    required this.progressValue,
+  });
 
   final SavedSound sound;
   final Stream<double>? progress;
+  final double progressValue;
 
   @override
   Widget build(BuildContext context) {
     final stream = progress;
-    if (stream == null) return _WaveformBars(sound: sound, progress: 0);
+    if (stream == null) {
+      return _WaveformBars(sound: sound, progress: 0);
+    }
     return StreamBuilder<double>(
       stream: stream,
-      initialData: 0,
-      builder: (context, snapshot) =>
-          _WaveformBars(sound: sound, progress: snapshot.data ?? 0),
+      initialData: progressValue,
+      builder: (context, snapshot) => _WaveformBars(
+        sound: sound,
+        progress: snapshot.data ?? progressValue,
+      ),
     );
   }
 }

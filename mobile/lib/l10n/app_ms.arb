@@ -2388,6 +2388,7 @@
   "soundsRemoveSavedSound": "Alih keluar bunyi",
   "savedSoundSaveAction": "Simpan",
   "savedSoundPausePreviewAction": "Jeda pratonton",
+  "savedSoundResumePreviewAction": "Sambung pratonton",
   "savedSoundDetailsSheetTitle": "Butiran bunyi",
   "savedSoundRemoveConfirmTitle": "Alih keluar bunyi ini?",
   "savedSoundRemoveConfirmMessage": "Ia hilang daripada pustaka anda, tetapi anda boleh menyimpannya semula daripada mana-mana video yang menggunakannya.",

@@ -4287,6 +4287,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'إيقاف المعاينة مؤقتًا';
 
   @override
+  String get savedSoundResumePreviewAction => 'استئناف المعاينة';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'تفاصيل الصوت';
 
   @override

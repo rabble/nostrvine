@@ -2552,6 +2552,10 @@
   "@savedSoundPausePreviewAction": {
     "description": "Accessibility label on the saved-sound card's preview button while that sound is playing. Tapping it pauses the preview, which resumes where it left off."
   },
+  "savedSoundResumePreviewAction": "Resume preview",
+  "@savedSoundResumePreviewAction": {
+    "description": "Accessibility label on the saved-sound card's preview button while that sound is paused mid-preview. Tapping it resumes from the current position."
+  },
   "savedSoundDetailsSheetTitle": "Sound details",
   "@savedSoundDetailsSheetTitle": {
     "description": "Title of the bottom sheet that edits a saved sound's private label and hashtags."
@@ -2560,7 +2564,7 @@
   "@savedSoundRemoveConfirmTitle": {
     "description": "Title of the confirmation sheet shown before removing a sound from the device-local library."
   },
-  "savedSoundRemoveConfirmMessage": "It's gone from your library, but you can save it again from any video that uses it.",
+  "savedSoundRemoveConfirmMessage": "It leaves your library, but you can save it again from any video that uses it.",
   "@savedSoundRemoveConfirmMessage": {
     "description": "Body of the remove-sound confirmation sheet. Reassures the user that removal is local and reversible."
   },

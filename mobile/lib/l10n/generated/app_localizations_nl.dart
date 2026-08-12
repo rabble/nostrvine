@@ -4342,6 +4342,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Voorbeeld pauzeren';
 
   @override
+  String get savedSoundResumePreviewAction => 'Voorbeeld hervatten';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Geluidsdetails';
 
   @override

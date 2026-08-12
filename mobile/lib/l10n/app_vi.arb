@@ -2388,6 +2388,7 @@
   "soundsRemoveSavedSound": "Xóa âm thanh",
   "savedSoundSaveAction": "Lưu",
   "savedSoundPausePreviewAction": "Tạm dừng nghe thử",
+  "savedSoundResumePreviewAction": "Tiếp tục nghe thử",
   "savedSoundDetailsSheetTitle": "Chi tiết âm thanh",
   "savedSoundRemoveConfirmTitle": "Xóa âm thanh này?",
   "savedSoundRemoveConfirmMessage": "Nó biến mất khỏi thư viện của bạn, nhưng bạn có thể lưu lại từ bất kỳ video nào dùng nó.",

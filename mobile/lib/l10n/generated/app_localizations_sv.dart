@@ -4323,6 +4323,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Pausa förhandsvisningen';
 
   @override
+  String get savedSoundResumePreviewAction => 'Återuppta förhandslyssning';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Ljuddetaljer';
 
   @override

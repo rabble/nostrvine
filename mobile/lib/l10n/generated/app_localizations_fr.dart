@@ -4388,6 +4388,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Mettre l\'aperçu en pause';
 
   @override
+  String get savedSoundResumePreviewAction => 'Reprendre l\'aperçu';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Détails du son';
 
   @override

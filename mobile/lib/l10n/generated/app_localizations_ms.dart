@@ -4358,6 +4358,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Jeda pratonton';
 
   @override
+  String get savedSoundResumePreviewAction => 'Sambung pratonton';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Butiran bunyi';
 
   @override

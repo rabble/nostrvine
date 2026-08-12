@@ -4019,6 +4019,7 @@
     "soundsRemoveSavedSound": "Supprimer le son",
     "savedSoundSaveAction": "Enregistrer",
     "savedSoundPausePreviewAction": "Mettre l'aperçu en pause",
+    "savedSoundResumePreviewAction": "Reprendre l'aperçu",
     "savedSoundDetailsSheetTitle": "Détails du son",
     "savedSoundRemoveConfirmTitle": "Retirer ce son ?",
     "savedSoundRemoveConfirmMessage": "Il disparaîtra de ta bibliothèque, mais tu peux le réenregistrer depuis n'importe quelle vidéo qui l'utilise.",

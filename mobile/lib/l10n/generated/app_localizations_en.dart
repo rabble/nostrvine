@@ -4325,6 +4325,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Pause preview';
 
   @override
+  String get savedSoundResumePreviewAction => 'Resume preview';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Sound details';
 
   @override
@@ -4332,7 +4335,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get savedSoundRemoveConfirmMessage =>
-      'It\'s gone from your library, but you can save it again from any video that uses it.';
+      'It leaves your library, but you can save it again from any video that uses it.';
 
   @override
   String get soundsRemovedFromLibrary => 'Removed from Sounds';

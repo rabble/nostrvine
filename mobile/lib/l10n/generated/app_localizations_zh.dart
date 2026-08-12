@@ -4097,6 +4097,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get savedSoundPausePreviewAction => '暂停试听';
 
   @override
+  String get savedSoundResumePreviewAction => '继续试听';
+
+  @override
   String get savedSoundDetailsSheetTitle => '声音详情';
 
   @override

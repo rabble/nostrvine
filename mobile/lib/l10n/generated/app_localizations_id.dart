@@ -4287,6 +4287,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Jeda pratinjau';
 
   @override
+  String get savedSoundResumePreviewAction => 'Lanjutkan pratinjau';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Detail suara';
 
   @override

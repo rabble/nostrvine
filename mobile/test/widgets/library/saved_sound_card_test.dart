@@ -45,6 +45,7 @@ Widget _app(
   ThemeData? theme,
   bool isPlaying = false,
   Stream<double>? progress,
+  double progressValue = 0,
 }) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
@@ -55,6 +56,7 @@ Widget _app(
         sound: sound,
         isPlaying: isPlaying,
         progress: progress,
+        progressValue: progressValue,
         onTap: onTap ?? () {},
         onPreview: onPreview ?? () {},
         onEdit: onEdit ?? () {},
@@ -223,6 +225,48 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_waveformProgress(tester), 0.42);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('waveform keeps its fill when remounted while paused', (
+    tester,
+  ) async {
+    final position = StreamController<double>.broadcast();
+    addTearDown(position.close);
+
+    await tester.pumpWidget(
+      _app(_richSound(), progress: position.stream, progressValue: 0.42),
+    );
+
+    // No new position events while paused — only the seeded value.
+    expect(_waveformProgress(tester), 0.42);
+
+    // Remount the same paused preview (list rebuild / scroll recycle).
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      _app(_richSound(), progress: position.stream, progressValue: 0.42),
+    );
+    expect(_waveformProgress(tester), 0.42);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('preview button labels resume while paused mid-preview', (
+    tester,
+  ) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    final position = StreamController<double>.broadcast();
+    addTearDown(position.close);
+
+    await tester.pumpWidget(_app(_richSound(), progress: position.stream));
+
+    expect(
+      tester
+          .widget<DivineIconButton>(
+            find.byKey(const Key('saved_sound_preview')),
+          )
+          .semanticLabel,
+      l10n.savedSoundResumePreviewAction,
+    );
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

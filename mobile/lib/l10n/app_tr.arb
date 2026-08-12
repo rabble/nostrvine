@@ -4019,6 +4019,7 @@
     "soundsRemoveSavedSound": "Sesi kaldır",
     "savedSoundSaveAction": "Kaydet",
     "savedSoundPausePreviewAction": "Önizlemeyi duraklat",
+    "savedSoundResumePreviewAction": "Önizlemeye devam et",
     "savedSoundDetailsSheetTitle": "Ses ayrıntıları",
     "savedSoundRemoveConfirmTitle": "Bu ses kaldırılsın mı?",
     "savedSoundRemoveConfirmMessage": "Kitaplığından kaybolur, ama onu kullanan herhangi bir videodan tekrar kaydedebilirsin.",

@@ -2388,6 +2388,7 @@
   "soundsRemoveSavedSound": "移除声音",
   "savedSoundSaveAction": "保存",
   "savedSoundPausePreviewAction": "暂停试听",
+  "savedSoundResumePreviewAction": "继续试听",
   "savedSoundDetailsSheetTitle": "声音详情",
   "savedSoundRemoveConfirmTitle": "要移除这个声音吗？",
   "savedSoundRemoveConfirmMessage": "它会从你的音库中消失，但你可以从任何用到它的视频里重新保存。",

@@ -4238,6 +4238,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'ቅድመ ዕይታን አቁም';
 
   @override
+  String get savedSoundResumePreviewAction => 'ቅድመ ዕይታን ቀጥል';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'የድምፅ ዝርዝሮች';
 
   @override

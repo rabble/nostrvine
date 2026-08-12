@@ -3357,6 +3357,7 @@
     "soundsRemoveSavedSound": "사운드 제거",
     "savedSoundSaveAction": "저장",
     "savedSoundPausePreviewAction": "미리듣기 일시정지",
+    "savedSoundResumePreviewAction": "미리듣기 재개",
     "savedSoundDetailsSheetTitle": "사운드 정보",
     "savedSoundRemoveConfirmTitle": "이 사운드를 삭제할까요?",
     "savedSoundRemoveConfirmMessage": "라이브러리에서 사라지지만, 이 사운드를 쓴 영상에서 언제든 다시 저장할 수 있어요.",

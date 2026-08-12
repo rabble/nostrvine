@@ -4435,6 +4435,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Wstrzymaj podgląd';
 
   @override
+  String get savedSoundResumePreviewAction => 'Wznów podgląd';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Szczegóły dźwięku';
 
   @override

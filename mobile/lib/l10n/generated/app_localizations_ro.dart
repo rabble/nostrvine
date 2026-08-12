@@ -4447,6 +4447,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Pune pauză la previzualizare';
 
   @override
+  String get savedSoundResumePreviewAction => 'Reia previzualizarea';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Detalii despre sunet';
 
   @override

@@ -2693,6 +2693,7 @@
     "soundsRemoveSavedSound": "Alisin ang sound",
     "savedSoundSaveAction": "I-save",
     "savedSoundPausePreviewAction": "I-pause ang preview",
+    "savedSoundResumePreviewAction": "Ipagpatuloy ang preview",
     "savedSoundDetailsSheetTitle": "Mga detalye ng sound",
     "savedSoundRemoveConfirmTitle": "Alisin ang sound na ito?",
     "savedSoundRemoveConfirmMessage": "Mawawala ito sa library mo, pero puwede mo itong i-save ulit mula sa kahit anong video na gumagamit nito.",

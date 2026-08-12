@@ -4374,6 +4374,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Пауза на визуализацията';
 
   @override
+  String get savedSoundResumePreviewAction => 'Продължи визуализацията';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Детайли за звука';
 
   @override

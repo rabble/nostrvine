@@ -4019,6 +4019,7 @@
     "soundsRemoveSavedSound": "Ta bort ljud",
     "savedSoundSaveAction": "Spara",
     "savedSoundPausePreviewAction": "Pausa förhandsvisningen",
+    "savedSoundResumePreviewAction": "Återuppta förhandslyssning",
     "savedSoundDetailsSheetTitle": "Ljuddetaljer",
     "savedSoundRemoveConfirmTitle": "Ta bort det här ljudet?",
     "savedSoundRemoveConfirmMessage": "Det försvinner från ditt bibliotek, men du kan spara det igen från vilken video som helst som använder det.",

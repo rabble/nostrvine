@@ -2388,6 +2388,7 @@
   "soundsRemoveSavedSound": "آواز ہٹائیں",
   "savedSoundSaveAction": "محفوظ کریں",
   "savedSoundPausePreviewAction": "پیش نظارہ روکیں",
+  "savedSoundResumePreviewAction": "پیش نظارہ دوبارہ چلائیں",
   "savedSoundDetailsSheetTitle": "آواز کی تفصیلات",
   "savedSoundRemoveConfirmTitle": "کیا یہ آواز ہٹا دیں؟",
   "savedSoundRemoveConfirmMessage": "یہ آپ کی لائبریری سے ہٹ جائے گی، لیکن آپ اسے استعمال کرنے والی کسی بھی ویڈیو سے دوبارہ محفوظ کر سکتے ہیں۔",

@@ -4104,6 +4104,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'プレビューを一時停止';
 
   @override
+  String get savedSoundResumePreviewAction => 'プレビューを再開';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'サウンドの詳細';
 
   @override

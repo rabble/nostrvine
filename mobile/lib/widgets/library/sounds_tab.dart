@@ -50,11 +50,24 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   /// previewing card can fill its waveform as the sound plays.
   Stream<double>? _previewProgress;
 
+  /// Last fraction observed on [_previewProgress].
+  ///
+  /// Seeded into the card so a list rebuild or off-screen remount does not
+  /// flash the waveform back to empty while a preview is still active
+  /// (including while paused, when the position stream is quiet).
+  double _previewProgressValue = 0;
+
+  /// Bumped whenever a new preview load starts or the preview is stopped, so
+  /// an in-flight `loadAudio` / `play` from a superseded tap cannot clobber
+  /// the active card state.
+  int _previewSession = 0;
+
   /// Cached reference to audio service for safe disposal.
   AudioPlaybackService? _audioService;
 
   @override
   void dispose() {
+    _previewSession++;
     if (_previewingSoundId != null && _audioService != null) {
       _audioService!.stop();
     }
@@ -71,10 +84,12 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       _previewingSoundId = null;
       _previewPaused = false;
       _previewProgress = null;
+      _previewProgressValue = 0;
     });
   }
 
   Future<void> _stopPreview() async {
+    _previewSession++;
     if (_previewingSoundId != null) {
       _audioService ??= ref.read(audioPlaybackServiceProvider);
       await _audioService!.stop();
@@ -93,14 +108,16 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
 
     if (sound.url == null || sound.url!.isEmpty) return;
 
+    final session = ++_previewSession;
     try {
       await audioService.stop();
       final total = await audioService.loadAudio(sound.url!);
-      if (!mounted) return;
+      if (!mounted || session != _previewSession) return;
       setState(() {
         _previewingSoundId = sound.id;
         _previewPaused = false;
-        _previewProgress = _progressFor(audioService, total);
+        _previewProgressValue = 0;
+        _previewProgress = _progressFor(audioService, total, session);
       });
     } catch (e) {
       Log.error(
@@ -108,10 +125,10 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         name: 'SoundsTab',
         category: LogCategory.video,
       );
-      if (mounted && _previewingSoundId == sound.id) _clearPreviewState();
+      if (mounted && session == _previewSession) _clearPreviewState();
       return;
     }
-    await _playToEnd(audioService, sound.id);
+    await _playToEnd(audioService, sound.id, session);
   }
 
   /// Pauses the running preview, or resumes it where it left off.
@@ -120,8 +137,9 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     String soundId,
   ) async {
     if (_previewPaused) {
+      final session = _previewSession;
       setState(() => _previewPaused = false);
-      await _playToEnd(audioService, soundId);
+      await _playToEnd(audioService, soundId, session);
       return;
     }
     // Flipped before the await: pausing resolves the pending `play()`, and
@@ -138,6 +156,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   Future<void> _playToEnd(
     AudioPlaybackService audioService,
     String soundId,
+    int session,
   ) async {
     try {
       await audioService.play();
@@ -148,17 +167,28 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         category: LogCategory.video,
       );
     }
-    if (mounted && _previewingSoundId == soundId && !_previewPaused) {
+    if (mounted &&
+        session == _previewSession &&
+        _previewingSoundId == soundId &&
+        !_previewPaused) {
       _clearPreviewState();
     }
   }
 
-  Stream<double> _progressFor(AudioPlaybackService service, Duration? total) {
+  Stream<double> _progressFor(
+    AudioPlaybackService service,
+    Duration? total,
+    int session,
+  ) {
     final totalMs = total?.inMilliseconds ?? 0;
     if (totalMs <= 0) return const Stream<double>.empty();
-    return service.positionStream.map(
-      (position) => (position.inMilliseconds / totalMs).clamp(0.0, 1.0),
-    );
+    return service.positionStream.map((position) {
+      final value = (position.inMilliseconds / totalMs).clamp(0.0, 1.0);
+      if (session == _previewSession) {
+        _previewProgressValue = value;
+      }
+      return value;
+    });
   }
 
   Future<void> _onRemoveTap(SavedSound sound) async {
@@ -281,6 +311,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
           playingSoundId: _previewingSoundId,
           playingPaused: _previewPaused,
           playingProgress: _previewProgress,
+          playingProgressValue: _previewProgressValue,
           onPreview: (sound) => _onPreviewTap(sound.audio),
           onOpenDetails: _onOpenDetails,
           onEdit: _onEditTap,
@@ -305,6 +336,7 @@ class _SoundsContent extends StatelessWidget {
     required this.playingSoundId,
     required this.playingPaused,
     required this.playingProgress,
+    required this.playingProgressValue,
     required this.onPreview,
     required this.onOpenDetails,
     required this.onEdit,
@@ -314,6 +346,7 @@ class _SoundsContent extends StatelessWidget {
   final String? playingSoundId;
   final bool playingPaused;
   final Stream<double>? playingProgress;
+  final double playingProgressValue;
   final ValueChanged<SavedSound> onPreview;
   final ValueChanged<SavedSound> onOpenDetails;
   final ValueChanged<SavedSound> onEdit;
@@ -331,6 +364,7 @@ class _SoundsContent extends StatelessWidget {
           playingSoundId: playingSoundId,
           playingPaused: playingPaused,
           playingProgress: playingProgress,
+          playingProgressValue: playingProgressValue,
           onPreview: onPreview,
           onOpenDetails: onOpenDetails,
           onEdit: onEdit,
@@ -536,6 +570,7 @@ class _SavedSoundsSection extends StatelessWidget {
     required this.playingSoundId,
     required this.playingPaused,
     required this.playingProgress,
+    required this.playingProgressValue,
     required this.onPreview,
     required this.onOpenDetails,
     required this.onEdit,
@@ -546,6 +581,7 @@ class _SavedSoundsSection extends StatelessWidget {
   final String? playingSoundId;
   final bool playingPaused;
   final Stream<double>? playingProgress;
+  final double playingProgressValue;
   final ValueChanged<SavedSound> onPreview;
   final ValueChanged<SavedSound> onOpenDetails;
   final ValueChanged<SavedSound> onEdit;
@@ -580,6 +616,7 @@ class _SavedSoundsSection extends StatelessWidget {
                   sound: sound,
                   isPlaying: isPreviewing && !playingPaused,
                   progress: isPreviewing ? playingProgress : null,
+                  progressValue: isPreviewing ? playingProgressValue : 0,
                   onTap: () => onOpenDetails(sound),
                   onPreview: () => onPreview(sound),
                   onEdit: () => onEdit(sound),

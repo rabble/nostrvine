@@ -4293,6 +4293,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Önizlemeyi duraklat';
 
   @override
+  String get savedSoundResumePreviewAction => 'Önizlemeye devam et';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Ses ayrıntıları';
 
   @override

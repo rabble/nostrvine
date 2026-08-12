@@ -4355,6 +4355,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get savedSoundPausePreviewAction => 'Pausar prévia';
 
   @override
+  String get savedSoundResumePreviewAction => 'Retomar prévia';
+
+  @override
   String get savedSoundDetailsSheetTitle => 'Detalhes do som';
 
   @override

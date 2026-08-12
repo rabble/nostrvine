@@ -4124,6 +4124,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get savedSoundPausePreviewAction => '미리듣기 일시정지';
 
   @override
+  String get savedSoundResumePreviewAction => '미리듣기 재개';
+
+  @override
   String get savedSoundDetailsSheetTitle => '사운드 정보';
 
   @override

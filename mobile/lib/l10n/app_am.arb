@@ -4144,6 +4144,7 @@
     "soundsRemoveSavedSound": "ድምፁን አስወግድ",
     "savedSoundSaveAction": "አስቀምጥ",
     "savedSoundPausePreviewAction": "ቅድመ ዕይታን አቁም",
+    "savedSoundResumePreviewAction": "ቅድመ ዕይታን ቀጥል",
     "savedSoundDetailsSheetTitle": "የድምፅ ዝርዝሮች",
     "savedSoundRemoveConfirmTitle": "ይህን ድምፅ ላስወግድ?",
     "savedSoundRemoveConfirmMessage": "ከቤተ መጻሕፍትህ ይጠፋል፣ ግን እሱን ከሚጠቀም ማንኛውም ቪዲዮ እንደገና ማስቀመጥ ትችላለህ።",

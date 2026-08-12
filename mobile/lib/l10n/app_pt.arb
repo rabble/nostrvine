@@ -4019,6 +4019,7 @@
     "soundsRemoveSavedSound": "Remover som",
     "savedSoundSaveAction": "Salvar",
     "savedSoundPausePreviewAction": "Pausar prévia",
+    "savedSoundResumePreviewAction": "Retomar prévia",
     "savedSoundDetailsSheetTitle": "Detalhes do som",
     "savedSoundRemoveConfirmTitle": "Remover este som?",
     "savedSoundRemoveConfirmMessage": "Ele sai da sua biblioteca, mas você pode salvá-lo de novo em qualquer vídeo que o use.",
