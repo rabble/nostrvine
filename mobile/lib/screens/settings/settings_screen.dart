@@ -48,6 +48,7 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/signup_invites_availability_builder.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -515,65 +516,72 @@ class _AccountHeader extends StatelessWidget {
             spacing: 16,
             children: [
               _AccountHeaderProfile(pubkey: pubkey),
-              BlocBuilder<InviteStatusCubit, InviteStatusState>(
-                builder: (context, inviteState) {
-                  if (!inviteState.hasInviteActivity) {
+              SignupInvitesAvailabilityBuilder(
+                builder: (context, availability) {
+                  if (!availability.isEnabled) {
                     return const SizedBox.shrink();
                   }
-                  return Semantics(
-                    button: true,
-                    label: context.l10n.settingsInvites,
-                    child: InkWell(
-                      onTap: () => context.push(InvitesScreen.path),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.vineColors.surfaceContainer,
+                  return BlocBuilder<InviteStatusCubit, InviteStatusState>(
+                    builder: (context, inviteState) {
+                      if (!inviteState.hasInviteActivity) {
+                        return const SizedBox.shrink();
+                      }
+                      return Semantics(
+                        button: true,
+                        label: context.l10n.settingsInvites,
+                        child: InkWell(
+                          onTap: () => context.push(InvitesScreen.path),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: context.vineColors.outlineMuted,
-                            width: 2,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          spacing: 8,
-                          children: [
-                            const DivineIcon(
-                              icon: DivineIconName.shareNetwork,
-                              color: VineTheme.vineGreen,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
                             ),
-                            Text(
-                              context.l10n.settingsInvites,
-                              style: VineTheme.titleMediumFont(
-                                color: VineTheme.vineGreen,
+                            decoration: BoxDecoration(
+                              color: context.vineColors.surfaceContainer,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: context.vineColors.outlineMuted,
+                                width: 2,
                               ),
                             ),
-                            if (inviteState.hasAvailableInvites)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              spacing: 8,
+                              children: [
+                                const DivineIcon(
+                                  icon: DivineIconName.shareNetwork,
                                   color: VineTheme.vineGreen,
-                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Text(
-                                  '${inviteState.availableInviteCount}',
-                                  style: VineTheme.labelSmallFont(
-                                    color: VineTheme.onPrimary,
+                                Text(
+                                  context.l10n.settingsInvites,
+                                  style: VineTheme.titleMediumFont(
+                                    color: VineTheme.vineGreen,
                                   ),
                                 ),
-                              ),
-                          ],
+                                if (inviteState.hasAvailableInvites)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: VineTheme.vineGreen,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${inviteState.availableInviteCount}',
+                                      style: VineTheme.labelSmallFont(
+                                        color: VineTheme.onPrimary,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
               ),

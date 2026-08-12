@@ -7,13 +7,16 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/known_account.dart';
@@ -26,6 +29,8 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
 import 'package:openvine/widgets/error_message.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+
+import '../helpers/invite_availability_harness.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -102,51 +107,59 @@ void main() {
   Widget createTestWidget({
     AuthState authState = AuthState.unauthenticated,
     String? initialSelectedPubkeyHex,
+    InviteAvailabilityCubit? availabilityCubit,
   }) {
+    Widget app = MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: VineTheme.theme,
+      routerConfig: GoRouter(
+        initialLocation: WelcomeScreen.path,
+        routes: [
+          GoRoute(
+            path: WelcomeScreen.path,
+            builder: (context, state) => WelcomeScreen(
+              initialSelectedPubkeyHex: initialSelectedPubkeyHex,
+            ),
+            routes: [
+              GoRoute(
+                path: 'invite',
+                builder: (context, state) =>
+                    const Scaffold(body: Text('Invite Gate')),
+              ),
+              GoRoute(
+                path: 'create-account',
+                builder: (context, state) =>
+                    const Scaffold(body: Text('Create Account')),
+              ),
+              GoRoute(
+                path: 'login-options',
+                builder: (context, state) =>
+                    const Scaffold(body: Text('Sign in')),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: MinorAccountReviewScreen.welcomePath,
+            builder: (context, state) =>
+                const Scaffold(body: Text('Family Guide Page')),
+          ),
+        ],
+      ),
+    );
+    if (availabilityCubit != null) {
+      app = BlocProvider<InviteAvailabilityCubit>.value(
+        value: availabilityCubit,
+        child: app,
+      );
+    }
     return ProviderScope(
       overrides: [
         authServiceProvider.overrideWithValue(mockAuthService),
         currentAuthStateProvider.overrideWithValue(authState),
         databaseProvider.overrideWithValue(mockDb),
       ],
-      child: MaterialApp.router(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: VineTheme.theme,
-        routerConfig: GoRouter(
-          initialLocation: WelcomeScreen.path,
-          routes: [
-            GoRoute(
-              path: WelcomeScreen.path,
-              builder: (context, state) => WelcomeScreen(
-                initialSelectedPubkeyHex: initialSelectedPubkeyHex,
-              ),
-              routes: [
-                GoRoute(
-                  path: 'invite',
-                  builder: (context, state) =>
-                      const Scaffold(body: Text('Invite Gate')),
-                ),
-                GoRoute(
-                  path: 'create-account',
-                  builder: (context, state) =>
-                      const Scaffold(body: Text('Create Account')),
-                ),
-                GoRoute(
-                  path: 'login-options',
-                  builder: (context, state) =>
-                      const Scaffold(body: Text('Sign in')),
-                ),
-              ],
-            ),
-            GoRoute(
-              path: MinorAccountReviewScreen.welcomePath,
-              builder: (context, state) =>
-                  const Scaffold(body: Text('Family Guide Page')),
-            ),
-          ],
-        ),
-      ),
+      child: app,
     );
   }
 
@@ -287,6 +300,27 @@ void main() {
         expect(find.text('Invite Gate'), findsOneWidget);
       });
 
+      testWidgets(
+        'tapping create account skips the invite gate when invites are disabled',
+        (tester) async {
+          final availabilityCubit = seededInviteAvailabilityCubit(
+            serverMode: OnboardingMode.open,
+          );
+          addTearDown(availabilityCubit.close);
+
+          await tester.pumpWidget(
+            createTestWidget(availabilityCubit: availabilityCubit),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Create a new Divine account'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Create Account'), findsOneWidget);
+          expect(find.text('Invite Gate'), findsNothing);
+        },
+      );
+
       testWidgets('tapping login button calls acceptTerms and navigates', (
         tester,
       ) async {
@@ -302,9 +336,7 @@ void main() {
 
       testWidgets(
         'tapping "Divine age authorization" navigates to the public family guide',
-        (
-          tester,
-        ) async {
+        (tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
@@ -335,9 +367,7 @@ void main() {
           final linkCenter = renderParagraph.localToGlobal(
             linkBoxes.first.toRect().center,
           );
-          await tester.tapAt(
-            linkCenter,
-          );
+          await tester.tapAt(linkCenter);
           await tester.pumpAndSettle();
 
           expect(find.text('Family Guide Page'), findsOneWidget);
@@ -346,9 +376,7 @@ void main() {
 
       testWidgets(
         'tapping "Here are your choices." navigates to the public family guide',
-        (
-          tester,
-        ) async {
+        (tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
@@ -364,9 +392,7 @@ void main() {
 
           // Tap the right edge of the RichText, where the green CTA span sits.
           final ctaRect = tester.getRect(ctaRichText);
-          await tester.tapAt(
-            Offset(ctaRect.right - 24, ctaRect.center.dy),
-          );
+          await tester.tapAt(Offset(ctaRect.right - 24, ctaRect.center.dy));
           await tester.pumpAndSettle();
 
           expect(find.text('Family Guide Page'), findsOneWidget);

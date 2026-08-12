@@ -8,11 +8,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:invite_api_client/invite_api_client.dart';
+import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
@@ -53,7 +55,6 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     );
     final inviteGateBloc = context.read<InviteGateBloc>();
     inviteGateBloc.add(const InviteGateTransientCleared());
-    inviteGateBloc.add(const InviteGateConfigRequested());
     if (widget.initialError != null && widget.initialError!.isNotEmpty) {
       inviteGateBloc.add(InviteGateGeneralErrorSet(widget.initialError));
     }
@@ -117,12 +118,6 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     }
   }
 
-  void _retryConfigLoad() {
-    context.read<InviteGateBloc>().add(
-      const InviteGateConfigRequested(force: true),
-    );
-  }
-
   void _redirectToCreateAccount() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -159,56 +154,25 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
       );
     }
 
-    return BlocConsumer<InviteGateBloc, InviteGateState>(
-      listenWhen: (previous, current) =>
-          previous.accessGrant != current.accessGrant &&
-          current.accessGrant != null,
-      listener: (context, state) {
-        context.go(WelcomeScreen.createAccountPath);
-      },
-      builder: (context, state) {
-        if (state.configStatus == InviteGateConfigStatus.initial ||
-            state.configStatus == InviteGateConfigStatus.loading) {
+    return BlocBuilder<InviteAvailabilityCubit, InviteAvailabilityState>(
+      builder: (context, availability) {
+        if (!availability.hasResolved) {
+          return const _InviteLoadingPage();
+        }
+        if (!availability.isEnabled) {
+          _redirectToCreateAccount();
           return const _InviteLoadingPage();
         }
 
-        if (state.configStatus == InviteGateConfigStatus.failure ||
-            state.config == null) {
-          return _InviteSheetPage(
-            illustrationAsset: 'assets/stickers/alert.svg',
-            title: context.l10n.authInviteUnavailable,
-            body: Text(
-              context.l10n.authInviteUnavailableBody,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                height: 1.5,
-                letterSpacing: 0.15,
-                color: context.vineColors.mutedText,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            primaryButton: DivineButton(
-              expanded: true,
-              label: context.l10n.authTryAgain,
-              onPressed: _retryConfigLoad,
-            ),
-            secondaryButton: DivineButton(
-              expanded: true,
-              type: .secondary,
-              label: context.l10n.authContactSupport,
-              onPressed: () => _contactSupport('support@divine.video'),
-            ),
-          );
-        }
-
-        final config = state.config!;
-
-        switch (config.mode) {
-          case OnboardingMode.open:
-            _redirectToCreateAccount();
-            return const _InviteLoadingPage();
-          case OnboardingMode.inviteCodeRequired:
+        final config = availability.resolvedConfig;
+        return BlocConsumer<InviteGateBloc, InviteGateState>(
+          listenWhen: (previous, current) =>
+              previous.accessGrant != current.accessGrant &&
+              current.accessGrant != null,
+          listener: (context, state) {
+            context.go(WelcomeScreen.createAccountPath);
+          },
+          builder: (context, state) {
             return _InviteCodeEntryPage(
               controller: _inviteCodeController,
               state: state,
@@ -220,7 +184,8 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
               onShowWaitlist: () => _showWaitlistSheet(config),
               onContactSupport: () => _contactSupport(config.supportEmail),
             );
-        }
+          },
+        );
       },
     );
   }
@@ -485,7 +450,6 @@ class _InviteSheetPage extends StatelessWidget {
     required this.title,
     required this.body,
     required this.primaryButton,
-    this.secondaryButton,
     this.showBackButton = true,
   });
 
@@ -493,7 +457,6 @@ class _InviteSheetPage extends StatelessWidget {
   final String title;
   final Widget body;
   final Widget primaryButton;
-  final Widget? secondaryButton;
   final bool showBackButton;
 
   @override
@@ -573,10 +536,6 @@ class _InviteSheetPage extends StatelessWidget {
                         body,
                         const SizedBox(height: 32),
                         primaryButton,
-                        if (secondaryButton != null) ...[
-                          const SizedBox(height: 16),
-                          secondaryButton!,
-                        ],
                       ],
                     ),
                   ),

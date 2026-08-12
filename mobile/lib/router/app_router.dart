@@ -10,6 +10,7 @@ import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/router/providers/redirect_provider.dart';
 import 'package:openvine/router/route_error_screen.dart';
@@ -77,6 +78,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final refreshListenable = RouterRefreshListenable(
     authService.authStateStream,
   );
+  final inviteAvailabilityCubit = ref.read(inviteAvailabilityCubitProvider);
+  var lastInviteRedirectSignature = (
+    inviteAvailabilityCubit.state.hasResolved,
+    inviteAvailabilityCubit.state.isEnabled,
+  );
+  final inviteAvailabilitySub = inviteAvailabilityCubit.stream.listen((state) {
+    final signature = (state.hasResolved, state.isEnabled);
+    if (signature == lastInviteRedirectSignature) return;
+    lastInviteRedirectSignature = signature;
+    refreshListenable.refresh();
+  });
+  ref.onDispose(inviteAvailabilitySub.cancel);
+
   ref.listen(currentMinorAccountReviewStatusProvider, (previous, next) {
     // A resume/background refetch that resolves to a routing-identical status
     // (active → active) must not refresh: refreshing churns the route pipeline

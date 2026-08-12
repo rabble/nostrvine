@@ -9,6 +9,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/invite_availability_redirects.dart';
 import 'package:openvine/screens/badges/badge_award_screen.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
@@ -91,6 +92,7 @@ List<RouteBase> settingsRoutes(Ref ref) {
     GoRoute(
       path: InvitesScreen.path,
       name: InvitesScreen.routeName,
+      redirect: invitesScreenRedirectIfDisabled,
       builder: (_, _) => const InvitesScreen(),
     ),
     GoRoute(

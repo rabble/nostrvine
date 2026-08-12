@@ -39,7 +39,6 @@ import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/bootstrap/font_licenses.dart';
-import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/constants/app_constants.dart';
@@ -74,6 +73,7 @@ import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
+import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/providers/invite_status_auth_sessions.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -111,7 +111,6 @@ import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/memory_pressure_handler.dart';
 import 'package:openvine/services/memory_telemetry_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
-import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/notification_helpers.dart'
     show localNotificationTapPayload, parseFcmPayload;
 import 'package:openvine/services/notification_service.dart'
@@ -2651,8 +2650,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
       );
     }
 
-    const forceOpenOnboarding = AppConfig.isGhActionsPrPreviewBuild;
-
     // Eagerly create the outgoing-DM retry service so its foreground
     // subscription is wired up at app shell setup. The service has no
     // UI consumer (it operates on the durable outgoing_dms queue), so
@@ -2685,45 +2682,8 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [
-        RepositoryProvider(
-          create: (_) => InviteApiClient(
-            baseUrl: ref.read(currentEnvironmentProvider).inviteBaseUrl,
-            client: ref.read(instrumentedHttpClientFactoryProvider)(),
-            // ignore: avoid_redundant_argument_values
-            forceOpenOnboarding: forceOpenOnboarding,
-            authHeaderProvider:
-                ({
-                  required String url,
-                  required InviteRequestMethod method,
-                  String? payload,
-                  bool forceRefresh = false,
-                }) async {
-                  final authService = ref.read(nip98AuthServiceProvider);
-                  if (!authService.canCreateTokens) return null;
-                  if (forceRefresh) {
-                    authService.clearTokenCache();
-                  }
-                  final token = await authService.createAuthToken(
-                    url: url,
-                    method: switch (method) {
-                      InviteRequestMethod.get => HttpMethod.get,
-                      InviteRequestMethod.post => HttpMethod.post,
-                      InviteRequestMethod.put => HttpMethod.put,
-                      InviteRequestMethod.patch => HttpMethod.patch,
-                    },
-                    payload: payload,
-                  );
-                  return token?.authorizationHeader;
-                },
-            warningLogger: (message) {
-              Log.warning(
-                message,
-                name: 'InviteApiClient',
-                category: LogCategory.api,
-              );
-            },
-          ),
-          dispose: (client) => client.dispose(),
+        RepositoryProvider<InviteApiClient>.value(
+          value: ref.watch(inviteApiClientProvider),
         ),
       ],
       // The two app-shell badge cubits + their repository-sync listeners live
@@ -2769,6 +2729,9 @@ class _DivineAppState extends ConsumerState<DivineApp>
                       const PermissionHandlerPermissionsService(),
                 )..add(const CameraPermissionRefresh()),
               ),
+              BlocProvider.value(
+                value: ref.watch(inviteAvailabilityCubitProvider)..load(),
+              ),
               BlocProvider(
                 create: (context) => InviteGateBloc(
                   inviteApiClient: context.read<InviteApiClient>(),
@@ -2788,6 +2751,9 @@ class _DivineAppState extends ConsumerState<DivineApp>
                   inviteApiClient: context.read<InviteApiClient>(),
                   initialAuthSession: ref.read(inviteStatusAuthSessionProvider),
                   authSessionStream: ref.read(inviteStatusAuthSessionsProvider),
+                  availabilityRepository: ref.read(
+                    inviteAvailabilityRepositoryProvider,
+                  ),
                 )..start(),
               ),
               BlocProvider(

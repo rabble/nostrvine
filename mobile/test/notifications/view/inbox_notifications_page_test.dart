@@ -13,11 +13,13 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
+import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
 
+import '../../helpers/invite_availability_harness.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockNotificationRepository extends Mock
@@ -51,7 +53,10 @@ void main() {
       when(mockInviteCubit.load).thenAnswer((_) async {});
     });
 
-    Widget buildSubject({bool reduceMotion = false}) {
+    Widget buildSubject({
+      bool reduceMotion = false,
+      InviteAvailabilityCubit? availabilityCubit,
+    }) {
       return testMaterialApp(
         mockFollowRepository: mockFollowRepo,
         additionalOverrides: [
@@ -64,8 +69,14 @@ void main() {
             data: MediaQuery.of(
               context,
             ).copyWith(disableAnimations: reduceMotion),
-            child: BlocProvider<InviteStatusCubit>.value(
-              value: mockInviteCubit,
+            child: MultiBlocProvider(
+              providers: [
+                if (availabilityCubit != null)
+                  BlocProvider<InviteAvailabilityCubit>.value(
+                    value: availabilityCubit,
+                  ),
+                BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
+              ],
               child: Scaffold(body: const InboxNotificationsPage()),
             ),
           ),
@@ -271,6 +282,36 @@ void main() {
           expect(find.text(l10n.notificationsInviteSingular), findsOneWidget);
         },
       );
+
+      testWidgets('hides the invite card when signup invites are disabled', (
+        tester,
+      ) async {
+        when(() => mockInviteCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 2,
+              total: 2,
+              codes: [
+                InviteCode(code: 'AB23-EF7K', claimed: false),
+                InviteCode(code: 'HN4P-QR56', claimed: false),
+              ],
+            ),
+          ),
+        );
+        final availabilityCubit = seededInviteAvailabilityCubit(
+          serverMode: OnboardingMode.open,
+        );
+        addTearDown(availabilityCubit.close);
+
+        await tester.pumpWidget(
+          buildSubject(availabilityCubit: availabilityCubit),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.notificationsInvitePlural(2)), findsNothing);
+      });
 
       testWidgets('hides the invite card when no invites are available', (
         tester,

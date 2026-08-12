@@ -18,6 +18,7 @@ import 'package:openvine/notifications/providers/notification_repository_provide
 import 'package:openvine/notifications/view/notifications_view.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
+import 'package:openvine/widgets/signup_invites_availability_builder.dart';
 
 /// Inbox notifications page — owns the BLoC and tab scaffold.
 ///
@@ -216,10 +217,15 @@ class _InvitesBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<InviteStatusCubit, InviteStatusState>(
-      builder: (context, state) {
-        if (!state.hasAvailableInvites) return const SizedBox.shrink();
-        return _InviteNotificationCard(count: state.availableInviteCount);
+    return SignupInvitesAvailabilityBuilder(
+      builder: (context, availability) {
+        if (!availability.isEnabled) return const SizedBox.shrink();
+        return BlocBuilder<InviteStatusCubit, InviteStatusState>(
+          builder: (context, state) {
+            if (!state.hasAvailableInvites) return const SizedBox.shrink();
+            return _InviteNotificationCard(count: state.availableInviteCount);
+          },
+        );
       },
     );
   }

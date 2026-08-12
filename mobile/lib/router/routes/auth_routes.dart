@@ -2,6 +2,7 @@
 // ABOUTME: Split from app_router.dart (#4508)
 
 import 'package:go_router/go_router.dart';
+import 'package:openvine/router/invite_availability_redirects.dart';
 import 'package:openvine/router/routes/router_guards.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
@@ -27,6 +28,7 @@ List<RouteBase> authRoutes() {
         GoRoute(
           path: 'invite',
           name: InviteGateScreen.routeName,
+          redirect: inviteGateRedirectIfDisabled,
           builder: (_, state) => InviteGateScreen(
             initialCode: state.uri.queryParameters['code'],
             initialError: state.uri.queryParameters['error'],

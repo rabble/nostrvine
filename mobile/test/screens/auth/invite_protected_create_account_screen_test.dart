@@ -10,10 +10,12 @@ import 'package:http/http.dart' as http;
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/invite_availability_repository.dart';
 import 'package:openvine/screens/auth/invite_protected_create_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -88,8 +90,15 @@ void main() {
       container: container,
       child: RepositoryProvider<InviteApiClient>.value(
         value: client,
-        child: BlocProvider.value(
-          value: inviteGateBloc,
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) => InviteAvailabilityCubit(
+                repository: InviteAvailabilityRepository(client: client),
+              )..load(),
+            ),
+            BlocProvider.value(value: inviteGateBloc),
+          ],
           child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -137,6 +146,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Invite Gate'), findsOneWidget);
+    });
+
+    testWidgets('allows create-account when server onboarding mode is open', (
+      tester,
+    ) async {
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
+        (_) async => const InviteClientConfig(
+          mode: OnboardingMode.open,
+          supportEmail: 'support@divine.video',
+        ),
+      );
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(DivineAuthTextField, 'Email'), findsOneWidget);
     });
 
     testWidgets(

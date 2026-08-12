@@ -54,22 +54,20 @@ class InviteStatusState extends Equatable {
   InviteStatusState copyWith({
     InviteStatusLoadingStatus? status,
     InviteStatus? inviteStatus,
+    bool clearInviteStatus = false,
     String? accountId,
     bool? isSignerReady,
   }) {
     return InviteStatusState(
       status: status ?? this.status,
-      inviteStatus: inviteStatus ?? this.inviteStatus,
+      inviteStatus: clearInviteStatus
+          ? null
+          : (inviteStatus ?? this.inviteStatus),
       accountId: accountId ?? this.accountId,
       isSignerReady: isSignerReady ?? this.isSignerReady,
     );
   }
 
   @override
-  List<Object?> get props => [
-    status,
-    inviteStatus,
-    accountId,
-    isSignerReady,
-  ];
+  List<Object?> get props => [status, inviteStatus, accountId, isSignerReady];
 }

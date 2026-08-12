@@ -2,6 +2,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 
 void main() {
+  group('parseOnboardingMode', () {
+    test('maps invite_code_required and aliases to inviteCodeRequired', () {
+      expect(
+        parseOnboardingMode('invite_code_required'),
+        OnboardingMode.inviteCodeRequired,
+      );
+      expect(
+        parseOnboardingMode('invite-code'),
+        OnboardingMode.inviteCodeRequired,
+      );
+      expect(
+        parseOnboardingMode('waitlist_only'),
+        OnboardingMode.inviteCodeRequired,
+      );
+    });
+
+    test('maps open to open', () {
+      expect(parseOnboardingMode('open'), OnboardingMode.open);
+    });
+
+    test('defaults missing and unknown values to inviteCodeRequired', () {
+      expect(parseOnboardingMode(null), OnboardingMode.inviteCodeRequired);
+      expect(parseOnboardingMode(''), OnboardingMode.inviteCodeRequired);
+      expect(
+        parseOnboardingMode('unavailable'),
+        OnboardingMode.inviteCodeRequired,
+      );
+      expect(parseOnboardingMode('mystery'), OnboardingMode.inviteCodeRequired);
+    });
+  });
+
   group('InviteStatus', () {
     test('claimedCodes returns only claimed codes', () {
       const status = InviteStatus(
