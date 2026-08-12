@@ -1032,13 +1032,13 @@ void main() {
           expect(controller.isAttached, isTrue);
           expect(controller.size, closeTo(0.4, 0.001));
 
-          unawaited(
-            controller.animateTo(
-              0.95,
-              duration: const Duration(milliseconds: 100),
-              curve: Curves.linear,
-            ),
-          );
+          controller
+              .animateTo(
+                0.95,
+                duration: const Duration(milliseconds: 100),
+                curve: Curves.linear,
+              )
+              .ignore();
           await tester.pumpAndSettle();
 
           expect(controller.size, closeTo(0.95, 0.001));
