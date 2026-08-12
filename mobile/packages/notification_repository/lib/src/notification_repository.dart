@@ -10,6 +10,8 @@ import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/nip19.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:notification_repository/src/blocked_notification_filter.dart';
 import 'package:notification_repository/src/notification_page.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -43,13 +45,18 @@ typedef AuthHeadersProvider =
 /// exists only to keep remote-controlled content finite, not for layout.
 const _maxCommentLength = 120;
 
-/// Longest reference that may be kept whole when it straddles the cap.
+/// Longest raw reference that may be kept whole when it straddles the cap.
 ///
-/// bech32's `maxInputLength` is 90, so `Nip19.decode` cannot decode anything
-/// longer; the UI would render such a token raw rather than as a resolved
-/// label, which is the #6346 defect. Keeping only decodable-length references
-/// bounds the preview without ever splitting one.
-const _maxKeptReferenceLength = 90;
+/// `NotificationCommentQuote` renders valid profile references as `@label`
+/// and video/event references as the localized "View video" label, so the
+/// source token can be longer than its visible text. This bound keeps
+/// remote-controlled source content finite while still admitting normal
+/// `nprofile`/`nevent`/`naddr` references with relay hints.
+const _maxKeptResolvedReferenceLength = 512;
+
+/// If an unbounded reference starts before this point, use the plain cap
+/// instead of returning an empty quote body such as `...`.
+const _minPreviewBeforeDroppingReference = 12;
 
 /// Maximum number of actor avatars shown in a grouped notification.
 const _maxGroupActors = 3;
@@ -2513,14 +2520,14 @@ class NotificationRepository {
   /// Returns a bounded cut index that does not split a decodable Nostr
   /// reference — bech32 or bare 64-char hex.
   ///
-  /// A reference that straddles [limit] is kept whole when it is short enough
-  /// to be decodable ([_maxKeptReferenceLength]); the UI then resolves it to
-  /// `@<name>` or a "view video" label, which renders *shorter* than the raw
-  /// token, so keeping it costs nothing the reader can see. Dropping it
-  /// instead deleted mid-sentence mentions outright (#6763).
+  /// A reference that straddles [limit] is kept whole when the notification
+  /// quote UI renders it as bounded display text: a decoded profile label, a
+  /// video label, or a 64-char hex reference. Dropping those instead deleted
+  /// mid-sentence mentions outright (#6763).
   ///
-  /// A longer run cannot decode and would render raw, so the cut falls back to
-  /// the reference's start and omits it rather than splitting it (#6346).
+  /// A token-shaped run that would render raw is omitted rather than split
+  /// (#6346), unless it starts too early to leave a useful preview; in that
+  /// case the plain cap is clearer than a bare `...`.
   ///
   /// A token the UI resolves as a URL or hashtag is skipped even when a
   /// bech32 or hex run sits inside it — the UI does not link that run, so
@@ -2535,19 +2542,37 @@ class NotificationRepository {
       // The `break` above already guarantees `match.start < limit`, so
       // ending after it is exactly the straddling case.
       if (match.end <= limit) continue;
-      // Measure the decodable payload only. The optional `nostr:` scheme is
-      // stripped before Nip19.decode in the UI, so counting it here would
-      // drop a still-decodable 85–90 char bech32 that merely carries the
-      // NIP-21 prefix.
-      final referenceLength =
-          match.group(_bech32ReferenceGroup)?.length ??
-          match.group(_hexReferenceGroup)?.length ??
-          (match.end - match.start);
-      return referenceLength <= _maxKeptReferenceLength
-          ? match.end
+      if (_referenceRendersAsBoundedLabel(match)) return match.end;
+      return match.start < _minPreviewBeforeDroppingReference
+          ? limit
           : match.start;
     }
     return limit;
+  }
+
+  static bool _referenceRendersAsBoundedLabel(RegExpMatch match) {
+    final hexReference = match.group(_hexReferenceGroup);
+    if (hexReference != null) return true;
+
+    final bech32Reference = match.group(_bech32ReferenceGroup);
+    if (bech32Reference == null ||
+        bech32Reference.length > _maxKeptResolvedReferenceLength) {
+      return false;
+    }
+
+    final lower = bech32Reference.toLowerCase();
+    if (lower.startsWith('npub1')) {
+      return Nip19.decode(bech32Reference).length == 64;
+    }
+
+    if (lower.startsWith('nprofile1')) {
+      final pubkey = NIP19Tlv.decodeNprofile(bech32Reference)?.pubkey;
+      return pubkey != null && pubkey.length == 64;
+    }
+
+    return lower.startsWith('note1') ||
+        lower.startsWith('nevent1') ||
+        lower.startsWith('naddr1');
   }
 
   /// Moves [cut] back one code unit when it would split a surrogate pair.

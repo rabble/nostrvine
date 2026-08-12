@@ -8,6 +8,8 @@ import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/nip19.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:test/test.dart';
@@ -27,6 +29,9 @@ void main() {
   const userPubkey = 'user1234567890abcdef';
   const stableCursorId =
       '1122334411223344112233441122334411223344112233441122334411223344';
+  const validPubkey =
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  final validNpub = Nip19.encodePubKey(validPubkey);
 
   NotificationRepository buildRepository({
     BlockedNotificationFilter? blockFilter,
@@ -3125,15 +3130,14 @@ void main() {
       );
 
       test(
-        'keeps a bounded leading bech32 npub intact when it spans the cut',
+        'keeps a valid bech32 npub intact',
         () async {
           // Regression: a reply whose content begins with a raw npub longer
           // than the 50-char preview cap must keep the token intact so the
           // row widget can decode it to a display name. Slicing it
           // mid-bech32 destroyed the checksum and the row fell back to
           // rendering a raw "npub1..." fragment verbatim.
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          final npub = validNpub;
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3152,9 +3156,8 @@ void main() {
       test(
         'keeps a bech32 npub after leading whitespace or punctuation',
         () async {
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-          const content = ' @$npub';
+          final npub = validNpub;
+          final content = ' @$npub';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3170,31 +3173,28 @@ void main() {
         },
       );
 
-      test(
-        "keeps the mention in #6763's reported example",
-        () async {
-          // The issue's own example. It no longer straddles the cap at 120, so
-          // this guards the cap; the straddle POLICY is guarded separately
-          // below. Previously this rendered as 'Reply to...' — the mention,
-          // the only meaningful part of the preview, was deleted.
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-          const content = 'Reply to $npub more';
-          stubNotifications([
-            makeNotification(
-              notificationType: 'comment',
-              sourceKind: 1,
-              content: content,
-            ),
-          ]);
-          stubProfiles({});
+      test("keeps the mention in #6763's reported example", () async {
+        // The issue's own example. It no longer straddles the cap at 120, so
+        // this guards the cap; the straddle POLICY is guarded separately
+        // below. Previously this rendered as 'Reply to...' — the mention,
+        // the only meaningful part of the preview, was deleted.
+        const npub =
+            'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+        const content = 'Reply to $npub more';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
 
-          final page = await repository.getNotifications();
-          final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals(content));
-          expect(item.commentText, contains(npub));
-        },
-      );
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals(content));
+        expect(item.commentText, contains(npub));
+      });
 
       test('keeps the mention in the production #6763 comment', () async {
         // Real comment from api.divine.video, event
@@ -3225,8 +3225,7 @@ void main() {
           // Guards the straddle POLICY, not the cap number: 100 chars of
           // lead-in push the npub past the 120-char cap, so the token is only
           // preserved because a straddling reference is now kept whole.
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          final npub = validNpub;
           final content = '${'word ' * 20}$npub tail';
           stubNotifications([
             makeNotification(
@@ -3305,11 +3304,8 @@ void main() {
       });
 
       test(
-        'omits a reference too long to decode rather than keeping it',
+        'uses the plain cap for a leading unbounded token-shaped run',
         () async {
-          // bech32 caps decodable input at 90 chars, so a longer run would only
-          // ever render raw. Keeping it let a comment that merely STARTS with a
-          // token-shaped run put ~200 raw characters into the row.
           final content = 'nprofile1${'q' * 180} tail';
           stubNotifications([
             makeNotification(
@@ -3322,19 +3318,21 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, isNot(contains('nprofile1')));
+          expect(item.commentText, equals('${content.substring(0, 120)}...'));
         },
       );
 
       test(
-        'keeps a straddling nostr:-prefixed bech32 near the decode cap',
+        'keeps a straddling nostr:-prefixed profile reference with relay hints',
         () async {
-          // The UI strips `nostr:` before Nip19.decode. An 85-char bech32 is
-          // still decodable; counting the scheme in the keep-length check
-          // would make the full match 91 and drop a still-valid reference.
-          final bech32 = 'nprofile1${'q' * 76}';
-          expect(bech32.length, 85);
-          final content = '${'word ' * 20}nostr:$bech32 tail';
+          final nprofile = NIP19Tlv.encodeNprofile(
+            Nprofile(
+              pubkey: validPubkey,
+              relays: const ['wss://relay.damus.io'],
+            ),
+          );
+          expect(nprofile.length, greaterThan(90));
+          final content = '${'word ' * 20}nostr:$nprofile tail';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3346,14 +3344,46 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, contains(bech32));
+          expect(item.commentText, contains(nprofile));
           expect(item.commentText, contains('nostr:'));
           expect(item.commentText, endsWith('...'));
         },
       );
 
       test(
-        'does not preserve unbounded leading token-shaped content',
+        'keeps a leading naddr that the quote UI renders as a video label',
+        () async {
+          final naddr = NIP19Tlv.encodeNaddr(
+            Naddr(
+              id: 'stable-video-reference',
+              author:
+                  'abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+                  '0123456789',
+              kind: 34236,
+              relays: const ['wss://relay.divine.video'],
+            ),
+          );
+          expect(naddr.length, greaterThan(120));
+          final content = 'nostr:$naddr tail';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, contains(naddr));
+          expect(item.commentText, isNot(equals('...')));
+          expect(item.commentText, endsWith('...'));
+        },
+      );
+
+      test(
+        'caps unbounded leading token-shaped content',
         () async {
           final content = 'npub1${'a' * 5000}';
           stubNotifications([
@@ -3367,8 +3397,8 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals('...'));
-          expect(item.commentText!.length, lessThanOrEqualTo(53));
+          expect(item.commentText, equals('${content.substring(0, 120)}...'));
+          expect(item.commentText!.length, lessThanOrEqualTo(123));
         },
       );
 
@@ -3421,8 +3451,7 @@ void main() {
           // silently regress to being locale-sensitive. Lead-in is long
           // enough that the npub straddles the 120-char cap (not only
           // fits under it).
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          final npub = validNpub;
           const cyrillic = 'Привет всем друзьям сегодня';
           final content = '$cyrillic ${'слово ' * 14}nostr:$npub tail';
           stubNotifications([
@@ -3444,14 +3473,15 @@ void main() {
       );
 
       test(
-        'still treats punctuation-only lead-in as leading for a bech32 token',
+        'keeps a punctuation-prefixed profile reference that straddles the cut',
         () async {
-          // Guards the other side of the non-Latin fix: real punctuation and
-          // whitespace must keep qualifying as "leading", including
-          // non-ASCII punctuation such as guillemets and an em dash.
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-          const content = '«— » $npub';
+          final nprofile = NIP19Tlv.encodeNprofile(
+            Nprofile(
+              pubkey: validPubkey,
+              relays: const ['wss://relay.divine.video'],
+            ),
+          );
+          final content = '«— » ${'— ' * 45}nostr:$nprofile tail';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3463,7 +3493,9 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals(content));
+          expect(content.length, greaterThan(120));
+          expect(item.commentText, contains(nprofile));
+          expect(item.commentText, endsWith('...'));
         },
       );
 
