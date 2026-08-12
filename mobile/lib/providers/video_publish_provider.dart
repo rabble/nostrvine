@@ -53,6 +53,8 @@ import 'package:openvine/services/video_editor/video_editor_render_service.dart'
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' show CompleteParameters;
+import 'package:pro_video_editor/pro_video_editor.dart'
+    show RenderCanceledException;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -419,9 +421,14 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           : null;
 
       if (finalRenderedClip != null && finalRenderedClip.isStopMotion) {
-        final materialized = await StopMotionRenderService.materialize(
-          finalRenderedClip,
-        );
+        DivineVideoClip? materialized;
+        try {
+          materialized = await StopMotionRenderService.materialize(
+            finalRenderedClip,
+          );
+        } on RenderCanceledException {
+          materialized = null;
+        }
         if (materialized == null) {
           setError(stopMotionFailedMessage!);
           await creationTracker.publishFailed(
@@ -479,20 +486,23 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           return;
         }
 
-        final result = await VideoEditorRenderService.renderVideoToClip(
-          clips: draft.clips,
-          parameters: parameters,
-          editorStateHistory: draft.editorStateHistory,
-          taskId: draft.id,
-        );
-
-        if (result == null) {
+        final (DivineVideoClip, String?) result;
+        try {
+          result = await VideoEditorRenderService.renderVideoToClip(
+            clips: draft.clips,
+            parameters: parameters,
+            editorStateHistory: draft.editorStateHistory,
+            taskId: draft.id,
+          );
+        } on VideoRenderFailedException catch (error) {
           // `setError` alone is invisible here: nothing on screen reads the
           // error state, so the `.preparing` scrim would just vanish (#6058).
-          // A frames-only draft that got this far failed its stop-motion
-          // assembly, which has its own copy.
+          // A draft whose stop-motion assembly failed has its own copy; every
+          // other failure gets the generic one.
+          final assemblyFailed =
+              error.reason == VideoRenderFailureReason.stopMotionAssembly;
           final message =
-              stopMotionFailedMessage ??
+              (assemblyFailed ? stopMotionFailedMessage : null) ??
               currentAppL10n(
                 ref.read(sharedPreferencesProvider),
               ).publishErrorMessage(PublishErrorKind.generic);
@@ -500,7 +510,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           _showPublishError(message);
           await creationTracker.publishFailed(
             mode: recorderMode,
-            reason: needsStopMotionRender
+            reason: assemblyFailed
                 ? 'stop_motion_render_failed'
                 : 'render_failed',
           );
