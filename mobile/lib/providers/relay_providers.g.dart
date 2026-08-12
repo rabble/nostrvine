@@ -112,7 +112,7 @@ final class RelayCapabilityServiceProvider
 }
 
 String _$relayCapabilityServiceHash() =>
-    r'99f5caa2c958c29928c911ef3c747961279ce8cc';
+    r'ed5dd07c834c2921fe4a8d9c2f5ee42c72c446a3';
 
 /// Relay statistics service for tracking per-relay metrics
 

@@ -19,7 +19,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:hive_ce/hive_ce.dart';
-import 'package:http/http.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -368,7 +367,10 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
     // Durable NIP-62 vanish markers, so a deleted account stays evicted
     // across restarts.
     vanishedProfilesDao: ref.watch(databaseProvider).vanishedProfilesDao,
-    httpClient: Client(),
+    // Not closed on dispose, matching the previous `Client()`: this repository
+    // is rebuilt on every auth flip, and closing the old instance's client
+    // would abort an in-flight username claim mid-flow.
+    httpClient: ref.watch(instrumentedHttpClientFactoryProvider)(),
     funnelcakeApiClient: funnelcakeClient,
     indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>

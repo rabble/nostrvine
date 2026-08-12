@@ -57,7 +57,7 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
       showHeaderDivider: false,
       initialChildSize: _sheetHeightFraction,
       maxChildSize: _sheetHeightFraction,
-      minChildSize: 0.5,
+      minChildSize: VineTheme.bottomSheetDismissFloor,
       buildScrollBody: (scrollController) => FindPeopleSheet(
         contacts: contacts,
         scrollController: scrollController,

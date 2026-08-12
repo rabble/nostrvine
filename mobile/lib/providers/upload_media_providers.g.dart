@@ -260,7 +260,7 @@ final class ApiServiceProvider
   }
 }
 
-String _$apiServiceHash() => r'f03345aebc453113d4b58bfa22a1e0455a85603d';
+String _$apiServiceHash() => r'8458d1d89858efc01eebb86ecf93b5f974d856fe';
 
 /// Crosspost API client for Bluesky toggle settings
 
@@ -313,7 +313,7 @@ final class CrosspostApiClientProvider
 }
 
 String _$crosspostApiClientHash() =>
-    r'b1bd6e7666b565c069cd7eaf6c24108366887124';
+    r'3c3771a323baade67d52ed7de2882fb42406ba56';
 
 /// Repository for Bluesky toggle settings
 
@@ -420,7 +420,7 @@ final class CrossposterApiClientProvider
 }
 
 String _$crossposterApiClientHash() =>
-    r'35226f862d4164690f286e8eba7b02da8ca1bc15';
+    r'aa560f29562e64ced8c08c2e203abfa6858cd2ee';
 
 /// Audio playback service for sound playback during recording and preview
 ///

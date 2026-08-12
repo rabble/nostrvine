@@ -8,6 +8,8 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/widgets/gallery_permission_sheet.dart';
+import 'package:pro_video_editor/pro_video_editor.dart'
+    show RenderCanceledException;
 
 /// Saves the final rendered video to the device gallery.
 ///
@@ -25,9 +27,13 @@ Future<void> saveToGallery(BuildContext context, WidgetRef ref) async {
   DivineVideoClip? materialized;
   try {
     // Stop-motion clips render their mp4 on demand; a normal clip passes through.
-    materialized = await StopMotionRenderService.materialize(
-      finalRenderedClip,
-    );
+    try {
+      materialized = await StopMotionRenderService.materialize(
+        finalRenderedClip,
+      );
+    } on RenderCanceledException {
+      return;
+    }
     if (materialized == null || !context.mounted) return;
     final video = materialized.requireVideo;
 

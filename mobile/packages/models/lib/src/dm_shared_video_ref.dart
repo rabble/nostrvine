@@ -31,9 +31,10 @@ enum DmSharedVideoKind {
 /// A structured reference to a video event cited inside a NIP-17 DM.
 ///
 /// Built from a NIP-18 `q` tag on a kind-14 rumor:
-/// `["q", "<coordinate-or-id>", "<relay-hint>", "<author?>"]`. Lets the
-/// recipient render a deterministic video card instead of regex-matching a URL
-/// embedded in the message text.
+/// `["q", "<coordinate-or-id>", "<relay-hint>", "<author?>"]`, or from
+/// divine-web's legacy `['r', <url>]` + `['a', <coordinate>]` share shape
+/// (#6224). Lets the recipient render a deterministic video card instead of
+/// regex-matching a URL embedded in the message text.
 class DmSharedVideoRef extends Equatable {
   const DmSharedVideoRef({
     required this.coordinateOrId,
@@ -80,8 +81,7 @@ class DmSharedVideoRef extends Equatable {
   /// `null` for addressable events.
   String? get eventId => isAddressable ? null : coordinateOrId;
 
-  /// JSON form for persistence in the `direct_messages.shared_video_ref_json`
-  /// Drift column.
+  /// JSON form of the reference.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'coordinateOrId': coordinateOrId,
     'kind': videoKind.kind,

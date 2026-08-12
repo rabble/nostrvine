@@ -106,6 +106,15 @@ class TimelineOverlayBloc
           item.id: item.waveformRightChannel!,
     };
 
+    // Same for a source duration the extractor measured (see
+    // _onWaveformLoaded). A track that reaches _soundItem without a duration
+    // would otherwise drop that basis on every rebuild and re-flatten its
+    // waveform.
+    final sourceDurationCache = <String, Duration>{
+      for (final item in state.items)
+        if (item.sourceDuration != null) item.id: item.sourceDuration!,
+    };
+
     // Clips may not be measured yet during a draft load, surfacing a transient
     // totalVideoDuration of zero. Clamping every item's end to zero would
     // collapse the whole timeline — sounds, layers, filters and markers — and
@@ -124,6 +133,7 @@ class TimelineOverlayBloc
           total: total,
           leftChannel: leftCache[track.id],
           rightChannel: rightCache[track.id],
+          measuredSourceDuration: sourceDurationCache[track.id],
         ),
     ];
 
@@ -260,22 +270,29 @@ class TimelineOverlayBloc
   /// [TimelineOverlayItem.sourceDuration] so the two never drift — the same
   /// `sourceDuration - startOffset` relationship [_onItemTrimmed] applies
   /// live during a trim drag.
+  ///
+  /// [measuredSourceDuration] is the basis the waveform extractor reported for
+  /// this track (see [_onWaveformLoaded]). It only fills in for a track whose
+  /// own duration never resolved; a track that carries one keeps it, so the
+  /// item's basis stays the same value the trim clamps read.
   static TimelineOverlayItem _soundItem(
     AudioEvent track, {
     required Duration total,
     Float32List? leftChannel,
     Float32List? rightChannel,
+    Duration? measuredSourceDuration,
   }) {
     // Treat a non-positive duration as "unknown" — matching
     // _resolveSoundDurationSecs / _healMissingAudioDurations, which key off
     // `(duration ?? 0) <= 0`. A persisted-but-zero duration must NOT become a
     // zero-length sourceDuration: that would drive maxDuration to <= 0 and let
     // a trim gesture immediately collapse the now-visible bar back to nothing.
-    // Falling through to null gives it the maxDuration fallback below instead.
+    // Falling through to the measured basis (or null) gives it the maxDuration
+    // fallback below instead.
     final hasDuration = (track.duration ?? 0) > 0;
     final sourceDuration = hasDuration
         ? Duration(milliseconds: (track.duration! * 1000).round())
-        : null;
+        : _positiveOrNull(measuredSourceDuration);
 
     // A persisted track can carry an invalid composition window — e.g. a sound
     // added before its duration was known ends up with endTime=0 (see
@@ -787,6 +804,34 @@ class TimelineOverlayBloc
     return endTime != null && endTime > track.startTime ? endTime : total;
   }
 
+  /// [duration] when it is positive, otherwise `null`.
+  static Duration? _positiveOrNull(Duration? duration) =>
+      duration != null && duration > Duration.zero ? duration : null;
+
+  /// Adopts the extractor's measured basis for an item that has none.
+  ///
+  /// A sound whose `AudioEvent.duration` never resolved reaches the painter
+  /// without a way to map full-source samples to time, so the whole file gets
+  /// squeezed into the visible bar. The extraction covers the whole source, so
+  /// its measured duration is exactly the missing basis. [maxDuration] moves
+  /// with it to keep the `sourceDuration - startOffset` relationship
+  /// [_onItemTrimmed] and [_soundItem] rely on.
+  static TimelineOverlayItem _withMeasuredBasis(
+    TimelineOverlayItem item,
+    Duration? measured,
+  ) {
+    if (item.sourceDuration != null) return item;
+    final basis = _positiveOrNull(measured);
+    if (basis == null) return item;
+
+    return item.copyWith(
+      sourceDuration: basis,
+      // Derived exactly as [_soundItem] does, so the next rebuild recomputes
+      // the same value instead of flip-flopping the bar's trim ceiling.
+      maxDuration: basis - item.startOffset,
+    );
+  }
+
   void _onWaveformLoaded(
     TimelineOverlayWaveformLoaded event,
     Emitter<TimelineOverlayState> emit,
@@ -794,9 +839,12 @@ class TimelineOverlayBloc
     final updated = [
       for (final item in state.items)
         if (item.id == event.itemId)
-          item.copyWith(
-            waveformLeftChannel: event.leftChannel,
-            waveformRightChannel: event.rightChannel,
+          _withMeasuredBasis(
+            item.copyWith(
+              waveformLeftChannel: event.leftChannel,
+              waveformRightChannel: event.rightChannel,
+            ),
+            event.sourceDuration,
           )
         else
           item,

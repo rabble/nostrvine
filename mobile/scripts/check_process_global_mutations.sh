@@ -98,6 +98,7 @@ RESET_TO_DEFAULT_GLOBALS=(
   'debugUsesAppleAppStoreTipPolicyOverride:null'
   'VideoEditorRenderService\.renderVideoOverride:null'
   'VideoEditorRenderService\.renderVideoToClipOverride:null'
+  'VideoEditorRenderService\.crashReporterOverride:null'
   'NativeProofModeService\.proofFileOverride:null'
   'NativeProofModeService\.c2paSigningServiceFactoryOverride:null'
   'InfiniteVideoFeed\.debugIsSupportedOverride:null'

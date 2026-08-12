@@ -121,10 +121,12 @@ abstract class TimelineConstants {
   /// Lower bound for the per-clip waveform normalizer. A clip whose loudest
   /// sample sits below this stays quiet on screen rather than being stretched
   /// to full scale — the difference between "quiet" and "silent" survives.
+  /// Keep in lockstep with `WaveformConstants.amplitudeNormalizerFloor`.
   static const double clipWaveformNormalizerFloor = 0.2;
 
   /// Exponent applied to the normalized amplitude. Below 1 it lifts the quiet
   /// body of the signal toward the peaks; 1 would be a linear (near-flat) band.
+  /// Keep in lockstep with `WaveformConstants.amplitudeCurve`.
   static const double clipWaveformCurve = 0.6;
 
   /// Baseline height of a clip-waveform bar. Keeps a continuous line visible

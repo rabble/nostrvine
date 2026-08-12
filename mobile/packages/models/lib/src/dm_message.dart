@@ -63,11 +63,12 @@ class DmMessage extends Equatable {
   /// File metadata for kind 15 messages. Null for kind 14.
   final DmFileMetadata? fileMetadata;
 
-  /// Structured reference to a video event cited via a NIP-18 `q` tag.
+  /// Structured reference to a video event cited via a NIP-18 `q` tag, or via
+  /// divine-web's legacy `r` + `a` share tags (#6224).
   ///
   /// Non-null when this message shares a video (e.g. a reel shared into the
   /// DM); lets the UI render a deterministic video card. Null for ordinary
-  /// messages and for legacy URL-only shares.
+  /// messages and for shares that carry only a URL and no event identity.
   final DmSharedVideoRef? sharedVideoRef;
 
   /// Durable, collision-proof id of the group-send fan-out this message

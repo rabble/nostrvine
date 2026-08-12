@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/features/oauth/app_oauth_support.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
 import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/crossposting_api_client.dart';
@@ -27,8 +28,11 @@ typedef CrosspostingApiClientFactory =
 
 final crosspostingApiClientFactoryProvider =
     Provider<CrosspostingApiClientFactory>((ref) {
-      return (accessTokenReader) =>
-          CrosspostingApiClient(accessTokenReader: accessTokenReader);
+      final newHttpClient = ref.watch(instrumentedHttpClientFactoryProvider);
+      return (accessTokenReader) => CrosspostingApiClient(
+        accessTokenReader: accessTokenReader,
+        httpClient: newHttpClient(),
+      );
     });
 
 final crosspostingApiClientProvider = Provider<CrosspostingApiClient>((ref) {

@@ -122,9 +122,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   /// every playhead tick so canvas overlays track playback smoothly.
   final _playTimeNotifier = ValueNotifier<Duration>(Duration.zero);
 
-  /// Tracks the previous audio tracks to detect offset changes.
-  List<AudioEvent> _previousAudioTracks = const [];
-
   /// Track ids whose missing duration we already tried to backfill, so a
   /// failed probe isn't retried on every audio-track change.
   final Set<String> _durationHealAttempted = {};
@@ -162,6 +159,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       stickerRepository: StickerRepository(),
       onPrecacheStickers: _precacheStickers,
     );
+    // Captured while mounted: long clip renders (reverse / transform /
+    // chroma-key, ~15-20s) can finish after this State unmounts. `ref` is
+    // unsafe then, but the notifier outlives the screen for the editor
+    // session, so deferred cleanup and final-clip invalidation still need to
+    // reach it — otherwise orphans never enter `_deferredFileCleanup`.
+    final videoEditor = ref.read(videoEditorProvider.notifier);
     _clipEditorBloc = ClipEditorBloc(
       // The clip library sits behind a Riverpod provider the BLoC can't reach,
       // so it arrives as a callback — the same transition seam that brings the
@@ -172,18 +175,15 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         if (!mounted) return false;
         return ref.read(clipManagerProvider.notifier).saveClipToLibrary(clip);
       },
-      cleanupChromaKeyFiles: (paths) {
-        if (!mounted) return;
-        ref.read(videoEditorProvider.notifier).deferFileCleanup(paths);
-      },
+      deferFileCleanup: videoEditor.deferFileCleanup,
       onFinalClipInvalidated: () {
         // A clip render (reverse / transform) can resolve after this screen is
         // disposed — the user backed out while a long clip was still
-        // re-encoding (~15-20s). Both `ref` and `_editor` are unsafe to touch
-        // once the State is unmounted, so bail before either is used;
-        // otherwise `ref.read` throws "Using ref when unmounted".
+        // re-encoding (~15-20s). `_editor` is unsafe once the State is
+        // unmounted; the video-editor notifier was captured above so cleanup
+        // and invalidation still run.
+        videoEditor.invalidateFinalRenderedClip();
         if (!mounted) return;
-        ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip();
 
         if (_editor != null) {
           // A split subdivides one clip at the same total span, so no marker
@@ -449,7 +449,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       context: context,
       maxChildSize: 1,
       initialChildSize: 0.9,
-      minChildSize: 0.5,
+      minChildSize: VineTheme.bottomSheetDismissFloor,
       buildScrollBody: (scrollController) => LibraryScreen(
         initialTabIndex: 1,
         selectionMode: true,
@@ -529,7 +529,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       title: Text(context.l10n.videoEditorStickers),
       maxChildSize: 1,
       initialChildSize: 1,
-      minChildSize: 0.8,
+      minChildSize: VineTheme.bottomSheetDismissFloor,
       buildScrollBody: (scrollController) => BlocProvider.value(
         value: _stickerBloc,
         child: VideoEditorStickerSheet(scrollController: scrollController),
@@ -909,6 +909,19 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
   /// Extracts waveform data for an audio track and updates the timeline
   /// overlay with the samples.
+  ///
+  /// Always extracts the **full source file**. Windowing to
+  /// `[startOffset, startOffset + span]` is [StereoWaveformPainter]'s job via
+  /// its `startOffset` / `maxDuration` args (see `_SoundContent`). Extracting a
+  /// pre-windowed segment here would (a) double-window against the painter's
+  /// offset and (b) restyle bar heights on every left-trim, because the
+  /// painter normalizes against the loudest sample in the arrays it is given.
+  ///
+  /// The measured duration travels with the samples: covering the whole source
+  /// makes it the source duration, which is the basis the painter maps samples
+  /// to time against. Sounds whose `duration` never resolved
+  /// (see [_healMissingAudioDurations]) would otherwise reach the painter with
+  /// no basis and draw the entire file squeezed into the visible bar.
   Future<void> _extractWaveform(AudioEvent audio) async {
     final path = audio.isBundled ? audio.assetPath : audio.url;
     if (path == null) return;
@@ -920,19 +933,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
           ? EditorVideo.file(path)
           : EditorVideo.network(path);
       final data = await ProVideoEditor.instance.getWaveform(
-        WaveformConfigs(
-          video: video,
-          startTime: audio.startOffset,
-          endTime:
-              audio.startOffset +
-              Duration(
-                milliseconds:
-                    ((audio.duration ??
-                                VideoEditorConstants.maxDuration.inSeconds) *
-                            1000)
-                        .toInt(),
-              ),
-        ),
+        WaveformConfigs(video: video),
       );
       if (!mounted) return;
       _timelineOverlayBloc.add(
@@ -940,6 +941,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
           itemId: audio.id,
           leftChannel: data.leftChannel,
           rightChannel: data.rightChannel,
+          sourceDuration: data.duration,
         ),
       );
     } catch (e, s) {
@@ -982,21 +984,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         listenWhen: (previous, current) =>
             previous.audioTracks != current.audioTracks,
         listener: (context, state) {
-          final previousById = {for (final a in _previousAudioTracks) a.id: a};
-          _previousAudioTracks = state.audioTracks;
-
           final existingWaveformIds = state.items
               .where((i) => i.waveformLeftChannel != null)
               .map((i) => i.id)
               .toSet();
 
           for (final audio in state.audioTracks) {
-            final hadWaveform = existingWaveformIds.contains(audio.id);
-            final prev = previousById[audio.id];
-            final offsetChanged =
-                prev != null && prev.startOffset != audio.startOffset;
-
-            if (!hadWaveform || offsetChanged) {
+            // Full-source samples are offset-invariant; the painter scrolls
+            // via startOffset. Re-extract only when this track has no samples
+            // yet (new sound, or a rebuild that dropped the cache).
+            if (!existingWaveformIds.contains(audio.id)) {
               unawaited(_extractWaveform(audio));
             }
           }

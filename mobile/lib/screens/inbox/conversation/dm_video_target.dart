@@ -3,7 +3,6 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
-import 'package:openvine/utils/divine_video_url.dart';
 
 /// Normalized identity and routing metadata for a video shared in a DM.
 @immutable

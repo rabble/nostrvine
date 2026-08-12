@@ -4,13 +4,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:characters/characters.dart';
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -604,20 +603,22 @@ void main() {
               required editorStateHistory,
               parameters,
               taskId,
-            }) async => null;
+            }) async => throw const VideoRenderFailedException(
+              VideoRenderFailureReason.nativeRender,
+            );
 
         await notifier.startRenderVideo();
 
         final state = container.read(videoEditorProvider);
         expect(state.isProcessing, isFalse);
         expect(state.finalRenderedClip, isNull);
-        // The null-return path is the primary way a genuine render failure
+        // A render that produced no video is the primary way a genuine failure
         // surfaces the retry overlay — a regression that drops this flag would
         // leave the user stuck with no way to retry (#6058).
         expect(
           state.renderFailed,
           isTrue,
-          reason: 'a null render result surfaces the retry affordance',
+          reason: 'a failed render surfaces the retry affordance',
         );
       });
 
@@ -692,8 +693,8 @@ void main() {
               duration: const Duration(seconds: 2),
             );
 
-        final slowCompleter = Completer<(DivineVideoClip, String?)?>();
-        final fastCompleter = Completer<(DivineVideoClip, String?)?>();
+        final slowCompleter = Completer<(DivineVideoClip, String?)>();
+        final fastCompleter = Completer<(DivineVideoClip, String?)>();
 
         var callCount = 0;
         VideoEditorRenderService.renderVideoToClipOverride =
@@ -765,8 +766,8 @@ void main() {
               duration: const Duration(seconds: 2),
             );
 
-        final slowCompleter = Completer<(DivineVideoClip, String?)?>();
-        final fastCompleter = Completer<(DivineVideoClip, String?)?>();
+        final slowCompleter = Completer<(DivineVideoClip, String?)>();
+        final fastCompleter = Completer<(DivineVideoClip, String?)>();
 
         var callCount = 0;
         VideoEditorRenderService.renderVideoToClipOverride =
@@ -784,15 +785,18 @@ void main() {
 
         // Start first (slow) render
         final render1 = notifier.startRenderVideo();
-        // Start second render — will complete with null (cancelled)
+        // Start second render — will fail
         final render2 = notifier.startRenderVideo();
 
-        // Second render returns null (simulating cancellation)
-        fastCompleter.complete(null);
+        // Second render produces no video (simulating a native failure)
+        fastCompleter.completeError(
+          const VideoRenderFailedException(
+            VideoRenderFailureReason.nativeRender,
+          ),
+        );
         await render2;
 
-        // isProcessing should be false after the latest render
-        // returned null
+        // isProcessing should be false after the latest render failed
         expect(container.read(videoEditorProvider).isProcessing, isFalse);
 
         // Now the stale render completes — should be silently
@@ -841,7 +845,9 @@ void main() {
               taskId,
             }) async {
               capturedTaskId = taskId;
-              return null;
+              throw const VideoRenderFailedException(
+                VideoRenderFailureReason.nativeRender,
+              );
             };
 
         await notifier.startRenderVideo();
@@ -875,7 +881,9 @@ void main() {
               taskId,
             }) async {
               capturedTaskId = taskId;
-              return null;
+              throw const VideoRenderFailedException(
+                VideoRenderFailureReason.nativeRender,
+              );
             };
 
         await notifier.startRenderVideo();
@@ -1041,7 +1049,9 @@ void main() {
               taskId,
             }) async {
               reRendered = true;
-              return null;
+              throw const VideoRenderFailedException(
+                VideoRenderFailureReason.nativeRender,
+              );
             };
         NativeProofModeService.proofFileOverride =
             (
@@ -1339,8 +1349,8 @@ void main() {
           final notifier = container.read(videoEditorProvider.notifier);
           addOneClip();
 
-          final slowCompleter = Completer<(DivineVideoClip, String?)?>();
-          final fastCompleter = Completer<(DivineVideoClip, String?)?>();
+          final slowCompleter = Completer<(DivineVideoClip, String?)>();
+          final fastCompleter = Completer<(DivineVideoClip, String?)>();
           var callCount = 0;
           VideoEditorRenderService.renderVideoToClipOverride =
               ({
@@ -1397,25 +1407,77 @@ void main() {
         },
       );
 
-      test('tags outcome=failed when the render returns null', () async {
-        final notifier = container.read(videoEditorProvider.notifier);
-        addOneClip();
+      void failRenderWith(VideoRenderFailedException failure) {
         VideoEditorRenderService.renderVideoToClipOverride =
             ({
               required clips,
               required editorStateHistory,
               parameters,
               taskId,
-            }) async => null;
+            }) async => throw failure;
+      }
+
+      test('tags outcome=failed with the reason behind a render that produced '
+          'no video (#7125)', () async {
+        final notifier = container.read(videoEditorProvider.notifier);
+        addOneClip();
+        failRenderWith(
+          const VideoRenderFailedException(
+            VideoRenderFailureReason.stopMotionAssembly,
+          ),
+        );
 
         await notifier.startRenderVideo();
+        final trace = performanceMonitor.traces.single;
+        expect(trace.attributes['outcome'], 'failed');
+        expect(trace.attributes['failure_reason'], 'stop_motion_assembly');
+      });
+
+      test('carries the native cause type in the reason, not its message '
+          '(#7125)', () async {
+        final notifier = container.read(videoEditorProvider.notifier);
+        addOneClip();
+        failRenderWith(
+          VideoRenderFailedException(
+            VideoRenderFailureReason.nativeRender,
+            cause: PlatformException(
+              code: 'RENDER_ERROR',
+              message: '/var/mobile/Containers/Data/Application/x/clip.mp4',
+            ),
+          ),
+        );
+
+        await notifier.startRenderVideo();
+        final reason =
+            performanceMonitor.traces.single.attributes['failure_reason'];
+        expect(reason, 'native_render:PlatformException');
         expect(
-          performanceMonitor.traces.single.attributes['outcome'],
-          'failed',
+          reason,
+          isNot(contains('/var/mobile')),
+          reason: 'device paths must not ride into a trace attribute',
         );
       });
 
-      test('tags outcome=error when the render throws', () async {
+      test('tags a cancelled render incomplete, not failed (#7125)', () async {
+        final notifier = container.read(videoEditorProvider.notifier);
+        addOneClip();
+        failRenderWith(
+          const VideoRenderFailedException(VideoRenderFailureReason.canceled),
+        );
+
+        await notifier.startRenderVideo();
+        final trace = performanceMonitor.traces.single;
+        expect(
+          trace.attributes['outcome'],
+          'incomplete',
+          reason:
+              'teardown cancelling in-flight native tasks is not a render that '
+              'could not produce a video',
+        );
+        expect(trace.attributes['failure_reason'], 'canceled');
+      });
+
+      test('tags outcome=error with the type when the render throws', () async {
         final notifier = container.read(videoEditorProvider.notifier);
         addOneClip();
         VideoEditorRenderService.renderVideoToClipOverride =
@@ -1424,13 +1486,12 @@ void main() {
               required editorStateHistory,
               parameters,
               taskId,
-            }) async => throw Exception('render boom');
+            }) async => throw StateError('render boom');
 
         await notifier.startRenderVideo();
-        expect(
-          performanceMonitor.traces.single.attributes['outcome'],
-          'error',
-        );
+        final trace = performanceMonitor.traces.single;
+        expect(trace.attributes['outcome'], 'error');
+        expect(trace.attributes['failure_reason'], 'StateError');
       });
     });
 
@@ -1523,7 +1584,7 @@ void main() {
                 limitClipDuration: false,
               );
 
-          final renderCompleter = Completer<(DivineVideoClip, String?)?>();
+          final renderCompleter = Completer<(DivineVideoClip, String?)>();
           VideoEditorRenderService.renderVideoToClipOverride =
               ({
                 required clips,
@@ -1548,7 +1609,11 @@ void main() {
                 'until the active render future has released native resources',
           );
 
-          renderCompleter.complete(null);
+          renderCompleter.completeError(
+            const VideoRenderFailedException(
+              VideoRenderFailureReason.canceled,
+            ),
+          );
           await cancel;
           await render;
 
