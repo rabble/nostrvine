@@ -1254,7 +1254,8 @@ void main() {
 
     group('schema repair', () {
       test(
-        'adds v3 clip organization columns to a damaged current schema',
+        'repairs the v4 clip organization schema on a damaged current-version '
+        'database',
         () async {
           await database.customSelect('SELECT 1').get();
           await database.close();
@@ -1303,7 +1304,12 @@ void main() {
                 FROM clips_old
               ''')
               ..execute('DROP TABLE clips_old;')
-              ..execute('PRAGMA user_version = 3;');
+              ..execute('DROP INDEX IF EXISTS idx_clip_category_id;')
+              ..execute('DROP TABLE IF EXISTS clip_categories;')
+              // Stays at the current version: an upgrade would set
+              // `hadUpgrade` and skip the guarded probe entirely, leaving the
+              // v4 migration — not the repair path — to do the work.
+              ..execute('PRAGMA user_version = 4;');
           } finally {
             raw.close();
           }
@@ -1319,8 +1325,88 @@ void main() {
           };
           expect(columnNames, contains('category_id'));
           expect(columnNames, contains('archived_at'));
+
+          final categoryTable = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='clip_categories'",
+              )
+              .get();
+          expect(
+            categoryTable,
+            hasLength(1),
+            reason: 'the probe must rebuild the category table it checks for',
+          );
+
+          final indexes = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='index' "
+                "AND name IN ('idx_clip_category_id', "
+                "'idx_clip_category_owner_pubkey')",
+              )
+              .get();
+          expect(
+            indexes,
+            hasLength(2),
+            reason: 'both category indexes are recovery-critical',
+          );
+
+          // The category DAO has to work off the rebuilt table, not just
+          // report that its name is back in sqlite_master.
+          await database.clipCategoriesDao.upsertCategory(
+            id: 'cat-repaired',
+            name: 'Repaired',
+            createdAt: DateTime(2026),
+          );
+          final categories = await database.clipCategoriesDao.getCategories();
+          expect(categories.map((c) => c.id), contains('cat-repaired'));
         },
       );
+
+      test('schema parity — clip_categories fresh-install matches runtime '
+          'CREATE-IF-NOT-EXISTS path', () async {
+        // Drift builds this table on a fresh install and migration, while
+        // `_createClipCategoriesTableIfMissing` builds it during repair. The
+        // two definitions live apart, so column order, nullability, defaults,
+        // the primary key, and the indexes have to be pinned equal.
+        final freshColumns = await _collectTableInfo(
+          database,
+          'clip_categories',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'clip_categories',
+        );
+
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason: 'precondition: fresh install should have clip_categories',
+        );
+
+        await database.customStatement('DROP TABLE clip_categories');
+        await database.close();
+
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='clip_categories'",
+            )
+            .get();
+
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'clip_categories',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'clip_categories',
+        );
+
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
     });
 
     group('identity caches (#3936)', () {
