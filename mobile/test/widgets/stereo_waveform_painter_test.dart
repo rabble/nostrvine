@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for StereoWaveformPainter and WaveformConstants.
 // ABOUTME: Tests shouldRepaint logic, paint with empty/valid data, and constants.
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -306,6 +307,106 @@ void main() {
           () => painter.paint(canvas, const Size(200, 72)),
           returnsNormally,
         );
+      });
+    });
+
+    group('amplitude shaping', () {
+      const size = Size(200, 72);
+      const halfHeight = 36.0;
+      const scaledHalfHeight = halfHeight * WaveformConstants.amplitudeScale;
+
+      /// The bar at [index], mirrored around the vertical centre.
+      RRect barAt(int index, double armHeight) => RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          index * WaveformConstants.barStep,
+          halfHeight - armHeight,
+          WaveformConstants.barWidth,
+          armHeight * 2,
+        ),
+        WaveformConstants.barRadius,
+      );
+
+      /// A bar at the band's ceiling — what the source's loudest sample draws.
+      RRect ceilingBar(int index) => barAt(index, scaledHalfHeight);
+
+      final waveformPaint = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is StereoWaveformPainter,
+      );
+
+      Future<RenderObject> pumpPainter(
+        WidgetTester tester,
+        StereoWaveformPainter painter,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Center(
+              child: SizedBox(
+                width: size.width,
+                height: size.height,
+                child: CustomPaint(painter: painter),
+              ),
+            ),
+          ),
+        );
+        return tester.renderObject(waveformPaint);
+      }
+
+      testWidgets('fills the band for a quietly recorded source', (
+        tester,
+      ) async {
+        // Real recordings peak well below full scale — mapped linearly they
+        // draw as a barely visible ripple, so the bars normalize per source.
+        final render = await pumpPainter(
+          tester,
+          createPainter(leftChannel: Float32List.fromList([0.25, 0.25])),
+        );
+
+        expect(render, paints..rrect(rrect: ceilingBar(0)));
+      });
+
+      testWidgets('keeps a near-silent source below the band', (tester) async {
+        final render = await pumpPainter(
+          tester,
+          createPainter(leftChannel: Float32List.fromList([0.03125, 0.03125])),
+        );
+
+        // Quiet, but still audible-looking: the floor holds the bars down
+        // without collapsing them to the silent baseline or hiding them.
+        expect(render, paints..rrect());
+        expect(render, isNot(paints..rrect(rrect: ceilingBar(0))));
+        expect(
+          render,
+          isNot(
+            paints..rrect(rrect: barAt(0, WaveformConstants.minBarHeight)),
+          ),
+        );
+      });
+
+      testWidgets('scales quiet passages against the source peak', (
+        tester,
+      ) async {
+        // 40 bars fit the 200px canvas, so each sample of a two-sample source
+        // owns half of them: the loud sample the first 20, the quiet one the
+        // rest.
+        final render = await pumpPainter(
+          tester,
+          createPainter(leftChannel: Float32List.fromList([0.5, 0.25])),
+        );
+
+        // The quiet half is drawn relative to the loud one, not to itself:
+        // normalizing per passage would flatten the dynamics away.
+        final quietArm =
+            math.pow(0.5, WaveformConstants.amplitudeCurve).toDouble() *
+            scaledHalfHeight;
+        const barCount = 40;
+        final bars = paints;
+        for (var i = 0; i < barCount ~/ 2; i++) {
+          bars.rrect(rrect: ceilingBar(i));
+        }
+        for (var i = barCount ~/ 2; i < barCount; i++) {
+          bars.rrect(rrect: barAt(i, quietArm));
+        }
+        expect(render, bars);
       });
     });
 
