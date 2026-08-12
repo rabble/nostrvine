@@ -503,4 +503,56 @@ void main() {
       });
     });
   });
+
+  group('render failure reporting (#7125)', () {
+    tearDown(() {
+      VideoEditorRenderService.renderVideoOverride = null;
+    });
+
+    test('renderVideoToClip names an empty clip list as the reason', () async {
+      await expectLater(
+        VideoEditorRenderService.renderVideoToClip(
+          clips: const [],
+          editorStateHistory: const {},
+        ),
+        throwsA(
+          isA<VideoRenderFailedException>().having(
+            (e) => e.reason,
+            'reason',
+            VideoRenderFailureReason.emptyClips,
+          ),
+        ),
+      );
+    });
+
+    test('renderVideo keeps returning null so callers that only need the '
+        'path are unaffected', () async {
+      VideoEditorRenderService.renderVideoOverride =
+          ({
+            required clips,
+            required usePersistentStorage,
+            aspectRatio,
+            parameters,
+            taskId,
+            maxOutputDuration,
+          }) async => null;
+
+      expect(
+        await VideoEditorRenderService.renderVideo(
+          clips: [clip('a', const Duration(seconds: 1))],
+        ),
+        isNull,
+      );
+    });
+
+    test('traceValue carries the cause type, never its message', () {
+      const failure = VideoRenderFailedException(
+        VideoRenderFailureReason.nativeRender,
+        cause: FormatException('/var/mobile/Containers/Data/x/clip.mp4'),
+      );
+
+      expect(failure.traceValue, 'native_render:FormatException');
+      expect(failure.toString(), contains('/var/mobile'));
+    });
+  });
 }

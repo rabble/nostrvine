@@ -25,6 +25,56 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Why a render produced no output.
+///
+/// Carried by [VideoRenderFailedException] and reported as the
+/// `failure_reason` attribute on the `video_generation` trace, so a render
+/// that fails on device can be told apart from one that was superseded (#7125).
+enum VideoRenderFailureReason {
+  /// Nothing to render — the clip list was empty.
+  emptyClips('empty_clips'),
+
+  /// A stop-motion clip could not be assembled into its base video.
+  stopMotionAssembly('stop_motion_assembly'),
+
+  /// The native render pipeline threw.
+  nativeRender('native_render'),
+
+  /// The native task was cancelled — by the user, or by teardown
+  /// (`AppLifecycleState.detached`) cancelling every in-flight task.
+  canceled('canceled');
+
+  const VideoRenderFailureReason(this.traceValue);
+
+  /// Stable identifier used in telemetry. Independent of the enum name so a
+  /// rename cannot silently split a Firebase dimension.
+  final String traceValue;
+}
+
+/// Thrown when a render finished without producing a video.
+class VideoRenderFailedException implements Exception {
+  const VideoRenderFailedException(this.reason, {this.cause});
+
+  final VideoRenderFailureReason reason;
+
+  /// The underlying error, when the failure came from a throw rather than a
+  /// guard. Native failures surface here as `PlatformException`.
+  final Object? cause;
+
+  /// Compact telemetry label, e.g. `native_render:PlatformException`.
+  ///
+  /// The cause's type — never its message — so device paths and other
+  /// free-form native text stay out of the trace attribute.
+  String get traceValue => cause == null
+      ? reason.traceValue
+      : '${reason.traceValue}:${cause.runtimeType}';
+
+  @override
+  String toString() =>
+      'VideoRenderFailedException(${reason.traceValue})'
+      '${cause == null ? '' : ': $cause'}';
+}
+
 /// Result of normalizing clips to a target aspect ratio.
 class _NormalizationResult {
   const _NormalizationResult({
@@ -334,7 +384,7 @@ class VideoEditorRenderService {
   /// When set, [renderVideoToClip] delegates to this callback instead of
   /// running the real render pipeline. Reset to `null` in `tearDown`.
   @visibleForTesting
-  static Future<(DivineVideoClip, String? proofManifestJson)?> Function({
+  static Future<(DivineVideoClip, String? proofManifestJson)> Function({
     required List<DivineVideoClip> clips,
     required Map<String, dynamic> editorStateHistory,
     CompleteParameters? parameters,
@@ -370,8 +420,12 @@ class VideoEditorRenderService {
   /// - The rendered [DivineVideoClip]
   /// - The proofManifestJson (or null if ProofMode unavailable)
   ///
-  /// Returns null if rendering failed/cancelled.
-  static Future<(DivineVideoClip, String? proofManifestJson)?>
+  /// Throws:
+  ///
+  /// * [VideoRenderFailedException] if the render produced no video — the
+  ///   reason distinguishes an empty clip list, a failed stop-motion assembly,
+  ///   a native render failure, and a cancellation.
+  static Future<(DivineVideoClip, String? proofManifestJson)>
   renderVideoToClip({
     required List<DivineVideoClip> clips,
     required Map<String, dynamic> editorStateHistory,
@@ -387,7 +441,11 @@ class VideoEditorRenderService {
       );
     }
 
-    if (clips.isEmpty) return null;
+    if (clips.isEmpty) {
+      throw const VideoRenderFailedException(
+        VideoRenderFailureReason.emptyClips,
+      );
+    }
 
     final effectiveTaskId = taskId ?? clips.first.id;
     // Frames-only stop-motion clips need an assembly pass (stills → base mp4)
@@ -425,7 +483,11 @@ class VideoEditorRenderService {
             clip,
             taskId: assemblyTaskId,
           );
-          if (materialized == null) return null;
+          if (materialized == null) {
+            throw const VideoRenderFailedException(
+              VideoRenderFailureReason.stopMotionAssembly,
+            );
+          }
           final intermediatePath = materialized.video?.file?.path;
           if (intermediatePath != null) {
             intermediateStopMotionPaths.add(intermediatePath);
@@ -445,15 +507,13 @@ class VideoEditorRenderService {
         category: LogCategory.video,
       );
 
-      final outputPath = await renderVideo(
+      final outputPath = await _renderVideoOrThrow(
         clips: clips,
         aspectRatio: clips.first.targetAspectRatio,
         usePersistentStorage: true,
         parameters: parameters,
         taskId: effectiveTaskId,
       );
-
-      if (outputPath == null) return null;
 
       await progressTracker.markRenderComplete();
 
@@ -629,7 +689,35 @@ class VideoEditorRenderService {
   /// [VideoEditorConstants.maxDuration] for the final-export path; pass `null`
   /// to render the full concatenation uncapped (e.g. when merging clips into an
   /// intermediate editor clip that the user can still trim).
+  ///
+  /// Callers that need to know *why* a render produced nothing should use
+  /// [_renderVideoOrThrow] instead — this wrapper collapses every failure to
+  /// `null`.
   static Future<String?> renderVideo({
+    required List<DivineVideoClip> clips,
+    bool usePersistentStorage = false,
+    model.AspectRatio? aspectRatio,
+    CompleteParameters? parameters,
+    String? taskId,
+    Duration? maxOutputDuration = VideoEditorConstants.maxDuration,
+  }) async {
+    try {
+      return await _renderVideoOrThrow(
+        clips: clips,
+        usePersistentStorage: usePersistentStorage,
+        aspectRatio: aspectRatio,
+        parameters: parameters,
+        taskId: taskId,
+        maxOutputDuration: maxOutputDuration,
+      );
+    } on VideoRenderFailedException {
+      return null;
+    }
+  }
+
+  /// [renderVideo], but throws [VideoRenderFailedException] instead of
+  /// returning null so the caller can report why the render produced nothing.
+  static Future<String> _renderVideoOrThrow({
     required List<DivineVideoClip> clips,
     bool usePersistentStorage = false,
     model.AspectRatio? aspectRatio,
@@ -639,7 +727,7 @@ class VideoEditorRenderService {
   }) async {
     final override = renderVideoOverride;
     if (override != null) {
-      return override(
+      final overridden = await override(
         clips: clips,
         usePersistentStorage: usePersistentStorage,
         aspectRatio: aspectRatio,
@@ -647,6 +735,12 @@ class VideoEditorRenderService {
         taskId: taskId,
         maxOutputDuration: maxOutputDuration,
       );
+      if (overridden == null) {
+        throw const VideoRenderFailedException(
+          VideoRenderFailureReason.nativeRender,
+        );
+      }
+      return overridden;
     }
 
     final cacheDir = await getTemporaryDirectory();
@@ -698,28 +792,33 @@ class VideoEditorRenderService {
       );
 
       return outputPath;
-    } on RenderCanceledException {
+    } on RenderCanceledException catch (e) {
       Log.info(
         '🚫 Video render cancelled by user',
         name: _logName,
         category: .video,
       );
       unawaited(_cleanupTempFiles(tempFilePaths));
-      return null;
+      throw VideoRenderFailedException(
+        VideoRenderFailureReason.canceled,
+        cause: e,
+      );
     } catch (e, stack) {
       Log.error('❌ Video render failed: $e', name: _logName, category: .video);
       unawaited(_cleanupTempFiles(tempFilePaths));
-      // Native/IO render failures are expected; only programming-invariant
-      // violations (StateError/TypeError/RangeError — all `Error` subtypes)
-      // are worth surfacing to Crashlytics.
-      if (e is Error) {
-        CrashReportingService.instance.recordError(
-          e,
-          stack,
-          reason: 'renderVideo failed',
-        );
-      }
-      return null;
+      // Every failure is reported, not just `Error` subtypes: a failed export
+      // is a dead end for the user, and the native pipeline signals its
+      // failures as `PlatformException`, which is not an `Error`. Gating on
+      // `Error` left the entire population invisible in Crashlytics (#7125).
+      CrashReportingService.instance.recordError(
+        e,
+        stack,
+        reason: 'renderVideo failed',
+      );
+      throw VideoRenderFailedException(
+        VideoRenderFailureReason.nativeRender,
+        cause: e,
+      );
     }
   }
 
