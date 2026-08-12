@@ -26,8 +26,9 @@ class VideoEditorTransformService {
     final documentsPath = await getDocumentsPath();
     final inputPath = await sourceClip.requireVideo.safeFilePath();
     // Unique per render so transforming the same clip twice never targets the
-    // previous output (which is the new input). The prior file is intentionally
-    // left on disk — undo history points back to it.
+    // previous output (which is the new input). The prior file stays on disk
+    // for the session — undo history points back to it — and `ClipEditorBloc`
+    // queues it for the editor session's deferred cleanup.
     final outputPath = p.join(
       documentsPath,
       '${sourceClip.id}_transformed_'

@@ -96,10 +96,17 @@ typedef CleanupFlattenedClipFn =
       String? keepThumbnailPath,
     });
 
-/// Queues files that became unreachable when chroma-key metadata was cleared.
-typedef CleanupChromaKeyFilesFn = void Function(Iterable<String?> paths);
+/// Queues files that became unreachable when a clip's file references were
+/// rewritten — a transform's pre-transform render, a bake's previous output,
+/// the chroma-key metadata a bake or a transform cleared.
+///
+/// Queued, not deleted: the editor's undo history still points at them for the
+/// rest of the session. Wired by the widget layer to
+/// `VideoEditorNotifier.deferFileCleanup`, which reference-checks each path and
+/// reaps it at session end.
+typedef DeferFileCleanupFn = void Function(Iterable<String?> paths);
 
-void _noopCleanupChromaKeyFiles(Iterable<String?> paths) {}
+void _noopDeferFileCleanup(Iterable<String?> paths) {}
 
 /// Persists an already-flattened clip to the device's clip library, returning
 /// whether it was stored.
@@ -136,7 +143,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     MergeClipsFn? mergeClips,
     FlattenClipForLibraryFn? flattenClipForLibrary,
     CleanupFlattenedClipFn? cleanupFlattenedClip,
-    CleanupChromaKeyFilesFn? cleanupChromaKeyFiles,
+    DeferFileCleanupFn? deferFileCleanup,
   }) : _audioExtractionService =
            audioExtractionService ?? AudioExtractionService(),
        _splitClip = splitClip ?? VideoEditorSplitService.splitClip,
@@ -154,8 +161,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
        _cleanupFlattenedClip =
            cleanupFlattenedClip ??
            VideoEditorClipLibrarySaveService.cleanupFlattenedClip,
-       _cleanupChromaKeyFiles =
-           cleanupChromaKeyFiles ?? _noopCleanupChromaKeyFiles,
+       _deferFileCleanup = deferFileCleanup ?? _noopDeferFileCleanup,
        _saveClipToLibrary = saveClipToLibrary,
        super(const ClipEditorState()) {
     // Clip data
@@ -257,7 +263,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final MergeClipsFn _mergeClips;
   final FlattenClipForLibraryFn _flattenClipForLibrary;
   final CleanupFlattenedClipFn _cleanupFlattenedClip;
-  final CleanupChromaKeyFilesFn _cleanupChromaKeyFiles;
+  final DeferFileCleanupFn _deferFileCleanup;
   final SaveClipToLibraryFn _saveClipToLibrary;
 
   // === CLIP DATA ===
@@ -1241,7 +1247,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         ),
       );
       onFinalClipInvalidated.call();
-      _cleanupClearedChromaKeyFiles(clip);
+      _deferSupersededFiles(clip);
       return;
     }
 
@@ -1263,7 +1269,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         ),
       );
       onFinalClipInvalidated.call();
-      _cleanupClearedChromaKeyFiles(clip);
+      _deferSupersededFiles(clip);
       return;
     }
 
@@ -1275,6 +1281,14 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         renderId: clip.id,
       );
 
+      // Screen dispose closes this bloc while a long reverse can still be
+      // finishing. The new file is on disk either way — queue it when we can
+      // no longer commit it to state.
+      if (isClosed) {
+        _deferOrphanedPaths([reversedVideo.file?.path]);
+        return;
+      }
+
       final currentClips = state.clips;
       final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
       if (currentIndex == -1) {
@@ -1283,6 +1297,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           name: 'ClipEditorBloc',
           category: LogCategory.video,
         );
+        // The render never reached a clip, so nothing but this queue can name it.
+        _deferOrphanedPaths([reversedVideo.file?.path]);
         emit(
           state.copyWith(
             isReversing: false,
@@ -1353,7 +1369,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       );
 
       onFinalClipInvalidated.call();
-      _cleanupClearedChromaKeyFiles(currentClip);
+      _deferSupersededFiles(currentClip);
     } catch (e, stackTrace) {
       final error = switch (e) {
         StateError() ||
@@ -1422,7 +1438,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     );
 
     onFinalClipInvalidated.call();
-    _cleanupClearedChromaKeyFiles(clip);
+    _deferSupersededFiles(clip);
   }
 
   Future<void> _onChromaKeyRequested(
@@ -1450,6 +1466,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         renderId: renderId,
       );
 
+      // See reverse: leave-during-bake still wrote a documents-dir file.
+      if (isClosed) {
+        _deferOrphanedPaths([baked.video.file?.path]);
+        return;
+      }
+
       final currentClips = state.clips;
       final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
       if (currentIndex == -1) {
@@ -1458,6 +1480,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           name: 'ClipEditorBloc',
           category: LogCategory.video,
         );
+        // Baked output never landed on a clip. Keep `baked.source` — that is the
+        // pre-key file some other draft or the library may still play.
+        _deferOrphanedPaths([baked.video.file?.path]);
         emit(
           state.copyWith(
             isChromaKeying: false,
@@ -1496,7 +1521,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       );
 
       onFinalClipInvalidated.call();
-      _cleanupClearedChromaKeyFiles(currentClip);
+      _deferSupersededFiles(currentClip);
     } on ChromaKeyBackdropMissingException catch (e, stackTrace) {
       addError(e, stackTrace);
       Log.warning(
@@ -1534,17 +1559,37 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     }
   }
 
-  void _cleanupClearedChromaKeyFiles(DivineVideoClip clip) {
-    final paths = [
-      clip.chromaKeySourcePath,
-      clip.chromaKey?.backgroundImagePath,
-    ];
-    if (paths.every((path) => path == null || path.isEmpty)) return;
+  /// Queues every file [superseded] pointed at that the clip list no longer
+  /// does, so the editor session reclaims it once undo can no longer reach it.
+  ///
+  /// Call after the emit that replaced the clip: the current [state] is the
+  /// other half of the diff.
+  ///
+  /// Diffed against live state rather than queued outright, because the
+  /// reaper's own reference check reads the database, which lags the editor by
+  /// an autosave. A file two clips share — a duplicated clip, a still
+  /// duplicated inside one — would otherwise be queued while it is still on
+  /// screen, and one cancelled autosave away from being deleted under it.
+  void _deferSupersededFiles(DivineVideoClip superseded) =>
+      _deferOrphanedPaths(superseded.ownedFilePaths);
+
+  /// Queues whichever of [paths] no clip in the current [state] points at.
+  ///
+  /// See [_deferSupersededFiles] for why the live clip list filters the queue.
+  void _deferOrphanedPaths(Iterable<String?> paths) {
+    final live = state.clips
+        .expand((clip) => clip.ownedFilePaths)
+        .nonNulls
+        .toSet();
+    final orphans = paths.nonNulls
+        .where((path) => path.isNotEmpty && !live.contains(path))
+        .toList();
+    if (orphans.isEmpty) return;
     try {
-      _cleanupChromaKeyFiles(paths);
+      _deferFileCleanup(orphans);
     } catch (e, stackTrace) {
       Log.warning(
-        '⚠️ Failed to queue chroma-key files for cleanup: $e',
+        '⚠️ Failed to queue superseded files for cleanup: $e',
         name: 'ClipEditorBloc',
         category: LogCategory.video,
       );
@@ -1614,31 +1659,53 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         name: 'ClipEditorBloc',
         category: LogCategory.video,
       );
-      emit(state.copyWith(lastTransformResult: ClipTransformFrameFailure()));
+      if (!isClosed) {
+        emit(state.copyWith(lastTransformResult: ClipTransformFrameFailure()));
+      }
+      return;
+    }
+
+    // Leave-during-write: still lands on disk and must be queued even though
+    // state can no longer accept it.
+    if (isClosed) {
+      _deferOrphanedPaths([path]);
       return;
     }
 
     final currentClips = state.clips;
     final currentIndex = currentClips.indexWhere((c) => c.id == event.clipId);
-    if (currentIndex == -1) return;
+    if (currentIndex == -1) {
+      // Whole clip gone while the still was writing — same leak class as a
+      // moved frame: the new file never became a reference anyone tracks.
+      Log.warning(
+        '⚠️ Transformed still discarded: clip ${event.clipId} no longer exists',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      _deferOrphanedPaths([path]);
+      return;
+    }
     final currentFrames = currentClips[currentIndex].stopMotionFrames;
     if (currentFrames == null ||
         event.frameIndex >= currentFrames.length ||
         currentFrames[event.frameIndex].path != sourcePath) {
       // The slot no longer holds the still the user transformed — it was
       // deleted, reordered or already repointed. Repointing it now would apply
-      // the crop to whatever moved in, so the write is abandoned instead.
+      // the crop to whatever moved in, so the write is abandoned instead. It
+      // never reached a clip, so nothing but this queue can reclaim it.
       Log.warning(
         '⚠️ Transformed still discarded: frame ${event.frameIndex} of '
         '${event.clipId} moved while the image was being written',
         name: 'ClipEditorBloc',
         category: LogCategory.video,
       );
+      _deferOrphanedPaths([path]);
       return;
     }
 
+    final supersededClip = currentClips[currentIndex];
     final updatedClip = StopMotionFrameOps.clipWithFrames(
-      currentClips[currentIndex],
+      supersededClip,
       StopMotionFrameOps.setFramePath(currentFrames, event.frameIndex, path),
     );
     final newClips = List<DivineVideoClip>.of(currentClips)
@@ -1649,6 +1716,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     // Writes the new clip list into editor history, so undo restores the still
     // that was there before — the same hook every other clip render uses.
     onFinalClipInvalidated.call();
+    // Queues the still this one replaced, unless a duplicate of it is still in
+    // the sequence. Deleting it now would break the undo the line above just
+    // wrote; the session reaps it once that history is gone.
+    _deferSupersededFiles(supersededClip);
   }
 
   Future<void> _onClipTransformRequested(
@@ -1684,6 +1755,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         renderId: renderId,
       );
 
+      // Leave-during-transform: the new documents-dir render exists even when
+      // this bloc was closed by screen dispose and can no longer emit.
+      if (isClosed) {
+        _deferOrphanedPaths([transformedVideo.file?.path]);
+        return;
+      }
+
       final currentClips = state.clips;
       final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
       if (currentIndex == -1) {
@@ -1692,6 +1770,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           name: 'ClipEditorBloc',
           category: LogCategory.video,
         );
+        // New render never swapped onto a clip — queue it the same way an
+        // abandoned stop-motion still is, so session end can reclaim it.
+        _deferOrphanedPaths([transformedVideo.file?.path]);
         emit(
           state.copyWith(
             isTransforming: false,
@@ -1730,7 +1811,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       );
 
       onFinalClipInvalidated.call();
-      _cleanupClearedChromaKeyFiles(currentClip);
+      // Queues the render this one supersedes — the clip's previous video, the
+      // reverse caches cleared above, the chroma-key files with them. The
+      // history entry written a line earlier still points at all of them, so
+      // the session deletes them at teardown rather than now.
+      _deferSupersededFiles(currentClip);
     } catch (e, stackTrace) {
       final error = switch (e) {
         StateError() ||

@@ -27,13 +27,12 @@ class StopMotionFrameTransformService {
   /// one file, so rewriting in place would silently transform every copy and
   /// make undo a no-op.
   ///
-  /// The superseded still is left on disk, and nothing reclaims it: undo can
-  /// still reach it for the rest of the session, and once the draft stops
-  /// referencing it no sweep enumerates it either — `FileCleanupService` only
-  /// sees paths handed to it explicitly, and `StorageManagementService` scans
-  /// for `.mp4` temp renders only. That is the same leak the clip transform
-  /// already has for its input file, so both are tracked together in #7077
-  /// rather than solved for one of them here.
+  /// The superseded still stays on disk for the rest of the session so undo
+  /// can reach it; `ClipEditorBloc` queues it with the editor session's
+  /// deferred cleanup, which reference-checks and deletes it at session end.
+  /// Nothing else would find it — `FileCleanupService` only sees paths handed
+  /// to it explicitly, and `StorageManagementService` scans the temp directory
+  /// for `.mp4` renders.
   ///
   /// Frames persist as a documents-relative basename (`StopMotionClipFrame`
   /// stores only the file name), so the documents directory is the only place
