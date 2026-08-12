@@ -407,6 +407,14 @@ class VideoEditorRenderService {
   })?
   renderVideoOverride;
 
+  /// Test-only override for the Crashlytics report a failed render files.
+  ///
+  /// When set, [_reportRenderFailure] delegates to this callback instead of
+  /// [CrashReportingService]. Reset to `null` in `tearDown`.
+  @visibleForTesting
+  static void Function(Object error, StackTrace stackTrace)?
+  crashReporterOverride;
+
   // ─────────────────────────────────────────────────────────────────────────
   // Public API
   // ─────────────────────────────────────────────────────────────────────────
@@ -513,6 +521,7 @@ class VideoEditorRenderService {
         usePersistentStorage: true,
         parameters: parameters,
         taskId: effectiveTaskId,
+        reportEveryFailure: true,
       );
 
       await progressTracker.markRenderComplete();
@@ -690,9 +699,12 @@ class VideoEditorRenderService {
   /// to render the full concatenation uncapped (e.g. when merging clips into an
   /// intermediate editor clip that the user can still trim).
   ///
-  /// Callers that need to know *why* a render produced nothing should use
-  /// [_renderVideoOrThrow] instead — this wrapper collapses every failure to
-  /// `null`.
+  /// Every failure — a cancellation included — collapses to `null` here, so
+  /// callers cannot tell them apart, and only a programming-invariant
+  /// violation (an `Error` subtype) is reported to Crashlytics. The
+  /// final-export path ([renderVideoToClip]) instead surfaces a
+  /// [VideoRenderFailedException] naming the reason, and reports every
+  /// failure.
   static Future<String?> renderVideo({
     required List<DivineVideoClip> clips,
     bool usePersistentStorage = false,
@@ -717,6 +729,10 @@ class VideoEditorRenderService {
 
   /// [renderVideo], but throws [VideoRenderFailedException] instead of
   /// returning null so the caller can report why the render produced nothing.
+  ///
+  /// [reportEveryFailure] widens Crashlytics reporting from `Error` subtypes to
+  /// every failure. Only the final export ([renderVideoToClip]) passes it —
+  /// see [_reportRenderFailure].
   static Future<String> _renderVideoOrThrow({
     required List<DivineVideoClip> clips,
     bool usePersistentStorage = false,
@@ -724,32 +740,34 @@ class VideoEditorRenderService {
     CompleteParameters? parameters,
     String? taskId,
     Duration? maxOutputDuration = VideoEditorConstants.maxDuration,
+    bool reportEveryFailure = false,
   }) async {
-    final override = renderVideoOverride;
-    if (override != null) {
-      final overridden = await override(
-        clips: clips,
-        usePersistentStorage: usePersistentStorage,
-        aspectRatio: aspectRatio,
-        parameters: parameters,
-        taskId: taskId,
-        maxOutputDuration: maxOutputDuration,
-      );
-      if (overridden == null) {
-        throw const VideoRenderFailedException(
-          VideoRenderFailureReason.nativeRender,
-        );
-      }
-      return overridden;
-    }
-
-    final cacheDir = await getTemporaryDirectory();
-    final outputDir = usePersistentStorage
-        ? await getApplicationDocumentsDirectory()
-        : cacheDir;
     var tempFilePaths = <String>[];
 
     try {
+      final override = renderVideoOverride;
+      if (override != null) {
+        final overridden = await override(
+          clips: clips,
+          usePersistentStorage: usePersistentStorage,
+          aspectRatio: aspectRatio,
+          parameters: parameters,
+          taskId: taskId,
+          maxOutputDuration: maxOutputDuration,
+        );
+        if (overridden == null) {
+          throw const VideoRenderFailedException(
+            VideoRenderFailureReason.nativeRender,
+          );
+        }
+        return overridden;
+      }
+
+      final cacheDir = await getTemporaryDirectory();
+      final outputDir = usePersistentStorage
+          ? await getApplicationDocumentsDirectory()
+          : cacheDir;
+
       Log.debug(
         '🎞️ Rendering ${clips.length} clip(s) to final video',
         name: _logName,
@@ -792,6 +810,10 @@ class VideoEditorRenderService {
       );
 
       return outputPath;
+    } on VideoRenderFailedException {
+      // Already classified (the test override's null return) — re-wrapping it
+      // below would report it a second time under the wrong cause.
+      rethrow;
     } on RenderCanceledException catch (e) {
       Log.info(
         '🚫 Video render cancelled by user',
@@ -806,20 +828,44 @@ class VideoEditorRenderService {
     } catch (e, stack) {
       Log.error('❌ Video render failed: $e', name: _logName, category: .video);
       unawaited(_cleanupTempFiles(tempFilePaths));
-      // Every failure is reported, not just `Error` subtypes: a failed export
-      // is a dead end for the user, and the native pipeline signals its
-      // failures as `PlatformException`, which is not an `Error`. Gating on
-      // `Error` left the entire population invisible in Crashlytics (#7125).
-      CrashReportingService.instance.recordError(
-        e,
-        stack,
-        reason: 'renderVideo failed',
-      );
+      _reportRenderFailure(e, stack, reportEveryFailure: reportEveryFailure);
       throw VideoRenderFailedException(
         VideoRenderFailureReason.nativeRender,
         cause: e,
       );
     }
+  }
+
+  /// Files a failed render to Crashlytics, unless the caller treats a failure
+  /// as recoverable.
+  ///
+  /// The final export reports everything, not just `Error` subtypes: it is a
+  /// dead end for the user, and the native pipeline signals its failures as
+  /// `PlatformException`, which is not an `Error` — gating on `Error` left the
+  /// entire population invisible in Crashlytics (#7125).
+  ///
+  /// Every other [renderVideo] caller stays on the `Error` gate. A transition
+  /// seam falls back to a hard cut and is never negative-cached, so
+  /// `_ensureSeamsRendered` re-attempts a failing boundary on each timeline
+  /// change — reporting each attempt would bury the export failures this is
+  /// meant to surface.
+  static void _reportRenderFailure(
+    Object error,
+    StackTrace stackTrace, {
+    required bool reportEveryFailure,
+  }) {
+    if (!reportEveryFailure && error is! Error) return;
+
+    final override = crashReporterOverride;
+    if (override != null) {
+      override(error, stackTrace);
+      return;
+    }
+    CrashReportingService.instance.recordError(
+      error,
+      stackTrace,
+      reason: 'renderVideo failed',
+    );
   }
 
   /// Limits a clip's duration to a specified length.
