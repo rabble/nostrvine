@@ -412,6 +412,24 @@ void main() {
       expect(tester.getRect(tile).width, closeTo(400, 0.5));
     });
 
+    testWidgets('reports a second pinch made before the owner caught up', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+
+      // Both pinches land inside one owner round trip: it persists before it
+      // emits, so the rebuild in between still carries the pre-pinch count.
+      await pinch(tester, from: 80, to: 120);
+      await pinch(tester, from: 120, to: 80);
+
+      // Deciding against the count last sent rather than the one the owner is
+      // still showing is what keeps the second pinch from reading as a no-op.
+      // Without it the owner is never told, and persists a step the user has
+      // already left.
+      expect(reported, equals([2, 3]));
+      expect(renderedColumns, equals(3));
+    });
+
     testWidgets('follows a column count changed from outside', (tester) async {
       await tester.pumpWidget(buildWidget());
 

@@ -154,6 +154,15 @@ class _PinchZoomGridState extends State<PinchZoomGrid>
   /// Column count the live grid is laid out with.
   late int _renderColumns = widget.columnCount;
 
+  /// Column count last handed to [PinchZoomGrid.onColumnCountChanged].
+  ///
+  /// The owner persists before it emits, so [PinchZoomGrid.columnCount] can
+  /// still be the pre-pinch count when the next pinch ends. Deciding whether
+  /// a pinch is worth reporting against that would drop the second of two
+  /// pinches inside one round trip, leaving the owner — and what it persists
+  /// — on a step the user has already left.
+  late int _lastReportedColumns = widget.columnCount;
+
   /// Fractional column count when the current pinch started.
   double _gestureStartColumns = 0;
 
@@ -204,6 +213,7 @@ class _PinchZoomGridState extends State<PinchZoomGrid>
     if (widget.columnCount == _renderColumns || _isGestureActive) return;
     _disposeFrozenLayout();
     _renderColumns = widget.columnCount;
+    _lastReportedColumns = widget.columnCount;
     _columns.value = widget.columnCount.toDouble();
   }
 
@@ -267,8 +277,10 @@ class _PinchZoomGridState extends State<PinchZoomGrid>
     // release can arrive twice.
     if (_settleController.isAnimating && _settleTarget == target) return;
     _settleTarget = target;
-    if (target != widget.columnCount.toDouble()) {
-      widget.onColumnCountChanged(target.toInt());
+    final columns = target.toInt();
+    if (columns != _lastReportedColumns) {
+      _lastReportedColumns = columns;
+      widget.onColumnCountChanged(columns);
     }
     if ((_columns.value - target).abs() < _epsilon) {
       _setColumns(target);
