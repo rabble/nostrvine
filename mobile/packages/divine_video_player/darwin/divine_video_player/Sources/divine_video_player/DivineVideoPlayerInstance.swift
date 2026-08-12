@@ -231,19 +231,26 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
         armSetClipsTimeout()
 
-        // Build the composition asynchronously.
+        // Build the player item asynchronously.
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                let (composition, videoComposition, offsets, durations, audioMix) = try await self.buildComposition(
-                    from: clipsRaw)
+                let playerItem: AVPlayerItem
+                let offsets: [Double]
+                let durations: [Double]
+                if let hlsClip = Self.soleHlsClip(in: clipsRaw) {
+                    (playerItem, offsets, durations) =
+                        try await self.makeHlsPlayerItem(from: hlsClip)
+                } else {
+                    (playerItem, offsets, durations) =
+                        try await self.makeCompositionPlayerItem(from: clipsRaw)
+                }
                 self.clipOffsets = offsets
                 self.clipDurations = durations
                 self.clipCount = offsets.count
                 self.totalDuration = offsets.last.map { $0 + (durations.last ?? 0) } ?? 0
                 self.firstFrameRendered = false
 
-                let playerItem = AVPlayerItem(asset: composition)
                 // Prevent pitch distortion when clips play at a speed other
                 // than 1×. .timeDomain preserves pitch across the editor's
                 // 0.25×–3× range at a fraction of .spectral's (phase vocoder)
@@ -251,23 +258,6 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 // cycles from video decode/render on weaker devices, showing up
                 // as dropped or stuttering frames during sped-up preview.
                 playerItem.audioTimePitchAlgorithm = .timeDomain
-                // Validate BEFORE assigning. -[AVPlayerItem setVideoComposition:]
-                // throws an Objective-C NSInvalidArgumentException on an invalid
-                // composition (zero render size or zero/invalid frame duration).
-                // That exception is not a Swift Error, so the enclosing do/catch
-                // can't catch it and the process aborts (SIGABRT). Rejecting the
-                // bad values here surfaces the failure as a FlutterError instead.
-                guard (videoComposition?.renderSize ?? composition.naturalSize).isPositive else {
-                    throw CompositionError.invalidRenderSize
-                }
-                if let videoComposition {
-                    let frameDuration = videoComposition.frameDuration
-                    guard frameDuration.isNumeric, frameDuration.seconds > 0 else {
-                        throw CompositionError.invalidFrameDuration
-                    }
-                    playerItem.videoComposition = videoComposition
-                }
-                if let audioMix { playerItem.audioMix = audioMix }
                 self.templateItem = playerItem
 
                 let requestedStartPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value
@@ -352,6 +342,109 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 )
             }
         }
+    }
+
+    /// The single clip of [clipsRaw] when it is an HLS source the direct-item
+    /// path can represent exactly, otherwise nil.
+    ///
+    /// An HLS `AVURLAsset` exposes **no** tracks — `loadTracks` returns an
+    /// empty array — so a composition built from one always ends in
+    /// [CompositionError.noPlayableVideoTracks] and can never play. Such
+    /// clips take the direct-item path in [makeHlsPlayerItem] instead.
+    ///
+    /// The diversion is deliberately narrow. A composition can start a clip
+    /// part-way in and rescale it; an `AVPlayerItem` carries the whole asset
+    /// from zero, so a non-zero `startMs` or an off-speed clip has no exact
+    /// representation here and would report a timeline that does not match
+    /// what plays. Those keep failing on the composition path exactly as they
+    /// do today rather than playing something subtly wrong. Multi-clip
+    /// timelines likewise still need a composition to stitch — the editor's
+    /// multi-clip sources are local files, never HLS.
+    private static func soleHlsClip(
+        in clipsRaw: [[String: Any]]
+    ) -> [String: Any]? {
+        guard clipsRaw.count == 1, let clip = clipsRaw.first,
+            let uri = clip["uri"] as? String,
+            URL(string: uri)?.pathExtension.lowercased() == "m3u8",
+            (clip["startMs"] as? NSNumber)?.int64Value ?? 0 == 0,
+            (clip["playbackSpeed"] as? NSNumber)?.doubleValue ?? 1.0 == 1.0
+        else { return nil }
+        return clip
+    }
+
+    /// Builds a player item straight from an HLS asset, bypassing the
+    /// composition.
+    ///
+    /// Trimming is applied with `forwardPlaybackEndTime` rather than a
+    /// composition time range. Orientation needs no video composition because
+    /// HLS renditions are already upright, and per-clip volume needs no audio
+    /// mix because there is exactly one clip — `volume` covers it. The cost is
+    /// that the audio-mix edge de-click fades do not apply, so an HLS loop
+    /// seam can click; HLS is only ever reached as a last-resort fallback
+    /// source, which does not justify rebuilding those ramps here.
+    private func makeHlsPlayerItem(
+        from clipMap: [String: Any]
+    ) async throws -> (AVPlayerItem, [Double], [Double]) {
+        guard let uri = clipMap["uri"] as? String, let url = URL(string: uri) else {
+            throw CompositionError.noPlayableVideoTracks
+        }
+        let httpHeaders = clipMap["httpHeaders"] as? [String: String]
+        let assetOptions: [String: Any]? = httpHeaders.map {
+            [Self.avURLAssetHTTPHeaderFieldsKey: $0]
+        }
+        let asset = AVURLAsset(url: url, options: assetOptions)
+        let assetDuration = try await asset.load(.duration)
+
+        // soleHlsClip guarantees startMs == 0, so the item's timeline is
+        // [0, endTime] and the reported duration is endTime itself.
+        var endTime = assetDuration
+        if let endMs = clipMap["endMs"] as? NSNumber {
+            // Clamp to the asset the same way the composition path does: the
+            // feed caps every clip at maxFeedPlaybackDuration without knowing
+            // the source length up front.
+            let requestedEnd = CMTime(value: endMs.int64Value, timescale: 1000)
+            endTime =
+                (assetDuration.isNumeric && CMTimeCompare(requestedEnd, assetDuration) > 0)
+                ? assetDuration
+                : requestedEnd
+        }
+        guard endTime.isNumeric, endTime.seconds > 0 else {
+            throw CompositionError.noPlayableVideoTracks
+        }
+
+        let playerItem = AVPlayerItem(asset: asset)
+        if CMTimeCompare(endTime, assetDuration) < 0 {
+            playerItem.forwardPlaybackEndTime = endTime
+        }
+        return (playerItem, [0], [endTime.seconds])
+    }
+
+    /// Builds a player item backed by an AVMutableComposition of every clip.
+    private func makeCompositionPlayerItem(
+        from clipsRaw: [[String: Any]]
+    ) async throws -> (AVPlayerItem, [Double], [Double]) {
+        let (composition, videoComposition, offsets, durations, audioMix) =
+            try await buildComposition(from: clipsRaw)
+
+        let playerItem = AVPlayerItem(asset: composition)
+        // Validate BEFORE assigning. -[AVPlayerItem setVideoComposition:]
+        // throws an Objective-C NSInvalidArgumentException on an invalid
+        // composition (zero render size or zero/invalid frame duration).
+        // That exception is not a Swift Error, so the enclosing do/catch
+        // can't catch it and the process aborts (SIGABRT). Rejecting the
+        // bad values here surfaces the failure as a FlutterError instead.
+        guard (videoComposition?.renderSize ?? composition.naturalSize).isPositive else {
+            throw CompositionError.invalidRenderSize
+        }
+        if let videoComposition {
+            let frameDuration = videoComposition.frameDuration
+            guard frameDuration.isNumeric, frameDuration.seconds > 0 else {
+                throw CompositionError.invalidFrameDuration
+            }
+            playerItem.videoComposition = videoComposition
+        }
+        if let audioMix { playerItem.audioMix = audioMix }
+        return (playerItem, offsets, durations)
     }
 
     /// Builds an AVMutableComposition that stitches all clips into a
