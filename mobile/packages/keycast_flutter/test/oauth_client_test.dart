@@ -1229,6 +1229,11 @@ void main() {
         expect(result.errorCode, ResendVerificationError.unavailable);
       });
 
+      // Status, both body keys and the message string are copied verbatim from
+      // keycast `headless_resend_pin`, the `expires_at <= Utc::now()` branch in
+      // `api/src/api/http/headless.rs`. That route answers an expired
+      // registration with 200 and `success: false`, not with the 410 the
+      // `/api/auth/*` routes use for their unrelated RegistrationExpired.
       test('reports an expired registration response as expired', () async {
         final mockClient = MockClient((request) async {
           return http.Response(
@@ -1249,6 +1254,24 @@ void main() {
           'This registration has expired. Please sign up again.',
         );
         expect(result.errorCode, ResendVerificationError.expired);
+      });
+
+      test('reports an unrecognised success:false body as declined', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'success': false,
+              'message': 'Please try again later.',
+            }),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.success, isFalse);
+        expect(result.errorCode, ResendVerificationError.declined);
       });
 
       test('reports a 4xx other than 404 as declined', () async {

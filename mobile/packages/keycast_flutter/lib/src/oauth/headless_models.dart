@@ -308,6 +308,25 @@ class ResendVerificationResult {
   factory ResendVerificationResult.failure(ResendVerificationError errorCode) =>
       ResendVerificationResult(success: false, errorCode: errorCode);
 
+  /// Classifies a 2xx body that reports `success: false`.
+  ///
+  /// An expired pending registration is the one such body keycast sends with a
+  /// distinct meaning, and it arrives as **HTTP 200** with
+  /// `{"success": false, "message": "This registration has expired. Please
+  /// sign up again."}` — see `headless_resend_pin`, the `expires_at <=
+  /// Utc::now()` branch in keycast `api/src/api/http/headless.rs`. The uniform
+  /// anti-enumeration response on that route is `success: true`, so any other
+  /// `success: false` is a genuine decline.
+  ///
+  /// Do not confuse this with the 410 `AuthError::RegistrationExpired` on the
+  /// `/api/auth/*` users-table routes (which means an async password hash died)
+  /// or with verify-pin's 410 `pin_expired`. Neither is reachable from
+  /// `/api/headless/resend-pin`.
+  ///
+  /// Matching on prose is the weak point: if keycast rewords that sentence this
+  /// silently degrades to [ResendVerificationError.declined], which costs the
+  /// user the "start again" guidance but leaves resend retryable. Swap to a
+  /// stable error code here the moment the route grows one.
   static ResendVerificationError _errorCodeFromMessage(String? message) {
     final normalized = message?.toLowerCase() ?? '';
     if (normalized.contains('registration') &&
