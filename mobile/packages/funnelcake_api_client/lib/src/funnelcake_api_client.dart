@@ -718,6 +718,120 @@ class FunnelcakeApiClient {
     }
   }
 
+  /// Fetches the currently renderable featured hashtag tabs.
+  ///
+  /// The response never carries the configured hashtag — each tab exposes
+  /// only an opaque [FeaturedTabConfig.id] used for fetching and analytics.
+  /// The server normally returns only enabled, in-window tabs that have
+  /// content, but callers must still apply their own eligibility checks.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<FeaturedTabsResponse> getFeaturedTabs() async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final uri = Uri.parse('$_baseUrl/api/featured-tabs');
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is! Map<String, dynamic>) {
+          throw const FunnelcakeException(
+            'Unexpected featured tabs response shape',
+          );
+        }
+        return FeaturedTabsResponse.fromJson(decoded);
+      }
+
+      throw FunnelcakeApiException(
+        message: 'Failed to fetch featured tabs',
+        statusCode: response.statusCode,
+        url: uri.toString(),
+      );
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch featured tabs: $e');
+    }
+  }
+
+  /// Fetches one page of videos for the featured tab identified by [id].
+  ///
+  /// Results arrive curated-first then approved newest-first; the returned
+  /// order is authoritative and callers must not re-sort or re-filter it.
+  /// A well-formed id for a retired or out-of-window tab returns an empty
+  /// page rather than a 404.
+  ///
+  /// [limit] is clamped by the server to 1-100 and defaults to 25.
+  /// [cursor] is the opaque cursor from a previous page.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<FeaturedTabVideosResponse> getFeaturedTabVideos({
+    required String id,
+    int limit = 25,
+    String? cursor,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = _videoQueryParameters({'limit': limit.toString()});
+    if (cursor != null && cursor.isNotEmpty) {
+      queryParams['cursor'] = cursor;
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/featured-tabs/${Uri.encodeComponent(id)}/videos',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final (:items, :hasMore, :nextCursor) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
+
+        final videos = items
+            .whereType<Map<String, dynamic>>()
+            .map(VideoStats.fromJson)
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+
+        return FeaturedTabVideosResponse(
+          videos: videos,
+          nextCursor: nextCursor,
+          hasMore: hasMore,
+        );
+      }
+
+      throw FunnelcakeApiException(
+        message: 'Failed to fetch featured tab videos',
+        statusCode: response.statusCode,
+        url: uri.toString(),
+      );
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch featured tab videos: $e');
+    }
+  }
+
   /// Fetches the top videos for a given leaderboard time window.
   ///
   /// Backed by funnelcake's `/api/leaderboard/videos?period=…` endpoint

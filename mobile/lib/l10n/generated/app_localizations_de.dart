@@ -1207,6 +1207,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Integrierte Apps';
 
   @override
+  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+
+  @override
+  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+
+  @override
+  String get featuredTabRetry => 'Try again';
+
+  @override
   String get exploreNoVideosAvailable => 'Keine Videos verfügbar';
 
   @override

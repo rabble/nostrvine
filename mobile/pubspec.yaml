@@ -286,6 +286,9 @@ dependencies:
   # Divine UI - Shared UI components
   divine_ui:
 
+  # Funnelcake REST API client
+  funnelcake_api_client:
+
   # Localization
   flutter_localizations:
     sdk: flutter

@@ -1199,6 +1199,15 @@ class AppLocalizationsMs extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Apl Bersepadu';
 
   @override
+  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+
+  @override
+  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+
+  @override
+  String get featuredTabRetry => 'Try again';
+
+  @override
   String get exploreNoVideosAvailable => 'Tiada video tersedia';
 
   @override

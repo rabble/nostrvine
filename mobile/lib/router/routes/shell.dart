@@ -93,10 +93,12 @@ List<RouteBase> shellRoutes() {
             GoRoute(
               path: ExploreScreen.pathTabSubpath,
               pageBuilder: (_, st) {
-                final tabName = ExploreScreen.tabNameFromPathParameter(
-                  st.pathParameters['name'],
+                final slug = st.pathParameters['name'];
+                final tabName = ExploreScreen.tabNameFromPathParameter(slug);
+                return _branchPage(
+                  st,
+                  ExploreScreen(initialTabName: tabName, initialTabSlug: slug),
                 );
-                return _branchPage(st, ExploreScreen(initialTabName: tabName));
               },
             ),
             GoRoute(

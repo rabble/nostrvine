@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:db_client/db_client.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 
 /// Backoff configuration for [ViewEventRetryService].

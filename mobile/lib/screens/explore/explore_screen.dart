@@ -5,13 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
+import 'package:openvine/blocs/featured_tabs/featured_tabs_cubit.dart';
+import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/screens/explore/explore_view.dart';
 
 /// Explore screen: a thin tabs Page over [ExploreTabsCubit] + [ExploreView].
 class ExploreScreen extends ConsumerWidget {
   /// Creates the explore screen, optionally selecting [initialTabName].
-  const ExploreScreen({super.key, this.initialTabName});
+  const ExploreScreen({super.key, this.initialTabName, this.initialTabSlug});
 
   static const _routeTabNames = <String>{
     exploreClassicsTabName,
@@ -65,14 +67,42 @@ class ExploreScreen extends ConsumerWidget {
   /// Optional tab name to select on first build.
   final String? initialTabName;
 
+  /// Raw URL slug, kept so a server-configured featured slug can still be
+  /// resolved once its configuration arrives.
+  ///
+  /// [tabNameFromPathParameter] only knows the tab names compiled into the
+  /// app, so a featured slug resolves to `null` there by design.
+  final String? initialTabSlug;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocProvider(
-      // topHashtagsServiceProvider is a stable keepAlive Provider that is never
-      // invalidated, so ref.read is safe here (see state_management.md §1).
-      create: (_) =>
-          ExploreTabsCubit(topHashtags: ref.read(topHashtagsServiceProvider)),
-      child: ExploreView(initialTabName: initialTabName),
+    final featuredTabsRepository = ref.watch(featuredTabsRepositoryProvider);
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          // topHashtagsServiceProvider is a stable keepAlive Provider that is
+          // never invalidated, so ref.read is safe here (state_management.md
+          // §1).
+          create: (_) => ExploreTabsCubit(
+            topHashtags: ref.read(topHashtagsServiceProvider),
+          ),
+        ),
+        BlocProvider(
+          // Keyed on the repository so an environment or relay swap rebuilds
+          // the cubit against the new host instead of polling a stale one.
+          // The shell keeps Explore mounted after the first visit; continuing
+          // at the clamped cadence lets backend kill switches land off-tab.
+          key: ValueKey(featuredTabsRepository),
+          create: (_) => FeaturedTabsCubit(
+            repository: featuredTabsRepository,
+            viewerIsMinor: () => ref.read(featuredTabViewerIsMinorProvider),
+          )..refresh(),
+        ),
+      ],
+      child: ExploreView(
+        initialTabName: initialTabName,
+        initialTabSlug: initialTabSlug,
+      ),
     );
   }
 }
