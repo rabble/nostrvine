@@ -570,6 +570,49 @@ void main() {
         ).called(1);
       });
 
+      testWidgets('the grid still pinches after a filter switch', (
+        tester,
+      ) async {
+        // The switch remounts the grid, so the zoom has to come back with it
+        // rather than being left behind with the filter it was set up under.
+        final category = ClipCategory(
+          id: 'cat1',
+          name: 'Trips',
+          createdAt: DateTime(2026),
+        );
+        final allState = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, clip2],
+          sortedClips: [clip1, clip2],
+          categories: [category],
+        );
+        whenListen(
+          mockBloc,
+          Stream.value(
+            allState.copyWith(filter: const ClipLibraryCategoryFilter('cat1')),
+          ),
+          initialState: allState,
+        );
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final centre = tester.getCenter(find.byType(ClipsTab));
+        final first = await tester.startGesture(centre - const Offset(80, 0));
+        final second = await tester.startGesture(centre + const Offset(80, 0));
+        await tester.pump();
+        await first.moveTo(centre - const Offset(120, 0));
+        await second.moveTo(centre + const Offset(120, 0));
+        await tester.pump();
+        await first.up();
+        await second.up();
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(const ClipsLibraryGridColumnsChanged(2)),
+        ).called(1);
+      });
+
       testWidgets(
         'long-press → trash closes preview and soft-deletes the clip',
         (tester) async {
