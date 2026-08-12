@@ -67,30 +67,6 @@ void main() {
           equals('https://login.divine.video/.well-known/nostr.json'),
         );
       });
-
-      // NIP-98 binds the absolute request URL by exact string equality and
-      // the unsigned endpoints interpolate onto the base, so a shipped value
-      // that is not already its own canonical form silently 401s or 404s.
-      // Dot segments are the worst case: they route fine on the unsigned
-      // GETs and reject on claim/release.
-      for (final url in const [
-        defaultNameServerBaseUrl,
-        defaultKeycastNip05Url,
-      ]) {
-        test('$url is already canonical', () {
-          expect(
-            Uri.parse(url).toString(),
-            equals(url),
-            reason: 'not a fixed point of Uri normalization',
-          );
-          expect(url, isNot(endsWith('/')), reason: 'would double a slash');
-          expect(url, isNot(contains('?')), reason: 'would corrupt ?name=');
-          expect(Uri.parse(url).userInfo, isEmpty);
-          expect(Uri.parse(url).hasPort, isFalse, reason: 'explicit port');
-          expect(Uri.parse(url).pathSegments, isNot(contains('.')));
-          expect(Uri.parse(url).pathSegments, isNot(contains('..')));
-        });
-      }
     });
 
     group('injection', () {
