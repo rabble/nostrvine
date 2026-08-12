@@ -905,6 +905,7 @@ void main() {
           content: captureAny(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).captured;
 

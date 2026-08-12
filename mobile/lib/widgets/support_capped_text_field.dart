@@ -117,9 +117,7 @@ class _SupportCappedTextFieldState extends State<SupportCappedTextField> {
           // was dropped, and green reads as success.
           Text(
             context.l10n.supportFieldLimitReached,
-            style: VineTheme.labelSmallFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
           ),
       ],
     );

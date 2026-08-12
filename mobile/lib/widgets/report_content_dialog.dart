@@ -5,8 +5,8 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/report/report_submission_cubit.dart';
@@ -752,9 +752,7 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           focusNode: widget.focusNode,
           enableInteractiveSelection: true,
           onChanged: _onChanged,
-          style: VineTheme.bodyLargeFont(
-            color: context.vineColors.primaryText,
-          ),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           minLines: 3,
           maxLines: 5,
           inputFormatters: [
@@ -771,9 +769,7 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
         if (_truncated)
           Text(
             context.l10n.supportFieldLimitReached,
-            style: VineTheme.labelSmallFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
           ),
       ],
     );
