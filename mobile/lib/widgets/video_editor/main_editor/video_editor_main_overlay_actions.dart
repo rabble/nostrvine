@@ -1,6 +1,8 @@
 // ABOUTME: Top overlay actions for the video editor with close and done buttons.
 // ABOUTME: Hides when the music sub-editor is open.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -191,10 +193,19 @@ class _TopActions extends ConsumerWidget {
     if (draftSaved) {
       // The draft now owns the session, so end it here like the discard path
       // does — otherwise its clips stay selected behind the editor and the
-      // next camera open inherits them, aspect ratio included. The saved
-      // draft references the same files, so only the redundant autosave copy
-      // is reaped.
-      ref.read(videoPublishProvider.notifier).clearAll();
+      // next camera open inherits them, aspect ratio included.
+      //
+      // `keepAutosavedDraft` because `saveAsDraft` already awaited
+      // `removeAutosavedDraft()`: there is nothing left to reap, and re-issuing
+      // that delete unawaited is the hazard its own doc warns about — it
+      // targets the fixed autosave id, so landing late would wipe the recovery
+      // point of whatever session is active by then (adding a clip back on the
+      // recorder writes one).
+      unawaited(
+        ref
+            .read(videoPublishProvider.notifier)
+            .clearAll(keepAutosavedDraft: true),
+      );
       // Success: close prompt + close editor.
       context.pop();
       context.pop();

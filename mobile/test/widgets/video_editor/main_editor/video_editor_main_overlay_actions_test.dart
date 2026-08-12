@@ -63,6 +63,7 @@ class _FakeVideoEditorNotifier extends VideoEditorNotifier {
 
 class _FakeVideoPublishNotifier extends VideoPublishNotifier {
   int clearAllCalls = 0;
+  final keepAutosavedDraftValues = <bool>[];
 
   @override
   VideoPublishProviderState build() => const VideoPublishProviderState();
@@ -70,6 +71,7 @@ class _FakeVideoPublishNotifier extends VideoPublishNotifier {
   @override
   Future<void> clearAll({bool keepAutosavedDraft = false}) async {
     clearAllCalls++;
+    keepAutosavedDraftValues.add(keepAutosavedDraft);
   }
 }
 
@@ -320,6 +322,10 @@ void main() {
           // The draft owns the session now; leaving it selected would carry
           // its clips — and their aspect ratio — into the next camera open.
           expect(fakeVideoPublishNotifier.clearAllCalls, equals(1));
+          // `saveAsDraft` already awaited the autosave delete, so this clear
+          // must not re-issue it: a late fixed-id delete would wipe whatever
+          // session is active by the time it lands.
+          expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, [isTrue]);
         },
       );
 
