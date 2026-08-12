@@ -929,7 +929,7 @@
     "authInviteErrorTemporary": "Hindi namin ma-confirm ang iyong invite ngayon. Bumalik sa iyong invite code at subukang ulit, o makipag-ugnayan sa support.",
     "authInviteErrorUnknown": "Hindi namin na-activate ang iyong invite. Bumalik sa iyong invite code, sumali sa waitlist, o makipag-ugnayan sa support.",
     "shareSheetSave": "I-save",
-    "shareSheetSaved": "Naka-save",
+    "shareSheetRemoveFromSaved": "Alisin sa naka-save",
     "shareSheetSaveToGallery": "I-save sa Gallery",
     "shareSheetSaveWithWatermark": "I-save na may Watermark",
     "shareSheetSaveVideo": "I-save ang Video",

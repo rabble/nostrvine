@@ -3421,7 +3421,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareSheetSave => 'አስቀምጥ';
 
   @override
-  String get shareSheetSaved => 'ተቀምጧል';
+  String get shareSheetRemoveFromSaved => 'ከዕልባቶች አስወግድ';
 
   @override
   String get shareSheetSaveToGallery => 'ወደ ማዕከለ-ስዕላት አስቀምጥ';

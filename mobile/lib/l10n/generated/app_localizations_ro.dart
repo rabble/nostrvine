@@ -3586,7 +3586,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareSheetSave => 'Salvează';
 
   @override
-  String get shareSheetSaved => 'Salvat';
+  String get shareSheetRemoveFromSaved => 'Elimină din salvate';
 
   @override
   String get shareSheetSaveToGallery => 'Salvează în galerie';

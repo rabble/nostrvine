@@ -3570,7 +3570,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareSheetSave => 'Zapisz';
 
   @override
-  String get shareSheetSaved => 'Zapisano';
+  String get shareSheetRemoveFromSaved => 'Usuń z zapisanych';
 
   @override
   String get shareSheetSaveToGallery => 'Zapisz w galerii';

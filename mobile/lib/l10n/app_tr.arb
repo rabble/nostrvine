@@ -1390,7 +1390,7 @@
     "authInviteErrorTemporary": "Davetini şu anda doğrulayamadık. Davet koduna geri dönüp tekrar dene veya destekle iletişime geç.",
     "authInviteErrorUnknown": "Davetini etkinleştiremedik. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.",
     "shareSheetSave": "Kaydet",
-    "shareSheetSaved": "Kaydedildi",
+    "shareSheetRemoveFromSaved": "Kaydı kaldır",
     "shareSheetSaveToGallery": "Galeriye Kaydet",
     "shareSheetSaveWithWatermark": "Filigranlı Kaydet",
     "shareSheetSaveVideo": "Videoyu Kaydet",

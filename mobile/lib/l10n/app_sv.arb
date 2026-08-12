@@ -1393,7 +1393,7 @@
     "authInviteErrorTemporary": "Vi kunde inte bekräfta din inbjudan just nu. Gå tillbaka till din inbjudningskod och försök igen, eller kontakta supporten.",
     "authInviteErrorUnknown": "Vi kunde inte aktivera din inbjudan. Gå tillbaka till din inbjudningskod, gå med i väntelistan eller kontakta supporten.",
     "shareSheetSave": "Spara",
-    "shareSheetSaved": "Sparad",
+    "shareSheetRemoveFromSaved": "Ta bort från sparade",
     "shareSheetSaveToGallery": "Spara i galleriet",
     "shareSheetSaveWithWatermark": "Spara med vattenmärke",
     "shareSheetSaveVideo": "Spara video",

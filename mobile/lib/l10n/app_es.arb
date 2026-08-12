@@ -1397,7 +1397,7 @@
     "authInviteErrorTemporary": "No pudimos confirmar tu invitación ahora. Volvé a tu código y probá de nuevo, o contactá a soporte.",
     "authInviteErrorUnknown": "No pudimos activar tu invitación. Volvé a tu código, unite a la lista de espera o contactá a soporte.",
     "shareSheetSave": "Guardar",
-    "shareSheetSaved": "Guardado",
+    "shareSheetRemoveFromSaved": "Quitar de guardados",
     "shareSheetSaveToGallery": "Guardar en la galería",
     "shareSheetSaveWithWatermark": "Guardar con marca de agua",
     "shareSheetSaveVideo": "Guardar video",

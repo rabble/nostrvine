@@ -291,7 +291,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   }
 
   // --------------------------------------------------------------------------
-  // Bookmark status (labels the Save affordance before it is tapped)
+  // Bookmark status (picks the save/remove row before it is tapped)
   // --------------------------------------------------------------------------
 
   /// Resolves [ShareSheetState.bookmarkStatus] from a relay-reconciled read.

@@ -1894,7 +1894,7 @@
   "authInviteErrorTemporary": "ہم فی الحال آپ کی دعوت کی تصدیق نہیں کر سکے۔ اپنے دعوتی کوڈ پر واپس جا کر دوبارہ کوشش کریں، یا سپورٹ سے رابطہ کریں۔",
   "authInviteErrorUnknown": "ہم آپ کی دعوت فعال نہیں کر سکے۔ اپنے دعوتی کوڈ پر واپس جائیں، ویٹ لسٹ میں شامل ہوں، یا سپورٹ سے رابطہ کریں۔",
   "shareSheetSave": "محفوظ کریں",
-  "shareSheetSaved": "محفوظ",
+  "shareSheetRemoveFromSaved": "محفوظات سے ہٹائیں",
   "shareSheetSaveToGallery": "گیلری میں محفوظ کریں",
   "shareSheetSaveWithWatermark": "واٹر مارک کے ساتھ محفوظ کریں",
   "shareSheetSaveVideo": "ویڈیو محفوظ کریں",

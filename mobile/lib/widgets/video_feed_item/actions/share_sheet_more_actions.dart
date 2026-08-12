@@ -78,11 +78,10 @@ class _MoreActionsSection extends ConsumerWidget {
       _ActionData(
         icon: DivineIconName.bookmarkSimple,
         label: isSaved
-            ? context.l10n.shareSheetSaved
+            ? context.l10n.shareSheetRemoveFromSaved
             : context.l10n.shareSheetSave,
         onTap: onSave,
         isPending: isSavePending,
-        isActive: isSaved,
       ),
       if (onSaveOriginal != null)
         _ActionData(
@@ -170,7 +169,6 @@ class _MoreActionsSection extends ConsumerWidget {
                   label: action.label,
                   onTap: action.onTap,
                   isPending: action.isPending,
-                  isActive: action.isActive,
                 );
               },
             ),
@@ -187,7 +185,6 @@ class _ActionData {
     required this.label,
     required this.onTap,
     this.isPending = false,
-    this.isActive = false,
   });
 
   final DivineIconName icon;
@@ -197,10 +194,6 @@ class _ActionData {
   /// Whether the action is mid-flight, so the circle shows a spinner and stops
   /// responding to taps.
   final bool isPending;
-
-  /// Renders the circle as an on-state. Used by Save to show the video is
-  /// already bookmarked, so the tap reads as a removal rather than an add.
-  final bool isActive;
 }
 
 class _ActionCircle extends StatelessWidget {
@@ -209,31 +202,20 @@ class _ActionCircle extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isPending = false,
-    this.isActive = false,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
   final bool isPending;
-  final bool isActive;
 
   static const double _circleSize = 48;
   static const double _iconSize = 22;
 
   @override
   Widget build(BuildContext context) {
-    // Every action already tints vineGreen, so an on-state cannot be another
-    // green tint. Inverting the fill — solid green with a surface-coloured
-    // glyph — is the same colour-swap idiom LikeActionButton uses, and needs
-    // no filled bookmark asset (none exists; bookmark_plus and bookmark_simple
-    // are byte-identical outlines).
-    final bgColor = isActive
-        ? VineTheme.vineGreen
-        : VineTheme.vineGreen.withValues(alpha: 0.15);
-    final iconColor = isActive
-        ? context.vineColors.surface
-        : VineTheme.vineGreen;
+    final bgColor = VineTheme.vineGreen.withValues(alpha: 0.15);
+    const iconColor = VineTheme.vineGreen;
 
     return Semantics(
       button: true,

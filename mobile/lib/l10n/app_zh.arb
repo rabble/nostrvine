@@ -1894,7 +1894,7 @@
   "authInviteErrorTemporary": "暂时无法确认你的邀请。返回你的邀请码页面重试，或联系客服。",
   "authInviteErrorUnknown": "无法激活你的邀请。返回你的邀请码页面、加入等候名单，或联系客服。",
   "shareSheetSave": "保存",
-  "shareSheetSaved": "已保存",
+  "shareSheetRemoveFromSaved": "移除收藏",
   "shareSheetSaveToGallery": "保存到相册",
   "shareSheetSaveWithWatermark": "保存（带水印）",
   "shareSheetSaveVideo": "保存视频",

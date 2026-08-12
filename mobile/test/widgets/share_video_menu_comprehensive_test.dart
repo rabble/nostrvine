@@ -204,7 +204,8 @@ void main() {
     });
 
     testWidgets(
-      'More actions row shows Saved once the reconciled read finds the video',
+      'More actions row offers Remove from saved once the reconciled read '
+      'finds the video',
       (tester) async {
         when(
           () => mockBookmarkService.syncGlobalBookmarks(),
@@ -218,7 +219,7 @@ void main() {
         await tester.tap(find.byType(ShareActionButton));
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.shareSheetSaved), findsOneWidget);
+        expect(find.text(l10n.shareSheetRemoveFromSaved), findsOneWidget);
         expect(find.text(l10n.shareSheetSave), findsNothing);
       },
     );
@@ -242,7 +243,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.shareSheetSave), findsOneWidget);
-        expect(find.text(l10n.shareSheetSaved), findsNothing);
+        expect(find.text(l10n.shareSheetRemoveFromSaved), findsNothing);
       },
     );
 

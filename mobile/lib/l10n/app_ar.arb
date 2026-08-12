@@ -1383,7 +1383,7 @@
     "authInviteErrorTemporary": "لم نتمكّن من تأكيد دعوتك الآن. عد إلى رمز دعوتك وحاول مرّة أخرى، أو تواصل مع الدعم.",
     "authInviteErrorUnknown": "لم نتمكّن من تفعيل دعوتك. عد إلى رمز دعوتك، انضم لقائمة الانتظار، أو تواصل مع الدعم.",
     "shareSheetSave": "حفظ",
-    "shareSheetSaved": "محفوظ",
+    "shareSheetRemoveFromSaved": "إزالة المحفوظ",
     "shareSheetSaveToGallery": "حفظ في المعرض",
     "shareSheetSaveWithWatermark": "حفظ مع العلامة المائية",
     "shareSheetSaveVideo": "حفظ الفيديو",

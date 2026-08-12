@@ -1393,7 +1393,7 @@
     "authInviteErrorTemporary": "On n'a pas pu confirmer ton invitation pour l'instant. Retourne à ton code d'invitation et réessaie, ou contacte le support.",
     "authInviteErrorUnknown": "On n'a pas pu activer ton invitation. Retourne à ton code d'invitation, rejoins la liste d'attente, ou contacte le support.",
     "shareSheetSave": "Enregistrer",
-    "shareSheetSaved": "Enregistré",
+    "shareSheetRemoveFromSaved": "Retirer des favoris",
     "shareSheetSaveToGallery": "Enregistrer dans la galerie",
     "shareSheetSaveWithWatermark": "Enregistrer avec filigrane",
     "shareSheetSaveVideo": "Enregistrer la vidéo",

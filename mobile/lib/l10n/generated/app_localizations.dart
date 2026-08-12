@@ -6062,11 +6062,11 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get shareSheetSave;
 
-  /// Share-sheet action label shown when the video is already in the user's global bookmarks; tapping it removes the bookmark.
+  /// Share-sheet action label shown in place of "Save" once a relay-reconciled read confirms the video is already in the user's global bookmarks. It names the direction of the tap, which removes the bookmark.
   ///
   /// In en, this message translates to:
-  /// **'Saved'**
-  String get shareSheetSaved;
+  /// **'Remove from saved'**
+  String get shareSheetRemoveFromSaved;
 
   /// No description provided for @shareSheetSaveToGallery.
   ///
