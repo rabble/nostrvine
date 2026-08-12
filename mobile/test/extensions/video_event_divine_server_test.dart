@@ -272,7 +272,7 @@ void main() {
       },
     );
 
-    test('mp4_480p override wins over classic Vine original', () async {
+    test('mp4_480p override applies to classic Vine originals', () async {
       const hash =
           'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d';
       final video = _createVideoWithUrl(
@@ -303,7 +303,11 @@ void main() {
       );
     });
 
-    test('skips single-file caching for original Vine raw blobs', () {
+    // Regression test for classic Vines being unplayable on iOS. The
+    // extensionless raw blob (`/{hash}`) cannot be parsed by AVURLAsset,
+    // which selects its container parser from the URL path extension and
+    // ignores the Content-Type header.
+    test('uses MP4 720p for classic Vine originals', () {
       final video = _createVideoWithUrl(
         'https://media.divine.video/$hash',
         rawTags: const {'platform': 'vine'},
@@ -312,8 +316,17 @@ void main() {
       expect(video.isOriginalVine, isTrue);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash'),
+        equals('https://media.divine.video/$hash/720p.mp4'),
       );
+    });
+
+    test('skips single-file caching for classic Vine originals', () {
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/$hash',
+        rawTags: const {'platform': 'vine'},
+      );
+
+      expect(video.isOriginalVine, isTrue);
       expect(video.getCacheableVideoUrlForPlatform(), isNull);
     });
 
