@@ -325,8 +325,10 @@ class ResendVerificationResult {
   ///
   /// Matching on prose is the weak point: if keycast rewords that sentence this
   /// silently degrades to [ResendVerificationError.declined], which costs the
-  /// user the "start again" guidance but leaves resend retryable. Swap to a
-  /// stable error code here the moment the route grows one.
+  /// user the "start again" guidance but leaves resend retryable.
+  // TODO(dcadenas): switch to the server's `code` once keycast emits one on
+  // resend-pin, tracked in divinevideo/keycast#362; keep this match as the
+  // old-server fallback until then. `verifyPin` already keys on codes this way.
   static ResendVerificationError _errorCodeFromMessage(String? message) {
     final normalized = message?.toLowerCase() ?? '';
     if (normalized.contains('registration') &&
