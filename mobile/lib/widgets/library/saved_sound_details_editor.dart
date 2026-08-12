@@ -10,15 +10,62 @@ import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/saved_sound.dart';
 
+/// Handle that commits a [SavedSoundDetailsEditor]'s pending edits on demand.
+///
+/// The editor autosaves as the user types, so this exists for the sheet's
+/// Save button: it writes whatever is still sitting in the debounce window
+/// instead of waiting out the delay.
+class SavedSoundDetailsEditorController {
+  VoidCallback? _save;
+
+  /// Writes the current label and hashtags immediately.
+  ///
+  /// Does nothing when no editor is attached.
+  void save() => _save?.call();
+}
+
 class SavedSoundDetailsEditor extends StatefulWidget {
   const SavedSoundDetailsEditor({
     required this.sound,
+    this.controller,
     this.autosaveDelay = const Duration(milliseconds: 350),
     super.key,
   });
 
   final SavedSound sound;
+
+  /// Optional handle used to flush pending edits from outside the editor.
+  final SavedSoundDetailsEditorController? controller;
+
   final Duration autosaveDelay;
+
+  /// Opens the editor in a bottom sheet.
+  ///
+  /// [context] must sit below a `SavedSoundsBloc`; the bloc is handed to the
+  /// sheet explicitly because the modal route builds outside this subtree.
+  static Future<void> show(
+    BuildContext context, {
+    required SavedSound sound,
+  }) {
+    final bloc = context.read<SavedSoundsBloc>();
+    return VineBottomSheet.show<void>(
+      context: context,
+      scrollable: false,
+      contentTitle: context.l10n.savedSoundDetailsSheetTitle,
+      contentWrapper: (_, child) =>
+          BlocProvider<SavedSoundsBloc>.value(value: bloc, child: child),
+      // The sheet is fixed-mode, so nothing else lifts it clear of the
+      // keyboard — without the view inset both fields sit underneath it the
+      // moment one takes focus. The scroll view keeps the form reachable when
+      // the keyboard plus the fields outgrow a short screen.
+      body: SingleChildScrollView(
+        child: VineKeyboardAwareFooter(
+          includeSafeArea: false,
+          child: _SavedSoundDetailsSheet(sound: sound),
+        ),
+      ),
+    );
+  }
 
   @override
   State<SavedSoundDetailsEditor> createState() =>
@@ -31,12 +78,19 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
   late final FocusNode _labelFocus;
   late final FocusNode _hashtagFocus;
   late List<String> _hashtags;
+
+  /// Captured so a pending autosave can still be flushed from [dispose],
+  /// after the editor's own `BuildContext` is on its way out.
+  late final SavedSoundsBloc _bloc;
+
   Timer? _autosaveTimer;
   bool _updatingHashtagField = false;
 
   @override
   void initState() {
     super.initState();
+    _bloc = context.read<SavedSoundsBloc>();
+    widget.controller?._save = _saveNow;
     _labelController = TextEditingController(
       text: widget.sound.personalLabel ?? '',
     );
@@ -69,8 +123,7 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
   void _saveNow() {
     _autosaveTimer?.cancel();
     _autosaveTimer = null;
-    if (!mounted) return;
-    context.read<SavedSoundsBloc>().add(
+    _bloc.add(
       SavedSoundDetailsChanged(
         soundId: widget.sound.id,
         label: _labelController.text,
@@ -107,7 +160,10 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
 
   @override
   void dispose() {
+    // Dismissing the sheet must not swallow the last few keystrokes.
+    if (_autosaveTimer?.isActive ?? false) _saveNow();
     _autosaveTimer?.cancel();
+    widget.controller?._save = null;
     _labelFocus
       ..removeListener(_onFocusChanged)
       ..dispose();
@@ -134,6 +190,10 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
             controller: _labelController,
             focusNode: _labelFocus,
             labelText: context.l10n.savedSoundYourLabel,
+            // Both fields sit directly on the sheet surface and would have no
+            // visible edge without a fill.
+            filled: true,
+            textInputAction: .next,
             spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
             onChanged: (_) => _scheduleSave(),
           ),
@@ -145,6 +205,7 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
             labelText: context.l10n.savedSoundAddHashtags,
             textInputAction: TextInputAction.done,
             autocorrect: false,
+            filled: true,
             spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
             onChanged: _onHashtagChanged,
             onSubmitted: _commitHashtag,
@@ -181,6 +242,49 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Sheet body: the editor plus an explicit Save action.
+///
+/// The editor autosaves, but a sheet needs a visible way to finish — the
+/// button flushes the debounce window so the write happens on tap rather
+/// than a beat later.
+class _SavedSoundDetailsSheet extends StatefulWidget {
+  const _SavedSoundDetailsSheet({required this.sound});
+
+  final SavedSound sound;
+
+  @override
+  State<_SavedSoundDetailsSheet> createState() =>
+      _SavedSoundDetailsSheetState();
+}
+
+class _SavedSoundDetailsSheetState extends State<_SavedSoundDetailsSheet> {
+  final _controller = SavedSoundDetailsEditorController();
+
+  void _onSave() {
+    _controller.save();
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SavedSoundDetailsEditor(sound: widget.sound, controller: _controller),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: DivineButton(
+            key: const Key('saved_sound_details_save'),
+            expanded: true,
+            label: context.l10n.savedSoundSaveAction,
+            onPressed: _onSave,
+          ),
+        ),
+      ],
     );
   }
 }

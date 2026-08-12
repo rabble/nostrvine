@@ -144,6 +144,24 @@ void main() {
       expect(find.text('Piano Loop'), findsNothing);
     });
 
+    testWidgets('scrolls the search field away with the list', (tester) async {
+      final service = SavedSoundsService(sharedPreferences);
+      for (var i = 0; i < 15; i++) {
+        await service.saveSound(_sound(id: 'sound$i', title: 'Loop $i'));
+      }
+
+      await pumpSoundsTab(tester);
+      expect(find.byType(TextField), findsOneWidget);
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      // The field lives in the scroll view now, not in a fixed header above
+      // it, so scrolling hands its height back to the results.
+      expect(find.byType(TextField), findsNothing);
+      expect(find.textContaining('Loop'), findsWidgets);
+    });
+
     testWidgets('saves sound selected from Add audio picker', (tester) async {
       await pumpSoundsTab(
         tester,
@@ -205,17 +223,96 @@ void main() {
       );
     });
 
-    testWidgets('removes a saved sound from the library', (tester) async {
+    testWidgets('removes a saved sound after the prompt is confirmed', (
+      tester,
+    ) async {
       await SavedSoundsService(
         sharedPreferences,
       ).saveSound(_sound(id: 'sound1', title: 'Original sound - rabble'));
+      final l10n = lookupAppLocalizations(const Locale('en'));
 
       await pumpSoundsTab(tester);
       await tester.tap(find.byKey(const Key('saved_sound_remove')));
       await tester.pumpAndSettle();
 
+      expect(find.text(l10n.savedSoundRemoveConfirmTitle), findsOneWidget);
+      expect(find.text('Original sound - rabble'), findsOneWidget);
+
+      await tester.tap(find.text(l10n.soundsRemoveSavedSound));
+      await tester.pumpAndSettle();
+
       expect(find.text('Original sound - rabble'), findsNothing);
       expect(find.text('No saved sounds yet'), findsOneWidget);
+    });
+
+    testWidgets('keeps the sound when the remove prompt is cancelled', (
+      tester,
+    ) async {
+      await SavedSoundsService(
+        sharedPreferences,
+      ).saveSound(_sound(id: 'sound1', title: 'Original sound - rabble'));
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpSoundsTab(tester);
+      await tester.tap(find.byKey(const Key('saved_sound_remove')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.commonCancel));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Original sound - rabble'), findsOneWidget);
+    });
+
+    testWidgets('edit sheet keeps its fields above the keyboard', (
+      tester,
+    ) async {
+      await SavedSoundsService(
+        sharedPreferences,
+      ).saveSound(_sound(id: 'sound1', title: 'Original sound - rabble'));
+      // 300 physical / 3.0 DPR = 100 logical points of keyboard.
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+
+      await pumpSoundsTab(tester);
+      await tester.tap(find.byKey(const Key('saved_sound_edit')));
+      await tester.pumpAndSettle();
+
+      final keyboardTop = tester.view.physicalSize.height / 3.0 - 100;
+      final fields = find.byType(DivineTextField);
+      expect(fields, findsNWidgets(2));
+      for (final field in [fields.first, fields.last]) {
+        expect(tester.getRect(field).bottom, lessThanOrEqualTo(keyboardTop));
+      }
+    });
+
+    testWidgets('edits sound details in a bottom sheet', (tester) async {
+      await SavedSoundsService(
+        sharedPreferences,
+      ).saveSound(_sound(id: 'sound1', title: 'Original sound - rabble'));
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpSoundsTab(tester);
+      expect(find.byKey(const Key('saved_sound_label_field')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('saved_sound_edit')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.savedSoundDetailsSheetTitle), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('saved_sound_label_field')),
+        'Practice loop',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('saved_sound_details_save')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.savedSoundDetailsSheetTitle), findsNothing);
+      expect(find.text('Practice loop'), findsOneWidget);
+      expect(
+        SavedSoundsService(
+          sharedPreferences,
+        ).loadSavedSounds().single.personalLabel,
+        'Practice loop',
+      );
     });
 
     group('sync trigger', () {

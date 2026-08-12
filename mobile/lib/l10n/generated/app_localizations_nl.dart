@@ -4336,6 +4336,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Sound verwijderen';
 
   @override
+  String get savedSoundSaveAction => 'Opslaan';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Voorbeeld pauzeren';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Geluidsdetails';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Dit geluid verwijderen?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Het verdwijnt uit je bibliotheek, maar je kunt het opnieuw opslaan vanuit elke video die het gebruikt.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Verwijderd uit Sounds';
 
   @override

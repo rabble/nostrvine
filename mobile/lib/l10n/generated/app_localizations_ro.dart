@@ -4441,6 +4441,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Elimină sunetul';
 
   @override
+  String get savedSoundSaveAction => 'Salvează';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Pune pauză la previzualizare';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Detalii despre sunet';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Elimini acest sunet?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Dispare din biblioteca ta, dar îl poți salva din nou din orice videoclip care îl folosește.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Eliminat din Sunete';
 
   @override

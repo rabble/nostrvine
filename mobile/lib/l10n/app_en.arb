@@ -2544,6 +2544,26 @@
   "soundsAvailabilityPrivate": "Private",
   "soundsAvailabilityCommunity": "Community",
   "soundsRemoveSavedSound": "Remove sound",
+  "savedSoundSaveAction": "Save",
+  "@savedSoundSaveAction": {
+    "description": "Label of the button that commits the saved-sound label and hashtag edits and closes the sheet."
+  },
+  "savedSoundPausePreviewAction": "Pause preview",
+  "@savedSoundPausePreviewAction": {
+    "description": "Accessibility label on the saved-sound card's preview button while that sound is playing. Tapping it stops the preview."
+  },
+  "savedSoundDetailsSheetTitle": "Sound details",
+  "@savedSoundDetailsSheetTitle": {
+    "description": "Title of the bottom sheet that edits a saved sound's private label and hashtags."
+  },
+  "savedSoundRemoveConfirmTitle": "Remove this sound?",
+  "@savedSoundRemoveConfirmTitle": {
+    "description": "Title of the confirmation sheet shown before removing a sound from the device-local library."
+  },
+  "savedSoundRemoveConfirmMessage": "It's gone from your library, but you can save it again from any video that uses it.",
+  "@savedSoundRemoveConfirmMessage": {
+    "description": "Body of the remove-sound confirmation sheet. Reassures the user that removal is local and reversible."
+  },
   "soundsRemovedFromLibrary": "Removed from Sounds",
   "soundsSaveFailed": "Couldn't save that sound. Try again.",
   "@soundsSaveFailed": {

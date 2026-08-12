@@ -4429,6 +4429,22 @@ class AppLocalizationsPl extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Usuń dźwięk';
 
   @override
+  String get savedSoundSaveAction => 'Zapisz';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Wstrzymaj podgląd';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Szczegóły dźwięku';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Usunąć ten dźwięk?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Zniknie z Twojej biblioteki, ale możesz zapisać go ponownie z dowolnego filmu, który go używa.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Usunięto z Dźwięków';
 
   @override

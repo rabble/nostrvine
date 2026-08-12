@@ -4118,6 +4118,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundsRemoveSavedSound => '사운드 제거';
 
   @override
+  String get savedSoundSaveAction => '저장';
+
+  @override
+  String get savedSoundPausePreviewAction => '미리듣기 일시정지';
+
+  @override
+  String get savedSoundDetailsSheetTitle => '사운드 정보';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => '이 사운드를 삭제할까요?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      '라이브러리에서 사라지지만, 이 사운드를 쓴 영상에서 언제든 다시 저장할 수 있어요.';
+
+  @override
   String get soundsRemovedFromLibrary => '사운드에서 제거됨';
 
   @override

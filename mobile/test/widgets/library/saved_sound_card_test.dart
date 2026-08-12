@@ -1,6 +1,8 @@
 // ABOUTME: Tests rich saved-sound cards and their source/private metadata.
 // ABOUTME: Ensures music-only fallbacks stay quiet and actions remain distinct.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +10,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/widgets/library/saved_sound_card.dart';
+import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../../helpers/contrast.dart';
@@ -40,6 +43,8 @@ Widget _app(
   VoidCallback? onEdit,
   VoidCallback? onRemove,
   ThemeData? theme,
+  bool isPlaying = false,
+  Stream<double>? progress,
 }) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
@@ -48,6 +53,8 @@ Widget _app(
     body: SingleChildScrollView(
       child: SavedSoundCard(
         sound: sound,
+        isPlaying: isPlaying,
+        progress: progress,
         onTap: onTap ?? () {},
         onPreview: onPreview ?? () {},
         onEdit: onEdit ?? () {},
@@ -56,6 +63,20 @@ Widget _app(
     ),
   ),
 );
+
+DivineIconName? _previewIcon(WidgetTester tester) => tester
+    .widget<DivineIconButton>(find.byKey(const Key('saved_sound_preview')))
+    .icon;
+
+double _waveformProgress(WidgetTester tester) {
+  final paint = tester.widget<CustomPaint>(
+    find.descendant(
+      of: find.byKey(const Key('saved_sound_waveform')),
+      matching: find.byType(CustomPaint),
+    ),
+  );
+  return (paint.painter! as StereoWaveformPainter).progress;
+}
 
 void main() {
   testWidgets('shows rich source, private, and catalog context', (
@@ -172,6 +193,36 @@ void main() {
     await tester.tap(find.byKey(const Key('saved_sound_remove')));
 
     expect((previews, edits, removes), (1, 1, 1));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('preview button turns into pause while the sound plays', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_richSound()));
+    expect(_previewIcon(tester), DivineIconName.play);
+
+    await tester.pumpWidget(_app(_richSound(), isPlaying: true));
+    expect(_previewIcon(tester), DivineIconName.pause);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('waveform fills as the preview position advances', (
+    tester,
+  ) async {
+    final position = StreamController<double>();
+    addTearDown(position.close);
+
+    await tester.pumpWidget(_app(_richSound()));
+    expect(_waveformProgress(tester), 0);
+
+    await tester.pumpWidget(
+      _app(_richSound(), isPlaying: true, progress: position.stream),
+    );
+    position.add(0.42);
+    await tester.pumpAndSettle();
+
+    expect(_waveformProgress(tester), 0.42);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

@@ -10,6 +10,9 @@ import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
+/// Edge length of the source thumbnail leading each card.
+const _thumbnailSize = 64.0;
+
 class SavedSoundCard extends StatelessWidget {
   const SavedSoundCard({
     required this.sound,
@@ -17,6 +20,8 @@ class SavedSoundCard extends StatelessWidget {
     required this.onPreview,
     required this.onEdit,
     required this.onRemove,
+    this.isPlaying = false,
+    this.progress,
     super.key,
   });
 
@@ -25,6 +30,15 @@ class SavedSoundCard extends StatelessWidget {
   final VoidCallback onPreview;
   final VoidCallback onEdit;
   final VoidCallback onRemove;
+
+  /// Whether this sound is the one currently previewing.
+  final bool isPlaying;
+
+  /// Playback position of the running preview as a 0–1 fraction.
+  ///
+  /// Null while this sound is not the one being previewed, which leaves the
+  /// waveform unfilled.
+  final Stream<double>? progress;
 
   String _displayTitle(BuildContext context) =>
       sound.personalLabel ??
@@ -53,15 +67,16 @@ class SavedSoundCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 8,
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 10,
                     children: [
                       _SavedSoundThumbnail(url: source?.thumbnailUrl),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: _SavedSoundText(
                           displayTitle: displayTitle,
@@ -70,28 +85,27 @@ class SavedSoundCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (sound.waveformSamples.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _SavedSoundWaveform(sound: sound),
-                  ],
+                  if (sound.waveformSamples.isNotEmpty)
+                    _SavedSoundWaveform(sound: sound, progress: progress),
                   if (sound.personalHashtags.isNotEmpty ||
-                      sound.catalogTags.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                      sound.catalogTags.isNotEmpty)
                     _SavedSoundTags(sound: sound),
-                  ],
-                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
+                    spacing: 8,
                     children: [
                       DivineIconButton(
                         key: const Key('saved_sound_preview'),
-                        icon: DivineIconName.play,
-                        semanticLabel: context.l10n.savedSoundPreviewAction,
+                        icon: isPlaying
+                            ? DivineIconName.pause
+                            : DivineIconName.play,
+                        semanticLabel: isPlaying
+                            ? context.l10n.savedSoundPausePreviewAction
+                            : context.l10n.savedSoundPreviewAction,
                         size: DivineIconButtonSize.small,
                         type: DivineIconButtonType.secondary,
                         onPressed: onPreview,
                       ),
-                      const SizedBox(width: 8),
                       DivineIconButton(
                         key: const Key('saved_sound_edit'),
                         icon: DivineIconName.pencilSimple,
@@ -100,7 +114,6 @@ class SavedSoundCard extends StatelessWidget {
                         type: DivineIconButtonType.secondary,
                         onPressed: onEdit,
                       ),
-                      const SizedBox(width: 8),
                       DivineIconButton(
                         key: const Key('saved_sound_remove'),
                         icon: DivineIconName.trash,
@@ -133,14 +146,14 @@ class _SavedSoundThumbnail extends StatelessWidget {
       return const _SavedSoundThumbnailFallback();
     }
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: VineCachedImage(
         key: const Key('saved_sound_thumbnail'),
         imageUrl: imageUrl,
-        width: 88,
-        height: 88,
-        memCacheWidth: 176,
-        memCacheHeight: 176,
+        width: _thumbnailSize,
+        height: _thumbnailSize,
+        memCacheWidth: (_thumbnailSize * 2).round(),
+        memCacheHeight: (_thumbnailSize * 2).round(),
         placeholder: (_, _) => const _SavedSoundThumbnailFallback(),
         errorWidget: (_, _, _) => const _SavedSoundThumbnailFallback(),
       ),
@@ -155,7 +168,7 @@ class _SavedSoundThumbnailFallback extends StatelessWidget {
   Widget build(BuildContext context) {
     return const SizedBox.square(
       key: Key('saved_sound_thumbnail_fallback'),
-      dimension: 88,
+      dimension: _thumbnailSize,
       child: ColoredBox(
         color: VineTheme.surfaceContainer,
         child: Center(
@@ -193,7 +206,7 @@ class _SavedSoundText extends StatelessWidget {
         if (secondaryTitle != null && secondaryTitle != displayTitle)
           Text(
             secondaryTitle,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
           ),
@@ -205,7 +218,7 @@ class _SavedSoundText extends StatelessWidget {
         if (source?.description case final description?)
           Text(
             description,
-            maxLines: 3,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
           ),
@@ -214,7 +227,7 @@ class _SavedSoundText extends StatelessWidget {
           Text(
             transcript,
             key: const Key('saved_sound_transcript'),
-            maxLines: 3,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
           ),
@@ -225,9 +238,29 @@ class _SavedSoundText extends StatelessWidget {
 }
 
 class _SavedSoundWaveform extends StatelessWidget {
-  const _SavedSoundWaveform({required this.sound});
+  const _SavedSoundWaveform({required this.sound, required this.progress});
 
   final SavedSound sound;
+  final Stream<double>? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final stream = progress;
+    if (stream == null) return _WaveformBars(sound: sound, progress: 0);
+    return StreamBuilder<double>(
+      stream: stream,
+      initialData: 0,
+      builder: (context, snapshot) =>
+          _WaveformBars(sound: sound, progress: snapshot.data ?? 0),
+    );
+  }
+}
+
+class _WaveformBars extends StatelessWidget {
+  const _WaveformBars({required this.sound, required this.progress});
+
+  final SavedSound sound;
+  final double progress;
 
   @override
   Widget build(BuildContext context) {
@@ -236,13 +269,13 @@ class _SavedSoundWaveform extends StatelessWidget {
     );
     return SizedBox(
       key: const Key('saved_sound_waveform'),
-      height: 44,
+      height: 28,
       width: double.infinity,
       child: CustomPaint(
         painter: StereoWaveformPainter(
           leftChannel: Float32List.fromList(sound.waveformSamples),
-          progress: 0,
-          activeColor: VineTheme.onSurfaceVariant,
+          progress: progress,
+          activeColor: VineTheme.vineGreen,
           inactiveColor: VineTheme.onSurfaceVariant,
           audioDuration: duration,
           maxDuration: duration,

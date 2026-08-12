@@ -4317,6 +4317,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Ta bort ljud';
 
   @override
+  String get savedSoundSaveAction => 'Spara';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Pausa förhandsvisningen';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Ljuddetaljer';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Ta bort det här ljudet?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Det försvinner från ditt bibliotek, men du kan spara det igen från vilken video som helst som använder det.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Borttaget från Ljud';
 
   @override

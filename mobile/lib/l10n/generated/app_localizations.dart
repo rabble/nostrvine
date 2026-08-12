@@ -7502,6 +7502,36 @@ abstract class AppLocalizations {
   /// **'Remove sound'**
   String get soundsRemoveSavedSound;
 
+  /// Label of the button that commits the saved-sound label and hashtag edits and closes the sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get savedSoundSaveAction;
+
+  /// Accessibility label on the saved-sound card's preview button while that sound is playing. Tapping it stops the preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause preview'**
+  String get savedSoundPausePreviewAction;
+
+  /// Title of the bottom sheet that edits a saved sound's private label and hashtags.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound details'**
+  String get savedSoundDetailsSheetTitle;
+
+  /// Title of the confirmation sheet shown before removing a sound from the device-local library.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this sound?'**
+  String get savedSoundRemoveConfirmTitle;
+
+  /// Body of the remove-sound confirmation sheet. Reassures the user that removal is local and reversible.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s gone from your library, but you can save it again from any video that uses it.'**
+  String get savedSoundRemoveConfirmMessage;
+
   /// No description provided for @soundsRemovedFromLibrary.
   ///
   /// In en, this message translates to:

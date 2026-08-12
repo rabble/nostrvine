@@ -4326,6 +4326,22 @@ class AppLocalizationsUr extends AppLocalizations {
   String get soundsRemoveSavedSound => 'آواز ہٹائیں';
 
   @override
+  String get savedSoundSaveAction => 'محفوظ کریں';
+
+  @override
+  String get savedSoundPausePreviewAction => 'پیش نظارہ روکیں';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'آواز کی تفصیلات';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'کیا یہ آواز ہٹا دیں؟';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'یہ آپ کی لائبریری سے ہٹ جائے گی، لیکن آپ اسے استعمال کرنے والی کسی بھی ویڈیو سے دوبارہ محفوظ کر سکتے ہیں۔';
+
+  @override
   String get soundsRemovedFromLibrary => 'آوازوں سے ہٹا دی گئی';
 
   @override
