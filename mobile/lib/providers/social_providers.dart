@@ -8,7 +8,6 @@ import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
@@ -19,6 +18,7 @@ import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -531,7 +531,7 @@ ViewEventRetryService? viewEventRetryService(Ref ref) {
 ProductEventQueue productEventQueue(Ref ref) {
   final db = ref.watch(databaseProvider);
   final env = ref.watch(currentEnvironmentProvider);
-  final client = http.Client();
+  final client = ref.watch(instrumentedHttpClientFactoryProvider)();
   ref.onDispose(client.close);
 
   final ingestClient = AnalyticsIngestClient(

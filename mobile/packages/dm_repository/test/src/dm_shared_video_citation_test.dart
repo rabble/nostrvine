@@ -199,4 +199,157 @@ void main() {
       expect(ref.isAddressable, isTrue);
     });
   });
+
+  // divine-web's `buildDmShareTags`, live 2026-03-09 → 2026-08-04, wrote
+  // `['r', url]` first and unconditionally, then an optional `['title', …]`,
+  // then either `['a', '34236:<pubkey>:<d>']` or `['e', <id>]` — and never put
+  // the URL in the rumor content. See #6224.
+  group('DmSharedVideoCitation.parse — legacy divine-web share', () {
+    const shareUrl = 'https://divine.video/video/$dTag';
+
+    List<List<String>> webShareTags({
+      String? coordinate,
+      String url = shareUrl,
+      bool omitCoordinate = false,
+    }) {
+      final address = coordinate ?? '34236:$author:$dTag';
+      return <List<String>>[
+        ['p', 'b' * 64],
+        ['r', url],
+        ['title', 'My reel'],
+        if (!omitCoordinate) ['a', address],
+      ];
+    }
+
+    test('parses the r + a share shape into an addressable ref', () {
+      final ref = DmSharedVideoCitation.parse(webShareTags())!;
+
+      expect(ref.coordinateOrId, equals('34236:$author:$dTag'));
+      expect(ref.videoKind, equals(DmSharedVideoKind.addressableShortVideo));
+      expect(ref.authorPubkey, equals(author));
+      expect(ref.dTag, equals(dTag));
+    });
+
+    test('parses the addressable normal-video (34235) coordinate', () {
+      final ref = DmSharedVideoCitation.parse(
+        webShareTags(coordinate: '34235:$author:$dTag'),
+      )!;
+
+      expect(ref.videoKind, equals(DmSharedVideoKind.addressableNormalVideo));
+    });
+
+    test('a `q` tag still wins when both shapes are present', () {
+      final ref = DmSharedVideoCitation.parse([
+        ...webShareTags(),
+        ['q', '34236:$eventId:other-reel', relay],
+      ])!;
+
+      expect(ref.coordinateOrId, equals('34236:$eventId:other-reel'));
+    });
+
+    test('ignores a collaborator invite carrying the same coordinate', () {
+      // The invite ships its own addressable `a` tag; without the marker guard
+      // it would render as a shared-video card.
+      expect(
+        DmSharedVideoCitation.parse([
+          ['divine', 'collab-invite'],
+          ['r', shareUrl],
+          ['a', '34236:$author:$dTag', relay, 'root'],
+          ['role', 'Collaborator'],
+        ]),
+        isNull,
+      );
+    });
+
+    test('requires a companion divine.video `r` tag', () {
+      expect(
+        DmSharedVideoCitation.parse([
+          ['p', 'b' * 64],
+          ['a', '34236:$author:$dTag'],
+        ]),
+        isNull,
+      );
+    });
+
+    test('rejects an `r` tag pointing somewhere other than divine.video', () {
+      expect(
+        DmSharedVideoCitation.parse(
+          webShareTags(url: 'https://example.com/video/$dTag'),
+        ),
+        isNull,
+      );
+    });
+
+    test('rejects an `r` tag that merely embeds a divine.video URL', () {
+      expect(
+        DmSharedVideoCitation.parse(
+          webShareTags(url: 'https://elsewhere.example/?next=$shareUrl'),
+        ),
+        isNull,
+      );
+    });
+
+    test('accepts a share URL carrying an unescaped d-tag', () {
+      // divine-web interpolated the `d` tag into the path with no
+      // percent-encoding, so a relay-supplied d-tag puts characters the URL
+      // grammar would otherwise end on straight into the `r` value.
+      const dottedTag = 'my.vine.2024';
+      final ref = DmSharedVideoCitation.parse(
+        webShareTags(
+          coordinate: '34236:$author:$dottedTag',
+          url: 'https://divine.video/video/$dottedTag',
+        ),
+      )!;
+
+      expect(ref.dTag, equals(dottedTag));
+    });
+
+    test('rejects a coordinate whose author is not 64-hex', () {
+      // divine-web built the coordinate from unvalidated URL query params.
+      expect(
+        DmSharedVideoCitation.parse(
+          webShareTags(coordinate: '34236:not-a-pubkey:$dTag'),
+        ),
+        isNull,
+      );
+    });
+
+    test('rejects a coordinate with an empty d-tag', () {
+      expect(
+        DmSharedVideoCitation.parse(webShareTags(coordinate: '34236:$author:')),
+        isNull,
+      );
+    });
+
+    test('rejects a non-video kind in the coordinate', () {
+      expect(
+        DmSharedVideoCitation.parse(
+          webShareTags(coordinate: '30023:$author:$dTag'),
+        ),
+        isNull,
+      );
+    });
+
+    test('never treats an `e` tag as a citation, even beside an `r`', () {
+      // NIP-17 reserves `e` for the reply parent, and DmRepository already
+      // assigns any `e` tag to replyToId — parsing it here would render a
+      // quoted preview instead of a share card and leave the actions dead.
+      expect(
+        DmSharedVideoCitation.parse([
+          ['p', 'b' * 64],
+          ['r', 'https://divine.video/video/$eventId'],
+          ['e', eventId],
+        ]),
+        isNull,
+      );
+    });
+
+    test('an `r` tag alone is not a citation', () {
+      // Carries no event identity, so there is nothing to resolve or save.
+      expect(
+        DmSharedVideoCitation.parse(webShareTags(omitCoordinate: true)),
+        isNull,
+      );
+    });
+  });
 }

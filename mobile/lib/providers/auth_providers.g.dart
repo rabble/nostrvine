@@ -284,7 +284,7 @@ final class OauthClientProvider
   }
 }
 
-String _$oauthClientHash() => r'0cc53348fbc3c769c81e52dd200c0efc6c20de3c';
+String _$oauthClientHash() => r'217c3c01dd4f147990ee0f189f5d4fe5bcd89d45';
 
 @ProviderFor(passwordResetListener)
 final passwordResetListenerProvider = PasswordResetListenerProvider._();
@@ -472,7 +472,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'b3067ab4e67df436daf979fc7d8e5fbd4f451bf3';
+String _$authServiceHash() => r'bfe49af6f81e63824cd62720f00a59c9f925f221';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -802,7 +802,7 @@ final class VerifierClientProvider
   }
 }
 
-String _$verifierClientHash() => r'1d6966c5483814cd7fa203e7e9e198dc5c9c232d';
+String _$verifierClientHash() => r'0cb119940e69355f90bd4532588ed27ba302c416';
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
 /// with NIP-39 i tag parsing, the persistent verdict cache (#3936) and the

@@ -263,13 +263,12 @@ void main() {
         );
         await _flushStreamEvents();
 
-        expect(result, isNotNull);
-        expect(result?.$2, isNotNull);
+        expect(result.$2, isNotNull);
         // Cover extraction cannot succeed here (the render output is never
         // written), so the clip must fall back to the first source clip's
         // thumbnail rather than being left without a preview.
         expect(
-          result?.$1.thumbnailPath,
+          result.$1.thumbnailPath,
           equals('${Directory.systemTemp.path}/clip-0-thumb.jpg'),
         );
         expect(
@@ -374,14 +373,12 @@ void main() {
           originalAspectRatio: 9 / 16,
         );
 
-        final result = await VideoEditorRenderService.renderVideoToClip(
+        await VideoEditorRenderService.renderVideoToClip(
           clips: [stopMotionClip],
           editorStateHistory: const {},
           taskId: taskId,
         );
         await _flushStreamEvents();
-
-        expect(result, isNotNull);
 
         // One clip → 5% proof budget; the remaining 95% splits evenly
         // between the assembly pass and the composite render.

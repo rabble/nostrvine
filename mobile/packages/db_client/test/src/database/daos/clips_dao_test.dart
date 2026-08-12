@@ -1172,6 +1172,32 @@ void main() {
       );
 
       test(
+        'returns true for reverse caches referenced only inside data',
+        () async {
+          // A reverse toggle caches the forward and reversed renders on the
+          // clip; neither has an indexed column. The editor now hands both to
+          // file cleanup when a transform clears them, so a clip that still
+          // points at one — a duplicate sharing the cache — has to keep it.
+          await dao.upsertClip(
+            id: 'rev_clip',
+            orderIndex: 0,
+            durationMs: 3000,
+            recordedAt: DateTime(2023, 11, 14, 10),
+            filePath: 'rev_current.mp4',
+            thumbnailPath: null,
+            data:
+                '{"id":"rev_clip","filePath":"rev_current.mp4",'
+                '"forwardVideoPath":"fwd_cache.mp4",'
+                '"reversedVideoPath":"rev_cache.mp4"}',
+          );
+
+          expect(await dao.isFileReferenced('fwd_cache.mp4'), isTrue);
+          expect(await dao.isFileReferenced('rev_cache.mp4'), isTrue);
+          expect(await dao.isFileReferenced('other_cache.mp4'), isFalse);
+        },
+      );
+
+      test(
         'returns true for a still stored as a legacy absolute path in data',
         () async {
           // A legacy row can store the full path rather than a basename. The

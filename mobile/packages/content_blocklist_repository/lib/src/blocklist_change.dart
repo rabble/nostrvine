@@ -1,7 +1,7 @@
 // ABOUTME: Granular blocklist change events emitted on the changes stream
 // ABOUTME: Subscribers (e.g. VideoEventService) react per-pubkey on additions
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 /// Type of blocklist mutation. Used by [BlocklistChange.op] so subscribers
 /// can decide whether the change should hide content
