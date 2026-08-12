@@ -4169,8 +4169,6 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountContentDeletionFailed": "从中继删除内容失败",
-  "deleteAccountRelayConfirmationFailed": "We couldn't confirm account deletion with a relay. Check your connection and try again.",
-  "@deleteAccountRelayConfirmationFailed": {"description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."},
   "deleteAccountDeleteAllContentButton": "删除所有内容",
   "deleteAccountDeletionIncomplete": "我们没能完成账号删除，请重试。",
   "@deleteAccountDeletionIncomplete": {

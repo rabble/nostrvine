@@ -4104,8 +4104,6 @@
     "deleteAccountConfirmationHintUsername": "사용자명 입력",
     "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
     "deleteAccountContentDeletionFailed": "릴레이에서 콘텐츠를 삭제하지 못했어요",
-  "deleteAccountRelayConfirmationFailed": "We couldn't confirm account deletion with a relay. Check your connection and try again.",
-  "@deleteAccountRelayConfirmationFailed": {"description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."},
     "deleteAccountDeleteAllContentButton": "모든 콘텐츠 삭제",
     "deleteAccountDeletionIncomplete": "계정 삭제를 완료하지 못했어요. 다시 시도해주세요.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
