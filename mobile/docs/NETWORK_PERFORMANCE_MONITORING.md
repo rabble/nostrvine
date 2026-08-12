@@ -66,12 +66,13 @@ Everything below routes through `instrumentedHttpClientFactoryProvider`.
 | Username claim / release / check | `names.divine.video`, `login.divine.video` | `repository_providers.dart` |
 | Relay-manager (minor-account review) | `api-relay-*.divine.video` | `upload_media_providers.dart` |
 | Invite server | `invite.divine.video` | `main.dart` |
-| Apps-directory audit | `apps.divine.video` | `nostr_apps_providers.dart` |
+| Apps-directory listing + audit | `apps.divine.video` | `nostr_apps_providers.dart` |
 | NIP-39 identity verification | `verifier.divine.video` | `auth_providers.dart` |
 | CAWG identity verification | `verifyer.divine.video` | `auth_providers.dart` |
 | Crossposting (settings, manual crossposts) | `crossposter.divine.video` | `upload_media_providers.dart`, `crossposting_providers.dart` |
 | Supporter worker (build-gated) | build-supplied | `supporter_providers.dart` |
 | Subtitle / VTT fetch | `media.divine.video` | `subtitle_providers.dart` |
+| Moderation check-result (playback UX) | `moderation-api.divine.video` | `video_moderation_status_service.dart` |
 | NIP-11 relay capability probe | relay HTTP origin | `relay_providers.dart` |
 
 ## What is deliberately not instrumented

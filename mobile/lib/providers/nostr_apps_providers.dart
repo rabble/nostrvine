@@ -2,7 +2,6 @@
 // ABOUTME: Owns the apps-directory client, grant store, audit, bridge policy/service
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -15,7 +14,7 @@ final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
   ref,
 ) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  final client = Client();
+  final client = ref.watch(instrumentedHttpClientFactoryProvider)();
   ref.onDispose(client.close);
   return NostrAppDirectoryService(
     sharedPreferences: prefs,
