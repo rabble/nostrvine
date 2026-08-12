@@ -55,6 +55,23 @@ abstract class PublishPhases {
 /// parallel with [PublishPhases.uploadTransfer], so `upload_ms` is roughly the
 /// longer of the two rather than their sum. Only the summary log line's
 /// top-level phases add up to the total.
+///
+/// `nostr_blurhash_ms` is a slice inside `nostr_ms`, beside `sign_ms` and
+/// `nostr_publish_ms`. It carries the parent's prefix because the upload leg
+/// derives a blurhash of its own ([PublishPhases.uploadThumbnailBlurhash]).
+///
+/// Its presence means the Nostr leg entered the fallback path for deriving a
+/// second blurhash, not that one was successfully produced. Its absence on a
+/// publish that reached the relay usually means the Nostr leg reused
+/// `PendingUpload.blurhash`; it can also mean the fallback had no local video
+/// path to decode. The other exception is a publish that coalesced onto another
+/// chain's event and reported no `nostr.*` slice at all, which
+/// [logPublishPhase] describes.
+///
+/// [PublishPhases.uploadThumbnailExtract],
+/// [PublishPhases.uploadThumbnailBlurhash], and
+/// [PublishPhases.uploadThumbnailPut] stay unmapped because
+/// [PublishPhases.uploadThumbnail] already accounts for their time.
 const Map<String, String> _metricByPhase = {
   PublishPhases.upload: 'upload_ms',
   PublishPhases.uploadTransfer: 'transfer_ms',
@@ -62,6 +79,7 @@ const Map<String, String> _metricByPhase = {
   PublishPhases.mentions: 'mentions_ms',
   PublishPhases.subtitles: 'subtitles_ms',
   PublishPhases.nostr: 'nostr_ms',
+  PublishPhases.nostrBlurhash: 'nostr_blurhash_ms',
   PublishPhases.nostrSign: 'sign_ms',
   PublishPhases.nostrPublish: 'nostr_publish_ms',
   PublishPhases.invites: 'invites_ms',
@@ -123,8 +141,12 @@ typedef PublishPhase = ({String name, Duration elapsed});
 ///   them, so attributing them to the publish that happened to wait would be
 ///   the wrong answer, not a missing one.
 /// - `VideoEventPublisher` (`nostr.sign`, `nostr.publish`, `nostr.blurhash`) —
-///   always inside the zone; `publishVideoEvent` is awaited directly by
-///   `VideoPublishService`.
+///   inside the zone when this publish signed its own event, because
+///   `VideoPublishService` awaits `publishVideoEvent` directly. Outside it
+///   when `publishDirectUpload` finds an event already in flight for the same
+///   video and returns that future rather than signing a duplicate (#6018).
+///   The slices then run in the first chain's zone, so the publish that joined
+///   reports `nostr_ms` with nothing inside it.
 ///
 /// A `Timer`, an isolate hop, or a future scheduled outside `run` would drop
 /// the metric the same silent way. There is deliberately no assert for it:

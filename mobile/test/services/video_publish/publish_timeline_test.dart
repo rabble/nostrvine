@@ -276,6 +276,65 @@ void main() {
         expect(monitor.trace.metrics['transfer_ms'], equals(240000));
       });
 
+      test('reports the second blurhash pass the Nostr leg made', () async {
+        await traced.run(() async {
+          traced.record(PublishPhases.nostr, const Duration(seconds: 4));
+          logPublishPhase(
+            PublishPhases.nostrBlurhash,
+            const Duration(milliseconds: 3800),
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        // Unmapped, this decode was 3.8s of `nostr_ms` the console could not
+        // attribute to anything.
+        expect(monitor.trace.metrics['nostr_blurhash_ms'], equals(3800));
+        expect(monitor.trace.metrics['nostr_ms'], equals(4000));
+      });
+
+      test('omits the blurhash metric when the upload leg supplied one', () {
+        // The Nostr leg emits no phase at all when it reuses the upload's
+        // blurhash, so an absent `nostr_blurhash_ms` on a successful publish
+        // counts as "the second decode was skipped" rather than zero-cost work.
+        traced
+          ..record(PublishPhases.nostr, const Duration(milliseconds: 120))
+          ..finish(outcome: 'success');
+
+        expect(monitor.trace.metrics['nostr_ms'], equals(120));
+        expect(monitor.trace.metrics.containsKey('nostr_blurhash_ms'), isFalse);
+      });
+
+      test('leaves the thumbnail sub-phases as log-only detail', () async {
+        await traced.run(() async {
+          traced.record(
+            PublishPhases.uploadThumbnail,
+            const Duration(milliseconds: 150),
+          );
+          logPublishPhase(
+            PublishPhases.uploadThumbnailExtract,
+            const Duration(milliseconds: 90),
+          );
+          logPublishPhase(
+            PublishPhases.uploadThumbnailBlurhash,
+            const Duration(milliseconds: 20),
+          );
+          logPublishPhase(
+            PublishPhases.uploadThumbnailPut,
+            const Duration(milliseconds: 40),
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        // Their parent is mapped, so leaving them out hides no time. The whole
+        // key set is pinned so mapping any sub-phase under any name trips this.
+        expect(
+          monitor.trace.metrics.keys,
+          unorderedEquals(<String>['thumbnail_ms', publishTotalMetric]),
+        );
+      });
+
       test('omits a metric for a phase that never ran', () {
         traced.finish(outcome: 'success');
 
