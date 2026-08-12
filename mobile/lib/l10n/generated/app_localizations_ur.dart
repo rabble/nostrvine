@@ -7657,6 +7657,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get supportRequiredHelper => 'درکار';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'مسئلے کا مختصر خلاصہ';
 
   @override

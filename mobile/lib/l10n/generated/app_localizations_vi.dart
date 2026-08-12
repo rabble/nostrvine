@@ -7661,6 +7661,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get supportRequiredHelper => 'Bắt buộc';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'Tóm tắt ngắn gọn vấn đề';
 
   @override

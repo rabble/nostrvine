@@ -3,7 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show LogEntry, LogLevel;
-import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/services/bug_report_log_summary.dart';
 
 LogEntry _log(int minute, LogLevel level, String msg) => LogEntry(
   timestamp: DateTime(2026, 3, 30, 10, minute),
@@ -129,6 +129,34 @@ void main() {
       expect(result, contains('... [truncated]'));
       // Total line length should be capped (500 + truncation marker)
       expect(result.length, lessThan(600));
+    });
+
+    test('redacts a credential inside a log entry', () {
+      final result = buildLogsSummary([
+        _log(0, LogLevel.error, 'auth failed password: hunter2'),
+      ])!;
+
+      expect(result, contains('[REDACTED]'));
+      expect(result, isNot(contains('hunter2')));
+    });
+
+    test('a credential in one entry cannot consume the next entry', () {
+      // Sanitizing per entry is what bounds this. Against the assembled
+      // summary, the unclosed brace in the first entry reaches the closing
+      // brace in the second and takes that entry with it - support loses a log
+      // line it was never told about.
+      final result = buildLogsSummary([
+        _log(0, LogLevel.error, 'auth failed password: {oops'),
+        _log(
+          1,
+          LogLevel.error,
+          'upload failed {code: 500} then relay '
+          'reconnected',
+        ),
+      ])!;
+
+      expect(result, contains('[REDACTED]'));
+      expect(result, contains('relay reconnected'));
     });
 
     test('caps total summary length at 32KB', () {

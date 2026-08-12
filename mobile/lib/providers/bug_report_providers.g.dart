@@ -8,14 +8,12 @@ part of 'bug_report_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Bug report service for collecting diagnostics and sending encrypted
-/// reports.
+/// Bug report service for collecting diagnostics and exporting logs.
 
 @ProviderFor(bugReportService)
 final bugReportServiceProvider = BugReportServiceProvider._();
 
-/// Bug report service for collecting diagnostics and sending encrypted
-/// reports.
+/// Bug report service for collecting diagnostics and exporting logs.
 
 final class BugReportServiceProvider
     extends
@@ -25,8 +23,7 @@ final class BugReportServiceProvider
           BugReportService
         >
     with $Provider<BugReportService> {
-  /// Bug report service for collecting diagnostics and sending encrypted
-  /// reports.
+  /// Bug report service for collecting diagnostics and exporting logs.
   BugReportServiceProvider._()
     : super(
         from: null,
@@ -60,4 +57,4 @@ final class BugReportServiceProvider
   }
 }
 
-String _$bugReportServiceHash() => r'f45cd35080b1bab710c84ddb049230ea25c5bf8b';
+String _$bugReportServiceHash() => r'5470af6a84c2b76d1229610de95fcb272c045ab9';

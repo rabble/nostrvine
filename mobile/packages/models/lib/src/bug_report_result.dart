@@ -6,21 +6,9 @@ class BugReportResult {
   const BugReportResult({
     required this.success,
     this.reportId,
-    this.messageEventId,
     this.error,
     this.timestamp,
   });
-
-  /// Create success result
-  factory BugReportResult.success({
-    required String reportId,
-    required String messageEventId,
-  }) => BugReportResult(
-    success: true,
-    reportId: reportId,
-    messageEventId: messageEventId,
-    timestamp: DateTime.now(),
-  );
 
   /// Create failure result
   factory BugReportResult.failure(String error, {String? reportId}) =>
@@ -33,15 +21,13 @@ class BugReportResult {
 
   final bool success;
   final String? reportId;
-  final String? messageEventId; // NIP-17 gift wrap event ID
   final String? error;
   final DateTime? timestamp;
 
   @override
   String toString() {
     if (success) {
-      return 'BugReportResult(success: true, '
-          'reportId: $reportId, messageEventId: $messageEventId)';
+      return 'BugReportResult(success: true, reportId: $reportId)';
     } else {
       return 'BugReportResult(success: false, error: $error)';
     }

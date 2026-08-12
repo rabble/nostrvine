@@ -7744,6 +7744,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get supportRequiredHelper => 'Pflichtfeld';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'Kurze Zusammenfassung des Problems';
 
   @override

@@ -1,5 +1,13 @@
 # Bug Report Full Logs Implementation Plan
 
+> Superseded by `docs/DIAGNOSTIC_DATA_POLICY.md`: do not wire full diagnostic
+> log uploads into public Zendesk/GitHub support flows. Public support paths
+> may include only bounded sanitized summaries. Full-log collection requires
+> the private storage, retention, access-control, and deletion-owner policy
+> tracked in #6941.
+> The historical implementation outline below is preserved only as background;
+> it does not describe current code.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Include full diagnostic logs (uploaded to Blossom) and an improved inline summary (errors/warnings + recent context) in bug reports submitted to Zendesk.

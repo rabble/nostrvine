@@ -4,6 +4,10 @@ import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 
+const _rawNsec =
+    'nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6';
+const _rawNcryptsec = 'ncryptsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -443,6 +447,46 @@ void main() {
       expect(capturedDescription, 'Something broke');
       expect(capturedTags, ['mobile', 'bug']);
     });
+
+    test('sanitizes public ticket fields before native submission', () async {
+      Map<String, dynamic>? capturedArgs;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      await ZendeskSupportService.createTicket(
+        subject: 'Bug $_rawNsec',
+        description: 'Description $_rawNcryptsec and liz@example.com',
+        customFields: [
+          {'id': 123, 'value': 'Field $_rawNsec'},
+        ],
+      );
+
+      expect(capturedArgs, isNotNull);
+      final customFields = capturedArgs!['customFields'] as List<dynamic>;
+      final customField = customFields.single as Map<dynamic, dynamic>;
+
+      expect(capturedArgs!['subject'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['description'], isNot(contains(_rawNcryptsec)));
+      expect(capturedArgs!['description'], isNot(contains('liz@example.com')));
+      expect(customField['value'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['subject'], contains('[REDACTED]'));
+      expect(capturedArgs!['description'], contains('[REDACTED]'));
+      expect(customField['value'], contains('[REDACTED]'));
+    });
   });
 
   group('ZendeskSupportService.createTicket attachmentPaths', () {
@@ -759,6 +803,158 @@ void main() {
       expect(capturedSubject, isNot(startsWith('fix: fix:')));
     });
 
+    test('redacts a credential in every assembled field', () async {
+      // Each field is sanitized separately, so each needs its own evidence: a
+      // mutation sweep found that subject, steps, device info, current screen
+      // and the error summary were all unpinned while only the description
+      // half of the assembly was covered.
+      String? capturedDescription;
+      String? capturedSubject;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedSubject = call.arguments['subject'] as String?;
+              capturedDescription = call.arguments['description'] as String?;
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      await ZendeskSupportService.createStructuredBugReport(
+        subject: 'crash when password: SUBJECTSECRET',
+        description: 'it broke, token: DESCRIPTIONSECRET',
+        reportId: 'test-every-field-001',
+        appVersion: '1.0.7+497',
+        deviceInfo: {'platform': 'ios', 'sessionKey': 'DEVICESECRET'},
+        stepsToReproduce: '1. paste api_key=STEPSSECRET',
+        expectedBehavior: 'no secret=EXPECTEDSECRET in the ticket',
+        currentScreen: 'CameraScreen?secret=SCREENSECRET',
+        errorCounts: {'upload:password=COUNTSSECRET': 3},
+        logsSummary: '[10:00] [ERROR] jwt: LOGSSECRET',
+      );
+
+      final payload = '$capturedSubject\n$capturedDescription';
+
+      for (final secret in [
+        'SUBJECTSECRET',
+        'DESCRIPTIONSECRET',
+        'DEVICESECRET',
+        'STEPSSECRET',
+        'EXPECTEDSECRET',
+        'SCREENSECRET',
+        'COUNTSSECRET',
+        'LOGSSECRET',
+      ]) {
+        expect(payload, isNot(contains(secret)), reason: 'leaked $secret');
+      }
+    });
+
+    // Each contributed field is sanitized separately, and the containment that
+    // buys is per field: a stray brace in any one of them must not reach the
+    // fields printed after it. The assembled-blob pass in `createTicket` masks
+    // a plain secret, so only this shape shows whether a given field's own
+    // pass is doing anything - a mutation sweep found subject, steps and
+    // current screen unpinned while only the description was covered.
+    const fieldsUnderTest = [
+      'subject',
+      'description',
+      'steps',
+      'expected',
+      'screen',
+      'device',
+      'errorCounts',
+      'appVersion',
+    ];
+
+    for (final field in fieldsUnderTest) {
+      test('a stray brace in $field cannot empty the whole report', () async {
+        // `my password: {weird symbols` is how someone describes a login bug,
+        // not an attack, and the field has no length limit below the cap.
+        const poison = 'my password: {weird symbols and it died';
+        String? capturedDescription;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'createTicket') {
+                capturedDescription = call.arguments['description'] as String?;
+                return true;
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        await ZendeskSupportService.createStructuredBugReport(
+          subject: field == 'subject' ? poison : 'App crashes on upload',
+          description: field == 'description' ? poison : 'it just dies',
+          reportId: 'test-blast-radius-$field',
+          // `appVersion` is machine-generated, so this case pins the
+          // invariant that every assembled field is contained, not a reachable
+          // leak - it is the field that would silently break containment if
+          // someone later routed user text through it.
+          appVersion: field == 'appVersion' ? poison : '1.0.7+497',
+          // The device case carries a credential-*shaped key* with a
+          // malformed value, not a poisoned ordinary value: the report renders
+          // device info as `- **key:** value`, so only a composed-line pass
+          // sees the key and the value together. A poisoned value alone is
+          // caught by value-only sanitization and pins nothing.
+          deviceInfo: {
+            'platform': 'ios',
+            if (field == 'device') 'password': '{oops',
+            'version': '18.2',
+          },
+          stepsToReproduce: field == 'steps'
+              ? poison
+              : '1. open the app 2. tap record',
+          expectedBehavior: field == 'expected' ? poison : 'it should upload',
+          currentScreen: field == 'screen' ? poison : 'CameraScreen',
+          errorCounts: {if (field == 'errorCounts') poison: 3},
+          // A closing brace downstream is what an unclosed one reaches for,
+          // and real logs are full of them (`Map.toString`). Without one the
+          // collection branch never engages and this passes on the unquoted
+          // fallback instead of the property it names.
+          logsSummary:
+              '[10:00] [ERROR] upload failed {code: 500}\n'
+              '[10:01] [INFO] relay reconnected',
+        );
+
+        final description = capturedDescription!;
+        expect(description, contains('[REDACTED]'));
+        // Everything the poisoned field does not own survives.
+        if (field != 'appVersion') {
+          expect(description, contains('App Version: 1.0.7+497'));
+        }
+        expect(description, contains('ios'));
+        // Printed after the device block, so it is the marker a malformed
+        // device value would consume.
+        expect(description, contains('18.2'));
+        expect(description, contains('upload failed'));
+        expect(description, contains('relay reconnected'));
+        if (field != 'steps') {
+          expect(description, contains('1. open the app 2. tap record'));
+        }
+        if (field != 'screen') {
+          expect(description, contains('CameraScreen'));
+        }
+        if (field != 'expected') {
+          expect(description, contains('it should upload'));
+        }
+      });
+    }
+
     test('falls back to REST API when SDK not initialized', () async {
       // Reset _initialized by calling initialize with a handler that fails
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -822,6 +1018,165 @@ void main() {
       );
       expect((buildField as Map)['value'], '99');
     });
+
+    test('sanitizes feature request fields before native submission', () async {
+      Map<String, dynamic>? capturedArgs;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      final result = await ZendeskSupportService.createFeatureRequest(
+        subject: 'Feature $_rawNsec',
+        description: 'Description $_rawNcryptsec',
+        usefulness: 'Useful for liz@example.com',
+        whenToUse: 'When importing $_rawNsec',
+      );
+
+      expect(result, isTrue);
+      expect(capturedArgs, isNotNull);
+      final customFields = capturedArgs!['customFields'] as List<dynamic>;
+      final values = customFields
+          .map((field) {
+            return (field as Map<dynamic, dynamic>)['value'] as String;
+          })
+          .join('\n');
+
+      expect(capturedArgs!['subject'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['description'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['description'], isNot(contains(_rawNcryptsec)));
+      expect(capturedArgs!['description'], isNot(contains('liz@example.com')));
+      expect(values, isNot(contains(_rawNsec)));
+      expect(values, isNot(contains('liz@example.com')));
+      expect(capturedArgs!['description'], contains('[REDACTED]'));
+      expect(values, contains('[REDACTED]'));
+    });
+
+    test('sanitizes bug report fields before native submission', () async {
+      Map<String, dynamic>? capturedArgs;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      final result = await ZendeskSupportService.createStructuredBugReport(
+        subject: 'Crash $_rawNsec',
+        description: 'Broke after importing $_rawNcryptsec',
+        reportId: 'test-sanitize-001',
+        appVersion: '1.0.0+42',
+        deviceInfo: {'platform': 'ios', 'version': '17.0'},
+        stepsToReproduce: 'Paste $_rawNsec',
+        expectedBehavior: 'Mail liz@example.com',
+        logsSummary: 'ERROR key=$_rawNsec',
+      );
+
+      expect(result, isTrue);
+      expect(capturedArgs, isNotNull);
+      final customFields = capturedArgs!['customFields'] as List<dynamic>;
+      final stepsField = customFields.firstWhere(
+        (f) => (f as Map)['id'] == 14677364166031,
+      );
+      final expectedField = customFields.firstWhere(
+        (f) => (f as Map)['id'] == 14677341431695,
+      );
+
+      // The body concatenates subject, description, steps, expected and the
+      // log summary, so one assertion covers every user-entered field on the
+      // way into the publicly mirrored ticket.
+      final description = capturedArgs!['description'] as String;
+      expect(description, isNot(contains(_rawNsec)));
+      expect(description, isNot(contains(_rawNcryptsec)));
+      expect(description, isNot(contains('liz@example.com')));
+      expect(description, contains('[REDACTED]'));
+      expect(capturedArgs!['subject'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['subject'], contains('[REDACTED]'));
+      expect((stepsField as Map)['value'], isNot(contains(_rawNsec)));
+      expect((expectedField as Map)['value'], isNot(contains('liz@example')));
+    });
+  });
+
+  group('ZendeskSupportService.createFeatureRequest field isolation', () {
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    // Same containment property as the bug report builder, and the same
+    // reason it needs one case per field: the assembled-blob pass in
+    // `createTicket` masks a plain secret, so only the stray-brace shape shows
+    // whether a given field's own pass does anything.
+    const featureFields = ['subject', 'description', 'usefulness', 'whenToUse'];
+
+    for (final field in featureFields) {
+      test('a stray brace in $field cannot erase the others', () async {
+        const poison = 'my password: {weird symbols and it died';
+        String? capturedDescription;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'createTicket') {
+                capturedDescription = call.arguments['description'] as String?;
+                return true;
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        await ZendeskSupportService.createFeatureRequest(
+          subject: field == 'subject' ? poison : 'Let me pin a vine',
+          description: field == 'description' ? poison : 'it would help a lot',
+          usefulness: field == 'usefulness'
+              ? poison
+              : 'I would use it daily {every morning}',
+          whenToUse: field == 'whenToUse'
+              ? poison
+              : 'when I open the app {every morning}',
+        );
+
+        final description = capturedDescription!;
+
+        expect(description, contains('[REDACTED]'));
+        if (field != 'description') {
+          expect(description, contains('it would help a lot'));
+        }
+        if (field != 'usefulness') {
+          expect(description, contains('I would use it daily'));
+        }
+        if (field != 'whenToUse') {
+          expect(description, contains('when I open the app'));
+        }
+      });
+    }
   });
 
   group('ZendeskSupportService REST API', () {

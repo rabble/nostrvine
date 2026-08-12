@@ -7824,6 +7824,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get supportRequiredHelper => 'Obligatoriu';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'Scurt rezumat al problemei';
 
   @override

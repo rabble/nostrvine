@@ -7684,6 +7684,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get supportRequiredHelper => 'Verplicht';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'Korte samenvatting van het probleem';
 
   @override

@@ -7496,6 +7496,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get supportRequiredHelper => 'ያስፈልጋል';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'የችግሩ አጭር ማጠቃለያ';
 
   @override

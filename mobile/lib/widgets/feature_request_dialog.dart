@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/feature_request/feature_request_cubit.dart';
 import 'package:openvine/blocs/feature_request/feature_request_state.dart';
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
+import 'package:openvine/widgets/support_capped_text_field.dart';
 import 'package:openvine/widgets/support_form_actions.dart';
 import 'package:openvine/widgets/support_form_fields.dart';
 import 'package:openvine/widgets/support_public_submission_notice.dart';
@@ -109,45 +111,45 @@ class _FeatureRequestView extends StatelessWidget {
                     spacing: 16,
                     children: [
                       const SupportPublicSubmissionNotice(),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxSubjectLength,
                         controller: fields.subject,
                         labelText: l10n.supportSubjectRequiredLabel,
                         hintText: l10n.featureRequestSubjectHint,
                         helperText: l10n.supportRequiredHelper,
                         enabled: !isSubmitting,
-                        filled: true,
                         textInputAction: TextInputAction.next,
                         onSubmitted: (_) =>
                             fields.descriptionFocus.requestFocus(),
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.description,
                         focusNode: fields.descriptionFocus,
                         labelText: l10n.featureRequestDescriptionRequiredLabel,
                         hintText: l10n.featureRequestDescriptionHint,
                         helperText: l10n.supportRequiredHelper,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 3,
                         maxLines: 5,
                         keyboardType: TextInputType.multiline,
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.usefulness,
                         labelText: l10n.featureRequestUsefulnessLabel,
                         hintText: l10n.featureRequestUsefulnessHint,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 3,
                         maxLines: 5,
                         keyboardType: TextInputType.multiline,
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.whenToUse,
                         labelText: l10n.featureRequestWhenLabel,
                         hintText: l10n.featureRequestWhenHint,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 2,
                         maxLines: 4,
                         keyboardType: TextInputType.multiline,

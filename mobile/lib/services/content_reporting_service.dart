@@ -8,6 +8,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
@@ -208,14 +209,23 @@ class ContentReportingService {
       // Generate report ID
       final reportId = 'report_${DateTime.now().millisecondsSinceEpoch}';
 
+      // Redact once, here, so every projection of this report inherits it.
+      // The kind-1984 event is published to relays in plaintext and the
+      // Zendesk ticket can be mirrored publicly, so a credential pasted into
+      // the details field must not survive into either.
+      final safeDetails = sanitizeDiagnosticText(details);
+      final safeAdditionalContext = additionalContext == null
+          ? null
+          : sanitizeDiagnosticText(additionalContext);
+
       // Create and broadcast NIP-56 reporting event (kind 1984)
       final reportEvent = await _createReportingEvent(
         reportId: reportId,
         eventId: eventId,
         authorPubkey: authorPubkey,
         reason: reason,
-        details: details,
-        additionalContext: additionalContext,
+        details: safeDetails,
+        additionalContext: safeAdditionalContext,
         hashtags: hashtags,
         nip56EventIds: nip56EventIds,
       );
@@ -251,8 +261,8 @@ class ContentReportingService {
         eventId: eventId,
         authorPubkey: authorPubkey,
         reason: reason,
-        details: details,
-        additionalContext: additionalContext,
+        details: safeDetails,
+        additionalContext: safeAdditionalContext,
       );
 
       // Save report to local history
@@ -261,9 +271,12 @@ class ContentReportingService {
         eventId: eventId,
         authorPubkey: authorPubkey,
         reason: reason,
-        details: details,
+        // The redacted copy, not the raw one. Nothing reads this history
+        // today, so keeping the raw text buys nothing and leaves a secret
+        // sitting in storage for whoever surfaces, exports or replays it.
+        details: safeDetails,
         createdAt: DateTime.now(),
-        additionalContext: additionalContext,
+        additionalContext: safeAdditionalContext,
         tags: hashtags,
       );
 
@@ -633,12 +646,14 @@ class ContentReportingService {
       description.writeln('Violation Type: ${reason.name}');
       description.writeln();
       description.writeln('Reporter Details:');
-      description.writeln(details);
+      // Per-field, before assembly: redaction spans lines, so sanitizing the
+      // finished blob lets one reporter field erase the ones after it.
+      description.writeln(sanitizeDiagnosticText(details));
 
       if (additionalContext != null) {
         description.writeln();
         description.writeln('Additional Context:');
-        description.writeln(additionalContext);
+        description.writeln(sanitizeDiagnosticText(additionalContext));
       }
 
       description.writeln();

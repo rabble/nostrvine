@@ -5,16 +5,19 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/report/report_submission_cubit.dart';
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/report_content_confirmation.dart';
+import 'package:openvine/widgets/support_capped_text_field.dart';
 
 /// Shows a [VineBottomSheet] for reporting content or a user.
 ///
@@ -535,21 +538,11 @@ class _ReportFormBody extends StatelessWidget {
                     l10n.reportDetailsRequired,
                     style: VineTheme.labelSmallFont(color: VineTheme.vineGreen),
                   ),
-                  TextField(
-                    key: detailsFieldKey,
+                  _CappedDetailsField(
+                    fieldKey: detailsFieldKey,
                     controller: detailsController,
                     focusNode: detailsFocusNode,
-                    enableInteractiveSelection: true,
-                    onChanged: (_) => onDetailsChanged(),
-                    style: VineTheme.bodyLargeFont(
-                      color: context.vineColors.primaryText,
-                    ),
-                    minLines: 3,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      isCollapsed: true,
-                    ),
+                    onChanged: onDetailsChanged,
                   ),
                 ],
               ),
@@ -700,6 +693,85 @@ class _RadioIndicator extends StatelessWidget {
               )
             : null,
       ),
+    );
+  }
+}
+
+/// The report details field, capped like the other support forms and saying so
+/// when the cap dropped part of a paste.
+///
+/// Its own widget because the notice needs state: whether the limiter actually
+/// truncated, which cannot be derived by comparing `String.length` to the cap.
+class _CappedDetailsField extends StatefulWidget {
+  const _CappedDetailsField({
+    required this.fieldKey,
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+  });
+
+  final GlobalKey fieldKey;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final VoidCallback onChanged;
+
+  @override
+  State<_CappedDetailsField> createState() => _CappedDetailsFieldState();
+}
+
+class _CappedDetailsFieldState extends State<_CappedDetailsField> {
+  bool _truncated = false;
+
+  void _onTruncated() {
+    if (_truncated || !mounted) return;
+    setState(() => _truncated = true);
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      context.l10n.supportFieldLimitReached,
+      Directionality.of(context),
+    );
+  }
+
+  void _onChanged(String value) {
+    widget.onChanged();
+    if (_truncated &&
+        value.characters.length < BugReportConfig.maxFreeTextFieldLength) {
+      setState(() => _truncated = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 4,
+      children: [
+        TextField(
+          key: widget.fieldKey,
+          controller: widget.controller,
+          focusNode: widget.focusNode,
+          enableInteractiveSelection: true,
+          onChanged: _onChanged,
+          style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
+          minLines: 3,
+          maxLines: 5,
+          inputFormatters: [
+            ReportingLengthLimiter(
+              BugReportConfig.maxFreeTextFieldLength,
+              _onTruncated,
+            ),
+          ],
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            isCollapsed: true,
+          ),
+        ),
+        if (_truncated)
+          Text(
+            context.l10n.supportFieldLimitReached,
+            style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
+          ),
+      ],
     );
   }
 }

@@ -78,7 +78,7 @@ class BugReportCubit extends Cubit<BugReportState> {
       );
       final success = await _submit(
         subject: trimmedSubject,
-        description: trimmedDescription,
+        description: reportData.userDescription,
         stepsToReproduce: stepsToReproduce.trim(),
         expectedBehavior: expectedBehavior.trim(),
         reportId: reportData.reportId,

@@ -7740,6 +7740,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get supportRequiredHelper => 'Kailangan';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'Maikling buod ng problema';
 
   @override

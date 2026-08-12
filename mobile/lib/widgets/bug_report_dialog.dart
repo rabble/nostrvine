@@ -12,60 +12,14 @@ import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
+import 'package:openvine/services/bug_report_log_summary.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/image_attachment_picker.dart';
+import 'package:openvine/widgets/support_capped_text_field.dart';
 import 'package:openvine/widgets/support_form_actions.dart';
 import 'package:openvine/widgets/support_form_fields.dart';
 import 'package:openvine/widgets/support_public_submission_notice.dart';
-import 'package:unified_logger/unified_logger.dart';
-
-/// Build a log summary prioritizing errors/warnings with recent context.
-/// Returns null if logs are empty.
-/// Takes up to 200 most recent error/warning entries plus the last 50
-/// entries of any level, deduplicates, and sorts chronologically.
-/// Individual entries are truncated to [BugReportConfig.maxLogEntryLength]
-/// characters and the total summary is capped at
-/// [BugReportConfig.maxLogSummaryLength] characters.
-String? buildLogsSummary(List<LogEntry> logs) {
-  if (logs.isEmpty) return null;
-
-  // Last 200 error/warning entries
-  final errorWarnings = logs
-      .where((l) => l.level == LogLevel.error || l.level == LogLevel.warning)
-      .toList();
-  final recentErrors = errorWarnings.length > 200
-      ? errorWarnings.sublist(errorWarnings.length - 200)
-      : errorWarnings;
-
-  // Last 50 entries of any level
-  final recentContext = logs.length > 50
-      ? logs.sublist(logs.length - 50)
-      : logs;
-
-  // Merge, deduplicate, sort chronologically
-  final merged = <LogEntry>{...recentErrors, ...recentContext}.toList()
-    ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-  final buffer = StringBuffer();
-  for (var i = 0; i < merged.length; i++) {
-    var line = merged[i].toFormattedString();
-    if (line.length > BugReportConfig.maxLogEntryLength) {
-      line =
-          '${line.substring(0, BugReportConfig.maxLogEntryLength)}... [truncated]';
-    }
-    if (buffer.length + line.length + 1 > BugReportConfig.maxLogSummaryLength) {
-      final remaining = merged.length - i;
-      final noun = remaining == 1 ? 'entry' : 'entries';
-      buffer.writeln('... [$remaining $noun truncated]');
-      break;
-    }
-    buffer.writeln(line);
-  }
-
-  final result = buffer.toString().trimRight();
-  return result.isEmpty ? null : result;
-}
 
 /// Route for collecting and submitting bug reports.
 class BugReportScreen extends StatefulWidget {
@@ -178,45 +132,45 @@ class _BugReportView extends StatelessWidget {
                     spacing: 16,
                     children: [
                       const SupportPublicSubmissionNotice(),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxSubjectLength,
                         controller: fields.subject,
                         labelText: l10n.supportSubjectRequiredLabel,
                         hintText: l10n.bugReportSubjectHint,
                         helperText: l10n.supportRequiredHelper,
                         enabled: !isSubmitting,
-                        filled: true,
                         textInputAction: TextInputAction.next,
                         onSubmitted: (_) =>
                             fields.descriptionFocus.requestFocus(),
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.description,
                         focusNode: fields.descriptionFocus,
                         labelText: l10n.bugReportDescriptionRequiredLabel,
                         hintText: l10n.bugReportDescriptionHint,
                         helperText: l10n.supportRequiredHelper,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 3,
                         maxLines: 5,
                         keyboardType: TextInputType.multiline,
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.steps,
                         labelText: l10n.bugReportStepsLabel,
                         hintText: l10n.bugReportStepsHint,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 3,
                         maxLines: 5,
                         keyboardType: TextInputType.multiline,
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.expected,
                         labelText: l10n.bugReportExpectedBehaviorLabel,
                         hintText: l10n.bugReportExpectedBehaviorHint,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 2,
                         maxLines: 4,
                         keyboardType: TextInputType.multiline,

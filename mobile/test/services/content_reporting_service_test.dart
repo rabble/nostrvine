@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for ContentReportingService
 // ABOUTME: Tests NIP-56 content reporting including AI-generated content reports
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -10,6 +11,7 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -544,6 +546,177 @@ void main() {
       expect(result.success, true);
       expect(result.error, isNull);
     });
+
+    test('keeps only the redacted copy in local history', () async {
+      // Nothing reads this history today, which is exactly why the raw copy
+      // should not sit there waiting for the first feature that surfaces,
+      // exports or replays it.
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [
+          ['e', _validEventId('e')],
+          ['p', 'reported_author'],
+        ],
+        content: 'spam',
+      );
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+      final _ = await service.reportContent(
+        eventId: _validEventId('e'),
+        authorPubkey: 'reported_author',
+        reason: ContentFilterReason.other,
+        details: 'they posted my password: hunter2',
+        additionalContext: 'and my api_key=SECRETKEY123',
+      );
+
+      final stored = service.reportHistory.last;
+      expect(stored.details, contains('[REDACTED]'));
+      expect(stored.details, isNot(contains('hunter2')));
+      expect(stored.additionalContext, isNot(contains('SECRETKEY123')));
+    });
+
+    test('never publishes a credential in the kind 1984 event', () async {
+      // The NIP-56 event goes to public relays: world-readable, permanent and
+      // unretractable, so it is a worse destination for a pasted secret than
+      // the Zendesk ticket. Both the content body and the `alt` tag carry
+      // user-typed text.
+      String? capturedContent;
+      List<List<String>>? capturedTags;
+
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [
+          ['e', _validEventId('d')],
+          ['p', 'reported_author'],
+        ],
+        content: 'spam',
+      );
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedContent =
+            invocation.namedArguments[const Symbol('content')] as String?;
+        capturedTags =
+            invocation.namedArguments[const Symbol('tags')]
+                as List<List<String>>?;
+        return reportEvent;
+      });
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+      final _ = await service.reportContent(
+        eventId: _validEventId('d'),
+        authorPubkey: 'reported_author',
+        reason: ContentFilterReason.other,
+        details: 'they posted my password: hunter2 and my token: abc123',
+        additionalContext: 'also my api_key=SECRETKEY123',
+      );
+
+      expect(capturedContent, contains('[REDACTED]'));
+      expect(capturedContent, isNot(contains('hunter2')));
+      expect(capturedContent, isNot(contains('abc123')));
+      expect(capturedContent, isNot(contains('SECRETKEY123')));
+      // Redacting is not the same as deleting. Without these, dropping the
+      // reporter's context entirely would satisfy the assertions above and
+      // moderation would silently lose what the report was about.
+      expect(capturedContent, contains('they posted my'));
+      expect(capturedContent, contains('also my'));
+      final altTag = capturedTags!.firstWhere((tag) => tag.first == 'alt');
+      expect(altTag.last, contains('also my'));
+      expect(altTag.last, contains('[REDACTED]'));
+    });
+
+    test(
+      'a stray brace in details cannot erase the reporter context',
+      () async {
+        // Redaction spans lines, so sanitizing only the assembled ticket let a
+        // credential key with an unclosed brace in `details` consume the
+        // additional-context section printed after it. A moderation ticket that
+        // silently loses the reporter's context is the same failure as a bug
+        // report that arrives empty.
+        const zendeskChannel = MethodChannel('com.openvine/zendesk_support');
+        String? capturedDescription;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(zendeskChannel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'createTicket') {
+                capturedDescription = call.arguments['description'] as String?;
+                return true;
+              }
+              return null;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(zendeskChannel, null);
+        });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        final reportEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [
+            ['e', _validEventId('c')],
+            ['p', 'reported_author'],
+          ],
+          content: 'spam',
+        );
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => reportEvent);
+        when(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+        final _ = await service.reportContent(
+          eventId: _validEventId('c'),
+          authorPubkey: 'reported_author',
+          reason: ContentFilterReason.other,
+          details: 'they posted my password: {and then more',
+          // A closing brace downstream is what an unclosed one reaches for.
+          additionalContext: 'this happened in a reply {twice}',
+        );
+
+        final description = capturedDescription!;
+
+        expect(description, contains('[REDACTED]'));
+        expect(description, contains('this happened in a reply'));
+      },
+    );
 
     test('reportContent() handles broadcast failures gracefully', () async {
       // Arrange

@@ -2630,7 +2630,7 @@ class BlossomUploadService {
 
       onProgress?.call(0.2);
 
-      return _uploadImageSourceToServers(
+      return await _uploadImageSourceToServers(
         source: _FileUploadSource(strippedFile),
         fileHash: fileHash,
         fileSize: fileSize,
@@ -2707,7 +2707,7 @@ class BlossomUploadService {
 
       onProgress?.call(0.2);
 
-      return _uploadImageSourceToServers(
+      return await _uploadImageSourceToServers(
         source: _BytesUploadSource(
           bytes: processedBytes,
           filename: processedFilename,
@@ -2875,128 +2875,6 @@ class BlossomUploadService {
           errorMessage: 'All servers failed',
           failureReason: BlossomUploadFailureReason.unknown,
         );
-  }
-
-  /// Upload a bug report file (text/plain) to the configured
-  /// Blossom server.
-  ///
-  /// Tries multiple Blossom servers in priority order with
-  /// fallback. Returns the URL if any server succeeds, null
-  /// only if all servers fail.
-  Future<String?> uploadBugReport({
-    required File bugReportFile,
-    void Function(double)? onProgress,
-  }) async {
-    try {
-      // Check authentication
-      if (!authProvider.isAuthenticated) {
-        Log.error(
-          'Not authenticated - cannot upload bug report',
-          name: 'BlossomUploadService',
-          category: LogCategory.system,
-        );
-        return null;
-      }
-
-      // Report initial progress
-      onProgress?.call(0.1);
-
-      // Calculate file hash and size
-      final fileBytes = await bugReportFile.readAsBytes();
-      final fileHash = HashUtil.sha256Hash(fileBytes);
-      final fileSize = fileBytes.length;
-
-      Log.info(
-        'Bug report file hash: $fileHash, size: $fileSize bytes',
-        name: 'BlossomUploadService',
-        category: LogCategory.system,
-      );
-
-      onProgress?.call(0.2);
-
-      // Get ordered list of servers to try
-      final serverUrls = await _getServerUrlsForUpload();
-
-      Log.info(
-        'Trying ${serverUrls.length} Blossom servers for bug report upload',
-        name: 'BlossomUploadService',
-        category: LogCategory.system,
-      );
-
-      // Try each server in order until one succeeds
-      for (final serverUrl in serverUrls) {
-        try {
-          Log.info(
-            'Attempting bug report upload to: $serverUrl',
-            name: 'BlossomUploadService',
-            category: LogCategory.system,
-          );
-
-          final result = await _uploadToServer(
-            serverUrl: serverUrl,
-            source: _FileUploadSource(bugReportFile),
-            fileHash: fileHash,
-            fileSize: fileSize,
-            contentType: 'text/plain',
-            onProgress: onProgress,
-          );
-
-          if (result.success) {
-            // Extract URL from result (fallbackUrl or url)
-            final uploadedUrl = result.fallbackUrl ?? result.url;
-
-            if (uploadedUrl != null) {
-              Log.info(
-                'Bug report uploaded to: $serverUrl',
-                name: 'BlossomUploadService',
-                category: LogCategory.system,
-              );
-              Log.info(
-                '  URL: $uploadedUrl',
-                name: 'BlossomUploadService',
-                category: LogCategory.system,
-              );
-              return uploadedUrl;
-            }
-          }
-
-          Log.warning(
-            'Upload to $serverUrl failed: '
-            '${result.errorMessage}, '
-            'trying next server...',
-            name: 'BlossomUploadService',
-            category: LogCategory.system,
-          );
-          // coverage:ignore-start
-        } on Object catch (e) {
-          Log.warning(
-            'Upload to $serverUrl failed: $e, '
-            'trying next server...',
-            name: 'BlossomUploadService',
-            category: LogCategory.system,
-          );
-          continue;
-        }
-        // coverage:ignore-end
-      }
-
-      // All servers failed
-      Log.error(
-        'All ${serverUrls.length} servers failed '
-        'for bug report upload',
-        name: 'BlossomUploadService',
-        category: LogCategory.system,
-      );
-
-      return null;
-    } on Object catch (e) {
-      Log.error(
-        'Bug report upload error: $e',
-        name: 'BlossomUploadService',
-        category: LogCategory.system,
-      );
-      return null;
-    }
   }
 
   /// Add ProofMode headers to upload request.

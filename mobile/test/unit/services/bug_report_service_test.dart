@@ -6,9 +6,13 @@ import 'dart:io' show Platform;
 import 'package:analytics/analytics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show BugReportData;
+import 'package:models/models.dart' show BugReportData, LogEntry, LogLevel;
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/bug_report_service.dart';
+
+const _rawNsec =
+    'nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6';
+const _rawNcryptsec = 'ncryptsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
 
 void main() {
   group('BugReportService', () {
@@ -84,13 +88,12 @@ void main() {
 
     test('should collect error counts from injected tracker', () async {
       final errorTracker =
-          ErrorAnalyticsTracker(
-            sink: const NoOpAnalyticsEventSink(),
-          )..trackError(
-            errorType: 'feed_load_failed',
-            errorMessage: 'Feed failed to load',
-            location: 'NewVideosTab',
-          );
+          ErrorAnalyticsTracker(sink: const NoOpAnalyticsEventSink())
+            ..trackError(
+              errorType: 'feed_load_failed',
+              errorMessage: 'Feed failed to load',
+              location: 'NewVideosTab',
+            );
       final service = BugReportService(errorTracker: errorTracker);
 
       final data = await service.collectDiagnostics(
@@ -98,6 +101,16 @@ void main() {
       );
 
       expect(data.errorCounts, {'NewVideosTab:feed_load_failed': 1});
+    });
+
+    test('collectDiagnostics returns sanitized description', () async {
+      final data = await service.collectDiagnostics(
+        userDescription: 'My key is $_rawNsec and email liz@example.com',
+      );
+
+      expect(data.userDescription, isNot(contains(_rawNsec)));
+      expect(data.userDescription, isNot(contains('liz@example.com')));
+      expect(data.userDescription, contains('[REDACTED]'));
     });
 
     test(
@@ -119,8 +132,7 @@ void main() {
       final input = BugReportData(
         reportId: 'test-123',
         timestamp: DateTime.now(),
-        userDescription:
-            'My nsec is nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6',
+        userDescription: 'My nsec is $_rawNsec',
         deviceInfo: {},
         appVersion: '1.0.0',
         recentLogs: [],
@@ -130,6 +142,66 @@ void main() {
       final sanitized = service.sanitizeSensitiveData(input);
 
       expect(sanitized.userDescription, isNot(contains('nsec1')));
+      expect(sanitized.userDescription, contains('[REDACTED]'));
+    });
+
+    test('sanitizes a device value by its key, not on its own', () {
+      // The rules match a credential key next to its value, so a map value
+      // sanitized in isolation arrives with no key attached and survives. This
+      // map is rendered into the shareable export, so the miss ships.
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'it crashed',
+        deviceInfo: {
+          'platform': 'ios',
+          'sessionKey': 'hunter2',
+          // A credential is just as exposed inside a list or a nested map, and
+          // recursing into those hands the rules a bare value with no key.
+          'apiKeys': ['LISTSECRET1', 'LISTSECRET2'],
+          'tokenBag': {'inner': 'NESTEDSECRET'},
+          'passcode': 1234,
+          'version': '18.2',
+        },
+        appVersion: '1.0.0',
+        recentLogs: [],
+        errorCounts: {'auth:sessionKey=hunter2': 3, 'login:token=abc': 5},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+      final rendered = sanitized.deviceInfo.toString();
+
+      expect(sanitized.deviceInfo['sessionKey'], isNot(contains('hunter2')));
+      expect(rendered, isNot(contains('LISTSECRET1')));
+      expect(rendered, isNot(contains('LISTSECRET2')));
+      expect(rendered, isNot(contains('NESTEDSECRET')));
+      expect(rendered, isNot(contains('1234')));
+      // Error-count keys are `'$location:$errorType'` strings, so they can
+      // carry a credential-shaped name too.
+      expect(sanitized.errorCounts.keys.join(), isNot(contains('hunter2')));
+      // Both credential-shaped keys collapse to the same placeholder, so the
+      // counts are summed rather than one silently replacing the other.
+      expect(sanitized.errorCounts['[REDACTED]'], 8);
+      // Ordinary device fields are untouched - the rule is key-driven, not a
+      // blanket redaction of everything in the map.
+      expect(sanitized.deviceInfo['platform'], 'ios');
+      expect(sanitized.deviceInfo['version'], '18.2');
+    });
+
+    test('should sanitize ncryptsec keys from description', () {
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'My encrypted key is $_rawNcryptsec',
+        deviceInfo: {},
+        appVersion: '1.0.0',
+        recentLogs: [],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+
+      expect(sanitized.userDescription, isNot(contains('ncryptsec1')));
       expect(sanitized.userDescription, contains('[REDACTED]'));
     });
 
@@ -215,6 +287,92 @@ void main() {
 
       expect(sanitized.userDescription, isNot(contains('secret_token_here')));
       expect(sanitized.userDescription, contains('[REDACTED]'));
+    });
+
+    test('should sanitize email addresses from descriptions and logs', () {
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'Follow up at liz@example.com',
+        deviceInfo: {},
+        appVersion: '1.0.0',
+        recentLogs: [
+          LogEntry(
+            timestamp: DateTime.now(),
+            level: LogLevel.warning,
+            message: 'User email liz@example.com',
+            error: 'Contact liz@example.com failed',
+            stackTrace: 'Frame included liz@example.com',
+          ),
+        ],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+      final log = sanitized.recentLogs.single;
+
+      expect(sanitized.userDescription, isNot(contains('liz@example.com')));
+      expect(log.message, isNot(contains('liz@example.com')));
+      expect(log.error, isNot(contains('liz@example.com')));
+      expect(log.stackTrace, isNot(contains('liz@example.com')));
+      expect(sanitized.userDescription, contains('[REDACTED]'));
+      expect(log.message, contains('[REDACTED]'));
+    });
+
+    test('should sanitize nsec keys from log entries', () {
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'Normal description',
+        deviceInfo: {},
+        appVersion: '1.0.0',
+        recentLogs: [
+          LogEntry(
+            timestamp: DateTime.now(),
+            level: LogLevel.error,
+            message: 'Message included $_rawNsec',
+            error: 'Error included $_rawNsec',
+            stackTrace: 'Stack included $_rawNsec',
+          ),
+        ],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+      final log = sanitized.recentLogs.single;
+
+      expect(log.message, isNot(contains(_rawNsec)));
+      expect(log.error, isNot(contains(_rawNsec)));
+      expect(log.stackTrace, isNot(contains(_rawNsec)));
+      expect(log.message, contains('[REDACTED]'));
+      expect(log.error, contains('[REDACTED]'));
+      expect(log.stackTrace, contains('[REDACTED]'));
+    });
+
+    test('should redact device names from diagnostic device info', () {
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'Normal description',
+        deviceInfo: const {
+          'platform': 'ios',
+          'model': 'iPhone',
+          'name': "Liz's iPhone",
+          'hostName': 'liz-macbook',
+          'computerName': 'LIZ-PC',
+        },
+        appVersion: '1.0.0',
+        recentLogs: [],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+
+      expect(sanitized.deviceInfo['platform'], 'ios');
+      expect(sanitized.deviceInfo['model'], 'iPhone');
+      expect(sanitized.deviceInfo['name'], '[REDACTED]');
+      expect(sanitized.deviceInfo['hostName'], '[REDACTED]');
+      expect(sanitized.deviceInfo['computerName'], '[REDACTED]');
     });
 
     test('should preserve pubkeys in sanitized data', () {

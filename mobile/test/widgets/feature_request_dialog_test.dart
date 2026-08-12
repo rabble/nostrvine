@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/feature_request/feature_request_cubit.dart';
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:openvine/widgets/support_public_submission_notice.dart';
@@ -74,6 +75,52 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
     }
+
+    testWidgets('caps every pasted free-text field', (tester) async {
+      // Same cap, same reason, same form family as the bug report screen:
+      // sanitization runs on the main isolate and its cost scales with field
+      // size, so an uncapped paste freezes submission. Every field is asserted
+      // individually - a loop over only the first one passes with the other
+      // three uncapped.
+      await openFlow(tester);
+
+      const overflow = 500;
+      final expectedCaps = <int, int>{
+        0: BugReportConfig.maxSubjectLength,
+        1: BugReportConfig.maxFreeTextFieldLength,
+        2: BugReportConfig.maxFreeTextFieldLength,
+        3: BugReportConfig.maxFreeTextFieldLength,
+      };
+
+      for (final entry in expectedCaps.entries) {
+        final field = find.byType(TextField).at(entry.key);
+        await tester.enterText(field, 'a' * (entry.value + overflow));
+        await tester.pump();
+
+        expect(
+          tester.widget<TextField>(field).controller!.text.length,
+          entry.value,
+          reason: 'field ${entry.key} is not capped',
+        );
+      }
+    });
+
+    testWidgets('says so when a paste hit the cap', (tester) async {
+      // The formatter drops the tail of a long paste, and that tail can be the
+      // detail the user meant to send. Silence would look like acceptance.
+      await openFlow(tester);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.supportFieldLimitReached), findsNothing);
+
+      await tester.enterText(
+        find.byType(TextField).at(1),
+        'a' * (BugReportConfig.maxFreeTextFieldLength + 500),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.supportFieldLimitReached), findsOneWidget);
+    });
 
     DivineButton buttonFor(WidgetTester tester, String label) {
       return tester.widget<DivineButton>(
