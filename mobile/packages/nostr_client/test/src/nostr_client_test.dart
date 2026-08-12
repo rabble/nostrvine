@@ -2039,6 +2039,111 @@ void main() {
         ).called(2);
       });
 
+      test('creates fresh anonymous subscriptions for identical filters', () {
+        final filters = [
+          Filter(kinds: [EventKind.textNote], limit: 10),
+        ];
+        final requestedIds = <String>[];
+
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer((invocation) {
+          final id = invocation.namedArguments[#id] as String;
+          requestedIds.add(id);
+          return id;
+        });
+
+        client
+          ..subscribe(filters)
+          ..subscribe(filters);
+
+        expect(requestedIds, hasLength(2));
+        expect(requestedIds.toSet(), hasLength(2));
+        verify(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).called(2);
+      });
+
+      test(
+        'cancels anonymous relay subscription when listener cancels',
+        () async {
+          final filters = [
+            Filter(kinds: [EventKind.textNote], limit: 10),
+          ];
+
+          when(
+            () => mockNostr.subscribe(
+              any(),
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer(
+            (invocation) => invocation.namedArguments[#id] as String,
+          );
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final stream = client.subscribe(filters);
+          final subscription = stream.listen((_) {});
+
+          await subscription.cancel();
+
+          verify(() => mockNostr.unsubscribe(any())).called(1);
+          expect(client.activeSubscriptionCount, 0);
+        },
+      );
+
+      test('closes anonymous stream after last listener cancels', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote], limit: 10),
+        ];
+
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer(
+          (invocation) => invocation.namedArguments[#id] as String,
+        );
+        when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+        final stream = client.subscribe(filters);
+        final subscription = stream.listen((_) {});
+
+        await subscription.cancel();
+
+        await expectLater(stream, emitsDone);
+      });
+
       test('uses custom subscription ID when provided', () {
         final filters = [
           Filter(kinds: [EventKind.textNote], limit: 10),

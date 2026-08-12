@@ -2233,10 +2233,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Pengubah environment dan pengaturan debug';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Aktifkan fitur eksperimen yang mungkin bermasalah.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Manajemen Kunci';
 
   @override
@@ -6205,6 +6201,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get discoverListsLoading => 'Mencari daftar publik...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Relay tidak mengembalikan daftar tepat waktu. Coba lagi.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Layanan tidak tersedia.';
+
+  @override
   String get discoverListsEmptyTitle => 'Tidak ada daftar publik';
 
   @override
@@ -10069,6 +10072,66 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Blokir pengklaim lencana';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Blokir pengklaim lencana';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Tidak bisa memuat pengklaim lencana ini';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Belum ada yang mengklaim lencana ini';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Kami tidak menemukan pengklaim saat ini untuk diblokir.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blokir $count pengklaim?',
+      one: 'Blokir 1 pengklaim?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ini memblokir $count akun yang sedang mengklaim lencana ini. Postingan mereka akan keluar dari feed-mu, dan mereka tidak akan diberi tahu.',
+      one:
+          'Ini memblokir akun yang sedang mengklaim lencana ini. Postingannya akan keluar dari feed-mu, dan mereka tidak akan diberi tahu.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blokir $count akun',
+      one: 'Blokir 1 akun',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Pengklaim lencana diblokir';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Tidak bisa memblokir pengklaim lencana';
+
+  @override
   String get badgeDetailLoadError => 'Lencana ini gagal dimuat';
 
   @override
@@ -10823,10 +10886,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Hapus baris ini';
 
   @override
-  String get subtitleEditorStartLabel => 'Mulai';
+  String get subtitleEditorPreviewUnavailable =>
+      'Video tidak bisa diputar sekarang, tapi kamu tetap bisa memperbaiki takarirnya.';
 
   @override
-  String get subtitleEditorEndLabel => 'Selesai';
+  String get subtitleEditorPlayPreview => 'Putar video';
+
+  @override
+  String get subtitleEditorPausePreview => 'Jeda video';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11418,4 +11485,200 @@ class AppLocalizationsId extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Akun terverifikasi';
+
+  @override
+  String get verifySignedOutMessage => 'Masuk dulu untuk menautkan akunmu.';
+
+  @override
+  String get verifyIntro =>
+      'Tautkan akun yang sudah kamu punya, biar orang tahu ini memang kamu.';
+
+  @override
+  String get verifyLoadFailed => 'Tautanmu gagal dimuat.';
+
+  @override
+  String get verifyRetry => 'Coba lagi';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Tertaut';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Verifier tidak bisa dihubungi, jadi semuanya tampil belum dicek.';
+
+  @override
+  String get verifyAddSectionTitle => 'Tambah akun';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Kamu sudah menautkan semua yang kami dukung.';
+
+  @override
+  String get verifyStatusVerified => 'Terverifikasi';
+
+  @override
+  String get verifyStatusUnverified => 'Belum terverifikasi';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Lepas tautan akun $platform $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Lepas tautan $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity tidak akan muncul lagi di profilmu. Kamu bisa menautkannya lagi nanti, tapi kamu harus masuk lagi atau memposting bukti baru.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Lepas tautan';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Tautkan akun $platform kamu';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Sekali ketuk';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Masuk ke $platform, sisanya kami yang urus. Tidak ada yang diposting.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Lanjut dengan $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Atau posting bukti';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Posting npub-mu di akunmu, lalu tempel tautan ke postingan itu.';
+
+  @override
+  String get verifyNpubLabel => 'npub kamu';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Salin npub kamu';
+
+  @override
+  String get verifyNpubCopied => 'npub disalin';
+
+  @override
+  String get verifyIdentityLabel => 'Nama akun';
+
+  @override
+  String get verifyProofLabel => 'Tautan ke postinganmu';
+
+  @override
+  String get verifyConnectProofCta => 'Cek dan tautkan';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Kami tidak menemukan npub-mu di postingan itu.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Verifier tidak bisa dihubungi. Coba lagi sebentar lagi.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Gagal. Coba sekali lagi.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Isi handle kamu dulu.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Terverifikasi, tapi tidak ada relay yang menerima pembaruan. Coba lagi.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Masuk sekali ketuk belum disiapkan untuk yang ini. Pakai bukti di bawah.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Buat gist publik dengan npub-mu di file pertama, lalu tempel tautan gist-nya.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Posting npub-mu di channel Discord yang bisa dibaca bot kami, lalu tempel tautan pesannya. Undangan server tidak membuktikan apa pun.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tweet npub-mu dari akun itu, lalu tempel tautan tweet-nya.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Posting npub-mu dari akun itu, lalu tempel tautannya. Nama akun harus menyertakan instance — mastodon.social/@alice, bukan cuma alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Yang ditautkan adalah channel-nya, bukan akun Telegram-mu. Channel perlu tautan publik dulu (Telegram membuat yang baru jadi privat). Posting npub-mu di sana dan tempel tautan pesannya.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Sudah masuk di atas? Tidak perlu apa-apa lagi. Kalau belum, posting npub-mu dan tempel tautan postingannya.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Taruh npub-mu di caption video, lalu tempel tautan video itu.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Taruh npub-mu di deskripsi video, lalu tempel tautan video itu.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform sudah tertaut.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Itu channel privat atau undangan. Beri channel itu tautan publik, lalu tempel tautan pesannya.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Gagal melepas tautan. Coba lagi.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Kami tidak bisa membaca tautanmu saat ini, jadi tidak ada yang diubah. Cek koneksimu dan coba lagi.';
+
+  @override
+  String get verifyChannelLabel => 'Nama channel';
+
+  @override
+  String get verifyHowItWorksTitle => 'Bagaimana cara kerjanya?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Anggap saja ini jabat tangan antara dua akun:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Profil Divine-mu bilang: “Aku @alice di Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Akun Twitter-mu membenarkan: “Ya, profil Divine itu punyaku.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Kami cek kedua sisi. Kalau cocok, kamu terverifikasi. Tidak bisa dipalsukan — nama dan foto bisa disalin, memposting dari akun aslimu tidak.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Tautannya ada di identitas Nostr-mu sendiri, jadi kamu bisa menghapusnya dari sini kapan saja.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identitas';
 }

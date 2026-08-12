@@ -44,6 +44,17 @@ List<RouteBase> videoRoutes() {
       name: CreatorAnalyticsScreen.routeName,
       parentNavigatorKey: NavigatorKeys.root,
       builder: (ctx, st) => const CreatorAnalyticsScreen(),
+      routes: [
+        GoRoute(
+          path: PostAnalyticsDetailScreen.subpath,
+          name: PostAnalyticsDetailScreen.routeName,
+          parentNavigatorKey: NavigatorKeys.root,
+          builder: (ctx, st) => PostAnalyticsDetailScreen(
+            videoId: st.pathParameters['videoId'] ?? '',
+            performance: extraAs<VideoPerformance>(st.extra),
+          ),
+        ),
+      ],
     ),
     // Video detail route (for deep links)
     GoRoute(

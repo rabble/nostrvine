@@ -2319,10 +2319,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przełącznik środowiska i ustawienia debugowania';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Włączaj flagi funkcji, które mogą czkać.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Zarządzanie kluczami';
 
   @override
@@ -6392,6 +6388,13 @@ class AppLocalizationsPl extends AppLocalizations {
   String get discoverListsLoading => 'Odkrywanie publicznych list...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Relay nie zwrócił list na czas. Spróbuj ponownie.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Usługa niedostępna.';
+
+  @override
   String get discoverListsEmptyTitle => 'Nie znaleziono publicznych list';
 
   @override
@@ -10298,6 +10301,75 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Zablokuj osoby z tą odznaką';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Zablokuj osoby z tą odznaką';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Nie udało się wczytać osób z tą odznaką';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Nikt teraz nie ma tej odznaki';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Nie znaleźliśmy teraz nikogo do zablokowania.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zablokować $count konta?',
+      many: 'Zablokować $count kont?',
+      few: 'Zablokować $count konta?',
+      one: 'Zablokować 1 konto?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'To zablokuje $count konta, które mają teraz tę odznakę. Ich posty nie będą pojawiać się w twoich kanałach i nie zostaną powiadomione.',
+      many:
+          'To zablokuje $count kont, które mają teraz tę odznakę. Ich posty nie będą pojawiać się w twoich kanałach i nie zostaną powiadomione.',
+      few:
+          'To zablokuje $count konta, które mają teraz tę odznakę. Ich posty nie będą pojawiać się w twoich kanałach i nie zostaną powiadomione.',
+      one:
+          'To zablokuje konto, które ma teraz tę odznakę. Jego posty nie będą pojawiać się w twoich kanałach i nie zostanie powiadomione.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zablokuj $count konta',
+      many: 'Zablokuj $count kont',
+      few: 'Zablokuj $count konta',
+      one: 'Zablokuj 1 konto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Zablokowano osoby z tą odznaką';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Nie udało się zablokować osób z tą odznaką';
+
+  @override
   String get badgeDetailLoadError => 'Nie udało się wczytać tej odznaki';
 
   @override
@@ -11055,10 +11127,14 @@ class AppLocalizationsPl extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Usuń tę linijkę';
 
   @override
-  String get subtitleEditorStartLabel => 'Początek';
+  String get subtitleEditorPreviewUnavailable =>
+      'Filmu nie da się teraz odtworzyć, ale napisy nadal możesz poprawić.';
 
   @override
-  String get subtitleEditorEndLabel => 'Koniec';
+  String get subtitleEditorPlayPreview => 'Odtwórz film';
+
+  @override
+  String get subtitleEditorPausePreview => 'Wstrzymaj film';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11658,4 +11734,202 @@ class AppLocalizationsPl extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Zweryfikowane konta';
+
+  @override
+  String get verifySignedOutMessage =>
+      'Zaloguj się, żeby połączyć swoje konta.';
+
+  @override
+  String get verifyIntro =>
+      'Połącz konta, które już masz, żeby było widać, że to naprawdę ty.';
+
+  @override
+  String get verifyLoadFailed => 'Nie udało się wczytać twoich połączeń.';
+
+  @override
+  String get verifyRetry => 'Spróbuj ponownie';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Połączone';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Weryfikator był nieosiągalny, więc wszystko pokazuje się jako niesprawdzone.';
+
+  @override
+  String get verifyAddSectionTitle => 'Dodaj konto';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Połączyłeś już wszystko, co obsługujemy.';
+
+  @override
+  String get verifyStatusVerified => 'Zweryfikowane';
+
+  @override
+  String get verifyStatusUnverified => 'Niezweryfikowane';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Odłącz konto $platform $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Odłączyć $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity przestanie być widoczne w twoim profilu. Możesz połączyć je ponownie później, ale trzeba będzie zalogować się jeszcze raz albo opublikować nowy dowód.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Odłącz';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Połącz swoje konto $platform';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Jedno tapnięcie';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Zaloguj się na $platform, resztą zajmiemy się my. Nic nie zostanie opublikowane.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Kontynuuj z $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Albo opublikuj dowód';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Opublikuj swój npub na koncie, a potem wklej link do tego wpisu.';
+
+  @override
+  String get verifyNpubLabel => 'Twój npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Skopiuj swój npub';
+
+  @override
+  String get verifyNpubCopied => 'npub skopiowany';
+
+  @override
+  String get verifyIdentityLabel => 'Nazwa konta';
+
+  @override
+  String get verifyProofLabel => 'Link do twojego wpisu';
+
+  @override
+  String get verifyConnectProofCta => 'Sprawdź i połącz';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Nie znaleźliśmy twojego npub w tym wpisie.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Weryfikator nieosiągalny. Spróbuj za chwilę.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Nie poszło. Spróbuj jeszcze raz.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Najpierw podaj swój handle.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Zweryfikowane, ale żaden przekaźnik nie przyjął aktualizacji. Spróbuj ponownie.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Logowanie jednym tapnięciem nie jest tu jeszcze skonfigurowane. Skorzystaj z dowodu poniżej.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Utwórz publiczny gist z npub w pierwszym pliku i wklej link do gista.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Opublikuj swój npub na kanale Discorda, który nasz bot może czytać, i wklej link do wiadomości. Zaproszenie na serwer niczego nie dowodzi.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Wrzuć tweeta ze swoim npub z tego konta i wklej link do tweeta.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Opublikuj swój npub z tego konta i wklej link. Nazwa konta musi zawierać instancję — mastodon.social/@alice, nie samo alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Łączony jest kanał, nie twoje konto Telegram. Najpierw potrzebuje publicznego linku (Telegram tworzy nowe jako prywatne). Opublikuj tam npub i wklej link do wiadomości.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Zalogowano powyżej? Nic więcej nie trzeba. W przeciwnym razie opublikuj npub i wklej link do wpisu.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Wpisz swój npub w opisie filmu i wklej link do tego filmu.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Wpisz swój npub w opisie filmu i wklej link do tego filmu.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform połączone.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'To prywatny kanał albo zaproszenie. Nadaj kanałowi publiczny link, a potem wklej link do wiadomości.';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'Nie udało się odłączyć. Spróbuj ponownie.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Nie udało się odczytać twoich obecnych połączeń, więc nic nie zmieniono. Sprawdź połączenie i spróbuj ponownie.';
+
+  @override
+  String get verifyChannelLabel => 'Nazwa kanału';
+
+  @override
+  String get verifyHowItWorksTitle => 'Jak to działa?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Pomyśl o tym jak o uścisku dłoni między dwoma kontami:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Twój profil Divine mówi: „Jestem @alice na Twitterze”.';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Twoje konto na Twitterze potwierdza: „Tak, ten profil Divine jest mój”.';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Sprawdzamy obie strony. Jeśli się zgadzają, jesteś zweryfikowany. Nie da się tego podrobić — imię i zdjęcie można skopiować, opublikować z twojego prawdziwego konta nie.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Połączenia znajdują się w twojej własnej tożsamości Nostr, więc możesz je stąd usunąć, kiedy zechcesz.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Tożsamość';
 }

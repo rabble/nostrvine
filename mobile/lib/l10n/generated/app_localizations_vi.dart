@@ -2281,10 +2281,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chuyển môi trường và cài đặt gỡ lỗi';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Bật/tắt các cờ tính năng có thể hơi \"khựng\".';
-
-  @override
   String get nostrSettingsKeyManagement => 'Quản lý khóa';
 
   @override
@@ -6248,6 +6244,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get discoverListsLoading => 'Đang khám phá danh sách công khai...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Relay không trả về danh sách kịp lúc. Thử lại nhé.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Dịch vụ không khả dụng.';
+
+  @override
   String get discoverListsEmptyTitle =>
       'Không tìm thấy danh sách công khai nào';
 
@@ -10112,6 +10115,67 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Chặn những người gắn huy hiệu';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Chặn những người gắn huy hiệu';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Không tải được những người gắn huy hiệu này';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Hiện chưa ai gắn huy hiệu này';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Chúng tôi không tìm thấy ai để chặn lúc này.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Chặn $count tài khoản?',
+      one: 'Chặn 1 tài khoản?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Thao tác này chặn $count tài khoản đang gắn huy hiệu này. Bài đăng của họ sẽ không xuất hiện trong bảng tin của bạn và họ sẽ không được thông báo.',
+      one:
+          'Thao tác này chặn tài khoản đang gắn huy hiệu này. Bài đăng của họ sẽ không xuất hiện trong bảng tin của bạn và họ sẽ không được thông báo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Chặn $count tài khoản',
+      one: 'Chặn 1 tài khoản',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Đã chặn những người gắn huy hiệu';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Không chặn được những người gắn huy hiệu';
+
+  @override
   String get badgeDetailLoadError => 'Không tải được huy hiệu này';
 
   @override
@@ -10867,10 +10931,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Xoá dòng này';
 
   @override
-  String get subtitleEditorStartLabel => 'Bắt đầu';
+  String get subtitleEditorPreviewUnavailable =>
+      'Hiện không phát được video, nhưng bạn vẫn có thể sửa phụ đề.';
 
   @override
-  String get subtitleEditorEndLabel => 'Kết thúc';
+  String get subtitleEditorPlayPreview => 'Phát video';
+
+  @override
+  String get subtitleEditorPausePreview => 'Tạm dừng video';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11468,4 +11536,201 @@ class AppLocalizationsVi extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Tài khoản đã xác minh';
+
+  @override
+  String get verifySignedOutMessage =>
+      'Đăng nhập để liên kết tài khoản của bạn.';
+
+  @override
+  String get verifyIntro =>
+      'Liên kết những tài khoản bạn đã có, để mọi người biết đúng là bạn.';
+
+  @override
+  String get verifyLoadFailed => 'Không tải được các liên kết của bạn.';
+
+  @override
+  String get verifyRetry => 'Thử lại';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Đã liên kết';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Không liên hệ được dịch vụ xác minh, nên tất cả hiện là chưa kiểm tra.';
+
+  @override
+  String get verifyAddSectionTitle => 'Thêm tài khoản';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Bạn đã liên kết mọi nền tảng chúng tôi hỗ trợ.';
+
+  @override
+  String get verifyStatusVerified => 'Đã xác minh';
+
+  @override
+  String get verifyStatusUnverified => 'Chưa xác minh';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Hủy liên kết tài khoản $platform $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Hủy liên kết $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity sẽ không còn hiển thị trên hồ sơ của bạn. Bạn có thể liên kết lại sau, nhưng sẽ phải đăng nhập lại hoặc đăng một bằng chứng mới.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Hủy liên kết';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Liên kết tài khoản $platform của bạn';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Một chạm';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Đăng nhập $platform, phần còn lại để chúng tôi lo. Không đăng gì cả.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Tiếp tục với $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Hoặc đăng một bằng chứng';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Đăng npub của bạn trên tài khoản đó, rồi dán liên kết tới bài đăng.';
+
+  @override
+  String get verifyNpubLabel => 'npub của bạn';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Sao chép npub của bạn';
+
+  @override
+  String get verifyNpubCopied => 'Đã sao chép npub';
+
+  @override
+  String get verifyIdentityLabel => 'Tên tài khoản';
+
+  @override
+  String get verifyProofLabel => 'Liên kết tới bài đăng';
+
+  @override
+  String get verifyConnectProofCta => 'Kiểm tra và liên kết';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Chúng tôi không tìm thấy npub của bạn trong bài đăng đó.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Không liên hệ được dịch vụ xác minh. Thử lại sau chút.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Chưa xong. Thử lại lần nữa nhé.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Nhập handle của bạn trước đã.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Đã xác minh, nhưng không relay nào nhận cập nhật. Thử lại.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Đăng nhập một chạm chưa được thiết lập cho mục này. Dùng bằng chứng bên dưới.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Tạo một gist công khai với npub của bạn ở tệp đầu tiên, rồi dán liên kết gist.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Đăng npub của bạn trong kênh Discord mà bot của chúng tôi đọc được, rồi dán liên kết tin nhắn. Lời mời máy chủ không chứng minh được gì.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Đăng npub của bạn từ tài khoản đó, rồi dán liên kết tới tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Đăng npub của bạn từ tài khoản đó, rồi dán liên kết. Tên tài khoản phải kèm máy chủ — mastodon.social/@alice, không chỉ alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Cái được liên kết là kênh, không phải tài khoản Telegram của bạn. Kênh cần liên kết công khai trước (Telegram tạo kênh mới ở chế độ riêng tư). Đăng npub ở đó rồi dán liên kết tin nhắn.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Đã đăng nhập ở trên? Không cần gì thêm. Nếu chưa, đăng npub và dán liên kết bài đăng.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Đặt npub của bạn vào chú thích video, rồi dán liên kết video đó.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Đặt npub của bạn vào mô tả video, rồi dán liên kết video đó.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return 'Đã liên kết $platform.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Đó là kênh riêng tư hoặc lời mời. Hãy đặt liên kết công khai cho kênh, rồi dán liên kết tin nhắn.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Không hủy liên kết được. Thử lại nhé.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Chúng tôi không đọc được các liên kết hiện tại của bạn, nên không thay đổi gì cả. Kiểm tra kết nối rồi thử lại.';
+
+  @override
+  String get verifyChannelLabel => 'Tên kênh';
+
+  @override
+  String get verifyHowItWorksTitle => 'Cái này hoạt động thế nào?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Hãy hình dung như một cái bắt tay giữa hai tài khoản:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Hồ sơ Divine của bạn nói: “Tôi là @alice trên Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Tài khoản Twitter của bạn xác nhận: “Đúng, hồ sơ Divine đó là của tôi.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Chúng tôi kiểm tra cả hai phía. Khớp nhau là bạn được xác minh. Không ai giả được — tên và ảnh thì sao chép được, đăng từ tài khoản thật của bạn thì không.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Các liên kết nằm trên chính danh tính Nostr của bạn, nên bạn có thể gỡ chúng ở đây bất cứ lúc nào.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Danh tính';
 }

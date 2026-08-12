@@ -3507,6 +3507,76 @@ void main() {
         expect(repository.followingCount, 0);
       });
 
+      test('handles connected relay query stream error gracefully', () async {
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer((invocation) {
+          final subscriptionId =
+              invocation.namedArguments[#subscriptionId] as String?;
+          if (subscriptionId != null) {
+            return const Stream<Event>.empty();
+          }
+          return Stream<Event>.error(Exception('Relay stream error'));
+        });
+
+        await repository.initialize();
+
+        expect(repository.followingCount, 0);
+      });
+
+      test('cancels connected relay contact list query on timeout', () {
+        fakeAsync((async) {
+          var queryStreamCanceled = false;
+          final controller = StreamController<Event>(
+            onCancel: () {
+              queryStreamCanceled = true;
+            },
+          );
+
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((invocation) {
+            final subscriptionId =
+                invocation.namedArguments[#subscriptionId] as String?;
+            if (subscriptionId != null) {
+              return const Stream<Event>.empty();
+            }
+            return controller.stream;
+          });
+
+          var completed = false;
+          unawaited(
+            repository.initialize().then((_) {
+              completed = true;
+            }),
+          );
+
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(seconds: 6))
+            ..flushMicrotasks();
+
+          expect(completed, isTrue);
+          expect(queryStreamCanceled, isTrue);
+        });
+      });
+
       test(
         'picks best contact list by createdAt (newer wins)',
         () async {

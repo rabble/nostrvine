@@ -1313,6 +1313,8 @@ class CuratedListService extends ChangeNotifier {
       category: LogCategory.system,
     );
 
+    StreamSubscription<Event>? relaySubscription;
+    Timer? timeoutTimer;
     try {
       final completer = Completer<void>();
       final receivedEvents = <Event>[];
@@ -1330,7 +1332,6 @@ class CuratedListService extends ChangeNotifier {
       final subscription = _nostrService.subscribe([filter]);
 
       // Set a timeout for the subscription
-      Timer? timeoutTimer;
       timeoutTimer = Timer(const Duration(seconds: 10), () {
         Log.debug(
           'Relay sync timeout reached, processing received events',
@@ -1338,11 +1339,14 @@ class CuratedListService extends ChangeNotifier {
           category: LogCategory.system,
         );
         if (!completer.isCompleted) {
+          final subscription = relaySubscription;
+          relaySubscription = null;
+          unawaited(subscription?.cancel());
           completer.complete();
         }
       });
 
-      subscription.listen(
+      relaySubscription = subscription.listen(
         (event) {
           receivedEvents.add(event);
           Log.debug(
@@ -1395,6 +1399,9 @@ class CuratedListService extends ChangeNotifier {
         name: 'CuratedListService',
         category: LogCategory.system,
       );
+    } finally {
+      timeoutTimer?.cancel();
+      await relaySubscription?.cancel();
     }
   }
 
@@ -1573,6 +1580,8 @@ class CuratedListService extends ChangeNotifier {
       category: LogCategory.system,
     );
 
+    StreamSubscription<Event>? relaySubscription;
+    Timer? timeoutTimer;
     try {
       final completer = Completer<void>();
       final receivedEvents = <Event>[];
@@ -1588,7 +1597,6 @@ class CuratedListService extends ChangeNotifier {
       final subscription = _nostrService.subscribe([filter]);
 
       // Set a timeout for the subscription
-      Timer? timeoutTimer;
       timeoutTimer = Timer(const Duration(seconds: 10), () {
         Log.debug(
           'Public lists containing video fetch timeout, processing received events',
@@ -1596,11 +1604,14 @@ class CuratedListService extends ChangeNotifier {
           category: LogCategory.system,
         );
         if (!completer.isCompleted) {
+          final subscription = relaySubscription;
+          relaySubscription = null;
+          unawaited(subscription?.cancel());
           completer.complete();
         }
       });
 
-      subscription.listen(
+      relaySubscription = subscription.listen(
         (event) {
           receivedEvents.add(event);
           Log.debug(
@@ -1676,6 +1687,9 @@ class CuratedListService extends ChangeNotifier {
         category: LogCategory.system,
       );
       return [];
+    } finally {
+      timeoutTimer?.cancel();
+      await relaySubscription?.cancel();
     }
   }
 

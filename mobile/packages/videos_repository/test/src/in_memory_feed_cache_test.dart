@@ -34,6 +34,29 @@ void main() {
         cache.set('home', createResult());
         expect(cache.get('latest'), isNull);
       });
+
+      test('returns null and removes entry after TTL expires', () {
+        var now = DateTime(2026, 8, 11, 12);
+        cache = InMemoryFeedCache(now: () => now);
+        final result = createResult();
+
+        cache.set('classics', result, ttl: const Duration(minutes: 15));
+        now = now.add(const Duration(minutes: 15));
+
+        expect(cache.get('classics'), isNull);
+        expect(cache.get('classics'), isNull);
+      });
+
+      test('returns entry before TTL expires', () {
+        var now = DateTime(2026, 8, 11, 12);
+        cache = InMemoryFeedCache(now: () => now);
+        final result = createResult();
+
+        cache.set('classics', result, ttl: const Duration(minutes: 15));
+        now = now.add(const Duration(minutes: 14, seconds: 59));
+
+        expect(cache.get('classics'), equals(result));
+      });
     });
 
     group('set', () {

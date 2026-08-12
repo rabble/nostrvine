@@ -865,28 +865,56 @@ class ContentBlocklistRepository {
   /// If [ourPubkey] is provided, it will be used to prevent self-blocking.
   /// Otherwise falls back to [_ourPubkey] set during
   /// [syncMuteListsInBackground].
-  Future<void> blockUser(String pubkey, {String? ourPubkey}) async {
-    // Guard: Prevent blocking self
+  Future<void> blockUser(String pubkey, {String? ourPubkey}) {
+    return blockUsers([pubkey], ourPubkey: ourPubkey);
+  }
+
+  /// Add public keys to the runtime blocklist in one persisted write.
+  ///
+  /// Persists to SharedPreferences and publishes the user's kind 10000 mute
+  /// list once (plus one legacy kind 30000 block-list publish) no matter how
+  /// many new pubkeys are added. Emits one [BlocklistChange] per newly-blocked
+  /// pubkey because downstream feed cleanup reacts per author.
+  Future<void> blockUsers(Iterable<String> pubkeys, {String? ourPubkey}) async {
     final selfPubkey = ourPubkey ?? _ourPubkey;
-    if (selfPubkey != null && pubkey == selfPubkey) {
+    var skippedSelf = false;
+    final newlyBlocked = <String>[];
+    final newlySeveredFollowers = <String>[];
+
+    for (final pubkey in pubkeys) {
+      if (pubkey.isEmpty) continue;
+      if (selfPubkey != null && pubkey == selfPubkey) {
+        skippedSelf = true;
+        continue;
+      }
+      if (_runtimeBlocklist.add(pubkey)) {
+        newlyBlocked.add(pubkey);
+      }
+      if (!_severedFollowers.contains(pubkey) &&
+          !newlySeveredFollowers.contains(pubkey)) {
+        newlySeveredFollowers.add(pubkey);
+      }
+    }
+
+    if (skippedSelf) {
       Log.warning(
         'Attempted to block self - ignoring',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
-      return;
     }
 
-    if (!_runtimeBlocklist.contains(pubkey)) {
-      _runtimeBlocklist.add(pubkey);
+    if (newlyBlocked.isNotEmpty) {
       await _saveBlockedUsers();
-      _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
+      for (final pubkey in newlyBlocked) {
+        _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
+      }
       _notifyChanged();
       await _publishMuteListToNostr();
       await _publishBlockListToNostr();
 
       Log.debug(
-        'Added user to blocklist: $pubkey',
+        'Added ${newlyBlocked.length} users to blocklist',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
@@ -894,8 +922,8 @@ class ContentBlocklistRepository {
 
     // Track as severed follower so they stay hidden from our followers
     // list even after unblocking (until they explicitly re-follow).
-    if (!_severedFollowers.contains(pubkey)) {
-      _severedFollowers.add(pubkey);
+    if (newlySeveredFollowers.isNotEmpty) {
+      _severedFollowers.addAll(newlySeveredFollowers);
       await _saveSeveredFollowers();
     }
   }

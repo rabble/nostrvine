@@ -2293,10 +2293,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Seletor de ambiente e opções de depuração';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Ative flags de recursos que podem dar chilique.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gerenciamento de chaves';
 
   @override
@@ -6283,6 +6279,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get discoverListsLoading => 'Descobrindo listas públicas...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'O relay não devolveu listas a tempo. Tente de novo.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Serviço indisponível.';
+
+  @override
   String get discoverListsEmptyTitle => 'Nenhuma lista pública encontrada';
 
   @override
@@ -10183,6 +10186,66 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Bloquear quem usa o selo';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Bloquear quem usa o selo';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Não foi possível carregar quem usa este selo';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Ninguém está usando este selo agora';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Não encontramos ninguém para bloquear agora.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear $count contas?',
+      one: 'Bloquear 1 conta?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Isso bloqueia as $count contas que estão usando este selo agora. Os posts delas não vão aparecer no seu feed e elas não serão notificadas.',
+      one:
+          'Isso bloqueia a conta que está usando este selo agora. Os posts dessa pessoa não vão aparecer no seu feed e ela não será notificada.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear $count contas',
+      one: 'Bloquear 1 conta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Contas com o selo bloqueadas';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Não foi possível bloquear quem usa o selo';
+
+  @override
   String get badgeDetailLoadError => 'Não foi possível carregar este selo';
 
   @override
@@ -10938,10 +11001,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Remover esta linha';
 
   @override
-  String get subtitleEditorStartLabel => 'Início';
+  String get subtitleEditorPreviewUnavailable =>
+      'O vídeo não dá para reproduzir agora, mas ainda podes corrigir as legendas.';
 
   @override
-  String get subtitleEditorEndLabel => 'Fim';
+  String get subtitleEditorPlayPreview => 'Reproduzir o vídeo';
+
+  @override
+  String get subtitleEditorPausePreview => 'Pausar o vídeo';
 
   @override
   String get subtitleEditorInvalidHint =>
@@ -11541,4 +11608,200 @@ class AppLocalizationsPt extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Contas verificadas';
+
+  @override
+  String get verifySignedOutMessage => 'Entre para vincular suas contas.';
+
+  @override
+  String get verifyIntro =>
+      'Vincule as contas que você já tem, assim todo mundo sabe que é você mesmo.';
+
+  @override
+  String get verifyLoadFailed => 'Não deu para carregar seus vínculos.';
+
+  @override
+  String get verifyRetry => 'Tentar de novo';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Vinculadas';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Não conseguimos falar com o verificador, então tudo aparece como não checado.';
+
+  @override
+  String get verifyAddSectionTitle => 'Adicionar uma conta';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Você já vinculou tudo o que a gente suporta.';
+
+  @override
+  String get verifyStatusVerified => 'Verificada';
+
+  @override
+  String get verifyStatusUnverified => 'Não verificada';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Desvincular a conta $platform $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Desvincular $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity deixa de aparecer no seu perfil. Você pode vincular de novo depois, mas vai precisar entrar na conta ou publicar uma prova nova.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Desvincular';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Vincular sua conta do $platform';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Um toque';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Entre no $platform que a gente cuida do resto. Nada é publicado.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Continuar com $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Ou publique uma prova';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Publique seu npub na sua conta e depois cole o link desse post.';
+
+  @override
+  String get verifyNpubLabel => 'Seu npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Copiar seu npub';
+
+  @override
+  String get verifyNpubCopied => 'npub copiado';
+
+  @override
+  String get verifyIdentityLabel => 'Nome da conta';
+
+  @override
+  String get verifyProofLabel => 'Link do seu post';
+
+  @override
+  String get verifyConnectProofCta => 'Checar e vincular';
+
+  @override
+  String get verifyErrorProofRejected => 'Não achamos seu npub nesse post.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Verificador fora do ar. Tente de novo daqui a pouco.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Não rolou. Tenta mais uma vez.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Digite seu handle primeiro.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Verificada, mas nenhum relay aceitou a atualização. Tente de novo.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'O login de um toque ainda não está configurado aqui. Use a prova abaixo.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Crie um gist público com seu npub no primeiro arquivo e cole o link do gist.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Publique seu npub num canal do Discord que nosso bot consiga ler e cole o link da mensagem. Um convite de servidor não prova nada.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tuíte seu npub dessa conta e cole o link do tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Publique seu npub dessa conta e cole o link. O nome da conta precisa da instância — mastodon.social/@alice, não só alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'O canal é que fica vinculado, não sua conta do Telegram. Ele precisa primeiro de um link público (o Telegram cria os novos como privados). Publique seu npub lá e cole o link da mensagem.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Entrou lá em cima? Não precisa de mais nada. Senão publique seu npub e cole o link do post.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Coloque seu npub na legenda de um vídeo e cole o link desse vídeo.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Coloque seu npub na descrição de um vídeo e cole o link desse vídeo.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform está vinculada.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Isso é um canal privado ou um convite. Dê ao canal um link público e depois cole o link da mensagem.';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'Não deu para desvincular. Tente de novo.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Não conseguimos ler seus vínculos atuais, então nada foi alterado. Verifique sua conexão e tente de novo.';
+
+  @override
+  String get verifyChannelLabel => 'Nome do canal';
+
+  @override
+  String get verifyHowItWorksTitle => 'Como funciona?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Pense nisso como um aperto de mão entre duas contas:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Seu perfil Divine diz: “Sou @alice no Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Sua conta do Twitter confirma: “Sim, esse perfil Divine é meu.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Verificamos os dois lados. Se baterem, você está verificado. Ninguém consegue forjar: dá para copiar seu nome e sua foto, mas não para postar da sua conta real.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Os vínculos ficam na sua própria identidade Nostr, então você pode removê-los aqui quando quiser.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identidade';
 }

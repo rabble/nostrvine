@@ -14,6 +14,7 @@ import 'package:openvine/models/video_editor/caption_generation_outcome.dart';
 import 'package:openvine/models/video_editor/caption_style.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/captions/caption_cue_row.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_caption_preset_sheet.dart';
 
 /// Result of the captions editor sheet, returned via [Navigator.pop].
@@ -402,7 +403,8 @@ class _CaptionsModeControls extends StatelessWidget {
   }
 }
 
-class _CueRow extends StatefulWidget {
+/// Adapts the shared [CaptionCueRow] to this sheet's cubit.
+class _CueRow extends StatelessWidget {
   const _CueRow({
     required this.cue,
     required this.totalDuration,
@@ -415,110 +417,20 @@ class _CueRow extends StatefulWidget {
   final Duration totalDuration;
 
   @override
-  State<_CueRow> createState() => _CueRowState();
-}
-
-class _CueRowState extends State<_CueRow> {
-  late final TextEditingController _textController = TextEditingController(
-    text: widget.cue.text,
-  );
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    super.dispose();
-  }
-
-  static double _seconds(Duration value) => value.inMilliseconds / 1000;
-
-  static String _label(Duration value) =>
-      '${_seconds(value).toStringAsFixed(1)}s';
-
-  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final cubit = context.read<CaptionsEditorCubit>();
-    final cue = widget.cue;
-    return Column(
-      spacing: 8,
-      children: [
-        // The slider spans the whole video — cues may freely overlap each
-        // other; the cubit only enforces the minimum cue duration between
-        // the two thumbs.
-        Row(
-          spacing: 12,
-          children: [
-            Text(
-              _label(cue.start),
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.secondaryText,
-              ),
-            ),
-            Expanded(
-              child: DivineRangeSlider(
-                values: RangeValues(_seconds(cue.start), _seconds(cue.end)),
-                max: _seconds(widget.totalDuration),
-                onChanged: (values) => cubit.updateCueTiming(
-                  cue.id,
-                  start: Duration(
-                    milliseconds: (values.start * 1000).round(),
-                  ),
-                  end: Duration(milliseconds: (values.end * 1000).round()),
-                ),
-              ),
-            ),
-            Text(
-              _label(cue.end),
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.secondaryText,
-              ),
-            ),
-          ],
-        ),
-        Row(
-          spacing: 8,
-          children: [
-            Expanded(
-              child: _InputSurface(
-                child: DivineTextField(
-                  controller: _textController,
-                  labelText: l10n.videoEditorCaptionsCueTextHint,
-                  minLines: 1,
-                  maxLines: 3,
-                  keyboardType: .multiline,
-                  textInputAction: .newline,
-                  onChanged: (value) => cubit.updateCueText(cue.id, value),
-                ),
-              ),
-            ),
-            DivineIconButton(
-              icon: .trash,
-              type: .ghostSecondary,
-              semanticLabel: l10n.videoEditorCaptionsCueDeleteSemanticLabel,
-              onPressed: () => cubit.removeCue(cue.id),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-/// Container surface for the sheet's inputs, mirroring the metadata form's
-/// field styling on a contrasting sheet background.
-class _InputSurface extends StatelessWidget {
-  const _InputSurface({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.vineColors.containerLow,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: child,
+    return CaptionCueRow(
+      text: cue.text,
+      textFieldLabel: l10n.videoEditorCaptionsCueTextHint,
+      removeSemanticLabel: l10n.videoEditorCaptionsCueDeleteSemanticLabel,
+      start: cue.start,
+      end: cue.end,
+      totalDuration: totalDuration,
+      onTimingChanged: (start, end) =>
+          cubit.updateCueTiming(cue.id, start: start, end: end),
+      onTextChanged: (value) => cubit.updateCueText(cue.id, value),
+      onRemoved: () => cubit.removeCue(cue.id),
     );
   }
 }

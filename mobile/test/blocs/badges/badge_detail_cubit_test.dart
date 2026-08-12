@@ -1,5 +1,6 @@
 import 'package:badge_repository/badge_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -7,9 +8,13 @@ import 'package:openvine/blocs/badges/badge_detail_cubit.dart';
 
 class _MockBadgeRepository extends Mock implements BadgeRepository {}
 
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
+
 void main() {
   group(BadgeDetailCubit, () {
     late _MockBadgeRepository repository;
+    late _MockContentBlocklistRepository contentBlocklistRepository;
 
     setUpAll(() {
       registerFallbackValue(const BadgeCoordinate(pubkey: '', identifier: ''));
@@ -18,10 +23,12 @@ void main() {
 
     setUp(() {
       repository = _MockBadgeRepository();
+      contentBlocklistRepository = _MockContentBlocklistRepository();
     });
 
     BadgeDetailCubit buildCubit() => BadgeDetailCubit(
       repository: repository,
+      contentBlocklistRepository: contentBlocklistRepository,
       coordinate: _coordinate,
     );
 
@@ -217,6 +224,76 @@ void main() {
       ],
       verify: (_) => verify(() => repository.removeAward(any())).called(1),
     );
+
+    blocTest<BadgeDetailCubit, BadgeDetailState>(
+      'blockClaimants blocks the resolved pubkeys without reloading',
+      setUp: () {
+        when(
+          () => contentBlocklistRepository.blockUsers(any()),
+        ).thenAnswer((_) async {});
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.blockClaimants({_pubkey(2), _pubkey(3)}),
+      expect: () => [
+        isA<BadgeDetailState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeDetailActionStatus.blockingClaimants,
+        ),
+        isA<BadgeDetailState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeDetailActionStatus.completed,
+        ),
+      ],
+      verify: (_) {
+        verify(
+          () => contentBlocklistRepository.blockUsers({_pubkey(2), _pubkey(3)}),
+        ).called(1);
+        verifyNever(() => repository.loadBadgeDetail(any()));
+      },
+    );
+
+    blocTest<BadgeDetailCubit, BadgeDetailState>(
+      'blockClaimants reports a batch block failure',
+      setUp: () {
+        when(
+          () => contentBlocklistRepository.blockUsers(any()),
+        ).thenThrow(Exception('prefs failed'));
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.blockClaimants({_pubkey(2)}),
+      skip: 1,
+      expect: () => [
+        isA<BadgeDetailState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeDetailActionStatus.failure,
+        ),
+      ],
+      errors: () => [isA<Exception>()],
+    );
+
+    blocTest<BadgeDetailCubit, BadgeDetailState>(
+      'blockClaimants does nothing for an empty set',
+      build: buildCubit,
+      act: (cubit) => cubit.blockClaimants(const {}),
+      expect: () => <BadgeDetailState>[],
+      verify: (_) =>
+          verifyNever(() => contentBlocklistRepository.blockUsers(any())),
+    );
+
+    test('loadClaimantPubkeys delegates to the badge repository', () async {
+      when(
+        () => repository.loadClaimantPubkeys(any()),
+      ).thenAnswer((_) async => {_pubkey(2)});
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      expect(await cubit.loadClaimantPubkeys(), {_pubkey(2)});
+      verify(() => repository.loadClaimantPubkeys(_coordinate)).called(1);
+    });
 
     blocTest<BadgeDetailCubit, BadgeDetailState>(
       'deleteBadge publishes the request and does not reload',

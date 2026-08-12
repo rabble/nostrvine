@@ -2,8 +2,8 @@
 // ABOUTME: Uses REST API when available, falls back to Nostr videos with embedded stats
 
 import 'dart:async';
-import 'dart:math';
 
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -12,6 +12,7 @@ import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -22,27 +23,17 @@ part 'classic_vines_provider.g.dart';
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
 /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-/// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
+/// Each page is 50 videos.
 ///
 /// Pull-to-refresh selects a fresh random slice of classics while retrying
 /// transient failures and empty pages.
 @Riverpod(keepAlive: true)
 class ClassicVinesFeed extends _$ClassicVinesFeed {
   static const int _pageSize = 50;
-  static const int _totalClassicVines = 10000; // Approximate total
   static const int _initialRequestAttempts = 2;
 
-  /// Shared with the home feed's Classics mode so both surfaces open on the
-  /// same slice of the archive.
-  static const int _maxRandomStartOffset = classicsMaxRandomStartOffset;
-
-  final Random _random = Random();
-
-  /// Starting offset for the current loaded classics window.
-  int _startOffset = 0;
-
-  /// Number of additional pages appended via loadMore
-  int _loadMorePages = 0;
+  /// Repository cursor for the next page of the current loaded classics window.
+  String? _paginationCursor;
 
   @override
   Future<VideoFeedState> build() async {
@@ -76,54 +67,59 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
-    _startOffset = _randomStartOffset();
-    _loadMorePages = 0;
+    _paginationCursor = null;
 
     return _loadFirstPage(funnelcakeAvailable: funnelcakeAvailable);
-  }
-
-  int _randomStartOffset() {
-    const pageCount = (_maxRandomStartOffset ~/ _pageSize) + 1;
-    return _random.nextInt(pageCount) * _pageSize;
   }
 
   Future<VideoFeedState> _loadFirstPage({
     required bool funnelcakeAvailable,
     bool preserveCurrentOnEmptyFallback = false,
+    bool skipCache = false,
   }) async {
-    final client = ref.read(funnelcakeApiClientProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     Object? restError;
 
-    Future<List<VideoEvent>> fetchFilteredRestPage(
-      int offset, {
+    Future<HomeFeedResult> fetchRestPage({
       required bool retryOnError,
+      String? cursor,
+      bool skipCache = false,
     }) async {
+      final repository = ref.read(videosRepositoryProvider);
       final attempts = retryOnError ? _initialRequestAttempts : 1;
       for (var attempt = 1; attempt <= attempts; attempt++) {
         try {
-          final stats = await client.getClassicVines(offset: offset);
-          final videos = stats.toVideoEvents();
-
-          // Filter for platform compatibility, content preferences,
-          // blocked users, dedupe by addressable identity, and shuffle
-          final filteredVideos = dedupeByFeedKey(
-            videoEventService.filterVideoList(
-              videos
-                  .where((v) => v.isSupportedOnCurrentPlatform)
-                  .where(
-                    (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
-                  )
-                  .toList(),
-            ),
+          final result = await repository.getClassicVideos(
+            limit: _pageSize,
+            cursor: cursor,
+            skipCache: skipCache,
+          );
+          final filteredResult = _filterRepositoryResult(
+            result,
+            videoEventService,
+            blocklistRepository,
           );
 
-          return filteredVideos..shuffle(_random);
+          if (filteredResult.videos.isNotEmpty ||
+              (filteredResult.hasMore ?? false)) {
+            return filteredResult;
+          }
+
+          if (attempt < attempts) {
+            Log.warning(
+              '🎬 ClassicVinesFeed: REST API returned no videos, retrying',
+              name: 'ClassicVinesFeedProvider',
+              category: LogCategory.video,
+            );
+            continue;
+          }
+
+          return filteredResult;
         } catch (e) {
           if (attempt < attempts) {
             Log.warning(
-              '🎬 ClassicVinesFeed: REST API error at offset $offset, retrying: $e',
+              '🎬 ClassicVinesFeed: REST API error, retrying: $e',
               name: 'ClassicVinesFeedProvider',
               category: LogCategory.video,
             );
@@ -136,23 +132,19 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       throw StateError('Classics API retry loop exhausted');
     }
 
-    VideoFeedState restFeedState({
-      required List<VideoEvent> videos,
-      required int offset,
-    }) {
-      _startOffset = offset;
-      final nextOffset = offset + _pageSize;
+    VideoFeedState restFeedState({required HomeFeedResult result}) {
+      _paginationCursor = result.paginationCursor;
 
       Log.info(
-        '🎬 ClassicVinesFeed: Loaded ${videos.length} videos '
-        '(offset: $offset, shuffled)',
+        '🎬 ClassicVinesFeed: Loaded ${result.videos.length} videos '
+        '(next cursor: ${result.paginationCursor})',
         name: 'ClassicVinesFeedProvider',
         category: LogCategory.video,
       );
 
       return VideoFeedState(
-        videos: videos,
-        hasMoreContent: nextOffset < _totalClassicVines,
+        videos: result.videos,
+        hasMoreContent: result.hasMore ?? false,
         lastUpdated: DateTime.now(),
       );
     }
@@ -160,33 +152,31 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     // Try REST API first (Funnelcake has comprehensive classic Vine data)
     if (funnelcakeAvailable) {
       try {
-        final firstPage = await fetchFilteredRestPage(
-          _startOffset,
+        final firstPage = await fetchRestPage(
           retryOnError: true,
+          skipCache: skipCache,
         );
 
-        if (firstPage.isNotEmpty) {
-          return restFeedState(videos: firstPage, offset: _startOffset);
+        if (firstPage.videos.isNotEmpty) {
+          return restFeedState(result: firstPage);
         }
 
-        restError = StateError(
-          'Classics API returned no videos at offset $_startOffset',
-        );
+        restError = StateError('Classics API returned no videos');
         Log.warning(
-          '🎬 ClassicVinesFeed: REST API returned no videos at offset $_startOffset, trying next page',
+          '🎬 ClassicVinesFeed: REST API returned no videos, trying next page',
           name: 'ClassicVinesFeedProvider',
           category: LogCategory.video,
         );
 
-        final recoveryOffset = _startOffset + _pageSize;
-        final recoveryPage = await fetchFilteredRestPage(
-          recoveryOffset,
+        final recoveryPage = await fetchRestPage(
+          cursor: firstPage.paginationCursor,
           retryOnError: false,
+          skipCache: true,
         );
 
-        if (recoveryPage.isEmpty) {
+        if (recoveryPage.videos.isEmpty) {
           restError = StateError(
-            'Classics API returned no videos at offset $recoveryOffset',
+            'Classics API recovery page returned no videos',
           );
           Log.warning(
             '🎬 ClassicVinesFeed: REST API recovery page returned no videos, falling back to Nostr',
@@ -195,7 +185,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           );
           // Fall through to Nostr fallback.
         } else {
-          return restFeedState(videos: recoveryPage, offset: recoveryOffset);
+          return restFeedState(result: recoveryPage);
         }
       } catch (e) {
         restError = e;
@@ -216,24 +206,18 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     );
 
     final allVideos = videoEventService.discoveryVideos;
-    final classicVideos =
-        dedupeByFeedKey(
-          videoEventService.filterVideoList(
-            allVideos
-                .where((v) => v.isOriginalVine)
-                .where((v) => v.isSupportedOnCurrentPlatform)
-                .where(
-                  (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
-                )
-                .toList(),
-          ),
-        )..sort(
-          (a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0),
-        );
+    final classicVideos = dedupeByFeedKey(
+      videoEventService.filterVideoList(
+        allVideos
+            .where((v) => v.isOriginalVine)
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
+            .toList(),
+      ),
+    )..sort((a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0));
 
     // Take top entries then shuffle for variety
-    final topClassics = classicVideos.take(_pageSize).toList()
-      ..shuffle(_random);
+    final topClassics = classicVideos.take(_pageSize).toList()..shuffle();
 
     if (topClassics.isEmpty && preserveCurrentOnEmptyFallback) {
       throw restError ?? StateError('Classics API unavailable');
@@ -252,11 +236,10 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
-    _startOffset = _randomStartOffset();
-    _loadMorePages = 0;
+    _paginationCursor = null;
 
     Log.info(
-      '🎬 ClassicVinesFeed: Refreshing with offset $_startOffset',
+      '🎬 ClassicVinesFeed: Refreshing',
       name: 'ClassicVinesFeedProvider',
       category: LogCategory.video,
     );
@@ -268,6 +251,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       fetchFresh: () => _loadFirstPage(
         funnelcakeAvailable: funnelcakeAvailable,
         preserveCurrentOnEmptyFallback: true,
+        skipCache: true,
       ),
     );
   }
@@ -278,7 +262,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final currentState = state.value!;
     if (currentState.isLoadingMore) return;
 
-    final client = ref.read(funnelcakeApiClientProvider);
+    final repository = ref.read(videosRepositoryProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -287,32 +273,27 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
-      _loadMorePages++;
-      final nextOffset = _startOffset + _loadMorePages * _pageSize;
-
-      final stats = await client.getClassicVines(offset: nextOffset);
-      final videos = stats.toVideoEvents();
-
-      final videoEventService = ref.read(videoEventServiceProvider);
-      final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+      final requestCursor = _paginationCursor;
+      final page = await repository.getClassicVideos(
+        limit: _pageSize,
+        cursor: requestCursor,
+        skipCache: true,
+      );
       final filteredVideos = dedupeByFeedKey(
-        videoEventService.filterVideoList(
-          videos
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .where(
-                (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
-              )
-              .toList(),
+        _filterRepositoryVideos(
+          page.videos,
+          videoEventService,
+          blocklistRepository,
         ),
         alreadySeen: currentState.videos.map((v) => v.feedDedupKey),
       );
 
       final allVideos = [...currentState.videos, ...filteredVideos];
-      final followingOffset = nextOffset + _pageSize;
+      _paginationCursor = page.paginationCursor;
 
       Log.info(
         '🎬 ClassicVinesFeed: Loaded ${filteredVideos.length} more '
-        '(offset: $nextOffset, total: ${allVideos.length})',
+        '(cursor: $requestCursor, total: ${allVideos.length})',
         name: 'ClassicVinesFeedProvider',
         category: LogCategory.video,
       );
@@ -320,12 +301,11 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       state = AsyncData(
         VideoFeedState(
           videos: allVideos,
-          hasMoreContent: followingOffset < _totalClassicVines,
+          hasMoreContent: page.hasMore ?? false,
           lastUpdated: DateTime.now(),
         ),
       );
     } catch (e) {
-      _loadMorePages--; // Revert so retry works
       Log.error(
         '🎬 ClassicVinesFeed: Error loading more: $e',
         name: 'ClassicVinesFeedProvider',
@@ -335,6 +315,39 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         currentState.copyWith(isLoadingMore: false, error: e.toString()),
       );
     }
+  }
+
+  HomeFeedResult _filterRepositoryResult(
+    HomeFeedResult result,
+    VideoEventService videoEventService,
+    ContentBlocklistRepository blocklistRepository,
+  ) {
+    return HomeFeedResult(
+      videos: _filterRepositoryVideos(
+        result.videos,
+        videoEventService,
+        blocklistRepository,
+      ),
+      videoListSources: result.videoListSources,
+      listOnlyVideoIds: result.listOnlyVideoIds,
+      consumedItemCount: result.consumedItemCount,
+      nextCursor: result.nextCursor,
+      paginationCursor: result.paginationCursor,
+      hasMore: result.hasMore,
+    );
+  }
+
+  List<VideoEvent> _filterRepositoryVideos(
+    List<VideoEvent> videos,
+    VideoEventService videoEventService,
+    ContentBlocklistRepository blocklistRepository,
+  ) {
+    return videoEventService.filterVideoList(
+      videos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
+          .toList(),
+    );
   }
 }
 

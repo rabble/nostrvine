@@ -596,5 +596,113 @@ void main() {
         );
       });
     });
+
+    group('formatPostAge', () {
+      testWidgets('returns elapsed time just under a week', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(
+              en,
+              _unixSecondsAgo(const Duration(days: 6, hours: 23)),
+            ),
+          ),
+          equals('6d ago'),
+        );
+      });
+
+      testWidgets('switches to a full date at one week', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(
+              en,
+              _unixSecondsAgo(const Duration(days: 7)),
+            ),
+          ),
+          equals('Mar 3, 2026'),
+        );
+      });
+
+      testWidgets('carries the year on a classic Vine date', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+
+        // Without the year an archive post is indistinguishable from
+        // something posted this spring. The day itself is timezone-dependent
+        // (the sibling test pins the local-vs-UTC contract), so assert the
+        // year and the absolute form.
+        final rendered = _withFixedClock(
+          () => LocalizedTimeFormatter.formatPostAge(en, 1398168000),
+        );
+
+        expect(rendered, contains('2014'));
+        expect(rendered, isNot(contains('ago')));
+      });
+
+      // NOTE: inert on CI. Mobile CI runs ubuntu-24.04 with no TZ override, so
+      // the process timezone is UTC, `toLocal()` is the identity, and both
+      // sides of this comparison collapse to the same string whichever way the
+      // implementation goes — removing `toLocal()` from formatPostAge keeps
+      // this green. It only bites on a developer machine outside UTC, which is
+      // where the bug it pins was found. Making it real on CI needs the suite
+      // running under a non-UTC TZ, which is a workflow change, not a test
+      // change. Kept deliberately: it costs nothing and catches the regression
+      // locally. Do not read it as CI coverage.
+      testWidgets('renders the local calendar day, not the UTC one (off-UTC '
+          'machines only)', (
+        tester,
+      ) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+
+        // 2014-04-22T00:00Z. Anywhere west of UTC this is still Apr 21
+        // locally, so formatting the UTC value would print the wrong day.
+        const midnightUtc = 1398124800;
+        final expected = DateFormat.yMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(
+            midnightUtc * 1000,
+            isUtc: true,
+          ).toLocal(),
+        );
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(en, midnightUtc),
+          ),
+          equals(expected),
+        );
+      });
+
+      testWidgets('localizes the absolute date', (tester) async {
+        final de = await _loadL10n(tester, const Locale('de'));
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(
+              de,
+              1398124800,
+              locale: 'de',
+            ),
+          ),
+          equals('22. Apr. 2014'),
+        );
+      });
+
+      testWidgets('localizes the relative form', (tester) async {
+        final de = await _loadL10n(tester, const Locale('de'));
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(
+              de,
+              _unixSecondsAgo(const Duration(hours: 3)),
+              locale: 'de',
+            ),
+          ),
+          isNot(equals('3h ago')),
+        );
+      });
+    });
   });
 }

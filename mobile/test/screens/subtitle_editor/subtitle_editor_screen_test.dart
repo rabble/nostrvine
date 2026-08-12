@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/providers/subtitle_repository_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/repositories/subtitle_repository.dart';
@@ -17,6 +18,8 @@ import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/services/subtitle_fetcher.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/video_event_resolver.dart';
+import 'package:openvine/widgets/captions/caption_cue_row.dart';
+import 'package:openvine/widgets/subtitle_editor/subtitle_editor_stage.dart';
 
 import '../../helpers/test_helpers.dart';
 
@@ -44,12 +47,51 @@ class _FakeVideoEventResolver implements VideoEventResolver {
   }
 }
 
-/// The caption-text field of a cue row, as opposed to its timing fields.
+/// The caption-text field of a cue row.
 Finder cueTextFields(AppLocalizations l10n) => find.byWidgetPredicate(
   (widget) =>
       widget is TextField &&
-      widget.decoration?.hintText == l10n.subtitleEditorCueHint,
+      widget.decoration?.labelText == l10n.subtitleEditorCueHint,
 );
+
+/// [text] as it appears in the editable cue list.
+///
+/// Scoped, because the same cue can also appear in the preview's caption pill.
+Finder cueTextInList(String text) =>
+    find.descendant(of: find.byType(ListView), matching: find.text(text));
+
+/// Scrolls the cue list until [target] is on screen.
+///
+/// Rows past the first can start below the fold, whether the list fills the
+/// screen or rides on the sheet over the video.
+Future<void> revealInList(WidgetTester tester, Finder target) async {
+  await tester.dragUntilVisible(
+    target,
+    find.byType(ListView),
+    const Offset(0, -80),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// A video with no playable URL unless one is asked for, so a test opts into
+/// the stage — and its native player — deliberately.
+VideoEvent _video({String? videoUrl}) => VideoEvent(
+  id: 'v',
+  pubkey: 'pk',
+  createdAt: 1,
+  content: '',
+  timestamp: DateTime.fromMillisecondsSinceEpoch(0),
+  vineId: 'd1',
+  videoUrl: videoUrl,
+);
+
+/// A loader that never reaches the network or the frame extractor.
+Stream<List<TimelineFrame>> noFrames({
+  required String videoUrl,
+  required String videoId,
+  required Duration duration,
+  required double devicePixelRatio,
+}) => const Stream.empty();
 
 void main() {
   late _MockCubit cubit;
@@ -60,12 +102,18 @@ void main() {
 
   setUp(() => cubit = _MockCubit());
 
-  Widget pump() => MaterialApp(
+  /// Pumps the view for a video with no playable URL, so the tests below
+  /// exercise the cue list without standing up a native player. The stage's
+  /// own behaviour is covered by its widget test.
+  Widget pump({String? videoUrl}) => MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: BlocProvider<SubtitleEditorCubit>.value(
       value: cubit,
-      child: const SubtitleEditorView(),
+      child: SubtitleEditorView(
+        video: _video(videoUrl: videoUrl),
+        loadFrames: noFrames,
+      ),
     ),
   );
 
@@ -82,7 +130,7 @@ void main() {
     await tester.pumpWidget(pump());
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(cueTextFields(l10n), findsNWidgets(2));
-    expect(find.text('one'), findsOneWidget);
+    expect(cueTextInList('one'), findsOneWidget);
   });
 
   testWidgets('shows processing message when status is processing', (
@@ -144,7 +192,7 @@ void main() {
     await tester.pumpWidget(pump());
 
     final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text('written'), findsOneWidget);
+    expect(cueTextInList('written'), findsOneWidget);
     expect(find.text(l10n.subtitleEditorLoadError), findsNothing);
   });
 
@@ -197,6 +245,7 @@ void main() {
     await tester.pumpWidget(pump());
 
     final l10n = lookupAppLocalizations(const Locale('en'));
+    await revealInList(tester, find.text(l10n.subtitleEditorAddCue));
     await tester.tap(find.text(l10n.subtitleEditorAddCue));
     verify(cubit.addCue).called(1);
   });
@@ -215,10 +264,7 @@ void main() {
     await tester.pumpWidget(pump());
 
     final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.tap(
-      find.text(l10n.subtitleEditorAddCue),
-      warnIfMissed: false,
-    );
+    await tester.tap(find.text(l10n.subtitleEditorAddCue), warnIfMissed: false);
     verifyNever(cubit.addCue);
   });
 
@@ -236,38 +282,15 @@ void main() {
     await tester.pumpWidget(pump());
 
     final l10n = lookupAppLocalizations(const Locale('en'));
+    await revealInList(
+      tester,
+      find.bySemanticsLabel(l10n.subtitleEditorRemoveCue).last,
+    );
     await tester.tap(find.bySemanticsLabel(l10n.subtitleEditorRemoveCue).last);
     verify(() => cubit.removeCue(1)).called(1);
   });
 
-  testWidgets('editing a start time dispatches updateCueTiming', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(
-        status: SubtitleEditorStatus.ready,
-        cues: [EditableCue(start: 0, end: 2000, text: 'one')],
-      ),
-    );
-    when(
-      () => cubit.updateCueTiming(any(), start: any(named: 'start')),
-    ).thenReturn(null);
-    await tester.pumpWidget(pump());
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.enterText(
-      find.descendant(
-        of: find.bySemanticsLabel(l10n.subtitleEditorStartLabel),
-        matching: find.byType(TextField),
-      ),
-      '1.5',
-    );
-    verify(() => cubit.updateCueTiming(0, start: 1500)).called(1);
-  });
-
-  testWidgets("clearing a timing field restores the cue's value on blur", (
-    tester,
-  ) async {
+  testWidgets('a row reads its timing back from the cue', (tester) async {
     when(() => cubit.state).thenReturn(
       const SubtitleEditorState(
         status: SubtitleEditorStatus.ready,
@@ -276,21 +299,185 @@ void main() {
     );
     await tester.pumpWidget(pump());
 
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    final startField = find.descendant(
-      of: find.bySemanticsLabel(l10n.subtitleEditorStartLabel),
-      matching: find.byType(TextField),
+    expect(find.text('1.5s'), findsOneWidget);
+    expect(find.text('2.0s'), findsOneWidget);
+  });
+
+  testWidgets('a row retimes its cue from the range slider', (tester) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        videoDurationMs: 4000,
+        cues: [EditableCue(start: 0, end: 2000, text: 'one')],
+      ),
     );
+    when(
+      () => cubit.updateCueTiming(
+        any(),
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenReturn(null);
+    await tester.pumpWidget(pump());
 
-    // Empty is unparseable, so the cubit never hears about it and the cue
-    // still holds 1.5s — the field must not keep claiming otherwise.
-    await tester.enterText(startField, '');
-    verifyNever(() => cubit.updateCueTiming(any(), start: any(named: 'start')));
-
-    await tester.tap(cueTextFields(l10n).first);
+    // The end thumb sits at 2s of a 4s track, i.e. mid-slider. Dragging it a
+    // quarter of the track to the left has to shorten the cue.
+    final slider = tester.getRect(find.byType(RangeSlider));
+    await tester.dragFrom(slider.center, Offset(-slider.width / 4, 0));
     await tester.pump();
 
-    expect(tester.widget<TextField>(startField).controller?.text, '1.5');
+    final captured = verify(
+      () => cubit.updateCueTiming(
+        0,
+        start: captureAny(named: 'start'),
+        end: captureAny(named: 'end'),
+      ),
+    ).captured;
+    expect(captured.last as int, lessThan(2000));
+  });
+
+  testWidgets('the video stage is skipped when there is nothing to play', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+      ),
+    );
+    await tester.pumpWidget(pump());
+
+    expect(find.byType(SubtitleEditorStage), findsNothing);
+    expect(cueTextInList('one'), findsOneWidget);
+  });
+
+  testWidgets('the rows fill the screen when there is nothing to play', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+      ),
+    );
+    await tester.pumpWidget(pump());
+
+    // Without a picture the sheet has nothing to sit on: parked halfway up it
+    // would leave the top of the screen empty above the rows.
+    expect(find.byType(DraggableScrollableSheet), findsNothing);
+    final list = tester.getRect(find.byType(ListView));
+    final body = tester.getRect(find.byType(Scaffold));
+    expect(list.top - body.top, lessThan(body.height / 4));
+  });
+
+  testWidgets('no-stage rows clear the keyboard inset', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    addTearDown(tester.view.reset);
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+      ),
+    );
+    await tester.pumpWidget(pump());
+
+    final saveButton = find.text(
+      lookupAppLocalizations(const Locale('en')).subtitleEditorSave,
+    );
+    expect(tester.getBottomLeft(saveButton).dy, lessThan(600 - 260));
+  });
+
+  testWidgets('the cue sheet rests on the stage and cannot collapse past it', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        videoDurationMs: 6000,
+        cues: [
+          EditableCue(start: 0, end: 1000, text: 'one'),
+          EditableCue(start: 1000, end: 2000, text: 'two'),
+        ],
+      ),
+    );
+    await tester.pumpWidget(pump(videoUrl: 'https://example.com/video.mp4'));
+    await tester.pump();
+
+    double sheetTop() => tester
+        .getRect(
+          find
+              .descendant(
+                of: find.byType(DraggableScrollableSheet),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        )
+        .top;
+
+    // A one-pixel divider closes the stage, so the sheet's edge meets it.
+    final stageBottom = tester.getRect(find.byType(SubtitleEditorStage)).bottom;
+    expect(sheetTop() - stageBottom, closeTo(1, 0.5));
+
+    await tester.drag(find.byType(ListView), const Offset(0, 80));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      sheetTop() - stageBottom,
+      closeTo(1, 0.5),
+      reason:
+          'the picture is a fixed height, so a lower sheet would only '
+          'open a band of empty background under it',
+    );
+  });
+
+  testWidgets('focusing a row selects its cue on the timeline', (tester) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        videoDurationMs: 4000,
+        cues: [
+          EditableCue(start: 0, end: 1000, text: 'one'),
+          EditableCue(start: 1000, end: 2000, text: 'two'),
+        ],
+      ),
+    );
+    when(() => cubit.selectCue(any())).thenReturn(null);
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await revealInList(tester, cueTextFields(l10n).last);
+    await tester.tap(cueTextFields(l10n).last);
+    await tester.pump();
+
+    verify(() => cubit.selectCue(1)).called(1);
+  });
+
+  testWidgets('tapping a row selects its cue without targeting the field', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        videoDurationMs: 4000,
+        cues: [
+          EditableCue(start: 0, end: 1000, text: 'one'),
+          EditableCue(start: 1000, end: 2000, text: 'two'),
+        ],
+      ),
+    );
+    when(() => cubit.selectCue(any())).thenReturn(null);
+    await tester.pumpWidget(pump());
+
+    final row = find.byType(CaptionCueRow).last;
+    await revealInList(tester, row);
+    final topLeft = tester.getTopLeft(row);
+    await tester.tapAt(topLeft + const Offset(8, 8));
+    await tester.pump();
+
+    verify(() => cubit.selectCue(1)).called(1);
   });
 
   testWidgets('rows follow the cue that moved into their position', (
@@ -314,14 +501,14 @@ void main() {
     );
 
     await tester.pumpWidget(pump());
-    expect(find.text('one'), findsOneWidget);
+    expect(cueTextInList('one'), findsOneWidget);
 
     // 'one' was deleted; the surviving cue slides into row 0 and its text
     // field has to follow rather than keep showing the removed line.
     await tester.pump();
 
-    expect(find.text('one'), findsNothing);
-    expect(find.text('two'), findsOneWidget);
+    expect(cueTextInList('one'), findsNothing);
+    expect(cueTextInList('two'), findsOneWidget);
   });
 
   testWidgets('save stays disabled while a cue is incomplete', (tester) async {
@@ -413,7 +600,7 @@ void main() {
 
       expect(resolver.resolvedIds, [video.id]);
       expect(resolver.allowOwnContentBypassValues, [isTrue]);
-      expect(find.text('hello'), findsOneWidget);
+      expect(cueTextInList('hello'), findsOneWidget);
       verify(() => repository.loadCues(video)).called(1);
     });
 

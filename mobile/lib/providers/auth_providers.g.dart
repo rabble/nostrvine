@@ -805,13 +805,27 @@ final class VerifierClientProvider
 String _$verifierClientHash() => r'1d6966c5483814cd7fa203e7e9e198dc5c9c232d';
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
-/// with NIP-39 i tag parsing and the persistent verdict cache (#3936).
+/// with NIP-39 i tag parsing, the persistent verdict cache (#3936) and the
+/// kind-10011 write path behind the in-app verify flow.
+///
+/// The write dependencies are wired unconditionally even though most
+/// consumers only render someone else's chips: the signer scopes every write
+/// to the current user, so a read-only consumer holding this instance cannot
+/// write with it. Consumers already re-key their blocs on this repository's
+/// identity, which is what keeps a post-auth-flip client from being captured.
 
 @ProviderFor(identityClaimsRepository)
 final identityClaimsRepositoryProvider = IdentityClaimsRepositoryProvider._();
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
-/// with NIP-39 i tag parsing and the persistent verdict cache (#3936).
+/// with NIP-39 i tag parsing, the persistent verdict cache (#3936) and the
+/// kind-10011 write path behind the in-app verify flow.
+///
+/// The write dependencies are wired unconditionally even though most
+/// consumers only render someone else's chips: the signer scopes every write
+/// to the current user, so a read-only consumer holding this instance cannot
+/// write with it. Consumers already re-key their blocs on this repository's
+/// identity, which is what keeps a post-auth-flip client from being captured.
 
 final class IdentityClaimsRepositoryProvider
     extends
@@ -822,7 +836,14 @@ final class IdentityClaimsRepositoryProvider
         >
     with $Provider<IdentityClaimsRepository> {
   /// Provider for [IdentityClaimsRepository] composing the verifier client
-  /// with NIP-39 i tag parsing and the persistent verdict cache (#3936).
+  /// with NIP-39 i tag parsing, the persistent verdict cache (#3936) and the
+  /// kind-10011 write path behind the in-app verify flow.
+  ///
+  /// The write dependencies are wired unconditionally even though most
+  /// consumers only render someone else's chips: the signer scopes every write
+  /// to the current user, so a read-only consumer holding this instance cannot
+  /// write with it. Consumers already re-key their blocs on this repository's
+  /// identity, which is what keeps a post-auth-flip client from being captured.
   IdentityClaimsRepositoryProvider._()
     : super(
         from: null,
@@ -858,7 +879,7 @@ final class IdentityClaimsRepositoryProvider
 }
 
 String _$identityClaimsRepositoryHash() =>
-    r'105116da1cf679bd06838f6fbfc290832057a8ec';
+    r'be740fe386e60c1253fa0ceeaa7966e510171019';
 
 /// NIP-98 authentication service
 

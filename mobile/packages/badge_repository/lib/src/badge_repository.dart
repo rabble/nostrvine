@@ -7,6 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 typedef BadgeCurrentPubkeyReader = String? Function();
 
+// Trust-safety bulk actions must stay bounded even when a public badge is
+// claimed by a very large group. These limits keep relay/cache reads finite:
+// first discover the newest claim events, then verify latest profile-badge
+// state in author chunks instead of issuing per-claimant REQs.
+const int _claimantCandidateEventLimit = 1000;
+const int _claimantProfileAuthorChunkSize = 100;
+const int _profileBadgeEventsPerAuthorLimit = 10;
+
 typedef BadgeEventSigner =
     Future<Event?> Function({
       required int kind,
@@ -608,6 +616,37 @@ class BadgeRepository {
     );
   }
 
+  /// Loads pubkeys whose latest profile-badge list claims [coordinate].
+  ///
+  /// NIP-58 profile badges are currently published as kind 10008 and, for
+  /// older clients, legacy kind 30008 with `d=profile_badges`. The initial
+  /// reverse `#a` query finds candidate claimants without walking every award
+  /// recipient; each candidate is then checked against their latest profile
+  /// badge list so an older claim does not survive after a newer removal.
+  Future<Set<String>> loadClaimantPubkeys(BadgeCoordinate coordinate) async {
+    final viewerPubkey = _currentPubkey();
+    final candidateEvents = await _queryProfileBadgeClaimsForCoordinate(
+      coordinate,
+    );
+    final candidatePubkeys = {
+      for (final event in candidateEvents)
+        if (event.pubkey != viewerPubkey) event.pubkey,
+    };
+    if (candidatePubkeys.isEmpty) return const {};
+
+    final memo = _DashboardLookupMemo();
+    final latestByPubkey = await _profileBadgesByPubkeyChunked(
+      memo,
+      candidatePubkeys,
+    );
+
+    return Set.unmodifiable({
+      for (final entry in latestByPubkey.entries)
+        if (_containsBadgeCoordinateValue(entry.value, coordinate.value))
+          entry.key,
+    });
+  }
+
   /// Publishes a badge definition (`kind:30009`) authored by the current user.
   ///
   /// Badge definitions are addressable, so publishing a draft whose
@@ -844,6 +883,30 @@ class BadgeRepository {
     return awards;
   }
 
+  Future<List<Event>> _queryProfileBadgeClaimsForCoordinate(
+    BadgeCoordinate coordinate, {
+    int limit = _claimantCandidateEventLimit,
+  }) async {
+    final events = await _nostrClient.queryEvents([
+      Filter(
+        kinds: [EventKind.profileBadges, EventKind.badgeSet],
+        a: [coordinate.value],
+        limit: limit,
+      ),
+    ]);
+
+    return events
+        .where(Nip58BadgeParser.isProfileBadgesEvent)
+        .where(
+          (event) =>
+              Nip58BadgeParser.parseProfileBadges(event)?.badges.any(
+                (ref) => ref.definitionCoordinate == coordinate.value,
+              ) ??
+              false,
+        )
+        .toList(growable: false);
+  }
+
   static List<Nip58BadgeDefinition> _newestDefinitionPerIdentifier(
     List<Event> events,
   ) {
@@ -870,6 +933,31 @@ class BadgeRepository {
         memo.definition(coordinate, () => _loadDefinition(coordinate)),
     ]);
     return {for (var i = 0; i < unique.length; i++) unique[i]: loaded[i]};
+  }
+
+  Future<Map<String, Nip58ProfileBadges?>> _profileBadgesByPubkeyChunked(
+    _DashboardLookupMemo memo,
+    Iterable<String> pubkeys,
+  ) async {
+    final unique = pubkeys.toSet().toList(growable: false);
+    final result = <String, Nip58ProfileBadges?>{};
+    for (
+      var start = 0;
+      start < unique.length;
+      start += _claimantProfileAuthorChunkSize
+    ) {
+      final chunkEnd = start + _claimantProfileAuthorChunkSize;
+      final end = chunkEnd > unique.length ? unique.length : chunkEnd;
+      final chunk = unique.sublist(start, end);
+      final badgesByPubkey = await memo.profileBadgeChunk(
+        chunk,
+        () => _latestProfileBadgesForAuthors(chunk),
+      );
+      for (final pubkey in chunk) {
+        result[pubkey] = badgesByPubkey[pubkey];
+      }
+    }
+    return result;
   }
 
   Future<Map<String, Nip58ProfileBadges?>> _profileBadgesByPubkey(
@@ -1014,6 +1102,47 @@ class BadgeRepository {
       ...results[1],
     ]);
 
+    return _preferPublishedProfileBadges(pubkey, fromRelays);
+  }
+
+  Future<Map<String, Nip58ProfileBadges?>> _latestProfileBadgesForAuthors(
+    List<String> pubkeys,
+  ) async {
+    if (pubkeys.isEmpty) return const {};
+    final pubkeySet = pubkeys.toSet();
+    final results = await _nostrClient.queryEvents([
+      Filter(
+        authors: pubkeys,
+        kinds: [EventKind.profileBadges],
+        limit: pubkeys.length * _profileBadgeEventsPerAuthorLimit,
+      ),
+      Filter(
+        authors: pubkeys,
+        kinds: [EventKind.badgeSet],
+        d: ['profile_badges'],
+        limit: pubkeys.length * _profileBadgeEventsPerAuthorLimit,
+      ),
+    ]);
+
+    final byPubkey = <String, List<Event>>{};
+    for (final event in results) {
+      if (!pubkeySet.contains(event.pubkey)) continue;
+      byPubkey.putIfAbsent(event.pubkey, () => []).add(event);
+    }
+
+    return {
+      for (final pubkey in pubkeys)
+        pubkey: _preferPublishedProfileBadges(
+          pubkey,
+          _newestParsedProfileBadges(byPubkey[pubkey] ?? const <Event>[]),
+        ),
+    };
+  }
+
+  Nip58ProfileBadges? _preferPublishedProfileBadges(
+    String pubkey,
+    Nip58ProfileBadges? fromRelays,
+  ) {
     final published = _publishedProfileBadges;
     if (published == null || published.pubkey != pubkey) return fromRelays;
     // `>=` rather than `>`: `created_at` has one-second resolution, so an
@@ -1196,8 +1325,18 @@ class BadgeRepository {
     Nip58ProfileBadges? profileBadges,
     Nip58BadgeAward award,
   ) {
+    return _containsBadgeCoordinateValue(
+      profileBadges,
+      award.definitionCoordinate,
+    );
+  }
+
+  static bool _containsBadgeCoordinateValue(
+    Nip58ProfileBadges? profileBadges,
+    String coordinate,
+  ) {
     return profileBadges?.badges.any(
-          (ref) => ref.definitionCoordinate == award.definitionCoordinate,
+          (ref) => ref.definitionCoordinate == coordinate,
         ) ??
         false;
   }
@@ -1226,6 +1365,8 @@ class BadgeRepository {
 class _DashboardLookupMemo {
   final Map<String, Future<Nip58BadgeDefinition?>> _definitions = {};
   final Map<String, Future<Nip58ProfileBadges?>> _profileBadges = {};
+  final Map<String, Future<Map<String, Nip58ProfileBadges?>>>
+  _profileBadgeChunks = {};
   final Map<String, Future<List<Nip58BadgeAward>>> _issuedAwards = {};
 
   Future<Nip58BadgeDefinition?> definition(
@@ -1237,6 +1378,14 @@ class _DashboardLookupMemo {
     String pubkey,
     Future<Nip58ProfileBadges?> Function() load,
   ) => _profileBadges.putIfAbsent(pubkey, load);
+
+  Future<Map<String, Nip58ProfileBadges?>> profileBadgeChunk(
+    List<String> pubkeys,
+    Future<Map<String, Nip58ProfileBadges?>> Function() load,
+  ) {
+    final key = pubkeys.join(',');
+    return _profileBadgeChunks.putIfAbsent(key, load);
+  }
 
   /// Awards authored by [pubkey]. Shared by the issued and created passes,
   /// which read the same `kind:8`-by-author query.

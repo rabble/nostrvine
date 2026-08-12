@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/features/oauth/app_oauth_support.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/crossposting_providers.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -63,32 +64,6 @@ void main() {
     verify(secondClient.close).called(1);
   });
 
-  group('iosVersionSupportsCrosspostingOAuth', () {
-    // flutter_web_auth_2 only uses ASWebAuthenticationSession's HTTPS
-    // callback API on iOS 17.4+; older iOS can silently report a completed
-    // connection as a cancel, so the floor decides whether the flow is shown.
-    for (final (version, expected) in [
-      ('17.4', true),
-      ('17.4.1', true),
-      ('17.5', true),
-      ('18.0', true),
-      ('17.3.9', false),
-      ('17.0', false),
-      ('16.7.2', false),
-      ('15.8', false),
-    ]) {
-      test('$version -> $expected', () {
-        expect(iosVersionSupportsCrosspostingOAuth(version), expected);
-      });
-    }
-
-    test('a version that cannot be parsed fails closed', () {
-      // Offering the flow on an unknown iOS risks the silent-cancel bug;
-      // hiding it is the recoverable failure.
-      expect(iosVersionSupportsCrosspostingOAuth('not-a-version'), isFalse);
-    });
-  });
-
   group('crosspostingEligibleProvider', () {
     ProviderContainer buildContainer({
       required bool oauthSupported,
@@ -103,16 +78,14 @@ void main() {
             (ref) => AuthState.authenticated,
           ),
           authServiceProvider.overrideWithValue(auth),
-          crosspostingOAuthSupportProvider.overrideWith(
-            (ref) async {
-              if (!resolveSupport) {
-                // Never settle: models the window before the device lookup
-                // completes.
-                return Completer<bool>().future;
-              }
-              return oauthSupported;
-            },
-          ),
+          appOAuthSupportProvider.overrideWith((ref) async {
+            if (!resolveSupport) {
+              // Never settle: models the window before the device lookup
+              // completes.
+              return Completer<bool>().future;
+            }
+            return oauthSupported;
+          }),
         ],
       );
     }
@@ -123,7 +96,7 @@ void main() {
         final container = buildContainer(oauthSupported: true);
         addTearDown(container.dispose);
 
-        await container.read(crosspostingOAuthSupportProvider.future);
+        await container.read(appOAuthSupportProvider.future);
 
         expect(container.read(crosspostingEligibleProvider), isTrue);
       },
@@ -137,7 +110,7 @@ void main() {
 
       // Load-bearing: assert after the lookup settles, so this cannot pass
       // for the unresolved-loading reason below.
-      await container.read(crosspostingOAuthSupportProvider.future);
+      await container.read(appOAuthSupportProvider.future);
 
       expect(container.read(crosspostingEligibleProvider), isFalse);
     });

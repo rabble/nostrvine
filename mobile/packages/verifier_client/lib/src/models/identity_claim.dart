@@ -53,6 +53,20 @@ class IdentityClaim extends Equatable {
     'tiktok',
   };
 
+  /// Proof value written into the `i` tag of an OAuth-linked claim.
+  ///
+  /// OAuth leaves no public post to point at, so the tag carries this
+  /// sentinel and the verifier confirms the claim from its own OAuth cache
+  /// (`divine-identify-verification-service/src/routes/verify.ts`). It
+  /// matches what the verifier's web UI writes, so a claim linked on one
+  /// surface re-verifies on the other.
+  ///
+  /// That cache expires after 24 hours. Once it does, the claim falls
+  /// through to the platform's proof check, which cannot resolve this
+  /// sentinel — so an OAuth link has to be renewed to stay verified. This is
+  /// service-side behaviour, identical on web.
+  static const String oauthProof = 'oauth';
+
   static final RegExp _hexPubkeyPattern = RegExp(r'^[0-9a-fA-F]+$');
   static final RegExp _invalidServerTextPattern = RegExp(
     r'''[<>"'{}|\\^`;]''',
