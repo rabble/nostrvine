@@ -313,6 +313,11 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             hasMoreStream: feedRepository.watchHasMore(source),
             removedIdsStream: removedIdsStream,
             onLoadMore: () => unawaited(feedRepository.loadMore(source)),
+            onRemoveVideo: (videoId) {
+              ref
+                  .read(videoEventServiceProvider)
+                  .removeVideoCompletely(videoId);
+            },
             onVideoConfirmedUnavailable: persistConfirmedUnavailable,
             confirmVideoUnavailable: confirmVideoUnavailable,
             mediaCache: mediaCache,

@@ -278,7 +278,9 @@ class FullscreenFeedBloc
         // (e.g. the liked-videos like-change subscription / load-more, which
         // never re-filter) can't re-introduce an author who is blocked under
         // the current blocklist. Idempotent for sources that already filter.
-        final videos = _applyUnavailableFilter(_applyHideFilter(incoming));
+        final videos = _applySessionRemovedFilter(
+          _applyUnavailableFilter(_applyHideFilter(incoming)),
+        );
 
         Log.debug(
           'FullscreenFeedBloc: Videos updated, count=${videos.length}',
@@ -647,10 +649,25 @@ class FullscreenFeedBloc
     _onRemoveVideo?.call(videoId);
 
     final updatedRemoved = {...state.removedVideoIds, videoId};
-    final nextIndex = index + 1;
+    final updatedVideos = [...state.videos]..removeAt(index);
 
+    if (updatedVideos.isEmpty) {
+      emit(
+        state.copyWith(
+          status: FullscreenFeedStatus.emptyAfterRemoval,
+          videos: const [],
+          removedVideoIds: updatedRemoved,
+          clearPendingSkipTarget: true,
+        ),
+      );
+      return;
+    }
+
+    final nextIndex = index.clamp(0, updatedVideos.length - 1);
     emit(
       state.copyWith(
+        videos: updatedVideos,
+        currentIndex: nextIndex,
         removedVideoIds: updatedRemoved,
         pendingSkipTarget: nextIndex,
       ),
@@ -753,6 +770,11 @@ class FullscreenFeedBloc
     final unavailableFilter = _unavailableFilter;
     if (unavailableFilter == null) return videos;
     return videos.where((v) => !unavailableFilter(v.id)).toList();
+  }
+
+  List<VideoEvent> _applySessionRemovedFilter(List<VideoEvent> videos) {
+    if (state.removedVideoIds.isEmpty) return videos;
+    return videos.where((v) => !state.removedVideoIds.contains(v.id)).toList();
   }
 
   /// Handle a broad blocklist change (`blocklistVersionProvider` bumped).

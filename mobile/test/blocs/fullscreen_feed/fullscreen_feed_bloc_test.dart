@@ -1725,9 +1725,14 @@ void main() {
                 equals({'video1'}),
               )
               .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                ['video2'],
+              )
+              .having(
                 (s) => s.pendingSkipTarget,
                 'pendingSkipTarget',
-                equals(1),
+                equals(0),
               ),
         ],
       );
@@ -1861,7 +1866,7 @@ void main() {
               .having(
                 (s) => s.pendingSkipTarget,
                 'pendingSkipTarget',
-                equals(1),
+                equals(0),
               ),
         ],
       );
@@ -1907,7 +1912,7 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'skip target matches index of removed video + 1',
+        'skip target lands on the survivor now at the removed index',
         build: () => createBloc(
           onRemoveVideo: (_) {},
           confirmVideoUnavailable: confirmerReturning(true),
@@ -1924,11 +1929,18 @@ void main() {
         act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video2')),
         wait: const Duration(milliseconds: 100),
         expect: () => [
-          isA<FullscreenFeedState>().having(
-            (s) => s.pendingSkipTarget,
-            'pendingSkipTarget',
-            equals(2),
-          ),
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                ['video1', 'video3'],
+              )
+              .having((s) => s.currentIndex, 'currentIndex', equals(1))
+              .having(
+                (s) => s.pendingSkipTarget,
+                'pendingSkipTarget',
+                equals(1),
+              ),
         ],
       );
 
@@ -1951,12 +1963,51 @@ void main() {
         act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
         wait: const Duration(milliseconds: 100),
         expect: () => [
-          isA<FullscreenFeedState>().having(
-            (s) => s.removedVideoIds,
-            'removedVideoIds',
-            equals({'video1'}),
-          ),
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.removedVideoIds,
+                'removedVideoIds',
+                equals({'video1'}),
+              )
+              .having(
+                (s) => s.status,
+                'status',
+                FullscreenFeedStatus.emptyAfterRemoval,
+              )
+              .having((s) => s.videos, 'videos', isEmpty),
         ],
+      );
+
+      test(
+        'session-only removal survives a source re-push of the same id',
+        () async {
+          final bloc = createBloc(
+            confirmVideoUnavailable: confirmerWith(
+              FeedUnavailability.sessionOnly,
+            ),
+          );
+          addTearDown(bloc.close);
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ]);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(bloc.state.videos.map((v) => v.id), ['video1', 'video2']);
+
+          bloc.add(const FullscreenFeedVideoUnavailable('video1'));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(bloc.state.videos.map((v) => v.id), ['video2']);
+          expect(bloc.state.removedVideoIds, equals({'video1'}));
+
+          videosController.add([
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ]);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(bloc.state.videos.map((v) => v.id), ['video2']);
+        },
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
@@ -2015,7 +2066,11 @@ void main() {
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
-          videos: [createTestVideo('video1'), createTestVideo('video2')],
+          videos: [
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+            createTestVideo('video3'),
+          ],
         ),
         act: (bloc) async {
           bloc.add(const FullscreenFeedVideoUnavailable('video1'));
@@ -2029,7 +2084,7 @@ void main() {
           isA<FullscreenFeedState>().having(
             (s) => s.pendingSkipTarget,
             'pendingSkipTarget after first unavailable',
-            equals(1),
+            equals(0),
           ),
           isA<FullscreenFeedState>().having(
             (s) => s.pendingSkipTarget,
@@ -2039,7 +2094,7 @@ void main() {
           isA<FullscreenFeedState>().having(
             (s) => s.pendingSkipTarget,
             'pendingSkipTarget after second unavailable',
-            equals(2),
+            equals(0),
           ),
         ],
       );
