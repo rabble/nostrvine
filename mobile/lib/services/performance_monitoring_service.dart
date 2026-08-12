@@ -25,22 +25,19 @@ abstract class PerformanceTrace {
 }
 
 /// Minimal trace API used by services that need testable performance spans.
+///
+/// Deliberately handle-only. The name-keyed API this replaced treated the
+/// trace *name* as the identity of a measurement, so starting a second trace
+/// of the same name reported the first one wherever it happened to be —
+/// truncating it — and a trace that was never stopped stayed open until some
+/// later start reported it, which is how a 23.6-hour `feed_load_profile`
+/// sample reached the console (#7119).
 abstract class PerformanceTraceMonitor {
-  Future<void> startTrace(String traceName);
-
-  Future<void> stopTrace(String traceName);
-
-  /// Starts a trace and returns an operation-scoped [PerformanceTrace] handle.
-  /// Prefer this over [startTrace] for any operation that can overlap another
-  /// of the same name or complete before its trace round-trip settles. Returns
-  /// a no-op handle when monitoring is unavailable.
+  /// Starts a trace and returns the handle that owns it.
+  ///
+  /// Returns a no-op handle when monitoring is unavailable, so callers never
+  /// need to null-check.
   PerformanceTrace startOperationTrace(String traceName);
-
-  void incrementMetric(String traceName, String metricName, int value);
-
-  void setMetric(String traceName, String metricName, int value);
-
-  void putAttribute(String traceName, String attribute, String value);
 }
 
 /// No-op [PerformanceTrace] returned when monitoring is unavailable.
@@ -112,23 +109,8 @@ class NoOpPerformanceTraceMonitor implements PerformanceTraceMonitor {
   const NoOpPerformanceTraceMonitor();
 
   @override
-  Future<void> startTrace(String traceName) async {}
-
-  @override
-  Future<void> stopTrace(String traceName) async {}
-
-  @override
   PerformanceTrace startOperationTrace(String traceName) =>
       const _NoOpPerformanceTrace();
-
-  @override
-  void incrementMetric(String traceName, String metricName, int value) {}
-
-  @override
-  void setMetric(String traceName, String metricName, int value) {}
-
-  @override
-  void putAttribute(String traceName, String attribute, String value) {}
 }
 
 /// Performance monitoring service for tracking app performance
@@ -144,9 +126,6 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
   /// instrumented HTTP client is constructed with the provider graph, well
   /// before [initialize] resolves.
   bool get isEnabled => _initialized;
-
-  /// Active traces for custom performance tracking
-  final Map<String, Trace> _activeTraces = {};
 
   /// Initialize performance monitoring
   Future<void> initialize() async {
@@ -172,36 +151,11 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
     }
   }
 
-  /// Start a custom trace for tracking operation performance
-  @override
-  Future<void> startTrace(String traceName) async {
-    if (!_initialized) return;
-
-    try {
-      // Stop existing trace with same name if it exists
-      await stopTrace(traceName);
-
-      final trace = _performance.newTrace(traceName);
-      await trace.start();
-      _activeTraces[traceName] = trace;
-
-      Log.debug(
-        'Started performance trace: $traceName',
-        name: 'PerformanceMonitoring',
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to start trace $traceName: $e',
-        name: 'PerformanceMonitoring',
-      );
-    }
-  }
-
   /// Start an operation-scoped trace and return its handle.
   ///
-  /// Unlike [startTrace], nothing is stored in [_activeTraces]: the caller
-  /// owns the returned [PerformanceTrace] and tags/stops it directly, so
-  /// overlapping operations of the same name keep independent traces. Start is
+  /// The caller owns the returned [PerformanceTrace] and tags/stops it
+  /// directly, so overlapping operations of the same name keep independent
+  /// traces and a handle that is never stopped simply never reports. Start is
   /// fire-and-forget so callers stay synchronous; attributes and metrics are
   /// buffered until stop, and stop itself waits for the start round-trip so a
   /// short operation cannot end its trace before the platform opened it.
@@ -224,122 +178,6 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
         name: 'PerformanceMonitoring',
       );
       return const _NoOpPerformanceTrace();
-    }
-  }
-
-  /// Stop a custom trace and record the duration
-  @override
-  Future<void> stopTrace(String traceName) async {
-    if (!_initialized) return;
-
-    try {
-      final trace = _activeTraces.remove(traceName);
-      if (trace != null) {
-        await trace.stop();
-        Log.debug(
-          'Stopped performance trace: $traceName',
-          name: 'PerformanceMonitoring',
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to stop trace $traceName: $e',
-        name: 'PerformanceMonitoring',
-      );
-    }
-  }
-
-  /// Add a metric to an active trace
-  @override
-  void incrementMetric(String traceName, String metricName, int value) {
-    if (!_initialized) return;
-
-    try {
-      final trace = _activeTraces[traceName];
-      if (trace != null) {
-        trace.incrementMetric(metricName, value);
-        Log.debug(
-          'Incremented metric $metricName by $value for trace $traceName',
-          name: 'PerformanceMonitoring',
-        );
-      } else {
-        Log.warning(
-          'Trace $traceName not found for metric $metricName',
-          name: 'PerformanceMonitoring',
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to increment metric $metricName: $e',
-        name: 'PerformanceMonitoring',
-      );
-    }
-  }
-
-  /// Set a metric value on an active trace
-  @override
-  void setMetric(String traceName, String metricName, int value) {
-    if (!_initialized) return;
-
-    try {
-      final trace = _activeTraces[traceName];
-      if (trace != null) {
-        trace.setMetric(metricName, value);
-        Log.debug(
-          'Set metric $metricName to $value for trace $traceName',
-          name: 'PerformanceMonitoring',
-        );
-      } else {
-        Log.warning(
-          'Trace $traceName not found for metric $metricName',
-          name: 'PerformanceMonitoring',
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to set metric $metricName: $e',
-        name: 'PerformanceMonitoring',
-      );
-    }
-  }
-
-  /// Add an attribute to an active trace for filtering in Firebase Console
-  @override
-  void putAttribute(String traceName, String attribute, String value) {
-    if (!_initialized) return;
-
-    try {
-      final trace = _activeTraces[traceName];
-      if (trace != null) {
-        trace.putAttribute(attribute, value);
-        Log.debug(
-          'Set attribute $attribute=$value for trace $traceName',
-          name: 'PerformanceMonitoring',
-        );
-      } else {
-        Log.warning(
-          'Trace $traceName not found for attribute $attribute',
-          name: 'PerformanceMonitoring',
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to put attribute $attribute: $e',
-        name: 'PerformanceMonitoring',
-      );
-    }
-  }
-
-  /// Convenience method to track an async operation with automatic start/stop
-  Future<T> trace<T>(String traceName, Future<T> Function() operation) async {
-    await startTrace(traceName);
-    try {
-      final result = await operation();
-      await stopTrace(traceName);
-      return result;
-    } catch (e) {
-      await stopTrace(traceName);
-      rethrow;
     }
   }
 }

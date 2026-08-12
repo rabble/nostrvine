@@ -101,28 +101,58 @@ class _FakeTransport implements BlossomBackgroundTransport {
   ) async => null;
 }
 
-/// A performance monitor whose [startTrace] throws on the first call and
-/// succeeds thereafter. The first call is from uploadVideoInBackground (the
+/// A performance monitor whose [startOperationTrace] throws on the first call
+/// and succeeds thereafter. The first call is from uploadVideoInBackground (the
 /// OS-first attempt); the throw makes it propagate out of that method before
 /// its internal try/catch, exercising the defensive catch in
 /// uploadVideoWithResume. The subsequent resumable uploadVideo path then gets
 /// a working trace so it can complete normally.
+/// Records every trace handed out, so a test can assert which trace names were
+/// used and how each one was tagged.
+class _RecordingPerformanceMonitor implements BlossomPerformanceMonitor {
+  final traces = <_RecordedTrace>[];
+
+  _RecordedTrace? named(String traceName) =>
+      traces.where((t) => t.name == traceName).firstOrNull;
+
+  @override
+  BlossomPerformanceTrace startOperationTrace(String traceName) {
+    final trace = _RecordedTrace(traceName);
+    traces.add(trace);
+    return trace;
+  }
+}
+
+class _RecordedTrace implements BlossomPerformanceTrace {
+  _RecordedTrace(this.name);
+
+  final String name;
+  final attributes = <String, String>{};
+  final metrics = <String, int>{};
+  bool stopped = false;
+
+  @override
+  void putAttribute(String attribute, String value) =>
+      attributes[attribute] = value;
+
+  @override
+  void setMetric(String metricName, int value) => metrics[metricName] = value;
+
+  @override
+  Future<void> stop() async => stopped = true;
+}
+
 class _ThrowingPerformanceMonitor implements BlossomPerformanceMonitor {
   var _calls = 0;
 
   @override
-  Future<void> startTrace(String traceName) async {
+  BlossomPerformanceTrace startOperationTrace(String traceName) {
     _calls++;
     if (_calls == 1) {
       throw Exception('perf monitor unavailable');
     }
+    return const NoOpPerformanceTrace();
   }
-
-  @override
-  Future<void> stopTrace(String traceName) async {}
-
-  @override
-  void setMetric(String traceName, String metricName, int value) {}
 }
 
 const _testServer = 'https://media.divine.video';
@@ -335,6 +365,162 @@ void main() {
             onSendProgress: any(named: 'onSendProgress'),
           ),
         ).called(2);
+      },
+    );
+
+    test('OS-first success reports only the enqueue trace', () async {
+      final monitor = _RecordingPerformanceMonitor();
+      final transport = _FakeTransport();
+      final service = BlossomUploadService(
+        authProvider: auth,
+        dio: dio,
+        defaultServerUrl: _testServer,
+        backgroundTransport: transport,
+        performanceMonitor: monitor,
+      );
+
+      final result = await service.uploadVideoWithResume(
+        videoFile: videoFile,
+        nostrPubkey: _testPublicKey,
+        taskId: 'task-trace-os',
+        title: 'OS-first success',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+      );
+
+      expect(result.success, isTrue);
+
+      // The OS leg measures the handoff only, so it must not report under the
+      // whole-transfer name — that blend is what made the old distribution
+      // unreadable (#7119).
+      expect(monitor.traces.map((t) => t.name), equals([enqueueTraceName]));
+
+      final enqueue = monitor.named(enqueueTraceName)!;
+      expect(enqueue.stopped, isTrue);
+      expect(enqueue.attributes['outcome'], 'success');
+      expect(enqueue.metrics['file_size_bytes'], 8);
+    });
+
+    test(
+      'OS-first failure reports the enqueue trace and a separate upload trace',
+      () async {
+        final monitor = _RecordingPerformanceMonitor();
+        final transport = _FakeTransport(completeSuccessfully: false);
+        final service = BlossomUploadService(
+          authProvider: auth,
+          dio: dio,
+          defaultServerUrl: _testServer,
+          backgroundTransport: transport,
+          performanceMonitor: monitor,
+        );
+
+        stubResumableControlPlane(uploadId: 'up_trace');
+        when(
+          () => dio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final options = invocation.namedArguments[#options] as Options;
+          final contentRange = options.headers?['Content-Range'] as String;
+          final nextOffset = switch (contentRange) {
+            'bytes 0-3/8' => '4',
+            'bytes 4-7/8' => '8',
+            _ => throw StateError('Unexpected range: $contentRange'),
+          };
+          return Response(
+            requestOptions: RequestOptions(path: '/sessions/up_trace'),
+            statusCode: 204,
+            headers: Headers.fromMap({
+              DivineUploadHeaders.uploadOffset: [nextOffset],
+            }),
+          );
+        });
+
+        final result = await service.uploadVideoWithResume(
+          videoFile: videoFile,
+          nostrPubkey: _testPublicKey,
+          taskId: 'task-trace-fallback',
+          title: 'OS-first fails, resumable fallback',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+        );
+
+        expect(result.success, isTrue);
+
+        // Two legs ran, so two independently named traces are reported. Under
+        // the name-keyed API these shared one name and one bucket.
+        expect(
+          monitor.traces.map((t) => t.name),
+          equals([enqueueTraceName, uploadTraceName]),
+        );
+
+        // The enqueue itself succeeded — the OS transfer failed afterwards,
+        // which this trace deliberately does not span.
+        expect(
+          monitor.named(enqueueTraceName)!.attributes['outcome'],
+          'success',
+        );
+
+        final upload = monitor.named(uploadTraceName)!;
+        expect(upload.stopped, isTrue);
+        expect(upload.attributes['outcome'], 'success');
+      },
+    );
+
+    test(
+      'a failed in-process upload is tagged with its failure reason',
+      () async {
+        final monitor = _RecordingPerformanceMonitor();
+        final service = BlossomUploadService(
+          authProvider: auth,
+          dio: dio,
+          defaultServerUrl: _testServer,
+          performanceMonitor: monitor,
+        );
+
+        when(
+          () => dio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/'),
+            type: DioExceptionType.connectionTimeout,
+          ),
+        );
+        when(
+          () => dio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/'),
+            type: DioExceptionType.connectionTimeout,
+          ),
+        );
+
+        final result = await service.uploadVideo(
+          videoFile: videoFile,
+          nostrPubkey: _testPublicKey,
+          title: 'doomed',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+        );
+
+        expect(result.success, isFalse);
+
+        // Without this attribute a two-minute timeout and an eight-second
+        // success sit in the same duration distribution (#7121).
+        final upload = monitor.named(uploadTraceName)!;
+        expect(upload.stopped, isTrue);
+        expect(upload.attributes['outcome'], 'error:network');
       },
     );
 

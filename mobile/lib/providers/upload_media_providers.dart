@@ -165,14 +165,27 @@ class _FirebasePerformanceAdapter implements BlossomPerformanceMonitor {
   final PerformanceTraceMonitor _monitor;
 
   @override
-  Future<void> startTrace(String traceName) => _monitor.startTrace(traceName);
+  BlossomPerformanceTrace startOperationTrace(String traceName) =>
+      _BlossomTraceAdapter(_monitor.startOperationTrace(traceName));
+}
+
+/// Adapts an app-layer [PerformanceTrace] handle to the package-level
+/// [BlossomPerformanceTrace] handle.
+class _BlossomTraceAdapter implements BlossomPerformanceTrace {
+  _BlossomTraceAdapter(this._trace);
+
+  final PerformanceTrace _trace;
 
   @override
-  Future<void> stopTrace(String traceName) => _monitor.stopTrace(traceName);
+  void setMetric(String metricName, int value) =>
+      _trace.setMetric(metricName, value);
 
   @override
-  void setMetric(String traceName, String metricName, int value) =>
-      _monitor.setMetric(traceName, metricName, value);
+  void putAttribute(String attribute, String value) =>
+      _trace.putAttribute(attribute, value);
+
+  @override
+  Future<void> stop() => _trace.stop();
 }
 
 /// Blossom BUD-01 authentication service for age-restricted content
