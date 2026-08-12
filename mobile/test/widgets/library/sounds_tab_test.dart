@@ -20,11 +20,53 @@ import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/library/sounds_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sound_service/sound_service.dart';
 
 class _MockSoundSyncRepository extends Mock implements SoundSyncRepository {}
+
+/// Stands in for just_audio's ownership of the `play()` future: it stays
+/// pending until playback ends, and resolves early when `pause()` or `stop()`
+/// takes the player away.
+class _FakeAudioPlaybackService extends Fake implements AudioPlaybackService {
+  final positions = StreamController<Duration>.broadcast();
+  Completer<void>? _playing;
+  int playCalls = 0;
+  int pauseCalls = 0;
+
+  @override
+  Stream<Duration> get positionStream => positions.stream;
+
+  @override
+  Future<Duration?> loadAudio(String url) async => const Duration(seconds: 6);
+
+  @override
+  Future<void> play() {
+    playCalls++;
+    return (_playing = Completer<void>()).future;
+  }
+
+  @override
+  Future<void> pause() async {
+    pauseCalls++;
+    _resolvePlay();
+  }
+
+  @override
+  Future<void> stop() async => _resolvePlay();
+
+  /// Completes the sound the way reaching its end would.
+  void finishPlayback() => _resolvePlay();
+
+  void _resolvePlay() {
+    final playing = _playing;
+    _playing = null;
+    if (playing != null && !playing.isCompleted) playing.complete();
+  }
+}
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -57,6 +99,10 @@ AudioEvent _sound({
   );
 }
 
+DivineIconName? _previewIcon(WidgetTester tester) => tester
+    .widget<DivineIconButton>(find.byKey(const Key('saved_sound_preview')))
+    .icon;
+
 void main() {
   group(SoundsTab, () {
     late SharedPreferences sharedPreferences;
@@ -69,11 +115,14 @@ void main() {
     Future<void> pumpSoundsTab(
       WidgetTester tester, {
       Future<AudioEvent?> Function(BuildContext)? showAudioPicker,
+      AudioPlaybackService? audioService,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            if (audioService != null)
+              audioPlaybackServiceProvider.overrideWithValue(audioService),
           ],
           child: SavedSoundsScope(
             service: SavedSoundsService(sharedPreferences),
@@ -160,6 +209,54 @@ void main() {
       // it, so scrolling hands its height back to the results.
       expect(find.byType(TextField), findsNothing);
       expect(find.textContaining('Loop'), findsWidgets);
+    });
+
+    testWidgets('preview pauses and resumes instead of restarting', (
+      tester,
+    ) async {
+      await SavedSoundsService(
+        sharedPreferences,
+      ).saveSound(_sound(id: 'sound1', title: 'Original sound - rabble'));
+      final audio = _FakeAudioPlaybackService();
+      addTearDown(audio.positions.close);
+
+      await pumpSoundsTab(tester, audioService: audio);
+      final preview = find.byKey(const Key('saved_sound_preview'));
+
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      expect(_previewIcon(tester), DivineIconName.pause);
+      expect(audio.playCalls, 1);
+
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      expect(audio.pauseCalls, 1);
+      expect(_previewIcon(tester), DivineIconName.play);
+      // Still the active preview — a pause must not reload the sound.
+      expect(audio.playCalls, 1);
+
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      expect(_previewIcon(tester), DivineIconName.pause);
+      expect(audio.playCalls, 2);
+    });
+
+    testWidgets('preview returns to idle when the sound ends', (tester) async {
+      await SavedSoundsService(
+        sharedPreferences,
+      ).saveSound(_sound(id: 'sound1', title: 'Original sound - rabble'));
+      final audio = _FakeAudioPlaybackService();
+      addTearDown(audio.positions.close);
+
+      await pumpSoundsTab(tester, audioService: audio);
+      await tester.tap(find.byKey(const Key('saved_sound_preview')));
+      await tester.pumpAndSettle();
+      expect(_previewIcon(tester), DivineIconName.pause);
+
+      audio.finishPlayback();
+      await tester.pumpAndSettle();
+
+      expect(_previewIcon(tester), DivineIconName.play);
     });
 
     testWidgets('saves sound selected from Add audio picker', (tester) async {

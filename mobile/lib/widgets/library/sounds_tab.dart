@@ -40,6 +40,12 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   final TextEditingController _searchController = TextEditingController();
   String? _previewingSoundId;
 
+  /// Whether the preview named by [_previewingSoundId] is paused.
+  ///
+  /// A paused preview keeps its card and its waveform fill — it is still the
+  /// active preview, just not advancing.
+  bool _previewPaused = false;
+
   /// Playback position of the running preview as a 0–1 fraction, so the
   /// previewing card can fill its waveform as the sound plays.
   Stream<double>? _previewProgress;
@@ -63,6 +69,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   void _clearPreviewState() {
     setState(() {
       _previewingSoundId = null;
+      _previewPaused = false;
       _previewProgress = null;
     });
   }
@@ -80,7 +87,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     final audioService = _audioService!;
 
     if (_previewingSoundId == sound.id) {
-      await _stopPreview();
+      await _togglePreviewPause(audioService, sound.id);
       return;
     }
 
@@ -89,12 +96,50 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     try {
       await audioService.stop();
       final total = await audioService.loadAudio(sound.url!);
-      if (mounted) {
-        setState(() {
-          _previewingSoundId = sound.id;
-          _previewProgress = _progressFor(audioService, total);
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _previewingSoundId = sound.id;
+        _previewPaused = false;
+        _previewProgress = _progressFor(audioService, total);
+      });
+    } catch (e) {
+      Log.error(
+        'Failed to preview sound: $e',
+        name: 'SoundsTab',
+        category: LogCategory.video,
+      );
+      if (mounted && _previewingSoundId == sound.id) _clearPreviewState();
+      return;
+    }
+    await _playToEnd(audioService, sound.id);
+  }
+
+  /// Pauses the running preview, or resumes it where it left off.
+  Future<void> _togglePreviewPause(
+    AudioPlaybackService audioService,
+    String soundId,
+  ) async {
+    if (_previewPaused) {
+      setState(() => _previewPaused = false);
+      await _playToEnd(audioService, soundId);
+      return;
+    }
+    // Flipped before the await: pausing resolves the pending `play()`, and
+    // [_playToEnd] reads this flag to tell a pause apart from an ending.
+    setState(() => _previewPaused = true);
+    await audioService.pause();
+  }
+
+  /// Plays until the sound ends, then hands the card back to its idle state.
+  ///
+  /// `play()` also resolves when the preview is paused, and when another
+  /// sound stopped this one and now owns the preview state. Neither is an
+  /// ending, so both leave the state alone.
+  Future<void> _playToEnd(
+    AudioPlaybackService audioService,
+    String soundId,
+  ) async {
+    try {
       await audioService.play();
     } catch (e) {
       Log.error(
@@ -102,10 +147,9 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         name: 'SoundsTab',
         category: LogCategory.video,
       );
-    } finally {
-      // `play()` completes when playback ends — but also when another sound
-      // stopped this one, and that sound now owns the preview state.
-      if (mounted && _previewingSoundId == sound.id) _clearPreviewState();
+    }
+    if (mounted && _previewingSoundId == soundId && !_previewPaused) {
+      _clearPreviewState();
     }
   }
 
@@ -235,6 +279,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
           const SliverToBoxAdapter(child: _SyncStatusBanner()),
         _SoundsContent(
           playingSoundId: _previewingSoundId,
+          playingPaused: _previewPaused,
           playingProgress: _previewProgress,
           onPreview: (sound) => _onPreviewTap(sound.audio),
           onOpenDetails: _onOpenDetails,
@@ -258,6 +303,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
 class _SoundsContent extends StatelessWidget {
   const _SoundsContent({
     required this.playingSoundId,
+    required this.playingPaused,
     required this.playingProgress,
     required this.onPreview,
     required this.onOpenDetails,
@@ -266,6 +312,7 @@ class _SoundsContent extends StatelessWidget {
   });
 
   final String? playingSoundId;
+  final bool playingPaused;
   final Stream<double>? playingProgress;
   final ValueChanged<SavedSound> onPreview;
   final ValueChanged<SavedSound> onOpenDetails;
@@ -282,6 +329,7 @@ class _SoundsContent extends StatelessWidget {
         return _SavedSoundsSection(
           state: state,
           playingSoundId: playingSoundId,
+          playingPaused: playingPaused,
           playingProgress: playingProgress,
           onPreview: onPreview,
           onOpenDetails: onOpenDetails,
@@ -486,6 +534,7 @@ class _SavedSoundsSection extends StatelessWidget {
   const _SavedSoundsSection({
     required this.state,
     required this.playingSoundId,
+    required this.playingPaused,
     required this.playingProgress,
     required this.onPreview,
     required this.onOpenDetails,
@@ -495,6 +544,7 @@ class _SavedSoundsSection extends StatelessWidget {
 
   final SavedSoundsState state;
   final String? playingSoundId;
+  final bool playingPaused;
   final Stream<double>? playingProgress;
   final ValueChanged<SavedSound> onPreview;
   final ValueChanged<SavedSound> onOpenDetails;
@@ -523,13 +573,13 @@ class _SavedSoundsSection extends StatelessWidget {
             itemCount: sounds.length,
             itemBuilder: (context, index) {
               final sound = sounds[index];
-              final isPlaying = playingSoundId == sound.id;
+              final isPreviewing = playingSoundId == sound.id;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: SavedSoundCard(
                   sound: sound,
-                  isPlaying: isPlaying,
-                  progress: isPlaying ? playingProgress : null,
+                  isPlaying: isPreviewing && !playingPaused,
+                  progress: isPreviewing ? playingProgress : null,
                   onTap: () => onOpenDetails(sound),
                   onPreview: () => onPreview(sound),
                   onEdit: () => onEdit(sound),

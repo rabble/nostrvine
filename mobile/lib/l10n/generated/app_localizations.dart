@@ -7508,7 +7508,7 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get savedSoundSaveAction;
 
-  /// Accessibility label on the saved-sound card's preview button while that sound is playing. Tapping it stops the preview.
+  /// Accessibility label on the saved-sound card's preview button while that sound is playing. Tapping it pauses the preview, which resumes where it left off.
   ///
   /// In en, this message translates to:
   /// **'Pause preview'**

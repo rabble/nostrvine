@@ -2550,7 +2550,7 @@
   },
   "savedSoundPausePreviewAction": "Pause preview",
   "@savedSoundPausePreviewAction": {
-    "description": "Accessibility label on the saved-sound card's preview button while that sound is playing. Tapping it stops the preview."
+    "description": "Accessibility label on the saved-sound card's preview button while that sound is playing. Tapping it pauses the preview, which resumes where it left off."
   },
   "savedSoundDetailsSheetTitle": "Sound details",
   "@savedSoundDetailsSheetTitle": {
