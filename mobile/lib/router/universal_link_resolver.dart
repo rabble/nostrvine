@@ -76,20 +76,58 @@ String? customSchemeToRouterPath(Uri uri) {
   if (uri.scheme != 'divine') return null;
 
   final deepLink = DeepLinkService.parseDeepLink(uri.toString());
-  switch (deepLink.type) {
-    case DeepLinkType.savedVideos:
-      return SavedVideosScreen.path;
-    case DeepLinkType.video:
-    case DeepLinkType.profile:
-    case DeepLinkType.hashtag:
-    case DeepLinkType.search:
-    case DeepLinkType.list:
-    case DeepLinkType.invite:
-    case DeepLinkType.signerCallback:
-    case DeepLinkType.unknown:
-      return null;
+  if (deepLink.type == DeepLinkType.savedVideos) {
+    return SavedVideosScreen.path;
   }
+
+  // Only the authority-less form addresses app routes. Anything else is a
+  // signer callback or untrusted input, and belongs to
+  // divineSchemeRedirectTarget.
+  if (uri.host.isNotEmpty) return null;
+
+  final segments = uri.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList();
+  // Every allow-listed prefix is a `/prefix/value` shape, so a bare prefix
+  // names no destination and must not fall through to the matcher.
+  if (segments.length < 2 ||
+      !_customSchemeRoutablePrefixes.contains(segments.first)) {
+    return null;
+  }
+
+  // Resolve through the https table so the two schemes cannot drift. It
+  // covers both the paths DeepLinkService models (/search/* becomes
+  // /search-results/:query) and deeper ones it does not (/video/:id/likers),
+  // which fall through to the path verbatim.
+  final canonical = Uri(
+    scheme: 'https',
+    host: 'divine.video',
+    pathSegments: segments,
+    queryParameters: uri.queryParameters.isEmpty ? null : uri.queryParameters,
+  );
+  final mapped = _pushRouteForDeepLink(
+    DeepLinkService.parseDeepLink(canonical.toString()),
+  );
+  if (mapped != null) return mapped;
+  return canonical.hasQuery
+      ? '${canonical.path}?${canonical.query}'
+      : canonical.path;
 }
+
+/// Path prefixes the `divine://` scheme may address beyond `saved-videos`.
+///
+/// Mirrors the universal-link claims in the served apple-app-site-association
+/// files, so the custom scheme reaches exactly what a web page can already
+/// reach over https — and nothing more. `invite` is deliberately absent: it
+/// has no GoRoute to land on and is handled by the [DeepLinkService] stream
+/// listener for https links only.
+const _customSchemeRoutablePrefixes = <String>{
+  'video',
+  'profile',
+  'hashtag',
+  'search',
+  'list',
+};
 
 /// Converts a universal-link [uri] into an internal GoRouter path.
 ///

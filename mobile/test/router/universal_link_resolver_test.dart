@@ -3,6 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 
 void main() {
   group('divineUrlToPushRoute', () {
@@ -293,6 +297,68 @@ void main() {
     test('returns null for an unlisted app route', () {
       expect(
         customSchemeToRouterPath(Uri.parse('divine:///settings')),
+        isNull,
+      );
+    });
+
+    // Parity with the served AASA claim set: the custom scheme reaches
+    // exactly what a web page can already reach over https (#6733).
+    test('maps the universal-link claim paths to their routes', () {
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///video/abc123')),
+        equals(VideoDetailScreen.pathForId('abc123')),
+      );
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///profile/npub1abc123')),
+        equals(ProfileScreenRouter.pathForNpub('npub1abc123')),
+      );
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///hashtag/vines')),
+        equals(HashtagScreenRouter.pathForTag('vines')),
+      );
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///list/my-vines')),
+        isNotNull,
+      );
+    });
+
+    test('rewrites /search/* to the internal search-results route', () {
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///search/music')),
+        equals(
+          SearchResultsPage.pathForQuery('music', requestFocusOnMount: false),
+        ),
+      );
+    });
+
+    // The issue's own repro (#6733): the likers screen had to be reached by
+    // long-press because the deep link would not route. DeepLinkService has
+    // no DeepLinkType for it, so it resolves by path passthrough.
+    test('passes deeper paths under a claimed prefix through verbatim', () {
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///video/abc123/likers')),
+        equals('/video/abc123/likers'),
+      );
+    });
+
+    test('preserves the query string on a passthrough path', () {
+      expect(
+        customSchemeToRouterPath(
+          Uri.parse('divine:///video/abc123/likers?a=34236%3Apk%3Ad'),
+        ),
+        contains('a=34236'),
+      );
+    });
+
+    test('returns null for a bare claimed prefix naming no destination', () {
+      expect(customSchemeToRouterPath(Uri.parse('divine:///video')), isNull);
+    });
+
+    test('returns null for the authority form of a claimed prefix', () {
+      // Only the authority-less form addresses routes; `video` in the
+      // authority is an unrecognised callback host, not a path segment.
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine://video/abc123')),
         isNull,
       );
     });

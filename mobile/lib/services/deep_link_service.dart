@@ -406,8 +406,12 @@ class DeepLinkService {
         : null;
 
     if (type == null) {
-      Log.warning(
-        'Ignoring unroutable divine:// app route: ${_describeUriForLogs(uri)}',
+      // Not a warning, and not necessarily the end of the road: the router's
+      // allow-list resolves the universal-link claim paths that carry no
+      // DeepLinkType of their own. `AppRouter` logs the outcome either way.
+      Log.debug(
+        'No DeepLinkType for divine:// route, deferring to the router '
+        'allow-list: ${_describeUriForLogs(uri)}',
         name: 'DeepLinkService',
         category: LogCategory.ui,
       );
