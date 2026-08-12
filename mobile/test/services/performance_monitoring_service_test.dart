@@ -99,11 +99,34 @@ void main() {
     });
 
     test('sets that build setting per iOS configuration', () {
-      // Release.xcconfig also backs the Profile configuration —
-      // Profile.xcconfig is not referenced by Runner.xcodeproj — so an iOS
-      // profile build is covered by the release-only Dart gate instead.
       expect(_deactivationSetting('ios/Flutter/Debug.xcconfig'), 'YES');
+      expect(_deactivationSetting('ios/Flutter/Profile.xcconfig'), 'YES');
       expect(_deactivationSetting('ios/Flutter/Release.xcconfig'), 'NO');
+    });
+
+    test('wires the iOS Profile configuration to Profile.xcconfig', () {
+      // Without this, Profile falls through to Release.xcconfig and inherits
+      // FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED=NO, so `_app_start` still
+      // reports from the first launch of an iOS profile build.
+      final pbxproj = File(
+        'ios/Runner.xcodeproj/project.pbxproj',
+      ).readAsStringSync();
+
+      expect(
+        pbxproj,
+        contains('path = Flutter/Profile.xcconfig'),
+        reason: 'Profile.xcconfig must be a project file reference.',
+      );
+      expect(
+        RegExp(
+          r'249021D4217E4FDB00AE95B9 /\* Profile \*/ = \{'
+          r'[\s\S]*?'
+          r'baseConfigurationReference = [0-9A-F]+ /\* Profile\.xcconfig \*/;',
+        ).hasMatch(pbxproj),
+        isTrue,
+        reason:
+            'Runner target Profile configuration must point at Profile.xcconfig.',
+      );
     });
   });
 

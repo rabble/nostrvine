@@ -1,11 +1,7 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
-#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"
 #include "Generated.xcconfig"
 
-// Production reports performance data (#7123). Note this file backs BOTH the
-// Release and Profile configurations - Profile.xcconfig is not referenced by
-// Runner.xcodeproj at all - so a profile build cannot be told apart from a
-// release build here, and is instead kept out of the dataset by the release
-// only gate in PerformanceMonitoringService. Android has no such limit and
-// deactivates profile builds outright in its profile manifest.
+// Production reports performance data (#7123). Profile builds use
+// Profile.xcconfig instead; do not fold the profile Pods include back in here
+// or a profile run silently inherits release settings again.
 FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED=NO

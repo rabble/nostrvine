@@ -153,10 +153,9 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
   /// build.
   ///
   /// Paired with a native deactivation in the debug and profile Android
-  /// manifests and in `Debug.xcconfig`, which is what actually suppresses
-  /// `_app_start` — that trace is captured natively before Dart runs. This
-  /// gate is what covers an iOS profile build, which shares `Release.xcconfig`
-  /// and so cannot be deactivated natively.
+  /// manifests and in iOS `Debug.xcconfig` / `Profile.xcconfig`, which is what
+  /// actually suppresses `_app_start` — that trace is captured natively before
+  /// Dart runs.
   @visibleForTesting
   static const bool collectionEnabled = kReleaseMode;
 

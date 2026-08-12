@@ -52,12 +52,12 @@
 	<key>FirebaseCrashlyticsCollectionEnabled</key>
 	<true/>
 	<!-- Keep developer builds out of the production Firebase Performance
-	     dataset (#7123). Set to YES by Debug.xcconfig and NO by
-	     Release.xcconfig; a string is fine because FPRConfigurations reads
-	     this through -boolValue. If the setting is ever missing the value
-	     expands to an empty string, which -boolValue reads as NO, so the
-	     failure mode is "production keeps reporting" rather than a silent
-	     loss of production data. -->
+	     dataset (#7123). Set to YES by Debug.xcconfig and Profile.xcconfig,
+	     and NO by Release.xcconfig; a string is fine because
+	     FPRConfigurations reads this through -boolValue. If the setting is
+	     ever missing the value expands to an empty string, which -boolValue
+	     reads as NO, so the failure mode is "production keeps reporting"
+	     rather than a silent loss of production data. -->
 	<key>firebase_performance_collection_deactivated</key>
 	<string>$(FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED)</string>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
