@@ -148,8 +148,6 @@ class _AudioPlaybackProgressButtonState
     if (oldWidget.audioService != widget.audioService) {
       _progress = 0;
       _bindStreams();
-    } else if (widget.isLoading && !oldWidget.isLoading) {
-      _progress = 0;
     }
   }
 

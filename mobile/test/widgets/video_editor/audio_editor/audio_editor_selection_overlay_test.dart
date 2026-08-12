@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:ui' show Tristate;
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -294,6 +295,33 @@ void main() {
 
         await emitPosition(tester, const Duration(milliseconds: 800));
         expect(progressPainter(tester).shouldRepaint(ahead), isTrue);
+      });
+
+      // Loading swaps the ring out for the spinner, so the position
+      // StreamBuilder remounts on the way back and its `initialData` of
+      // `Duration.zero` is what clears the previous sound's progress. Nothing
+      // else resets it on this path, so a change to that initial value would
+      // silently leave the old ring on screen while the next sound loads.
+      // pumpAndSettle is unusable here — the spinner animates forever.
+      testWidgets('resets after a loading round-trip', (tester) async {
+        await tester.pumpWidget(buildWidget(audio: _createTestAudio()));
+        await tester.pump();
+        final atStart = progressPainter(tester);
+
+        await emitPosition(tester, const Duration(seconds: 5));
+        expect(progressPainter(tester).shouldRepaint(atStart), isTrue);
+
+        await tester.pumpWidget(
+          buildWidget(audio: _createTestAudio(), isLoading: true),
+        );
+        await tester.pump();
+        await tester.pump(VineTheme.defaultAnimationDuration);
+
+        await tester.pumpWidget(buildWidget(audio: _createTestAudio()));
+        await tester.pump();
+        await tester.pump(VineTheme.defaultAnimationDuration);
+
+        expect(progressPainter(tester).shouldRepaint(atStart), isFalse);
       });
 
       testWidgets('rewinds when playback restarts at the beginning', (
