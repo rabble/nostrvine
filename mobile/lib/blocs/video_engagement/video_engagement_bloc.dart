@@ -1,6 +1,5 @@
 // ABOUTME: BLoC for fetching the list of users who liked or reposted a video.
-// ABOUTME: Backs the engagement list screens shown when the video owner taps
-// ABOUTME: the like or repost button on their own video.
+// ABOUTME: Backs engagement list screens opened from feed buttons/notifications.
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';

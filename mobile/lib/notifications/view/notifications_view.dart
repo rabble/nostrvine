@@ -7,9 +7,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/video_engagement/video_engagement_bloc.dart'
+    show VideoEngagementType;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
+import 'package:openvine/notifications/routing/avatar_stack_tap_target.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -17,6 +20,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -112,8 +116,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                         .add(const NotificationFeedRefreshed()),
                     onItemTap: (notification) =>
                         _onItemTap(context, notification),
-                    onProfileTap: (pubkey) =>
-                        _navigateToProfile(context, pubkey),
+                    onProfileTap: (notification) =>
+                        _onAvatarStackTap(context, notification),
                     onFollowBack: (pubkey) => context
                         .read<NotificationFeedBloc>()
                         .add(NotificationFeedFollowBack(pubkey)),
@@ -268,6 +272,45 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
             break;
         }
     }
+  }
+
+  void _onAvatarStackTap(BuildContext context, NotificationItem notification) {
+    final target = resolveAvatarStackTapTarget(notification);
+    switch (target) {
+      case OpenEngagementListTarget(
+        :final eventId,
+        :final addressableId,
+        :final type,
+      ):
+        _navigateToEngagementList(
+          context,
+          eventId: eventId,
+          addressableId: addressableId,
+          type: type,
+        );
+      case OpenActorProfileTarget(:final pubkey):
+        _navigateToProfile(context, pubkey);
+      case null:
+        break;
+    }
+  }
+
+  void _navigateToEngagementList(
+    BuildContext context, {
+    required String eventId,
+    required String? addressableId,
+    required VideoEngagementType type,
+  }) {
+    final routeName = switch (type) {
+      VideoEngagementType.likers => VideoEngagementListScreen.likersRouteName,
+      VideoEngagementType.reposters =>
+        VideoEngagementListScreen.repostersRouteName,
+    };
+    context.pushNamed(
+      routeName,
+      pathParameters: {'eventId': eventId},
+      queryParameters: addressableId == null ? const {} : {'a': addressableId},
+    );
   }
 
   void _navigateToList(
@@ -503,7 +546,7 @@ class _NotificationList extends StatelessWidget {
   final bool hasMore;
   final ScrollController scrollController;
   final void Function(NotificationItem notification) onItemTap;
-  final void Function(String pubkey) onProfileTap;
+  final void Function(NotificationItem notification) onProfileTap;
   final void Function(String pubkey) onFollowBack;
 
   /// When `true`, renders [_RefreshErrorBanner] as the list's first item so
@@ -566,10 +609,7 @@ class _NotificationList extends StatelessWidget {
             NotificationListItem(
               notification: notification,
               onTap: () => onItemTap(notification),
-              onProfileTap: () {
-                final pubkey = _profilePubkey(notification);
-                if (pubkey != null) onProfileTap(pubkey);
-              },
+              onProfileTap: () => onProfileTap(notification),
               onFollowBack: () {
                 final pubkey = _profilePubkey(notification);
                 if (pubkey != null) onFollowBack(pubkey);
