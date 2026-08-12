@@ -184,6 +184,11 @@ class RelayPool {
   /// quiet altogether. Dropped when the query settles or is unsubscribed.
   final Map<String, DateTime> _querySentAt = {};
 
+  /// The [_querySentAt] equivalent for live subscriptions, so a subscription
+  /// its caller tore down without ever being served can ask the same question.
+  /// Dropped when the subscription is unsubscribed.
+  final Map<String, DateTime> _subscriptionSentAt = {};
+
   /// One-shot queries at least one relay has already answered.
   ///
   /// Sticky for the query's lifetime rather than a property of the call that
@@ -1051,6 +1056,30 @@ class RelayPool {
     _repairSilentRelays(silent, sentAt);
   }
 
+  /// [_repairRelaysThatNeverAnswered] for live subscriptions.
+  ///
+  /// A live subscription has no terminal frame, so "the relay still holds it"
+  /// is true right up to the CLOSE — silence since the REQ is the whole signal,
+  /// and [_repairSilentRelays] is what applies it. A relay that streamed events
+  /// or EOSE'd stamped its activity clock and is therefore left alone; one that
+  /// swallowed the REQ into a half-open socket is not, which is the case the
+  /// feed loads hit. Without this a zombie charges every subsequent feed load
+  /// the caller's full timeout until something else happens to cycle it.
+  void _repairRelaysThatNeverServedSubscription(String subId) {
+    final sentAt = _subscriptionSentAt.remove(subId);
+    if (sentAt == null) return;
+    final silent = [
+      for (final relay in [
+        ..._relaysSnapshot(),
+        ..._tempRelaysSnapshot(),
+        ..._cacheRelaysSnapshot(),
+      ])
+        if (relay.hasSubscriptionById(subId)) relay.url,
+    ];
+    if (silent.isEmpty) return;
+    _repairSilentRelays(silent, sentAt);
+  }
+
   /// Releases the one-shot queries [relay] is parked on once it can no longer
   /// answer them.
   ///
@@ -1548,6 +1577,7 @@ class RelayPool {
       onEose: onEose,
     );
     _subscriptions[subscription.id] = subscription;
+    _subscriptionSentAt[subscription.id] = DateTime.now();
     log(
       '📋 subscribe: id=${subscription.id}, '
       'relays=${_relays.length}, filters=$filters',
@@ -1656,6 +1686,9 @@ class RelayPool {
     // Clean up EOSE tracking for this subscription
     _subscriptionEoseRelays.remove(id);
     if (subscription != null) {
+      // A relay that still holds this REQ never served it, so offer it to the
+      // zombie repair before the CLOSE sweep below drops that evidence.
+      _repairRelaysThatNeverServedSubscription(id);
       // check query and send close
       var it = _relaysSnapshot();
       for (var relay in it) {
@@ -2247,19 +2280,20 @@ class RelayPool {
   /// so a brownout relay isn't force-cycled on every timed-out publish.
   final Map<String, DateTime> _lastSilentRepairAt = {};
 
-  /// Repair pass for OK-awaiting publishes that timed out in silence.
+  /// Repair pass for frames that were written and answered with silence.
   ///
   /// A relay lands in [PublishOutcome.noResponseFrom] when its WebSocket sink
   /// accepted the EVENT frame but no OK of either polarity came back within
-  /// the confirm window. When the same connection ALSO received no inbound
-  /// frame of any kind since the publish was written, the socket is a
-  /// half-open zombie (typically left behind by a connectivity flap). Nothing
-  /// else repairs it: publish sends pass `skipReconnect`, the idle heartbeat
-  /// needs 90s+ of silence, and a zombie still reports `connected` to every
-  /// health gate — so every retry inside that window would deterministically
-  /// time out again. Force-cycle the connection and re-send the relay's
-  /// subscriptions (mirroring [add]'s autoSubscribe and the post-AUTH replay)
-  /// so the next attempt runs on a live socket.
+  /// the confirm window; the query and subscription paths feed the same check
+  /// with the relays still holding an abandoned REQ. When the same connection
+  /// ALSO received no inbound frame of any kind since that frame was written,
+  /// the socket is a half-open zombie (typically left behind by a connectivity
+  /// flap). Nothing else repairs it: publish and REQ sends pass
+  /// `skipReconnect`, the idle heartbeat needs 90s+ of silence, and a zombie
+  /// still reports `connected` to every health gate — so every retry inside
+  /// that window would deterministically time out again. Force-cycle the
+  /// connection so the next attempt runs on a live socket; the reconnect
+  /// re-issues the relay's saved REQs (see [Relay.onConnected]).
   void _repairSilentRelays(List<String> silentRelayUrls, DateTime sentAt) {
     final now = DateTime.now();
     for (final url in silentRelayUrls) {
@@ -2285,19 +2319,12 @@ class RelayPool {
     }
   }
 
+  /// Force-cycles [relay]'s socket. [Relay.onConnected] re-issues the saved
+  /// subscriptions and pending one-shot queries on the fresh connection, so an
+  /// in-flight REQ that the closed socket swallowed still runs.
   Future<void> _reconnectAndResubscribe(RelayBase relay) async {
     try {
-      if (!await relay.forceReconnect()) return;
-      for (final subscription in relay.getSubscriptions()) {
-        await relay.send(subscription.toJson());
-      }
-      // Replay pending one-shot queries too: forceReconnect closed the old
-      // socket, so an in-flight REQ that had not yet EOSE'd is gone. Without
-      // re-issuing it the relay never EOSEs on the fresh socket and the
-      // pool-level completion can only resolve via the caller's timeout.
-      for (final query in relay.getQueries()) {
-        await relay.send(query.toJson());
-      }
+      await relay.forceReconnect();
     } catch (e) {
       log('OK-timeout reconnect failed for ${relay.url}: $e');
     }

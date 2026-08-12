@@ -81,4 +81,72 @@ void main() {
       },
     );
   });
+
+  group('Relay saved-REQ re-issue on reconnect', () {
+    Subscription subscriptionWith(String id) => Subscription(
+      [
+        {
+          'kinds': [34236],
+        },
+      ],
+      (_) {},
+      id: id,
+    );
+
+    test('re-issues saved subscriptions so a dropped socket does not leave the '
+        'caller waiting forever', () async {
+      final relay = _RequeueingRelay('wss://relay.example', failedMessage: [])
+        ..saveSubscription(subscriptionWith('feed'));
+
+      await relay.onConnected(source: 'stateStream-reconnect');
+
+      expect(relay.sentMessages, [
+        [
+          'REQ',
+          'feed',
+          {
+            'kinds': [34236],
+          },
+        ],
+      ]);
+    });
+
+    test('re-issues pending one-shot queries too', () async {
+      final relay = _RequeueingRelay('wss://relay.example', failedMessage: [])
+        ..saveQuery(subscriptionWith('author-page'));
+
+      await relay.onConnected(source: 'stateStream-reconnect');
+
+      expect(relay.sentMessages.single[1], 'author-page');
+    });
+
+    test(
+      'sends a queued REQ once when its subscription is also saved — a '
+      'double REQ makes the relay replay the whole stored window twice',
+      () async {
+        final subscription = subscriptionWith('feed');
+        final relay = _RequeueingRelay('wss://relay.example', failedMessage: [])
+          ..saveSubscription(subscription)
+          ..pendingMessages.add(subscription.toJson());
+
+        await relay.onConnected(source: 'stateStream-reconnect');
+
+        expect(relay.sentMessages, hasLength(1));
+        expect(relay.pendingMessages, isEmpty);
+      },
+    );
+
+    test('still replays queued frames that are not re-issued REQs', () async {
+      final relay = _RequeueingRelay('wss://relay.example', failedMessage: [])
+        ..saveSubscription(subscriptionWith('feed'))
+        ..pendingMessages.add([
+          'EVENT',
+          {'id': 'queued-while-down'},
+        ]);
+
+      await relay.onConnected(source: 'stateStream-reconnect');
+
+      expect(relay.sentMessages.map((m) => m.first), ['EVENT', 'REQ']);
+    });
+  });
 }
