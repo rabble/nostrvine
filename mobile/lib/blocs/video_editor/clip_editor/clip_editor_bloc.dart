@@ -1571,13 +1571,16 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   /// duplicated inside one — would otherwise be queued while it is still on
   /// screen, and one cancelled autosave away from being deleted under it.
   void _deferSupersededFiles(DivineVideoClip superseded) =>
-      _deferOrphanedPaths(_clipFilePaths(superseded));
+      _deferOrphanedPaths(superseded.ownedFilePaths);
 
   /// Queues whichever of [paths] no clip in the current [state] points at.
   ///
   /// See [_deferSupersededFiles] for why the live clip list filters the queue.
   void _deferOrphanedPaths(Iterable<String?> paths) {
-    final live = state.clips.expand(_clipFilePaths).nonNulls.toSet();
+    final live = state.clips
+        .expand((clip) => clip.ownedFilePaths)
+        .nonNulls
+        .toSet();
     final orphans = paths.nonNulls
         .where((path) => path.isNotEmpty && !live.contains(path))
         .toList();
@@ -1592,24 +1595,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       );
       addError(e, stackTrace);
     }
-  }
-
-  /// Every local file a clip points at, so two clips can be diffed for the
-  /// references one of them dropped.
-  static Iterable<String?> _clipFilePaths(DivineVideoClip clip) sync* {
-    yield clip.video?.file?.path;
-    // Cached reverse renders: a transform or a de-key clears both, which
-    // orphans whichever of them is not also the clip's current video.
-    yield clip.forwardVideoPath;
-    yield clip.reversedVideoPath;
-    final stopMotionFrames = clip.stopMotionFrames;
-    if (stopMotionFrames != null) {
-      yield* stopMotionFrames.map((frame) => frame.path);
-    }
-    yield clip.thumbnailPath;
-    yield clip.ghostFramePath;
-    yield clip.chromaKeySourcePath;
-    yield clip.chromaKey?.backgroundImagePath;
   }
 
   /// Persists the crop / rotate / flip the image editor rasterized for one
