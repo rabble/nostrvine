@@ -189,6 +189,12 @@ class _TopActions extends ConsumerWidget {
     final draftSaved = outcome == DraftSaveOutcome.saved;
 
     if (draftSaved) {
+      // The draft now owns the session, so end it here like the discard path
+      // does — otherwise its clips stay selected behind the editor and the
+      // next camera open inherits them, aspect ratio included. The saved
+      // draft references the same files, so only the redundant autosave copy
+      // is reaped.
+      ref.read(videoPublishProvider.notifier).clearAll();
       // Success: close prompt + close editor.
       context.pop();
       context.pop();

@@ -317,6 +317,9 @@ void main() {
           expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
           verify(() => mockGoRouter.pop<Object?>(any())).called(2);
           expect(find.text('Saved to library'), findsOneWidget);
+          // The draft owns the session now; leaving it selected would carry
+          // its clips — and their aspect ratio — into the next camera open.
+          expect(fakeVideoPublishNotifier.clearAllCalls, equals(1));
         },
       );
 
@@ -358,6 +361,8 @@ void main() {
           verify(() => mockGoRouter.pop<Object?>(any())).called(1);
           expect(find.text('Failed to save'), findsOneWidget);
           expect(find.bySemanticsLabel(closeLabel), findsOneWidget);
+          // Nothing was saved, so the session is all the user has left.
+          expect(fakeVideoPublishNotifier.clearAllCalls, isZero);
         },
       );
 
