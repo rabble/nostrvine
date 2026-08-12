@@ -116,6 +116,7 @@ void main() {
       when(
         () => videoEventService.filterVideoList(any()),
       ).thenAnswer((i) => i.positionalArguments.first as List<VideoEvent>);
+      when(() => videoEventService.shouldHideVideo(any())).thenReturn(false);
       when(
         () => videoEventService.isVideoEventKnownDeleted(any()),
       ).thenReturn(false);

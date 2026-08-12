@@ -133,17 +133,15 @@ void main() {
           hasMore: true,
         ),
       );
-      when(
-        () => mockBlocklistRepository.shouldFilterFromFeeds('blocked-author'),
-      ).thenReturn(true);
-
       final filteredIds = <List<String>>[];
       when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
         invocation,
       ) {
         final videos = invocation.positionalArguments.first as List<VideoEvent>;
         filteredIds.add(videos.map((video) => video.id).toList());
-        return videos;
+        return videos
+            .where((video) => video.pubkey != 'blocked-author')
+            .toList();
       });
 
       final container = createContainer();
@@ -154,7 +152,7 @@ void main() {
 
       expect(state.videos.map((video) => video.id), ['classic-supported']);
       expect(filteredIds, [
-        ['classic-supported'],
+        ['classic-supported', 'classic-blocked'],
       ]);
     });
 
