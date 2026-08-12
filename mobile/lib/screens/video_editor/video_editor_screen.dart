@@ -172,7 +172,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         if (!mounted) return false;
         return ref.read(clipManagerProvider.notifier).saveClipToLibrary(clip);
       },
-      cleanupChromaKeyFiles: (paths) {
+      deferFileCleanup: (paths) {
         if (!mounted) return;
         ref.read(videoEditorProvider.notifier).deferFileCleanup(paths);
       },
