@@ -29,7 +29,9 @@ QueryExecutor openEncryptedConnection({
   required String rawKeyHex,
   String? databasePath,
 }) {
-  throw UnsupportedError('Native at-rest encryption is not supported on web');
+  throw UnsupportedError(
+    'Native at-rest encryption is not supported on web',
+  );
 }
 
 /// Web never opens native encrypted databases; startup skips DB encryption
@@ -38,7 +40,9 @@ Future<bool> encryptedDatabaseOpensWithKey({
   required String rawKeyHex,
   String? databasePath,
 }) async {
-  throw UnsupportedError('Native at-rest encryption is not supported on web');
+  throw UnsupportedError(
+    'Native at-rest encryption is not supported on web',
+  );
 }
 
 /// Corruption salvage is native-only; startup skips DB encryption on web.
@@ -47,7 +51,9 @@ Future<bool> encryptedDatabaseKeyDecrypts({
   required String rawKeyHex,
   String? databasePath,
 }) async {
-  throw UnsupportedError('Native at-rest encryption is not supported on web');
+  throw UnsupportedError(
+    'Native at-rest encryption is not supported on web',
+  );
 }
 
 /// Corruption salvage is native-only; startup skips DB encryption on web.
@@ -56,7 +62,9 @@ Future<bool> salvageCorruptEncryptedDatabase({
   required String rawKeyHex,
   String? databasePath,
 }) async {
-  throw UnsupportedError('Native at-rest encryption is not supported on web');
+  throw UnsupportedError(
+    'Native at-rest encryption is not supported on web',
+  );
 }
 
 /// No-op on web (key-loss recovery is native-only). Never reached at runtime.
@@ -83,5 +91,7 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
   required String rawKeyHex,
   String? databasePath,
 }) async {
-  throw UnsupportedError('Native at-rest encryption is not supported on web');
+  throw UnsupportedError(
+    'Native at-rest encryption is not supported on web',
+  );
 }

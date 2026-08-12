@@ -170,69 +170,75 @@ void main() {
       },
     );
 
-    test('does not repair secure-storage failures', () async {
-      var removedSplash = false;
-      Widget? renderedApp;
-      var attempts = 0;
-      var repaired = false;
-      final error = DatabaseCipherStorageUnavailableException(
-        _lockedKeychainFailure(),
-      );
+    test(
+      'does not repair secure-storage failures',
+      () async {
+        var removedSplash = false;
+        Widget? renderedApp;
+        var attempts = 0;
+        var repaired = false;
+        final error = DatabaseCipherStorageUnavailableException(
+          _lockedKeychainFailure(),
+        );
 
-      final result = await resolveDatabaseBootstrapForAppStart(
-        resolveCipherKey: () async {
-          attempts += 1;
-          throw error;
-        },
-        repairLocalDatabaseCache: (error, stack) async {
-          repaired = true;
-        },
-        shouldRepairLocalDatabaseCache:
-            shouldRepairLocalDatabaseCacheAfterBootstrapError,
-        removeNativeSplash: () => removedSplash = true,
-        runApp: (app) => renderedApp = app,
-      );
+        final result = await resolveDatabaseBootstrapForAppStart(
+          resolveCipherKey: () async {
+            attempts += 1;
+            throw error;
+          },
+          repairLocalDatabaseCache: (error, stack) async {
+            repaired = true;
+          },
+          shouldRepairLocalDatabaseCache:
+              shouldRepairLocalDatabaseCacheAfterBootstrapError,
+          removeNativeSplash: () => removedSplash = true,
+          runApp: (app) => renderedApp = app,
+        );
 
-      expect(result.didRenderFailureApp, isTrue);
-      expect(attempts, equals(1));
-      expect(repaired, isFalse);
-      expect(removedSplash, isTrue);
-      expect(renderedApp, isA<DatabaseBootstrapFailureApp>());
-    });
+        expect(result.didRenderFailureApp, isTrue);
+        expect(attempts, equals(1));
+        expect(repaired, isFalse);
+        expect(removedSplash, isTrue);
+        expect(renderedApp, isA<DatabaseBootstrapFailureApp>());
+      },
+    );
 
-    test('repairs allowlisted sqlite corruption failures', () async {
-      var removedSplash = false;
-      Widget? renderedApp;
-      var attempts = 0;
-      var repaired = false;
+    test(
+      'repairs allowlisted sqlite corruption failures',
+      () async {
+        var removedSplash = false;
+        Widget? renderedApp;
+        var attempts = 0;
+        var repaired = false;
 
-      final result = await resolveDatabaseBootstrapForAppStart(
-        resolveCipherKey: () async {
-          attempts += 1;
-          if (attempts == 1) {
-            throw SqliteException(
-              extendedResultCode: 26,
-              message: 'file is not a database',
-            );
-          }
-          return 'c' * 64;
-        },
-        repairLocalDatabaseCache: (error, stack) async {
-          repaired = true;
-        },
-        shouldRepairLocalDatabaseCache:
-            shouldRepairLocalDatabaseCacheAfterBootstrapError,
-        removeNativeSplash: () => removedSplash = true,
-        runApp: (app) => renderedApp = app,
-      );
+        final result = await resolveDatabaseBootstrapForAppStart(
+          resolveCipherKey: () async {
+            attempts += 1;
+            if (attempts == 1) {
+              throw SqliteException(
+                extendedResultCode: 26,
+                message: 'file is not a database',
+              );
+            }
+            return 'c' * 64;
+          },
+          repairLocalDatabaseCache: (error, stack) async {
+            repaired = true;
+          },
+          shouldRepairLocalDatabaseCache:
+              shouldRepairLocalDatabaseCacheAfterBootstrapError,
+          removeNativeSplash: () => removedSplash = true,
+          runApp: (app) => renderedApp = app,
+        );
 
-      expect(result.didRenderFailureApp, isFalse);
-      expect(result.cipherKey, equals('c' * 64));
-      expect(attempts, equals(2));
-      expect(repaired, isTrue);
-      expect(removedSplash, isFalse);
-      expect(renderedApp, isNull);
-    });
+        expect(result.didRenderFailureApp, isFalse);
+        expect(result.cipherKey, equals('c' * 64));
+        expect(attempts, equals(2));
+        expect(repaired, isTrue);
+        expect(removedSplash, isFalse);
+        expect(renderedApp, isNull);
+      },
+    );
   });
 
   group('resolveDatabaseBootstrapForAppStart reset wiring', () {
@@ -270,7 +276,10 @@ void main() {
         ),
       );
 
-      expect(find.text("couldn't unlock your local database"), findsOneWidget);
+      expect(
+        find.text("couldn't unlock your local database"),
+        findsOneWidget,
+      );
       expect(find.textContaining('Restart Divine'), findsOneWidget);
       // The rendered code is what a support report is triaged from, so pin the
       // value rather than just the label.
@@ -282,7 +291,9 @@ void main() {
 
     test('classifies cipher availability failures for release diagnostics', () {
       expect(
-        databaseBootstrapDiagnosticCode(DatabaseCipherUnavailableError()),
+        databaseBootstrapDiagnosticCode(
+          DatabaseCipherUnavailableError(),
+        ),
         equals('db-cipher-unavailable'),
       );
     });
