@@ -918,19 +918,22 @@ void main() {
         verifyNever(() => nostrClient.publishEventAwaitOk(any()));
       });
 
-      test('reports relayDidNotAccept when the publish is rejected', () async {
-        stubRelay(events: []);
-        stubPublishRejected();
-        final service = createService();
+      test(
+        'reports publishDidNotComplete when the publish is rejected',
+        () async {
+          stubRelay(events: []);
+          stubPublishRejected();
+          final service = createService();
 
-        final result = await service.toggleVideoInGlobalBookmarks('wanted');
+          final result = await service.toggleVideoInGlobalBookmarks('wanted');
 
-        expect(result.succeeded, isFalse);
-        expect(
-          result.failure,
-          equals(BookmarkToggleFailure.relayDidNotAccept),
-        );
-      });
+          expect(result.succeeded, isFalse);
+          expect(
+            result.failure,
+            equals(BookmarkToggleFailure.publishDidNotComplete),
+          );
+        },
+      );
 
       test('carries no failure reason when the toggle succeeds', () async {
         stubRelay(events: []);

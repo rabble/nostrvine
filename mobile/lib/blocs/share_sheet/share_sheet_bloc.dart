@@ -301,6 +301,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     emit(state.copyWith(isSaving: true, clearActionResult: true));
 
     final bookmarkService = await _bookmarkServiceFuture;
+    if (isClosed) return;
+
     if (bookmarkService == null) {
       Log.warning(
         'Bookmark service unavailable — cannot save',
@@ -327,6 +329,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       final result = await bookmarkService.toggleVideoInGlobalBookmarks(
         _video.id,
       );
+      if (isClosed) return;
+
       wasBookmarked = result.wasBookmarked;
       emit(
         state.copyWith(
@@ -350,6 +354,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
+      if (isClosed) return;
+
       emit(
         state.copyWith(
           isSaving: false,

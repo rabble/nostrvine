@@ -87,7 +87,7 @@ class BookmarkToggleResult {
   final bool isBookmarked;
 
   /// Why the toggle failed, or `null` when [succeeded] is true. Lets the UI
-  /// tell "we could not reach the network" apart from "the relay said no".
+  /// tell "we could not reach the network" apart from publish-leg failures.
   final BookmarkToggleFailure? failure;
 }
 
@@ -103,8 +103,8 @@ enum BookmarkToggleFailure {
   /// Relays were reachable but did not answer before the query deadline.
   timedOut,
 
-  /// The list reconciled, but no relay accepted the new version.
-  relayDidNotAccept,
+  /// The list reconciled, but the new version was not published.
+  publishDidNotComplete,
 
   /// There is no signed-in identity to read or publish as.
   notAuthenticated,
@@ -253,7 +253,7 @@ class BookmarkService {
         requireAuthoritative: requireAuthoritative,
       );
       var events = read.events;
-      if (events == null) return read.failure;
+      if (events == null) return read.failure ?? BookmarkToggleFailure.unknown;
       var answeredAuthoritatively = requireAuthoritative;
 
       if (events.isEmpty && !requireAuthoritative && _mustConfirmAbsence) {
@@ -276,7 +276,7 @@ class BookmarkService {
             name: 'BookmarkService',
             category: LogCategory.system,
           );
-          return confirmation.failure;
+          return confirmation.failure ?? BookmarkToggleFailure.unknown;
         }
         answeredAuthoritatively = true;
       }
@@ -415,8 +415,9 @@ class BookmarkService {
       wasBookmarked: wasBookmarked,
       isBookmarked: succeeded ? !wasBookmarked : wasBookmarked,
       // The read already reconciled, so anything failing past this point is
-      // the publish leg.
-      failure: succeeded ? null : BookmarkToggleFailure.relayDidNotAccept,
+      // the publish leg: auth disappeared, signing failed, relay OK never came
+      // back true, or the publish path threw.
+      failure: succeeded ? null : BookmarkToggleFailure.publishDidNotComplete,
     );
   }
 

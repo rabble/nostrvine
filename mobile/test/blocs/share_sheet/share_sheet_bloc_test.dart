@@ -1031,6 +1031,31 @@ void main() {
           () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
         ).called(1),
       );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'does not emit after close when save completes late',
+        setUp: () {
+          saveGate = Completer<BookmarkToggleResult>();
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer((_) => saveGate.future);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ShareSheetSaveRequested());
+          await Future<void>.delayed(Duration.zero);
+          await bloc.close();
+          saveGate.complete(
+            const BookmarkToggleResult(
+              succeeded: true,
+              wasBookmarked: false,
+              isBookmarked: true,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        expect: () => [savePending],
+      );
     });
 
     // -----------------------------------------------------------------------

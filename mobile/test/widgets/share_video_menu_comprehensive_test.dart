@@ -363,7 +363,8 @@ void main() {
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Added to bookmarks'), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.shareAddedToBookmarks), findsOneWidget);
       verify(
         () => mockBookmarkService.isVideoBookmarkedGlobally(testVideo.id),
       ).called(1);
@@ -421,7 +422,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Added to bookmarks'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.shareAddedToBookmarks), findsOneWidget);
         verify(
           () => mockBookmarkService.toggleVideoInGlobalBookmarks(testVideo.id),
         ).called(1);
