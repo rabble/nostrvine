@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/models/invite_availability.dart';
+import 'package:openvine/repositories/invite_availability_repository.dart';
 
 class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
@@ -44,11 +46,13 @@ void main() {
           ),
       Stream<InviteStatusAuthSession> authSessionStream =
           const Stream<InviteStatusAuthSession>.empty(),
+      InviteAvailabilityRepository? availabilityRepository,
       Duration authWaitTimeout = const Duration(seconds: 12),
     }) => InviteStatusCubit(
       inviteApiClient: mockInviteApiClient,
       initialAuthSession: initialAuthSession,
       authSessionStream: authSessionStream,
+      availabilityRepository: availabilityRepository,
       authWaitTimeout: authWaitTimeout,
     );
 
@@ -839,6 +843,68 @@ void main() {
         expect(state.hasAvailableInvites, isTrue);
         expect(state.availableInviteCount, equals(5));
       });
+    });
+
+    group('signup invite availability', () {
+      test(
+        'skips status and generate requests while invites are disabled',
+        () async {
+          when(
+            () => mockInviteApiClient.getInviteStatus(),
+          ).thenAnswer((_) async => testStatus);
+          when(() => mockInviteApiClient.generateInvite()).thenAnswer(
+            (_) async =>
+                const GenerateInviteResult(code: 'AAAA-BBBB', remaining: 0),
+          );
+
+          final availability = InviteAvailabilityRepository(
+            client: mockInviteApiClient,
+            seed: const InviteAvailabilityState(
+              hasResolved: true,
+              serverMode: OnboardingMode.open,
+            ),
+          );
+          addTearDown(availability.dispose);
+
+          final cubit = buildCubit(availabilityRepository: availability);
+          addTearDown(cubit.close);
+          await cubit.load();
+          await cubit.generateInvite();
+
+          verifyNever(() => mockInviteApiClient.getInviteStatus());
+          verifyNever(() => mockInviteApiClient.generateInvite());
+          expect(cubit.state.inviteStatus, isNull);
+        },
+      );
+
+      test(
+        'clears loaded status when availability flips to disabled',
+        () async {
+          when(
+            () => mockInviteApiClient.getInviteStatus(),
+          ).thenAnswer((_) async => testStatus);
+
+          final availability = InviteAvailabilityRepository(
+            client: mockInviteApiClient,
+            seed: const InviteAvailabilityState(
+              hasResolved: true,
+              serverMode: OnboardingMode.inviteCodeRequired,
+            ),
+          );
+          addTearDown(availability.dispose);
+
+          final cubit = buildCubit(availabilityRepository: availability);
+          addTearDown(cubit.close);
+          await cubit.load();
+          expect(cubit.state.inviteStatus, testStatus);
+
+          availability.setOverride(InviteAvailabilityOverride.forceDisabled);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(cubit.state.inviteStatus, isNull);
+          verify(() => mockInviteApiClient.getInviteStatus()).called(1);
+        },
+      );
     });
   });
 }

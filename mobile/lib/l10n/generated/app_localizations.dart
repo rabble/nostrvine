@@ -5558,18 +5558,6 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get authOk;
 
-  /// No description provided for @authInviteUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Invite access is temporarily unavailable.'**
-  String get authInviteUnavailable;
-
-  /// No description provided for @authInviteUnavailableBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again in a moment, or contact support if you need help getting in.'**
-  String get authInviteUnavailableBody;
-
   /// No description provided for @authTryAgain.
   ///
   /// In en, this message translates to:
@@ -18459,6 +18447,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Protected-minor override cleared'**
   String get devOptionsProtectedMinorClearedToast;
+
+  /// No description provided for @devOptionsInviteAvailabilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Signup invites'**
+  String get devOptionsInviteAvailabilityTitle;
+
+  /// No description provided for @devOptionsInviteAvailabilityCurrentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current state'**
+  String get devOptionsInviteAvailabilityCurrentLabel;
+
+  /// No description provided for @devOptionsInviteAvailabilityServerLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Server value: loading'**
+  String get devOptionsInviteAvailabilityServerLoading;
+
+  /// No description provided for @devOptionsInviteAvailabilityServerEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Server value: enabled'**
+  String get devOptionsInviteAvailabilityServerEnabled;
+
+  /// No description provided for @devOptionsInviteAvailabilityServerDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Server value: disabled'**
+  String get devOptionsInviteAvailabilityServerDisabled;
+
+  /// No description provided for @devOptionsInviteAvailabilityServerUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Server value: unknown (defaults enabled)'**
+  String get devOptionsInviteAvailabilityServerUnknown;
+
+  /// No description provided for @devOptionsInviteAvailabilityOverrideNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Override: use server value'**
+  String get devOptionsInviteAvailabilityOverrideNone;
+
+  /// No description provided for @devOptionsInviteAvailabilityOverrideEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Override: force enabled'**
+  String get devOptionsInviteAvailabilityOverrideEnabled;
+
+  /// No description provided for @devOptionsInviteAvailabilityOverrideDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Override: force disabled'**
+  String get devOptionsInviteAvailabilityOverrideDisabled;
+
+  /// No description provided for @devOptionsInviteAvailabilityUseServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Use server value'**
+  String get devOptionsInviteAvailabilityUseServer;
+
+  /// No description provided for @devOptionsInviteAvailabilityUseServerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the invite service onboardingMode'**
+  String get devOptionsInviteAvailabilityUseServerSubtitle;
+
+  /// No description provided for @devOptionsInviteAvailabilityForceEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Force enabled'**
+  String get devOptionsInviteAvailabilityForceEnabled;
+
+  /// No description provided for @devOptionsInviteAvailabilityForceEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show signup invite gates and management locally'**
+  String get devOptionsInviteAvailabilityForceEnabledSubtitle;
+
+  /// No description provided for @devOptionsInviteAvailabilityForceDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Force disabled'**
+  String get devOptionsInviteAvailabilityForceDisabled;
+
+  /// No description provided for @devOptionsInviteAvailabilityForceDisabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide signup invite UI locally without changing the server'**
+  String get devOptionsInviteAvailabilityForceDisabledSubtitle;
+
+  /// No description provided for @devOptionsInviteAvailabilityUseServerToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Signup invites now follow the server'**
+  String get devOptionsInviteAvailabilityUseServerToast;
+
+  /// No description provided for @devOptionsInviteAvailabilityForceEnabledToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Signup invites forced on'**
+  String get devOptionsInviteAvailabilityForceEnabledToast;
+
+  /// No description provided for @devOptionsInviteAvailabilityForceDisabledToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Signup invites forced off'**
+  String get devOptionsInviteAvailabilityForceDisabledToast;
 
   /// Semantics label for the button that opens the recorder to create a video reply in comments.
   ///

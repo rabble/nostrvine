@@ -3204,14 +3204,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Truy cập bằng mã mời tạm thời không khả dụng.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Thử lại sau ít phút, hoặc liên hệ hỗ trợ nếu bạn cần giúp để vào.';
-
-  @override
   String get authTryAgain => 'Thử lại';
 
   @override
@@ -10786,6 +10778,73 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get devOptionsProtectedMinorClearedToast =>
       'Đã xóa ghi đè vị thành niên được bảo vệ';
+
+  @override
+  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+
+  @override
+  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+
+  @override
+  String get devOptionsInviteAvailabilityServerLoading =>
+      'Server value: loading';
+
+  @override
+  String get devOptionsInviteAvailabilityServerEnabled =>
+      'Server value: enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityServerDisabled =>
+      'Server value: disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityServerUnknown =>
+      'Server value: unknown (defaults enabled)';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideNone =>
+      'Override: use server value';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideEnabled =>
+      'Override: force enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideDisabled =>
+      'Override: force disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServerSubtitle =>
+      'Follow the invite service onboardingMode';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
+      'Show signup invite gates and management locally';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
+      'Hide signup invite UI locally without changing the server';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServerToast =>
+      'Signup invites now follow the server';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabledToast =>
+      'Signup invites forced on';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabledToast =>
+      'Signup invites forced off';
 
   @override
   String get commentsRecordVideoButtonLabel => 'Quay bình luận video';

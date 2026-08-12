@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:invite_api_client/invite_api_client.dart';
+import 'package:openvine/models/invite_availability.dart';
+import 'package:openvine/repositories/invite_availability_repository.dart';
 
 part 'invite_status_state.dart';
 
@@ -31,8 +33,10 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
     required InviteApiClient inviteApiClient,
     required InviteStatusAuthSession initialAuthSession,
     required Stream<InviteStatusAuthSession> authSessionStream,
+    InviteAvailabilityRepository? availabilityRepository,
     Duration authWaitTimeout = const Duration(seconds: 12),
   }) : _inviteApiClient = inviteApiClient,
+       _availabilityRepository = availabilityRepository,
        _initialAuthSession = initialAuthSession,
        _authWaitTimeout = authWaitTimeout,
        super(
@@ -43,18 +47,29 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
          ),
        ) {
     _authSessionSubscription = authSessionStream.listen(_onAuthSessionChanged);
+    _availabilitySubscription = availabilityRepository?.changes.listen(
+      _onAvailabilityChanged,
+    );
     if (state.status == InviteStatusLoadingStatus.waitingForAuth) {
       _scheduleAuthWaitTimeout();
     }
   }
 
   final InviteApiClient _inviteApiClient;
+  final InviteAvailabilityRepository? _availabilityRepository;
   final InviteStatusAuthSession _initialAuthSession;
   final Duration _authWaitTimeout;
   late final StreamSubscription<InviteStatusAuthSession>
   _authSessionSubscription;
+  StreamSubscription<InviteAvailabilityState>? _availabilitySubscription;
   Timer? _authWaitTimer;
   var _sessionGeneration = 0;
+
+  bool get _canRequestInvites {
+    final availability = _availabilityRepository?.current;
+    if (availability == null) return true;
+    return availability.hasResolved && availability.isEnabled;
+  }
 
   static InviteStatusLoadingStatus _statusBeforeFirstLoad(
     InviteStatusAuthSession session,
@@ -71,6 +86,10 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
   }
 
   Future<void> load() async {
+    if (!_canRequestInvites) {
+      _clearInviteData();
+      return;
+    }
     if (state.status == InviteStatusLoadingStatus.loading) return;
     final requestAccountId = state.accountId;
     if (requestAccountId == null) return;
@@ -109,6 +128,10 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
   }
 
   Future<void> generateInvite() async {
+    if (!_canRequestInvites) {
+      _clearInviteData();
+      return;
+    }
     if (state.status == InviteStatusLoadingStatus.loading) return;
     final requestAccountId = state.accountId;
     if (requestAccountId == null) return;
@@ -190,6 +213,32 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
     }
   }
 
+  void _onAvailabilityChanged(InviteAvailabilityState availability) {
+    if (isClosed) return;
+    if (!_canRequestInvites) {
+      _clearInviteData();
+      return;
+    }
+    if (state.accountId != null && state.isSignerReady) {
+      unawaited(load());
+    }
+  }
+
+  void _clearInviteData() {
+    if (isClosed) return;
+    if (state.inviteStatus == null &&
+        state.status == InviteStatusLoadingStatus.initial) {
+      return;
+    }
+    _cancelAuthWaitTimeout();
+    _emitIfOpen(
+      InviteStatusState(
+        accountId: state.accountId,
+        isSignerReady: state.isSignerReady,
+      ),
+    );
+  }
+
   bool _requestStillBelongsTo(String requestAccountId, int requestGeneration) =>
       !isClosed &&
       state.accountId == requestAccountId &&
@@ -263,6 +312,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
   Future<void> close() async {
     _cancelAuthWaitTimeout();
     await _authSessionSubscription.cancel();
+    await _availabilitySubscription?.cancel();
     return super.close();
   }
 }

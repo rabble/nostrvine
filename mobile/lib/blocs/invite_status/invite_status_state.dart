@@ -66,10 +66,5 @@ class InviteStatusState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    status,
-    inviteStatus,
-    accountId,
-    isSignerReady,
-  ];
+  List<Object?> get props => [status, inviteStatus, accountId, isSignerReady];
 }

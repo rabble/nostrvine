@@ -5,13 +5,15 @@ enum OnboardingMode { open, inviteCodeRequired }
 OnboardingMode parseOnboardingMode(String? rawValue) {
   final normalized = rawValue?.trim().toLowerCase().replaceAll('-', '_');
   switch (normalized) {
+    case 'open':
+      return OnboardingMode.open;
     case 'waitlist_only':
     case 'invite_code':
     case 'invite_code_required':
       return OnboardingMode.inviteCodeRequired;
-    case 'open':
     default:
-      return OnboardingMode.open;
+      // Missing or unknown values keep signup invites enabled.
+      return OnboardingMode.inviteCodeRequired;
   }
 }
 

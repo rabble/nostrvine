@@ -8,9 +8,11 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/repositories/invite_availability_repository.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 
@@ -38,8 +40,15 @@ void main() {
 
     return RepositoryProvider<InviteApiClient>.value(
       value: client,
-      child: BlocProvider(
-        create: (_) => InviteGateBloc(inviteApiClient: client),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => InviteAvailabilityCubit(
+              repository: InviteAvailabilityRepository(client: client),
+            )..load(),
+          ),
+          BlocProvider(create: (_) => InviteGateBloc(inviteApiClient: client)),
+        ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -91,6 +100,36 @@ void main() {
 
       expect(find.text('Add your invite code'), findsOneWidget);
       expect(find.text('Join waitlist'), findsOneWidget);
+    });
+
+    testWidgets('keeps the invite form when client config is unavailable', (
+      tester,
+    ) async {
+      when(
+        () => mockInviteApiClient.getClientConfig(),
+      ).thenThrow(const InviteApiException('unavailable'));
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add your invite code'), findsOneWidget);
+    });
+
+    testWidgets('bypasses the gate when server onboarding mode is open', (
+      tester,
+    ) async {
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
+        (_) async => const InviteClientConfig(
+          mode: OnboardingMode.open,
+          supportEmail: 'support@divine.video',
+        ),
+      );
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create Account'), findsOneWidget);
+      expect(find.text('Add your invite code'), findsNothing);
     });
 
     testWidgets(
@@ -209,8 +248,20 @@ void main() {
       await tester.pumpWidget(
         RepositoryProvider<InviteApiClient>.value(
           value: mockInviteApiClient,
-          child: BlocProvider(
-            create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create: (_) => InviteAvailabilityCubit(
+                  repository: InviteAvailabilityRepository(
+                    client: mockInviteApiClient,
+                  ),
+                )..load(),
+              ),
+              BlocProvider(
+                create: (_) =>
+                    InviteGateBloc(inviteApiClient: mockInviteApiClient),
+              ),
+            ],
             child: MaterialApp.router(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
@@ -272,8 +323,20 @@ void main() {
       await tester.pumpWidget(
         RepositoryProvider<InviteApiClient>.value(
           value: mockInviteApiClient,
-          child: BlocProvider(
-            create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create: (_) => InviteAvailabilityCubit(
+                  repository: InviteAvailabilityRepository(
+                    client: mockInviteApiClient,
+                  ),
+                )..load(),
+              ),
+              BlocProvider(
+                create: (_) =>
+                    InviteGateBloc(inviteApiClient: mockInviteApiClient),
+              ),
+            ],
             child: MaterialApp.router(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
@@ -347,8 +410,20 @@ void main() {
       await tester.pumpWidget(
         RepositoryProvider<InviteApiClient>.value(
           value: mockInviteApiClient,
-          child: BlocProvider(
-            create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create: (_) => InviteAvailabilityCubit(
+                  repository: InviteAvailabilityRepository(
+                    client: mockInviteApiClient,
+                  ),
+                )..load(),
+              ),
+              BlocProvider(
+                create: (_) =>
+                    InviteGateBloc(inviteApiClient: mockInviteApiClient),
+              ),
+            ],
             child: MaterialApp.router(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,

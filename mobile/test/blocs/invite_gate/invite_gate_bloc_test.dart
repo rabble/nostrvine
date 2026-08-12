@@ -23,30 +23,6 @@ void main() {
     }
 
     blocTest<InviteGateBloc, InviteGateState>(
-      'loads invite client config successfully',
-      setUp: () {
-        when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
-          (_) async => const InviteClientConfig(
-            mode: OnboardingMode.inviteCodeRequired,
-            supportEmail: 'support@divine.video',
-          ),
-        );
-      },
-      build: buildBloc,
-      act: (bloc) => bloc.add(const InviteGateConfigRequested()),
-      expect: () => [
-        const InviteGateState(configStatus: InviteGateConfigStatus.loading),
-        const InviteGateState(
-          configStatus: InviteGateConfigStatus.success,
-          config: InviteClientConfig(
-            mode: OnboardingMode.inviteCodeRequired,
-            supportEmail: 'support@divine.video',
-          ),
-        ),
-      ],
-    );
-
-    blocTest<InviteGateBloc, InviteGateState>(
       'surfaces malformed invite codes immediately',
       build: buildBloc,
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('abc')),

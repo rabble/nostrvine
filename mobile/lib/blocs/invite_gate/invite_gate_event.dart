@@ -1,5 +1,5 @@
 // ABOUTME: Events for the invite gate onboarding flow
-// ABOUTME: Drives config loading, invite validation, and invite access state
+// ABOUTME: Drives invite validation and invite access state
 
 import 'package:equatable/equatable.dart';
 import 'package:openvine/models/invite_models.dart';
@@ -9,15 +9,6 @@ sealed class InviteGateEvent extends Equatable {
 
   @override
   List<Object?> get props => const [];
-}
-
-class InviteGateConfigRequested extends InviteGateEvent {
-  const InviteGateConfigRequested({this.force = false});
-
-  final bool force;
-
-  @override
-  List<Object?> get props => [force];
 }
 
 class InviteGateCodeSubmitted extends InviteGateEvent {

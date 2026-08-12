@@ -3044,13 +3044,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authOk => '확인';
 
   @override
-  String get authInviteUnavailable => '초대 접근이 일시적으로 이용 불가능해요.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      '잠시 후에 다시 시도하거나 도움이 필요하면 고객센터에 문의해주세요.';
-
-  @override
   String get authTryAgain => '다시 시도';
 
   @override
@@ -10360,6 +10353,73 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get devOptionsProtectedMinorClearedToast =>
       'Protected-minor override cleared';
+
+  @override
+  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+
+  @override
+  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+
+  @override
+  String get devOptionsInviteAvailabilityServerLoading =>
+      'Server value: loading';
+
+  @override
+  String get devOptionsInviteAvailabilityServerEnabled =>
+      'Server value: enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityServerDisabled =>
+      'Server value: disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityServerUnknown =>
+      'Server value: unknown (defaults enabled)';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideNone =>
+      'Override: use server value';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideEnabled =>
+      'Override: force enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideDisabled =>
+      'Override: force disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServerSubtitle =>
+      'Follow the invite service onboardingMode';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
+      'Show signup invite gates and management locally';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
+      'Hide signup invite UI locally without changing the server';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServerToast =>
+      'Signup invites now follow the server';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabledToast =>
+      'Signup invites forced on';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabledToast =>
+      'Signup invites forced off';
 
   @override
   String get commentsRecordVideoButtonLabel => '영상 댓글 녹화';

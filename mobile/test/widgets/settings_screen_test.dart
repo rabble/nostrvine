@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -18,6 +19,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -36,6 +38,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/go_router.dart';
+import '../helpers/invite_availability_harness.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -118,6 +121,7 @@ void main() {
       List<KnownAccount> knownAccounts = const [],
       _MockInviteStatusCubit? inviteCubit,
       _MockBackgroundPublishBloc? publishBloc,
+      InviteAvailabilityCubit? availabilityCubit,
       bool developerMode = false,
     }) {
       when(
@@ -129,9 +133,9 @@ void main() {
       // Default publish bloc has no uploads in progress.
       final effectivePublishBloc = publishBloc ?? _MockBackgroundPublishBloc();
       if (publishBloc == null) {
-        when(() => effectivePublishBloc.state).thenReturn(
-          const BackgroundPublishState(),
-        );
+        when(
+          () => effectivePublishBloc.state,
+        ).thenReturn(const BackgroundPublishState());
         whenListen(
           effectivePublishBloc,
           const Stream<BackgroundPublishState>.empty(),
@@ -159,6 +163,10 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: MultiBlocProvider(
             providers: [
+              if (availabilityCubit != null)
+                BlocProvider<InviteAvailabilityCubit>.value(
+                  value: availabilityCubit,
+                ),
               BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
               BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
               BlocProvider<BackgroundPublishBloc>.value(
@@ -225,6 +233,80 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+
+    testWidgets('hides invite shortcut when signup invites are disabled', (
+      tester,
+    ) async {
+      final mockInviteCubit = _MockInviteStatusCubit();
+      when(mockInviteCubit.load).thenAnswer((_) async {});
+      when(() => mockInviteCubit.state).thenReturn(
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: InviteStatus(
+            canInvite: true,
+            remaining: 5,
+            total: 5,
+            codes: [],
+          ),
+        ),
+      );
+      final availabilityCubit = seededInviteAvailabilityCubit(
+        serverMode: OnboardingMode.open,
+      );
+      addTearDown(availabilityCubit.close);
+
+      await tester.pumpWidget(
+        buildSubject(
+          inviteCubit: mockInviteCubit,
+          availabilityCubit: availabilityCubit,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Invites'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets(
+      'hides invite shortcut immediately when override forces disabled',
+      (tester) async {
+        final mockInviteCubit = _MockInviteStatusCubit();
+        when(mockInviteCubit.load).thenAnswer((_) async {});
+        when(() => mockInviteCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 5,
+              total: 5,
+              codes: [],
+            ),
+          ),
+        );
+        final availabilityCubit = seededInviteAvailabilityCubit();
+        addTearDown(availabilityCubit.close);
+
+        await tester.pumpWidget(
+          buildSubject(
+            inviteCubit: mockInviteCubit,
+            availabilityCubit: availabilityCubit,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Invites'), findsOneWidget);
+
+        availabilityCubit.setOverride(InviteAvailabilityOverride.forceDisabled);
+        expect(availabilityCubit.state.isEnabled, isFalse);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Invites'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
 
     testWidgets('renders invite shortcut when unclaimed invites exist', (
       tester,
@@ -645,76 +727,67 @@ void main() {
       },
     );
 
-    testWidgets(
-      'defers nav to login-options until background upload finishes '
-      'when Session Expired tile is tapped and refresh fails',
-      (tester) async {
-        // Regression for #4626: tapping the Session Expired tile while a
-        // background upload is active must not navigate immediately.
-        // Navigation is deferred until BackgroundPublishBloc.hasUploadInProgress
-        // becomes false.
-        final publishStreamController =
-            StreamController<BackgroundPublishState>();
-        addTearDown(publishStreamController.close);
+    testWidgets('defers nav to login-options until background upload finishes '
+        'when Session Expired tile is tapped and refresh fails', (
+      tester,
+    ) async {
+      // Regression for #4626: tapping the Session Expired tile while a
+      // background upload is active must not navigate immediately.
+      // Navigation is deferred until BackgroundPublishBloc.hasUploadInProgress
+      // becomes false.
+      final publishStreamController =
+          StreamController<BackgroundPublishState>();
+      addTearDown(publishStreamController.close);
 
-        final mockPublishBloc = _MockBackgroundPublishBloc();
-        final inProgressState = BackgroundPublishState(
-          uploads: [
-            BackgroundUpload(
-              draft: _FakeDraft(),
-              result: null,
-              progress: 0.5,
-            ),
-          ],
-        );
-        when(() => mockPublishBloc.state).thenReturn(inProgressState);
-        whenListen(
-          mockPublishBloc,
-          publishStreamController.stream,
-          initialState: inProgressState,
-        );
+      final mockPublishBloc = _MockBackgroundPublishBloc();
+      final inProgressState = BackgroundPublishState(
+        uploads: [
+          BackgroundUpload(draft: _FakeDraft(), result: null, progress: 0.5),
+        ],
+      );
+      when(() => mockPublishBloc.state).thenReturn(inProgressState);
+      whenListen(
+        mockPublishBloc,
+        publishStreamController.stream,
+        initialState: inProgressState,
+      );
 
-        // Session is expired, refresh will fail.
-        when(() => mockAuthService.hasExpiredOAuthSession).thenReturn(true);
-        when(
-          () => mockAuthService.tryRefreshExpiredSession(),
-        ).thenAnswer((_) async => false);
+      // Session is expired, refresh will fail.
+      when(() => mockAuthService.hasExpiredOAuthSession).thenReturn(true);
+      when(
+        () => mockAuthService.tryRefreshExpiredSession(),
+      ).thenAnswer((_) async => false);
 
-        final mockGoRouter = MockGoRouter();
-        when(() => mockGoRouter.go(any())).thenReturn(null);
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.go(any())).thenReturn(null);
 
-        await tester.pumpWidget(
-          buildSubject(goRouter: mockGoRouter, publishBloc: mockPublishBloc),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        buildSubject(goRouter: mockGoRouter, publishBloc: mockPublishBloc),
+      );
+      await tester.pumpAndSettle();
 
-        // Session Expired tile is present.
-        expect(find.text(l10n.settingsSessionExpired), findsOneWidget);
+      // Session Expired tile is present.
+      expect(find.text(l10n.settingsSessionExpired), findsOneWidget);
 
-        // Tap the tile — triggers _handleSessionExpired.
-        await tester.tap(find.text(l10n.settingsSessionExpired));
-        await tester.pumpAndSettle();
+      // Tap the tile — triggers _handleSessionExpired.
+      await tester.tap(find.text(l10n.settingsSessionExpired));
+      await tester.pumpAndSettle();
 
-        // Navigation must NOT have fired yet — upload is still in progress.
-        verifyNever(() => mockGoRouter.go(any()));
+      // Navigation must NOT have fired yet — upload is still in progress.
+      verifyNever(() => mockGoRouter.go(any()));
 
-        // Simulate upload completing.
-        publishStreamController.add(const BackgroundPublishState());
-        await tester.pump();
+      // Simulate upload completing.
+      publishStreamController.add(const BackgroundPublishState());
+      await tester.pump();
 
-        // Now navigation must have fired exactly once to login-options.
-        verify(
-          () => mockGoRouter.go(
-            any(
-              that: contains('login-options'),
-            ),
-          ),
-        ).called(1);
+      // Now navigation must have fired exactly once to login-options.
+      verify(
+        () => mockGoRouter.go(any(that: contains('login-options'))),
+      ).called(1);
 
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-      },
-    );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
 
     testWidgets(
       'navigates immediately when upload finishes before stream listener '

@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/welcome/welcome_bloc.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -143,7 +144,14 @@ class _WelcomeView extends StatelessWidget {
       listener: (context, state) {
         switch (state.status) {
           case WelcomeStatus.navigatingToCreateAccount:
-            context.push(WelcomeScreen.inviteGatePath);
+            final invitesEnabled =
+                context.read<InviteAvailabilityCubit?>()?.state.isEnabled ??
+                true;
+            context.push(
+              invitesEnabled
+                  ? WelcomeScreen.inviteGatePath
+                  : WelcomeScreen.createAccountPath,
+            );
           case WelcomeStatus.navigatingToLoginOptions:
             context.push(WelcomeScreen.loginOptionsPath);
           case WelcomeStatus.sessionExpired:

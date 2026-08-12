@@ -100,7 +100,15 @@ docker compose -f "$COMPOSE_FILE" logs -f -t --since "$(date -u +%Y-%m-%dT%H:%M:
 DOCKER_PID=$!
 
 # --- Detect connected Android device ---
-DEVICE="$(adb devices | sed -n '2p' | cut -f1)"
+# ANDROID_SERIAL wins so a physical phone does not steal emulator e2e runs.
+if [[ -n "${ANDROID_SERIAL:-}" ]]; then
+    DEVICE="$ANDROID_SERIAL"
+else
+    DEVICE="$(adb devices | awk '/emulator-/{print $1; exit}')"
+    if [[ -z "$DEVICE" ]]; then
+        DEVICE="$(adb devices | sed -n '2p' | cut -f1)"
+    fi
+fi
 if [[ -z "$DEVICE" ]]; then
     echo "ERROR: No Android device connected." >&2
     exit 1

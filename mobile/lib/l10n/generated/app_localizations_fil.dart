@@ -3244,14 +3244,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Pansamantalang hindi available ang invite access.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Subukang ulit mamaya, o makipag-ugnayan sa support kung kailangan mo ng tulong para makapasok.';
-
-  @override
   String get authTryAgain => 'Subukan ulit';
 
   @override
@@ -10900,6 +10892,73 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get devOptionsProtectedMinorClearedToast =>
       'Protected-minor override cleared';
+
+  @override
+  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+
+  @override
+  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+
+  @override
+  String get devOptionsInviteAvailabilityServerLoading =>
+      'Server value: loading';
+
+  @override
+  String get devOptionsInviteAvailabilityServerEnabled =>
+      'Server value: enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityServerDisabled =>
+      'Server value: disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityServerUnknown =>
+      'Server value: unknown (defaults enabled)';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideNone =>
+      'Override: use server value';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideEnabled =>
+      'Override: force enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityOverrideDisabled =>
+      'Override: force disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServerSubtitle =>
+      'Follow the invite service onboardingMode';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
+      'Show signup invite gates and management locally';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
+      'Hide signup invite UI locally without changing the server';
+
+  @override
+  String get devOptionsInviteAvailabilityUseServerToast =>
+      'Signup invites now follow the server';
+
+  @override
+  String get devOptionsInviteAvailabilityForceEnabledToast =>
+      'Signup invites forced on';
+
+  @override
+  String get devOptionsInviteAvailabilityForceDisabledToast =>
+      'Signup invites forced off';
 
   @override
   String get commentsRecordVideoButtonLabel => 'Mag-record ng video comment';
