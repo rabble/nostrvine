@@ -440,7 +440,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count የተባባሪ ግብዣዎች አሁንም መላክ ይፈልጋሉ',
-      one: '1 የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል',
+      one: '$count የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል',
     );
     return '$_temp0';
   }
@@ -470,7 +470,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count የተባባሪ ግብዣዎች አሁንም መላክ ይፈልጋሉ።',
-      one: '1 የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል።',
+      one: '$count የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል።',
       zero: 'የተባባሪ ግብዣዎች ተልከዋል።',
     );
     return '$_temp0';
@@ -482,7 +482,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ተባባሪዎች ግብዣ መቀበል አይችሉም።',
-      one: '1 ተባባሪ ግብዣ መቀበል አይችልም።',
+      one: '$count ተባባሪ ግብዣ መቀበል አይችልም።',
     );
     return '$_temp0';
   }
@@ -1227,7 +1227,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count አዳዲስ ቪዲዮዎች',
-      one: '1 አዲስ ቪዲዮ',
+      one: '$count አዲስ ቪዲዮ',
     );
     return '$_temp0';
   }
@@ -1238,7 +1238,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count አዳዲስ ቪዲዮዎች ጫን',
-      one: '1 አዲስ ቪዲዮ ጫን',
+      one: '$count አዲስ ቪዲዮ ጫን',
     );
     return '$_temp0';
   }
@@ -1581,7 +1581,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ተባባሪዎች',
-      one: '1 ተባባሪ',
+      one: '$count ተባባሪ',
     );
     return '$_temp0። መገለጫውን ለማየት መታ አድርግ።';
   }
@@ -3858,7 +3858,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: 'በ$count ዝርዝሮች ውስጥ',
-      one: 'በ1 ዝርዝር ውስጥ',
+      one: 'በ$count ዝርዝር ውስጥ',
     );
     return '$_temp0';
   }
@@ -4041,7 +4041,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count የተባባሪ ግብዣዎች አልተላኩም።',
-      one: '1 የተባባሪ ግብዣ አልተላከም።',
+      one: '$count የተባባሪ ግብዣ አልተላከም።',
     );
     return 'ቪዲዮ ተዘምኗል፣ ግን $_temp0';
   }
@@ -4388,7 +4388,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ያልተነበቡ ማሳወቂያዎች',
-      one: '1 ያልተነበበ ማሳወቂያ',
+      one: '$count ያልተነበበ ማሳወቂያ',
     );
     return '$_temp0';
   }
@@ -4996,7 +4996,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ሰዎች',
-      one: '1 ሰው',
+      one: '$count ሰው',
     );
     return '$_temp0';
   }
@@ -5918,7 +5918,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count የተባባሪ ግብዣዎች አልተላኩም።',
-      one: '1 የተባባሪ ግብዣ አልተላከም።',
+      one: '$count የተባባሪ ግብዣ አልተላከም።',
     );
     return 'ቪዲዮ ተለጠፈ፣ ግን $_temp0';
   }
@@ -6379,7 +6379,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count የተመረጡ ክሊፖች',
-      one: '1 የተመረጠ ክሊፕ',
+      one: '$count የተመረጠ ክሊፕ',
     );
     return '$_temp0 መሰረዝ እርግጠኛ ነህ?';
   }
@@ -6400,7 +6400,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ክሊፖች',
-      one: '1 ክሊፕ',
+      one: '$count ክሊፕ',
     );
     return '$_temp0 ወደ $destination ተቀምጠዋል';
   }
@@ -6421,7 +6421,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ክሊፖች ተሰርዘዋል',
-      one: '1 ክሊፕ ተሰርዟል',
+      one: '$count ክሊፕ ተሰርዟል',
     );
     return '$_temp0';
   }
@@ -7065,7 +7065,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count መልእክቶች',
-      one: '1 መልእክት',
+      one: '$count መልእክት',
     );
     return '$_temp0';
   }
@@ -7456,7 +7456,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: 'በ$count ዝርዝሮች ውስጥ',
-      one: 'በ1 ዝርዝር ውስጥ',
+      one: 'በ$count ዝርዝር ውስጥ',
     );
     return '$_temp0';
   }
@@ -7804,7 +7804,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ግብዣዎች ለማመንጨት ዝግጁ ናቸው',
-      one: '1 ግብዣ ለማመንጨት ዝግጁ ነው',
+      one: '$count ግብዣ ለማመንጨት ዝግጁ ነው',
     );
     return '$_temp0';
   }
@@ -8117,7 +8117,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ሌሎች',
-      one: '1 ሌላ',
+      one: '$count ሌላ',
     );
     return '$_temp0';
   }
@@ -8402,7 +8402,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ክሊፖች',
-      one: '1 ክሊፕ',
+      one: '$count ክሊፕ',
     );
     return '$_temp0 ከቆሻሻ መጣያው ወዲያውኑ በቋሚነት ይሰረዛሉ።';
   }
@@ -8437,7 +8437,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ፎቶዎች ቀርተዋል',
-      one: '1 ፎቶ ቀርቷል',
+      one: '$count ፎቶ ቀርቷል',
       zero: 'ምንም የቀረ ፎቶ የለም',
     );
     return '$_temp0';
@@ -8515,7 +8515,7 @@ class AppLocalizationsAm extends AppLocalizations {
       clipCount,
       locale: localeName,
       other: 'የክሊፕ ቤተ-መዝገብ ክፈት፣ $clipCount ክሊፖች',
-      one: 'የክሊፕ ቤተ-መዝገብ ክፈት፣ 1 ክሊፕ',
+      one: 'የክሊፕ ቤተ-መዝገብ ክፈት፣ $clipCount ክሊፕ',
     );
     return '$_temp0';
   }
@@ -8526,7 +8526,7 @@ class AppLocalizationsAm extends AppLocalizations {
       frameCount,
       locale: localeName,
       other: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ $frameCount ፍሬሞች',
-      one: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ 1 ፍሬም',
+      one: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ $frameCount ፍሬም',
       zero: 'የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት',
     );
     return '$_temp0';
@@ -8892,7 +8892,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ቅረጻዎች',
-      one: '1 ቅረጻ',
+      one: '$count ቅረጻ',
       zero: 'እስካሁን ቅረጻ የለም',
     );
     return '$_temp0';
@@ -9446,7 +9446,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ቅንጥቦች ተመርጠዋል',
-      one: '1 ቅንጥብ ተመርጧል',
+      one: '$count ቅንጥብ ተመርጧል',
       zero: 'ምንም ቅንጥብ አልተመረጠም',
     );
     return '$_temp0';
@@ -9468,7 +9468,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ስዕሎች ተመርጠዋል',
-      one: '1 ስዕል ተመርጧል',
+      one: '$count ስዕል ተመርጧል',
       zero: 'ምንም ስዕል አልተመረጠም',
     );
     return '$_temp0';
@@ -9794,7 +9794,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: 'የተደበቁ ($count)',
-      one: 'የተደበቀ (1)',
+      one: 'የተደበቀ ($count)',
     );
     return '$_temp0';
   }
@@ -9832,7 +9832,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: 'ለ$count ሰዎች ተሰጥቷል',
-      one: 'ለ1 ሰው ተሰጥቷል',
+      one: 'ለ$count ሰው ተሰጥቷል',
       zero: 'እስካሁን አልተሰጠም',
     );
     return '$_temp0';
@@ -9961,7 +9961,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count መለያዎች ይታገዱ?',
-      one: '1 መለያ ይታገድ?',
+      one: '$count መለያ ይታገድ?',
     );
     return '$_temp0';
   }
@@ -9984,7 +9984,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count መለያዎች አግድ',
-      one: '1 መለያ አግድ',
+      one: '$count መለያ አግድ',
     );
     return '$_temp0';
   }
@@ -10025,7 +10025,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: 'ለ$count ሰዎች ስጥ',
-      one: 'ለ1 ሰው ስጥ',
+      one: 'ለ$count ሰው ስጥ',
       zero: 'ባጅ ስጥ',
     );
     return '$_temp0';

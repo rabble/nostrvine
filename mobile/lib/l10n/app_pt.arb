@@ -499,7 +499,7 @@
             }
         }
     },
-    "exploreNewVideosCount": "{count, plural, one{1 vídeo novo} other{{count} vídeos novos}}",
+    "exploreNewVideosCount": "{count, plural, one{{count} vídeo novo} other{{count} vídeos novos}}",
     "@exploreNewVideosCount": {
         "placeholders": {
             "count": {
@@ -619,7 +619,7 @@
             }
         }
     },
-    "videoCollaboratorCountLabel": "{count, plural, one{1 colaborador} other{{count} colaboradores}}. Toque para ver o perfil.",
+    "videoCollaboratorCountLabel": "{count, plural, one{{count} colaborador} other{{count} colaboradores}}. Toque para ver o perfil.",
     "@videoCollaboratorCountLabel": {
         "placeholders": {
             "count": {
@@ -1612,7 +1612,7 @@
     "shareMenuChangeCover": "Alterar capa",
     "shareMenuCoverUploadingBackground": "A miniatura está sendo enviada em segundo plano",
     "shareMenuVideoUpdated": "Vídeo atualizado com sucesso",
-    "shareMenuVideoUpdatedWithInviteFailures": "Vídeo atualizado, mas {count, plural, =1{1 convite de colaborador não foi enviado.} other{{count} convites de colaboradores não foram enviados.}}",
+    "shareMenuVideoUpdatedWithInviteFailures": "Vídeo atualizado, mas {count, plural, =1{{count} convite de colaborador não foi enviado.} other{{count} convites de colaboradores não foram enviados.}}",
     "shareMenuFailedToUpdateVideo": "Falha ao atualizar vídeo: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {
@@ -2487,7 +2487,7 @@
     },
     "libraryAddClips": "Adicionar",
     "libraryClipSelectionTitle": "Clipes",
-    "libraryClipsDeletedCount": "{count, plural, =1{1 clipe excluído} other{{count} clipes excluídos}}",
+    "libraryClipsDeletedCount": "{count, plural, =1{{count} clipe excluído} other{{count} clipes excluídos}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
             "count": {
@@ -2506,7 +2506,7 @@
             }
         }
     },
-    "libraryClipsSavedToDestination": "{count, plural, =1{1 clipe} other{{count} clipes}} salvos em {destination}",
+    "libraryClipsSavedToDestination": "{count, plural, =1{{count} clipe} other{{count} clipes}} salvos em {destination}",
     "@libraryClipsSavedToDestination": {
         "placeholders": {
             "count": {
@@ -2898,7 +2898,7 @@
     "libraryTrashDeleteConfirmTitle": "Excluir clipe agora?",
     "libraryTrashDeleteConfirmMessage": "Isso remove o clipe da lixeira imediatamente.",
     "libraryTrashEmptyConfirmTitle": "Esvaziar lixeira?",
-    "libraryTrashEmptyConfirmMessage": "Isso exclui permanentemente da lixeira {count, plural, =1{1 clipe} other{{count} clipes}} agora mesmo.",
+    "libraryTrashEmptyConfirmMessage": "Isso exclui permanentemente da lixeira {count, plural, =1{{count} clipe} other{{count} clipes}} agora mesmo.",
     "videoRecorderCloseLabel": "Fechar gravador de vídeo",
     "videoRecorderContinueToEditorLabel": "Continuar para o editor de vídeo",
     "videoRecorderCameraPreviewLabel": "Pré-visualização da câmara",
@@ -2906,7 +2906,7 @@
     "videoRecorderSwitchToModeLabel": "Mudar para o modo {mode}",
     "videoRecorderLipSyncAddAudioFirst": "Adicione áudio antes de gravar",
     "videoRecorderStopMotionAssembleFailed": "Não foi possível criar o vídeo. Tente novamente.",
-    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Nenhuma foto restante} =1{Resta 1 foto} other{Restam {count} fotos}}",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Nenhuma foto restante} =1{Resta {count} foto} other{Restam {count} fotos}}",
     "@videoRecorderStopMotionShotsLeft": {
         "placeholders": {
             "count": {
@@ -2936,7 +2936,7 @@
     "videoRecorderCameraValueFront": "Câmera frontal",
     "videoRecorderCameraValueBack": "Câmera traseira",
     "videoRecorderLibraryEmptyLabel": "Biblioteca de clipes, sem clipes",
-    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Abrir biblioteca de clipes, 1 clipe} other{Abrir biblioteca de clipes, {clipCount} clipes}}",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Abrir biblioteca de clipes, {clipCount} clipe} other{Abrir biblioteca de clipes, {clipCount} clipes}}",
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
@@ -2944,7 +2944,7 @@
             }
         }
     },
-    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Abrir biblioteca de stop motion} one{Abrir biblioteca de stop motion, 1 quadro} other{Abrir biblioteca de stop motion, {frameCount} quadros}}",
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{Abrir biblioteca de stop motion} one{Abrir biblioteca de stop motion, {frameCount} quadro} other{Abrir biblioteca de stop motion, {frameCount} quadros}}",
     "@videoRecorderLibraryOpenStopMotionLabel": {
         "placeholders": {
             "frameCount": {
@@ -3079,7 +3079,7 @@
     "videoEditorVoiceOverRecordSemanticLabel": "Iniciar gravação",
     "videoEditorVoiceOverStopSemanticLabel": "Parar gravação",
     "videoEditorVoiceOverHint": "Toque para gravar. Adicione quantas tomadas quiser.",
-    "videoEditorVoiceOverRecordingsCount": "{count, plural, =0{Ainda sem gravações} =1{1 gravação} other{{count} gravações}}",
+    "videoEditorVoiceOverRecordingsCount": "{count, plural, =0{Ainda sem gravações} =1{{count} gravação} other{{count} gravações}}",
     "videoEditorVoiceOverDeleteLast": "Excluir última gravação",
     "videoEditorVoiceOverPermissionTitle": "Acesso ao microfone necessário",
     "videoEditorVoiceOverPermissionBody": "Permita o acesso ao microfone para gravar uma narração.",
@@ -3102,7 +3102,7 @@
     "videoEditorLayerMultiSelectSemanticLabel": "Selecionar vários desenhos",
     "videoEditorLayerMultiSelectDoneSemanticLabel": "Concluir a seleção de desenhos",
     "videoEditorDeleteSelectedDrawingsSemanticLabel": "Eliminar os desenhos selecionados",
-    "videoEditorLayerMultiSelectCountLabel": "{count, plural, =0{Nenhum desenho selecionado} =1{1 desenho selecionado} other{{count} desenhos selecionados}}",
+    "videoEditorLayerMultiSelectCountLabel": "{count, plural, =0{Nenhum desenho selecionado} =1{{count} desenho selecionado} other{{count} desenhos selecionados}}",
     "videoEditorSplitLabel": "Dividir",
     "videoEditorSplitSelectedClipSemanticLabel": "Dividir clipe selecionado",
     "videoEditorExtractAudioLabel": "Extrair áudio",
@@ -3353,7 +3353,7 @@
     "navSearchTooltip": "Pesquisar",
     "fullscreenFeedRemovedMessage": "Vídeo removido",
     "fullscreenFeedEmptyMessage": "Não há mais nada para reproduzir aqui",
-    "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+    "invitesGenerateCardTitle": "{count, plural, =1{{count} invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
     "profileAvatarLightboxBarrierLabel": "Fechar avatar",
@@ -3385,7 +3385,7 @@
   },
   "notificationRepliedToYourComment": "{actorName} respondeu ao teu comentário",
     "notificationAndConnector": "e",
-    "notificationOthersCount": "{count, plural, =1{mais 1 pessoa} other{mais {count} pessoas}}",
+    "notificationOthersCount": "{count, plural, =1{mais {count} pessoa} other{mais {count} pessoas}}",
     "@notificationOthersCount": {
         "placeholders": {
             "count": {
@@ -3428,7 +3428,7 @@
     "peopleListsAddPeopleRetry": "Tentar novamente",
     "peopleListsAddButton": "Adicionar",
     "peopleListsAddButtonWithCount": "Adicionar {count}",
-    "peopleListsInNLists": "{count, plural, =1{Em 1 lista} other{Em {count} listas}}",
+    "peopleListsInNLists": "{count, plural, =1{Em {count} lista} other{Em {count} listas}}",
     "peopleListsRemoveConfirmTitle": "Remover {name}?",
     "peopleListsRemoveConfirmBody": "Será removido/a desta lista.",
     "peopleListsRemove": "Remover",
@@ -3652,7 +3652,7 @@
     "nostrSettingsDeleteAccountSubtitle": "Envia solicitações de exclusão do seu conteúdo e desconecta você neste dispositivo. Relays, clientes, índices de busca e outros dispositivos conectados podem manter cópias.",
     "safetySettingsWhatYouSee": "O QUE VOCÊ VÊ",
     "safetySettingsWhatYouPublish": "O QUE VOCÊ PUBLICA",
-    "listPersonCount": "{count, plural, =1{1 pessoa} other{{count} pessoas}}",
+    "listPersonCount": "{count, plural, =1{{count} pessoa} other{{count} pessoas}}",
     "@listPersonCount": {
         "placeholders": {
             "count": {
@@ -3941,7 +3941,7 @@
     "badgesIssuedNoRecipients": "Nenhum destinatário encontrado para esta premiação.",
     "badgesRecipientAcceptedStatus": "Aceita pelo destinatário",
     "badgesRecipientWaitingStatus": "Aguardando destinatário",
-    "badgesHiddenSectionTitle": "{count, plural, =1{Oculto (1)} other{Ocultos ({count})}}",
+    "badgesHiddenSectionTitle": "{count, plural, =1{Oculto ({count})} other{Ocultos ({count})}}",
     "badgesActionRestore": "Restaurar",
     "badgesHiddenSnackbar": "Selo oculto",
     "badgesHiddenSnackbarUndo": "Desfazer",
@@ -3951,7 +3951,7 @@
     "badgesCreateAction": "Novo selo",
     "badgesCreatedEmptyTitle": "Nenhum selo criado ainda",
     "badgesCreatedEmptySubtitle": "Crie um e entregue a quem merece.",
-    "badgesCreatedAwardSummary": "{count, plural, =0{Ainda não entregue} =1{Entregue a 1 pessoa} other{Entregue a {count} pessoas}}",
+    "badgesCreatedAwardSummary": "{count, plural, =0{Ainda não entregue} =1{Entregue a {count} pessoa} other{Entregue a {count} pessoas}}",
     "badgeEditorCreateTitle": "Novo selo",
     "badgeEditorEditTitle": "Editar selo",
     "badgeEditorNameLabel": "Nome",
@@ -3989,9 +3989,9 @@
     "badgeDetailBlockClaimantsLoadError": "Não foi possível carregar quem usa este selo",
     "badgeDetailBlockClaimantsEmptyTitle": "Ninguém está usando este selo agora",
     "badgeDetailBlockClaimantsEmptyBody": "Não encontramos ninguém para bloquear agora.",
-    "badgeDetailBlockClaimantsHeading": "{count, plural, =1{Bloquear 1 conta?} other{Bloquear {count} contas?}}",
+    "badgeDetailBlockClaimantsHeading": "{count, plural, =1{Bloquear {count} conta?} other{Bloquear {count} contas?}}",
     "badgeDetailBlockClaimantsBody": "{count, plural, =1{Isso bloqueia a conta que está usando este selo agora. Os posts dessa pessoa não vão aparecer no seu feed e ela não será notificada.} other{Isso bloqueia as {count} contas que estão usando este selo agora. Os posts delas não vão aparecer no seu feed e elas não serão notificadas.}}",
-    "badgeDetailBlockClaimantsConfirm": "{count, plural, =1{Bloquear 1 conta} other{Bloquear {count} contas}}",
+    "badgeDetailBlockClaimantsConfirm": "{count, plural, =1{Bloquear {count} conta} other{Bloquear {count} contas}}",
     "badgeDetailBlockClaimantsSuccess": "Contas com o selo bloqueadas",
     "badgeDetailBlockClaimantsFailure": "Não foi possível bloquear quem usa o selo",
     "badgeDetailLoadError": "Não foi possível carregar este selo",
@@ -4002,7 +4002,7 @@
     "badgeAwardManualLabel": "Ou cole chaves",
     "badgeAwardManualHint": "npub1…, npub1…",
     "badgeAwardEmptyHint": "Escolha pelo menos uma pessoa.",
-    "badgeAwardSubmitAction": "{count, plural, =0{Entregar selo} =1{Entregar a 1 pessoa} other{Entregar a {count} pessoas}}",
+    "badgeAwardSubmitAction": "{count, plural, =0{Entregar selo} =1{Entregar a {count} pessoa} other{Entregar a {count} pessoas}}",
     "profileBadgeAwardedBy": "Entregue por",
     "profileBadgeRecipients": "Destinatários",
     "profileBadgeMoreRecipients": "+{count} mais",
@@ -4487,7 +4487,7 @@
     "videoEditorMultiSelectLabel": "Selecionar",
     "videoEditorMultiSelectSemanticLabel": "Selecionar vários clipes",
     "videoEditorMultiSelectDoneSemanticLabel": "Concluir seleção",
-    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Nenhum clipe selecionado} =1{1 clipe selecionado} other{{count} clipes selecionados}}",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Nenhum clipe selecionado} =1{{count} clipe selecionado} other{{count} clipes selecionados}}",
     "@videoEditorMultiSelectCountLabel": {
         "placeholders": {
             "count": {"type": "int"}
@@ -4515,7 +4515,7 @@
     "@feedTuningLessLabel": {"description": "Indicator and snackbar text when the user swipes left to get fewer videos like the current one."},
     "feedTuningUndo": "Desfazer",
     "@feedTuningUndo": {"description": "Snackbar action that retracts a just-published feed-tuning swipe."},
-    "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{1 convite de colaborador ainda precisa ser enviado} other{{count} convites de colaborador ainda precisam ser enviados}}",
+    "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{{count} convite de colaborador ainda precisa ser enviado} other{{count} convites de colaborador ainda precisam ser enviados}}",
     "@profileCollaboratorInvitePendingHeadline": {"placeholders": {"count": {"type": "int"}}},
     "profileCollaboratorInvitePendingDetail": "Mantivemos o convite na fila. Tente reenviá-lo aqui.",
     "profileCollaboratorInvitePendingDetailWithTitle": "Para \"{title}\". Tente reenviá-lo aqui.",
@@ -4523,9 +4523,9 @@
     "profileCollaboratorInviteRetryAction": "Tentar novamente",
     "profileCollaboratorInviteRetryingAction": "Tentando novamente",
     "profileCollaboratorInviteRetryUnavailable": "Não é possível reenviar o convite de colaborador agora.",
-    "profileCollaboratorInviteRetryResult": "{count, plural, =0{Convites de colaborador enviados.} =1{1 convite de colaborador ainda precisa ser enviado.} other{{count} convites de colaborador ainda precisam ser enviados.}}",
+    "profileCollaboratorInviteRetryResult": "{count, plural, =0{Convites de colaborador enviados.} =1{{count} convite de colaborador ainda precisa ser enviado.} other{{count} convites de colaborador ainda precisam ser enviados.}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
-    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 colaborador não pode receber convites.} other{{count} colaboradores não podem receber convites.}}",
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{{count} colaborador não pode receber convites.} other{{count} colaboradores não podem receber convites.}}",
     "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHiddenTitle": "O conteúdo adulto está desativado",
     "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
@@ -4567,7 +4567,7 @@
     "@shareSheetSavedClipToClips": {"description": "Snackbar shown after importing a clip into the local library with its chosen title", "placeholders": {"title": {"type": "String"}}},
     "shareSheetUntitledClip": "Clipe sem título",
     "@shareSheetUntitledClip": {"description": "Fallback title if a saved clip somehow has no local library title"},
-    "notificationsBadgeUnread": "{count, plural, =1{1 notificação não lida} other{{count} notificações não lidas}}",
+    "notificationsBadgeUnread": "{count, plural, =1{{count} notificação não lida} other{{count} notificações não lidas}}",
     "@notificationsBadgeUnread": {"description": "Screen-reader announcement for the notifications badge overlay on top of nav icons. Conveys the unread count to assistive technology users.", "placeholders": {"count": {"type": "int"}}},
     "feedLoadingMore": "Carregando mais vídeos…",
     "@feedLoadingMore": {"description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."},
@@ -4581,7 +4581,7 @@
     "@reportModerationDmDelayed": {"description": "Calm, non-blocking notice shown on the report confirmation screen when the secondary NIP-17 direct message to the moderation team failed to send. The report itself still succeeded via other channels."},
     "reportContactModeration": "Mandar mensagem para a equipe de moderação",
     "@reportContactModeration": {"description": "Button on the report confirmation screen that opens a direct-message conversation with the Divine moderation team so the user can follow up about their report."},
-    "videoPublishCollaboratorInviteWarning": "Vídeo publicado, mas {count, plural, =1{1 convite de colaborador não foi enviado.} other{{count} convites de colaborador não foram enviados.}}",
+    "videoPublishCollaboratorInviteWarning": "Vídeo publicado, mas {count, plural, =1{{count} convite de colaborador não foi enviado.} other{{count} convites de colaborador não foram enviados.}}",
     "@videoPublishCollaboratorInviteWarning": {"placeholders": {"count": {"type": "int"}}},
     "dmMessageBubbleSentHint": "Mensagem enviada",
     "@dmMessageBubbleSentHint": {"description": "Accessibility hint announcing that a direct message bubble was sent by the current user"},
@@ -4759,7 +4759,7 @@
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} vídeos",
     "@messageRequestVideosCount": {"placeholders": {"count": {"type": "String"}}},
-    "messageRequestMessageCount": "{count, plural, =1{1 mensagem} other{{count} mensagens}}",
+    "messageRequestMessageCount": "{count, plural, =1{{count} mensagem} other{{count} mensagens}}",
     "@messageRequestMessageCount": {"placeholders": {"count": {"type": "int"}}},
     "messageRequestViewMessagesButton": "Ver mensagens",
     "messageRequestViewProfileButton": "Ver perfil",
@@ -4854,7 +4854,7 @@
     "profileBadgeOgVinerBody": "Essa pessoa postou um Vine original que a Divine encontrou no arquivo. Não é um selo de verificação de conta.",
     "profileBadgeCheckmarkTitle": "Marca de verificação do perfil",
     "profileBadgeCheckmarkBody": "Essa conta está na lista de marcas de verificação de perfil da Divine. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.",
-    "shareVideoInListsCount": "{count, plural, =1{Em 1 lista} other{Em {count} listas}}",
+    "shareVideoInListsCount": "{count, plural, =1{Em {count} lista} other{Em {count} listas}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Deixar de seguir",
     "videoClipSaveFailed": "Falha ao salvar o clipe",
@@ -5017,7 +5017,7 @@
     "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Aumentar quadros por imagem",
     "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Reduzir quadros por imagem",
     "videoEditorStopMotionFrameSemanticLabel": "Quadro de stop motion {position} de {total}",
-    "videoEditorStopMotionFramesCount": "{count, plural, =1{1 quadro} other{{count} quadros}}",
+    "videoEditorStopMotionFramesCount": "{count, plural, =1{{count} quadro} other{{count} quadros}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Quadros",
   "profileNotifyBellOff": "Avisar sobre novos vines",
   "profileNotifyBellOn": "Parar de avisar sobre novos vines",

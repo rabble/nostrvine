@@ -450,7 +450,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count convites de colaborador ainda precisam ser enviados',
-      one: '1 convite de colaborador ainda precisa ser enviado',
+      one: '$count convite de colaborador ainda precisa ser enviado',
     );
     return '$_temp0';
   }
@@ -480,7 +480,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count convites de colaborador ainda precisam ser enviados.',
-      one: '1 convite de colaborador ainda precisa ser enviado.',
+      one: '$count convite de colaborador ainda precisa ser enviado.',
       zero: 'Convites de colaborador enviados.',
     );
     return '$_temp0';
@@ -492,7 +492,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count colaboradores não podem receber convites.',
-      one: '1 colaborador não pode receber convites.',
+      one: '$count colaborador não pode receber convites.',
     );
     return '$_temp0';
   }
@@ -1265,7 +1265,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count vídeos novos',
-      one: '1 vídeo novo',
+      one: '$count vídeo novo',
     );
     return '$_temp0';
   }
@@ -1633,7 +1633,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count colaboradores',
-      one: '1 colaborador',
+      one: '$count colaborador',
     );
     return '$_temp0. Toque para ver o perfil.';
   }
@@ -3965,7 +3965,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Em $count listas',
-      one: 'Em 1 lista',
+      one: 'Em $count lista',
     );
     return '$_temp0';
   }
@@ -4153,7 +4153,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count convites de colaboradores não foram enviados.',
-      one: '1 convite de colaborador não foi enviado.',
+      one: '$count convite de colaborador não foi enviado.',
     );
     return 'Vídeo atualizado, mas $_temp0';
   }
@@ -4508,7 +4508,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count notificações não lidas',
-      one: '1 notificação não lida',
+      one: '$count notificação não lida',
     );
     return '$_temp0';
   }
@@ -5139,7 +5139,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count pessoas',
-      one: '1 pessoa',
+      one: '$count pessoa',
     );
     return '$_temp0';
   }
@@ -6082,7 +6082,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count convites de colaborador não foram enviados.',
-      one: '1 convite de colaborador não foi enviado.',
+      one: '$count convite de colaborador não foi enviado.',
     );
     return 'Vídeo publicado, mas $_temp0';
   }
@@ -6574,7 +6574,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clipes',
-      one: '1 clipe',
+      one: '$count clipe',
     );
     return '$_temp0 salvos em $destination';
   }
@@ -6595,7 +6595,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clipes excluídos',
-      one: '1 clipe excluído',
+      one: '$count clipe excluído',
     );
     return '$_temp0';
   }
@@ -7267,7 +7267,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count mensagens',
-      one: '1 mensagem',
+      one: '$count mensagem',
     );
     return '$_temp0';
   }
@@ -7668,7 +7668,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Em $count listas',
-      one: 'Em 1 lista',
+      one: 'Em $count lista',
     );
     return '$_temp0';
   }
@@ -8031,7 +8031,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count invites ready to generate',
-      one: '1 invite ready to generate',
+      one: '$count invite ready to generate',
     );
     return '$_temp0';
   }
@@ -8348,7 +8348,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'mais $count pessoas',
-      one: 'mais 1 pessoa',
+      one: 'mais $count pessoa',
     );
     return '$_temp0';
   }
@@ -8641,7 +8641,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clipes',
-      one: '1 clipe',
+      one: '$count clipe',
     );
     return 'Isso exclui permanentemente da lixeira $_temp0 agora mesmo.';
   }
@@ -8678,7 +8678,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Restam $count fotos',
-      one: 'Resta 1 foto',
+      one: 'Resta $count foto',
       zero: 'Nenhuma foto restante',
     );
     return '$_temp0';
@@ -8759,7 +8759,7 @@ class AppLocalizationsPt extends AppLocalizations {
       clipCount,
       locale: localeName,
       other: 'Abrir biblioteca de clipes, $clipCount clipes',
-      one: 'Abrir biblioteca de clipes, 1 clipe',
+      one: 'Abrir biblioteca de clipes, $clipCount clipe',
     );
     return '$_temp0';
   }
@@ -8770,7 +8770,7 @@ class AppLocalizationsPt extends AppLocalizations {
       frameCount,
       locale: localeName,
       other: 'Abrir biblioteca de stop motion, $frameCount quadros',
-      one: 'Abrir biblioteca de stop motion, 1 quadro',
+      one: 'Abrir biblioteca de stop motion, $frameCount quadro',
       zero: 'Abrir biblioteca de stop motion',
     );
     return '$_temp0';
@@ -9142,7 +9142,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count gravações',
-      one: '1 gravação',
+      one: '$count gravação',
       zero: 'Ainda sem gravações',
     );
     return '$_temp0';
@@ -9321,7 +9321,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count quadros',
-      one: '1 quadro',
+      one: '$count quadro',
     );
     return '$_temp0';
   }
@@ -9720,7 +9720,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clipes selecionados',
-      one: '1 clipe selecionado',
+      one: '$count clipe selecionado',
       zero: 'Nenhum clipe selecionado',
     );
     return '$_temp0';
@@ -9744,7 +9744,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count desenhos selecionados',
-      one: '1 desenho selecionado',
+      one: '$count desenho selecionado',
       zero: 'Nenhum desenho selecionado',
     );
     return '$_temp0';
@@ -10095,7 +10095,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Ocultos ($count)',
-      one: 'Oculto (1)',
+      one: 'Oculto ($count)',
     );
     return '$_temp0';
   }
@@ -10133,7 +10133,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Entregue a $count pessoas',
-      one: 'Entregue a 1 pessoa',
+      one: 'Entregue a $count pessoa',
       zero: 'Ainda não entregue',
     );
     return '$_temp0';
@@ -10266,7 +10266,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Bloquear $count contas?',
-      one: 'Bloquear 1 conta?',
+      one: 'Bloquear $count conta?',
     );
     return '$_temp0';
   }
@@ -10290,7 +10290,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Bloquear $count contas',
-      one: 'Bloquear 1 conta',
+      one: 'Bloquear $count conta',
     );
     return '$_temp0';
   }
@@ -10332,7 +10332,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Entregar a $count pessoas',
-      one: 'Entregar a 1 pessoa',
+      one: 'Entregar a $count pessoa',
       zero: 'Entregar selo',
     );
     return '$_temp0';

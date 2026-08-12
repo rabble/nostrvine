@@ -577,7 +577,7 @@
             }
         }
     },
-    "exploreNewVideosCount": "{count, plural, =1{1 አዲስ ቪዲዮ} other{{count} አዳዲስ ቪዲዮዎች}}",
+    "exploreNewVideosCount": "{count, plural, =1{{count} አዲስ ቪዲዮ} other{{count} አዳዲስ ቪዲዮዎች}}",
     "@exploreNewVideosCount": {
         "placeholders": {
             "count": {
@@ -585,7 +585,7 @@
             }
         }
     },
-    "exploreLoadNewVideosLabel": "{count, plural, =1{1 አዲስ ቪዲዮ ጫን} other{{count} አዳዲስ ቪዲዮዎች ጫን}}",
+    "exploreLoadNewVideosLabel": "{count, plural, =1{{count} አዲስ ቪዲዮ ጫን} other{{count} አዳዲስ ቪዲዮዎች ጫን}}",
     "@exploreLoadNewVideosLabel": {
         "placeholders": {
             "count": {
@@ -705,7 +705,7 @@
             }
         }
     },
-    "videoCollaboratorCountLabel": "{count, plural, =1{1 ተባባሪ} other{{count} ተባባሪዎች}}። መገለጫውን ለማየት መታ አድርግ።",
+    "videoCollaboratorCountLabel": "{count, plural, =1{{count} ተባባሪ} other{{count} ተባባሪዎች}}። መገለጫውን ለማየት መታ አድርግ።",
     "@videoCollaboratorCountLabel": {
         "placeholders": {
             "count": {
@@ -1868,7 +1868,7 @@
             }
         }
     },
-    "peopleListsInNLists": "{count, plural, =1{በ1 ዝርዝር ውስጥ} other{በ{count} ዝርዝሮች ውስጥ}}",
+    "peopleListsInNLists": "{count, plural, =1{በ{count} ዝርዝር ውስጥ} other{በ{count} ዝርዝሮች ውስጥ}}",
     "@peopleListsInNLists": {
         "placeholders": {
             "count": {
@@ -1981,7 +1981,7 @@
     "shareMenuChangeCover": "ሽፋን ቀይር",
     "shareMenuCoverUploadingBackground": "ድቅን ምስሉ ዳራ ላይ እየተሰቀለ ነው",
     "shareMenuVideoUpdated": "ቪዲዮው በተሳካ ሁኔታ ተዘምኗል",
-    "shareMenuVideoUpdatedWithInviteFailures": "ቪዲዮ ተዘምኗል፣ ግን {count, plural, =1{1 የተባባሪ ግብዣ አልተላከም።} other{{count} የተባባሪ ግብዣዎች አልተላኩም።}}",
+    "shareMenuVideoUpdatedWithInviteFailures": "ቪዲዮ ተዘምኗል፣ ግን {count, plural, =1{{count} የተባባሪ ግብዣ አልተላከም።} other{{count} የተባባሪ ግብዣዎች አልተላኩም።}}",
     "shareMenuFailedToUpdateVideo": "ቪዲዮውን ማዘመን አልተሳካም፦ {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {
@@ -2412,7 +2412,7 @@
             }
         }
     },
-    "listPersonCount": "{count, plural, =1{1 ሰው} other{{count} ሰዎች}}",
+    "listPersonCount": "{count, plural, =1{{count} ሰው} other{{count} ሰዎች}}",
     "@listPersonCount": {
         "placeholders": {
             "count": {
@@ -2953,7 +2953,7 @@
     "librarySortSquareFirst": "ካሬ በመጀመሪያ",
     "librarySortVerticalFirst": "ቁመት በመጀመሪያ",
     "libraryDeleteClipsTitle": "ክሊፖችን ሰርዝ",
-    "libraryDeleteClipsMessage": "{count, plural, =1{1 የተመረጠ ክሊፕ} other{{count} የተመረጡ ክሊፖች}} መሰረዝ እርግጠኛ ነህ?",
+    "libraryDeleteClipsMessage": "{count, plural, =1{{count} የተመረጠ ክሊፕ} other{{count} የተመረጡ ክሊፖች}} መሰረዝ እርግጠኛ ነህ?",
     "@libraryDeleteClipsMessage": {
         "placeholders": {
             "count": {
@@ -2964,7 +2964,7 @@
     "libraryDeleteClipsWarning": "ይህ እርምጃ ሊቀለበስ አይችልም። የቪዲዮ ፋይሎቹ እስከመጨረሻው ከመሣሪያዎ ይወገዳሉ።",
     "libraryPreparingVideo": "ቪዲዮ በማዘጋጀት ላይ...",
     "libraryCreateVideo": "ቪዲዮ ፍጠር",
-    "libraryClipsSavedToDestination": "{count, plural, =1{1 ክሊፕ} other{{count} ክሊፖች}} ወደ {destination} ተቀምጠዋል",
+    "libraryClipsSavedToDestination": "{count, plural, =1{{count} ክሊፕ} other{{count} ክሊፖች}} ወደ {destination} ተቀምጠዋል",
     "@libraryClipsSavedToDestination": {
         "placeholders": {
             "count": {
@@ -2994,7 +2994,7 @@
             }
         }
     },
-    "libraryClipsDeletedCount": "{count, plural, =1{1 ክሊፕ ተሰርዟል} other{{count} ክሊፖች ተሰርዘዋል}}",
+    "libraryClipsDeletedCount": "{count, plural, =1{{count} ክሊፕ ተሰርዟል} other{{count} ክሊፖች ተሰርዘዋል}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
             "count": {
@@ -3227,7 +3227,7 @@
   "blueskySetUpHandle": "Set up",
     "blueskyTemporarilyUnavailable": "Bluesky publishing is temporarily unavailable. Please try again.",
     "invitesTitle": "ጓደኞችን ይጋብዙ",
-    "invitesGenerateCardTitle": "{count, plural, =1{1 ግብዣ ለማመንጨት ዝግጁ ነው} other{{count} ግብዣዎች ለማመንጨት ዝግጁ ናቸው}}",
+    "invitesGenerateCardTitle": "{count, plural, =1{{count} ግብዣ ለማመንጨት ዝግጁ ነው} other{{count} ግብዣዎች ለማመንጨት ዝግጁ ናቸው}}",
     "@invitesGenerateCardTitle": {
         "description": "Title of the generate-invite card on the invites screen, shown when the user has invite capacity that has not been generated as codes yet.",
         "placeholders": {
@@ -3500,7 +3500,7 @@
     "@notificationAndConnector": {
         "description": "Connector word between the first actor and the 'N others' count in a grouped notification (e.g. 'Alice and 3 others liked your video')."
     },
-    "notificationOthersCount": "{count, plural, =1{1 ሌላ} other{{count} ሌሎች}}",
+    "notificationOthersCount": "{count, plural, =1{{count} ሌላ} other{{count} ሌሎች}}",
     "@notificationOthersCount": {
         "description": "Number of additional actors beyond the first in a grouped notification.",
         "placeholders": {
@@ -3572,7 +3572,7 @@
     "libraryTrashDeleteConfirmTitle": "አሁኑኑ ክሊፑን ሰርዝ?",
     "libraryTrashDeleteConfirmMessage": "ይህ ክሊፑን ከቆሻሻ መጣያው ወዲያውኑ ያስወግደዋል።",
     "libraryTrashEmptyConfirmTitle": "ቆሻሻ መጣያውን ባዶ አድርግ?",
-    "libraryTrashEmptyConfirmMessage": "{count, plural, =1{1 ክሊፕ} other{{count} ክሊፖች}} ከቆሻሻ መጣያው ወዲያውኑ በቋሚነት ይሰረዛሉ።",
+    "libraryTrashEmptyConfirmMessage": "{count, plural, =1{{count} ክሊፕ} other{{count} ክሊፖች}} ከቆሻሻ መጣያው ወዲያውኑ በቋሚነት ይሰረዛሉ።",
     "videoRecorderCloseLabel": "የቪዲዮ መቅረጫ ዝጋ",
     "videoRecorderContinueToEditorLabel": "ወደ ቪዲዮ አርታዒ ይቀጥሉ",
     "videoRecorderCameraPreviewLabel": "የካሜራ ቅድመ እይታ",
@@ -3580,7 +3580,7 @@
     "videoRecorderSwitchToModeLabel": "ወደ {mode} ሁነታ ቀይር",
     "videoRecorderLipSyncAddAudioFirst": "ከመቅረጽ በፊት ኦዲዮ ያክሉ",
     "videoRecorderStopMotionAssembleFailed": "ቪዲዮውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።",
-    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{ምንም የቀረ ፎቶ የለም} =1{1 ፎቶ ቀርቷል} other{{count} ፎቶዎች ቀርተዋል}}",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{ምንም የቀረ ፎቶ የለም} =1{{count} ፎቶ ቀርቷል} other{{count} ፎቶዎች ቀርተዋል}}",
     "@videoRecorderStopMotionShotsLeft": {
         "placeholders": {
             "count": {
@@ -3610,7 +3610,7 @@
     "videoRecorderCameraValueFront": "የፊት ካሜራ",
     "videoRecorderCameraValueBack": "የኋላ ካሜራ",
     "videoRecorderLibraryEmptyLabel": "ክሊፕ ቤተ-መጽሐፍት፣ ምንም ቅንጥቦች የሉም",
-    "videoRecorderLibraryOpenLabel": "{clipCount, plural, =1{የክሊፕ ቤተ-መዝገብ ክፈት፣ 1 ክሊፕ} other{የክሊፕ ቤተ-መዝገብ ክፈት፣ {clipCount} ክሊፖች}}",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, =1{የክሊፕ ቤተ-መዝገብ ክፈት፣ {clipCount} ክሊፕ} other{የክሊፕ ቤተ-መዝገብ ክፈት፣ {clipCount} ክሊፖች}}",
     "@videoRecorderLibraryOpenLabel": {
         "placeholders": {
             "clipCount": {
@@ -3618,7 +3618,7 @@
             }
         }
     },
-    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት} =1{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ 1 ፍሬም} other{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ {frameCount} ፍሬሞች}}",
+    "videoRecorderLibraryOpenStopMotionLabel": "{frameCount, plural, =0{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት} =1{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ {frameCount} ፍሬም} other{የስቶፕ-ሞሽን ቤተ-መዝገብ ክፈት፣ {frameCount} ፍሬሞች}}",
     "@videoRecorderLibraryOpenStopMotionLabel": {
         "placeholders": {
             "frameCount": {
@@ -3753,7 +3753,7 @@
     "videoEditorVoiceOverRecordSemanticLabel": "ቅረጻ ጀምር",
     "videoEditorVoiceOverStopSemanticLabel": "ቅረጻ አቁም",
     "videoEditorVoiceOverHint": "ለመቅዳት ንካ። የፈለግከውን ያህል ቅረጻዎች አክል።",
-    "videoEditorVoiceOverRecordingsCount": "{count, plural, =0{እስካሁን ቅረጻ የለም} =1{1 ቅረጻ} other{{count} ቅረጻዎች}}",
+    "videoEditorVoiceOverRecordingsCount": "{count, plural, =0{እስካሁን ቅረጻ የለም} =1{{count} ቅረጻ} other{{count} ቅረጻዎች}}",
     "videoEditorVoiceOverDeleteLast": "የመጨረሻውን ቅረጻ ሰርዝ",
     "videoEditorVoiceOverPermissionTitle": "የማይክሮፎን መዳረሻ ያስፈልጋል",
     "videoEditorVoiceOverPermissionBody": "የድምፅ ትረካ ለመቅዳት የማይክሮፎን መዳረሻ ፍቀድ።",
@@ -3776,7 +3776,7 @@
     "videoEditorLayerMultiSelectSemanticLabel": "ብዙ ስዕሎችን ይምረጡ",
     "videoEditorLayerMultiSelectDoneSemanticLabel": "ስዕሎችን መምረጥ ጨርስ",
     "videoEditorDeleteSelectedDrawingsSemanticLabel": "የተመረጡ ስዕሎችን ሰርዝ",
-    "videoEditorLayerMultiSelectCountLabel": "{count, plural, =0{ምንም ስዕል አልተመረጠም} =1{1 ስዕል ተመርጧል} other{{count} ስዕሎች ተመርጠዋል}}",
+    "videoEditorLayerMultiSelectCountLabel": "{count, plural, =0{ምንም ስዕል አልተመረጠም} =1{{count} ስዕል ተመርጧል} other{{count} ስዕሎች ተመርጠዋል}}",
     "videoEditorSplitLabel": "ተከፈለ",
     "videoEditorSplitSelectedClipSemanticLabel": "የተመረጠውን ቅንጥብ ክፈል።",
     "videoEditorExtractAudioLabel": "ኦዲዮ ያውጡ",
@@ -4066,7 +4066,7 @@
     "badgesIssuedNoRecipients": "ለዚህ ሽልማት ምንም ተቀባዮች አልተገኙም።",
     "badgesRecipientAcceptedStatus": "ተቀባዩ ተቀብሎታል",
     "badgesRecipientWaitingStatus": "ተቀባይን በመጠባበቅ ላይ",
-    "badgesHiddenSectionTitle": "{count, plural, =1{የተደበቀ (1)} other{የተደበቁ ({count})}}",
+    "badgesHiddenSectionTitle": "{count, plural, =1{የተደበቀ ({count})} other{የተደበቁ ({count})}}",
     "badgesActionRestore": "መልስ",
     "badgesHiddenSnackbar": "ባጁ ተደብቋል",
     "badgesHiddenSnackbarUndo": "ቀልብስ",
@@ -4076,7 +4076,7 @@
     "badgesCreateAction": "አዲስ ባጅ",
     "badgesCreatedEmptyTitle": "እስካሁን ባጅ አልሠራህም",
     "badgesCreatedEmptySubtitle": "አንድ ሥራና ለሚገባው ሰው ስጠው።",
-    "badgesCreatedAwardSummary": "{count, plural, =0{እስካሁን አልተሰጠም} =1{ለ1 ሰው ተሰጥቷል} other{ለ{count} ሰዎች ተሰጥቷል}}",
+    "badgesCreatedAwardSummary": "{count, plural, =0{እስካሁን አልተሰጠም} =1{ለ{count} ሰው ተሰጥቷል} other{ለ{count} ሰዎች ተሰጥቷል}}",
     "badgeEditorCreateTitle": "አዲስ ባጅ",
     "badgeEditorEditTitle": "ባጅ አርትዕ",
     "badgeEditorNameLabel": "ስም",
@@ -4114,9 +4114,9 @@
     "badgeDetailBlockClaimantsLoadError": "ይህን ባጅ የጠየቁትን መጫን አልተቻለም",
     "badgeDetailBlockClaimantsEmptyTitle": "አሁን ይህን ባጅ የጠየቀ የለም",
     "badgeDetailBlockClaimantsEmptyBody": "ለማገድ የአሁን ጠያቂዎችን አላገኘንም።",
-    "badgeDetailBlockClaimantsHeading": "{count, plural, =1{1 መለያ ይታገድ?} other{{count} መለያዎች ይታገዱ?}}",
+    "badgeDetailBlockClaimantsHeading": "{count, plural, =1{{count} መለያ ይታገድ?} other{{count} መለያዎች ይታገዱ?}}",
     "badgeDetailBlockClaimantsBody": "{count, plural, =1{ይህ አሁን ይህን ባጅ የጠየቀውን መለያ ያግዳል። ፖስቶቹ ከፊዶችህ ይጠፋሉ፣ ማሳወቂያም አይደርሰውም።} other{ይህ አሁን ይህን ባጅ የጠየቁትን {count} መለያዎች ያግዳል። ፖስቶቻቸው ከፊዶችህ ይጠፋሉ፣ ማሳወቂያም አይደርሳቸውም።}}",
-    "badgeDetailBlockClaimantsConfirm": "{count, plural, =1{1 መለያ አግድ} other{{count} መለያዎች አግድ}}",
+    "badgeDetailBlockClaimantsConfirm": "{count, plural, =1{{count} መለያ አግድ} other{{count} መለያዎች አግድ}}",
     "badgeDetailBlockClaimantsSuccess": "የባጅ ጠያቂዎች ታግደዋል",
     "badgeDetailBlockClaimantsFailure": "የባጅ ጠያቂዎችን ማገድ አልተቻለም",
     "badgeDetailLoadError": "ይህን ባጅ መጫን አልተቻለም",
@@ -4127,7 +4127,7 @@
     "badgeAwardManualLabel": "ወይም ቁልፎችን ለጥፍ",
     "badgeAwardManualHint": "npub1…, npub1…",
     "badgeAwardEmptyHint": "ቢያንስ አንድ ሰው ምረጥ።",
-    "badgeAwardSubmitAction": "{count, plural, =0{ባጅ ስጥ} =1{ለ1 ሰው ስጥ} other{ለ{count} ሰዎች ስጥ}}",
+    "badgeAwardSubmitAction": "{count, plural, =0{ባጅ ስጥ} =1{ለ{count} ሰው ስጥ} other{ለ{count} ሰዎች ስጥ}}",
     "profileBadgeAwardedBy": "የሰጠው",
     "profileBadgeRecipients": "ተቀባዮች",
     "profileBadgeMoreRecipients": "+{count} ተጨማሪ",
@@ -4612,7 +4612,7 @@
     "videoEditorMultiSelectLabel": "ምረጥ",
     "videoEditorMultiSelectSemanticLabel": "ብዙ ቅንጥቦችን ምረጥ",
     "videoEditorMultiSelectDoneSemanticLabel": "ምርጫን ጨርስ",
-    "videoEditorMultiSelectCountLabel": "{count, plural, =0{ምንም ቅንጥብ አልተመረጠም} =1{1 ቅንጥብ ተመርጧል} other{{count} ቅንጥቦች ተመርጠዋል}}",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{ምንም ቅንጥብ አልተመረጠም} =1{{count} ቅንጥብ ተመርጧል} other{{count} ቅንጥቦች ተመርጠዋል}}",
     "@videoEditorMultiSelectCountLabel": {
         "placeholders": {
             "count": {"type": "int"}
@@ -4640,7 +4640,7 @@
     "@feedTuningLessLabel": {"description": "Indicator and snackbar text when the user swipes left to get fewer videos like the current one."},
     "feedTuningUndo": "መልስ",
     "@feedTuningUndo": {"description": "Snackbar action that retracts a just-published feed-tuning swipe."},
-    "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{1 የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል} other{{count} የተባባሪ ግብዣዎች አሁንም መላክ ይፈልጋሉ}}",
+    "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{{count} የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል} other{{count} የተባባሪ ግብዣዎች አሁንም መላክ ይፈልጋሉ}}",
     "@profileCollaboratorInvitePendingHeadline": {"placeholders": {"count": {"type": "int"}}},
     "profileCollaboratorInvitePendingDetail": "ግብዣውን በወረፋ አስቀምጠነዋል። እዚህ እንደገና ይሞክሩት።",
     "profileCollaboratorInvitePendingDetailWithTitle": "ለ\"{title}\"። እዚህ እንደገና ይሞክሩት።",
@@ -4648,9 +4648,9 @@
     "profileCollaboratorInviteRetryAction": "እንደገና ሞክር",
     "profileCollaboratorInviteRetryingAction": "እንደገና በመሞከር ላይ",
     "profileCollaboratorInviteRetryUnavailable": "የተባባሪ ግብዣ እንደገና መሞከር አሁን አይገኝም።",
-    "profileCollaboratorInviteRetryResult": "{count, plural, =0{የተባባሪ ግብዣዎች ተልከዋል።} =1{1 የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል።} other{{count} የተባባሪ ግብዣዎች አሁንም መላክ ይፈልጋሉ።}}",
+    "profileCollaboratorInviteRetryResult": "{count, plural, =0{የተባባሪ ግብዣዎች ተልከዋል።} =1{{count} የተባባሪ ግብዣ አሁንም መላክ ይፈልጋል።} other{{count} የተባባሪ ግብዣዎች አሁንም መላክ ይፈልጋሉ።}}",
     "@profileCollaboratorInviteRetryResult": {"placeholders": {"count": {"type": "int"}}},
-    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{1 ተባባሪ ግብዣ መቀበል አይችልም።} other{{count} ተባባሪዎች ግብዣ መቀበል አይችሉም።}}",
+    "profileCollaboratorInviteBlockedResult": "{count, plural, =1{{count} ተባባሪ ግብዣ መቀበል አይችልም።} other{{count} ተባባሪዎች ግብዣ መቀበል አይችሉም።}}",
     "@profileCollaboratorInviteBlockedResult": {"placeholders": {"count": {"type": "int"}}},
     "videoErrorAdultContentHiddenTitle": "የአዋቂዎች ይዘት ጠፍቷል",
     "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
@@ -4692,7 +4692,7 @@
     "@shareSheetSavedClipToClips": {"description": "Snackbar shown after importing a clip into the local library with its chosen title", "placeholders": {"title": {"type": "String"}}},
     "shareSheetUntitledClip": "ያለ ርዕስ ክሊፕ",
     "@shareSheetUntitledClip": {"description": "Fallback title if a saved clip somehow has no local library title"},
-    "notificationsBadgeUnread": "{count, plural, =1{1 ያልተነበበ ማሳወቂያ} other{{count} ያልተነበቡ ማሳወቂያዎች}}",
+    "notificationsBadgeUnread": "{count, plural, =1{{count} ያልተነበበ ማሳወቂያ} other{{count} ያልተነበቡ ማሳወቂያዎች}}",
     "@notificationsBadgeUnread": {"description": "Screen-reader announcement for the notifications badge overlay on top of nav icons. Conveys the unread count to assistive technology users.", "placeholders": {"count": {"type": "int"}}},
     "feedLoadingMore": "ተጨማሪ ቪዲዮዎችን በመጫን ላይ…",
     "@feedLoadingMore": {"description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."},
@@ -4706,7 +4706,7 @@
     "@reportModerationDmDelayed": {"description": "Calm, non-blocking notice shown on the report confirmation screen when the secondary NIP-17 direct message to the moderation team failed to send. The report itself still succeeded via other channels."},
     "reportContactModeration": "የልከኝነት ቡድኑን መልእክት ላክ",
     "@reportContactModeration": {"description": "Button on the report confirmation screen that opens a direct-message conversation with the Divine moderation team so the user can follow up about their report."},
-    "videoPublishCollaboratorInviteWarning": "ቪዲዮ ተለጠፈ፣ ግን {count, plural, =1{1 የተባባሪ ግብዣ አልተላከም።} other{{count} የተባባሪ ግብዣዎች አልተላኩም።}}",
+    "videoPublishCollaboratorInviteWarning": "ቪዲዮ ተለጠፈ፣ ግን {count, plural, =1{{count} የተባባሪ ግብዣ አልተላከም።} other{{count} የተባባሪ ግብዣዎች አልተላኩም።}}",
     "@videoPublishCollaboratorInviteWarning": {"placeholders": {"count": {"type": "int"}}},
     "dmMessageBubbleSentHint": "የተላከ መልእክት",
     "@dmMessageBubbleSentHint": {"description": "Accessibility hint announcing that a direct message bubble was sent by the current user"},
@@ -4884,7 +4884,7 @@
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} ቪዲዮዎች",
     "@messageRequestVideosCount": {"placeholders": {"count": {"type": "String"}}},
-    "messageRequestMessageCount": "{count, plural, =1{1 መልእክት} other{{count} መልእክቶች}}",
+    "messageRequestMessageCount": "{count, plural, =1{{count} መልእክት} other{{count} መልእክቶች}}",
     "@messageRequestMessageCount": {"placeholders": {"count": {"type": "int"}}},
     "messageRequestViewMessagesButton": "መልእክቶችን ይመልከቱ",
     "messageRequestViewProfileButton": "መገለጫ ይመልከቱ",
@@ -4979,7 +4979,7 @@
     "profileBadgeOgVinerBody": "ይህ ሰው Divine በማህደር ውስጥ ያገኘውን ዋና Vine ለጥፏል። ይህ የመለያ ማረጋገጫ ባጅ አይደለም።",
     "profileBadgeCheckmarkTitle": "የመገለጫ ምልክት",
     "profileBadgeCheckmarkBody": "ይህ መለያ በDivine የመገለጫ ምልክት ዝርዝር ውስጥ ነው። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።",
-    "shareVideoInListsCount": "{count, plural, =1{በ1 ዝርዝር ውስጥ} other{በ{count} ዝርዝሮች ውስጥ}}",
+    "shareVideoInListsCount": "{count, plural, =1{በ{count} ዝርዝር ውስጥ} other{በ{count} ዝርዝሮች ውስጥ}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "አትከተል",
     "videoClipSaveFailed": "ክሊፕ ማስቀመጥ አልተሳካም",

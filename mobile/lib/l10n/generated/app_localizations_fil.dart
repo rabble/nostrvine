@@ -446,7 +446,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count collaborator invite ang kailangan pang ipadala',
-      one: '1 collaborator invite ang kailangan pang ipadala',
+      one: '$count collaborator invite ang kailangan pang ipadala',
     );
     return '$_temp0';
   }
@@ -476,7 +476,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count collaborator invite ang kailangan pang ipadala.',
-      one: '1 collaborator invite ang kailangan pang ipadala.',
+      one: '$count collaborator invite ang kailangan pang ipadala.',
       zero: 'Naipadala na ang mga collaborator invite.',
     );
     return '$_temp0';
@@ -488,7 +488,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count collaborator ang hindi makakatanggap ng mga invite.',
-      one: '1 collaborator ang hindi makakatanggap ng mga invite.',
+      one: '$count collaborator ang hindi makakatanggap ng mga invite.',
     );
     return '$_temp0';
   }
@@ -1269,7 +1269,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count bagong video',
-      one: '1 bagong video',
+      one: '$count bagong video',
     );
     return '$_temp0';
   }
@@ -1644,7 +1644,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count collaborator',
-      one: '1 collaborator',
+      one: '$count collaborator',
     );
     return '$_temp0. I-tap para tingnan ang profile.';
   }
@@ -3996,7 +3996,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Nasa $count listahan',
-      one: 'Nasa 1 listahan',
+      one: 'Nasa $count listahan',
     );
     return '$_temp0';
   }
@@ -4184,7 +4184,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count mga imbitasyon sa collaborator ang hindi naipadala.',
-      one: '1 imbitasyon sa collaborator ang hindi naipadala.',
+      one: '$count imbitasyon sa collaborator ang hindi naipadala.',
     );
     return 'Na-update ang video, pero $_temp0';
   }
@@ -4541,7 +4541,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count hindi pa nababasang notification',
-      one: '1 hindi pa nababasang notification',
+      one: '$count hindi pa nababasang notification',
     );
     return '$_temp0';
   }
@@ -5174,7 +5174,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count tao',
-      one: '1 tao',
+      one: '$count tao',
     );
     return '$_temp0';
   }
@@ -6115,7 +6115,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count collaborator invite ang hindi naipadala.',
-      one: '1 collaborator invite ang hindi naipadala.',
+      one: '$count collaborator invite ang hindi naipadala.',
     );
     return 'Nai-post ang video, pero $_temp0';
   }
@@ -6609,7 +6609,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clip',
-      one: '1 clip',
+      one: '$count clip',
     );
     return '$_temp0 na-save sa $destination';
   }
@@ -6630,7 +6630,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clip ang nabura',
-      one: '1 clip ang nabura',
+      one: '$count clip ang nabura',
     );
     return '$_temp0';
   }
@@ -7298,7 +7298,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count mensahe',
-      one: '1 mensahe',
+      one: '$count mensahe',
     );
     return '$_temp0';
   }
@@ -7701,7 +7701,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Nasa $count list',
-      one: 'Nasa 1 list',
+      one: 'Nasa $count list',
     );
     return '$_temp0';
   }
@@ -8065,7 +8065,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count invite handa nang i-generate',
-      one: '1 invite handa nang i-generate',
+      one: '$count invite handa nang i-generate',
     );
     return '$_temp0';
   }
@@ -8384,7 +8384,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count iba pa',
-      one: '1 iba pa',
+      one: '$count iba pa',
     );
     return '$_temp0';
   }
@@ -8679,7 +8679,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clip',
-      one: '1 clip',
+      one: '$count clip',
     );
     return 'Permanente nitong ide-delete agad mula sa trash ang $_temp0.';
   }
@@ -8715,7 +8715,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count shot na lang',
-      one: '1 shot na lang',
+      one: '$count shot na lang',
       zero: 'Wala nang natitirang shot',
     );
     return '$_temp0';
@@ -8795,7 +8795,7 @@ class AppLocalizationsFil extends AppLocalizations {
       clipCount,
       locale: localeName,
       other: 'Buksan ang clip library, $clipCount clip',
-      one: 'Buksan ang clip library, 1 clip',
+      one: 'Buksan ang clip library, $clipCount clip',
     );
     return '$_temp0';
   }
@@ -9184,7 +9184,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count na recording',
-      one: '1 recording',
+      one: '$count recording',
       zero: 'Wala pang recording',
     );
     return '$_temp0';
@@ -9764,7 +9764,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clip ang napili',
-      one: '1 clip ang napili',
+      one: '$count clip ang napili',
       zero: 'Walang napiling clip',
     );
     return '$_temp0';
@@ -9788,7 +9788,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count drawing ang napili',
-      one: '1 drawing ang napili',
+      one: '$count drawing ang napili',
       zero: 'Walang napiling drawing',
     );
     return '$_temp0';
@@ -10137,7 +10137,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Nakatago ($count)',
-      one: 'Nakatago (1)',
+      one: 'Nakatago ($count)',
     );
     return '$_temp0';
   }
@@ -10176,7 +10176,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Naibigay sa $count tao',
-      one: 'Naibigay sa 1 tao',
+      one: 'Naibigay sa $count tao',
       zero: 'Hindi pa naibibigay',
     );
     return '$_temp0';
@@ -10311,7 +10311,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: 'I-block ang $count claimants?',
-      one: 'I-block ang 1 claimant?',
+      one: 'I-block ang $count claimant?',
     );
     return '$_temp0';
   }
@@ -10335,7 +10335,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: 'I-block ang $count account',
-      one: 'I-block ang 1 account',
+      one: 'I-block ang $count account',
     );
     return '$_temp0';
   }
@@ -10378,7 +10378,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Ibigay sa $count tao',
-      one: 'Ibigay sa 1 tao',
+      one: 'Ibigay sa $count tao',
       zero: 'Ibigay ang badge',
     );
     return '$_temp0';
