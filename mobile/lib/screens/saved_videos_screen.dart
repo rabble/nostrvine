@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -34,13 +35,7 @@ class SavedVideosScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: context.vineColors.surfaceContainerHigh,
-      appBar: AppBar(
-        backgroundColor: context.vineColors.surfaceContainerHigh,
-        title: Text(
-          context.l10n.shareMenuBookmarks,
-          style: VineTheme.titleMediumFont(color: context.vineColors.onNav),
-        ),
-      ),
+      appBar: const SavedVideosAppBar(),
       body: BlocProvider<ProfileSavedVideosBloc>(
         // Re-created when either captured dependency changes identity, so an
         // account switch cannot leave the grid reading the previous viewer's
@@ -54,6 +49,40 @@ class SavedVideosScreen extends ConsumerWidget {
           deletedVideoFilter: videosRepository.isVideoKnownDeleted,
         )..add(const ProfileSavedVideosSyncRequested()),
         child: SavedVideosView(userIdHex: currentUserPubkey),
+      ),
+    );
+  }
+}
+
+/// The screen's app bar, split out so its back affordance can be driven in
+/// tests without the screen's bookmark and video dependencies.
+@visibleForTesting
+class SavedVideosAppBar extends StatelessWidget implements PreferredSizeWidget {
+  @visibleForTesting
+  const SavedVideosAppBar({super.key});
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: context.vineColors.surfaceContainerHigh,
+      // Explicit rather than automaticallyImplyLeading: a divine:// deep link
+      // lands here with a one-entry stack, and the screen sits outside the
+      // shell, so Material would render no back button and there is no bottom
+      // nav either — a dead end. safePop falls back to the feed.
+      leading: DivineIconButton(
+        icon: DivineIconName.caretLeft,
+        type: DivineIconButtonType.ghostSecondary,
+        size: DivineIconButtonSize.small,
+        showShadow: false,
+        semanticLabel: context.l10n.commonBack,
+        onPressed: context.safePop,
+      ),
+      title: Text(
+        context.l10n.shareMenuBookmarks,
+        style: VineTheme.titleMediumFont(color: context.vineColors.onNav),
       ),
     );
   }

@@ -192,6 +192,24 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
     return signerCallbackRedirect;
   }
 
+  // Rewrite allow-listed divine:// app routes to their internal path. Doing
+  // it here rather than leaving it to the matcher keeps the reported location
+  // clean (/saved-videos, not divine:///saved-videos) for analytics, route
+  // normalization, and the listener's currentLocation comparison — GoRouter
+  // matches on uri.path alone and would otherwise land there under the raw
+  // custom-scheme location.
+  final customSchemeRedirect = customSchemeToRouterPath(state.uri);
+  if (customSchemeRedirect != null) {
+    Log.info(
+      'Router redirect: custom scheme '
+      '${redactUriStringForLogs(state.uri.toString())} -> '
+      '$customSchemeRedirect',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
+    return customSchemeRedirect;
+  }
+
   // Rewrite divine.video universal-link URLs to internal paths before the
   // auth/match logic runs. Android delivers the full intent URL (scheme +
   // host + path) to GoRouter, which only matches on path. Without this

@@ -260,6 +260,50 @@ void main() {
           isNull,
         );
       });
+
+      test('divine:// app routes return null — the custom scheme has its '
+          'own resolver', () {
+        expect(
+          universalLinkToRouterPath(Uri.parse('divine:///saved-videos')),
+          isNull,
+        );
+      });
+    });
+  });
+
+  group('customSchemeToRouterPath', () {
+    test('maps the authority-less saved-videos link to its route', () {
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///saved-videos')),
+        equals('/saved-videos'),
+      );
+    });
+
+    test('returns null for a NIP-46 signer callback', () {
+      expect(
+        customSchemeToRouterPath(
+          Uri.parse(
+            'divine://nostrconnect?x-source=aegis&relay=wss://localrelay.link:28443',
+          ),
+        ),
+        isNull,
+      );
+    });
+
+    test('returns null for an unlisted app route', () {
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///settings')),
+        isNull,
+      );
+    });
+
+    test('returns null for a divine.video universal link', () {
+      expect(
+        customSchemeToRouterPath(
+          Uri.parse('https://divine.video/video/abc123'),
+        ),
+        isNull,
+      );
     });
   });
 }

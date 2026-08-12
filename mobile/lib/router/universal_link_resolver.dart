@@ -1,10 +1,11 @@
-// ABOUTME: Pure resolver from universal-link URIs to internal GoRouter paths
+// ABOUTME: Pure resolvers from universal-link and divine:// URIs to GoRouter paths
 // ABOUTME: Shared source of truth used by the router redirect and tests
 
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/saved_videos_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/deep_link_service.dart';
@@ -56,6 +57,33 @@ String? _pushRouteForDeepLink(DeepLink deepLink) {
         pubkey: listPubkey,
         listId: listId,
       );
+    // savedVideos is unreachable here — it only arrives over divine://, which
+    // both callers reject before this point. customSchemeToRouterPath owns it.
+    case DeepLinkType.savedVideos:
+    case DeepLinkType.invite:
+    case DeepLinkType.signerCallback:
+    case DeepLinkType.unknown:
+      return null;
+  }
+}
+
+/// Converts a `divine://` custom-scheme app-route link into an internal path.
+///
+/// Returns null for everything else, including NIP-46 signer callbacks. A
+/// custom scheme can be opened by any app on the device, so only the routes
+/// [DeepLinkService.parseDeepLink] allow-lists resolve to a location here.
+String? customSchemeToRouterPath(Uri uri) {
+  if (uri.scheme != 'divine') return null;
+
+  final deepLink = DeepLinkService.parseDeepLink(uri.toString());
+  switch (deepLink.type) {
+    case DeepLinkType.savedVideos:
+      return SavedVideosScreen.path;
+    case DeepLinkType.video:
+    case DeepLinkType.profile:
+    case DeepLinkType.hashtag:
+    case DeepLinkType.search:
+    case DeepLinkType.list:
     case DeepLinkType.invite:
     case DeepLinkType.signerCallback:
     case DeepLinkType.unknown:
@@ -89,6 +117,7 @@ String? universalLinkToRouterPath(Uri uri) {
   final route = _pushRouteForDeepLink(deepLink);
   switch (deepLink.type) {
     case DeepLinkType.video:
+    case DeepLinkType.savedVideos:
     case DeepLinkType.invite:
     case DeepLinkType.signerCallback:
     case DeepLinkType.unknown:

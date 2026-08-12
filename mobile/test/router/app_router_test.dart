@@ -464,6 +464,23 @@ void main() {
         ),
       ).called(greaterThan(0));
     });
+
+    test('leaves a divine:// app route alone and fires no signer side '
+        'effect', () {
+      final authService = _MockAuthService();
+
+      final target = signerCallbackRedirectTarget(
+        Uri.parse('divine:///saved-videos'),
+        authService,
+      );
+
+      expect(target, isNull);
+      verifyNever(
+        () => authService.onSignerCallbackReceived(
+          relayUrl: any(named: 'relayUrl'),
+        ),
+      );
+    });
   });
 
   group('DM route extras', () {

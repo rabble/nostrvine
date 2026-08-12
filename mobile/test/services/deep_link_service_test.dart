@@ -380,6 +380,54 @@ void main() {
       });
     });
 
+    // The divine:// scheme splits on the authority: an authority means the
+    // NIP-46 callback namespace, an empty one means an internal app route.
+    // These cases pin both halves of that boundary (#7074).
+    group('Custom-Scheme App Routes', () {
+      test('routes the authority-less saved-videos link', () {
+        final result = DeepLinkService.parseDeepLink(
+          'divine:///saved-videos',
+        );
+
+        expect(result.type, equals(DeepLinkType.savedVideos));
+      });
+
+      test('leaves an authority-form saved-videos link as a callback', () {
+        final result = DeepLinkService.parseDeepLink('divine://saved-videos');
+
+        expect(result.type, equals(DeepLinkType.signerCallback));
+      });
+
+      test('leaves a divine.video-host link as a callback', () {
+        final result = DeepLinkService.parseDeepLink(
+          'divine://divine.video/saved-videos',
+        );
+
+        expect(result.type, equals(DeepLinkType.signerCallback));
+      });
+
+      test('rejects an unlisted app route instead of treating it as a '
+          'callback', () {
+        final result = DeepLinkService.parseDeepLink('divine:///settings');
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+
+      test('rejects a multi-segment app route', () {
+        final result = DeepLinkService.parseDeepLink(
+          'divine:///saved-videos/extra',
+        );
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+
+      test('rejects the bare authority-less scheme', () {
+        final result = DeepLinkService.parseDeepLink('divine:///');
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+    });
+
     group('Unknown URL Patterns', () {
       test('ignores internal app route paths', () {
         const url = '/profile/npub1abc123def456';
@@ -623,6 +671,11 @@ void main() {
           link.toString(),
           equals('DeepLink(type: profile, npub: npub1x, index: 2)'),
         );
+      });
+
+      test('formats saved videos deep link', () {
+        const link = DeepLink(type: DeepLinkType.savedVideos);
+        expect(link.toString(), equals('DeepLink(type: savedVideos)'));
       });
 
       test('formats hashtag deep link', () {

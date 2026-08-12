@@ -7,6 +7,7 @@ import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/saved_videos_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 
 void main() {
@@ -129,6 +130,27 @@ void main() {
       );
 
       expect(action, equals(app.DeepLinkNavAction.push));
+    });
+
+    test('pushes saved videos so back returns to where the user was', () {
+      final action = app.resolveDeepLinkNavAction(
+        currentLocation: '/home/0',
+        targetPath: SavedVideosScreen.path,
+        isRouteFamilyLocation: (location) => location == SavedVideosScreen.path,
+      );
+
+      expect(action, equals(app.DeepLinkNavAction.push));
+    });
+
+    test('skips saved videos when the router redirect already landed '
+        'there', () {
+      final action = app.resolveDeepLinkNavAction(
+        currentLocation: SavedVideosScreen.path,
+        targetPath: SavedVideosScreen.path,
+        isRouteFamilyLocation: (location) => location == SavedVideosScreen.path,
+      );
+
+      expect(action, equals(app.DeepLinkNavAction.skip));
     });
   });
 }
