@@ -11,6 +11,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -20,6 +21,8 @@ class _MockHashtagService extends Mock implements HashtagService {}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 VideoEvent _video(String id, String pubkey) {
   final created = DateTime(2026, 3, 30, 12);
@@ -36,17 +39,23 @@ VideoEvent _video(String id, String pubkey) {
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<VideoEvent>[]);
+  });
+
   const blockedPubkey =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
   late _MockVideosRepository mockVideosRepository;
   late _MockHashtagService mockHashtagService;
   late _MockContentBlocklistRepository mockBlocklist;
+  late _MockVideoEventService mockVideoEventService;
 
   setUp(() {
     mockVideosRepository = _MockVideosRepository();
     mockHashtagService = _MockHashtagService();
     mockBlocklist = _MockContentBlocklistRepository();
+    mockVideoEventService = _MockVideoEventService();
 
     when(() => mockHashtagService.getVideosByHashtags(any())).thenReturn([]);
     when(() => mockHashtagService.getHashtagStats(any())).thenReturn(null);
@@ -54,6 +63,14 @@ void main() {
       () => mockHashtagService.subscribeToHashtagVideos(any()),
     ).thenAnswer((_) async {});
     when(() => mockBlocklist.shouldFilterFromFeeds(any())).thenReturn(false);
+    when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
+      invocation,
+    ) {
+      final videos = invocation.positionalArguments.first as List<VideoEvent>;
+      return videos
+          .where((video) => !mockBlocklist.shouldFilterFromFeeds(video.pubkey))
+          .toList();
+    });
   });
 
   Widget buildSubject(String hashtag) {
@@ -62,6 +79,7 @@ void main() {
         videosRepositoryProvider.overrideWithValue(mockVideosRepository),
         hashtagServiceProvider.overrideWith((ref) => mockHashtagService),
         contentBlocklistRepositoryProvider.overrideWithValue(mockBlocklist),
+        videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         subscribedListVideoCacheProvider.overrideWithValue(null),
       ],
       child: MaterialApp(

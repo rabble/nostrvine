@@ -62,7 +62,7 @@ class ForYouFeed extends _$ForYouFeed {
             name: 'ForYouFeedProvider',
             category: LogCategory.video,
           );
-          return existing;
+          return existing.copyWith(videos: _filterVideos(existing.videos));
         }
       }
       Log.info(
@@ -142,15 +142,9 @@ class ForYouFeed extends _$ForYouFeed {
       // users, and dedupe by addressable identity (the recommendation cursor
       // dedupes by event id, so a republished coordinate arrives twice).
       final videoEventService = ref.read(videoEventServiceProvider);
-      final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
       final filteredVideos = dedupeByFeedKey(
         videoEventService.filterVideoList(
-          resultVideos
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .where(
-                (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
-              )
-              .toList(),
+          resultVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
         ),
       );
       final seenVideosService = ref.read(seenVideosServiceProvider);
@@ -163,9 +157,7 @@ class ForYouFeed extends _$ForYouFeed {
         try {
           return ref
               .read(featureFlagServiceProvider)
-              .isEnabled(
-                FeatureFlag.clientSeenFiltering,
-              );
+              .isEnabled(FeatureFlag.clientSeenFiltering);
         } catch (_) {
           return true;
         }
@@ -256,12 +248,8 @@ class ForYouFeed extends _$ForYouFeed {
       }
 
       final videoEventService = ref.read(videoEventServiceProvider);
-      final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        resultVideos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-            .toList(),
+        resultVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
       );
       final seenVideosService = ref.read(seenVideosServiceProvider);
       await seenVideosService.initialize();
@@ -271,9 +259,7 @@ class ForYouFeed extends _$ForYouFeed {
         try {
           return ref
               .read(featureFlagServiceProvider)
-              .isEnabled(
-                FeatureFlag.clientSeenFiltering,
-              );
+              .isEnabled(FeatureFlag.clientSeenFiltering);
         } catch (_) {
           return true;
         }
@@ -339,6 +325,13 @@ class ForYouFeed extends _$ForYouFeed {
         preserveExistingOnError: true,
         sessionSeed: generateRecommendationSessionSeed(),
       ),
+    );
+  }
+
+  List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
+    final videoEventService = ref.read(videoEventServiceProvider);
+    return videoEventService.filterVideoList(
+      videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
     );
   }
 }

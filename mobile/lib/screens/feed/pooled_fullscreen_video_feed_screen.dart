@@ -33,6 +33,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/feed_tuning_snackbar.dart';
+import 'package:openvine/services/dead_media_feed_guard.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
@@ -230,9 +231,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     // doesn't flip identity on a block action. The version listener in
     // [FullscreenFeedContent] re-runs the filter when the blocklist changes
     // broadly (account switch / external sync). See #5041.
-    final blockFilter = ref
-        .read(contentBlocklistRepositoryProvider)
-        .shouldFilterFromFeeds;
+    final hideFilter = ref.read(videoEventServiceProvider).shouldHideVideo;
 
     // The removal bus is wired internally (no longer a per-caller parameter):
     // deletion / block / mute emit a removed id here and the bloc drops it,
@@ -243,16 +242,18 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
 
     // Persist permanently-unavailable ids so the video stays filtered out of
     // every list surface (feed, profile, hashtag, grids) across restarts. The
-    // bloc only fires this after DeadMediaFeedGuard confirms both a 404 and a
-    // requester-independent, terminal moderation verdict (#6251).
-    void persistConfirmedUnavailable(String videoId) {
+    // bloc only fires this after DeadMediaFeedGuard confirms a
+    // requester-independent, terminal moderation verdict explains the media
+    // 404 (#6251). An API 404 is session-only.
+    void persistConfirmedUnavailable(VideoEvent video) {
+      ref.read(videoEventServiceProvider).removeVideoEventCompletely(video);
       unawaited(
         ref
             .read(brokenVideoTrackerProvider.future)
             .then(
               (tracker) => tracker.markVideoBroken(
-                videoId,
-                'Confirmed moderation-unavailable 404 in fullscreen feed',
+                video.id,
+                'Confirmed unavailable video in fullscreen feed',
               ),
             )
             .catchError((Object error) {
@@ -282,13 +283,15 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
           orElse: () => false,
         );
 
-    Future<bool> confirmVideoUnavailable({
+    Future<FeedUnavailability> confirmVideoUnavailable({
+      required String videoId,
       required String? videoUrl,
       String? explicitSha256,
     }) async {
       final guard = ref.read(deadMediaFeedGuardProvider).asData?.value;
-      if (guard == null) return false;
+      if (guard == null) return FeedUnavailability.none;
       return guard.isConfirmedUnavailable(
+        videoId: videoId,
         videoUrl: videoUrl,
         explicitSha256: explicitSha256,
       );
@@ -310,11 +313,16 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             hasMoreStream: feedRepository.watchHasMore(source),
             removedIdsStream: removedIdsStream,
             onLoadMore: () => unawaited(feedRepository.loadMore(source)),
+            onRemoveVideo: (videoId) {
+              ref
+                  .read(videoEventServiceProvider)
+                  .removeVideoCompletely(videoId);
+            },
             onVideoConfirmedUnavailable: persistConfirmedUnavailable,
             confirmVideoUnavailable: confirmVideoUnavailable,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
-            blockFilter: blockFilter,
+            hideFilter: hideFilter,
             unavailableFilter: unavailableFilter,
             feedTuningRepository: feedTuningRepository,
           )..add(const FullscreenFeedStarted()),

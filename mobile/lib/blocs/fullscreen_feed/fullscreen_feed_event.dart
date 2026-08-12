@@ -118,7 +118,7 @@ final class FullscreenFeedVideoRemoved extends FullscreenFeedEvent {
 /// Dispatched when `blocklistVersionProvider` changes (block / mute / account
 /// switch / identity adoption / external relay sync). The BLoC re-filters its
 /// current [FullscreenFeedState.videos] against the injected
-/// [BlockAuthorFilter], dropping now-blocked authors and shifting the cursor;
+/// [VideoHideFilter], dropping now-hidden videos and shifting the cursor;
 /// an empty result transitions to [FullscreenFeedStatus.emptyAfterRemoval].
 ///
 /// This covers BROAD blocklist changes that emit no granular `removedVideoIds`

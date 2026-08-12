@@ -86,7 +86,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       if (state.hasValue && state.value != null) {
         final existing = state.value!;
         if (existing.videos.isNotEmpty) {
-          return existing;
+          return existing.copyWith(
+            videos: _filterVideos(existing.videos, variant),
+          );
         }
       }
       return const VideoFeedState(videos: [], hasMoreContent: true);
@@ -294,10 +296,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     PopularVideosVariant variant,
   ) {
     final videoEventService = ref.read(videoEventServiceProvider);
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    final compatibleVideos = videos
-        .where((v) => v.isSupportedOnCurrentPlatform)
-        .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey));
+    final compatibleVideos = videos.where(
+      (v) => v.isSupportedOnCurrentPlatform,
+    );
     final platformVideos = variant == PopularVideosVariant.native
         ? compatibleVideos.where((v) => !v.isOriginalVine)
         : compatibleVideos;

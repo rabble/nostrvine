@@ -81,10 +81,17 @@ void main() {
       when(
         () => mockVideoEventService.addVideoUpdateListener(any()),
       ).thenReturn(() {});
-      when(() => mockVideoEventService.filterVideoList(any())).thenAnswer(
-        (invocation) =>
-            invocation.positionalArguments.first as List<VideoEvent>,
-      );
+      when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
+        invocation,
+      ) {
+        final videos = invocation.positionalArguments.first as List<VideoEvent>;
+        return videos
+            .where(
+              (video) =>
+                  !mockBlocklistRepository.shouldFilterFromFeeds(video.pubkey),
+            )
+            .toList();
+      });
       when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
       when(() => mockVideoEventService.addListener(any())).thenReturn(null);
       when(
@@ -122,8 +129,10 @@ void main() {
         ],
       );
 
-      // Read the provider to trigger build
-      final notifier = container.read(videoEventsProvider.notifier);
+      final emissions = <List<VideoEvent>>[];
+      container.listen(videoEventsProvider, (prev, next) {
+        next.whenData(emissions.add);
+      });
 
       // Give time for the Future.microtask in _startSubscription to fire
       await Future<void>.delayed(Duration.zero);
@@ -137,8 +146,8 @@ void main() {
         () => mockBlocklistRepository.shouldFilterFromFeeds(allowedPubkey),
       ).called(greaterThanOrEqualTo(1));
 
-      // The notifier should exist without error
-      expect(notifier, isNotNull);
+      expect(emissions, isNotEmpty);
+      expect(emissions.last.map((video) => video.id), ['v1', 'v3']);
     });
 
     test('filters blocked users from change-triggered emission', () async {
@@ -193,16 +202,7 @@ void main() {
       // Check that emissions only contain allowed videos
       if (emissions.isNotEmpty) {
         final lastEmission = emissions.last;
-        expect(
-          lastEmission.every((v) => v.pubkey != blockedPubkey),
-          isTrue,
-          reason: 'Blocked user videos should be filtered from emissions',
-        );
-        expect(
-          lastEmission.length,
-          equals(2),
-          reason: 'Only 2 allowed videos should be emitted',
-        );
+        expect(lastEmission.map((video) => video.id), ['v1', 'v3']);
       }
 
       // Verify the blocklist was consulted during the change callback

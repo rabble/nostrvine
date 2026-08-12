@@ -45,7 +45,7 @@ class NewVideosFeed extends _$NewVideosFeed {
       if (state.hasValue && state.value != null) {
         final existing = state.value!;
         if (existing.videos.isNotEmpty) {
-          return existing;
+          return existing.copyWith(videos: _filterVideos(existing.videos));
         }
       }
       return const VideoFeedState(videos: [], hasMoreContent: true);
@@ -206,12 +206,8 @@ class NewVideosFeed extends _$NewVideosFeed {
 
   List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
     final videoEventService = ref.read(videoEventServiceProvider);
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     return videoEventService.filterVideoList(
-      videos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-          .toList(),
+      videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
     );
   }
 

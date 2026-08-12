@@ -35,25 +35,29 @@ typedef OnRemoveVideo = void Function(String videoId);
 /// the current session — this persists the id so the video stays filtered out
 /// of every list surface across app restarts. A callback keeps the BLoC free
 /// of direct dependencies on concrete services.
-typedef OnVideoConfirmedUnavailable = void Function(String videoId);
+typedef OnVideoConfirmedUnavailable = void Function(VideoEvent video);
 
 /// Confirms whether a player-reported unavailable video is safe to prune.
 ///
-/// Production passes [DeadMediaFeedGuard.isConfirmedUnavailable], which first
-/// HEAD-confirms a 404 and then requires moderation to say the blob is
-/// `blocked`. Quarantined and age-restricted blobs also 404 but are reversible,
-/// so they keep their error tile instead of being pruned. Tests may inject a
-/// smaller predicate.
+/// Production passes [DeadMediaFeedGuard.isConfirmedUnavailable]. An API 404
+/// is session-only; only a HEAD-confirmed 404 plus a terminal `blocked`
+/// verdict is persisted. Quarantined and age-restricted blobs also 404 but
+/// are reversible, so they keep their error tile. Tests may inject a smaller
+/// predicate.
 typedef ConfirmVideoUnavailable =
-    Future<bool> Function({required String? videoUrl, String? explicitSha256});
+    Future<FeedUnavailability> Function({
+      required String videoId,
+      required String? videoUrl,
+      String? explicitSha256,
+    });
 
-/// Returns `true` when [pubkey]'s content must be hidden (blocked / muted /
-/// blocked-us / muted-us). Injected so the BLoC stays free of Riverpod and
-/// repository dependencies — the launching `ConsumerWidget` resolves it from
-/// `contentBlocklistRepository.shouldFilterFromFeeds`. The bound method reads
-/// live blocklist state on every call, so a captured reference stays correct
-/// across mutations.
-typedef BlockAuthorFilter = bool Function(String pubkey);
+/// Returns `true` when [video] must be hidden (blocked / muted / blocked-us /
+/// muted-us authors or reposters, plus shared feed policy). Injected so the
+/// BLoC stays free of Riverpod and repository dependencies — the launching
+/// `ConsumerWidget` resolves it from `VideoEventService.shouldHideVideo`. The
+/// bound method reads live filter state on every call, so a captured reference
+/// stays correct across mutations.
+typedef VideoHideFilter = bool Function(VideoEvent video);
 
 /// Returns `true` when [videoId] has been confirmed unavailable and persisted.
 /// Injected so the BLoC stays free of concrete service
@@ -108,7 +112,7 @@ class FullscreenFeedBloc
     OnRemoveVideo? onRemoveVideo,
     OnVideoConfirmedUnavailable? onVideoConfirmedUnavailable,
     ConfirmVideoUnavailable? confirmVideoUnavailable,
-    BlockAuthorFilter? blockFilter,
+    VideoHideFilter? hideFilter,
     UnavailableVideoFilter? unavailableFilter,
     FeedTuningRepository? feedTuningRepository,
   }) : _videosStream = videosStream,
@@ -123,7 +127,7 @@ class FullscreenFeedBloc
        _onVideoConfirmedUnavailable = onVideoConfirmedUnavailable,
        _confirmVideoUnavailable =
            confirmVideoUnavailable ?? _defaultConfirmVideoUnavailable,
-       _blockFilter = blockFilter,
+       _hideFilter = hideFilter,
        _unavailableFilter = unavailableFilter,
        _feedTuningRepository = feedTuningRepository,
        super(FullscreenFeedState(currentIndex: initialIndex)) {
@@ -164,7 +168,7 @@ class FullscreenFeedBloc
   final OnRemoveVideo? _onRemoveVideo;
   final OnVideoConfirmedUnavailable? _onVideoConfirmedUnavailable;
   final ConfirmVideoUnavailable _confirmVideoUnavailable;
-  final BlockAuthorFilter? _blockFilter;
+  final VideoHideFilter? _hideFilter;
   final UnavailableVideoFilter? _unavailableFilter;
   final FeedTuningRepository? _feedTuningRepository;
   StreamSubscription<bool>? _hasMoreSubscription;
@@ -274,7 +278,9 @@ class FullscreenFeedBloc
         // (e.g. the liked-videos like-change subscription / load-more, which
         // never re-filter) can't re-introduce an author who is blocked under
         // the current blocklist. Idempotent for sources that already filter.
-        final videos = _applyUnavailableFilter(_applyBlockFilter(incoming));
+        final videos = _applySessionRemovedFilter(
+          _applyUnavailableFilter(_applyHideFilter(incoming)),
+        );
 
         Log.debug(
           'FullscreenFeedBloc: Videos updated, count=${videos.length}',
@@ -616,10 +622,11 @@ class FullscreenFeedBloc
     if (videoUrl == null || videoUrl.isEmpty) return;
 
     final unavailable = await _confirmVideoUnavailable(
+      videoId: videoId,
       videoUrl: videoUrl,
       explicitSha256: video.sha256,
     );
-    if (!unavailable) {
+    if (!unavailable.shouldRemoveFromSession) {
       Log.warning(
         'FullscreenFeedBloc: Player reported notFound for $videoId but '
         'confirmation did not allow prune — video stays.',
@@ -629,23 +636,45 @@ class FullscreenFeedBloc
       return;
     }
 
-    // Re-check dedupe in case another handler inserted the same id while
-    // our HEAD was in flight.
+    // Re-check dedupe and re-resolve the index after the await. A source
+    // re-push or hide-filter can shift the list while confirmation runs.
     if (state.removedVideoIds.contains(videoId)) return;
+    var currentIndex = state.videos.indexWhere((v) => v.id == videoId);
+    if (currentIndex < 0) return;
+    final currentVideo = state.videos[currentIndex];
 
-    // Persist the confirmed 404 first so the video stays filtered out of
-    // every list surface (feed, profile, hashtag, grids) across restarts —
-    // not just dropped from this session's in-memory caches via
-    // [_onRemoveVideo].
-    _onVideoConfirmedUnavailable?.call(videoId);
+    // Persist only a terminal (HEAD 404 + blocked) verdict. An API 404 is
+    // session-only because funnelcake also 404s reversible states.
+    if (unavailable.shouldPersist) {
+      _onVideoConfirmedUnavailable?.call(currentVideo);
+    }
 
     _onRemoveVideo?.call(videoId);
 
-    final updatedRemoved = {...state.removedVideoIds, videoId};
-    final nextIndex = index + 1;
+    if (state.removedVideoIds.contains(videoId)) return;
+    currentIndex = state.videos.indexWhere((v) => v.id == videoId);
+    if (currentIndex < 0) return;
 
+    final updatedRemoved = {...state.removedVideoIds, videoId};
+    final updatedVideos = [...state.videos]..removeAt(currentIndex);
+
+    if (updatedVideos.isEmpty) {
+      emit(
+        state.copyWith(
+          status: FullscreenFeedStatus.emptyAfterRemoval,
+          videos: const [],
+          removedVideoIds: updatedRemoved,
+          clearPendingSkipTarget: true,
+        ),
+      );
+      return;
+    }
+
+    final nextIndex = currentIndex.clamp(0, updatedVideos.length - 1);
     emit(
       state.copyWith(
+        videos: updatedVideos,
+        currentIndex: nextIndex,
         removedVideoIds: updatedRemoved,
         pendingSkipTarget: nextIndex,
       ),
@@ -654,10 +683,11 @@ class FullscreenFeedBloc
 
   /// Fails closed: without an injected confirmer there is no moderation
   /// verdict, and a bare 404 is not grounds for the persistent prune (#6251).
-  static Future<bool> _defaultConfirmVideoUnavailable({
+  static Future<FeedUnavailability> _defaultConfirmVideoUnavailable({
+    required String videoId,
     required String? videoUrl,
     String? explicitSha256,
-  }) async => false;
+  }) async => FeedUnavailability.none;
 
   /// Handle UI acknowledgement of a pending skip signal.
   void _onSkipAcknowledged(
@@ -730,12 +760,12 @@ class FullscreenFeedBloc
     );
   }
 
-  /// Returns [videos] with blocked authors removed, or the same list
-  /// unchanged when no [BlockAuthorFilter] was injected.
-  List<VideoEvent> _applyBlockFilter(List<VideoEvent> videos) {
-    final blockFilter = _blockFilter;
-    if (blockFilter == null) return videos;
-    return videos.where((v) => !blockFilter(v.pubkey)).toList();
+  /// Returns [videos] with hidden items removed, or the same list unchanged
+  /// when no [VideoHideFilter] was injected.
+  List<VideoEvent> _applyHideFilter(List<VideoEvent> videos) {
+    final hideFilter = _hideFilter;
+    if (hideFilter == null) return videos;
+    return videos.where((v) => !hideFilter(v)).toList();
   }
 
   /// Returns [videos] with persisted unavailable videos removed, or the same
@@ -749,14 +779,19 @@ class FullscreenFeedBloc
     return videos.where((v) => !unavailableFilter(v.id)).toList();
   }
 
+  List<VideoEvent> _applySessionRemovedFilter(List<VideoEvent> videos) {
+    if (state.removedVideoIds.isEmpty) return videos;
+    return videos.where((v) => !state.removedVideoIds.contains(v.id)).toList();
+  }
+
   /// Handle a broad blocklist change (`blocklistVersionProvider` bumped).
   ///
   /// Re-filters the current [FullscreenFeedState.videos] against the injected
-  /// [BlockAuthorFilter] and drops now-blocked authors. This is the path for
+  /// [VideoHideFilter] and drops now-hidden videos. This is the path for
   /// account switch / identity adoption / external relay sync, which bump the
   /// version but emit no granular `removedVideoIds` (see #5041). It is a pure
   /// list filter — never a permanent tombstone — so an unblock re-shows the
-  /// author on the next source emit.
+  /// item on the next source emit.
   ///
   /// The cursor shifts left by the number of removed videos that preceded it,
   /// preserving the playing video when it survives and landing on the next
@@ -767,10 +802,10 @@ class FullscreenFeedBloc
     FullscreenFeedBlocklistChanged event,
     Emitter<FullscreenFeedState> emit,
   ) {
-    final blockFilter = _blockFilter;
-    if (blockFilter == null || state.videos.isEmpty) return;
+    final hideFilter = _hideFilter;
+    if (hideFilter == null || state.videos.isEmpty) return;
 
-    final kept = _applyBlockFilter(state.videos);
+    final kept = _applyHideFilter(state.videos);
     if (kept.length == state.videos.length) return; // nothing newly blocked
 
     if (kept.isEmpty) {
@@ -786,7 +821,7 @@ class FullscreenFeedBloc
 
     final removedBeforeCursor = state.videos
         .take(state.currentIndex)
-        .where((v) => blockFilter(v.pubkey))
+        .where(hideFilter)
         .length;
     final nextIndex = (state.currentIndex - removedBeforeCursor).clamp(
       0,

@@ -76,6 +76,83 @@ void main() {
       );
 
       test(
+        'returns true without persisting when the canonical API no longer has the video',
+        () async {
+          final apiMissingGuard = DeadMediaFeedGuard(
+            brokenVideoTracker: tracker,
+            moderationStatusService: moderationStatusService,
+            availabilityChecker: checker,
+            eventMissingChecker: (_) async => true,
+          );
+
+          final result = await apiMissingGuard.confirmAndMarkMissing(
+            videoId: 'v1',
+            videoUrl: 'https://media.divine.video/live',
+            explicitSha256: 'a' * 64,
+          );
+
+          expect(result, isTrue);
+          verifyNever(() => tracker.markVideoBroken(any(), any()));
+          verifyNever(() => checker.isConfirmedMissing(any()));
+          verifyNever(() => moderationStatusService.fetchStatus(any()));
+        },
+      );
+
+      test(
+        'falls back to media confirmation when the API missing check fails',
+        () async {
+          const url = 'https://media.divine.video/deadhash';
+          final sha256 = 'a' * 64;
+          final apiFailingGuard = DeadMediaFeedGuard(
+            brokenVideoTracker: tracker,
+            moderationStatusService: moderationStatusService,
+            availabilityChecker: checker,
+            eventMissingChecker: (_) async => throw Exception('timeout'),
+          );
+          when(
+            () => checker.isConfirmedMissing(url),
+          ).thenAnswer((_) async => true);
+          when(
+            () => moderationStatusService.fetchStatus(sha256),
+          ).thenAnswer((_) async => status(blocked: true));
+
+          final result = await apiFailingGuard.confirmAndMarkMissing(
+            videoId: 'v1',
+            videoUrl: url,
+            explicitSha256: sha256,
+          );
+
+          expect(result, isTrue);
+          verify(() => tracker.markVideoBroken('v1', any())).called(1);
+        },
+      );
+
+      test(
+        'stays recoverable when the API check throws and media cannot confirm',
+        () async {
+          const url = 'https://media.divine.video/live';
+          final apiFailingGuard = DeadMediaFeedGuard(
+            brokenVideoTracker: tracker,
+            moderationStatusService: moderationStatusService,
+            availabilityChecker: checker,
+            eventMissingChecker: (_) async => throw Exception('timeout'),
+          );
+          when(
+            () => checker.isConfirmedMissing(url),
+          ).thenAnswer((_) async => false);
+
+          final result = await apiFailingGuard.confirmAndMarkMissing(
+            videoId: 'v1',
+            videoUrl: url,
+            explicitSha256: 'a' * 64,
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => tracker.markVideoBroken(any(), any()));
+        },
+      );
+
+      test(
         'returns false and does NOT mark broken when the media is reachable / non-404',
         () async {
           when(
@@ -222,32 +299,54 @@ void main() {
         ).thenAnswer((_) async => true);
       });
 
-      test('is true for a 404 blocked by moderation', () async {
+      test('is persistent for a 404 blocked by moderation', () async {
         when(
           () => moderationStatusService.fetchStatus(any()),
         ).thenAnswer((_) async => status(blocked: true));
 
         expect(
           await guard.isConfirmedUnavailable(
+            videoId: 'v1',
             videoUrl: url,
             explicitSha256: 'e' * 64,
           ),
-          isTrue,
+          FeedUnavailability.persistent,
         );
       });
 
-      test('is false for a 404 that is only quarantined', () async {
+      test('is none for a 404 that is only quarantined', () async {
         when(
           () => moderationStatusService.fetchStatus(any()),
         ).thenAnswer((_) async => status(quarantined: true));
 
         expect(
           await guard.isConfirmedUnavailable(
+            videoId: 'v1',
             videoUrl: url,
             explicitSha256: 'e' * 64,
           ),
-          isFalse,
+          FeedUnavailability.none,
         );
+      });
+
+      test('is session-only when the canonical API 404s the video', () async {
+        final apiMissingGuard = DeadMediaFeedGuard(
+          brokenVideoTracker: tracker,
+          moderationStatusService: moderationStatusService,
+          availabilityChecker: checker,
+          eventMissingChecker: (_) async => true,
+        );
+
+        expect(
+          await apiMissingGuard.isConfirmedUnavailable(
+            videoId: 'v1',
+            videoUrl: url,
+            explicitSha256: 'e' * 64,
+          ),
+          FeedUnavailability.sessionOnly,
+        );
+        verifyNever(() => checker.isConfirmedMissing(any()));
+        verifyNever(() => moderationStatusService.fetchStatus(any()));
       });
     });
   });

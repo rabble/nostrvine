@@ -14,6 +14,7 @@ import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/services/dead_media_feed_guard.dart';
 
 class MockFileInfo extends Mock implements FileInfo {}
 
@@ -93,7 +94,7 @@ void main() {
       OnRemoveVideo? onRemoveVideo,
       OnVideoConfirmedUnavailable? onVideoConfirmedUnavailable,
       ConfirmVideoUnavailable? confirmVideoUnavailable,
-      BlockAuthorFilter? blockFilter,
+      VideoHideFilter? hideFilter,
       UnavailableVideoFilter? unavailableFilter,
       FeedTuningRepository? feedTuningRepository,
     }) => FullscreenFeedBloc(
@@ -108,18 +109,28 @@ void main() {
       onRemoveVideo: onRemoveVideo,
       onVideoConfirmedUnavailable: onVideoConfirmedUnavailable,
       confirmVideoUnavailable: confirmVideoUnavailable,
-      blockFilter: blockFilter,
+      hideFilter: hideFilter,
       unavailableFilter: unavailableFilter,
       feedTuningRepository: feedTuningRepository,
     );
 
-    ConfirmVideoUnavailable confirmerReturning(
-      bool result, {
-      void Function(String? videoUrl, String? explicitSha256)? onCall,
-    }) => ({required videoUrl, explicitSha256}) async {
-      onCall?.call(videoUrl, explicitSha256);
+    ConfirmVideoUnavailable confirmerWith(
+      FeedUnavailability result, {
+      void Function(String videoId, String? videoUrl, String? explicitSha256)?
+      onCall,
+    }) => ({required videoId, required videoUrl, explicitSha256}) async {
+      onCall?.call(videoId, videoUrl, explicitSha256);
       return result;
     };
+
+    ConfirmVideoUnavailable confirmerReturning(
+      bool result, {
+      void Function(String videoId, String? videoUrl, String? explicitSha256)?
+      onCall,
+    }) => confirmerWith(
+      result ? FeedUnavailability.persistent : FeedUnavailability.none,
+      onCall: onCall,
+    );
 
     test('initial state has correct values', () {
       final bloc = createBloc(initialIndex: 2);
@@ -634,9 +645,8 @@ void main() {
       // just as effectively as one that pushes an empty list.
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'emits empty when every video in a later emission is filtered out',
-        build: () => createBloc(
-          unavailableFilter: (videoId) => videoId == 'video2',
-        ),
+        build: () =>
+            createBloc(unavailableFilter: (videoId) => videoId == 'video2'),
         act: (bloc) async {
           bloc.add(const FullscreenFeedStarted());
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -899,7 +909,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'filters blocked authors from incoming stream lists at the boundary',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         act: (bloc) async {
           bloc.add(const FullscreenFeedStarted());
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -919,12 +929,42 @@ void main() {
         ],
       );
 
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'filters videos when a visible reposter is blocked',
+        build: () => createBloc(
+          hideFilter: (video) =>
+              video.pubkey == authorB ||
+              video.reposterPubkey == authorB ||
+              (video.reposterPubkeys?.contains(authorB) ?? false),
+        ),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('reposted', pubkey: authorC).copyWith(
+              isRepost: true,
+              reposterPubkey: authorB,
+              reposterPubkeys: [authorB],
+            ),
+          ]);
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'video ids',
+            ['a'],
+          ),
+        ],
+      );
+
       // The boundary filter must hold across a source re-push — the
       // liked-videos like-change subscription / load-more re-emit unfiltered
       // lists (finding N1), so a blocked author must not slip back in.
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'keeps blocked authors out across a source re-push',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         act: (bloc) async {
           bloc.add(const FullscreenFeedStarted());
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -960,7 +1000,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'preserves the playing video when an earlier author is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -989,7 +1029,7 @@ void main() {
       // 'e', not 'd' — so this test fails loudly if the shift logic regresses.
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'shifts the cursor left by the count of blocked videos before it',
-        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorA),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1016,7 +1056,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'lands on the next survivor when the current video is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1043,7 +1083,7 @@ void main() {
       // surface at index 0.
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'lands on the next survivor when the index-0 video is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorA),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1066,7 +1106,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'transitions to emptyAfterRemoval when every author is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorA),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1088,7 +1128,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'emits nothing when no author is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1685,9 +1725,14 @@ void main() {
                 equals({'video1'}),
               )
               .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                ['video2'],
+              )
+              .having(
                 (s) => s.pendingSkipTarget,
                 'pendingSkipTarget',
-                equals(1),
+                equals(0),
               ),
         ],
       );
@@ -1745,8 +1790,8 @@ void main() {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'calls onVideoConfirmedUnavailable when confirmation allows prune',
         build: () => createBloc(
-          onVideoConfirmedUnavailable: expectAsync1<void, String>((id) {
-            expect(id, equals('video1'));
+          onVideoConfirmedUnavailable: expectAsync1<void, VideoEvent>((video) {
+            expect(video.id, equals('video1'));
           }),
           confirmVideoUnavailable: confirmerReturning(true),
         ),
@@ -1821,7 +1866,7 @@ void main() {
               .having(
                 (s) => s.pendingSkipTarget,
                 'pendingSkipTarget',
-                equals(1),
+                equals(0),
               ),
         ],
       );
@@ -1867,7 +1912,7 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'skip target matches index of removed video + 1',
+        'skip target lands on the survivor now at the removed index',
         build: () => createBloc(
           onRemoveVideo: (_) {},
           confirmVideoUnavailable: confirmerReturning(true),
@@ -1884,20 +1929,134 @@ void main() {
         act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video2')),
         wait: const Duration(milliseconds: 100),
         expect: () => [
-          isA<FullscreenFeedState>().having(
-            (s) => s.pendingSkipTarget,
-            'pendingSkipTarget',
-            equals(2),
-          ),
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                ['video1', 'video3'],
+              )
+              .having((s) => s.currentIndex, 'currentIndex', equals(1))
+              .having(
+                (s) => s.pendingSkipTarget,
+                'pendingSkipTarget',
+                equals(1),
+              ),
         ],
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'passes video URL and explicit sha256 to confirmation',
+        'session-only confirmation removes without persisting',
+        build: () => createBloc(
+          onRemoveVideo: expectAsync1<void, String>((id) {
+            expect(id, equals('video1'));
+          }),
+          onVideoConfirmedUnavailable: (_) =>
+              fail('API-missing 404 must not persist'),
+          confirmVideoUnavailable: confirmerWith(
+            FeedUnavailability.sessionOnly,
+          ),
+        ),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [createTestVideo('video1')],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.removedVideoIds,
+                'removedVideoIds',
+                equals({'video1'}),
+              )
+              .having(
+                (s) => s.status,
+                'status',
+                FullscreenFeedStatus.emptyAfterRemoval,
+              )
+              .having((s) => s.videos, 'videos', isEmpty),
+        ],
+      );
+
+      test('re-resolves the video after confirm if the list shifted', () async {
+        final started = Completer<void>();
+        final release = Completer<void>();
+        final bloc = createBloc(
+          confirmVideoUnavailable:
+              ({
+                required videoId,
+                required videoUrl,
+                explicitSha256,
+              }) async {
+                started.complete();
+                await release.future;
+                return FeedUnavailability.sessionOnly;
+              },
+        );
+        addTearDown(bloc.close);
+        bloc.add(const FullscreenFeedStarted());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        videosController.add([
+          createTestVideo('video1'),
+          createTestVideo('video2'),
+          createTestVideo('video3'),
+        ]);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        bloc.add(const FullscreenFeedVideoUnavailable('video2'));
+        await started.future;
+        videosController.add([
+          createTestVideo('video3'),
+          createTestVideo('video1'),
+          createTestVideo('video2'),
+        ]);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        release.complete();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(bloc.state.videos.map((v) => v.id), ['video3', 'video1']);
+        expect(bloc.state.removedVideoIds, equals({'video2'}));
+      });
+
+      test(
+        'session-only removal survives a source re-push of the same id',
+        () async {
+          final bloc = createBloc(
+            confirmVideoUnavailable: confirmerWith(
+              FeedUnavailability.sessionOnly,
+            ),
+          );
+          addTearDown(bloc.close);
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ]);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(bloc.state.videos.map((v) => v.id), ['video1', 'video2']);
+
+          bloc.add(const FullscreenFeedVideoUnavailable('video1'));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(bloc.state.videos.map((v) => v.id), ['video2']);
+          expect(bloc.state.removedVideoIds, equals({'video1'}));
+
+          videosController.add([
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ]);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(bloc.state.videos.map((v) => v.id), ['video2']);
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'passes video id, URL and explicit sha256 to confirmation',
         build: () => createBloc(
           confirmVideoUnavailable: confirmerReturning(
             true,
-            onCall: expectAsync2((videoUrl, explicitSha256) {
+            onCall: expectAsync3((videoId, videoUrl, explicitSha256) {
+              expect(videoId, equals('video1'));
               expect(videoUrl, equals('https://example.com/video_video1.mp4'));
               expect(explicitSha256, equals('a' * 64));
             }),
@@ -1947,7 +2106,11 @@ void main() {
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
-          videos: [createTestVideo('video1'), createTestVideo('video2')],
+          videos: [
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+            createTestVideo('video3'),
+          ],
         ),
         act: (bloc) async {
           bloc.add(const FullscreenFeedVideoUnavailable('video1'));
@@ -1961,7 +2124,7 @@ void main() {
           isA<FullscreenFeedState>().having(
             (s) => s.pendingSkipTarget,
             'pendingSkipTarget after first unavailable',
-            equals(1),
+            equals(0),
           ),
           isA<FullscreenFeedState>().having(
             (s) => s.pendingSkipTarget,
@@ -1971,7 +2134,7 @@ void main() {
           isA<FullscreenFeedState>().having(
             (s) => s.pendingSkipTarget,
             'pendingSkipTarget after second unavailable',
-            equals(2),
+            equals(0),
           ),
         ],
       );
