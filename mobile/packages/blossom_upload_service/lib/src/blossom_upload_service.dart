@@ -2630,7 +2630,7 @@ class BlossomUploadService {
 
       onProgress?.call(0.2);
 
-      return _uploadImageSourceToServers(
+      return await _uploadImageSourceToServers(
         source: _FileUploadSource(strippedFile),
         fileHash: fileHash,
         fileSize: fileSize,
@@ -2707,7 +2707,7 @@ class BlossomUploadService {
 
       onProgress?.call(0.2);
 
-      return _uploadImageSourceToServers(
+      return await _uploadImageSourceToServers(
         source: _BytesUploadSource(
           bytes: processedBytes,
           filename: processedFilename,
