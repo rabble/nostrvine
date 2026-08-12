@@ -1,6 +1,7 @@
 // ABOUTME: A user-created category that files clips in the clip library.
 // ABOUTME: Mirrors the Drift clip_categories row without exposing db_client.
 
+import 'package:characters/characters.dart';
 import 'package:equatable/equatable.dart';
 
 /// A category the user created to organize their library clips.
@@ -37,9 +38,7 @@ class ClipCategory extends Equatable {
   static String? sanitizeName(String rawName) {
     final trimmed = rawName.trim();
     if (trimmed.isEmpty) return null;
-    return trimmed.length <= maxNameLength
-        ? trimmed
-        : trimmed.substring(0, maxNameLength);
+    return trimmed.characters.take(maxNameLength).toString();
   }
 
   ClipCategory copyWith({String? name, int? orderIndex}) {
