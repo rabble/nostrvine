@@ -133,9 +133,6 @@ dependencies:
   webview_flutter_android: ^4.10.13 # Direct dep for AndroidWebViewController (frame attestation, #4105)
   webview_flutter_wkwebview: ^3.24.1
 
-  # Not imported by lib/ directly — consumed through permissions_service. Kept
-  # declared because it is a Flutter plugin: dropping it would deregister the
-  # permission_handler native plugins and fail at runtime, not at compile time.
   permission_handler: ^12.0.1 # Handle runtime permissions
   record: ^7.1.0 # Microphone capture for voice-over recording
 
