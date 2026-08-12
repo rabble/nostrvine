@@ -171,12 +171,14 @@ void main() {
     late _MockSubscriptionManager mockSubscriptionManager;
     late _FakeConnectionStatusService connectionService;
     late List<List<Filter>> subscribeCalls;
+    late List<void Function()> eoseCallbacks;
 
     setUp(() {
       mockNostrService = _MockNostrClient();
       mockSubscriptionManager = _MockSubscriptionManager();
       connectionService = _FakeConnectionStatusService();
       subscribeCalls = [];
+      eoseCallbacks = [];
 
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(1);
@@ -186,6 +188,8 @@ void main() {
         subscribeCalls.add(
           (invocation.positionalArguments.first as List<Filter>).toList(),
         );
+        final onEose = invocation.namedArguments[#onEose] as void Function()?;
+        if (onEose != null) eoseCallbacks.add(onEose);
         // Never emits and never EOSEs: the relay that swallowed the REQ.
         final controller = StreamController<Event>(onCancel: () async {});
         addTearDown(controller.close);
@@ -241,7 +245,35 @@ void main() {
       });
     });
 
-    test('stops retrying once a re-issued subscription is established', () {
+    test('gives up after the retry budget instead of re-issuing forever', () {
+      fakeAsync((fake) {
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.profile,
+            authors: [author],
+          ),
+        );
+        fake.flushMicrotasks();
+
+        for (var i = 0; i < 30; i++) {
+          fake
+            ..elapse(const Duration(seconds: 10))
+            ..flushMicrotasks();
+        }
+
+        expect(
+          subscribeCalls,
+          hasLength(4),
+          reason:
+              'the initial load plus three retries. Issuing a REQ always '
+              'succeeds, so the retry cycle re-arms its own budget on every '
+              'attempt — without a cap on consecutive timeouts a silent relay '
+              'is re-subscribed every ~40s for the life of the process',
+        );
+      });
+    });
+
+    test('a load the relay answers restores the retry budget', () {
       fakeAsync((fake) {
         unawaited(
           service.subscribeToVideoFeed(
@@ -251,19 +283,35 @@ void main() {
         );
         fake
           ..flushMicrotasks()
-          ..elapse(const Duration(seconds: 31))
-          ..flushMicrotasks()
-          ..elapse(const Duration(seconds: 10))
+          ..elapse(const Duration(seconds: 41))
           ..flushMicrotasks();
         expect(subscribeCalls, hasLength(2));
 
-        fake
-          ..elapse(const Duration(seconds: 30))
-          ..flushMicrotasks();
+        // The retry is served, so the feed is healthy again.
+        eoseCallbacks.last();
+        fake.flushMicrotasks();
+
+        // A later load onto a relay that has gone silent again gets the whole
+        // budget, not the remainder of the one that timed out before.
+        final servedCalls = subscribeCalls.length;
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.profile,
+            authors: [author],
+            force: true,
+          ),
+        );
+        fake.flushMicrotasks();
+        for (var i = 0; i < 30; i++) {
+          fake
+            ..elapse(const Duration(seconds: 10))
+            ..flushMicrotasks();
+        }
+
         expect(
-          subscribeCalls,
-          hasLength(2),
-          reason: 'a successful re-subscribe ends the retry cycle',
+          subscribeCalls.length - servedCalls,
+          4,
+          reason: 'the second load plus a full three retries',
         );
       });
     });

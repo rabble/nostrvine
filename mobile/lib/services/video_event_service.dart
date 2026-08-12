@@ -253,6 +253,17 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   static const Duration _retryDelay = Duration(seconds: 10);
   static const int _eventDeletionKind = 5;
 
+  /// Feed loads that hit the deadline in a row without the relay ever
+  /// answering, per type.
+  ///
+  /// [_scheduleRetryWhenOnline] resets its budget whenever a re-subscribe
+  /// *call* succeeds, and issuing a REQ always succeeds — so a relay that
+  /// stays silent would otherwise re-arm the cycle on every timeout and
+  /// re-issue the same feed every ~40s for the life of the process. Cleared
+  /// the moment the feed is actually served (first event or EOSE), so a
+  /// recovered relay gets the full budget back.
+  final Map<SubscriptionType, int> _consecutiveFeedTimeouts = {};
+
   // Optional services for enhanced functionality
   ContentBlocklistRepository? _blocklistRepository;
   StreamSubscription<BlocklistChange>? _blocklistChangesSubscription;
@@ -2333,7 +2344,21 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             // Every other completion path notifies; without this the loading
             // state flips silently and no listener re-evaluates the feed.
             notifyListeners();
-            _scheduleRetryWhenOnline(subscriptionType);
+
+            final consecutive =
+                (_consecutiveFeedTimeouts[subscriptionType] ?? 0) + 1;
+            _consecutiveFeedTimeouts[subscriptionType] = consecutive;
+            if (consecutive <= _maxRetryAttempts) {
+              _scheduleRetryWhenOnline(subscriptionType);
+            } else {
+              Log.warning(
+                'Giving up on $subscriptionType after $consecutive '
+                'consecutive timed-out loads; the next explicit subscribe '
+                'starts over',
+                name: 'VideoEventService',
+                category: LogCategory.video,
+              );
+            }
           }
         });
 
@@ -2403,6 +2428,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             eoseReceived = true;
             feedLoadingTimeout
                 ?.cancel(); // Cancel timeout - EOSE received successfully
+            _consecutiveFeedTimeouts.remove(subscriptionType);
             final eoseDuration = DateTime.now().difference(
               subscriptionStartTime,
             );
@@ -2500,6 +2526,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               firstEventTime = DateTime.now();
               feedLoadingTimeout
                   ?.cancel(); // Cancel timeout - events are arriving successfully
+              _consecutiveFeedTimeouts.remove(subscriptionType);
               final firstEventLatency = firstEventTime!.difference(
                 subscriptionStartTime,
               );
@@ -4783,6 +4810,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// whose relay never answered (#7124). Both need the same thing — re-issue
   /// these filters a few times, but only while there is a network to issue
   /// them on.
+  ///
+  /// The attempt budget here counts re-subscribe *calls* that threw, and a
+  /// REQ that reaches a silent relay does not throw — so the budget cannot
+  /// bound a relay that keeps timing out. [_consecutiveFeedTimeouts] is what
+  /// stops that loop, on the timeout side.
   void _scheduleRetryWhenOnline(SubscriptionType subscriptionType) {
     _typesAwaitingRetry.add(subscriptionType);
 
