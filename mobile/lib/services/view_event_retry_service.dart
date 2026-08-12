@@ -100,13 +100,8 @@ class ViewEventRetryService {
           continue;
         }
 
-        // A view event addresses its subject by `kind:pubkey:d-tag`, so a row
-        // without one can never publish. Rows queued before the column existed
-        // are recovered by the v4 migration, which copies a real `d` tag out
-        // of video_vine_id; anything still null here has none to recover, so
-        // drop it instead of burning the retry budget on a guaranteed skip.
-        final addressableDTag = row.videoAddressableDTag;
-        if (addressableDTag == null || addressableDTag.isEmpty) {
+        final addressableDTag = _addressableDTagFor(row);
+        if (addressableDTag == null) {
           await _dao.deleteById(row.id);
           continue;
         }
@@ -157,4 +152,17 @@ class ViewEventRetryService {
       addressableDTag: addressableDTag,
     );
   }
+}
+
+String? _addressableDTagFor(PendingViewEvent row) {
+  final stored = row.videoAddressableDTag;
+  if (stored != null && stored.isNotEmpty) return stored;
+
+  // Before schema v4, parsed `d` tags were persisted only as vineId. Do not
+  // reuse the event-id fallback that VideoEvent assigns when `d` is absent.
+  final vineId = row.videoVineId;
+  if (vineId != null && vineId.isNotEmpty && vineId != row.videoId) {
+    return vineId;
+  }
+  return null;
 }

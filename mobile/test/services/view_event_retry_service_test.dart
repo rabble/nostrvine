@@ -44,12 +44,14 @@ void main() {
       String eventVideoPubkey = videoPubkey,
       DateTime? createdAt,
       String? addressableDTag = 'd-tag',
+      String? eventVideoId,
+      String? videoVineId,
     }) {
       return PendingViewEvent(
         id: id,
-        videoId: 'video-$id',
+        videoId: eventVideoId ?? 'video-$id',
         videoPubkey: eventVideoPubkey,
-        videoVineId: 'vine-$id',
+        videoVineId: videoVineId ?? 'vine-$id',
         videoAddressableDTag: addressableDTag,
         userPubkey: userPubkey,
         watchDurationMs: watchDurationMs,
@@ -144,14 +146,39 @@ void main() {
       expect(captured[5], 1);
     });
 
-    test('discards a legacy row that has no addressable d tag', () async {
+    test('recovers a legacy row d tag from its distinct vine id', () async {
       await dao.enqueue(makeEvent(id: 'legacy', addressableDTag: null));
       final service = makeService();
 
       await service.sweep();
 
-      // It can never address its subject, so retrying only burns the budget
-      // and re-logs a skip on every sweep.
+      expect(await dao.getById('legacy'), isNull);
+      final captured = verify(
+        () => publisher.publishViewEvent(
+          video: captureAny(named: 'video'),
+          startSeconds: any(named: 'startSeconds'),
+          endSeconds: any(named: 'endSeconds'),
+          source: any(named: 'source'),
+          sourceDetail: any(named: 'sourceDetail'),
+          loopCount: any(named: 'loopCount'),
+        ),
+      ).captured;
+      expect((captured.single as VideoEvent).addressableDTag, 'vine-legacy');
+    });
+
+    test('discards a legacy row whose vine id is its event id', () async {
+      await dao.enqueue(
+        makeEvent(
+          id: 'legacy',
+          addressableDTag: null,
+          eventVideoId: 'event-id',
+          videoVineId: 'event-id',
+        ),
+      );
+      final service = makeService();
+
+      await service.sweep();
+
       expect(await dao.getById('legacy'), isNull);
       verifyNever(
         () => publisher.publishViewEvent(
