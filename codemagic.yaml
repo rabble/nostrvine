@@ -379,11 +379,14 @@ definitions:
       name: Install Maestro CLI
       script: |
         set -e
-        # Pinned: 2.1.0 is the version the smoke suite was repaired and
-        # verified against on real devices (#6948). An unpinned install lets
-        # a Maestro release break CI with no commit on our side. Bump
-        # deliberately and re-verify the suite before merging the bump.
-        export MAESTRO_VERSION=2.1.0
+        # Pinned: 2.8.0 verified green on Codemagic itself — probe builds on
+        # the current image (Xcode 26.4.1, 17E202) passed the credential-free
+        # smoke flows 2/2 (#6979 review, 2026-08-11). 2.1.0, the #6948 repair
+        # baseline, predates Maestro's iOS-26 runner fixes (2.5.0, 2.7.0,
+        # 2.8.0) and its driver never starts on any Xcode 26 toolchain
+        # (upstream #2932). Bump deliberately, with a probe build, and
+        # re-verify the suite before merging the bump.
+        export MAESTRO_VERSION=2.8.0
         curl -Ls "https://get.maestro.mobile.dev" | bash
         export PATH="$PATH:$HOME/.maestro/bin"
         maestro --version
@@ -405,11 +408,20 @@ definitions:
             exit 1
           fi
         done
+        # Per-flow invocation, not suites/smoke.yaml: one JUnit <testcase>
+        # per flow with name, file, timing and tags (probe-verified on
+        # Codemagic, #6979 review); suite mode collapses the whole run into
+        # a single unnamed testcase, which makes test_report near-useless.
+        # Keep this list in sync with suites/smoke.yaml — the copy-drift
+        # guard (#6978) binds the same literals, so a forgotten flow shows
+        # up as manifest drift on the next ARB change.
         maestro test \
           --format junit --output report.xml \
           -e USER_EMAIL="$MAESTRO_USER_EMAIL" \
           -e USER_PWD="$MAESTRO_USER_PWD" \
-          e2e/maestro/suites/smoke.yaml
+          e2e/maestro/tests/loginFreshInstall.yaml \
+          e2e/maestro/tests/removeKeys.yaml \
+          e2e/maestro/flows/loginEmailPwd.yaml
     - &boot_ios_simulator
       name: Boot iOS Simulator
       script: |
@@ -741,15 +753,15 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.0
-      # Pinned, not latest: Maestro 2.1.0's iOS driver never starts on Xcode
-      # 26.2 (upstream mobile-dev-inc/Maestro#2932 — xcodebuild
-      # test-without-building exits instantly and port 7001 never binds), and
-      # latest now resolves to 26.4, which is unverified. 26.1 is the newest
-      # Codemagic image with no reported Maestro breakage. Verify on the
-      # first run after the maestro_e2e_credentials group exists; if the
-      # driver still fails, drop to 16.4 or move the Maestro pin past the
-      # upstream fix together with this one.
-      xcode: 26.1
+      # Pinned as a pair with MAESTRO_VERSION so neither side of the
+      # compatibility contract moves alone. Probe builds on this exact
+      # image (2026-08-11, #6979 review) ran Maestro 2.8.0 / Xcode 26.4.1
+      # (17E202) with the smoke flows 2/2 green — 26.4 is CI-verified, and
+      # latest resolving past it is the only unverified move left. The
+      # image ships iOS 26 runtimes only, so the simulator runtime follows
+      # the Xcode image either way. Move both pins together, after a probe
+      # build, when bumping toward a newer image.
+      xcode: 26.4
       cocoapods: default
       groups:
         - zendesk_credentials
