@@ -112,9 +112,7 @@ void main() {
         any(),
         libraryTitle: any(named: 'libraryTitle'),
       ),
-    ).thenAnswer(
-      (_) async => VideoClipImportSuccess(_FakeDivineVideoClip()),
-    );
+    ).thenAnswer((_) async => VideoClipImportSuccess(_FakeDivineVideoClip()));
     when(
       () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
     ).thenReturn(false);
@@ -260,9 +258,7 @@ void main() {
           () => authService.currentPublicKeyHex,
         ).thenReturn(testVideo.pubkey);
 
-        await tester.pumpWidget(
-          buildSubject(mockAuthService: authService),
-        );
+        await tester.pumpWidget(buildSubject(mockAuthService: authService));
         await tester.tap(find.byType(ShareActionButton));
         await tester.pumpAndSettle();
 
@@ -296,9 +292,7 @@ void main() {
     ) async {
       final authService = createMockAuthService();
       when(() => authService.isAuthenticated).thenReturn(true);
-      when(
-        () => authService.currentPublicKeyHex,
-      ).thenReturn(testVideo.pubkey);
+      when(() => authService.currentPublicKeyHex).thenReturn(testVideo.pubkey);
 
       await tester.pumpWidget(buildSubject(mockAuthService: authService));
       await tester.tap(find.byType(ShareActionButton));
@@ -477,6 +471,44 @@ void main() {
 
       expect(find.text('Failed to add bookmark'), findsOneWidget);
     });
+
+    // Both network-shaped failures share the "couldn't reach the network"
+    // wording. timedOut is the one a degraded connection actually produces:
+    // the read runs with requireAllRelaysSettled, so one slow relay times the
+    // query out while connectedRelays is non-empty and noRelays stays false.
+    for (final (name, failure) in const [
+      ('couldNotReachRelays', BookmarkToggleFailure.couldNotReachRelays),
+      ('timedOut', BookmarkToggleFailure.timedOut),
+    ]) {
+      testWidgets('tapping Save reports $name as a network failure', (
+        tester,
+      ) async {
+        when(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        ).thenReturn(false);
+        when(
+          () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+        ).thenAnswer(
+          (_) async => BookmarkToggleResult(
+            succeeded: false,
+            wasBookmarked: false,
+            isBookmarked: false,
+            failure: failure,
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileSetupNoRelaysConnected), findsOneWidget);
+        expect(find.text(l10n.shareFailedToAddBookmark), findsNothing);
+      });
+    }
 
     testWidgets('share sheet has correct DivineIcons', (tester) async {
       await tester.pumpWidget(buildSubject());

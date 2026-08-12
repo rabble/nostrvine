@@ -295,17 +295,23 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       ):
         // "Failed to add bookmark" names no recovery for the state the user is
         // almost certainly in, and after a long blocking wait that matters
-        // more, not less. Only the unreachable-relay case is worded
-        // separately; the rest keep today's copy.
+        // more, not less. Both network-shaped failures are worded that way:
+        // the read runs with requireAllRelaysSettled, so a single slow relay
+        // reports timedOut while the device is merely degraded, not offline.
+        // Everything else keeps today's copy.
         final snackText = succeeded
             ? (removed
                   ? context.l10n.shareRemovedFromBookmarks
                   : context.l10n.shareAddedToBookmarks)
-            : failure == BookmarkToggleFailure.couldNotReachRelays
-            ? context.l10n.profileSetupNoRelaysConnected
-            : (wasBookmarkedBeforeToggle
-                  ? context.l10n.shareFailedToRemoveBookmark
-                  : context.l10n.shareFailedToAddBookmark);
+            : switch (failure) {
+                BookmarkToggleFailure.couldNotReachRelays ||
+                BookmarkToggleFailure.timedOut =>
+                  context.l10n.profileSetupNoRelaysConnected,
+                _ =>
+                  wasBookmarkedBeforeToggle
+                      ? context.l10n.shareFailedToRemoveBookmark
+                      : context.l10n.shareFailedToAddBookmark,
+              };
         _safePop(context);
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(snackText, error: !succeeded),
