@@ -29,8 +29,9 @@ void main() {
         source,
         contains('pathExtension.lowercased() == "m3u8"'),
         reason:
-            'AVURLAsset itself picks its parser from the URL path extension, '
-            'so the same signal must decide which builder runs.',
+            'Every HLS URL the app resolves ends in .m3u8, so the path '
+            'extension is the cheap deterministic signal for which builder '
+            'runs — no extra load to discover the asset has no tracks.',
       );
       expect(
         source,

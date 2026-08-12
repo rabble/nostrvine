@@ -217,12 +217,12 @@ extension VideoEventAppExtensions on VideoEvent {
     // transcoded yet.
     //
     // Classic Vine originals take this path as well. They must never be sent
-    // to the extensionless raw blob: iOS AVURLAsset picks its container parser
-    // from the URL path extension and ignores the Content-Type header, so
-    // `/{hash}` fails to parse with AVFoundation -11828/-11829 "Cannot Open"
-    // and never plays. The transcoder caps at the source resolution,
-    // so the "720p" variant of a 480x480 Vine is still 480x480 — smaller than
-    // the raw blob, not an upscale.
+    // to the bare blob: every Range request to `/{hash}` comes back as a
+    // cached `NoSuchKey` XML body dressed up as a 206, so AVFoundation — which
+    // always range-requests — fails with -11829 "Cannot Open" and the video
+    // never plays (divine-blossom#198). The transcoder caps at the source
+    // resolution, so the "720p" variant of a 480x480 Vine is still 480x480 —
+    // smaller than the raw blob, not an upscale.
     return '$_divineMediaBase/$hash/720p.mp4';
   }
 
@@ -231,9 +231,11 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Older desktop Chrome (< 150) and Firefox lack native HLS, so an HLS
   /// `.m3u8` won't play there. Resolve HLS to the progressive variant — the
   /// same [getOptimalVideoUrlForPlatform] selection the feed already uses on
-  /// every platform. Resolve extensionless Divine raw blobs too, because iOS
-  /// AVURLAsset cannot parse them. Progressive URLs pass through unchanged, so
-  /// the common case (and its transcode readiness) is never touched.
+  /// every platform. Resolve bare Divine blobs too: every Range request to
+  /// `/{hash}` comes back as a cached `NoSuchKey` body dressed up as a 206
+  /// (divine-blossom#198), and a range-requesting player gets that instead of
+  /// video. Progressive URLs pass through unchanged, so the common case (and
+  /// its transcode readiness) is never touched.
   String? get inlinePlayerVideoUrl {
     final url = videoUrl;
     if (url == null) return null;
