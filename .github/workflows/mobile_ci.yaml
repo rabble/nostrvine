@@ -10,7 +10,9 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # merge_group refs are the queue's only signal. Cancelling that run ejects
+  # the PR even when the replacement job never starts (#7197).
+  cancel-in-progress: ${{ github.event_name != 'merge_group' }}
 
 jobs:
   changes:
@@ -296,6 +298,26 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
+      - name: Restore sqlite3mc hook cache
+        # The sqlite3 hook stores libsqlite3mc under this tree. flutter-action
+        # cache: true does not keep it. merge_group can restore but not save
+        # (#7197), so only push-to-main warms the cache.
+        uses: actions/cache/restore@v4
+        with:
+          path: mobile/.dart_tool/hooks_runner/shared/sqlite3
+          key: ${{ runner.os }}-sqlite3mc-${{ hashFiles('mobile/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sqlite3mc-
+      - name: Warm sqlite3mc native assets
+        # Retries the hook download. A cache hit makes the hook skip GitHub
+        # Releases; a miss still gets five attempts instead of one.
+        run: bash scripts/ci/warmup_sqlite3mc.sh
+      - name: Save sqlite3mc hook cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: mobile/.dart_tool/hooks_runner/shared/sqlite3
+          key: ${{ runner.os }}-sqlite3mc-${{ hashFiles('mobile/pubspec.lock') }}
       - name: 🛠️ Install Very Good CLI
         # Pinned so the optimizer's bundle mechanics don't float under CI. 1.3.0
         # is the current latest; 1.1.1≡1.2.0≡1.3.0 for all test/optimizer
