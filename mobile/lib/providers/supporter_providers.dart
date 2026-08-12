@@ -5,6 +5,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:iap_repository/iap_repository.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/supporter_api_client.dart';
 import 'package:openvine/services/supporter_repository.dart';
@@ -37,6 +38,7 @@ SupporterApiClient? supporterApiClient(Ref ref) {
   final authService = ref.watch(nip98AuthServiceProvider);
   final client = SupporterApiClient(
     baseUri: Uri.parse(supporterApiBaseUrl),
+    httpClient: ref.watch(instrumentedHttpClientFactoryProvider)(),
     authHeaderProvider: ({required url, required method, payload}) async {
       final token = await authService.createAuthToken(
         url: url,

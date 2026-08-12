@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_client/nostr_client.dart'
     show NostrClient, RelayConnectionStatus, RelayRemoveSource, RelayState;
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
@@ -501,8 +502,12 @@ ConnectionStatusService connectionStatusService(Ref ref) {
 /// Relay capability service for detecting NIP-11 Divine extensions
 @Riverpod(keepAlive: true)
 RelayCapabilityService relayCapabilityService(Ref ref) {
-  final service = RelayCapabilityService();
+  // The service's dispose() only clears its cache, so the injected client is
+  // closed here.
+  final httpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
+  final service = RelayCapabilityService(httpClient: httpClient);
   ref.onDispose(service.dispose);
+  ref.onDispose(httpClient.close);
   return service;
 }
 

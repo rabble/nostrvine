@@ -18,6 +18,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/account_deletion_service.dart';
@@ -88,8 +89,14 @@ PendingVerificationService pendingVerificationService(Ref ref) =>
 KeycastOAuth oauthClient(Ref ref) {
   final config = ref.watch(oauthConfigProvider);
   final storage = ref.watch(secureKeycastStorageProvider);
-
-  final oauth = KeycastOAuth(config: config, storage: storage);
+  // login.divine.video auth traffic (token, poll, password reset, …).
+  // close() owns the injected client.
+  final httpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
+  final oauth = KeycastOAuth(
+    config: config,
+    storage: storage,
+    httpClient: httpClient,
+  );
 
   ref.onDispose(oauth.close);
 
@@ -151,18 +158,31 @@ AuthService authService(Ref ref) {
       // set, so the router redirect has accurate cache data and sends
       // user to /home not /explore.
       final environmentConfig = ref.read(currentEnvironmentProvider);
-      final client = FunnelcakeApiClient(baseUrl: environmentConfig.apiBaseUrl);
+      // Instrumented and closed here: this one-shot client blocks the login
+      // redirect, so its latency is worth reporting, and nothing reuses it.
+      final httpClient = ref.read(instrumentedHttpClientFactoryProvider)();
+      final client = FunnelcakeApiClient(
+        baseUrl: environmentConfig.apiBaseUrl,
+        httpClient: httpClient,
+      );
       final prefs = ref.read(sharedPreferencesProvider);
-      final result = await client.getFollowing(pubkey: pubkeyHex, limit: 5000);
-      if (result.pubkeys.isNotEmpty) {
-        final key = 'following_list_$pubkeyHex';
-        await prefs.setString(key, jsonEncode(result.pubkeys));
-        Log.info(
-          'Pre-fetched ${result.pubkeys.length} following for '
-          'router redirect cache',
-          name: 'AuthService',
-          category: LogCategory.auth,
+      try {
+        final result = await client.getFollowing(
+          pubkey: pubkeyHex,
+          limit: 5000,
         );
+        if (result.pubkeys.isNotEmpty) {
+          final key = 'following_list_$pubkeyHex';
+          await prefs.setString(key, jsonEncode(result.pubkeys));
+          Log.info(
+            'Pre-fetched ${result.pubkeys.length} following for '
+            'router redirect cache',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
+      } finally {
+        httpClient.close();
       }
     },
   );
@@ -277,8 +297,12 @@ final cawgVerifierBaseUriProvider = Provider<Uri>((ref) {
 /// Provider for the optional CAWG identity verifier client.
 final cawgVerifierClientProvider = Provider<CawgVerifierClient>((ref) {
   final baseUri = ref.watch(cawgVerifierBaseUriProvider);
-  final client = CawgVerifierClient(baseUri: baseUri);
+  // The client's own dispose() only closes a client it created, so the
+  // injected one is closed here.
+  final httpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
+  final client = CawgVerifierClient(baseUri: baseUri, httpClient: httpClient);
   ref.onDispose(client.dispose);
+  ref.onDispose(httpClient.close);
   return client;
 });
 
@@ -430,7 +454,9 @@ Future<void> _setZendeskIdentity(
 @Riverpod(keepAlive: true)
 VerifierClient verifierClient(Ref ref) {
   final env = ref.watch(currentEnvironmentProvider);
-  return VerifierClient(baseUrl: env.verifierBaseUrl);
+  final httpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
+  ref.onDispose(httpClient.close);
+  return VerifierClient(baseUrl: env.verifierBaseUrl, httpClient: httpClient);
 }
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
