@@ -117,6 +117,9 @@ void main() {
       () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
     ).thenReturn(false);
     when(
+      () => mockBookmarkService.syncGlobalBookmarks(),
+    ).thenAnswer((_) async => true);
+    when(
       () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
     ).thenAnswer(
       (_) async => const BookmarkToggleResult(
@@ -202,6 +205,24 @@ void main() {
 
       expect(find.text('Save'), findsOneWidget);
     });
+
+    testWidgets(
+      'More actions row keeps Save when the reconciled read omits the video',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.shareSheetSave), findsOneWidget);
+        expect(find.text(l10n.shareSheetRemoveFromSaved), findsNothing);
+        verify(() => mockBookmarkService.syncGlobalBookmarks()).called(1);
+        verify(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(testVideo.id),
+        ).called(1);
+      },
+    );
 
     testWidgets(
       'More actions row offers Remove from saved once the reconciled read '
@@ -403,6 +424,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
+      clearInteractions(mockBookmarkService);
 
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();

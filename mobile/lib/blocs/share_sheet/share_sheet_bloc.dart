@@ -315,7 +315,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
 
     try {
       final reconciled = await bookmarkService.syncGlobalBookmarks();
-      if (isClosed || !reconciled) return;
+      if (isClosed ||
+          !reconciled ||
+          state.bookmarkStatus != ShareSheetBookmarkStatus.unknown) {
+        return;
+      }
 
       emit(
         state.copyWith(
@@ -325,10 +329,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         ),
       );
     } catch (e, stackTrace) {
-      // Expected on a flaky network: the affordance stays `unknown` and reads
-      // as plain "Save", which is exactly the pre-existing behaviour. Not
-      // reportable, and deliberately not surfaced — the sheet's other actions
-      // are unaffected.
+      _addUnexpectedError(
+        e,
+        stackTrace,
+        ShareSheetBlocReportableSites.onBookmarkStatusRequested,
+      );
       Log.warning(
         'Could not resolve bookmark status: $e',
         name: 'ShareSheetBloc',

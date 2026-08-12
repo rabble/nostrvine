@@ -418,11 +418,10 @@ void main() {
                 'selected pubkeys',
                 [testRecipient.pubkey],
               )
-              .having(
-                (s) => s.contacts.map((c) => c.pubkey),
-                'contacts',
-                [testRecipient.pubkey, otherRecipient.pubkey],
-              ),
+              .having((s) => s.contacts.map((c) => c.pubkey), 'contacts', [
+                testRecipient.pubkey,
+                otherRecipient.pubkey,
+              ]),
         ],
       );
     });
@@ -471,11 +470,7 @@ void main() {
           ),
           isA<ShareSheetState>()
               .having((s) => s.isSending, 'isSending', isFalse)
-              .having(
-                (s) => s.selectedRecipients,
-                'selection cleared',
-                isEmpty,
-              )
+              .having((s) => s.selectedRecipients, 'selection cleared', isEmpty)
               .having(
                 (s) => s.actionResult,
                 'actionResult',
@@ -514,24 +509,13 @@ void main() {
             isTrue,
           ),
           isA<ShareSheetState>()
-              .having(
-                (s) => s.selectedRecipients,
-                'selection cleared',
-                isEmpty,
-              )
+              .having((s) => s.selectedRecipients, 'selection cleared', isEmpty)
               .having(
                 (s) => s.actionResult,
                 'actionResult',
                 isA<ShareSheetSendSuccess>()
-                    .having((r) => r.recipientNames, 'names', [
-                      'Alice',
-                      'Bob',
-                    ])
-                    .having(
-                      (r) => r.conversationId,
-                      'conversationId',
-                      isNull,
-                    )
+                    .having((r) => r.recipientNames, 'names', ['Alice', 'Bob'])
+                    .having((r) => r.conversationId, 'conversationId', isNull)
                     .having(
                       (r) => r.recipientPubkey,
                       'recipientPubkey',
@@ -576,11 +560,7 @@ void main() {
           ),
           isA<ShareSheetState>()
               .having((s) => s.isSending, 'isSending', isFalse)
-              .having(
-                (s) => s.selectedRecipients,
-                'selection cleared',
-                isEmpty,
-              )
+              .having((s) => s.selectedRecipients, 'selection cleared', isEmpty)
               .having(
                 (s) => s.actionResult,
                 'actionResult',
@@ -1082,9 +1062,8 @@ void main() {
               libraryTitle: any(named: 'libraryTitle'),
             ),
           ).thenAnswer(
-            (_) async => VideoClipImportSuccess(
-              _clip(libraryTitle: 'My local cut'),
-            ),
+            (_) async =>
+                VideoClipImportSuccess(_clip(libraryTitle: 'My local cut')),
           );
         },
         build: () => createBloc(videoClipImportService: mockImporter),
@@ -1098,11 +1077,7 @@ void main() {
             (state) => state.actionResult,
             'actionResult',
             isA<ShareSheetVideoClipImportResult>()
-                .having(
-                  (result) => result.succeeded,
-                  'succeeded',
-                  isTrue,
-                )
+                .having((result) => result.succeeded, 'succeeded', isTrue)
                 .having(
                   (result) => result.libraryTitle,
                   'libraryTitle',
@@ -1223,11 +1198,7 @@ void main() {
                   'text',
                   'https://divine.video/video/test-id',
                 )
-                .having(
-                  (r) => r.kind,
-                  'kind',
-                  ShareSheetCopiedKind.postLink,
-                ),
+                .having((r) => r.kind, 'kind', ShareSheetCopiedKind.postLink),
           ),
         ],
       );
@@ -1416,11 +1387,7 @@ void main() {
             (s) => s.actionResult,
             'actionResult',
             isA<ShareSheetCopiedToClipboard>()
-                .having(
-                  (r) => r.kind,
-                  'kind',
-                  ShareSheetCopiedKind.eventJson,
-                )
+                .having((r) => r.kind, 'kind', ShareSheetCopiedKind.eventJson)
                 .having(
                   (r) => r.text.contains('"id"'),
                   'text contains id field',
@@ -1471,11 +1438,7 @@ void main() {
             (s) => s.actionResult,
             'actionResult',
             isA<ShareSheetCopiedToClipboard>()
-                .having(
-                  (r) => r.kind,
-                  'kind',
-                  ShareSheetCopiedKind.eventId,
-                )
+                .having((r) => r.kind, 'kind', ShareSheetCopiedKind.eventId)
                 .having(
                   (r) => r.text.startsWith('nevent'),
                   'text starts with nevent',
@@ -1513,6 +1476,8 @@ void main() {
     });
 
     group('ShareSheetBookmarkStatusRequested', () {
+      late Completer<bool> bookmarkStatusSyncCompleter;
+
       blocTest<ShareSheetBloc, ShareSheetState>(
         'resolves saved when the reconciled list contains the video',
         setUp: () {
@@ -1552,6 +1517,58 @@ void main() {
             'bookmarkStatus',
             ShareSheetBookmarkStatus.notSaved,
           ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'does not let a late status read overwrite a successful toggle',
+        setUp: () {
+          bookmarkStatusSyncCompleter = Completer<bool>();
+          when(
+            () => mockBookmarkService.syncGlobalBookmarks(),
+          ).thenAnswer((_) => bookmarkStatusSyncCompleter.future);
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(false);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer(
+            (_) async => const BookmarkToggleResult(
+              succeeded: true,
+              wasBookmarked: false,
+              isBookmarked: true,
+            ),
+          );
+          addTearDown(() {
+            if (!bookmarkStatusSyncCompleter.isCompleted) {
+              bookmarkStatusSyncCompleter.complete(false);
+            }
+          });
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ShareSheetBookmarkStatusRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const ShareSheetSaveRequested());
+          await Future<void>.delayed(Duration.zero);
+          bookmarkStatusSyncCompleter.complete(true);
+        },
+        expect: () => [
+          isA<ShareSheetState>()
+              .having(
+                (s) => s.bookmarkStatus,
+                'bookmarkStatus',
+                ShareSheetBookmarkStatus.saved,
+              )
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>().having(
+                  (r) => r.succeeded,
+                  'succeeded',
+                  isTrue,
+                ),
+              ),
         ],
       );
 
