@@ -89,8 +89,14 @@ PendingVerificationService pendingVerificationService(Ref ref) =>
 KeycastOAuth oauthClient(Ref ref) {
   final config = ref.watch(oauthConfigProvider);
   final storage = ref.watch(secureKeycastStorageProvider);
-
-  final oauth = KeycastOAuth(config: config, storage: storage);
+  // login.divine.video auth traffic (token, poll, password reset, …).
+  // close() owns the injected client.
+  final httpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
+  final oauth = KeycastOAuth(
+    config: config,
+    storage: storage,
+    httpClient: httpClient,
+  );
 
   ref.onDispose(oauth.close);
 

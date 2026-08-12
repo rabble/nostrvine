@@ -35,12 +35,12 @@ bool isInstrumentedHost(String host) {
   );
 }
 
-/// Routes whose path carries free text that no generic rule can recognise as
-/// an identifier, mapped to the pattern reported instead.
+/// Prefix free-text routes: any remainder after [prefix] is one identifier.
 ///
 /// Add an entry when a new endpoint interpolates something arbitrary (a
-/// username, a slug, a search term) into its *path*. Query parameters need no
-/// entry — [httpMetricUrlPattern] drops the query entirely.
+/// username, a slug, a search term) into its *path* and the remainder is a
+/// single segment. Query parameters need no entry — [httpMetricUrlPattern]
+/// drops the query entirely.
 ///
 /// Placeholders use the `:name` form for the reason given on
 /// [_normalizeIdentifier] — braces would make the URL unparseable.
@@ -48,6 +48,28 @@ const List<(String, String)> _freeTextRoutePatterns = [
   // names.divine.video/api/username/check/<username> — one pattern per
   // username typed into the claim field otherwise.
   ('/api/username/check/', '/api/username/check/:username'),
+];
+
+/// Structured free-text routes whose identifier is not the whole remainder
+/// (subpaths after the id, or static siblings that must stay distinct).
+///
+/// Funnelcake accepts stableId / d-tag / vine shortcodes on video paths —
+/// values like `5gITeYOlL7g` that fail the hex/uuid/opaque recognisers and
+/// would otherwise mint one Firebase pattern per video.
+final List<(RegExp, String Function(Match))> _structuredFreeTextRoutes = [
+  // /api/videos/<id> and /api/videos/<id>/{stats|views}, but not
+  // /api/videos/stats/bulk (static "stats" segment).
+  (
+    RegExp(r'^/api/videos/(?!stats(?:/|$))([^/]+)(?:/(stats|views))?$'),
+    (m) {
+      final suffix = m.group(2);
+      return suffix == null ? '/api/videos/:id' : '/api/videos/:id/$suffix';
+    },
+  ),
+  (
+    RegExp(r'^/api/v2/videos/([^/]+)/comments$'),
+    (_) => '/api/v2/videos/:id/comments',
+  ),
 ];
 
 final RegExp _digits = RegExp(r'^\d+$');
@@ -91,7 +113,12 @@ final RegExp _fileExtension = RegExp(r'^[A-Za-z0-9]{1,5}$');
 /// Rules").
 String httpMetricUrlPattern(Uri url) {
   final host = url.host.toLowerCase();
-  final authority = url.hasPort ? '$host:${url.port}' : host;
+  // Bracket IPv6 hosts so the reported URL stays parseable by the Firebase
+  // SDKs (same silent-drop failure mode as the braced-placeholder bug).
+  final hostForAuthority = host.contains(':') ? '[$host]' : host;
+  final authority = url.hasPort
+      ? '$hostForAuthority:${url.port}'
+      : hostForAuthority;
   return '${url.scheme}://$authority${_normalizePath(url.path)}';
 }
 
@@ -100,6 +127,10 @@ String _normalizePath(String path) {
     if (path.startsWith(prefix) && path.length > prefix.length) {
       return pattern;
     }
+  }
+  for (final (pattern, rewrite) in _structuredFreeTextRoutes) {
+    final match = pattern.firstMatch(path);
+    if (match != null) return rewrite(match);
   }
   return path.split('/').map(_normalizeSegment).join('/');
 }

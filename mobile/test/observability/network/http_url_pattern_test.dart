@@ -118,6 +118,40 @@ void main() {
       expect(bob, alice);
     });
 
+    test('collapses free-form video ids that are not hex/uuid/opaque', () {
+      const shortcode = '5gITeYOlL7g';
+      final byId = httpMetricUrlPattern(
+        Uri.parse('https://api.divine.video/api/videos/$shortcode'),
+      );
+      final stats = httpMetricUrlPattern(
+        Uri.parse('https://api.divine.video/api/videos/$shortcode/stats'),
+      );
+      final views = httpMetricUrlPattern(
+        Uri.parse('https://api.divine.video/api/videos/$shortcode/views'),
+      );
+      final comments = httpMetricUrlPattern(
+        Uri.parse(
+          'https://api.divine.video/api/v2/videos/$shortcode/comments',
+        ),
+      );
+      final bulk = httpMetricUrlPattern(
+        Uri.parse('https://api.divine.video/api/videos/stats/bulk'),
+      );
+
+      expect(byId, 'https://api.divine.video/api/videos/:id');
+      expect(stats, 'https://api.divine.video/api/videos/:id/stats');
+      expect(views, 'https://api.divine.video/api/videos/:id/views');
+      expect(comments, 'https://api.divine.video/api/v2/videos/:id/comments');
+      expect(bulk, 'https://api.divine.video/api/videos/stats/bulk');
+    });
+
+    test('brackets IPv6 loopback so the reported URL stays parseable', () {
+      expect(
+        httpMetricUrlPattern(Uri.parse('http://[::1]:43001/api/videos')),
+        'http://[::1]:43001/api/videos',
+      );
+    });
+
     test('leaves route words alone, however long', () {
       expect(
         httpMetricUrlPattern(

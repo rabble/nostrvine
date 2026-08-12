@@ -63,7 +63,8 @@ Everything below routes through `instrumentedHttpClientFactoryProvider`.
 | Funnelcake REST API — feeds, search, profiles, notifications, video stats | `api.divine.video` | `curation_providers.dart` |
 | Event publish (REST-first kind 34236) | relay HTTP origin | `video_providers.dart` |
 | Product analytics ingest | `api.divine.video` | `social_providers.dart` |
-| Username claim / release / check | `names.divine.video`, `login.divine.video` | `repository_providers.dart` |
+| Username claim / release / check | `names.divine.video` | `repository_providers.dart` |
+| Keycast OAuth (login/register/token/poll/reset) | `login.divine.video` | `auth_providers.dart` |
 | Relay-manager (minor-account review) | `api-relay-*.divine.video` | `upload_media_providers.dart` |
 | Invite server | `invite.divine.video` | `main.dart` |
 | Apps-directory listing + audit | `apps.divine.video` | `nostr_apps_providers.dart` |

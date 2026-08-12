@@ -284,7 +284,7 @@ final class OauthClientProvider
   }
 }
 
-String _$oauthClientHash() => r'0cc53348fbc3c769c81e52dd200c0efc6c20de3c';
+String _$oauthClientHash() => r'217c3c01dd4f147990ee0f189f5d4fe5bcd89d45';
 
 @ProviderFor(passwordResetListener)
 final passwordResetListenerProvider = PasswordResetListenerProvider._();
