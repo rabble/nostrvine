@@ -165,9 +165,22 @@ void main() {
 
   group(WelcomeScreen, () {
     group('default variant', () {
-      testWidgets('displays $AuthHeroSection', (tester) async {
+      // The fresh-install hero column overflows the default 800x600 test
+      // surface by 13px, but only when it lays out with the wide fallback
+      // font: VineTheme's GoogleFonts.inter registers its asset into the
+      // process-global font collection asynchronously, so the first test in
+      // an isolate to render this screen misses real Inter metrics. Under
+      // randomized ordering that is whichever test the seed sorts first, so
+      // every test here takes the headroom rather than the four that
+      // happened to hit it. Width stays 800 so nothing re-wraps. This cannot
+      // move into setUp — setSurfaceSize asserts it runs inside a test.
+      Future<void> useTallSurface(WidgetTester tester) async {
         await tester.binding.setSurfaceSize(const Size(800, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
+      }
+
+      testWidgets('displays $AuthHeroSection', (tester) async {
+        await useTallSurface(tester);
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -175,6 +188,7 @@ void main() {
       });
 
       testWidgets('displays create account button', (tester) async {
+        await useTallSurface(tester);
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -182,6 +196,7 @@ void main() {
       });
 
       testWidgets('displays login button', (tester) async {
+        await useTallSurface(tester);
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -189,14 +204,9 @@ void main() {
       });
 
       testWidgets('primary actions carry stable test anchors', (tester) async {
-        // The default 800x600 surface overflows the hero column by 13px on
-        // the fresh-install variant. That is pre-existing on origin/main and
-        // out of scope here; size the surface so this test fails only for
-        // its own reason.
-        tester.view.physicalSize = const Size(390, 844);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
+        // This one wants a phone viewport rather than the headroom above.
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -214,6 +224,7 @@ void main() {
       });
 
       testWidgets('displays terms notice with legal links', (tester) async {
+        await useTallSurface(tester);
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -233,8 +244,7 @@ void main() {
         'renders Greenlight label, under-16 link, and terms above the auth buttons',
         (tester) async {
           final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.binding.setSurfaceSize(const Size(800, 1200));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await useTallSurface(tester);
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
@@ -290,6 +300,7 @@ void main() {
       testWidgets('tapping create account calls acceptTerms and navigates', (
         tester,
       ) async {
+        await useTallSurface(tester);
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -324,6 +335,7 @@ void main() {
       testWidgets('tapping login button calls acceptTerms and navigates', (
         tester,
       ) async {
+        await useTallSurface(tester);
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -337,6 +349,7 @@ void main() {
       testWidgets(
         'tapping "Divine age authorization" navigates to the public family guide',
         (tester) async {
+          await useTallSurface(tester);
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
@@ -377,6 +390,7 @@ void main() {
       testWidgets(
         'tapping "Here are your choices." navigates to the public family guide',
         (tester) async {
+          await useTallSurface(tester);
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
@@ -400,8 +414,7 @@ void main() {
       );
 
       testWidgets('shows error when lastError is set', (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await useTallSurface(tester);
         when(() => mockAuthService.lastError).thenReturn('Auth failed');
 
         await tester.pumpWidget(createTestWidget());
@@ -412,6 +425,7 @@ void main() {
       });
 
       testWidgets('does not show error when lastError is null', (tester) async {
+        await useTallSurface(tester);
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
