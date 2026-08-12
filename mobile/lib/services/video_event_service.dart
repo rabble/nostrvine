@@ -204,6 +204,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     onRelayNotReady: _scheduleRetryWhenRelayReady,
   );
 
+  /// Per-type 30s feed-load fuses. Cancelled on replace/teardown so a
+  /// subscription the user already left cannot fire recovery against a later
+  /// live feed of the same type.
+  final Map<SubscriptionType, Timer> _feedLoadTimeouts = {};
+
   // Track subscription parameters per type
   final Map<SubscriptionType, Map<String, dynamic>> _subscriptionParams = {};
 
@@ -1791,6 +1796,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _isLoading = true;
     _error = null;
 
+    // Explicit subscribe paths re-arm the consecutive-timeout budget. The
+    // auto-retry cycle passes scheduleOnlineRetry: false so it keeps counting
+    // toward the give-up ceiling instead of resetting itself every attempt.
+    if (scheduleOnlineRetry) {
+      _retryScheduler.clearTimeoutBudget(subscriptionType);
+    }
+
     if (!_nostrService.isInitialized) {
       _isLoading = false;
 
@@ -2287,10 +2299,27 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           category: LogCategory.video,
         );
 
-        // Set up timeout to detect feed loading failures (30 seconds)
-        Timer? feedLoadingTimeout;
+        // Set up timeout to detect feed loading failures (30 seconds).
+        // Tracked on the service so replace/cancel can kill it — a local-only
+        // Timer kept firing after the user left and could unmap a later live
+        // sub of the same type, then auto-retry with stale/null filters.
+        _cancelFeedLoadTimeout(subscriptionType);
+        late final Timer feedLoadingTimeout;
         feedLoadingTimeout = Timer(const Duration(seconds: 30), () {
           if (_isDisposed) return;
+          if (!identical(
+            _feedLoadTimeouts[subscriptionType],
+            feedLoadingTimeout,
+          )) {
+            return;
+          }
+          _feedLoadTimeouts.remove(subscriptionType);
+
+          // Subscription already torn down or replaced — do not recover.
+          if (_activeSubscriptions[subscriptionType] != subscriptionId ||
+              !_subscriptions.containsKey(subscriptionId)) {
+            return;
+          }
 
           if (!eoseReceived && eventCount == 0 && !timeoutReported) {
             timeoutReported = true;
@@ -2341,6 +2370,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             }
           }
         });
+        _feedLoadTimeouts[subscriptionType] = feedLoadingTimeout;
 
         // Phase 3.3: Cache-first strategy - load cached events BEFORE relay subscription
         // This provides instant UI feedback while relay fetches fresh data
@@ -2406,8 +2436,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           filters,
           onEose: () {
             eoseReceived = true;
-            feedLoadingTimeout
-                ?.cancel(); // Cancel timeout - EOSE received successfully
+            _cancelFeedLoadTimeout(subscriptionType);
             _retryScheduler.recordFeedServed(subscriptionType);
             final eoseDuration = DateTime.now().difference(
               subscriptionStartTime,
@@ -2504,8 +2533,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             // Track first event arrival time
             if (firstEventTime == null) {
               firstEventTime = DateTime.now();
-              feedLoadingTimeout
-                  ?.cancel(); // Cancel timeout - events are arriving successfully
+              _cancelFeedLoadTimeout(subscriptionType);
               _retryScheduler.recordFeedServed(subscriptionType);
               final firstEventLatency = firstEventTime!.difference(
                 subscriptionStartTime,
@@ -2553,7 +2581,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             );
           },
           onError: (error) {
-            feedLoadingTimeout?.cancel();
+            _cancelFeedLoadTimeout(subscriptionType);
             Log.error(
               '❌ Subscription error for $subscriptionType after $eventCount events: $error',
               name: 'VideoEventService',
@@ -2563,7 +2591,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             _handleSubscriptionError(error, subscriptionType);
           },
           onDone: () {
-            feedLoadingTimeout?.cancel();
+            _cancelFeedLoadTimeout(subscriptionType);
             final totalDuration = DateTime.now().difference(
               subscriptionStartTime,
             );
@@ -5429,8 +5457,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         includeReposts == currentIncludeReposts;
   }
 
+  void _cancelFeedLoadTimeout(SubscriptionType subscriptionType) {
+    _feedLoadTimeouts.remove(subscriptionType)?.cancel();
+  }
+
   /// Cancel subscription for a specific type
   Future<void> _cancelSubscription(SubscriptionType subscriptionType) async {
+    // Kill the fuse before tearing down state so a later fire cannot unmap a
+    // replacement subscription or schedule a retry for a feed the user left.
+    _cancelFeedLoadTimeout(subscriptionType);
+
     final subscriptionId = _activeSubscriptions[subscriptionType];
     if (subscriptionId != null) {
       Log.info(
@@ -5802,6 +5838,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   void dispose() {
     _isDisposed = true;
 
+    for (final timer in _feedLoadTimeouts.values) {
+      timer.cancel();
+    }
+    _feedLoadTimeouts.clear();
     _retryScheduler.dispose();
     _cancelRelayReadyRetrySubscription();
     _likeCountBatchTimer?.cancel();

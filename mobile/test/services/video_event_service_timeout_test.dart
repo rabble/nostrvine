@@ -371,5 +371,108 @@ void main() {
         );
       });
     });
+
+    test(
+      'cancelling before the fuse expires does not resubscribe or unmap a '
+      'replacement',
+      () {
+        fakeAsync((fake) {
+          const authorB =
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+          unawaited(
+            service.subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: [author],
+            ),
+          );
+          fake.flushMicrotasks();
+          expect(subscribeCalls, hasLength(1));
+
+          // User leaves / replaces the feed well inside the 30s window.
+          unawaited(
+            service.subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: [authorB],
+              force: true,
+            ),
+          );
+          fake.flushMicrotasks();
+          expect(subscribeCalls, hasLength(2));
+          expect(service.isSubscribed(SubscriptionType.profile), isTrue);
+
+          // Stay inside B's fuse so only a leaked A fuse could fire recovery.
+          fake
+            ..elapse(const Duration(seconds: 29))
+            ..flushMicrotasks();
+
+          expect(
+            subscribeCalls,
+            hasLength(2),
+            reason:
+                "A's cancelled fuse must not schedule a retry after replace",
+          );
+          expect(
+            service.isSubscribed(SubscriptionType.profile),
+            isTrue,
+            reason: "A's cancelled fuse must not unmap B's live subscription",
+          );
+          expect(
+            subscribeCalls.last.any(
+              (filter) => filter.authors?.contains(authorB) ?? false,
+            ),
+            isTrue,
+          );
+        });
+      },
+    );
+
+    test(
+      'an explicit subscribe after give-up re-arms the timeout retry budget',
+      () {
+        fakeAsync((fake) {
+          unawaited(
+            service.subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: [author],
+            ),
+          );
+          fake.flushMicrotasks();
+
+          // Exhaust the consecutive-timeout budget (initial + 3 retries).
+          for (var i = 0; i < 30; i++) {
+            fake
+              ..elapse(const Duration(seconds: 10))
+              ..flushMicrotasks();
+          }
+          expect(subscribeCalls, hasLength(4));
+
+          // User comes back with an explicit subscribe — must not stay latched.
+          unawaited(
+            service.subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: [author],
+              force: true,
+            ),
+          );
+          fake.flushMicrotasks();
+          final afterExplicit = subscribeCalls.length;
+
+          for (var i = 0; i < 30; i++) {
+            fake
+              ..elapse(const Duration(seconds: 10))
+              ..flushMicrotasks();
+          }
+
+          expect(
+            subscribeCalls.length - afterExplicit,
+            3,
+            reason:
+                'explicit subscribe clears the latch so the new load gets a '
+                'full three retries again',
+          );
+        });
+      },
+    );
   });
 }
