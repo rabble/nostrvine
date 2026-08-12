@@ -54,7 +54,7 @@ class VideoEditorAudioChip extends StatelessWidget {
           context: context,
           maxChildSize: 1,
           initialChildSize: 1,
-          minChildSize: 0.8,
+          minChildSize: VineTheme.bottomSheetDismissFloor,
           buildScrollBody: (scrollController) =>
               AudioSelectionBottomSheet(scrollController: scrollController),
         );

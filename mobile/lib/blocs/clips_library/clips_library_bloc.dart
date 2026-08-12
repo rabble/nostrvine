@@ -10,6 +10,8 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart'
+    show RenderCanceledException;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -358,7 +360,11 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       DivineVideoClip? materialized;
       try {
         // Stop-motion clips render their mp4 on demand before saving.
-        materialized = await StopMotionRenderService.materialize(clip);
+        try {
+          materialized = await StopMotionRenderService.materialize(clip);
+        } on RenderCanceledException {
+          materialized = null;
+        }
         if (materialized == null) {
           failureCount++;
           continue;

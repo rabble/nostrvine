@@ -69,15 +69,11 @@ void main() {
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(
-        find.bySemanticsLabel(
-          l10n.videoMetadataTagsPickerCancelSemanticLabel,
-        ),
+        find.bySemanticsLabel(l10n.videoMetadataTagsPickerCancelSemanticLabel),
         findsOneWidget,
       );
       expect(
-        find.bySemanticsLabel(
-          l10n.videoMetadataTagsPickerConfirmSemanticLabel,
-        ),
+        find.bySemanticsLabel(l10n.videoMetadataTagsPickerConfirmSemanticLabel),
         findsOneWidget,
       );
     });
@@ -234,6 +230,65 @@ void main() {
         expect(find.text('musician'), findsOneWidget);
       },
     );
+
+    testWidgets('a short drag on the results keeps the picker and its tags', (
+      tester,
+    ) async {
+      when(
+        () => hashtagRepository.searchHashtags(
+          query: 'mus',
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((_) async => ['music', 'musician']);
+
+      await tester.pumpWidget(
+        _buildTestApp(
+          hashtagRepository: hashtagRepository,
+          videoEditorState: VideoEditorProviderState(),
+        ),
+      );
+
+      await tester.tap(
+        find.byType(VideoMetadataSelectionTile),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.enterText(find.byType(TextField).last, 'mus');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.text('music'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      // The results pane is the only scroll view wired to the sheet's own
+      // controller, so it is where an overscroll turns into a sheet drag.
+      final results = find.byWidgetPredicate(
+        (widget) =>
+            widget is SingleChildScrollView && widget.controller != null,
+      );
+      expect(results, findsOneWidget);
+
+      // A third of the viewport: past the floor the sheet used to sit on,
+      // short of the one it sits on now. Reaching the floor pops the modal,
+      // and the selection pops with it.
+      await tester.drag(results, const Offset(0, 200));
+      await tester.pump();
+      // Long enough for the modal's exit transition to have finished, had the
+      // drag triggered one. `pumpAndSettle` cannot be used: the sheet keeps a
+      // LinearProgressIndicator mounted at zero opacity, which never settles.
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.bySemanticsLabel(l10n.videoMetadataTagsPickerConfirmSemanticLabel),
+        findsOneWidget,
+      );
+      expect(find.text('music'), findsAtLeastNWidgets(1));
+    });
   });
 }
 
