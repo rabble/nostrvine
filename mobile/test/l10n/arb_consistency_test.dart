@@ -410,8 +410,9 @@ void main() {
 
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
-  // Email-verification recovery copy (resend unavailable, polling stopped);
-  // translation is deferred to the next auth localization pass.
+  // Email-verification recovery copy (resend expired, resend unavailable,
+  // polling stopped); translation is deferred to the next auth localization
+  // pass.
   'authVerificationResendExpired',
   'authVerificationResendUnavailable',
   'authVerificationPollingStopped',
