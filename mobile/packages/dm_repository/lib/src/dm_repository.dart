@@ -16,6 +16,7 @@ import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
+import 'package:dm_repository/src/dm_send_budget.dart';
 import 'package:dm_repository/src/dm_shared_video_citation.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/dm_verify_isolate.dart';
@@ -152,16 +153,42 @@ const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 /// durable queue keeps the row and the retry sweep re-drives it rather than
 /// parking a red chip.
 ///
-/// Every sub-step now carries its own tight bound — Keycast RPCs 12s each
-/// (`KeycastRpc.defaultRequestTimeout`), the recipient OK window 10s, the
-/// self-wrap publish 10s — so this cap exists only to bound a truly hung
-/// await, and it must sit ABOVE the capped worst case or it fires mid-send
-/// and misclassifies it. Remote-signer worst case: recipient wrap build
-/// (2 RPCs, 24s) + OK window (10s) + deferred self-wrap build (2 RPCs, 24s)
-/// + self-wrap publish (10s) ≈ 68s + overhead → 90s. A 15s cap here (the
-/// original value) fired during routine slow-Keycast sends, turning sends
-/// that were still legitimately in flight into eternally-retrying rows.
-const Duration _messagePublishTimeout = Duration(seconds: 90);
+/// Every sub-step carries its own bound — see [DmSendBudget], which owns the
+/// derivation. This cap exists only to bound a truly hung await, and it must
+/// sit ABOVE [DmSendBudget.chainWorstCase] or it fires mid-send and
+/// misclassifies it.
+///
+/// That is exactly what went wrong in #6586. The bound was hand-derived from a
+/// Keycast per-RPC timeout of 12s; #6075 raised that timeout to 30s (correctly
+/// — 12s had regressed video-publish signing, likes, reposts and follows) and
+/// the derivation here was never redone. A 1:1 send costs **four** measured
+/// signer round trips, so the honest chain became (2 × 30s) + 10s + (2 × 30s)
+/// + 10s = 140s against a 90s cap.
+///
+/// Because the self-wrap is built only after the recipient's `OK true`
+/// arrives, that 140s path was the *delivery* path: the cap fired on sends the
+/// recipient had already received, parking them as soft-unconfirmed until the
+/// retry budget terminalised them into a red bubble. The cure is not a bigger
+/// number — the wrap builds now carry explicit bounds
+/// ([DmSendBudget.recipientWrapBuild], [DmSendBudget.selfWrapBuild]), which is
+/// what stops the *signing chain* outrunning this cap even when the signer path
+/// is slower. Amber's NIP-55 intent path for `nip44Encrypt` and `signEvent` is
+/// human-gated and unbounded, so a recipient-build timeout leaves the durable
+/// row pending for retry instead of red-failed.
+///
+/// That covers the signing chain, not the whole send. Three awaited steps
+/// inside this cap are still unbounded and deliberately NOT in
+/// [DmSendBudget.chainWorstCase]: `refreshPublicKey()` (a real round trip for
+/// any signer that doesn't cache the pubkey, e.g. a NIP-46 bunker — Keycast
+/// does cache it), the send-policy protected-minor check, and the connectivity
+/// probe. So this cap remains a genuine backstop for those, and
+/// [DmSendBudget.chainWorstCase] is a floor on what a send can cost, not a
+/// ceiling. Bounding them is tracked separately.
+///
+/// A 15s cap here (the original value) fired during routine slow-Keycast
+/// sends, turning sends that were still legitimately in flight into
+/// eternally-retrying rows — the reason this backstop must stay generous.
+const Duration _messagePublishTimeout = DmSendBudget.messagePublishTimeout;
 
 /// Outcome of resolving a user's own kind-10050 DM inbox relay list (#4974).
 ///
@@ -3131,10 +3158,11 @@ class DmRepository {
         rumorId: rumor.id,
       );
     } else if (result.retryablePending && outgoingDao != null) {
-      // Soft-unconfirmed: the recipient frame was written but no NIP-20 OK
-      // arrived (and no explicit rejection). Keep the row pending — it
-      // renders as a plain optimistic bubble, never a red failure — and let
-      // the retry sweep re-drive it. A lost OK is not proof of loss.
+      // Soft retry: either the recipient frame was written but no NIP-20 OK
+      // arrived, or the pre-publish wrap build timed out while a human-gated
+      // signer approval may still be pending. Keep the row pending — it renders
+      // as a plain optimistic bubble, never a red failure — and let the retry
+      // sweep re-drive it.
       await _finalizeAfterRecipientUnconfirmed(
         outgoingDao: outgoingDao,
         rumorId: rumor.id,
@@ -3834,9 +3862,10 @@ class DmRepository {
       // refuses every time. This attempt delivered nothing.
       await _finalizeAfterRecipientBlocked(outgoingDao: dao, rumorId: rumorId);
     } else if (result.retryablePending) {
-      // Soft-unconfirmed retry: frame written, no OK yet. Keep the row
-      // pending (plain optimistic bubble, not a red failure) and let the
-      // next sweep re-drive it; only bump the retry count so it eventually
+      // Soft retry: frame written with no OK yet, or a pre-publish wrap build
+      // timeout while a human-gated signer approval may still be pending. Keep
+      // the row pending (plain optimistic bubble, not a red failure) and let
+      // the next sweep re-drive it; only bump the retry count so it eventually
       // exhausts.
       await _finalizeAfterRecipientUnconfirmed(
         outgoingDao: dao,
@@ -4231,11 +4260,12 @@ class DmRepository {
     }
   }
 
-  /// Apply the queue-row transition for a soft, retryable-pending recipient
-  /// publish — the relay frame was written but no NIP-20 `OK` arrived within
-  /// the confirm window (and no explicit rejection). A lost OK is not proof
-  /// of loss, so the row stays `pending` (rendering as a plain optimistic
-  /// bubble, never a red failure) and the retry sweep re-drives it.
+  /// Apply the queue-row transition for a soft, retryable-pending failure: an
+  /// inconclusive recipient publish (frame written, no NIP-20 `OK`, no explicit
+  /// rejection) or a bounded pre-publish wrap build timeout where a human-gated
+  /// signer approval may still be pending. The row stays `pending` (rendering
+  /// as a plain optimistic bubble, never a red failure) and the retry sweep
+  /// re-drives it.
   ///
   /// Only `incrementRetry` runs: it records the attempt timestamp so the
   /// next sweep applies backoff, and counts this attempt toward the retry
