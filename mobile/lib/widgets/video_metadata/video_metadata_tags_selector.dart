@@ -24,7 +24,7 @@ Future<Set<String>?> showVideoMetadataTagsSelector(
     context: context,
     initialChildSize: 1,
     maxChildSize: 1,
-    minChildSize: 0.8,
+    minChildSize: 0.5,
     showDragHandle: false,
     showHeader: false,
     buildScrollBody: (scrollController) => _TagsPickerSheet(

@@ -54,7 +54,7 @@ class VideoEditorAudioChip extends StatelessWidget {
           context: context,
           maxChildSize: 1,
           initialChildSize: 1,
-          minChildSize: 0.8,
+          minChildSize: 0.5,
           buildScrollBody: (scrollController) =>
               AudioSelectionBottomSheet(scrollController: scrollController),
         );

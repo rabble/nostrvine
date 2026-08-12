@@ -1602,6 +1602,85 @@ void main() {
     });
   });
 
+  group('showUserPickerSheet', () {
+    testWidgets('a short drag on the results keeps the picker and its picks', (
+      tester,
+    ) async {
+      final profiles = [
+        UserProfile(
+          pubkey: 'pubkey1',
+          name: 'Picked User',
+          rawData: const {'name': 'Picked User'},
+          createdAt: DateTime(2026),
+          eventId: 'event1',
+        ),
+        UserProfile(
+          pubkey: 'pubkey2',
+          name: 'Other User',
+          rawData: const {'name': 'Other User'},
+          createdAt: DateTime(2026),
+          eventId: 'event2',
+        ),
+      ];
+
+      var pickerClosed = false;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            profileRepositoryProvider.overrideWithValue(
+              _createMockProfileRepository(cachedProfiles: profiles),
+            ),
+            followRepositoryProvider.overrideWithValue(
+              _createMockFollowRepository(
+                followingPubkeys: ['pubkey1', 'pubkey2'],
+              ),
+            ),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () async {
+                    await showUserPickerSheet(
+                      context,
+                      filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                      title: 'Title',
+                      maxCount: 2,
+                    );
+                    pickerClosed = true;
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Picked User'));
+      await tester.pumpAndSettle();
+
+      // A third of the viewport: past the floor the sheet used to sit on,
+      // short of the one it sits on now. Reaching the floor pops the modal,
+      // and the selection pops with it.
+      await tester.drag(find.byType(ListView), const Offset(0, 200));
+      await tester.pumpAndSettle();
+
+      expect(pickerClosed, isFalse);
+      expect(find.byType(UserPickerSheet), findsOneWidget);
+      expect(find.text('Picked User'), findsOneWidget);
+    });
+  });
+
   group(UserPickerFilterMode, () {
     test('has correct enum values', () {
       expect(UserPickerFilterMode.values.length, equals(2));

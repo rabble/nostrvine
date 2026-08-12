@@ -529,7 +529,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       title: Text(context.l10n.videoEditorStickers),
       maxChildSize: 1,
       initialChildSize: 1,
-      minChildSize: 0.8,
+      minChildSize: 0.5,
       buildScrollBody: (scrollController) => BlocProvider.value(
         value: _stickerBloc,
         child: VideoEditorStickerSheet(scrollController: scrollController),

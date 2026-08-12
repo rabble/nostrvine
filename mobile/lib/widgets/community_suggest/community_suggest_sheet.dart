@@ -28,7 +28,7 @@ class CommunitySuggestSheet {
     return context.showVideoPausingVineBottomSheet<void>(
       maxChildSize: 1,
       initialChildSize: 0.9,
-      minChildSize: 0.7,
+      minChildSize: 0.5,
       showHeader: false,
       showDragHandle: false,
       // Preserves the pre-pause-integration presentation: the sheet stays in
