@@ -16,6 +16,7 @@ enum DeleteAccountFailureReason {
   signingFailed,
   vanishNotConfirmed,
   accountChanged,
+  accountChangedAfterVanish,
   unexpected,
 }
 
@@ -78,13 +79,23 @@ class DeleteAccountResult {
   );
 }
 
-/// Thrown when the signed-in account changes mid-deletion, so no kind-5 or
-/// kind-62 event is ever signed for an account the user did not confirm.
+/// Thrown when the signed-in account changes before the vanish request is
+/// confirmed, so cleanup must not continue for a different account.
 class AccountChangedDuringDeletion implements Exception {
   const AccountChangedDuringDeletion();
 
   @override
   String toString() => 'AccountChangedDuringDeletion';
+}
+
+/// Thrown when the signed-in account changes after a relay confirms the vanish
+/// request. The network deletion may have landed, but account-bound cleanup
+/// must stop before it can target the newly signed-in account.
+class AccountChangedAfterVanish implements Exception {
+  const AccountChangedAfterVanish();
+
+  @override
+  String toString() => 'AccountChangedAfterVanish';
 }
 
 class _VanishPublishConfig {
@@ -261,6 +272,19 @@ class AccountDeletionService {
         contentDeletionIncomplete:
             allUserEvents.isNotEmpty && deletedCount < allUserEvents.length,
       );
+    } on AccountChangedAfterVanish {
+      Log.warning(
+        'Deletion cleanup aborted: signed-in account changed after the '
+        'vanish request was confirmed',
+        name: 'AccountDeletionService',
+        category: LogCategory.auth,
+      );
+      return DeleteAccountResult.failure(
+        DeleteAccountFailureReason.accountChangedAfterVanish,
+        diagnosticError:
+            'Signed-in account changed after vanish confirmation; '
+            'account-bound cleanup stopped',
+      );
     } on AccountChangedDuringDeletion {
       Log.warning(
         'Deletion aborted: signed-in account changed mid-flight',
@@ -295,7 +319,14 @@ class AccountDeletionService {
         event,
         timeout: _vanishPublish.timeout,
       );
-      _assertSignerMatches(expectedPubkey);
+      try {
+        _assertSignerMatches(expectedPubkey);
+      } on AccountChangedDuringDeletion {
+        if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
+          throw const AccountChangedAfterVanish();
+        }
+        rethrow;
+      }
 
       if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
         return outcome;

@@ -7363,6 +7363,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ai schimbat contul, așa că nimic nu a fost șters. Redeschide ștergerea pentru contul pe care vrei să-l elimini.';
 
   @override
+  String get deleteAccountAccountChangedAfterVanish =>
+      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Nu am putut elibera numele tău de utilizator. Contul tău nu a fost șters. Încearcă din nou sau debifează opțiunea.';
 

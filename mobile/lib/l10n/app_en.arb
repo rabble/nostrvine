@@ -4360,6 +4360,8 @@
   "@messageRequestWantsToMessageYou": {"placeholders": {"displayName": {"type": "String"}, "messageText": {"type": "String"}}},
   "deleteAccountAccountChanged": "You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.",
   "@deleteAccountAccountChanged": {"description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."},
+  "deleteAccountAccountChangedAfterVanish": "Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.",
+  "@deleteAccountAccountChangedAfterVanish": {"description": "Error shown when a relay accepted the NIP-62 account deletion request but the signed-in account changed before server and local cleanup could finish."},
   "deleteAccountBurnUsernameFailed": "Couldn't release your username. Your account was not deleted. Try again, or uncheck the option.",
   "@deleteAccountBurnUsernameFailed": {"description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."},
   "deleteAccountBurnUsernameReleased": "Your username {username} has been permanently released, but we couldn't finish deleting your account. Tap Delete again to finish.",

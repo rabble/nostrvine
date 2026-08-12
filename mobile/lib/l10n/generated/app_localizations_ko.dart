@@ -6905,6 +6905,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '계정이 전환돼서 아무것도 삭제되지 않았어요. 삭제할 계정에서 삭제 화면을 다시 열어주세요.';
 
   @override
+  String get deleteAccountAccountChangedAfterVanish =>
+      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       '사용자명을 해제하지 못했어요. 계정은 삭제되지 않았어요. 다시 시도하거나 옵션 선택을 해제해주세요.';
 

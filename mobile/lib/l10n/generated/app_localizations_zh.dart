@@ -6848,6 +6848,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '你切换了账号，因此没有删除任何内容。请为要删除的账号重新打开删除流程。';
 
   @override
+  String get deleteAccountAccountChangedAfterVanish =>
+      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       '无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。';
 

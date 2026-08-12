@@ -1584,6 +1584,61 @@ void main() {
       },
     );
 
+    testWidgets(
+      'acknowledges a confirmed vanish when the account changes afterward',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            DeleteAccountFailureReason.accountChangedAfterVanish,
+            diagnosticError:
+                'Signed-in account changed after vanish confirmation',
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          confirmedPubkey: _pubkeyHex,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.deleteAccountAccountChangedAfterVanish),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.deleteAccountAccountChanged),
+          findsNothing,
+        );
+        verifyNever(authService.deleteKeycastAccount);
+      },
+    );
+
     // THE regression test for #6335. Production published the irreversible
     // NIP-62 vanish and the kind-5 sweep, and only then asked Keycast to delete
     // the account — which refused with 403 for any user whose token had been

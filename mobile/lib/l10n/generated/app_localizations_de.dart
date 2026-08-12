@@ -7282,6 +7282,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du hast das Konto gewechselt, also wurde nichts gelöscht. Öffne das Löschen erneut für das Konto, das du entfernen willst.';
 
   @override
+  String get deleteAccountAccountChangedAfterVanish =>
+      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Dein Benutzername konnte nicht freigegeben werden. Dein Konto wurde nicht gelöscht. Versuch es erneut oder deaktiviere die Option.';
 

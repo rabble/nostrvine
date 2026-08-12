@@ -1277,7 +1277,7 @@ void main() {
           expect(result.success, isFalse);
           expect(
             result.failureReason,
-            DeleteAccountFailureReason.accountChanged,
+            DeleteAccountFailureReason.accountChangedAfterVanish,
           );
         },
       );

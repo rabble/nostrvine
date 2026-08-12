@@ -7206,6 +7206,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bạn đã chuyển tài khoản nên không có gì bị xóa. Hãy mở lại mục xóa cho tài khoản bạn muốn gỡ.';
 
   @override
+  String get deleteAccountAccountChangedAfterVanish =>
+      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Không nhả được tên người dùng của bạn. Tài khoản của bạn chưa bị xóa. Thử lại, hoặc bỏ chọn tùy chọn đó.';
 

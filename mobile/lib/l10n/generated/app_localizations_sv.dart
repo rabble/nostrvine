@@ -7191,6 +7191,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du bytte konto, så ingenting raderades. Öppna raderingen igen för kontot du vill ta bort.';
 
   @override
+  String get deleteAccountAccountChangedAfterVanish =>
+      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Kunde inte frigöra ditt användarnamn. Ditt konto raderades inte. Försök igen eller avmarkera alternativet.';
 
