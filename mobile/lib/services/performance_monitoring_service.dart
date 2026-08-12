@@ -8,10 +8,10 @@ import 'package:unified_logger/unified_logger.dart';
 ///
 /// Callers capture the handle returned by
 /// [PerformanceTraceMonitor.startOperationTrace] and tag/stop *that* handle, so
-/// each operation owns its own trace. This avoids the name-keyed pitfalls of
-/// the legacy [PerformanceTraceMonitor.startTrace] API: a fast operation can't
-/// tag/stop before a shared registration completes, and two overlapping
-/// operations can't stop or re-attribute each other's trace.
+/// each operation owns its own trace. This avoids the pitfalls of the removed
+/// name-keyed API: a fast operation can't tag/stop before a shared
+/// registration completes, and two overlapping operations can't stop or
+/// re-attribute each other's trace.
 abstract class PerformanceTrace {
   /// Adds an attribute for filtering in the Firebase console.
   void putAttribute(String attribute, String value);

@@ -630,20 +630,13 @@ class BlossomUploadService {
   /// Size of the uploaded file, reported on both upload traces.
   static const String _fileSizeMetric = 'file_size_bytes';
 
-  /// Trace attribute separating completed uploads from the ones that failed or
-  /// were cancelled. Without it a two-minute timeout and an eight-second
-  /// success sit in the same duration distribution (#7121).
+  /// Trace attribute separating completed uploads from the ones that failed.
+  /// Without it a two-minute timeout and an eight-second success sit in the
+  /// same duration distribution (#7121).
   static const String _outcomeAttribute = 'outcome';
 
   /// Attribute value for an upload that reached its terminal success state.
   static const String _outcomeSuccess = 'success';
-
-  /// Attribute value for an upload the user deliberately stopped.
-  ///
-  /// Kept apart from the `error:*` values rather than folded in: a cancel is
-  /// terminal but not a failure, and grouping it with timeouts would inflate
-  /// the error rate with user intent.
-  static const String _outcomeCancelled = 'cancelled';
 
   /// Attribute value for a trace whose operation threw instead of returning a
   /// result. Distinct from a returned failure, which carries its own reason.
@@ -934,19 +927,19 @@ class BlossomUploadService {
   /// Maps an upload result onto the trace's `outcome` attribute value.
   ///
   /// A null [result] means the operation threw instead of returning, which is
-  /// otherwise indistinguishable from a returned failure. A user cancellation
-  /// reports [_outcomeCancelled] rather than an `error:*` value — it is
-  /// terminal but not a failure. Every other failure is `error:<reason>`, so
-  /// the attribute's cardinality stays bounded by
+  /// otherwise indistinguishable from a returned failure. Failure values are
+  /// `error:<reason>`, so the attribute's cardinality is bounded by
   /// [BlossomUploadFailureReason]; an unclassified failure reports `unknown`,
   /// matching how callers are told to treat a null reason.
+  ///
+  /// [BlossomUploadFailureReason.cancelled] needs no special case: it is only
+  /// ever produced by [_backgroundTransferResult] from an OS terminal event,
+  /// which arrives after the enqueue trace has already been tagged and
+  /// stopped. No traced result can carry it.
   static String _traceOutcome(BlossomUploadResult? result) {
     if (result == null) return _outcomeThrew;
     if (result.success) return _outcomeSuccess;
     final reason = result.failureReason ?? BlossomUploadFailureReason.unknown;
-    if (reason == BlossomUploadFailureReason.cancelled) {
-      return _outcomeCancelled;
-    }
     return 'error:${reason.name}';
   }
 

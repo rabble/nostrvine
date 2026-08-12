@@ -532,7 +532,7 @@ void main() {
       },
     );
 
-    test('a user cancellation is not tagged as an error', () async {
+    test('a cancelled OS transfer keeps its enqueue tagged success', () async {
       final monitor = _RecordingPerformanceMonitor();
       final transport = _FakeTransport(outcome: _FakeOutcome.cancelled);
       final service = BlossomUploadService(
@@ -554,8 +554,10 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      // A cancel is terminal but deliberate. Folding it into `error:*` would
-      // inflate the error rate with user intent.
+      // The hand-off itself succeeded; the cancel lands on the OS leg, which
+      // this trace deliberately does not span. A cancel therefore never
+      // reaches the `outcome` attribute at all — it cannot inflate the error
+      // rate, so it needs no value of its own.
       expect(monitor.named(enqueueTraceName)!.attributes['outcome'], 'success');
       // The cancel is terminal, so no fallback leg runs and no second trace
       // is opened.
@@ -981,9 +983,10 @@ void main() {
       'OS-first attempt that throws still falls back to chunked resumable',
       () async {
         // uploadVideoInBackground normally returns failures rather than
-        // throwing, so to exercise the catch-guard we make startTrace throw
-        // (it runs before uploadVideoInBackground's internal try/catch). The
-        // publish must still get a resumable retry rather than dying.
+        // throwing, so to exercise the catch-guard we make
+        // startOperationTrace throw (it runs before uploadVideoInBackground's
+        // internal try/catch). The publish must still get a resumable retry
+        // rather than dying.
         final transport = _FakeTransport();
         final service = BlossomUploadService(
           authProvider: auth,
@@ -1030,8 +1033,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        // The OS attempt never reached enqueue (startTrace threw first), but
-        // the resumable fallback still completed successfully.
+        // The OS attempt never reached enqueue (startOperationTrace threw
+        // first), but the resumable fallback still completed successfully.
         expect(transport.enqueuedTaskIds, isEmpty);
         verify(
           () => dio.put<dynamic>(
