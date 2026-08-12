@@ -9431,6 +9431,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Transformation impossible : le clip n\'est pas disponible localement.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Rogner, faire pivoter ou retourner l\'image sélectionnée';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Un instant, on transforme ton image';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Impossible de transformer l\'image. Réessaie.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Pivoter';
 
   @override

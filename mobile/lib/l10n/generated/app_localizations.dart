@@ -16038,6 +16038,24 @@ abstract class AppLocalizations {
   /// **'Cannot transform: clip is not locally available.'**
   String get videoEditorTransformNoLocalFile;
 
+  /// Accessibility label for the Transform button in the stop-motion frame controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop, rotate, or flip selected frame'**
+  String get videoEditorTransformSelectedFrameSemanticLabel;
+
+  /// Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform.
+  ///
+  /// In en, this message translates to:
+  /// **'One moment, we\'re transforming your frame'**
+  String get videoEditorTransformFrameProgressLabel;
+
+  /// Snackbar message shown when saving a transformed stop-motion frame fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not transform frame. Please try again.'**
+  String get videoEditorTransformFrameFailed;
+
   /// Label for the rotate action button in the clip transform editor.
   ///
   /// In en, this message translates to:

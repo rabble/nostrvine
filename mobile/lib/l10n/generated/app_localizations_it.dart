@@ -9395,6 +9395,18 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile trasformare: il clip non è disponibile localmente.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Ritaglia, ruota o capovolgi il fotogramma selezionato';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Un attimo, stiamo trasformando il tuo fotogramma';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Impossibile trasformare il fotogramma. Riprova.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Ruota';
 
   @override

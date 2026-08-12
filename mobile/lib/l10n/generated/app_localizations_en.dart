@@ -9282,6 +9282,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cannot transform: clip is not locally available.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Crop, rotate, or flip selected frame';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'One moment, we\'re transforming your frame';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Could not transform frame. Please try again.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Rotate';
 
   @override

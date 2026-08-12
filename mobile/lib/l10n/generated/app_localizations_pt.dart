@@ -9369,6 +9369,18 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não é possível transformar: o clipe não está disponível localmente.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Cortar, girar ou espelhar o quadro selecionado';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Um momento, estamos transformando seu quadro';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Não foi possível transformar o quadro. Tente novamente.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Girar';
 
   @override

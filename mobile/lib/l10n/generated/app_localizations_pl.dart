@@ -9485,6 +9485,18 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie można przekształcić: klip nie jest dostępny lokalnie.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Przytnij, obróć lub odbij zaznaczoną klatkę';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Chwileczkę, przekształcamy twoją klatkę';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Nie udało się przekształcić klatki. Spróbuj ponownie.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Obróć';
 
   @override

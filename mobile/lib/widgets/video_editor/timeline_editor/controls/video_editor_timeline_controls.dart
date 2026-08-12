@@ -26,6 +26,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.isSaveToLibraryDisabled = false,
     this.onMultiSelect,
     this.multiSelectSemanticLabel,
+    this.transformSemanticLabel,
     this.extraControls = const [],
     super.key,
   });
@@ -43,6 +44,11 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onAnimate;
   final VoidCallback? onSpeed;
   final VoidCallback? onTransform;
+
+  /// Overrides the transform button's accessibility label. Defaults to the
+  /// clip-oriented copy; the stop-motion action bar passes a frame-specific
+  /// label because it transforms a single still, not the clip.
+  final String? transformSemanticLabel;
 
   /// Opens the green-screen editor for the active clip.
   final VoidCallback? onChromaKey;
@@ -168,9 +174,11 @@ class VideoEditorTimelineControls extends StatelessWidget {
                     _ControlButton(
                       icon: .cropSquare,
                       label: context.l10n.videoEditorTransformLabel,
-                      semanticLabel: context
-                          .l10n
-                          .videoEditorTransformSelectedClipSemanticLabel,
+                      semanticLabel:
+                          transformSemanticLabel ??
+                          context
+                              .l10n
+                              .videoEditorTransformSelectedClipSemanticLabel,
                       onPressed: onTransform,
                     ),
                   if (onChromaKey != null)

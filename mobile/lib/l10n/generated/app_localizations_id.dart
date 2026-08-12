@@ -9259,6 +9259,18 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak dapat mentransformasi: klip tidak tersedia secara lokal.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Pangkas, putar, atau balik bingkai yang dipilih';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Sebentar, kami sedang mengubah bingkaimu';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Bingkai tidak dapat diubah. Coba lagi.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Putar';
 
   @override

@@ -33,9 +33,9 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
   @override
   Widget build(BuildContext context) {
     // Frames-only stop-motion clips get a frame-first action set: delete /
-    // duplicate / multi-select stills and adjust their hold. Clip-only
-    // actions (split, speed, reverse, extract audio, transform) don't apply
-    // to a still sequence and are hidden.
+    // duplicate / multi-select stills, adjust their hold, transform the
+    // selected still. Clip-only actions (split, speed, reverse, extract audio)
+    // don't apply to a still sequence and are hidden.
     final isStopMotion = context.select((ClipEditorBloc b) {
       final state = b.state;
       final index = state.currentClipIndex;
@@ -505,6 +505,18 @@ class _StopMotionClipControls extends StatelessWidget {
               ],
             )
           : null,
+      // Crop / rotate / flip the selected still. A stop-motion still is an
+      // image, so the transform is applied by the image editor and written
+      // straight back to the frame — no clip re-render involved.
+      onTransform: hasSelection
+          ? () => transformStopMotionFrame(
+              context,
+              clipId: data.clipId,
+              frameIndex: selected,
+            )
+          : null,
+      transformSemanticLabel:
+          context.l10n.videoEditorTransformSelectedFrameSemanticLabel,
       // Frame multi-select: batch delete / hold on several stills. Needs a
       // second still to be meaningful.
       onMultiSelect: frames.length > 1

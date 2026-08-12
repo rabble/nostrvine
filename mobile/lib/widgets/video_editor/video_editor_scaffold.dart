@@ -236,6 +236,12 @@ class _ClipTransformResultListener extends StatelessWidget {
             context.l10n.videoEditorTransformFailed,
           ),
         );
+      case ClipTransformFrameFailure():
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorTransformFrameFailed,
+          ),
+        );
       case ClipTransformDiscarded():
         // Source clip was removed during the async gap — nothing to attach
         // the transformed render to and no user action that warrants a

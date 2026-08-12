@@ -8930,6 +8930,16 @@ class AppLocalizationsKo extends AppLocalizations {
       '변형할 수 없음: 클립을 로컬에서 사용할 수 없습니다.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      '선택한 프레임 자르기, 회전 또는 뒤집기';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel => '잠시만요, 프레임을 변환하고 있어요';
+
+  @override
+  String get videoEditorTransformFrameFailed => '프레임을 변환하지 못했어요. 다시 시도해 주세요.';
+
+  @override
   String get videoEditorTransformRotateLabel => '회전';
 
   @override

@@ -5481,6 +5481,18 @@
   "@videoEditorTransformNoLocalFile": {
     "description": "Snackbar message shown when a transform is requested for a clip that has no locally available file."
   },
+  "videoEditorTransformSelectedFrameSemanticLabel": "منتخب فریم کو کراپ، گھمائیں یا پلٹیں",
+  "@videoEditorTransformSelectedFrameSemanticLabel": {
+    "description": "Accessibility label for the Transform button in the stop-motion frame controls."
+  },
+  "videoEditorTransformFrameProgressLabel": "ایک لمحہ، ہم آپ کا فریم تبدیل کر رہے ہیں",
+  "@videoEditorTransformFrameProgressLabel": {
+    "description": "Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform."
+  },
+  "videoEditorTransformFrameFailed": "فریم تبدیل نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
+  "@videoEditorTransformFrameFailed": {
+    "description": "Snackbar message shown when saving a transformed stop-motion frame fails."
+  },
   "videoEditorTransformRotateLabel": "گھمائیں",
   "@videoEditorTransformRotateLabel": {
     "description": "Label for the rotate action button in the clip transform editor."

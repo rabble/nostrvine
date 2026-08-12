@@ -9497,6 +9497,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Transformare imposibilă: clipul nu este disponibil local.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Decupează, rotește sau oglindește cadrul selectat';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'O clipă, îți transformăm cadrul';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Cadrul nu a putut fi transformat. Încearcă din nou.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Rotește';
 
   @override

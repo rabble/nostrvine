@@ -9306,6 +9306,18 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không thể biến đổi: clip không có sẵn trên máy.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Cắt, xoay hoặc lật khung hình đã chọn';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Chờ chút, chúng tôi đang biến đổi khung hình của bạn';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Không thể biến đổi khung hình. Vui lòng thử lại.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Xoay';
 
   @override
