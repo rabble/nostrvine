@@ -1411,5 +1411,75 @@ void main() {
         );
       },
     );
+
+    // `failure` and `expired` both render red error text after the same async
+    // resend, so both need the announcement `unavailable` already gets.
+    // Otherwise the mildest outcome is the only one spoken.
+    for (final (status, label) in <(ResendStatus, String)>[
+      (ResendStatus.failure, 'failure'),
+      (ResendStatus.expired, 'expired'),
+    ]) {
+      testWidgets('announces a resend $label to screen readers', (
+        tester,
+      ) async {
+        final announced = <String>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                if (message is Map) {
+                  final data = message['data'];
+                  if (data is Map && data['message'] is String) {
+                    announced.add(data['message'] as String);
+                  }
+                }
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final expected = status == ResendStatus.failure
+            ? l10n.authVerificationResendFailed
+            : l10n.authVerificationResendExpired;
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'device-code',
+          verifier: 'verifier',
+          email: 'someone@example.test',
+          // Ends on pollingTimedOut so the polling spinner is gone and
+          // pumpAndSettle can settle.
+          stateStream: Stream<EmailVerificationState>.fromIterable([
+            const EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+            ),
+            const EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              resendStatus: ResendStatus.sending,
+            ),
+            EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              resendStatus: status,
+            ),
+          ]),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          announced.where((m) => m == expected),
+          hasLength(1),
+          reason:
+              'a resend $label swaps in red error text after an async '
+              'transition that moves no focus, so it must be announced',
+        );
+      });
+    }
   });
 }

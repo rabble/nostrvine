@@ -492,6 +492,26 @@ class _EmailVerificationScreenState
             ),
             BlocListener<EmailVerificationCubit, EmailVerificationState>(
               listenWhen: (previous, current) =>
+                  previous.resendStatus != current.resendStatus &&
+                  current.resendStatus == ResendStatus.failure,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.authVerificationResendFailed,
+                Directionality.of(context),
+              ),
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.resendStatus != current.resendStatus &&
+                  current.resendStatus == ResendStatus.expired,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.authVerificationResendExpired,
+                Directionality.of(context),
+              ),
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
                   (previous.pinStatus != current.pinStatus ||
                       previous.pinErrorCode != current.pinErrorCode) &&
                   current.pinStatus == PinSubmissionStatus.failure,
