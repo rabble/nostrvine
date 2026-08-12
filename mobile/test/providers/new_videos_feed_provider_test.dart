@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
@@ -39,11 +40,11 @@ void main() {
       ).thenReturn(false);
     });
 
-    ProviderContainer createContainer() {
+    ProviderContainer createContainer({bool overrideAppReady = true}) {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(),
-          appReadyProvider.overrideWithValue(true),
+          if (overrideAppReady) appReadyProvider.overrideWithValue(true),
           videosRepositoryProvider.overrideWithValue(videosRepository),
           videoEventServiceProvider.overrideWithValue(videoEventService),
           contentBlocklistRepositoryProvider.overrideWithValue(
@@ -84,9 +85,7 @@ void main() {
       test(
         'reports more content behind a page shorter than its page size',
         () async {
-          stubPages(
-            first: HomeFeedResult(videos: _videos(2), hasMore: true),
-          );
+          stubPages(first: HomeFeedResult(videos: _videos(2), hasMore: true));
 
           final state = await createContainer().read(
             newVideosFeedProvider.future,
@@ -114,6 +113,39 @@ void main() {
           expect(state.hasMoreContent, isFalse);
         },
       );
+
+      test('re-filters existing videos when appReady is false', () async {
+        var hideSecondVideo = false;
+        when(() => videoEventService.filterVideoList(any())).thenAnswer((
+          invocation,
+        ) {
+          final videos = List<VideoEvent>.from(
+            invocation.positionalArguments.first as List,
+          );
+          return hideSecondVideo
+              ? videos.where((video) => video.id != 'new-1').toList()
+              : videos;
+        });
+        stubPages(first: HomeFeedResult(videos: _videos(2), hasMore: true));
+        final container = createContainer(overrideAppReady: false);
+
+        final initial = await container.read(newVideosFeedProvider.future);
+        expect(initial.videos.map((v) => v.id), ['new-0', 'new-1']);
+
+        hideSecondVideo = true;
+        container.read(appForegroundProvider.notifier).setForeground(false);
+        await container.read(newVideosFeedProvider.future);
+
+        final backgrounded = container.read(newVideosFeedProvider).requireValue;
+        expect(backgrounded.videos.map((v) => v.id), ['new-0']);
+        verify(
+          () => videosRepository.getNewVideos(
+            limit: any(named: 'limit'),
+            until: any(named: 'until'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).called(1);
+      });
     });
 
     group('loadMore', () {

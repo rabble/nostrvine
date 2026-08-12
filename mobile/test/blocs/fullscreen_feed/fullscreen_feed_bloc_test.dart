@@ -93,7 +93,7 @@ void main() {
       OnRemoveVideo? onRemoveVideo,
       OnVideoConfirmedUnavailable? onVideoConfirmedUnavailable,
       ConfirmVideoUnavailable? confirmVideoUnavailable,
-      BlockAuthorFilter? blockFilter,
+      VideoHideFilter? hideFilter,
       UnavailableVideoFilter? unavailableFilter,
       FeedTuningRepository? feedTuningRepository,
     }) => FullscreenFeedBloc(
@@ -108,7 +108,7 @@ void main() {
       onRemoveVideo: onRemoveVideo,
       onVideoConfirmedUnavailable: onVideoConfirmedUnavailable,
       confirmVideoUnavailable: confirmVideoUnavailable,
-      blockFilter: blockFilter,
+      hideFilter: hideFilter,
       unavailableFilter: unavailableFilter,
       feedTuningRepository: feedTuningRepository,
     );
@@ -116,7 +116,7 @@ void main() {
     ConfirmVideoUnavailable confirmerReturning(
       bool result, {
       void Function(String? videoUrl, String? explicitSha256)? onCall,
-    }) => ({required videoUrl, explicitSha256}) async {
+    }) => ({required videoId, required videoUrl, explicitSha256}) async {
       onCall?.call(videoUrl, explicitSha256);
       return result;
     };
@@ -634,9 +634,8 @@ void main() {
       // just as effectively as one that pushes an empty list.
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'emits empty when every video in a later emission is filtered out',
-        build: () => createBloc(
-          unavailableFilter: (videoId) => videoId == 'video2',
-        ),
+        build: () =>
+            createBloc(unavailableFilter: (videoId) => videoId == 'video2'),
         act: (bloc) async {
           bloc.add(const FullscreenFeedStarted());
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -899,7 +898,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'filters blocked authors from incoming stream lists at the boundary',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         act: (bloc) async {
           bloc.add(const FullscreenFeedStarted());
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -919,12 +918,42 @@ void main() {
         ],
       );
 
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'filters videos when a visible reposter is blocked',
+        build: () => createBloc(
+          hideFilter: (video) =>
+              video.pubkey == authorB ||
+              video.reposterPubkey == authorB ||
+              (video.reposterPubkeys?.contains(authorB) ?? false),
+        ),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('reposted', pubkey: authorC).copyWith(
+              isRepost: true,
+              reposterPubkey: authorB,
+              reposterPubkeys: [authorB],
+            ),
+          ]);
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'video ids',
+            ['a'],
+          ),
+        ],
+      );
+
       // The boundary filter must hold across a source re-push — the
       // liked-videos like-change subscription / load-more re-emit unfiltered
       // lists (finding N1), so a blocked author must not slip back in.
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'keeps blocked authors out across a source re-push',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         act: (bloc) async {
           bloc.add(const FullscreenFeedStarted());
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -960,7 +989,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'preserves the playing video when an earlier author is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -989,7 +1018,7 @@ void main() {
       // 'e', not 'd' — so this test fails loudly if the shift logic regresses.
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'shifts the cursor left by the count of blocked videos before it',
-        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorA),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1016,7 +1045,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'lands on the next survivor when the current video is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1043,7 +1072,7 @@ void main() {
       // surface at index 0.
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'lands on the next survivor when the index-0 video is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorA),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1066,7 +1095,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'transitions to emptyAfterRemoval when every author is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorA),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1088,7 +1117,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'emits nothing when no author is blocked',
-        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        build: () => createBloc(hideFilter: (video) => video.pubkey == authorB),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [
@@ -1745,8 +1774,8 @@ void main() {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'calls onVideoConfirmedUnavailable when confirmation allows prune',
         build: () => createBloc(
-          onVideoConfirmedUnavailable: expectAsync1<void, String>((id) {
-            expect(id, equals('video1'));
+          onVideoConfirmedUnavailable: expectAsync1<void, VideoEvent>((video) {
+            expect(video.id, equals('video1'));
           }),
           confirmVideoUnavailable: confirmerReturning(true),
         ),

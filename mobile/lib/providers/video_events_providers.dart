@@ -320,13 +320,8 @@ class VideoEvents extends _$VideoEvents {
     }
 
     // Always emit current events if available (no reordering - preserve insertion order)
-    // Create defensive copy, filtering blocked users and unsupported platforms
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    final currentEvents = service.filterVideoList(
-      service.discoveryVideos
-          .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-          .toList(),
-    );
+    // Create defensive copy, applying the shared feed filters.
+    final currentEvents = service.filterVideoList(service.discoveryVideos);
 
     Log.error(
       '  🔍 About to emit ${currentEvents.length} current events (canEmit: $_canEmit)',
@@ -416,14 +411,10 @@ class VideoEvents extends _$VideoEvents {
     }
 
     // Store pending events for debounced emission (no reordering - preserve order)
-    // Filter for platform support and blocked users
+    // Filter for platform support and shared hidden-video policy.
     // Create defensive copy ONLY when contents changed
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     _pendingEvents = service.filterVideoList(
-      newEvents
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-          .toList(),
+      newEvents.where((v) => v.isSupportedOnCurrentPlatform).toList(),
     );
 
     // Cancel any existing timer

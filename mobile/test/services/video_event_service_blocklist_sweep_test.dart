@@ -63,35 +63,30 @@ void main() {
       blocklistRepo.dispose();
     });
 
-    test(
-      'blockUser triggers a sweep — removedVideoIds emits every cached id '
-      'for the blocked author',
-      () async {
-        const author = 'author-pubkey';
-        service.debugSeedAuthorBucket(author, [
-          _video(id: 'v1', pubkey: author),
-          _video(id: 'v2', pubkey: author),
-          _video(id: 'v3', pubkey: author),
-        ]);
+    test('blockUser triggers a sweep — removedVideoIds emits every cached id '
+        'for the blocked author', () async {
+      const author = 'author-pubkey';
+      service.debugSeedAuthorBucket(author, [
+        _video(id: 'v1', pubkey: author),
+        _video(id: 'v2', pubkey: author),
+        _video(id: 'v3', pubkey: author),
+      ]);
 
-        final emitted = <String>[];
-        final sub = service.removedVideoIds.listen(emitted.add);
-        addTearDown(sub.cancel);
+      final emitted = <String>[];
+      final sub = service.removedVideoIds.listen(emitted.add);
+      addTearDown(sub.cancel);
 
-        await blocklistRepo.blockUser(author);
-        await Future<void>.delayed(Duration.zero);
+      await blocklistRepo.blockUser(author);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(emitted, containsAll(['v1', 'v2', 'v3']));
-        expect(emitted.length, 3);
-      },
-    );
+      expect(emitted, containsAll(['v1', 'v2', 'v3']));
+      expect(emitted.length, 3);
+    });
 
     test('unblockUser does NOT trigger a sweep (no-op for removals)', () async {
       const author = 'author-pubkey';
       await blocklistRepo.blockUser(author); // pre-block so unblock fires
-      service.debugSeedAuthorBucket(author, [
-        _video(id: 'v1', pubkey: author),
-      ]);
+      service.debugSeedAuthorBucket(author, [_video(id: 'v1', pubkey: author)]);
 
       // Listener after pre-block so the initial blocked emit isn't counted.
       final emitted = <String>[];
@@ -133,78 +128,71 @@ void main() {
       expect(emitted, isEmpty);
     });
 
-    test(
-      're-blocking the same author is dedupe at the repository level — no '
-      'duplicate sweep',
-      () async {
-        const author = 'author-pubkey';
-        service.debugSeedAuthorBucket(author, [
-          _video(id: 'v1', pubkey: author),
-        ]);
+    test('re-blocking the same author is dedupe at the repository level — no '
+        'duplicate sweep', () async {
+      const author = 'author-pubkey';
+      service.debugSeedAuthorBucket(author, [_video(id: 'v1', pubkey: author)]);
 
-        await blocklistRepo.blockUser(author);
-        await Future<void>.delayed(Duration.zero);
+      await blocklistRepo.blockUser(author);
+      await Future<void>.delayed(Duration.zero);
 
-        final emitted = <String>[];
-        final sub = service.removedVideoIds.listen(emitted.add);
-        addTearDown(sub.cancel);
+      final emitted = <String>[];
+      final sub = service.removedVideoIds.listen(emitted.add);
+      addTearDown(sub.cancel);
 
-        await blocklistRepo.blockUser(author); // already blocked → no-op
-        await Future<void>.delayed(Duration.zero);
+      await blocklistRepo.blockUser(author); // already blocked → no-op
+      await Future<void>.delayed(Duration.zero);
 
-        expect(emitted, isEmpty);
-      },
-    );
+      expect(emitted, isEmpty);
+    });
 
-    test(
-      'dispose cancels the blocklist subscription (further repo emits are '
-      'ignored without errors)',
-      () async {
-        // Build a separate service so the global tearDown does not double-
-        // dispose. Pre-existing helpers (`service`, `blocklistRepo`) stay
-        // owned by the outer setUp/tearDown.
-        final localNostr = _MockNostrClient();
-        when(() => localNostr.isInitialized).thenReturn(true);
-        when(() => localNostr.connectedRelayCount).thenReturn(1);
-        when(
-          () => localNostr.subscribe(any()),
-        ).thenAnswer((_) => const Stream<Event>.empty());
-        final localService = VideoEventService(
-          localNostr,
-          subscriptionManager: subscriptionManager,
-        );
-        final localRepo = ContentBlocklistRepository();
-        addTearDown(localRepo.dispose);
+    test('dispose cancels the blocklist subscription (further repo emits are '
+        'ignored without errors)', () async {
+      // Build a separate service so the global tearDown does not double-
+      // dispose. Pre-existing helpers (`service`, `blocklistRepo`) stay
+      // owned by the outer setUp/tearDown.
+      final localNostr = _MockNostrClient();
+      when(() => localNostr.isInitialized).thenReturn(true);
+      when(() => localNostr.connectedRelayCount).thenReturn(1);
+      when(
+        () => localNostr.subscribe(any()),
+      ).thenAnswer((_) => const Stream<Event>.empty());
+      final localService = VideoEventService(
+        localNostr,
+        subscriptionManager: subscriptionManager,
+      );
+      final localRepo = ContentBlocklistRepository();
+      addTearDown(localRepo.dispose);
 
-        localService.setBlocklistRepository(localRepo);
-        const author = 'author-pubkey';
-        localService.debugSeedAuthorBucket(author, [
-          _video(id: 'v1', pubkey: author),
-        ]);
+      localService.setBlocklistRepository(localRepo);
+      const author = 'author-pubkey';
+      localService.debugSeedAuthorBucket(author, [
+        _video(id: 'v1', pubkey: author),
+      ]);
 
-        final emitted = <String>[];
-        final sub = localService.removedVideoIds.listen(
-          emitted.add,
-          onError: (Object _) {},
-        );
-        addTearDown(sub.cancel);
+      final emitted = <String>[];
+      final sub = localService.removedVideoIds.listen(
+        emitted.add,
+        onError: (Object _) {},
+      );
+      addTearDown(sub.cancel);
 
-        localService.dispose();
+      localService.dispose();
 
-        // Repo is still live; emit a Blocked. The cancelled subscription
-        // means the bus does not see this event.
-        await localRepo.blockUser(author);
-        await Future<void>.delayed(Duration.zero);
+      // Repo is still live; emit a Blocked. The cancelled subscription
+      // means the bus does not see this event.
+      await localRepo.blockUser(author);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(emitted, isEmpty);
-      },
-    );
+      expect(emitted, isEmpty);
+    });
   });
 
   // Regression for #4782: detail/by-id surfaces (sound detail, video detail,
   // curated lists, notifications) gate only on shouldHideVideo and bypass the
   // reception-time blocklist filter, so shouldHideVideo itself must consult the
-  // blocklist or a blocked/muted author's videos leak onto those surfaces.
+  // blocklist or a blocked/muted author's/reposter's videos leak onto those
+  // surfaces.
   group('VideoEventService.shouldHideVideo blocklist filtering', () {
     late VideoEventService service;
     late ContentBlocklistRepository blocklistRepo;
@@ -237,11 +225,27 @@ void main() {
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
       await blocklistRepo.blockUser(author);
 
-      expect(
-        service.shouldHideVideo(_video(id: 'v1', pubkey: author)),
-        isTrue,
-      );
+      expect(service.shouldHideVideo(_video(id: 'v1', pubkey: author)), isTrue);
     });
+
+    test(
+      'hides a repost whose visible reposter is filtered from feeds',
+      () async {
+        const author =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        const reposter =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        await blocklistRepo.blockUser(reposter);
+
+        final repost = _video(id: 'v1', pubkey: author).copyWith(
+          isRepost: true,
+          reposterPubkey: reposter,
+          reposterPubkeys: [reposter],
+        );
+
+        expect(service.shouldHideVideo(repost), isTrue);
+      },
+    );
 
     test('does not hide a non-blocked author (Divine-host filter off)', () {
       const author =

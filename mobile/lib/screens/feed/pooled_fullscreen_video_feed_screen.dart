@@ -230,9 +230,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     // doesn't flip identity on a block action. The version listener in
     // [FullscreenFeedContent] re-runs the filter when the blocklist changes
     // broadly (account switch / external sync). See #5041.
-    final blockFilter = ref
-        .read(contentBlocklistRepositoryProvider)
-        .shouldFilterFromFeeds;
+    final hideFilter = ref.read(videoEventServiceProvider).shouldHideVideo;
 
     // The removal bus is wired internally (no longer a per-caller parameter):
     // deletion / block / mute emit a removed id here and the bloc drops it,
@@ -243,16 +241,18 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
 
     // Persist permanently-unavailable ids so the video stays filtered out of
     // every list surface (feed, profile, hashtag, grids) across restarts. The
-    // bloc only fires this after DeadMediaFeedGuard confirms both a 404 and a
-    // requester-independent, terminal moderation verdict (#6251).
-    void persistConfirmedUnavailable(String videoId) {
+    // bloc only fires this after DeadMediaFeedGuard confirms either the
+    // canonical API no longer has the video, or a requester-independent,
+    // terminal moderation verdict explains the media 404 (#6251).
+    void persistConfirmedUnavailable(VideoEvent video) {
+      ref.read(videoEventServiceProvider).removeVideoEventCompletely(video);
       unawaited(
         ref
             .read(brokenVideoTrackerProvider.future)
             .then(
               (tracker) => tracker.markVideoBroken(
-                videoId,
-                'Confirmed moderation-unavailable 404 in fullscreen feed',
+                video.id,
+                'Confirmed unavailable video in fullscreen feed',
               ),
             )
             .catchError((Object error) {
@@ -283,12 +283,14 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         );
 
     Future<bool> confirmVideoUnavailable({
+      required String videoId,
       required String? videoUrl,
       String? explicitSha256,
     }) async {
       final guard = ref.read(deadMediaFeedGuardProvider).asData?.value;
       if (guard == null) return false;
       return guard.isConfirmedUnavailable(
+        videoId: videoId,
         videoUrl: videoUrl,
         explicitSha256: explicitSha256,
       );
@@ -314,7 +316,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             confirmVideoUnavailable: confirmVideoUnavailable,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
-            blockFilter: blockFilter,
+            hideFilter: hideFilter,
             unavailableFilter: unavailableFilter,
             feedTuningRepository: feedTuningRepository,
           )..add(const FullscreenFeedStarted()),

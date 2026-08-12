@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/safe_pop_extension.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
@@ -143,20 +144,20 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     }
   }
 
-  /// Removes videos whose author is blocked/muted (kind 30000 d=block /
-  /// kind 10000), or who has blocked/muted the current user.
+  /// Applies the shared feed filters, including blocked/muted authors and
+  /// reposters.
   ///
   /// The REST source is already parse-gated by the repository, so this
   /// seam mainly covers the WebSocket source and hides a just-blocked
-  /// author immediately (the [blocklistVersionProvider] watch in [build]
+  /// account immediately (the [blocklistVersionProvider] watch in [build]
   /// re-runs it). Unblocked authors reappear via the version-triggered
   /// REST refetch in [build]. See #4782, #948.
-  List<VideoEvent> _filterBlockedAuthors(List<VideoEvent> videos) {
+  List<VideoEvent> _applyFeedFilters(List<VideoEvent> videos) {
     if (videos.isEmpty) return videos;
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    return videos
-        .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-        .toList();
+    final videoEventService = ref.read(videoEventServiceProvider);
+    return videoEventService.filterVideoList(
+      videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+    );
   }
 
   /// Combine and sort videos from Funnelcake and WebSocket sources.
@@ -166,7 +167,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     // If no Funnelcake data, just sort WebSocket videos locally
     if (_popularVideos == null || _popularVideos!.isEmpty) {
       webSocketVideos.sort(VideoEvent.compareByLoopsThenTime);
-      return _filterBlockedAuthors(webSocketVideos);
+      return _applyFeedFilters(webSocketVideos);
     }
 
     final funnelcakeIds = <String>{};
@@ -195,7 +196,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
     // Return Funnelcake videos (already sorted by API) + additional WebSocket
     // videos, with blocked/muted authors removed from both sources.
-    return _filterBlockedAuthors([..._popularVideos!, ...additionalVideos]);
+    return _applyFeedFilters([..._popularVideos!, ...additionalVideos]);
   }
 
   /// Navigate to fullscreen video feed through the hashtag [ViewSource].

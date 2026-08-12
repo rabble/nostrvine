@@ -46,6 +46,7 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/video_block_policy.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -516,17 +517,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   bool get shouldFilterNonDivineVideos =>
       _divineHostFilterService?.showDivineHostedOnly ?? false;
 
-  /// Returns true when this video should be hidden — either because its author
-  /// is blocked/muted (the viewer blocked them, or they blocked the viewer via
-  /// kind-30000 `d=block` / muted via kind-10000), or because the viewer's
-  /// Divine-hosted-only preference is on and the video is not Divine-hosted.
-  ///
-  /// Detail/by-id surfaces (sound detail, video detail, curated lists,
-  /// notifications) resolve videos directly and bypass the reception-time
-  /// blocklist filter, so the blocklist check lives here at the shared
-  /// chokepoint rather than at each call site.
+  /// Returns true when shared feed policy hides this video.
   bool shouldHideVideo(VideoEvent video) {
-    if (_blocklistRepository?.shouldFilterFromFeeds(video.pubkey) ?? false) {
+    if (VideoBlockPolicy.isHiddenByBlocklist(video, _blocklistRepository)) {
       return true;
     }
     if (shouldFilterNonDivineVideos && !video.isFromDivineServer) {

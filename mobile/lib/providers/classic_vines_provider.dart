@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -78,7 +77,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     bool skipCache = false,
   }) async {
     final videoEventService = ref.read(videoEventServiceProvider);
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     Object? restError;
 
     Future<HomeFeedResult> fetchRestPage({
@@ -98,7 +96,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           final filteredResult = _filterRepositoryResult(
             result,
             videoEventService,
-            blocklistRepository,
           );
 
           if (filteredResult.videos.isNotEmpty ||
@@ -211,7 +208,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         allVideos
             .where((v) => v.isOriginalVine)
             .where((v) => v.isSupportedOnCurrentPlatform)
-            .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       ),
     )..sort((a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0));
@@ -264,7 +260,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
     final repository = ref.read(videosRepositoryProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -280,11 +275,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         skipCache: true,
       );
       final filteredVideos = dedupeByFeedKey(
-        _filterRepositoryVideos(
-          page.videos,
-          videoEventService,
-          blocklistRepository,
-        ),
+        _filterRepositoryVideos(page.videos, videoEventService),
         alreadySeen: currentState.videos.map((v) => v.feedDedupKey),
       );
 
@@ -320,14 +311,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
   HomeFeedResult _filterRepositoryResult(
     HomeFeedResult result,
     VideoEventService videoEventService,
-    ContentBlocklistRepository blocklistRepository,
   ) {
     return HomeFeedResult(
-      videos: _filterRepositoryVideos(
-        result.videos,
-        videoEventService,
-        blocklistRepository,
-      ),
+      videos: _filterRepositoryVideos(result.videos, videoEventService),
       videoListSources: result.videoListSources,
       listOnlyVideoIds: result.listOnlyVideoIds,
       consumedItemCount: result.consumedItemCount,
@@ -340,13 +326,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
   List<VideoEvent> _filterRepositoryVideos(
     List<VideoEvent> videos,
     VideoEventService videoEventService,
-    ContentBlocklistRepository blocklistRepository,
   ) {
     return videoEventService.filterVideoList(
-      videos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
-          .toList(),
+      videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
     );
   }
 }

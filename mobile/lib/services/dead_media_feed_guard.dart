@@ -5,6 +5,8 @@ import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/media_availability_checker.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 
+typedef VideoEventMissingChecker = Future<bool> Function(String videoId);
+
 /// Decides whether a feed item whose player failed should be treated as
 /// permanently unavailable.
 ///
@@ -30,18 +32,22 @@ class DeadMediaFeedGuard {
   const DeadMediaFeedGuard({
     required BrokenVideoTracker brokenVideoTracker,
     required VideoModerationStatusService moderationStatusService,
+    VideoEventMissingChecker? eventMissingChecker,
     MediaAvailabilityChecker availabilityChecker =
         const MediaAvailabilityChecker(),
   }) : _tracker = brokenVideoTracker,
        _checker = availabilityChecker,
+       _eventMissingChecker = eventMissingChecker,
        _moderationStatusService = moderationStatusService;
 
   final BrokenVideoTracker _tracker;
   final MediaAvailabilityChecker _checker;
+  final VideoEventMissingChecker? _eventMissingChecker;
   final VideoModerationStatusService _moderationStatusService;
 
-  /// Returns `true` iff [videoUrl] is a HEAD-confirmed 404 and moderation
-  /// confirms the blob is `blocked`.
+  /// Returns `true` iff either [videoId] is missing from the canonical video
+  /// API, or [videoUrl] is a HEAD-confirmed 404 and moderation confirms the
+  /// blob is `blocked`.
   ///
   /// Returns `false` when [videoUrl] is missing, reachable, returns any status
   /// other than 404, the HEAD request fails, the blob hash cannot be resolved,
@@ -49,9 +55,20 @@ class DeadMediaFeedGuard {
   /// (quarantined / age-restricted). The caller must then keep the item
   /// recoverable.
   Future<bool> isConfirmedUnavailable({
+    required String videoId,
     required String? videoUrl,
     String? explicitSha256,
   }) async {
+    final eventMissingChecker = _eventMissingChecker;
+    if (eventMissingChecker != null && videoId.isNotEmpty) {
+      try {
+        if (await eventMissingChecker(videoId)) return true;
+      } on Exception {
+        // API confirmation is an optional prune signal. Fall through to the
+        // media/moderation path and stay conservative if that cannot confirm.
+      }
+    }
+
     if (videoUrl == null || videoUrl.isEmpty) return false;
     final missing = await _checker.isConfirmedMissing(videoUrl);
     if (!missing) return false;
@@ -78,6 +95,7 @@ class DeadMediaFeedGuard {
     String? explicitSha256,
   }) async {
     final unavailable = await isConfirmedUnavailable(
+      videoId: videoId,
       videoUrl: videoUrl,
       explicitSha256: explicitSha256,
     );

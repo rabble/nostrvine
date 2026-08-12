@@ -9,7 +9,6 @@ import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
-import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -57,7 +56,7 @@ class RiverpodFeedRepository implements FeedRepository {
   late final StaticFeedRepository _static = StaticFeedRepository(
     // Static snapshots bypass each feed provider's `build()` filter, so apply
     // the platform boundary here. Block / mute is enforced downstream by the
-    // FullscreenFeedBloc's BlockAuthorFilter + the removedVideoIds bus.
+    // FullscreenFeedBloc's VideoHideFilter + the removedVideoIds bus.
     filter: (videos) =>
         videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
   );
@@ -73,16 +72,13 @@ class RiverpodFeedRepository implements FeedRepository {
   bool _isStatic(ViewSource source) =>
       source is SingleVideoViewSource || source is VideoListViewSource;
 
-  /// Applies the standard feed boundary filter (platform support + blocklist)
+  /// Applies the standard feed boundary filter (platform support + shared
+  /// VideoEventService policy)
   /// used by every feed surface.
   List<VideoEvent> _applyBoundaryFilter(List<VideoEvent> videos) {
     final videoEventService = _ref.read(videoEventServiceProvider);
-    final blocklist = _ref.read(contentBlocklistRepositoryProvider);
     return videoEventService.filterVideoList(
-      videos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .where((v) => !blocklist.shouldFilterFromFeeds(v.pubkey))
-          .toList(),
+      videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
     );
   }
 

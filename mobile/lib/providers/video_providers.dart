@@ -470,10 +470,13 @@ Future<DeadMediaFeedGuard> deadMediaFeedGuard(Ref ref) async {
   final moderationStatusService = ref.watch(
     videoModerationStatusServiceProvider,
   );
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
   final tracker = await ref.watch(brokenVideoTrackerProvider.future);
   return DeadMediaFeedGuard(
     brokenVideoTracker: tracker,
     moderationStatusService: moderationStatusService,
+    eventMissingChecker: (videoId) async =>
+        await funnelcakeClient.getVideoEvent(videoId) == null,
   );
 }
 
