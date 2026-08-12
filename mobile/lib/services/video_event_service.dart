@@ -2298,16 +2298,22 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               category: LogCategory.video,
             );
 
-            // Clean up subscription state so retry is possible
+            // Clean up subscription state so retry is possible.
+            // The stored params are deliberately kept: they are the only
+            // record of the filters this feed was built from, and the retry
+            // scheduled below cannot re-issue the REQ without them. Dropping
+            // them made a timed-out feed unrecoverable until the user
+            // navigated away and back (#7124).
             Log.info(
               '🧹 Cleaning up timed-out subscription state for $subscriptionType',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
             _activeSubscriptions.remove(subscriptionType);
-            _subscriptionParams.remove(subscriptionType);
 
-            // Cancel the subscription to prevent leaks
+            // Cancel the subscription to prevent leaks. This also releases the
+            // REQ in the SDK, which force-cycles the relay if the socket
+            // swallowed it — so the retry below runs on a live connection.
             final sub = _subscriptions.remove(subscriptionId);
             sub?.cancel();
 
@@ -2324,6 +2330,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             );
 
             completeFeedLoadTrace('timeout');
+            // Every other completion path notifies; without this the loading
+            // state flips silently and no listener re-evaluates the feed.
+            notifyListeners();
+            _scheduleRetryWhenOnline(subscriptionType);
           }
         });
 
@@ -4762,12 +4772,17 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _relayReadyRetrySubscription = null;
   }
 
-  /// Schedule retry of [subscriptionType] when the device is back online.
+  /// Schedule a bounded retry of [subscriptionType] once the device is online.
   ///
   /// The failed type is recorded so the retry re-establishes the feed
   /// that actually broke (with its original parameters) — previously the
   /// retry hardcoded the discovery feed, so home/hashtag/profile feeds
   /// never recovered through this path.
+  ///
+  /// Serves two callers: a subscribe attempted while offline, and a feed load
+  /// whose relay never answered (#7124). Both need the same thing — re-issue
+  /// these filters a few times, but only while there is a network to issue
+  /// them on.
   void _scheduleRetryWhenOnline(SubscriptionType subscriptionType) {
     _typesAwaitingRetry.add(subscriptionType);
 

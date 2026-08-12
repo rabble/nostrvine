@@ -5,12 +5,26 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+class _FakeConnectionStatusService extends ConnectionStatusService {
+  bool online = true;
+
+  @override
+  bool get isOnline => online;
+
+  @override
+  bool get isConnected => online;
+
+  @override
+  Map<String, dynamic> getConnectionInfo() => {'isConnected': online};
+}
 
 void main() {
   setUpAll(() {
@@ -143,5 +157,171 @@ void main() {
         });
       },
     );
+  });
+
+  // A relay that answers with nothing at all used to be terminal: the timeout
+  // dropped the stored filters and scheduled no retry, so the feed stayed empty
+  // until the user navigated away and back (#7124).
+  group('VideoEventService timeout recovery', () {
+    const author =
+        '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+
+    late VideoEventService service;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
+    late _FakeConnectionStatusService connectionService;
+    late List<List<Filter>> subscribeCalls;
+
+    setUp(() {
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
+      connectionService = _FakeConnectionStatusService();
+      subscribeCalls = [];
+
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+      when(
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
+      ).thenAnswer((invocation) {
+        subscribeCalls.add(
+          (invocation.positionalArguments.first as List<Filter>).toList(),
+        );
+        // Never emits and never EOSEs: the relay that swallowed the REQ.
+        final controller = StreamController<Event>(onCancel: () async {});
+        addTearDown(controller.close);
+        return controller.stream;
+      });
+
+      service = VideoEventService(
+        mockNostrService,
+        subscriptionManager: mockSubscriptionManager,
+        connectionService: connectionService,
+      );
+    });
+
+    tearDown(() {
+      service.dispose();
+      connectionService.dispose();
+    });
+
+    test('re-issues the timed-out feed with its original filters', () {
+      fakeAsync((fake) {
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.profile,
+            authors: [author],
+          ),
+        );
+        fake.flushMicrotasks();
+        expect(subscribeCalls, hasLength(1));
+
+        fake
+          ..elapse(const Duration(seconds: 31))
+          ..flushMicrotasks();
+        expect(
+          subscribeCalls,
+          hasLength(1),
+          reason: 'the timeout itself must not re-subscribe',
+        );
+
+        fake
+          ..elapse(const Duration(seconds: 10))
+          ..flushMicrotasks();
+
+        expect(subscribeCalls, hasLength(2));
+        expect(
+          subscribeCalls.last.any(
+            (filter) => filter.authors?.contains(author) ?? false,
+          ),
+          isTrue,
+          reason:
+              'the retry must re-establish the feed that timed out, which is '
+              'only possible if the timeout kept its stored parameters',
+        );
+      });
+    });
+
+    test('stops retrying once a re-issued subscription is established', () {
+      fakeAsync((fake) {
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.profile,
+            authors: [author],
+          ),
+        );
+        fake
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 31))
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 10))
+          ..flushMicrotasks();
+        expect(subscribeCalls, hasLength(2));
+
+        fake
+          ..elapse(const Duration(seconds: 30))
+          ..flushMicrotasks();
+        expect(
+          subscribeCalls,
+          hasLength(2),
+          reason: 'a successful re-subscribe ends the retry cycle',
+        );
+      });
+    });
+
+    test('does not re-issue while the device is offline', () {
+      fakeAsync((fake) {
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.profile,
+            authors: [author],
+          ),
+        );
+        fake
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 31))
+          ..flushMicrotasks();
+
+        connectionService.online = false;
+        fake
+          ..elapse(const Duration(seconds: 30))
+          ..flushMicrotasks();
+        expect(subscribeCalls, hasLength(1));
+
+        connectionService.online = true;
+        fake
+          ..elapse(const Duration(seconds: 10))
+          ..flushMicrotasks();
+        expect(subscribeCalls, hasLength(2));
+      });
+    });
+
+    test('notifies listeners when the load times out', () {
+      fakeAsync((fake) {
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.profile,
+            authors: [author],
+          ),
+        );
+        fake.flushMicrotasks();
+
+        var notifications = 0;
+        void onChange() => notifications++;
+        service.addListener(onChange);
+        addTearDown(() => service.removeListener(onChange));
+
+        fake
+          ..elapse(const Duration(seconds: 31))
+          ..flushMicrotasks();
+
+        expect(
+          notifications,
+          greaterThan(0),
+          reason:
+              'every other completion path notifies; without this the loading '
+              'state flips with nothing re-reading it',
+        );
+      });
+    });
   });
 }
