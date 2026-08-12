@@ -107,7 +107,7 @@ class ReportContentDialog extends ConsumerWidget {
         .showVideoPausingVineBottomSheet<void>(
           initialChildSize: 0.85,
           maxChildSize: 0.95,
-          minChildSize: 0.5,
+          minChildSize: VineTheme.bottomSheetDismissFloor,
           draggableController: controller,
           buildScrollBody: (scrollController) => ReportContentDialog(
             video: video,
@@ -131,7 +131,7 @@ class ReportContentDialog extends ConsumerWidget {
         .showVideoPausingVineBottomSheet<void>(
           initialChildSize: 0.85,
           maxChildSize: 0.95,
-          minChildSize: 0.5,
+          minChildSize: VineTheme.bottomSheetDismissFloor,
           draggableController: controller,
           buildScrollBody: (scrollController) => ReportContentDialog(
             eventId: messageId,
@@ -159,7 +159,7 @@ class ReportContentDialog extends ConsumerWidget {
         .showVideoPausingVineBottomSheet<void>(
           initialChildSize: 0.85,
           maxChildSize: 0.95,
-          minChildSize: 0.5,
+          minChildSize: VineTheme.bottomSheetDismissFloor,
           draggableController: controller,
           buildScrollBody: (scrollController) => ReportContentDialog(
             userPubkey: userPubkey,

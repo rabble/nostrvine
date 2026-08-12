@@ -158,7 +158,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
       // Long-form content: keep the pre-design-system sizing so the explainer
       // still opens nearly full-height instead of the 0.6 default.
       initialChildSize: 0.85,
-      minChildSize: 0.5,
+      minChildSize: VineTheme.bottomSheetDismissFloor,
       maxChildSize: 0.95,
       buildScrollBody: (scrollController) =>
           _AlgorithmExplainerSheet(scrollController: scrollController),
