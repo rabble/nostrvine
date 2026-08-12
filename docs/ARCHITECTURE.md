@@ -130,7 +130,8 @@ Two things are worth knowing before doing more of this work:
   analyze failure, and each package's own CI workflow runs `flutter analyze`.
   So re-opening the boundary costs a pubspec edit that shows up in review,
   rather than an import nobody notices. (A package with no workflow of its
-  own — `nostr_apps` today — gets the local guard but no CI gate.)
+  own would get the local guard but no CI gate; as of #3347 every package
+  under `mobile/packages/` carries one.)
 - **No package in the `nostr_sdk` cone can run under `dart test`.** `nostr_sdk`
   declares the Flutter SDK and five Flutter plugins, and nearly every package
   reaches it — `models` included, via `models -> nostr_sdk`. So a package with

@@ -100,10 +100,11 @@ graph on every run.
 
 ### Package workflows
 
-`mobile/packages/` has 55 entries. The 54 package workflows currently present
-under `.github/workflows/` carry `paths:` filters scoped to their own package
-plus their own workflow file; `nostr_apps` is the existing package-CI exception
-tracked in `mobile/scripts/baseline/package_ci_exceptions.txt`. The two mobile
+`mobile/packages/` has 56 entries, and all 56 now have a package workflow
+under `.github/workflows/` carrying `paths:` filters scoped to their own
+package plus their own workflow file; since #3347 removed the orphaned
+`nostr_apps` package there are no package-CI exceptions left in
+`mobile/scripts/baseline/package_ci_exceptions.txt`. The two mobile
 web build/deploy workflows are also path-filtered to `mobile/**`. The six
 workflows without `paths:` filters are `mobile_ci.yaml`,
 `mobile_service_integration_tests.yaml`, `semantic_pr.yaml`, `pr_issue_link.yml`,
