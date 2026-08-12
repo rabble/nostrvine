@@ -5,11 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 class _RequeueingRelay extends Relay {
-  _RequeueingRelay(String url, {required this.failedMessage})
-    : super(url, RelayStatus(url));
+  _RequeueingRelay(
+    String url, {
+    required this.failedMessage,
+    this.connectionIsFresh = true,
+  }) : super(url, RelayStatus(url));
 
   final List<dynamic> failedMessage;
   final List<List<dynamic>> sentMessages = [];
+
+  @override
+  final bool connectionIsFresh;
 
   @override
   Future<bool> doConnect() async => true;
@@ -147,6 +153,43 @@ void main() {
       await relay.onConnected(source: 'stateStream-reconnect');
 
       expect(relay.sentMessages.map((m) => m.first), ['EVENT', 'REQ']);
+    });
+
+    test('leaves saved REQs alone when the connection was only reused — the '
+        'live socket still holds them', () async {
+      final subscription = subscriptionWith('feed');
+      final relay =
+          _RequeueingRelay(
+              'wss://relay.example',
+              failedMessage: [],
+              connectionIsFresh: false,
+            )
+            ..saveSubscription(subscription)
+            ..pendingMessages.add([
+              'EVENT',
+              {'id': 'queued-while-down'},
+            ]);
+
+      await relay.onConnected(source: 'connect()');
+
+      expect(relay.sentMessages.map((m) => m.first), ['EVENT']);
+    });
+
+    test('replays a queued REQ when the connection was only reused — nothing '
+        're-issues it otherwise', () async {
+      final subscription = subscriptionWith('feed');
+      final relay =
+          _RequeueingRelay(
+              'wss://relay.example',
+              failedMessage: [],
+              connectionIsFresh: false,
+            )
+            ..saveSubscription(subscription)
+            ..pendingMessages.add(subscription.toJson());
+
+      await relay.onConnected(source: 'connect()');
+
+      expect(relay.sentMessages.map((m) => m.first), ['REQ']);
     });
   });
 }

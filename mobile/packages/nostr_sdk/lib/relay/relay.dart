@@ -63,17 +63,28 @@ abstract class Relay {
   /// The method implement by different relays to do some real when it connecting.
   Future<bool> doConnect();
 
+  /// Whether the socket this [onConnected] runs on is a new one.
+  ///
+  /// [connect] short-circuits when the connection is already live, so it can
+  /// reach [onConnected] without anything having been cycled. Such a socket
+  /// still holds every REQ it was sent, and re-issuing them would only make
+  /// the relay replay its stored window again.
+  bool get connectionIsFresh => true;
+
   /// The medhod called after relay connect success.
   ///
-  /// Flushes whatever was queued while the socket was down, then re-issues
-  /// every saved subscription and pending one-shot query. The re-issue is what
-  /// makes a reconnect recoverable: a REQ written to a socket that later died
-  /// is gone, and the relay keeps no record of it, so without this a live
-  /// subscription goes permanently silent after any reconnect and its caller
-  /// can only fall back to a timeout. Mirrors the post-AUTH replay and the
-  /// zombie reconnect in `RelayPool`.
+  /// Flushes whatever was queued while the socket was down, then — when the
+  /// connection is actually new — re-issues every saved subscription and
+  /// pending one-shot query. The re-issue is what makes a reconnect
+  /// recoverable: a REQ written to a socket that later died is gone, and the
+  /// relay keeps no record of it, so without this a live subscription goes
+  /// permanently silent after any reconnect and its caller can only fall back
+  /// to a timeout. Mirrors the post-AUTH replay and the zombie reconnect in
+  /// `RelayPool`.
   Future onConnected({String? source}) async {
-    final saved = [..._subscriptions.values, ..._queries.values];
+    final saved = connectionIsFresh
+        ? [..._subscriptions.values, ..._queries.values]
+        : const <Subscription>[];
     await _flushPendingMessages(source, {for (final s in saved) s.id});
     await _reissueSavedRequests(source, saved);
   }
@@ -126,6 +137,11 @@ abstract class Relay {
       message.length > 1 && message[0] == 'REQ' && ids.contains(message[1]);
 
   /// Re-sends every REQ this relay is still holding on the fresh socket.
+  ///
+  /// `skipReconnect` matches how these REQs were sent the first time
+  /// (`RelayPool.relayDoSubscribe`): re-issuing onto a socket that dies again
+  /// must queue the frame, not drive a nested reconnect out of the reconnect
+  /// handler that is already running.
   Future<void> _reissueSavedRequests(
     String? source,
     List<Subscription> saved,
@@ -136,7 +152,7 @@ abstract class Relay {
     );
     for (final subscription in saved) {
       try {
-        await send(subscription.toJson());
+        await send(subscription.toJson(), skipReconnect: true);
       } catch (e) {
         log('subscription re-issue exception onConnected');
         log('$e');
