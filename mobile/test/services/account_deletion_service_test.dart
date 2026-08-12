@@ -1238,6 +1238,51 @@ void main() {
 
     group('expectedPubkey binding', () {
       test(
+        'aborts when the account changes while awaiting vanish confirmation',
+        () async {
+          var current = testPublicKey;
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenAnswer((_) => current);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 62,
+              tags: const [
+                ['relay', 'ALL_RELAYS'],
+              ],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async {
+            current = 'a_different_pubkey_than_confirmed';
+            return _confirmed;
+          });
+
+          final result = await service.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountChanged,
+          );
+        },
+      );
+
+      test(
         'aborts before signing when the account changes mid-deletion',
         () async {
           var current = testPublicKey;

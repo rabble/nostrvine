@@ -135,8 +135,8 @@ class AccountDeletionService {
 
   /// Aborts (via [AccountChangedDuringDeletion]) if [expectedPubkey] is set and
   /// no longer matches the live signer. Called immediately before every
-  /// destructive sign/publish so a mid-flight account switch can't delete a
-  /// different account's content.
+  /// destructive sign/publish and after awaiting the final vanish outcome so a
+  /// mid-flight account switch can't continue cleanup for a different account.
   void _assertSignerMatches(String? expectedPubkey) {
     if (expectedPubkey != null &&
         _authService.currentPublicKeyHex != expectedPubkey) {
@@ -295,6 +295,7 @@ class AccountDeletionService {
         event,
         timeout: _vanishPublish.timeout,
       );
+      _assertSignerMatches(expectedPubkey);
 
       if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
         return outcome;
