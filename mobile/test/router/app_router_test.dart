@@ -22,6 +22,8 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/router/routes/settings_routes.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
@@ -463,6 +465,46 @@ void main() {
           relayUrl: 'wss://localrelay.link:28443',
         ),
       ).called(greaterThan(0));
+    });
+
+    // go_router runs the top-level redirect at most once per navigation, so
+    // whatever this returns is terminal — the authenticated-auth-route bounce
+    // further down appRouterRedirect never gets a second pass (#7074).
+    test('sends a signed-in user home when no pairing is in flight', () {
+      final authService = _MockAuthService();
+      when(() => authService.nostrConnectUrl).thenReturn(null);
+      when(() => authService.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => authService.onSignerCallbackReceived(
+          relayUrl: any(named: 'relayUrl'),
+        ),
+      ).thenReturn(null);
+
+      final target = signerCallbackRedirectTarget(
+        Uri.parse('divine://nostrconnect'),
+        authService,
+      );
+
+      expect(target, equals(VideoFeedPage.pathForIndex(0)));
+    });
+
+    test('sends a signed-out user to welcome when no pairing is in '
+        'flight', () {
+      final authService = _MockAuthService();
+      when(() => authService.nostrConnectUrl).thenReturn(null);
+      when(() => authService.authState).thenReturn(AuthState.unauthenticated);
+      when(
+        () => authService.onSignerCallbackReceived(
+          relayUrl: any(named: 'relayUrl'),
+        ),
+      ).thenReturn(null);
+
+      final target = signerCallbackRedirectTarget(
+        Uri.parse('divine://nostrconnect'),
+        authService,
+      );
+
+      expect(target, equals(WelcomeScreen.path));
     });
 
     test('leaves a divine:// app route alone and fires no signer side '

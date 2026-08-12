@@ -32,8 +32,19 @@ String? signerCallbackRedirectTarget(Uri uri, AuthService authService) {
   // custom-scheme callbacks first. Keep this idempotent: it only preserves
   // an already-listening NIP-46 session while routing back to its screen.
   authService.onSignerCallbackReceived(relayUrl: deepLink.signerCallbackRelay);
-  return authService.nostrConnectUrl != null
-      ? NostrConnectScreen.path
+  if (authService.nostrConnectUrl != null) {
+    return NostrConnectScreen.path;
+  }
+
+  // No pairing is in flight, so this is a stray callback — a stale signer
+  // return, an expired session, or another app probing the scheme. Send a
+  // signed-in user home rather than to /welcome: go_router runs the top-level
+  // redirect at most once per navigation, so returning /welcome here is
+  // terminal and [appRouterRedirect]'s authenticated-auth-route bounce never
+  // gets a second pass. The user would be left on the account picker, which
+  // reads as a lost session.
+  return authService.authState == AuthState.authenticated
+      ? VideoFeedPage.pathForIndex(0)
       : WelcomeScreen.path;
 }
 
