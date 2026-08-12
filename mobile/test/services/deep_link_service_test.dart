@@ -380,9 +380,10 @@ void main() {
       });
     });
 
-    // The divine:// scheme splits on the authority: an authority means the
-    // NIP-46 callback namespace, an empty one means an internal app route.
-    // These cases pin both halves of that boundary (#7074).
+    // The divine:// scheme splits three ways on the authority: `nostrconnect`
+    // is the NIP-46 callback Divine mints, an empty authority addresses an
+    // internal app route, and any other authority is untrusted input. These
+    // cases pin all three (#6733/#7074).
     group('Custom-Scheme App Routes', () {
       test('routes the authority-less saved-videos link', () {
         final result = DeepLinkService.parseDeepLink(
@@ -392,18 +393,31 @@ void main() {
         expect(result.type, equals(DeepLinkType.savedVideos));
       });
 
-      test('leaves an authority-form saved-videos link as a callback', () {
+      test('rejects an authority-form saved-videos link', () {
         final result = DeepLinkService.parseDeepLink('divine://saved-videos');
 
-        expect(result.type, equals(DeepLinkType.signerCallback));
+        expect(result.type, equals(DeepLinkType.unknown));
       });
 
-      test('leaves a divine.video-host link as a callback', () {
+      test('rejects a divine.video-host link', () {
         final result = DeepLinkService.parseDeepLink(
           'divine://divine.video/saved-videos',
         );
 
-        expect(result.type, equals(DeepLinkType.signerCallback));
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+
+      // Regression guard for #6733: an authority Divine never mints must not
+      // inherit the signer-callback side effects (relay reconnection, and the
+      // attacker-supplied relay that rides along with them).
+      test('rejects an unrecognised authority instead of treating it as a '
+          'callback', () {
+        final result = DeepLinkService.parseDeepLink(
+          'divine://attacker-controlled?relay=wss://evil.example',
+        );
+
+        expect(result.type, equals(DeepLinkType.unknown));
+        expect(result.signerCallbackRelay, isNull);
       });
 
       test('rejects an unlisted app route instead of treating it as a '

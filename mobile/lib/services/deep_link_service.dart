@@ -165,6 +165,18 @@ class DeepLinkService {
         if (uri.host.isEmpty) {
           return _parseCustomSchemeAppRoute(uri);
         }
+        if (uri.host != _signerCallbackHost) {
+          // Any app can open a custom scheme, so an authority we never mint
+          // is untrusted input rather than a callback — classifying it as one
+          // would hand a stranger the signer-callback side effects (#6733).
+          Log.warning(
+            'Ignoring divine:// URL with an unrecognised authority: '
+            '${_describeUriForLogs(uri)}',
+            name: 'DeepLinkService',
+            category: LogCategory.ui,
+          );
+          return const DeepLink(type: DeepLinkType.unknown);
+        }
         // Signer apps open this scheme to bring our app back to foreground
         // after the user approves the connection. We emit signerCallback so
         // listeners can trigger relay reconnection for the nostrconnect
@@ -373,6 +385,11 @@ class DeepLinkService {
   void pushLink(DeepLink link) {
     _controller.add(link);
   }
+
+  /// The only authority Divine mints on its NIP-46 callback.
+  ///
+  /// See `NostrConnectCoordinator`, which embeds `divine://nostrconnect`.
+  static const _signerCallbackHost = 'nostrconnect';
 
   /// Routes the authority-less `divine:///<route>` form may open.
   ///
