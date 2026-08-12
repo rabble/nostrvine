@@ -198,11 +198,15 @@ class MessageBubble extends StatelessWidget {
           .toList();
       personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
     } else if (videoTarget != null) {
+      // Identity came from the citation rather than a URL in the body, so the
+      // body is not the share template — it is only what the sender typed.
+      // Strip the machine-readable `nostr:` line we append on the wire, but
+      // NOT the quoted-title line: with no template to strip a title from,
+      // that filter would swallow a comment the sender wrapped in quotes.
       final lines = safeMessage
           .split('\n')
           .map((line) => line.trim())
           .where((line) => line.isNotEmpty)
-          .where((line) => !_quotedTitleRegex.hasMatch(line))
           .where((line) => !_nostrRefLineRegex.hasMatch(line))
           .toList();
       personalMessage = lines.isEmpty ? null : lines.join('\n');

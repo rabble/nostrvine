@@ -154,14 +154,18 @@ void main() {
       expect(target!.fallbackRouteIds, equals(['34236:$author:$dTag']));
     });
 
-    test('resolves when the sender typed a comment alongside the share', () {
+    test('a typed comment does not displace the citation identity', () {
+      // The comment carries no URL, so the citation must remain the only
+      // source of identity — not fall back to regex-matching the body.
       final target = resolveDmVideoTarget(
-        content: 'check this out',
+        content: 'check this out https://example.com/video/decoy',
         sharedVideoRef: webRef(),
       );
 
       expect(target, isNotNull);
       expect(target!.stableId, equals(dTag));
+      expect(target.authorPubkey, equals(author));
+      expect(target.videoKind, equals(34236));
     });
   });
 }
