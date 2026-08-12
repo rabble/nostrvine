@@ -1293,6 +1293,38 @@ void main() {
       );
     });
 
+    test('reports corruption past the schema page as unreadable, not a '
+        'deferrable failure', () async {
+      // The other door onto the same #6897 state, and the wider one: the
+      // classification reads only sqlite_master, so damage anywhere past page 1
+      // looks like healthy plaintext and first surfaces in the VACUUM INTO copy
+      // below. Deferring there retried the identical bytes on every launch just
+      // as forever as the schema-page case did.
+      _createMultiPageDatabase(dbPath);
+      _corruptPagesAfterSchema(dbPath);
+
+      expect(
+        await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        equals(CipherMigrationOutcome.unreadable),
+        reason:
+            'the schema page is intact, so only the whole-database copy '
+            'can see this damage',
+      );
+      expect(
+        File(dbPath).existsSync(),
+        isTrue,
+        reason: 'the damaged file is left for the caller to back up',
+      );
+      expect(
+        File('$dbPath.sqlcipher_migrating').existsSync(),
+        isFalse,
+        reason: 'the half-written side file is cleaned up',
+      );
+    });
+
     test(
       'migrates a populated plaintext DB to encrypted raw-key storage',
       () async {

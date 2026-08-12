@@ -65,7 +65,12 @@ migration path is replaced with a safe side-file flow:
    neither — a legible header over a damaged page classifies the same way on
    every launch, so it fails startup closed rather than retrying forever (#6897).
 2. For populated plaintext DBs, copy the source to
-   `divine_db.db.sqlcipher_migrating` with `VACUUM INTO`.
+   `divine_db.db.sqlcipher_migrating` with `VACUUM INTO`. The classification in
+   step 1 reads only `sqlite_master`, so damage anywhere past page 1 reaches
+   here looking like healthy plaintext; this copy walks every b-tree and is the
+   first thing to see it. `SQLITE_CORRUPT` here takes the same fail-closed path
+   as step 1, and for the same reason — it is a property of the bytes, so the
+   retry never comes out differently.
 3. Open the side file, select `cipher='sqlcipher'` + `legacy=4`, then
    `PRAGMA rekey = "x'<key>'"`.
 4. Verify the encrypted copy opens with the raw key and that `user_version` plus
@@ -75,10 +80,10 @@ migration path is replaced with a safe side-file flow:
 
 On any failure, the plaintext source is left intact and migration retries next
 launch. That deferral opens the database unkeyed in the meantime, which is only
-safe because the source is readable plaintext — a database damaged past
-classification takes the fail-closed path above instead. After a later successful
-keyed open, old pre-cipher plaintext backups are deleted so plaintext does not
-remain at rest.
+safe because the source is readable plaintext — a structurally corrupt one takes
+the fail-closed path above instead, from whichever of the two steps first sees
+the damage. After a later successful keyed open, old pre-cipher plaintext backups
+are deleted so plaintext does not remain at rest.
 
 ## Key-loss recovery
 

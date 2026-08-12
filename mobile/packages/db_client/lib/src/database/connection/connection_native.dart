@@ -487,11 +487,15 @@ enum CipherMigrationOutcome {
   /// really is plaintext.
   failed,
 
-  /// The database file exists but could not be classified or read: a legible
-  /// SQLite header over a structurally corrupt page. Unlike [failed] this is
+  /// The database file exists but could not be classified or copied: a legible
+  /// SQLite header over structurally corrupt pages. Unlike [failed] this is
   /// deterministic for a given file, so retrying next launch never recovers,
   /// and opening it with a null key yields SQLITE_CORRUPT on every statement
   /// for the whole session. The caller must fail closed. See #6897.
+  ///
+  /// Reached from either place the damage can surface: the keyless
+  /// classification, which sees only page 1, and the `VACUUM INTO` copy that
+  /// walks every remaining b-tree.
   unreadable,
 }
 
@@ -509,8 +513,9 @@ enum CipherMigrationOutcome {
 /// re-fetched. See `mobile/docs/sqlcipher_at_rest_plan.md`.
 ///
 /// Returns [CipherMigrationOutcome.unreadable] when the existing file is
-/// neither readable plaintext nor recognizably encrypted, which no retry can
-/// fix — the caller must fail closed rather than open it unkeyed.
+/// structurally corrupt — whether that surfaces while classifying page 1 or
+/// while copying the rest of it — which no retry can fix, so the caller must
+/// fail closed rather than open it unkeyed.
 ///
 /// Requires SQLite3MultipleCiphers; returns [CipherMigrationOutcome.failed]
 /// when it is not linked, leaving the source intact.
@@ -658,6 +663,24 @@ _DbClassification _classifyKeylessFailure(SqliteException e) =>
       _ => _DbClassification.indeterminate,
     };
 
+/// Maps a rekey failure to an outcome, on the same result-code split
+/// [_classifyKeylessFailure] applies one step earlier.
+///
+/// [_classifyDatabase] reads only `sqlite_master`, so it can only ever see
+/// damage on page 1; everything past it classifies as readable plaintext and
+/// first surfaces here, where `VACUUM INTO` copies the whole database and walks
+/// every b-tree. That is the larger share of a real database, and the same
+/// permanent condition: the bytes classify identically on every launch, so
+/// deferring retries them forever while the app runs unkeyed against a file
+/// that throws on the damaged pages. Fail closed for it too (#6897).
+///
+/// Everything else — busy, locked, I/O, a missing SQLite3MultipleCiphers — is
+/// genuinely transient and keeps deferring.
+CipherMigrationOutcome _rekeyFailureOutcome(SqliteException e) =>
+    e.resultCode == _sqliteCorrupt
+    ? CipherMigrationOutcome.unreadable
+    : CipherMigrationOutcome.failed;
+
 CipherMigrationOutcome _rekeyPlaintextInPlace({
   required String dbPath,
   required String rawKeyHex,
@@ -671,8 +694,8 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
     // The source must be opened UNKEYED. It remains untouched until a verified
     // encrypted side-file is ready to promote.
     source = sqlite3.open(dbPath);
-  } on SqliteException {
-    return CipherMigrationOutcome.failed;
+  } on SqliteException catch (e) {
+    return _rekeyFailureOutcome(e);
   }
 
   try {
@@ -682,9 +705,9 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
       return CipherMigrationOutcome.failed;
     }
     source.execute('VACUUM INTO ?;', [encryptedPath]);
-  } on SqliteException {
+  } on SqliteException catch (e) {
     _deleteDatabaseAndSidecars(encryptedPath);
-    return CipherMigrationOutcome.failed;
+    return _rekeyFailureOutcome(e);
   } finally {
     source.close();
   }
