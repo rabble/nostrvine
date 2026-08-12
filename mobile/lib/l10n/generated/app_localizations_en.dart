@@ -11282,7 +11282,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'This wipes notifications, cached profiles, bookmarks and temporary files. Your clips and drafts stay, but you\'ll be signed out and have to restart the app.';
+      'This clears cached feed data and temporary files. Your clips, drafts, settings and sign-in stay, but you\'ll need to restart the app afterwards.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

@@ -5140,7 +5140,7 @@
   "settingsStorageRepairDescription": "መተግበሪያው በተደጋጋሚ የሚቋረጥ ወይም እንግዳ ባህሪ የሚያሳይ ከሆነ፣ የአካባቢ ውሂቡን ዳግም ማስጀመር አብዛኛውን ጊዜ ይፈታዋል። ክሊፖችህና ረቂቆችህ ይቀራሉ።",
   "settingsStorageRepairButton": "የመተግበሪያ ውሂብ ዳግም አስጀምር",
   "settingsStorageRepairConfirmTitle": "የመተግበሪያ ውሂብ ዳግም ይጀመር?",
-  "settingsStorageRepairConfirmMessage": "ይህ ማሳወቂያዎችን፣ የተቀመጡ መገለጫዎችን፣ ዕልባቶችንና ጊዜያዊ ፋይሎችን ያጠፋል። ክሊፖችህና ረቂቆችህ ይቀራሉ፣ ነገር ግን ትወጣለህ እና መተግበሪያውን እንደገና ማስጀመር አለብህ።",
+  "settingsStorageRepairConfirmMessage": "ይህ የተቀመጠ የፊድ ውሂብንና ጊዜያዊ ፋይሎችን ያጸዳል። ክሊፖችህ፣ ረቂቆችህ፣ ቅንብሮችህና መግቢያህ ይቀራሉ፣ ነገር ግን ከዚያ በኋላ መተግበሪያውን እንደገና ማስጀመር አለብህ።",
   "settingsStorageRepairFootprint": "{size} ይሰረዛል",
   "settingsStorageRepairConfirmAction": "ዳግም አስጀምር",
   "settingsStorageRepairInProgress": "ዳግም በማስጀመር ላይ…",

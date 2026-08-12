@@ -11426,7 +11426,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Questo cancella notifiche, profili in cache, segnalibri e file temporanei. I tuoi clip e le bozze restano, ma dovrai accedere di nuovo e riavviare l\'app.';
+      'Questo cancella i dati del feed in cache e i file temporanei. I tuoi clip, le bozze, le impostazioni e l\'accesso restano, ma dopo dovrai riavviare l\'app.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

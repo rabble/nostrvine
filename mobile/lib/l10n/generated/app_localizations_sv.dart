@@ -11315,7 +11315,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Det här raderar aviseringar, cachade profiler, bokmärken och tillfälliga filer. Dina klipp och utkast finns kvar, men du loggas ut och måste starta om appen.';
+      'Det här raderar cachad flödesdata och tillfälliga filer. Dina klipp, utkast, inställningar och inloggning finns kvar, men du måste starta om appen efteråt.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

@@ -3601,7 +3601,7 @@
   "settingsStorageRepairDescription": "Kung paulit-ulit na nagka-crash o kakaiba ang app, kadalasang nakakatulong ang pag-reset ng lokal na data. Nananatili ang mga clip at draft mo.",
   "settingsStorageRepairButton": "I-reset ang app data",
   "settingsStorageRepairConfirmTitle": "I-reset ang app data?",
-  "settingsStorageRepairConfirmMessage": "Buburahin nito ang mga notification, naka-cache na profile, bookmark, at pansamantalang file. Mananatili ang mga clip at draft mo, pero masa-sign out ka at kailangan mong i-restart ang app.",
+  "settingsStorageRepairConfirmMessage": "Buburahin nito ang naka-cache na data ng feed at ang mga pansamantalang file. Mananatili ang mga clip, draft, setting at pag-sign in mo, pero kailangan mong i-restart ang app pagkatapos.",
   "settingsStorageRepairFootprint": "Buburahin ang {size}",
   "settingsStorageRepairConfirmAction": "I-reset",
   "settingsStorageRepairInProgress": "Nagre-reset…",

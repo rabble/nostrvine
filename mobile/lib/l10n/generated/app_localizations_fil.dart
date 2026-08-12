@@ -11434,7 +11434,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Buburahin nito ang mga notification, naka-cache na profile, bookmark, at pansamantalang file. Mananatili ang mga clip at draft mo, pero masa-sign out ka at kailangan mong i-restart ang app.';
+      'Buburahin nito ang naka-cache na data ng feed at ang mga pansamantalang file. Mananatili ang mga clip, draft, setting at pag-sign in mo, pero kailangan mong i-restart ang app pagkatapos.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

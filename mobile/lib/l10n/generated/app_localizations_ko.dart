@@ -10879,7 +10879,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      '알림, 캐시된 프로필, 북마크, 임시 파일이 삭제돼요. 클립과 초안은 남지만 로그아웃되고 앱을 다시 시작해야 해요.';
+      '캐시된 피드 데이터와 임시 파일이 삭제돼요. 클립, 초안, 설정, 로그인은 남지만 그다음에 앱을 다시 시작해야 해요.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

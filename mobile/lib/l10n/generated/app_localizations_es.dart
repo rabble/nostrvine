@@ -11424,7 +11424,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Esto borra notificaciones, perfiles en caché, marcadores y archivos temporales. Tus clips y borradores se quedan, pero cerrarás sesión y tendrás que reiniciar la app.';
+      'Esto borra los datos del feed en caché y los archivos temporales. Tus clips, borradores, ajustes y sesión se quedan, pero tendrás que reiniciar la app después.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

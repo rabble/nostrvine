@@ -21,6 +21,7 @@ import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -457,7 +458,7 @@ class CuratedListsState extends _$CuratedListsState {
 }
 
 /// Name of the Hive box used for caching NIP-51 kind 30000 people lists.
-const String _peopleListsBoxName = 'people_lists_v1';
+const String _peopleListsBoxName = HiveBoxNames.peopleLists;
 
 /// Repository for NIP-51 kind 30000 people lists.
 ///

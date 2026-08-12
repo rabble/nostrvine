@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:hive_ce/hive.dart';
+import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -39,8 +40,9 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   final Future<Box<dynamic>> Function() _openBox;
   final Future<Box<dynamic>> Function() _openDirtyBox;
 
-  static const _boxName = 'notifications';
-  static const _dirtyBoxName = 'push_notification_preferences_dirty';
+  static const String _boxName = HiveBoxNames.notifications;
+  static const String _dirtyBoxName =
+      HiveBoxNames.pushNotificationPreferencesDirty;
   static const _prefsKey = 'push_preferences';
   static const _dirtyPrefix = 'push_preferences_dirty_';
   static const _schemaVersionPrefix = 'push_preferences_schema_';

@@ -5015,7 +5015,7 @@
   "settingsStorageRepairDescription": "Als de app blijft crashen of raar doet, helpt het meestal om de lokale gegevens te resetten. Je clips en concepten blijven staan.",
   "settingsStorageRepairButton": "App-gegevens resetten",
   "settingsStorageRepairConfirmTitle": "App-gegevens resetten?",
-  "settingsStorageRepairConfirmMessage": "Dit wist meldingen, gecachte profielen, bladwijzers en tijdelijke bestanden. Je clips en concepten blijven, maar je wordt uitgelogd en moet de app opnieuw starten.",
+  "settingsStorageRepairConfirmMessage": "Dit wist gecachte feedgegevens en tijdelijke bestanden. Je clips, concepten, instellingen en aanmelding blijven, maar je moet de app daarna opnieuw starten.",
   "settingsStorageRepairFootprint": "{size} wordt verwijderd",
   "settingsStorageRepairConfirmAction": "Resetten",
   "settingsStorageRepairInProgress": "Bezig met resetten…",

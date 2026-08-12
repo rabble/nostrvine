@@ -5015,7 +5015,7 @@
   "settingsStorageRepairDescription": "إذا كان التطبيق يتعطل أو يتصرف بغرابة، فإعادة ضبط بياناته المحلية تحل المشكلة غالبًا. مقاطعك ومسوداتك تبقى كما هي.",
   "settingsStorageRepairButton": "إعادة ضبط بيانات التطبيق",
   "settingsStorageRepairConfirmTitle": "إعادة ضبط بيانات التطبيق؟",
-  "settingsStorageRepairConfirmMessage": "سيؤدي هذا إلى حذف الإشعارات والملفات الشخصية المخزنة مؤقتًا والإشارات المرجعية والملفات المؤقتة. تبقى مقاطعك ومسوداتك، لكن سيتم تسجيل خروجك وعليك إعادة تشغيل التطبيق.",
+  "settingsStorageRepairConfirmMessage": "سيؤدي هذا إلى مسح بيانات الموجز المخزنة مؤقتًا والملفات المؤقتة. تبقى مقاطعك ومسوداتك وإعداداتك وتسجيل دخولك، لكن عليك إعادة تشغيل التطبيق بعد ذلك.",
   "settingsStorageRepairFootprint": "سيتم حذف {size}",
   "settingsStorageRepairConfirmAction": "إعادة ضبط",
   "settingsStorageRepairInProgress": "جارٍ إعادة الضبط…",

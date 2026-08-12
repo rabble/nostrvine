@@ -5015,7 +5015,7 @@
   "settingsStorageRepairDescription": "Se l'app continua a crashare o si comporta in modo strano, azzerare i dati locali di solito risolve. I tuoi clip e le bozze restano.",
   "settingsStorageRepairButton": "Azzera i dati dell'app",
   "settingsStorageRepairConfirmTitle": "Azzerare i dati dell'app?",
-  "settingsStorageRepairConfirmMessage": "Questo cancella notifiche, profili in cache, segnalibri e file temporanei. I tuoi clip e le bozze restano, ma dovrai accedere di nuovo e riavviare l'app.",
+  "settingsStorageRepairConfirmMessage": "Questo cancella i dati del feed in cache e i file temporanei. I tuoi clip, le bozze, le impostazioni e l'accesso restano, ma dopo dovrai riavviare l'app.",
   "settingsStorageRepairFootprint": "Verranno rimossi {size}",
   "settingsStorageRepairConfirmAction": "Azzera",
   "settingsStorageRepairInProgress": "Azzeramento…",

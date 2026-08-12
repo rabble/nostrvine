@@ -19381,7 +19381,7 @@ abstract class AppLocalizations {
   /// Body of the repair confirmation sheet: what is removed, what survives, and that a restart is needed.
   ///
   /// In en, this message translates to:
-  /// **'This wipes notifications, cached profiles, bookmarks and temporary files. Your clips and drafts stay, but you\'ll be signed out and have to restart the app.'**
+  /// **'This clears cached feed data and temporary files. Your clips, drafts, settings and sign-in stay, but you\'ll need to restart the app afterwards.'**
   String get settingsStorageRepairConfirmMessage;
 
   /// Shows how much disk the repair reset frees, inside the confirmation sheet.

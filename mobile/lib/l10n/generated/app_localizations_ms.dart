@@ -11373,7 +11373,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Ini memadamkan pemberitahuan, profil dalam cache, penanda buku dan fail sementara. Klip dan draf anda kekal, tetapi anda akan dilog keluar dan perlu mulakan semula apl.';
+      'Ini memadamkan data suapan dalam cache dan fail sementara. Klip, draf, tetapan dan log masuk anda kekal, tetapi anda perlu mulakan semula apl selepas itu.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

@@ -11070,7 +11070,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'ይህ ማሳወቂያዎችን፣ የተቀመጡ መገለጫዎችን፣ ዕልባቶችንና ጊዜያዊ ፋይሎችን ያጠፋል። ክሊፖችህና ረቂቆችህ ይቀራሉ፣ ነገር ግን ትወጣለህ እና መተግበሪያውን እንደገና ማስጀመር አለብህ።';
+      'ይህ የተቀመጠ የፊድ ውሂብንና ጊዜያዊ ፋይሎችን ያጸዳል። ክሊፖችህ፣ ረቂቆችህ፣ ቅንብሮችህና መግቢያህ ይቀራሉ፣ ነገር ግን ከዚያ በኋላ መተግበሪያውን እንደገና ማስጀመር አለብህ።';
 
   @override
   String settingsStorageRepairFootprint(String size) {

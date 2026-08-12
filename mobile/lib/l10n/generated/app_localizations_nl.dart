@@ -11364,7 +11364,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Dit wist meldingen, gecachte profielen, bladwijzers en tijdelijke bestanden. Je clips en concepten blijven, maar je wordt uitgelogd en moet de app opnieuw starten.';
+      'Dit wist gecachte feedgegevens en tijdelijke bestanden. Je clips, concepten, instellingen en aanmelding blijven, maar je moet de app daarna opnieuw starten.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

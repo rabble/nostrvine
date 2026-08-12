@@ -6863,7 +6863,7 @@
   "@settingsStorageRepairButton": {"description": "Button that wipes local app data to recover from a broken install."},
   "settingsStorageRepairConfirmTitle": "Reset app data?",
   "@settingsStorageRepairConfirmTitle": {"description": "Title of the confirmation sheet before the repair reset."},
-  "settingsStorageRepairConfirmMessage": "This wipes notifications, cached profiles, bookmarks and temporary files. Your clips and drafts stay, but you'll be signed out and have to restart the app.",
+  "settingsStorageRepairConfirmMessage": "This clears cached feed data and temporary files. Your clips, drafts, settings and sign-in stay, but you'll need to restart the app afterwards.",
   "@settingsStorageRepairConfirmMessage": {"description": "Body of the repair confirmation sheet: what is removed, what survives, and that a restart is needed."},
   "settingsStorageRepairFootprint": "{size} will be removed",
   "@settingsStorageRepairFootprint": {"description": "Shows how much disk the repair reset frees, inside the confirmation sheet.", "placeholders": {"size": {"type": "String"}}},

@@ -5,13 +5,14 @@ import 'dart:async';
 
 import 'package:hive_ce/hive.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/constants/hive_box_names.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for aggressively caching ALL of the current user's own events
 /// This ensures the user's own data is always instantly available
 class PersonalEventCacheService {
-  static const String _boxName = 'personal_events';
-  static const String _metadataBoxName = 'personal_events_metadata';
+  static const String _boxName = HiveBoxNames.personalEvents;
+  static const String _metadataBoxName = HiveBoxNames.personalEventsMetadata;
   static const int _maxPendingEventWrites = 100;
 
   Box<dynamic>? _eventsBox;

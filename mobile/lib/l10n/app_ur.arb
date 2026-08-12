@@ -6735,7 +6735,7 @@
   "settingsStorageRepairDescription": "اگر ایپ بار بار بند ہو رہی ہے یا عجیب چل رہی ہے تو مقامی ڈیٹا ری سیٹ کرنے سے عموماً مسئلہ حل ہو جاتا ہے۔ آپ کی کلپس اور ڈرافٹس محفوظ رہیں گے۔",
   "settingsStorageRepairButton": "ایپ ڈیٹا ری سیٹ کریں",
   "settingsStorageRepairConfirmTitle": "ایپ ڈیٹا ری سیٹ کریں؟",
-  "settingsStorageRepairConfirmMessage": "اس سے اطلاعات، کیش شدہ پروفائلز، بک مارکس اور عارضی فائلیں مٹ جائیں گی۔ آپ کی کلپس اور ڈرافٹس رہیں گے، لیکن آپ لاگ آؤٹ ہو جائیں گے اور ایپ دوبارہ شروع کرنی ہوگی۔",
+  "settingsStorageRepairConfirmMessage": "اس سے کیش شدہ فیڈ ڈیٹا اور عارضی فائلیں مٹ جائیں گی۔ آپ کی کلپس، ڈرافٹس، ترتیبات اور لاگ اِن رہیں گے، لیکن بعد میں ایپ دوبارہ شروع کرنی ہوگی۔",
   "settingsStorageRepairFootprint": "{size} حذف ہو جائے گا",
   "settingsStorageRepairConfirmAction": "ری سیٹ",
   "settingsStorageRepairInProgress": "ری سیٹ ہو رہا ہے…",

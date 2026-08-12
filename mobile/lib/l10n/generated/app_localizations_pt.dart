@@ -11388,7 +11388,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Isso apaga notificações, perfis em cache, favoritos e arquivos temporários. Seus clipes e rascunhos ficam, mas você sairá da conta e terá que reiniciar o app.';
+      'Isso apaga os dados do feed em cache e os arquivos temporários. Seus clipes, rascunhos, configurações e login ficam, mas você terá que reiniciar o app depois.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

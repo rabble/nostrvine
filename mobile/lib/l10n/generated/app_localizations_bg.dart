@@ -11423,7 +11423,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Това изтрива известията, кешираните профили, отметките и временните файлове. Клиповете и черновите ти остават, но ще излезеш от профила си и ще трябва да рестартираш приложението.';
+      'Това изчиства кешираните данни от емисията и временните файлове. Клиповете, черновите, настройките и профилът ти остават, но след това ще трябва да рестартираш приложението.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

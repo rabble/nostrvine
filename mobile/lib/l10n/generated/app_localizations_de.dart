@@ -11433,7 +11433,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Das löscht Benachrichtigungen, zwischengespeicherte Profile, Lesezeichen und temporäre Dateien. Deine Clips und Entwürfe bleiben, aber du wirst abgemeldet und musst die App neu starten.';
+      'Das löscht zwischengespeicherte Feed-Daten und temporäre Dateien. Deine Clips, Entwürfe, Einstellungen und Anmeldung bleiben, aber du musst die App danach neu starten.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

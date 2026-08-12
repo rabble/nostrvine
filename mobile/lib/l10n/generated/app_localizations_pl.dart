@@ -11519,7 +11519,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'To usunie powiadomienia, zapisane profile, zakładki i pliki tymczasowe. Twoje klipy i wersje robocze zostaną, ale wylogujemy Cię i trzeba będzie zrestartować aplikację.';
+      'To usunie zapisane dane kanału i pliki tymczasowe. Twoje klipy, wersje robocze, ustawienia i zalogowanie zostaną, ale trzeba będzie potem zrestartować aplikację.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

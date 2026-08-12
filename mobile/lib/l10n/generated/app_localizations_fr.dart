@@ -11464,7 +11464,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Ça efface les notifications, les profils en cache, les favoris et les fichiers temporaires. Tes clips et brouillons restent, mais tu devras te reconnecter et redémarrer l\'appli.';
+      'Ça efface les données de fil en cache et les fichiers temporaires. Tes clips, brouillons, réglages et ta connexion restent, mais tu devras redémarrer l\'appli après.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

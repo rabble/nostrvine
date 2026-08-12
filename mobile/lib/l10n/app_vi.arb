@@ -6735,7 +6735,7 @@
   "settingsStorageRepairDescription": "Nếu ứng dụng cứ bị lỗi hoặc chạy lạ, đặt lại dữ liệu cục bộ thường sẽ khắc phục được. Clip và bản nháp của bạn vẫn còn.",
   "settingsStorageRepairButton": "Đặt lại dữ liệu ứng dụng",
   "settingsStorageRepairConfirmTitle": "Đặt lại dữ liệu ứng dụng?",
-  "settingsStorageRepairConfirmMessage": "Thao tác này xóa thông báo, hồ sơ đã lưu tạm, dấu trang và tệp tạm. Clip và bản nháp của bạn vẫn còn, nhưng bạn sẽ bị đăng xuất và phải khởi động lại ứng dụng.",
+  "settingsStorageRepairConfirmMessage": "Thao tác này xóa dữ liệu bảng tin đã lưu tạm và tệp tạm. Clip, bản nháp, cài đặt và phiên đăng nhập của bạn vẫn còn, nhưng sau đó bạn phải khởi động lại ứng dụng.",
   "settingsStorageRepairFootprint": "Sẽ xóa {size}",
   "settingsStorageRepairConfirmAction": "Đặt lại",
   "settingsStorageRepairInProgress": "Đang đặt lại…",

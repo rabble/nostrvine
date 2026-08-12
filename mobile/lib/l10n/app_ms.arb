@@ -6735,7 +6735,7 @@
   "settingsStorageRepairDescription": "Kalau apl kerap crash atau berkelakuan pelik, set semula data setempat biasanya membantu. Klip dan draf anda kekal.",
   "settingsStorageRepairButton": "Set semula data apl",
   "settingsStorageRepairConfirmTitle": "Set semula data apl?",
-  "settingsStorageRepairConfirmMessage": "Ini memadamkan pemberitahuan, profil dalam cache, penanda buku dan fail sementara. Klip dan draf anda kekal, tetapi anda akan dilog keluar dan perlu mulakan semula apl.",
+  "settingsStorageRepairConfirmMessage": "Ini memadamkan data suapan dalam cache dan fail sementara. Klip, draf, tetapan dan log masuk anda kekal, tetapi anda perlu mulakan semula apl selepas itu.",
   "settingsStorageRepairFootprint": "{size} akan dipadam",
   "settingsStorageRepairConfirmAction": "Set semula",
   "settingsStorageRepairInProgress": "Menetapkan semula…",
