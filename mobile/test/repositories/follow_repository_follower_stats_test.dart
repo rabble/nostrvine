@@ -78,12 +78,14 @@ ProfileStatRow _persistedRow({
   required int followers,
   required int following,
   DateTime? cachedAt,
+  DateTime? followerCountsUpdatedAt,
 }) {
   return ProfileStatRow(
     pubkey: _testPubkey,
     followerCount: followers,
     followingCount: following,
     cachedAt: cachedAt ?? DateTime.now(),
+    followerCountsUpdatedAt: followerCountsUpdatedAt,
   );
 }
 
@@ -202,9 +204,9 @@ void main() {
       test('accepts lower count when persisted data is stale', () async {
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
-        // Persisted 2 hours ago — stale.
+        // Persisted well beyond the staleness window.
         final staleTimestamp = DateTime.now().subtract(
-          const Duration(hours: 2),
+          const Duration(hours: 30),
         );
         final repository = _createRepository(
           apiClient: apiClient,
@@ -223,6 +225,73 @@ void main() {
         // Stale → accept fresh count even though it's within threshold.
         expect(stats.followers, equals(85));
         expect(stats.following, equals(18));
+      });
+
+      test('uses follower timestamp instead of unrelated cachedAt', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final staleCountsTimestamp = DateTime.now().subtract(
+          const Duration(hours: 30),
+        );
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 85,
+          restFollowing: 18,
+          persistedRow: _persistedRow(
+            followers: 100,
+            following: 20,
+            cachedAt: DateTime.now(),
+            followerCountsUpdatedAt: staleCountsTimestamp,
+          ),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(85));
+        expect(stats.following, equals(18));
+      });
+
+      test('holds the count across an overnight gap (#6902)', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        // The reported failure: last seen at 98 the night before, relays
+        // answer 86 in the morning. A window shorter than the gap would treat
+        // the baseline as stale and accept 86 outright.
+        final lastNight = DateTime.now().subtract(const Duration(hours: 10));
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 86,
+          restFollowing: 20,
+          persistedRow: _persistedRow(
+            followers: 98,
+            following: 20,
+            cachedAt: lastNight,
+            followerCountsUpdatedAt: lastNight,
+          ),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(98));
+      });
+
+      test('accepts one-person drops for small accounts', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 8,
+          restFollowing: 4,
+          persistedRow: _persistedRow(followers: 9, following: 5),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(8));
+        expect(stats.following, equals(4));
       });
 
       test('does not apply hysteresis when no persisted data exists', () async {

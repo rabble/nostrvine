@@ -243,6 +243,7 @@ class _BannerImage extends StatelessWidget {
 class _ProfileStatsRow extends StatefulWidget {
   const _ProfileStatsRow({
     required this.userIdHex,
+    required this.displayName,
     required this.isOwnProfile,
     this.profileStats,
   });
@@ -256,6 +257,7 @@ class _ProfileStatsRow extends StatefulWidget {
   /// [profileLoopsVisibilityFloor].
   final bool isOwnProfile;
 
+  final String? displayName;
   final ProfileStats? profileStats;
 
   @override
@@ -293,8 +295,6 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
   Widget build(BuildContext context) {
     final isLoading = widget.profileStats == null;
 
-    final hasFollowers = widget.profileStats?.followers != null;
-    final hasFollowing = widget.profileStats?.following != null;
     final hasLikes = widget.profileStats?.totalLikes != null;
     final totalViews = widget.profileStats?.totalViews;
     // A visitor landing on a new creator's profile should not be met by a
@@ -321,27 +321,40 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
           label: l10n.profileLikesLabel,
           isLoading: isLoading && _timeoutExpired,
         ),
-      if (hasFollowing || isLoading)
+      // Followers / Following always render: the BLoC-backed columns own their
+      // own loading state, and a null cached count means "not known yet"
+      // rather than zero.
+      if (isLoading)
         ProfileStatColumn(
-          count: isLoading
-              ? _skeletonPlaceholderCount
-              : widget.profileStats!.following,
+          count: _skeletonPlaceholderCount,
           label: l10n.profileFollowingLabel,
-          isLoading: isLoading && _timeoutExpired,
+          isLoading: _timeoutExpired,
           onTap: () => context.push(
             FollowingScreenRouter.pathForPubkey(widget.userIdHex),
           ),
+        )
+      else
+        ProfileFollowingStat(
+          pubkey: widget.userIdHex,
+          displayName: widget.displayName,
+          isOwnProfile: widget.isOwnProfile,
+          initialCount: widget.profileStats!.following,
         ),
-      if (hasFollowers || isLoading)
+      if (isLoading)
         ProfileStatColumn(
-          count: isLoading
-              ? _skeletonPlaceholderCount
-              : widget.profileStats!.followers,
+          count: _skeletonPlaceholderCount,
           label: l10n.profileFollowersLabel,
-          isLoading: isLoading && _timeoutExpired,
+          isLoading: _timeoutExpired,
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(widget.userIdHex),
           ),
+        )
+      else
+        ProfileFollowersStat(
+          pubkey: widget.userIdHex,
+          displayName: widget.displayName,
+          isOwnProfile: widget.isOwnProfile,
+          initialCount: widget.profileStats!.followers,
         ),
     ];
 

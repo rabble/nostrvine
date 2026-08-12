@@ -1,6 +1,6 @@
 // dart format width=80
 import 'package:db_client/src/database/app_database.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,6 +40,53 @@ void main() {
       final schema = await verifier.schemaAt(1);
       final db = AppDatabase(schema.newConnection());
       await verifier.migrateAndValidate(db, 3);
+      await db.close();
+    });
+
+    test('migrates v2 profile statistic follower timestamps to v3', () async {
+      final schema = await verifier.schemaAt(2);
+      final cachedAt =
+          DateTime.now()
+              .subtract(const Duration(hours: 10))
+              .millisecondsSinceEpoch ~/
+          1000;
+
+      schema.rawDatabase.execute(
+        'INSERT INTO profile_statistics '
+        '(pubkey, video_count, follower_count, following_count, total_views, '
+        'total_likes, cached_at) '
+        'VALUES (?, NULL, ?, ?, NULL, NULL, ?)',
+        ['withcounts', 12, 7, cachedAt],
+      );
+      schema.rawDatabase.execute(
+        'INSERT INTO profile_statistics '
+        '(pubkey, video_count, follower_count, following_count, total_views, '
+        'total_likes, cached_at) '
+        'VALUES (?, NULL, NULL, NULL, NULL, NULL, ?)',
+        ['withoutcounts', cachedAt],
+      );
+
+      final db = AppDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 3);
+
+      final rows = await db
+          .customSelect(
+            'SELECT pubkey, follower_counts_updated_at '
+            'FROM profile_statistics ORDER BY pubkey',
+          )
+          .get();
+      final byPubkey = {
+        for (final row in rows) row.read<String>('pubkey'): row,
+      };
+
+      expect(
+        byPubkey['withcounts']!.read<int?>('follower_counts_updated_at'),
+        cachedAt,
+      );
+      expect(
+        byPubkey.containsKey('withoutcounts'),
+        isFalse,
+      );
       await db.close();
     });
 

@@ -5,6 +5,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/followers/follower_visibility.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'my_followers_event.dart';
@@ -33,15 +34,6 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   final FollowRepository _followRepository;
   final ContentBlocklistRepository _blocklistRepository;
 
-  /// Filter pubkeys by removing blocked and follow-severed users.
-  List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
-      .where(
-        (pk) =>
-            !_blocklistRepository.isBlocked(pk) &&
-            !_blocklistRepository.isFollowSevered(pk),
-      )
-      .toList();
-
   /// The rows to show: [rawPubkeys] arranged for [sortOrder], then filtered.
   ///
   /// Ordering runs first because filtering preserves relative order, so the
@@ -50,11 +42,12 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     required List<String> rawPubkeys,
     required int datedCount,
     required FollowSortOrder sortOrder,
-  }) => _filterPubkeys(
-    sortOrder.fromNewestFirst(
+  }) => filterMyFollowerPubkeys(
+    pubkeys: sortOrder.fromNewestFirst(
       rawPubkeys,
       datedCount: datedCount,
     ),
+    blocklistRepository: _blocklistRepository,
   );
 
   /// Handle request to load current user's followers list.
@@ -77,16 +70,17 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       await emit.forEach<CacheResult<FollowersSnapshot>>(
         _followRepository.watchMyFollowersCached(),
         onData: (result) {
+          final visiblePubkeys = _visiblePubkeys(
+            rawPubkeys: result.data.pubkeys,
+            datedCount: result.data.datedCount,
+            sortOrder: state.sortOrder,
+          );
           return state.copyWith(
             status: MyFollowersStatus.success,
             rawFollowersPubkeys: result.data.pubkeys,
             rawDatedCount: result.data.datedCount,
-            followersPubkeys: _visiblePubkeys(
-              rawPubkeys: result.data.pubkeys,
-              datedCount: result.data.datedCount,
-              sortOrder: state.sortOrder,
-            ),
-            followerCount: result.data.count,
+            followersPubkeys: visiblePubkeys,
+            authoritativeFollowerCount: result.data.count,
             isRefreshing: result.isStale,
           );
         },
@@ -109,14 +103,16 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     Emitter<MyFollowersState> emit,
   ) {
     if (state.status != MyFollowersStatus.success) return;
-
+    final visiblePubkeys = _visiblePubkeys(
+      rawPubkeys: state.rawFollowersPubkeys,
+      datedCount: state.rawDatedCount,
+      sortOrder: state.sortOrder,
+    );
+    // followerCount derives from the unchanged authoritative count, so
+    // re-filtering alone updates it.
     emit(
       state.copyWith(
-        followersPubkeys: _visiblePubkeys(
-          rawPubkeys: state.rawFollowersPubkeys,
-          datedCount: state.rawDatedCount,
-          sortOrder: state.sortOrder,
-        ),
+        followersPubkeys: visiblePubkeys,
       ),
     );
   }
@@ -128,16 +124,18 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   ) {
     if (event.sortOrder == state.sortOrder) return;
 
+    final visiblePubkeys = _visiblePubkeys(
+      rawPubkeys: state.rawFollowersPubkeys,
+      datedCount: state.rawDatedCount,
+      sortOrder: event.sortOrder,
+    );
+
     // The sort is remembered even before the first load resolves, so the
     // pending list arrives in the order the user already asked for.
     emit(
       state.copyWith(
         sortOrder: event.sortOrder,
-        followersPubkeys: _visiblePubkeys(
-          rawPubkeys: state.rawFollowersPubkeys,
-          datedCount: state.rawDatedCount,
-          sortOrder: event.sortOrder,
-        ),
+        followersPubkeys: visiblePubkeys,
       ),
     );
   }

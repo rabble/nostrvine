@@ -497,29 +497,38 @@ void main() {
         await expectLater(stream, emits(isNull));
       });
 
-      test('defaults nullable int fields to zero', () async {
-        final row = ProfileStatRow(
-          pubkey: testPubkey,
-          cachedAt: DateTime(2026),
-        );
-        when(
-          () => mockProfileStatsDao.watchStats(any()),
-        ).thenAnswer((_) => Stream.value(row));
+      test(
+        'defaults engagement counts to zero but leaves follower counts null',
+        () async {
+          final row = ProfileStatRow(
+            pubkey: testPubkey,
+            cachedAt: DateTime(2026),
+          );
+          when(
+            () => mockProfileStatsDao.watchStats(any()),
+          ).thenAnswer((_) => Stream.value(row));
 
-        final stream = profileRepository.watchProfileStats(pubkey: testPubkey);
+          final stream = profileRepository.watchProfileStats(
+            pubkey: testPubkey,
+          );
 
-        await expectLater(
-          stream,
-          emits(
-            isA<ProfileStats>()
-                .having((s) => s.videoCount, 'videoCount', equals(0))
-                .having((s) => s.totalLikes, 'totalLikes', equals(0))
-                .having((s) => s.followers, 'followers', equals(0))
-                .having((s) => s.following, 'following', equals(0))
-                .having((s) => s.totalViews, 'totalViews', equals(0)),
-          ),
-        );
-      });
+          await expectLater(
+            stream,
+            emits(
+              isA<ProfileStats>()
+                  .having((s) => s.videoCount, 'videoCount', equals(0))
+                  .having((s) => s.totalLikes, 'totalLikes', equals(0))
+                  // Follower counts stay null: FollowRepository owns them, and
+                  // "not written yet" must stay distinguishable from a genuine
+                  // zero so the profile header can show a placeholder instead
+                  // of a wrong count.
+                  .having((s) => s.followers, 'followers', isNull)
+                  .having((s) => s.following, 'following', isNull)
+                  .having((s) => s.totalViews, 'totalViews', equals(0)),
+            ),
+          );
+        },
+      );
 
       test('returns empty stream when ProfileStatsDao not injected', () async {
         final repoWithoutStats = ProfileRepository(
@@ -1253,8 +1262,6 @@ void main() {
           verify(
             () => mockProfileStatsDao.upsertStats(
               pubkey: testPubkey,
-              followerCount: 12,
-              followingCount: 7,
               videoCount: 3,
               totalLikes: 42,
               totalViews: 99,

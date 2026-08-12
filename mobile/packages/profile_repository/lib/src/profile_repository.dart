@@ -635,16 +635,19 @@ class ProfileRepository implements ProfileReader {
         pubkey: row.pubkey,
         videoCount: row.videoCount ?? 0,
         totalLikes: row.totalLikes ?? 0,
-        followers: row.followerCount ?? 0,
-        following: row.followingCount ?? 0,
+        followers: row.followerCount,
+        following: row.followingCount,
         totalViews: row.totalViews ?? 0,
         lastUpdated: row.cachedAt,
       );
     });
   }
 
-  /// Caches profile stats (social counts, video stats, engagement data) from a
+  /// Caches profile stats (video stats and engagement data) from a
   /// [UserProfileResult] into the local [ProfileStatsDao].
+  ///
+  /// Follower/following counts are owned by FollowRepository because it merges
+  /// REST, relay, and persisted inputs with hysteresis stabilization.
   Future<void> _cacheProfileStatsFromResult(
     String pubkey,
     UserProfileResult result,
@@ -654,11 +657,10 @@ class ProfileRepository implements ProfileReader {
 
     // Both variants expose social/stats/engagement on the sealed base class,
     // so no switch is needed here.
-    final social = result.social;
     final stats = result.stats;
     final engagement = result.engagement;
 
-    if (social == null && stats == null && engagement == null) return;
+    if (stats == null && engagement == null) return;
 
     int? publicViewCount;
     if (engagement != null) {
@@ -669,8 +671,6 @@ class ProfileRepository implements ProfileReader {
 
     await dao.upsertStats(
       pubkey: pubkey,
-      followerCount: social?.followerCount,
-      followingCount: social?.followingCount,
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
       totalViews: publicViewCount,
@@ -1872,7 +1872,7 @@ class ProfileRepository implements ProfileReader {
       final profiles = restResults
           .map((result) => result.toUserProfile())
           .where((p) => !(_blockFilter?.call(p.pubkey) ?? false));
-      return _enrichFromCache(profiles.toList());
+      return await _enrichFromCache(profiles.toList());
     } on Exception catch (e) {
       Log.warning(
         'REST profile search failed: $e',

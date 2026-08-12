@@ -147,21 +147,51 @@ class AppDatabase extends _$AppDatabase {
             ],
           ),
         );
+        await _addColumnIfMissing(
+          'profile_statistics',
+          'follower_counts_updated_at',
+          'INTEGER NULL',
+        );
+        await _backfillFollowerCountTimestamps();
       }
     },
     beforeOpen: (details) async {
       // v1 databases are normalized by onUpgrade. This guarded path remains
-      // only as recovery for damaged or manually-mutated v2 databases.
+      // only as recovery for damaged or manually-mutated databases.
       if (!details.wasCreated &&
           !details.hadUpgrade &&
           await _needsSchemaRepair()) {
         await _normalizeLegacyV1Schema();
+        await _repairSchemaV3();
       }
 
       // Run cleanup of expired data on every app startup
       await runStartupCleanup();
     },
   );
+
+  Future<void> _repairSchemaV3() async {
+    await _addColumnIfMissing(
+      'profile_statistics',
+      'follower_counts_updated_at',
+      'INTEGER NULL',
+    );
+    await _backfillFollowerCountTimestamps();
+  }
+
+  /// Anchors pre-v3 follower counts to the time they were written.
+  ///
+  /// Rows that predate `follower_counts_updated_at` carry counts with a NULL
+  /// timestamp. Backfilling during the v3 upgrade gives the follower freshness
+  /// clock a stable anchor without running an UPDATE on every database open.
+  Future<void> _backfillFollowerCountTimestamps() async {
+    await customStatement(
+      'UPDATE profile_statistics '
+      'SET follower_counts_updated_at = cached_at '
+      'WHERE follower_counts_updated_at IS NULL '
+      'AND (follower_count IS NOT NULL OR following_count IS NOT NULL)',
+    );
+  }
 
   /// Normalizes all historical schema drift from version 1 to version 2.
   ///
@@ -1024,6 +1054,7 @@ class AppDatabase extends _$AppDatabase {
       'pending_product_events': ['owner_pubkey'],
       'outgoing_dms': ['send_batch_id'],
       'personal_reactions': ['addressable_id'],
+      'profile_statistics': ['follower_counts_updated_at'],
     };
 
     for (final entry in requiredColumns.entries) {

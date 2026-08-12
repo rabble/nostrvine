@@ -651,12 +651,28 @@ class FollowRepository {
 
   /// Counts older than this are considered stale and will be replaced
   /// even if the new value is lower.
-  static const _staleDuration = Duration(hours: 1);
+  ///
+  /// This has to outlast the gap between closing the app at night and opening
+  /// it the next day, because that gap is the failure in #6902: a count that
+  /// dropped overnight and stayed wrong. A one-hour window expired during every
+  /// such gap, so the persisted baseline was always considered stale by morning
+  /// and the low fresh count was accepted outright — the stabilization never
+  /// ran in the one case it exists for.
+  ///
+  /// A genuine drop larger than [_hysteresisThreshold] still shows up
+  /// immediately; only drops small enough to look like relay variance wait for
+  /// this window.
+  static const _staleDuration = Duration(hours: 24);
 
   /// A new count must drop below this fraction of the persisted count
   /// before being treated as a genuine decrease (when not stale).
   /// Drops within this threshold are assumed to be relay query variance.
   static const _hysteresisThreshold = 0.8;
+
+  /// Small accounts should reflect one-person changes immediately; percentage
+  /// hysteresis is only useful once counts are large enough for relay variance
+  /// to dominate individual follow/unfollow events.
+  static const _hysteresisMinimumCount = 20;
 
   /// In-memory cache for follower/following counts.
   final Map<String, FollowerStats> _followerStatsCache = {};
@@ -675,7 +691,7 @@ class FollowRepository {
     return (
       followers: row.followerCount ?? 0,
       following: row.followingCount ?? 0,
-      timestamp: row.cachedAt,
+      timestamp: row.followerCountsUpdatedAt ?? row.cachedAt,
     );
   }
 
@@ -700,6 +716,9 @@ class FollowRepository {
   }) {
     // Fresh count is higher → always accept
     if (freshCount >= persistedCount) return freshCount;
+
+    // One-person changes are meaningful for small accounts.
+    if (persistedCount < _hysteresisMinimumCount) return freshCount;
 
     // Persisted count is stale → accept the fresh count
     if (DateTime.now().difference(persistedTimestamp) > _staleDuration) {

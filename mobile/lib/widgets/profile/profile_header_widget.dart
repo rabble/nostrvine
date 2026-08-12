@@ -42,6 +42,8 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
+import 'package:openvine/widgets/profile/profile_followers_stat.dart';
+import 'package:openvine/widgets/profile/profile_following_stat.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_support_sheet.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
@@ -420,6 +422,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: _ProfileStatsRow(
               userIdHex: widget.userIdHex,
+              displayName: widget.displayName,
               isOwnProfile: widget.isOwnProfile,
               profileStats: widget.profileStats,
             ),

@@ -189,6 +189,8 @@ class ProfileStats extends Table {
   IntColumn get totalViews => integer().nullable().named('total_views')();
   IntColumn get totalLikes => integer().nullable().named('total_likes')();
   DateTimeColumn get cachedAt => dateTime().named('cached_at')();
+  DateTimeColumn get followerCountsUpdatedAt =>
+      dateTime().nullable().named('follower_counts_updated_at')();
 
   @override
   Set<Column> get primaryKey => {pubkey};

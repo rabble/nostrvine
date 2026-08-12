@@ -1449,6 +1449,94 @@ void main() {
     });
 
     testWidgets(
+      'shows a placeholder, not "0", when no follower count has been cached '
+      'and the followers BLoC has not loaded yet',
+      (tester) async {
+        // A profile row exists for the video/engagement stats, but
+        // FollowRepository has not written follower counts for this pubkey
+        // yet, so they arrive as null. Rendering that as "0" is the bug in
+        // #6764: a settled, wrong count that never shimmers, and that sticks
+        // permanently if the followers fetch fails.
+        const profileStats = ProfileStats(
+          pubkey: testUserHex,
+          totalLikes: 10,
+          totalViews: 20,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: createTestProfile(displayName: 'Unknown Counts'),
+            profileStats: profileStats,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: find
+                .ancestor(
+                  of: find.text('Followers'),
+                  matching: find.byType(ProfileStatColumn),
+                )
+                .first,
+            matching: find.text('—'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find
+                .ancestor(
+                  of: find.text('Followers'),
+                  matching: find.byType(ProfileStatColumn),
+                )
+                .first,
+            matching: find.text('0'),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows the cached follower count while the followers BLoC loads',
+      (tester) async {
+        const profileStats = ProfileStats(
+          pubkey: testUserHex,
+          followers: 7,
+          following: 3,
+          totalLikes: 10,
+          totalViews: 20,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: createTestProfile(displayName: 'Cached Counts'),
+            profileStats: profileStats,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: find
+                .ancestor(
+                  of: find.text('Followers'),
+                  matching: find.byType(ProfileStatColumn),
+                )
+                .first,
+            matching: find.text('7'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'keeps all stat columns visible with em-dash placeholders once the '
       'skeleton timeout expires and profileStats is still null',
       (tester) async {
