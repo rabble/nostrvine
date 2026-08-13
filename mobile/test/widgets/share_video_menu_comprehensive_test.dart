@@ -117,6 +117,9 @@ void main() {
       () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
     ).thenReturn(false);
     when(
+      () => mockBookmarkService.hasUnreadablePrivateItems,
+    ).thenReturn(false);
+    when(
       () => mockBookmarkService.syncGlobalBookmarks(),
     ).thenAnswer((_) async => true);
     when(
