@@ -55,8 +55,8 @@ Future<InviteAvailabilityCubit> pumpScreen(
 Future<void> tapTile(WidgetTester tester, String title) async {
   // Tap the whole ListTile rather than just its text: a tap on the text's
   // centre lands off-target on some layouts (this is what failed on Linux CI
-  // but passed on macOS). hitTestWarningShouldBeFatal (set in main) turns any
-  // such miss into a hard failure so it can't pass locally again.
+  // but passed on macOS). Some groups below make hit-test warnings fatal so
+  // this cannot slip through their local runs again.
   final tile = find.widgetWithText(ListTile, title);
   await scrollUntilTappable(tester, tile, 300);
   await tester.tap(tile);
