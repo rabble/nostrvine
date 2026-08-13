@@ -234,6 +234,34 @@ void main() {
       final divider = tester.widget<Divider>(find.byType(Divider).first);
       expect(divider.color, VineTheme.lightColors.outlineMuted);
 
+      final reconnect = tester.widget<Text>(
+        find.text(l10n.crosspostingNeedsReconnect),
+      );
+      expect(reconnect.style?.color, VineTheme.lightColors.accentWarning);
+
+      // One per platform row, in `entries` order: connected, disconnected,
+      // needs-reauth. Typed on the icon name so the app bar's own icons — a
+      // plain `find.byType(DivineIcon).first` picks up the back arrow — stay
+      // out of it.
+      final platformIcons = tester
+          .widgetList<DivineIcon>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is DivineIcon &&
+                  widget.icon == DivineIconName.shareNetwork,
+            ),
+          )
+          .toList();
+      expect(platformIcons, hasLength(3));
+      expect(platformIcons.first.color, VineTheme.lightColors.accentPositive);
+      expect(platformIcons[1].color, VineTheme.lightColors.mutedText);
+      expect(platformIcons.last.color, VineTheme.lightColors.accentWarning);
+
+      final refresh = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      expect(refresh.color, VineTheme.lightColors.accentPositive);
+
       expect(VineThemeColors.debugFallbackCount, 0);
     });
 
@@ -294,8 +322,13 @@ void main() {
   });
 }
 
-/// One connected platform (identity + mode subtitle) and one disconnected one
-/// (status line), so every migrated text token has a rendered call site.
+/// One platform per rendered branch — connected (identity + mode subtitle),
+/// disconnected (status line) and needs-reauth (the accent-tinted status line
+/// and icon) — so every migrated token has a rendered call site.
+///
+/// The needs-reauth row is the one this screen shipped without: it is the only
+/// branch that paints an accent on the canvas rather than a text token, and it
+/// is where the raw brand orange stayed 2.48:1 in light mode.
 const _crosspostingEntries = <CrosspostingPlatformSettings>[
   CrosspostingPlatformSettings(
     platform: CrosspostingPlatform.instagram,
@@ -312,5 +345,16 @@ const _crosspostingEntries = <CrosspostingPlatformSettings>[
     platform: CrosspostingPlatform.x,
     supportsAutomatic: false,
     mode: CrosspostingMode.disabled,
+  ),
+  CrosspostingPlatformSettings(
+    platform: CrosspostingPlatform.tiktok,
+    supportsAutomatic: true,
+    mode: CrosspostingMode.manual,
+    connection: CrosspostingConnection(
+      id: 'tiktok-connection',
+      platform: CrosspostingPlatform.tiktok,
+      status: CrosspostingConnectionStatus.needsReauth,
+      externalAccountName: 'divine.tiktok',
+    ),
   ),
 ];

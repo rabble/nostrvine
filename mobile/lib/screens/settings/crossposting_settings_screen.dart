@@ -171,7 +171,7 @@ class _LoadedSettingsList extends StatelessWidget {
       context,
     ).refreshIndicatorSemanticLabel;
     return RefreshIndicator(
-      color: VineTheme.vineGreen,
+      color: context.vineColors.accentPositive,
       backgroundColor: context.vineColors.surfaceContainer,
       onRefresh: context.read<CrosspostingSettingsCubit>().refresh,
       child: ListView.separated(
@@ -307,9 +307,9 @@ class _PlatformSection extends StatelessWidget {
               DivineIcon(
                 icon: DivineIconName.shareNetwork,
                 color: entry.isConnected
-                    ? VineTheme.vineGreen
+                    ? context.vineColors.accentPositive
                     : entry.needsReauth
-                    ? VineTheme.accentOrange
+                    ? context.vineColors.accentWarning
                     : context.vineColors.mutedText,
               ),
               Expanded(
@@ -336,7 +336,7 @@ class _PlatformSection extends StatelessWidget {
                         status,
                         style: VineTheme.bodyMediumFont(
                           color: entry.needsReauth
-                              ? VineTheme.accentOrange
+                              ? context.vineColors.accentWarning
                               : context.vineColors.mutedText,
                         ),
                       ),

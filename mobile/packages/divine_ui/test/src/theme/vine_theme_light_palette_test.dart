@@ -64,6 +64,8 @@ Map<String, Color> _tokens(VineThemeColors c) => {
   'skeleton': c.skeleton,
   'errorContainer': c.errorContainer,
   'onErrorContainer': c.onErrorContainer,
+  'accentPositive': c.accentPositive,
+  'accentWarning': c.accentWarning,
   'inverseSurface': c.inverseSurface,
   'inverseOnSurface': c.inverseOnSurface,
   'mediaChrome': c.mediaChrome,
@@ -89,6 +91,9 @@ const _bodyPairs = <(String, String)>[
   ('mutedText', 'background'),
   ('mutedText', 'card'),
   ('mutedText', 'surface'),
+  // `accentWarning` labels the copy next to its icon ("Reconnect needed"), not
+  // just the icon, so it is held to the body ratio rather than the 3:1 floor.
+  ('accentWarning', 'background'),
 ];
 
 /// Supporting copy — hints, placeholders, secondary labels — held to the
@@ -97,6 +102,10 @@ const _supportingPairs = <(String, String)>[
   ('onSurfaceVariant', 'surface'),
   ('onSurfaceMuted', 'surface'),
   ('onErrorContainer', 'errorContainer'),
+  // `accentPositive` only ever tints an icon — the connected row's label is
+  // `primaryText` and its identity line is `secondaryText` — so the non-text
+  // floor is the honest bar for it. Promote it if it ever colors copy.
+  ('accentPositive', 'background'),
 ];
 
 /// Token pairs that share a dark value while differing in light.
