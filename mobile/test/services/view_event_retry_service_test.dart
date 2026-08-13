@@ -47,6 +47,8 @@ void main() {
       int? videoEventKind = NIP71VideoKinds.addressableShortVideo,
       String? eventVideoId,
       String? videoVineId,
+
+      String? phase,
     }) {
       return PendingViewEvent(
         id: id,
@@ -65,6 +67,7 @@ void main() {
         retryCount: retryCount,
         lastAttemptAt: lastAttemptAt,
         createdAt: createdAt ?? DateTime.utc(2026, 5),
+        phase: phase,
       );
     }
 
@@ -100,6 +103,7 @@ void main() {
           source: any(named: 'source'),
           sourceDetail: any(named: 'sourceDetail'),
           loopCount: any(named: 'loopCount'),
+          phase: any(named: 'phase'),
         ),
       ).thenAnswer((_) async => true);
     });
@@ -131,6 +135,7 @@ void main() {
           source: captureAny(named: 'source'),
           sourceDetail: captureAny(named: 'sourceDetail'),
           loopCount: captureAny(named: 'loopCount'),
+          phase: captureAny(named: 'phase'),
         ),
       ).captured;
       final video = captured[0] as VideoEvent;
@@ -160,6 +165,7 @@ void main() {
             source: any(named: 'source'),
             sourceDetail: any(named: 'sourceDetail'),
             loopCount: any(named: 'loopCount'),
+            phase: any(named: 'phase'),
           ),
         ).thenAnswer((_) async => false);
         await dao.enqueue(
@@ -224,6 +230,7 @@ void main() {
             source: any(named: 'source'),
             sourceDetail: any(named: 'sourceDetail'),
             loopCount: any(named: 'loopCount'),
+            phase: any(named: 'phase'),
           ),
         ).thenAnswer((_) async => false);
         await dao.enqueue(makeEvent(id: 'view-a'));
@@ -261,6 +268,7 @@ void main() {
           source: any(named: 'source'),
           sourceDetail: any(named: 'sourceDetail'),
           loopCount: any(named: 'loopCount'),
+          phase: any(named: 'phase'),
         ),
       );
       final skipped = await dao.getById('view-a');
@@ -292,6 +300,7 @@ void main() {
             source: any(named: 'source'),
             sourceDetail: any(named: 'sourceDetail'),
             loopCount: any(named: 'loopCount'),
+            phase: any(named: 'phase'),
           ),
         ).called(1);
       },
@@ -324,6 +333,7 @@ void main() {
           source: any(named: 'source'),
           sourceDetail: any(named: 'sourceDetail'),
           loopCount: any(named: 'loopCount'),
+          phase: any(named: 'phase'),
         ),
       ).called(2);
     });
@@ -351,6 +361,7 @@ void main() {
             source: any(named: 'source'),
             sourceDetail: any(named: 'sourceDetail'),
             loopCount: any(named: 'loopCount'),
+            phase: any(named: 'phase'),
           ),
         );
         final skipped = await dao.getById('view-a');
@@ -377,10 +388,12 @@ void main() {
           source: captureAny(named: 'source'),
           sourceDetail: captureAny(named: 'sourceDetail'),
           loopCount: captureAny(named: 'loopCount'),
+          phase: captureAny(named: 'phase'),
         ),
       ).captured;
       // Two publishes: self-view + short partial-loop view.
-      expect(captured.length, equals(12));
+      // Each call captures 7 args; legacy rows carry null phase.
+      expect(captured.length, equals(14));
       final video = captured[0] as VideoEvent;
       expect(video.id, 'video-self-view');
       expect(video.pubkey, userPubkey);
@@ -390,6 +403,7 @@ void main() {
       expect(captured[3], ViewTrafficSource.home);
       expect(captured[4], 'following');
       expect(captured[5], closeTo(0.416, 0.01));
+      expect(captured[6], isNull);
     });
 
     test(
@@ -418,6 +432,74 @@ void main() {
             source: any(named: 'source'),
             sourceDetail: any(named: 'sourceDetail'),
             loopCount: any(named: 'loopCount'),
+            phase: any(named: 'phase'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('start-phase queued row replays as a start event', () async {
+      await dao.enqueue(
+        makeEvent(id: 'view-start', watchDurationMs: 0, phase: 'start'),
+      );
+      final service = makeService();
+
+      await service.sweep();
+
+      expect(await dao.getById('view-start'), isNull);
+      verify(
+        () => publisher.publishViewEvent(
+          video: any(named: 'video'),
+          startSeconds: 0,
+          endSeconds: 0,
+          source: any(named: 'source'),
+          sourceDetail: any(named: 'sourceDetail'),
+          loopCount: any(named: 'loopCount'),
+          phase: ViewEventPhase.start,
+        ),
+      ).called(1);
+    });
+
+    test('end-phase queued row replays as an end event', () async {
+      await dao.enqueue(makeEvent(id: 'view-end', phase: 'end'));
+      final service = makeService();
+
+      await service.sweep();
+
+      expect(await dao.getById('view-end'), isNull);
+      verify(
+        () => publisher.publishViewEvent(
+          video: any(named: 'video'),
+          startSeconds: any(named: 'startSeconds'),
+          endSeconds: any(named: 'endSeconds'),
+          source: any(named: 'source'),
+          sourceDetail: any(named: 'sourceDetail'),
+          loopCount: any(named: 'loopCount'),
+          phase: ViewEventPhase.end,
+        ),
+      ).called(1);
+    });
+
+    test(
+      'legacy queued row (null phase) replays without a phase tag',
+      () async {
+        await dao.enqueue(makeEvent(id: 'view-legacy'));
+        final service = makeService();
+
+        await service.sweep();
+
+        // Pre-phase rows are legacy end-of-session events; replaying them
+        // WITH phase=end would erase their view (the relay counts views on
+        // start events only), so they go out with no phase at all.
+        verify(
+          () => publisher.publishViewEvent(
+            video: any(named: 'video'),
+            startSeconds: any(named: 'startSeconds'),
+            endSeconds: any(named: 'endSeconds'),
+            source: any(named: 'source'),
+            sourceDetail: any(named: 'sourceDetail'),
+            loopCount: any(named: 'loopCount'),
+            phase: null,
           ),
         ).called(1);
       },
