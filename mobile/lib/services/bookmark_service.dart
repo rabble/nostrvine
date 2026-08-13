@@ -584,13 +584,14 @@ class BookmarkService {
         return false;
       }
 
-      // A private item is removed from the encrypted array, leaving the public
-      // tags alone. Dropping only a public copy would report "Removed" while
-      // every conforming client still shows it bookmarked (#7136).
+      // A private item is removed from the encrypted array. Dropping only a
+      // public copy would report "Removed" while every conforming client still
+      // shows it bookmarked (#7136) — and the reverse is just as untrue, so an
+      // item the pre-fix leak left in *both* halves loses both.
       if (_privateBookmarks.contains(item)) {
         final privateCandidate = [..._privateBookmarks]..remove(item);
         final published = await _publishGlobalBookmarks(
-          [..._globalBookmarks],
+          [..._globalBookmarks]..removeWhere((candidate) => candidate == item),
           privateCandidate: privateCandidate,
         );
         if (!published) return false;

@@ -1092,6 +1092,38 @@ void main() {
         },
       );
 
+      test('removing an item held in both halves drops both copies', () async {
+        const inBoth = 'in-both';
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              [inBoth],
+              content: await encryptToSelf([
+                ['e', inBoth],
+              ]),
+            ),
+          ],
+        );
+        final service = createService();
+
+        final result = await service.toggleVideoInGlobalBookmarks(inBoth);
+
+        expect(result.succeeded, isTrue);
+        expect(result.isBookmarked, isFalse);
+        expect(
+          signedEventIds(),
+          isNot(contains(inBoth)),
+          reason:
+              'a surviving public tag makes the reported removal a lie - the '
+              'pre-fix leak (#7136) is what puts an item in both halves',
+        );
+        expect(
+          service.isVideoBookmarkedGlobally(inBoth),
+          isFalse,
+          reason: 'and the local read must agree with what was published',
+        );
+      });
+
       test('clears content once the last private item is removed', () async {
         stubRelay(
           events: [
