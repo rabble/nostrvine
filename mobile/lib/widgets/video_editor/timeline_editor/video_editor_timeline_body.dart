@@ -92,7 +92,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
     );
 
     final clipTrimExpand = trimmingClipId != null
-        ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
+        ? TimelineConstants.trimHitOverhang
         : 0.0;
 
     // Also expand for overlay trim handles when an overlay item is selected.
@@ -100,7 +100,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
       (TimelineOverlayBloc b) => b.state.selectedItemId,
     );
     final overlayTrimExpand = overlaySelectedId != null
-        ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
+        ? TimelineConstants.trimHitOverhang
         : 0.0;
 
     final trimExpand = clipTrimExpand > overlayTrimExpand
@@ -172,39 +172,49 @@ class VideoEditorTimelineBody extends StatelessWidget {
 
               /// Layers, Filters and Audio-Tracks
               Expanded(
-                child: AnimatedOpacity(
-                  opacity: isReordering ? 0.0 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: ClipRect(
-                    clipper: const VerticalOnlyClipper(),
-                    child: SingleChildScrollView(
-                      controller: overlayStripsScrollController,
-                      clipBehavior: Clip.none,
-                      physics: isVolumeEditMode
-                          ? const NeverScrollableScrollPhysics()
-                          : null,
-                      padding: EdgeInsets.only(
-                        top: 4,
-                        bottom:
-                            _scrollBottomPadding +
-                            MediaQuery.paddingOf(context).bottom,
-                      ),
-                      child: IgnorePointer(
-                        ignoring: isReordering,
-                        child: RepaintBoundary(
-                          child: _CachedOverlayStrips(
-                            clips: clips,
-                            totalWidth: totalWidth,
-                            pixelsPerSecond: pixelsPerSecond,
-                            totalDuration: totalDuration,
-                            playheadPosition: playheadPosition,
-                            onItemTapped: onOverlayItemTapped,
-                            onItemMoved: onOverlayItemMoved,
-                            onItemMoving: onOverlayItemMoving,
-                            onItemTrimmed: onOverlayItemTrimmed,
-                            onTrimDragChanged: onOverlayTrimDragChanged,
-                            onDragStarted: onOverlayDragStarted,
-                            onDragEnded: onOverlayDragEnded,
+                // The strips are only clipped vertically, so a selected item's
+                // trim handle stays visible past the composition's last pixel.
+                // The strip itself is exactly totalWidth wide, and every box
+                // between here and it hit-tests against its own edge, so the
+                // touch was rejected all the way up and the horizontal scroll
+                // view took it instead.
+                child: HitExpandedBox(
+                  expandLeft: overlayTrimExpand,
+                  expandRight: overlayTrimExpand,
+                  child: AnimatedOpacity(
+                    opacity: isReordering ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: ClipRect(
+                      clipper: const VerticalOnlyClipper(),
+                      child: SingleChildScrollView(
+                        controller: overlayStripsScrollController,
+                        clipBehavior: Clip.none,
+                        physics: isVolumeEditMode
+                            ? const NeverScrollableScrollPhysics()
+                            : null,
+                        padding: EdgeInsets.only(
+                          top: 4,
+                          bottom:
+                              _scrollBottomPadding +
+                              MediaQuery.paddingOf(context).bottom,
+                        ),
+                        child: IgnorePointer(
+                          ignoring: isReordering,
+                          child: RepaintBoundary(
+                            child: _CachedOverlayStrips(
+                              clips: clips,
+                              totalWidth: totalWidth,
+                              pixelsPerSecond: pixelsPerSecond,
+                              totalDuration: totalDuration,
+                              playheadPosition: playheadPosition,
+                              onItemTapped: onOverlayItemTapped,
+                              onItemMoved: onOverlayItemMoved,
+                              onItemMoving: onOverlayItemMoving,
+                              onItemTrimmed: onOverlayItemTrimmed,
+                              onTrimDragChanged: onOverlayTrimDragChanged,
+                              onDragStarted: onOverlayDragStarted,
+                              onDragEnded: onOverlayDragEnded,
+                            ),
                           ),
                         ),
                       ),

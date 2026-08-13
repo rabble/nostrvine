@@ -11,8 +11,12 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strips.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -64,6 +68,9 @@ void main() {
       bool isReordering = false,
       Duration totalDuration = const Duration(seconds: 12),
       List<DivineVideoClip> clips = const <DivineVideoClip>[],
+      OverlayTrimCallback? onOverlayItemTrimmed,
+      double pixelsPerSecond = 80,
+      double totalWidth = 960,
     }) async {
       when(
         () => mainBloc.state,
@@ -89,15 +96,16 @@ void main() {
               height: 120000,
               child: VideoEditorTimelineBody(
                 totalDuration: totalDuration,
-                pixelsPerSecond: 80,
+                pixelsPerSecond: pixelsPerSecond,
                 scrollController: scrollController,
                 overlayStripsScrollController: overlayStripsScrollController,
                 scrollPadding: 16,
                 clips: clips,
-                totalWidth: 960,
+                totalWidth: totalWidth,
                 isInteracting: false,
                 onReorder: (_) {},
                 onReorderChanged: (_) {},
+                onOverlayItemTrimmed: onOverlayItemTrimmed,
                 playheadPosition: playhead,
               ),
             ),
@@ -105,6 +113,62 @@ void main() {
         ),
       );
     }
+
+    testWidgets(
+      'the right trim handle of an overlay item ending at the composition '
+      'end takes the drag',
+      (tester) async {
+        // Regression: the strips are exactly totalWidth wide, so the handle of
+        // an item ending on the last pixel sits outside every box in that
+        // subtree. The hit was rejected all the way up and the horizontal
+        // scroll view took the touch — pressing the handle scrolled the
+        // timeline instead of trimming, while grabbing just inside the item
+        // worked.
+        const item = TimelineOverlayItem(
+          id: 'layer-1',
+          type: TimelineOverlayType.layer,
+          startTime: Duration(seconds: 2),
+          endTime: Duration(seconds: 5),
+          label: 'Text',
+        );
+        when(() => overlayBloc.state).thenReturn(
+          const TimelineOverlayState(items: [item], selectedItemId: 'layer-1'),
+        );
+
+        var trimmedEnd = false;
+        // Sized so the composition's end stays inside the test viewport.
+        await pumpBody(
+          tester,
+          totalDuration: const Duration(seconds: 5),
+          totalWidth: 400,
+          clips: [_createClip(id: 'a', duration: const Duration(seconds: 5))],
+          onOverlayItemTrimmed:
+              ({
+                required item,
+                required startTime,
+                required endTime,
+                required isStart,
+              }) {
+                if (!isStart) trimmedEnd = true;
+              },
+        );
+
+        final handles = find.byType(TimelineTrimHandles);
+        expect(handles, findsOneWidget);
+        final content = tester.getRect(handles);
+        // Squarely on the visible handle, which is painted past the item's
+        // right edge — the spot that used to be dead.
+        final grabPoint = Offset(
+          content.right + TimelineConstants.trimHandleWidth / 2,
+          content.center.dy,
+        );
+
+        await tester.dragFrom(grabPoint, const Offset(-40, 0));
+        await tester.pump();
+
+        expect(trimmedEnd, isTrue);
+      },
+    );
 
     test('stores constructor parameters', () {
       final scrollController = ScrollController();

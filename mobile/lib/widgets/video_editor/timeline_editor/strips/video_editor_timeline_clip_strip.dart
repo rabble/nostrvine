@@ -647,7 +647,7 @@ class _VideoEditorTimelineClipStripState
     final shouldAnimate = _isReordering || _isReorderExiting;
 
     final trimExpand = widget.trimmingClipId != null
-        ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
+        ? TimelineConstants.trimHitOverhang
         : 0.0;
 
     final isVolumeEditMode = context.select(
