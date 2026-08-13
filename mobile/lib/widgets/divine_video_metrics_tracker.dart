@@ -14,6 +14,7 @@ import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:uuid/uuid.dart';
 
 class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
   const DivineVideoMetricsTracker({
@@ -21,6 +22,7 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
     required this.controller,
     required this.isActive,
     required this.child,
+    this.isFeedVisible = true,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
     @visibleForTesting DateTime Function()? clock,
@@ -29,7 +31,17 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
 
   final VideoEvent video;
   final DivineVideoPlayerController? controller;
+  /// Whether this item is the one the feed is showing (scroll position).
   final bool isActive;
+
+  /// Whether the feed itself is visible — false when a sheet or route covers
+  /// it, the tab is switched, or the app is backgrounded.
+  ///
+  /// Kept separate from [isActive] because the two mean different things for
+  /// a viewing session: scrolling away ends it, a cover only interrupts it.
+  /// Defaults to true for hosts that have no cover concept.
+  final bool isFeedVisible;
+
   final Widget child;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -42,15 +54,41 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
 
 class _DivineVideoMetricsTrackerState
     extends ConsumerState<DivineVideoMetricsTracker> {
-  DateTime? _viewStartTime;
-  DateTime? _lastPlayStartTime;
-  Duration _totalWatchDuration = Duration.zero;
-  Duration? _lastPosition;
-  double _loopCount = 0;
-  bool _hasTrackedView = false;
-  bool _hasSentEndEvent = false;
+  bool get _isTracking => widget.isActive && widget.isFeedVisible;
+
+  /// Identifies this mount's viewing session so the view_start dedupe in
+  /// AnalyticsService suppresses double-fires within a session but lets a
+  /// remount re-watch report its own start.
+  String? _sessionToken;
+
+  /// Whether playback has actually started at least once in this session.
+  /// The view is counted at that moment, not at mount: a scroll-past that
+  /// never reached playback starts no session and reports nothing.
+  bool _hasStartedPlayback = false;
   bool _hasRecordedImpression = false;
+
+  /// Mount time, kept for the seen-impression's elapsed-since-active gate.
+  DateTime? _mountedAt;
+
+  DateTime? _playIntervalStartedAt;
   bool _isPlaying = false;
+
+  /// Cumulative watch time / completed-pass wraps for the session, and the
+  /// amounts already flushed with an end event. An end segment reports the
+  /// delta between them, so interrupting a session (comment sheet, tab
+  /// switch) flushes one segment without ending the session — nothing
+  /// accumulated after the interruption is lost.
+  Duration _watchTotal = Duration.zero;
+  Duration _watchFlushed = Duration.zero;
+  double _wrapsTotal = 0;
+  double _wrapsFlushed = 0;
+
+  Duration? _lastPosition;
+
+  /// Last duration the player reported. Read at flush time in preference to
+  /// the controller, which may already be serving the next video.
+  Duration? _lastKnownDuration;
+
   StreamSubscription<DivineVideoPlayerState>? _stateSubscription;
 
   late AnalyticsService _analyticsService;
@@ -68,7 +106,7 @@ class _DivineVideoMetricsTrackerState
     );
     _authService = ref.read(authServiceProvider);
     _seenVideosService = ref.read(seenVideosServiceProvider);
-    if (widget.isActive) _startTracking();
+    if (_isTracking) _startTracking();
   }
 
   @override
@@ -77,15 +115,25 @@ class _DivineVideoMetricsTrackerState
 
     final videoChanged = oldWidget.video.id != widget.video.id;
     final controllerChanged = oldWidget.controller != widget.controller;
-    final becameInactive = oldWidget.isActive && !widget.isActive;
-    final becameActive = !oldWidget.isActive && widget.isActive;
+    final wasTracking = oldWidget.isActive && oldWidget.isFeedVisible;
+    final becameInactive = wasTracking && !_isTracking;
+    final becameActive = !wasTracking && _isTracking;
 
     if (videoChanged) {
-      _finalizeAndPublish(finalizedVideo: oldWidget.video);
+      _flushSegment(oldWidget.video);
       _resetTracking();
     } else if (becameInactive) {
-      _finalizeAndPublish();
-      _resetViewSession();
+      // Either way the visible segment ends, so report the delta so far.
+      _flushSegment(widget.video);
+      if (!widget.isActive) {
+        // Scrolled away. The session is over; scrolling back is a fresh
+        // watch and must count its own view (#7231).
+        _resetViewSession();
+      }
+      // Otherwise the item is still current and only the feed was covered
+      // (comment sheet, route push, tab switch, backgrounding). The session
+      // stays alive so watch time after the cover lifts is still counted
+      // against it rather than dropped (#7243).
     }
 
     if (controllerChanged || videoChanged || becameInactive) {
@@ -93,7 +141,7 @@ class _DivineVideoMetricsTrackerState
       _stateSubscription = null;
     }
 
-    if (widget.isActive &&
+    if (_isTracking &&
         (videoChanged || becameActive || controllerChanged)) {
       _startTracking();
     }
@@ -103,10 +151,7 @@ class _DivineVideoMetricsTrackerState
     final controller = widget.controller;
     if (controller == null) return;
 
-    if (!_hasTrackedView) {
-      _trackViewStart();
-    }
-
+    _mountedAt ??= widget._clock();
     _subscribeToController(controller);
 
     try {
@@ -135,133 +180,140 @@ class _DivineVideoMetricsTrackerState
   }
 
   void _handleState(DivineVideoPlayerState state) {
-    if (!_hasTrackedView || !widget.isActive) return;
+    if (!widget.isActive) return;
 
     final now = widget._clock();
     if (state.isPlaying && !_isPlaying) {
       _isPlaying = true;
-      _lastPlayStartTime = now;
+      _playIntervalStartedAt = now;
+      _onPlaybackStarted();
     } else if (!state.isPlaying && _isPlaying) {
-      _totalWatchDuration += now.difference(_lastPlayStartTime!);
-      _lastPlayStartTime = null;
-      _isPlaying = false;
+      _closePlayInterval(now);
     }
 
     final position = state.position;
     final duration = state.duration;
-    // Count completed loops via position wrap-around. Also track fractional
-    // loops — a 4.5s watch of a 6s video is 0.75 loops, which the old int
-    // counter would record as 0. The view event sends this as a fraction
-    // per the fractional-loops decision.
-    if (_lastPosition != null &&
+    if (duration > Duration.zero) _lastKnownDuration = duration;
+
+    // Count completed loops via position wrap-around. Only meaningful once a
+    // session has started; a stale pre-session position must not fabricate
+    // one.
+    if (_hasStartedPlayback &&
+        _lastPosition != null &&
         position < _lastPosition! &&
         position < const Duration(seconds: 1) &&
         duration > Duration.zero &&
         _lastPosition!.inMilliseconds > duration.inMilliseconds - 1000) {
-      _loopCount += 1;
+      _wrapsTotal += 1;
     }
     _lastPosition = position;
   }
 
-  void _trackViewStart() {
-    _viewStartTime = widget._clock();
-    _hasTrackedView = true;
-    _hasSentEndEvent = false;
+  /// The view is counted here: one start-phase event, fired at the first
+  /// real playback of the session and never again for this mount.
+  void _onPlaybackStarted() {
+    if (_hasStartedPlayback) return;
+    _hasStartedPlayback = true;
+    _sessionToken = const Uuid().v4();
 
     _analyticsService.trackDetailedVideoViewWithUser(
       widget.video,
       userId: _authService.currentPublicKeyHex,
       source: 'mobile',
       eventType: 'view_start',
+      sessionToken: _sessionToken,
+      trafficSource: widget.trafficSource,
+      sourceDetail: widget.sourceDetail,
     );
   }
 
-  void _finalizeAndPublish({VideoEvent? finalizedVideo}) {
-    if (!_hasTrackedView) return;
-    if (_hasSentEndEvent && _hasRecordedImpression) return;
-    final viewStartTime = _viewStartTime;
-    if (viewStartTime == null) return;
-
-    if (_isPlaying && _lastPlayStartTime != null) {
-      _totalWatchDuration += widget._clock().difference(_lastPlayStartTime!);
-      _lastPlayStartTime = null;
+  void _closePlayInterval(DateTime now) {
+    final startedAt = _playIntervalStartedAt;
+    if (startedAt != null) {
+      _watchTotal += now.difference(startedAt);
+      _playIntervalStartedAt = null;
     }
     _isPlaying = false;
-
-    final video = finalizedVideo ?? widget.video;
-    final activeDuration = widget._clock().difference(viewStartTime);
-    _publishEvents(video, activeDuration: activeDuration);
   }
 
-  void _publishEvents(VideoEvent video, {required Duration activeDuration}) {
-    Duration? totalDuration;
-    try {
-      totalDuration = widget.controller?.state.duration;
-    } catch (_) {
-      totalDuration = null;
-    }
+  /// Flush the watch/loop delta since the last flush as an end-phase event.
+  /// Non-terminal by construction: a segment with no new playback emits
+  /// nothing, so flush triggers (cover, video change, dispose) can all run
+  /// without double-counting.
+  void _flushSegment(VideoEvent video) {
+    _closePlayInterval(widget._clock());
+    _recordImpression(video);
 
-    // Compute fractional loops for this session. Integer wrap-arounds are
-    // already in _loopCount; add the fractional remainder for views that
-    // never completed a full pass. This ensures a 4.5s watch of a 6s video
-    // reports 0.75 rather than 0 — the median case that flooring would zero.
-    var fractionalLoops = _loopCount;
-    if (totalDuration != null &&
-        totalDuration > Duration.zero &&
-        _totalWatchDuration > Duration.zero) {
-      final fractional =
-          _totalWatchDuration.inMilliseconds / totalDuration.inMilliseconds;
-      // Take the larger of counted wrap-arounds vs time ratio to handle
-      // cases where wrap detection missed a transition.
-      if (fractional > fractionalLoops) fractionalLoops = fractional;
-    }
+    if (!_hasStartedPlayback) return;
 
-    if (!_hasSentEndEvent &&
-        _hasTrackedView &&
-        _totalWatchDuration > Duration.zero) {
-      // View = playback start: every session needs real playback
-      // (not just mount time). Gating on _totalWatchDuration drops the
-      // never-played case (isPlaying never true) while still counting
-      // sub-second flings (400ms of real playback is a view).
+    final deltaWatch = _watchTotal - _watchFlushed;
+    final deltaWraps = _wrapsTotal - _wrapsFlushed;
+    if (deltaWatch <= Duration.zero && deltaWraps <= 0) return;
+
+    Duration? totalDuration = _lastKnownDuration;
+    if (totalDuration == null) {
       try {
-        _analyticsService.trackDetailedVideoViewWithUser(
-          video,
-          userId: _authService.currentPublicKeyHex,
-          source: 'mobile',
-          eventType: 'view_end',
-          watchDuration: _totalWatchDuration,
-          totalDuration: totalDuration,
-          loopCount: fractionalLoops,
-          completedVideo:
-              fractionalLoops >= 1 ||
-              (totalDuration != null &&
-                  totalDuration > Duration.zero &&
-                  _totalWatchDuration.inMilliseconds >=
-                      totalDuration.inMilliseconds * 0.9),
-          trafficSource: widget.trafficSource,
-          sourceDetail: widget.sourceDetail,
-        );
-
-        _hasSentEndEvent = true;
-      } catch (e) {
-        Log.warning(
-          'Failed to send video end event: $e',
-          name: 'DivineVideoMetricsTracker',
-          category: LogCategory.video,
-        );
+        totalDuration = widget.controller?.state.duration;
+      } catch (_) {
+        totalDuration = null;
       }
     }
 
-    if (!_hasRecordedImpression && activeDuration > Duration.zero) {
-      _hasRecordedImpression = true;
-      unawaited(
-        _seenVideosService.recordVideoView(
-          video.id,
-          loopCount: fractionalLoops.round(),
-          watchDuration: _totalWatchDuration,
-        ),
+    // Fractional loops for the segment: the larger of counted wrap-arounds
+    // and the watch-time ratio, so a wrap transition missed across a flush
+    // seam does not lose the pass.
+    var fractionalLoops = deltaWraps;
+    if (totalDuration != null &&
+        totalDuration > Duration.zero &&
+        deltaWatch > Duration.zero) {
+      final ratio = deltaWatch.inMilliseconds / totalDuration.inMilliseconds;
+      if (ratio > fractionalLoops) fractionalLoops = ratio;
+    }
+
+    try {
+      _analyticsService.trackDetailedVideoViewWithUser(
+        video,
+        userId: _authService.currentPublicKeyHex,
+        source: 'mobile',
+        eventType: 'view_end',
+        watchDuration: deltaWatch,
+        totalDuration: totalDuration,
+        loopCount: fractionalLoops,
+        completedVideo:
+            fractionalLoops >= 1 ||
+            (totalDuration != null &&
+                totalDuration > Duration.zero &&
+                deltaWatch.inMilliseconds >=
+                    totalDuration.inMilliseconds * 0.9),
+        trafficSource: widget.trafficSource,
+        sourceDetail: widget.sourceDetail,
+      );
+
+      _watchFlushed = _watchTotal;
+      _wrapsFlushed = _wrapsTotal;
+    } catch (e) {
+      Log.warning(
+        'Failed to send video end event: $e',
+        name: 'DivineVideoMetricsTracker',
+        category: LogCategory.video,
       );
     }
+  }
+
+  void _recordImpression(VideoEvent video) {
+    if (_hasRecordedImpression) return;
+    final mountedAt = _mountedAt;
+    if (mountedAt == null) return;
+    if (widget._clock().difference(mountedAt) <= Duration.zero) return;
+
+    _hasRecordedImpression = true;
+    unawaited(
+      _seenVideosService.recordVideoView(
+        video.id,
+        loopCount: _wrapsTotal.round(),
+        watchDuration: _watchTotal,
+      ),
+    );
   }
 
   void _resetTracking() {
@@ -269,20 +321,25 @@ class _DivineVideoMetricsTrackerState
     _hasRecordedImpression = false;
   }
 
+  /// Clears the viewing session without re-arming the seen impression, which
+  /// belongs to the mount rather than to the session.
   void _resetViewSession() {
-    _viewStartTime = null;
-    _lastPlayStartTime = null;
-    _totalWatchDuration = Duration.zero;
-    _lastPosition = null;
-    _loopCount = 0.0;
-    _hasTrackedView = false;
-    _hasSentEndEvent = false;
+    _sessionToken = null;
+    _hasStartedPlayback = false;
+    _mountedAt = _isTracking ? widget._clock() : null;
+    _playIntervalStartedAt = null;
     _isPlaying = false;
+    _watchTotal = Duration.zero;
+    _watchFlushed = Duration.zero;
+    _wrapsTotal = 0;
+    _wrapsFlushed = 0;
+    _lastPosition = null;
+    _lastKnownDuration = null;
   }
 
   @override
   void dispose() {
-    _finalizeAndPublish();
+    _flushSegment(widget.video);
     unawaited(_stateSubscription?.cancel());
     _analyticsServiceSubscription?.close();
     super.dispose();

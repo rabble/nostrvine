@@ -536,7 +536,8 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           return DivineVideoMetricsTracker(
             video: video,
             controller: controller,
-            isActive: isFeedActive && isActive,
+            isActive: isActive,
+            isFeedVisible: isFeedActive,
             trafficSource: widget.trafficSource,
             sourceDetail: widget.sourceDetail,
             child: _Overlay(

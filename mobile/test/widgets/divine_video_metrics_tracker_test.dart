@@ -31,6 +31,7 @@ class _RecordingAnalyticsService extends AnalyticsService {
     required String? userId,
     required String source,
     required String eventType,
+    String? sessionToken,
     Duration? watchDuration,
     Duration? totalDuration,
     double? loopCount,
@@ -44,6 +45,7 @@ class _RecordingAnalyticsService extends AnalyticsService {
         userId: userId,
         source: source,
         eventType: eventType,
+        sessionToken: sessionToken,
         watchDuration: watchDuration,
         totalDuration: totalDuration,
         loopCount: loopCount,
@@ -80,6 +82,7 @@ class _TrackedAnalyticsEvent {
     required this.userId,
     required this.source,
     required this.eventType,
+    required this.sessionToken,
     required this.watchDuration,
     required this.totalDuration,
     required this.loopCount,
@@ -92,6 +95,7 @@ class _TrackedAnalyticsEvent {
   final String? userId;
   final String source;
   final String eventType;
+  final String? sessionToken;
   final Duration? watchDuration;
   final Duration? totalDuration;
   final double? loopCount;
@@ -128,8 +132,10 @@ void main() {
       when(() => authService.currentPublicKeyHex).thenReturn('viewer_pubkey');
     });
 
-    testWidgets('active tracker sends view_start', (tester) async {
-      final controller = _stubController(isPlaying: false);
+    testWidgets('active tracker sends view_start once playback starts', (
+      tester,
+    ) async {
+      final controller = _stubController(isPlaying: true);
 
       await tester.pumpWidget(
         _buildTracker(
@@ -548,6 +554,116 @@ void main() {
       await controller.close();
     });
 
+    testWidgets(
+      'covering the feed (comment sheet) flushes one segment and keeps the '
+      'session — later loops still publish',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final isFeedVisible = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(isPlaying: true);
+
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            isFeedVisible: isFeedVisible,
+            clock: () => now,
+          ),
+        );
+
+        // 2s watched, then a sheet covers the feed. The item is still the
+        // current one — only the feed stopped being visible.
+        now = now.add(const Duration(seconds: 2));
+        isFeedVisible.value = false;
+        await tester.pump();
+
+        // Back from the sheet, 2s more, then dispose.
+        isFeedVisible.value = true;
+        await tester.pump();
+        now = now.add(const Duration(seconds: 2));
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        final starts = analyticsService.events
+            .where((event) => event.eventType == 'view_start')
+            .toList();
+        expect(starts, hasLength(1));
+        expect(starts.single.sessionToken, isNotNull);
+
+        final ends = _viewEndEvents(analyticsService);
+        expect(ends, hasLength(2));
+        expect(ends[0].watchDuration, const Duration(seconds: 2));
+        expect(ends[1].watchDuration, const Duration(seconds: 2));
+        // Fractional loops per segment: 2s of a 5s video = 0.4.
+        expect(ends[0].loopCount, 0.4);
+        expect(ends[1].loopCount, 0.4);
+        expect(seenVideosService.records, hasLength(1));
+
+        isActive.dispose();
+        isFeedVisible.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
+
+    testWidgets(
+      'scrolling away ends the session — returning counts a new view',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final isFeedVisible = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(isPlaying: true);
+
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            isFeedVisible: isFeedVisible,
+            clock: () => now,
+          ),
+        );
+
+        // 2s watched, then the viewer scrolls to another video. Unlike a
+        // cover, this ends the session outright.
+        now = now.add(const Duration(seconds: 2));
+        isActive.value = false;
+        await tester.pump();
+
+        // Scrolling back is a fresh watch and must report its own start.
+        isActive.value = true;
+        controller.setState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.playing,
+            duration: Duration(seconds: 5),
+            isFirstFrameRendered: true,
+          ),
+        );
+        await tester.pump();
+        now = now.add(const Duration(seconds: 2));
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        final starts = analyticsService.events
+            .where((event) => event.eventType == 'view_start')
+            .toList();
+        expect(starts, hasLength(2));
+        // A new session means a new token, or the dedupe would swallow it.
+        expect(starts[0].sessionToken, isNot(equals(starts[1].sessionToken)));
+
+        isActive.dispose();
+        isFeedVisible.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
+
     testWidgets('video id change finalizes old video and starts new one', (
       tester,
     ) async {
@@ -617,6 +733,9 @@ Widget _buildTracker({
   );
 }
 
+/// Shared always-visible feed signal for tests that only vary scroll position.
+final _alwaysFeedVisible = ValueNotifier<bool>(true);
+
 Widget _buildTrackerHarness({
   required AuthService authService,
   required AnalyticsService analyticsService,
@@ -625,6 +744,7 @@ Widget _buildTrackerHarness({
   required ValueListenable<VideoEvent> video,
   required ValueListenable<bool> isActive,
   required DateTime Function() clock,
+  ValueListenable<bool>? isFeedVisible,
 }) {
   return ProviderScope(
     overrides: [
@@ -638,13 +758,17 @@ Widget _buildTrackerHarness({
         valueListenable: video,
         builder: (context, currentVideo, _) => ValueListenableBuilder<bool>(
           valueListenable: isActive,
-          builder: (context, active, _) => DivineVideoMetricsTracker(
-            video: currentVideo,
-            controller: controller,
-            isActive: active,
-            trafficSource: ViewTrafficSource.home,
-            clock: clock,
-            child: const SizedBox.shrink(),
+          builder: (context, active, _) => ValueListenableBuilder<bool>(
+            valueListenable: isFeedVisible ?? _alwaysFeedVisible,
+            builder: (context, feedVisible, _) => DivineVideoMetricsTracker(
+              video: currentVideo,
+              controller: controller,
+              isActive: active,
+              isFeedVisible: feedVisible,
+              trafficSource: ViewTrafficSource.home,
+              clock: clock,
+              child: const SizedBox.shrink(),
+            ),
           ),
         ),
       ),
