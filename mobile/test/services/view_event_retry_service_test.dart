@@ -147,8 +147,18 @@ void main() {
     });
 
     test(
-      'passes through a null stored d tag without deriving one from vine id',
+      'passes a missing d tag through the publisher then deletes the row',
       () async {
+        when(
+          () => publisher.publishViewEvent(
+            video: any(named: 'video'),
+            startSeconds: any(named: 'startSeconds'),
+            endSeconds: any(named: 'endSeconds'),
+            source: any(named: 'source'),
+            sourceDetail: any(named: 'sourceDetail'),
+            loopCount: any(named: 'loopCount'),
+          ),
+        ).thenAnswer((_) async => false);
         await dao.enqueue(
           makeEvent(
             id: 'legacy',
@@ -161,8 +171,8 @@ void main() {
         await service.sweep();
 
         // ViewEventPublisher owns the missing-d-tag drop decision (and its
-        // Crashlytics reporting) — the retry service must not fabricate a
-        // tag from vineId or short-circuit around that check.
+        // Crashlytics reporting). The queue snapshot cannot grow a d-tag
+        // later, so retrying would only re-fire the structural report.
         final captured = verify(
           () => publisher.publishViewEvent(
             video: captureAny(named: 'video'),
@@ -174,6 +184,29 @@ void main() {
           ),
         ).captured;
         expect((captured.single as VideoEvent).addressableDTag, isNull);
+        expect(await dao.getById('legacy'), isNull);
+      },
+    );
+
+    test(
+      'deletes an empty stored d tag after the publisher returns false',
+      () async {
+        when(
+          () => publisher.publishViewEvent(
+            video: any(named: 'video'),
+            startSeconds: any(named: 'startSeconds'),
+            endSeconds: any(named: 'endSeconds'),
+            source: any(named: 'source'),
+            sourceDetail: any(named: 'sourceDetail'),
+            loopCount: any(named: 'loopCount'),
+          ),
+        ).thenAnswer((_) async => false);
+        await dao.enqueue(makeEvent(id: 'empty-d', addressableDTag: ''));
+        final service = makeService();
+
+        await service.sweep();
+
+        expect(await dao.getById('empty-d'), isNull);
       },
     );
 

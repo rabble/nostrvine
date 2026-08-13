@@ -106,6 +106,7 @@ class ViewEventRetryService {
         if (!marked) continue;
 
         try {
+          final video = _toVideoEvent(row);
           // Derive fractional loops from watch/total already on the row
           // instead of the rounded IntColumn, so 0.75 does not become 1.0
           // and the queue vs direct paths agree.
@@ -117,7 +118,7 @@ class ViewEventRetryService {
             fractionalLoops = row.loopCount?.toDouble();
           }
           final success = await _viewEventPublisher.publishViewEvent(
-            video: _toVideoEvent(row),
+            video: video,
             startSeconds: 0,
             endSeconds: row.watchDurationMs ~/ 1000,
             source: viewTrafficSourceFromTag(row.trafficSource),
@@ -125,6 +126,10 @@ class ViewEventRetryService {
             loopCount: fractionalLoops,
           );
           if (success) {
+            await _dao.deleteById(row.id);
+          } else if (video.addressableId == null) {
+            // The publisher has now reported the missing d tag, and a queued
+            // snapshot can never grow one, so a retry would only re-report.
             await _dao.deleteById(row.id);
           } else {
             await _dao.markFailed(row.id, 'publish returned false');

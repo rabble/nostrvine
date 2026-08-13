@@ -187,9 +187,7 @@ void main() {
 
         verifyNever(() => mockNostr.publishEvent(any()));
         expect(drops, [ViewEventDropReason.missingAddressableDTag]);
-        final row = await dao.getById('queued-view-without-d');
-        expect(row, isNotNull);
-        expect(row!.status, PendingViewEventStatus.failed);
+        expect(await dao.getById('queued-view-without-d'), isNull);
       },
     );
   });
