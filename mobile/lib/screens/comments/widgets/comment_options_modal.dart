@@ -169,8 +169,8 @@ class _OptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = isDestructive
         // The sheet surface follows the palette now, and fixed `likeRed` only
-        // holds 4.13:1 on the light one. The palette token is `likeRed`
-        // verbatim on dark, so that rendering is unchanged.
+        // holds 4.13:1 on the light one. #7147 moved the dark token off
+        // `likeRed` onto `error/error`, lifting dark from 4.57:1 to 5.12:1.
         ? context.vineColors.onErrorContainer
         : context.vineColors.onSurface;
 
