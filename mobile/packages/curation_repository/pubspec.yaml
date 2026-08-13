@@ -10,7 +10,6 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
-  http: ^1.3.0
   likes_repository:
     path: ../likes_repository
   models:
