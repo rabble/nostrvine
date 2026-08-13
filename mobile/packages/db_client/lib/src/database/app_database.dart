@@ -127,7 +127,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -163,6 +163,16 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await _migrateToV4ClipCategories(m);
       }
+      if (from < 5) {
+        // hadUpgrade suppresses the beforeOpen repair on this open, so every
+        // earlier idempotent repair has to re-run here or a damaged pre-v5
+        // database silently keeps its damage. from == 3 covers databases cut
+        // at the original v3, before #6911 folded the follower columns into
+        // it; from == 4 covers a clips table mutated out of shape.
+        await _repairSchemaV3();
+        await _migrateToV4ClipCategories(m);
+        await _repairSchemaV5();
+      }
     },
     beforeOpen: (details) async {
       // v1 databases are normalized by onUpgrade. This guarded path remains
@@ -172,6 +182,7 @@ class AppDatabase extends _$AppDatabase {
           await _needsSchemaRepair()) {
         await _normalizeLegacyV1Schema();
         await _repairSchemaV3();
+        await _repairSchemaV5();
       }
 
       // Run cleanup of expired data on every app startup
@@ -186,6 +197,28 @@ class AppDatabase extends _$AppDatabase {
       'INTEGER NULL',
     );
     await _backfillFollowerCountTimestamps();
+  }
+
+  /// Adds the queued view-event `d` tag column and recovers stuck rows.
+  ///
+  /// Pre-v4 rows stored a parsed `d` tag only as `video_vine_id`. Copying it
+  /// when it is not the event-id fallback lets the stuck backlog publish
+  /// (#7169); true nulls stay null so a vine_id-only row cannot mint an
+  /// `a` tag.
+  Future<void> _repairSchemaV5() async {
+    await _addColumnIfMissing(
+      'pending_view_events',
+      'video_addressable_d_tag',
+      'TEXT NULL',
+    );
+    await customStatement('''
+      UPDATE pending_view_events
+      SET video_addressable_d_tag = video_vine_id
+      WHERE video_addressable_d_tag IS NULL
+        AND video_vine_id IS NOT NULL
+        AND video_vine_id != ''
+        AND video_vine_id != video_id
+    ''');
   }
 
   /// Anchors pre-v3 follower counts to the time they were written.
@@ -806,6 +839,7 @@ class AppDatabase extends _$AppDatabase {
           video_id TEXT NOT NULL,
           video_pubkey TEXT NOT NULL,
           video_vine_id TEXT,
+          video_addressable_d_tag TEXT,
           user_pubkey TEXT NOT NULL,
           watch_duration_ms INTEGER NOT NULL,
           total_duration_ms INTEGER,
@@ -1137,6 +1171,7 @@ class AppDatabase extends _$AppDatabase {
       'personal_reactions': ['addressable_id'],
       'profile_statistics': ['follower_counts_updated_at'],
       'identity_events': ['source_created_at', 'source_event_id'],
+      'pending_view_events': ['video_addressable_d_tag'],
     };
 
     for (final entry in requiredColumns.entries) {

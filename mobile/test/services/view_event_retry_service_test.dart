@@ -43,12 +43,16 @@ void main() {
       DateTime? lastAttemptAt,
       String eventVideoPubkey = videoPubkey,
       DateTime? createdAt,
+      String? addressableDTag = 'd-tag',
+      String? eventVideoId,
+      String? videoVineId,
     }) {
       return PendingViewEvent(
         id: id,
-        videoId: 'video-$id',
+        videoId: eventVideoId ?? 'video-$id',
         videoPubkey: eventVideoPubkey,
-        videoVineId: 'vine-$id',
+        videoVineId: videoVineId ?? 'vine-$id',
+        videoAddressableDTag: addressableDTag,
         userPubkey: userPubkey,
         watchDurationMs: watchDurationMs,
         totalDurationMs: 6000,
@@ -131,12 +135,63 @@ void main() {
       expect(video.id, 'video-view-a');
       expect(video.pubkey, videoPubkey);
       expect(video.vineId, 'vine-view-a');
-      expect(video.addressableDTag, 'vine-view-a');
+      // Without this the publisher skips on a null addressableId, which is
+      // what made every queued view event unpublishable (#7169).
+      expect(video.addressableDTag, 'd-tag');
+      expect(video.addressableId, isNotNull);
       expect(captured[1], 0);
       expect(captured[2], 2);
       expect(captured[3], ViewTrafficSource.home);
       expect(captured[4], 'following');
       expect(captured[5], 1);
+    });
+
+    test(
+      'discards a null stored d tag even when vine id is distinct',
+      () async {
+        await dao.enqueue(makeEvent(id: 'legacy', addressableDTag: null));
+        final service = makeService();
+
+        await service.sweep();
+
+        expect(await dao.getById('legacy'), isNull);
+        verifyNever(
+          () => publisher.publishViewEvent(
+            video: any(named: 'video'),
+            startSeconds: any(named: 'startSeconds'),
+            endSeconds: any(named: 'endSeconds'),
+            source: any(named: 'source'),
+            sourceDetail: any(named: 'sourceDetail'),
+            loopCount: any(named: 'loopCount'),
+          ),
+        );
+      },
+    );
+
+    test('discards a legacy row whose vine id is its event id', () async {
+      await dao.enqueue(
+        makeEvent(
+          id: 'legacy',
+          addressableDTag: null,
+          eventVideoId: 'event-id',
+          videoVineId: 'event-id',
+        ),
+      );
+      final service = makeService();
+
+      await service.sweep();
+
+      expect(await dao.getById('legacy'), isNull);
+      verifyNever(
+        () => publisher.publishViewEvent(
+          video: any(named: 'video'),
+          startSeconds: any(named: 'startSeconds'),
+          endSeconds: any(named: 'endSeconds'),
+          source: any(named: 'source'),
+          sourceDetail: any(named: 'sourceDetail'),
+          loopCount: any(named: 'loopCount'),
+        ),
+      );
     });
 
     test(

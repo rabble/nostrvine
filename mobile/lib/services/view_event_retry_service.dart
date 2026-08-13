@@ -100,6 +100,12 @@ class ViewEventRetryService {
           continue;
         }
 
+        final addressableDTag = row.videoAddressableDTag;
+        if (addressableDTag == null || addressableDTag.isEmpty) {
+          await _dao.deleteById(row.id);
+          continue;
+        }
+
         final lastAttempt = row.lastAttemptAt;
         if (lastAttempt != null) {
           final gap = _now().difference(lastAttempt);
@@ -111,7 +117,7 @@ class ViewEventRetryService {
 
         try {
           final success = await _viewEventPublisher.publishViewEvent(
-            video: _toVideoEvent(row),
+            video: _toVideoEvent(row, addressableDTag: addressableDTag),
             startSeconds: 0,
             endSeconds: row.watchDurationMs ~/ 1000,
             source: viewTrafficSourceFromTag(row.trafficSource),
@@ -132,14 +138,10 @@ class ViewEventRetryService {
     }
   }
 
-  VideoEvent _toVideoEvent(PendingViewEvent row) {
-    final addressableDTag =
-        row.videoVineId != null &&
-            row.videoVineId!.isNotEmpty &&
-            row.videoVineId != row.videoId
-        ? row.videoVineId
-        : null;
-
+  VideoEvent _toVideoEvent(
+    PendingViewEvent row, {
+    required String addressableDTag,
+  }) {
     return VideoEvent(
       id: row.videoId,
       pubkey: row.videoPubkey,
@@ -147,8 +149,6 @@ class ViewEventRetryService {
       content: '',
       timestamp: row.createdAt,
       vineId: row.videoVineId,
-      // Older queued rows only have videoVineId. Trust it as a d tag when it
-      // differs from videoId; equality is the known event-id fallback shape.
       addressableDTag: addressableDTag,
     );
   }

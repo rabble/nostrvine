@@ -90,6 +90,7 @@ void main() {
           videoId: 'a' * 64,
           videoPubkey: videoPubkey,
           videoVineId: 'vine-id-from-queue-row',
+          videoAddressableDTag: 'vine-id-from-queue-row',
           userPubkey: userPubkey,
           watchDurationMs: 6000,
           totalDurationMs: 6000,
@@ -155,7 +156,7 @@ void main() {
     });
 
     test(
-      'drops a queued event-id fallback instead of fabricating an a tag',
+      'discards a queued event-id fallback instead of fabricating an a tag',
       () async {
         await dao.deleteById('queued-view');
         await dao.enqueue(
@@ -163,6 +164,8 @@ void main() {
             id: 'queued-view-without-d',
             videoId: 'b' * 64,
             videoPubkey: videoPubkey,
+            // vine id == video id is the event-id fallback shape, so the v4
+            // backfill leaves the d tag null and there is nothing to address.
             videoVineId: 'b' * 64,
             userPubkey: userPubkey,
             watchDurationMs: 6000,
@@ -183,10 +186,11 @@ void main() {
         await service.sweep();
 
         verifyNever(() => mockNostr.publishEvent(any()));
-        expect(drops, [ViewEventDropReason.missingAddressableDTag]);
-        final row = await dao.getById('queued-view-without-d');
-        expect(row, isNotNull);
-        expect(row!.status, PendingViewEventStatus.failed);
+        // The sweep drops it before the publisher, so no publisher-level
+        // drop is recorded; it can never address a subject, and retrying
+        // it forever would only burn the sweep budget.
+        expect(drops, isEmpty);
+        expect(await dao.getById('queued-view-without-d'), isNull);
       },
     );
   });

@@ -344,6 +344,7 @@ class AnalyticsService implements BackgroundAwareService {
           videoId: video.id,
           videoPubkey: video.pubkey,
           videoVineId: video.vineId,
+          videoAddressableDTag: video.addressableDTag,
           userPubkey: userPubkey,
           watchDurationMs: watchDuration.inMilliseconds,
           totalDurationMs: totalDuration?.inMilliseconds,

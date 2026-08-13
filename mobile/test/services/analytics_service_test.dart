@@ -208,6 +208,7 @@ void main() {
         content: 'Test video',
         timestamp: DateTime.now(),
         vineId: 'vine-id',
+        addressableDTag: 'the-d-tag',
       );
 
       await analyticsService.trackDetailedVideoViewWithUser(
@@ -231,6 +232,9 @@ void main() {
       expect(retryable.single.videoId, video.id);
       expect(retryable.single.videoPubkey, video.pubkey);
       expect(retryable.single.videoVineId, 'vine-id');
+      // Without this the row cannot address its subject, and every retry is
+      // skipped by ViewEventPublisher for the lifetime of the queue (#7169).
+      expect(retryable.single.videoAddressableDTag, 'the-d-tag');
       expect(retryable.single.watchDurationMs, 2500);
       expect(retryable.single.totalDurationMs, 6000);
       expect(retryable.single.loopCount, 1);
