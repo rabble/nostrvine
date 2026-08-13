@@ -41,6 +41,25 @@ void main() {
       });
     });
 
+    group('no signer supplied', () {
+      test('substitutes a keyless signer that reports no keys', () {
+        final client = NostrServiceFactory.create();
+
+        expect(client.signer, isA<UnauthenticatedSigner>());
+        // hasKeys false is what gates every author-scoped query and the
+        // NIP-42 AUTH handshake while signed out.
+        expect(client.hasKeys, isFalse);
+        expect(client.publicKey, isEmpty);
+      });
+
+      test('keyless signer throws instead of silently returning null', () {
+        final client = NostrServiceFactory.create();
+        final event = Event(testPublicKey, 1, const <List<String>>[], 'hi');
+
+        expect(client.signer.signEvent(event), throwsStateError);
+      });
+    });
+
     group('environment relay isolation', () {
       test('production allows any relay host', () {
         final client = NostrServiceFactory.create(

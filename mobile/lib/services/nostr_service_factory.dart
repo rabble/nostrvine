@@ -7,7 +7,6 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/environment_config.dart';
-import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -17,8 +16,12 @@ class NostrServiceFactory {
   ///
   /// [signer] is the single source of truth for the current user's public
   /// key and all signing operations. Pass `authService.currentIdentity`.
-  /// When null (pre-auth), a no-op [LocalKeySigner] is used as a
-  /// placeholder until the identity is established.
+  /// When null (pre-auth, or after sign-out) an [UnauthenticatedSigner]
+  /// fills the slot: it reports an empty public key, so the client's
+  /// `hasKeys` stays false, and it throws from every signing entry point
+  /// rather than returning null. The caller is expected to replace the
+  /// whole client once an identity resolves — see `NostrService`, which
+  /// deliberately never initializes relays on a keyless client.
   ///
   /// Takes [environmentConfig] to determine the relay URL to use.
   /// If not provided, falls back to [AppConstants.defaultRelayUrl].
@@ -42,7 +45,7 @@ class NostrServiceFactory {
       name: 'NostrServiceFactory',
     );
 
-    final effectiveSigner = signer ?? LocalKeySigner(null);
+    final effectiveSigner = signer ?? const UnauthenticatedSigner();
 
     final config = NostrClientConfig(
       signer: effectiveSigner,
