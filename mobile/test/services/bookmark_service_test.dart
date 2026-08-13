@@ -6,10 +6,12 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,6 +33,12 @@ void main() {
     late _MockAuthService authService;
     late SharedPreferences prefs;
     late String pubkey;
+
+    /// A real local identity, so NIP-44 in these tests is the actual crypto
+    /// rather than a stub. `NostrIdentity` is sealed and cannot be mocked, and
+    /// using the real signer is what makes the private-item fixtures genuine
+    /// NIP-51 payloads.
+    late LocalNostrIdentity identity;
 
     /// The tags of the last kind-10003 handed to the signer.
     List<List<String>>? signedTags;
@@ -127,8 +135,27 @@ void main() {
       ),
     ).captured;
 
+    /// A genuine NIP-51 private payload: a stringified tag array, NIP-44
+    /// encrypted to the author's own key.
+    Future<String> encryptToSelf(List<List<String>> items) async {
+      final ciphertext = await identity.nip44Encrypt(pubkey, jsonEncode(items));
+      return ciphertext!;
+    }
+
+    Future<List<List<String>>> decryptToSelf(String ciphertext) async {
+      final plaintext = await identity.nip44Decrypt(pubkey, ciphertext);
+      return [
+        for (final entry in jsonDecode(plaintext!) as List)
+          [for (final value in entry as List) value as String],
+      ];
+    }
+
     setUp(() async {
-      pubkey = getPublicKey(generatePrivateKey());
+      final privateKeyHex = generatePrivateKey();
+      pubkey = getPublicKey(privateKeyHex);
+      identity = LocalNostrIdentity(
+        keyContainer: SecureKeyContainer.fromPrivateKeyHex(privateKeyHex),
+      );
       nostrClient = _MockNostrClient();
       authService = _MockAuthService();
       signedTags = null;
@@ -139,6 +166,7 @@ void main() {
 
       when(() => authService.isAuthenticated).thenReturn(true);
       when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+      when(() => authService.currentIdentity).thenReturn(identity);
 
       // Capture what the service asks to sign, and hand back a real event.
       when(
@@ -422,6 +450,9 @@ void main() {
           // leaves the bookmark list empty while holding another client's
           // ciphertext. A stamp from before it existed must not let a later
           // partial empty answer through unconfirmed and wipe that content.
+          final ciphertext = await encryptToSelf([
+            ['e', 'their-private-one'],
+          ]);
           var clock = DateTime(2026);
           final service = createService(now: () => clock);
 
@@ -429,7 +460,7 @@ void main() {
           await service.syncGlobalBookmarks();
 
           clock = clock.add(const Duration(minutes: 1));
-          stubRelay(events: [bookmarkListEvent([], content: 'ciphertext')]);
+          stubRelay(events: [bookmarkListEvent([], content: ciphertext)]);
           await service.syncGlobalBookmarks();
 
           clock = clock.add(const Duration(minutes: 1));
@@ -443,13 +474,13 @@ void main() {
 
           // The unconfirmed empty must not have reached the content, so a
           // publish still carries the other client's private items.
-          stubRelay(events: [bookmarkListEvent([], content: 'ciphertext')]);
+          stubRelay(events: [bookmarkListEvent([], content: ciphertext)]);
           await service.addToGlobalBookmarks(
             const BookmarkItem(type: 'e', id: 'mine'),
           );
           expect(
             signedContent,
-            equals('ciphertext'),
+            equals(ciphertext),
             reason: 'a stale absence must not strip private bookmarks',
           );
         },
@@ -763,7 +794,9 @@ void main() {
       test(
         "carries another client's encrypted content through untouched",
         () async {
-          const ciphertext = 'AhjoBRIcKJZSgAGz/y0uYsggKpn6dgeRHYs=';
+          final ciphertext = await encryptToSelf([
+            ['e', 'their-private-one'],
+          ]);
           stubRelay(
             events: [
               bookmarkListEvent(['relay-a'], content: ciphertext),
@@ -779,8 +812,8 @@ void main() {
             signedContent,
             equals(ciphertext),
             reason:
-                'overwriting it would delete the private bookmarks that '
-                'Divine cannot yet decrypt',
+                'a public-item write must re-emit the payload byte-for-byte '
+                'rather than re-encrypting it',
           );
         },
       );
@@ -943,6 +976,273 @@ void main() {
 
         expect(result.succeeded, isTrue);
         expect(result.failure, isNull);
+      });
+    });
+
+    group('NIP-51 private items', () {
+      const privateVideo = 'privately-bookmarked-video';
+
+      test('reads a list whose items are all private', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              [],
+              content: await encryptToSelf([
+                ['e', privateVideo],
+              ]),
+            ),
+          ],
+        );
+        final service = createService();
+
+        await service.syncGlobalBookmarks();
+
+        expect(
+          service.isVideoBookmarkedGlobally(privateVideo),
+          isTrue,
+          reason: 'a private item is still a bookmark',
+        );
+        expect(
+          service.globalBookmarks.map((item) => item.id),
+          contains(privateVideo),
+          reason: 'Saved must list it, not render an empty state',
+        );
+      });
+
+      test('merges public and private items without duplicating', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              ['public-one', 'in-both'],
+              content: await encryptToSelf([
+                ['e', privateVideo],
+                ['e', 'in-both'],
+              ]),
+            ),
+          ],
+        );
+        final service = createService();
+
+        await service.syncGlobalBookmarks();
+
+        expect(
+          service.globalBookmarks.map((item) => item.id),
+          equals(['public-one', 'in-both', privateVideo]),
+        );
+      });
+
+      test(
+        'saving a privately-bookmarked video does not publish a public tag',
+        () async {
+          final ciphertext = await encryptToSelf([
+            ['e', privateVideo],
+          ]);
+          stubRelay(events: [bookmarkListEvent([], content: ciphertext)]);
+          final service = createService();
+
+          final result = await service.toggleVideoInGlobalBookmarks(
+            privateVideo,
+          );
+
+          expect(
+            result.wasBookmarked,
+            isTrue,
+            reason: 'the private item decides the direction',
+          );
+          expect(
+            signedEventIds(),
+            isNot(contains(privateVideo)),
+            reason:
+                'publishing it as a public tag would disclose a bookmark the '
+                'user chose to keep private (#7136)',
+          );
+        },
+      );
+
+      test(
+        'removing a private item drops it from the encrypted array',
+        () async {
+          final ciphertext = await encryptToSelf([
+            ['e', privateVideo],
+            ['e', 'keep-me'],
+          ]);
+          stubRelay(events: [bookmarkListEvent([], content: ciphertext)]);
+          final service = createService();
+
+          final result = await service.toggleVideoInGlobalBookmarks(
+            privateVideo,
+          );
+
+          expect(result.succeeded, isTrue);
+          expect(result.isBookmarked, isFalse);
+          expect(
+            await decryptToSelf(signedContent!),
+            equals([
+              ['e', 'keep-me'],
+            ]),
+            reason:
+                'leaving it in `content` would make the reported removal a lie '
+                'for every conforming client (#7136)',
+          );
+          expect(
+            service.isVideoBookmarkedGlobally(privateVideo),
+            isFalse,
+            reason: 'and the local read must agree with what was published',
+          );
+        },
+      );
+
+      test('clears content once the last private item is removed', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              [],
+              content: await encryptToSelf([
+                ['e', privateVideo],
+              ]),
+            ),
+          ],
+        );
+        final service = createService();
+
+        await service.toggleVideoInGlobalBookmarks(privateVideo);
+
+        expect(
+          signedContent,
+          isEmpty,
+          reason: 'an empty private array carries no payload at all',
+        );
+      });
+
+      test('never writes private items into SharedPreferences', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              ['public-one'],
+              content: await encryptToSelf([
+                ['e', privateVideo],
+              ]),
+            ),
+          ],
+        );
+        final service = createService();
+
+        await service.syncGlobalBookmarks();
+
+        expect(
+          prefs.getString(BookmarkService.globalBookmarksStorageKey),
+          allOf(contains('public-one'), isNot(contains(privateVideo))),
+          reason:
+              'SharedPreferences is unencrypted, so caching private items '
+              'would move them into plaintext local storage',
+        );
+      });
+
+      group('unreadable content', () {
+        test('refuses to publish when the payload is NIP-04', () async {
+          // NIP-51 deprecated NIP-04 here but tells clients to detect it by
+          // the `iv` marker; one such list is live on relay.divine.video.
+          stubRelay(
+            events: [
+              bookmarkListEvent([], content: 'c29tZQ==?iv=aXY='),
+            ],
+          );
+          final service = createService();
+
+          final result = await service.toggleVideoInGlobalBookmarks('wanted');
+
+          expect(result.succeeded, isFalse);
+          expect(
+            result.failure,
+            equals(BookmarkToggleFailure.privateItemsUnreadable),
+          );
+          expect(signedTags, isNull, reason: 'nothing may be published');
+        });
+
+        test('refuses to publish when the signer cannot decrypt', () async {
+          // Content encrypted to a different identity: real ciphertext this
+          // signer will never read.
+          final stranger = LocalNostrIdentity(
+            keyContainer: SecureKeyContainer.fromPrivateKeyHex(
+              generatePrivateKey(),
+            ),
+          );
+          final foreign = await stranger.nip44Encrypt(
+            stranger.pubkey,
+            jsonEncode([
+              ['e', privateVideo],
+            ]),
+          );
+          stubRelay(events: [bookmarkListEvent([], content: foreign!)]);
+          final service = createService();
+
+          final result = await service.toggleVideoInGlobalBookmarks('wanted');
+
+          expect(result.succeeded, isFalse);
+          expect(
+            result.failure,
+            equals(BookmarkToggleFailure.privateItemsUnreadable),
+          );
+          expect(signedTags, isNull);
+        });
+
+        test(
+          'refuses to publish when the plaintext is not a tag array',
+          () async {
+            stubRelay(
+              events: [
+                bookmarkListEvent(
+                  [],
+                  content: (await identity.nip44Encrypt(pubkey, 'not json'))!,
+                ),
+              ],
+            );
+            final service = createService();
+
+            final result = await service.toggleVideoInGlobalBookmarks('wanted');
+
+            expect(result.succeeded, isFalse);
+            expect(
+              result.failure,
+              equals(BookmarkToggleFailure.privateItemsUnreadable),
+            );
+            expect(signedTags, isNull);
+          },
+        );
+
+        test(
+          'reports the blind spot so callers can stay indeterminate',
+          () async {
+            stubRelay(
+              events: [
+                bookmarkListEvent([], content: 'c29tZQ==?iv=aXY='),
+              ],
+            );
+            final service = createService();
+
+            await service.syncGlobalBookmarks();
+
+            expect(service.hasUnreadablePrivateItems, isTrue);
+          },
+        );
+
+        test('stays false for a list Divine can read end to end', () async {
+          stubRelay(
+            events: [
+              bookmarkListEvent(
+                [],
+                content: await encryptToSelf([
+                  ['e', privateVideo],
+                ]),
+              ),
+            ],
+          );
+          final service = createService();
+
+          await service.syncGlobalBookmarks();
+
+          expect(service.hasUnreadablePrivateItems, isFalse);
+        });
       });
     });
   });

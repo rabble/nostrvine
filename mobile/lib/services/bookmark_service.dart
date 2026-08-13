@@ -109,8 +109,29 @@ enum BookmarkToggleFailure {
   /// There is no signed-in identity to read or publish as.
   notAuthenticated,
 
+  /// The list carries NIP-51 private items this client could not read, so the
+  /// current state is unknown and any write could disclose one of them.
+  privateItemsUnreadable,
+
   /// Anything else, including an unexpected throw.
   unknown,
+}
+
+/// What this client managed to make of a kind-10003's `content`.
+enum _PrivateItemsState {
+  /// There is nothing encrypted to read.
+  none,
+
+  /// The private item array was decrypted and parsed.
+  readable,
+
+  /// `content` is non-empty but did not yield items — a deprecated NIP-04
+  /// payload, a signer that declined, or malformed plaintext.
+  ///
+  /// Distinct from [none] on purpose: treating it as "no private items" is
+  /// what lets the write path publish a public duplicate of an item it cannot
+  /// see (#7136).
+  unreadable,
 }
 
 /// Service for the user's NIP-51 global bookmark list (kind 10003).
@@ -147,16 +168,31 @@ class BookmarkService {
   /// bookmark on an older build.
   static const String _legacyProseContent = 'Divine global bookmarks';
 
-  // Global bookmarks (Kind 10003)
+  /// The list's **public** items — the ones carried in `tags`.
+  ///
+  /// Kept separate from [_privateBookmarks] because this is the sole input to
+  /// the published `tags`. A private item that leaked in here would be
+  /// republished in the clear, which is the disclosure #7136 is about.
   final List<BookmarkItem> _globalBookmarks = [];
+
+  /// The list's **private** items, decrypted from `content`.
+  ///
+  /// Never persisted. [SharedPreferences] is unencrypted, so caching these
+  /// would move the user's private bookmarks into plaintext local storage —
+  /// a disclosure of its own. They are re-read on every sync instead.
+  final List<BookmarkItem> _privateBookmarks = [];
+
+  /// What became of the newest `content` we saw. Drives the write path's
+  /// refusal to act on a list it cannot fully see.
+  _PrivateItemsState _privateItemsState = _PrivateItemsState.none;
 
   /// The `content` of the newest kind-10003 we have seen for this user.
   ///
   /// NIP-51 reserves `.content` for the NIP-44-encrypted private item array.
-  /// Divine cannot read those items yet, so it carries the ciphertext through
-  /// untouched instead of overwriting another client's private bookmarks —
-  /// except for [_legacyProseContent], which is Divine's own malformed output
-  /// and is dropped rather than propagated.
+  /// Carried through untouched whenever the private items are not the thing
+  /// being changed, so a public-item write can never disturb them — except for
+  /// [_legacyProseContent], which is Divine's own malformed output and is
+  /// dropped rather than propagated.
   String _lastKnownRemoteContent = '';
 
   /// How long a full-settlement "this user has no list" answer is reused
@@ -190,7 +226,20 @@ class BookmarkService {
         _now().difference(confirmedAt) >= absenceConfirmationTtl;
   }
 
-  List<BookmarkItem> get globalBookmarks => List.unmodifiable(_globalBookmarks);
+  /// Every bookmark on the list — public items first, then private ones.
+  ///
+  /// A set literal, so an item held both publicly and privately appears once
+  /// ([BookmarkItem] compares on type and id).
+  List<BookmarkItem> get globalBookmarks =>
+      List.unmodifiable({..._globalBookmarks, ..._privateBookmarks});
+
+  /// Whether the list carries private items this client could not read.
+  ///
+  /// While true the bookmark state is genuinely unknown: callers must not
+  /// render "not saved", and the write path refuses rather than publishing a
+  /// public copy of an item it cannot see.
+  bool get hasUnreadablePrivateItems =>
+      _privateItemsState == _PrivateItemsState.unreadable;
 
   /// Reconciles [globalBookmarks] against the user's kind-10003 on the relay.
   ///
@@ -272,7 +321,8 @@ class BookmarkService {
         if (events == null) {
           Log.warning(
             'Empty bookmark answer not confirmed by every relay - keeping '
-            'the ${_globalBookmarks.length} bookmarks this device has',
+            'the ${_globalBookmarks.length + _privateBookmarks.length} '
+            'bookmarks this device has',
             name: 'BookmarkService',
             category: LogCategory.system,
           );
@@ -291,6 +341,8 @@ class BookmarkService {
         // session that opens Saved often enough would never re-confirm.
         if (answeredAuthoritatively) _absenceConfirmedAt = _now();
         _globalBookmarks.clear();
+        _privateBookmarks.clear();
+        _privateItemsState = _PrivateItemsState.none;
         _lastKnownRemoteContent = '';
       } else {
         // Seeing the event disproves the absence, so the stamp cannot stand.
@@ -301,13 +353,14 @@ class BookmarkService {
         _absenceConfirmedAt = null;
         final newestFirst = [...events]
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        _adoptGlobalBookmarksFromEvent(newestFirst.first);
+        await _adoptGlobalBookmarksFromEvent(newestFirst.first);
       }
 
       await _saveBookmarksToSharedPreferences();
 
       Log.info(
-        'Synced ${_globalBookmarks.length} global bookmarks from relay',
+        'Synced ${_globalBookmarks.length + _privateBookmarks.length} global '
+        'bookmarks from relay (${_privateBookmarks.length} private)',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
@@ -395,6 +448,18 @@ class BookmarkService {
       );
     }
 
+    // The list reconciled, but part of it stayed encrypted. Either direction
+    // would be a guess: adding could publish an item already held privately,
+    // and removing could report "Removed" for one that survives in `content`.
+    if (hasUnreadablePrivateItems) {
+      return BookmarkToggleResult(
+        succeeded: false,
+        wasBookmarked: wasBookmarked,
+        isBookmarked: wasBookmarked,
+        failure: BookmarkToggleFailure.privateItemsUnreadable,
+      );
+    }
+
     final succeeded = wasBookmarked
         ? await removeFromGlobalBookmarks(
             BookmarkItem(type: 'e', id: videoEventId),
@@ -445,8 +510,19 @@ class BookmarkService {
         return false;
       }
 
-      // Check if already bookmarked
-      if (_globalBookmarks.contains(item)) {
+      if (hasUnreadablePrivateItems) {
+        Log.warning(
+          'Not adding to global bookmarks: the list has private items this '
+          'client could not read, so a public tag could disclose one',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+
+      // Already bookmarked either way. Adding a public tag for an item held
+      // privately would publish a bookmark the user chose to keep encrypted.
+      if (_globalBookmarks.contains(item) || _privateBookmarks.contains(item)) {
         Log.debug(
           'Item already in global bookmarks: ${item.id}',
           name: 'BookmarkService',
@@ -498,6 +574,35 @@ class BookmarkService {
         return false;
       }
 
+      if (hasUnreadablePrivateItems) {
+        Log.warning(
+          'Not removing from global bookmarks: the list has private items this '
+          'client could not read, so the result could not be reported honestly',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+
+      // A private item is removed from the encrypted array, leaving the public
+      // tags alone. Dropping only a public copy would report "Removed" while
+      // every conforming client still shows it bookmarked (#7136).
+      if (_privateBookmarks.contains(item)) {
+        final privateCandidate = [..._privateBookmarks]..remove(item);
+        final published = await _publishGlobalBookmarks(
+          [..._globalBookmarks],
+          privateCandidate: privateCandidate,
+        );
+        if (!published) return false;
+
+        Log.info(
+          'Removed private item from global bookmarks: ${item.id}',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return true;
+      }
+
       final candidate = [..._globalBookmarks];
       if (!candidate.remove(item)) {
         Log.warning(
@@ -528,11 +633,13 @@ class BookmarkService {
     }
   }
 
-  /// Check if an item is in global bookmarks
+  /// Check if an item is in global bookmarks, public or private.
+  ///
+  /// Consulting only the public tags is what made a privately-bookmarked video
+  /// read as unsaved, and then let a save publish it in the clear (#7136).
   bool isInGlobalBookmarks(String itemId, String type) {
-    return _globalBookmarks.any(
-      (item) => item.id == itemId && item.type == type,
-    );
+    bool matches(BookmarkItem item) => item.id == itemId && item.type == type;
+    return _globalBookmarks.any(matches) || _privateBookmarks.any(matches);
   }
 
   /// Check if a video event is bookmarked globally
@@ -555,7 +662,14 @@ class BookmarkService {
   /// share sheet turns into "Saved" — a relay-policy rejection has to be able
   /// to say the save did not stick. It is still breadth, not durability: the
   /// relay acknowledges from an in-memory queue and commits afterwards.
-  Future<bool> _publishGlobalBookmarks(List<BookmarkItem> candidate) async {
+  /// Pass [privateCandidate] only when the private items are the thing being
+  /// changed; it is re-encrypted and replaces `content`. Leaving it null keeps
+  /// the ciphertext byte-for-byte, which is what makes a public-item write
+  /// incapable of disturbing another client's private bookmarks.
+  Future<bool> _publishGlobalBookmarks(
+    List<BookmarkItem> candidate, {
+    List<BookmarkItem>? privateCandidate,
+  }) async {
     try {
       if (!_authService.isAuthenticated) {
         Log.warning(
@@ -566,11 +680,20 @@ class BookmarkService {
         return false;
       }
 
+      // NIP-51 reserves `content` for the encrypted private item array, so it
+      // is either ciphertext or empty — never prose.
+      final String content;
+      if (privateCandidate == null) {
+        content = _lastKnownRemoteContent;
+      } else {
+        final encrypted = await _encryptPrivateItems(privateCandidate);
+        if (encrypted == null) return false;
+        content = encrypted;
+      }
+
       final event = await _authService.createAndSignEvent(
         kind: globalBookmarksKind,
-        // NIP-51 reserves `content` for the encrypted private item array, so
-        // it is either the ciphertext we read back or empty — never prose.
-        content: _lastKnownRemoteContent,
+        content: content,
         tags: [for (final item in candidate) item.toTag()],
       );
 
@@ -590,6 +713,15 @@ class BookmarkService {
       _globalBookmarks
         ..clear()
         ..addAll(candidate);
+      if (privateCandidate != null) {
+        _privateBookmarks
+          ..clear()
+          ..addAll(privateCandidate);
+        _lastKnownRemoteContent = content;
+        _privateItemsState = privateCandidate.isEmpty
+            ? _PrivateItemsState.none
+            : _PrivateItemsState.readable;
+      }
       await _saveBookmarksToSharedPreferences();
 
       Log.debug(
@@ -609,23 +741,157 @@ class BookmarkService {
     }
   }
 
+  /// Encrypts [items] as the NIP-51 private array, or `null` if the payload
+  /// could not be produced **or did not read back**.
+  ///
+  /// The verification round trip is the point. Kind 10003 is replaceable, so a
+  /// re-encryption that silently produced the wrong bytes would destroy
+  /// private bookmarks this client cannot reconstruct. Everything else keeps
+  /// carrying the original ciphertext untouched.
+  Future<String?> _encryptPrivateItems(List<BookmarkItem> items) async {
+    // A list with no private items left carries no payload at all, rather than
+    // the ciphertext of an empty array.
+    if (items.isEmpty) return '';
+
+    final pubkey = _authService.currentPublicKeyHex;
+    final identity = _authService.currentIdentity;
+    if (pubkey == null || identity == null) return null;
+
+    final plaintext = jsonEncode([for (final item in items) item.toTag()]);
+    try {
+      final ciphertext = await identity.nip44Encrypt(pubkey, plaintext);
+      if (ciphertext == null || ciphertext.isEmpty) {
+        Log.warning(
+          'Signer returned no ciphertext for the private bookmark items',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
+
+      if (await identity.nip44Decrypt(pubkey, ciphertext) != plaintext) {
+        Log.error(
+          'Re-encrypted private bookmark items did not read back - '
+          'refusing to publish',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
+      return ciphertext;
+    } catch (e) {
+      Log.error(
+        'Failed to encrypt private bookmark items: $e',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
   // === NOSTR LOADING ===
 
-  /// Replace the in-memory list with the contents of a kind-10003 [event].
+  /// Replace the in-memory lists with the contents of a kind-10003 [event].
   ///
-  /// Also captures `event.content`. Divine cannot decrypt NIP-51 private
-  /// items, so carrying the ciphertext through unchanged is what keeps a
-  /// republish from deleting bookmarks another client stored privately.
-  void _adoptGlobalBookmarksFromEvent(Event event) {
+  /// Reads both halves NIP-51 defines: the public items in `tags`, and the
+  /// private items in `content` — a stringified tag array encrypted to the
+  /// author's own key. The ciphertext is still captured verbatim so a
+  /// public-item write can republish it untouched.
+  Future<void> _adoptGlobalBookmarksFromEvent(Event event) async {
     _lastKnownRemoteContent = event.content == _legacyProseContent
         ? ''
         : event.content;
-    _globalBookmarks.clear();
+    _globalBookmarks
+      ..clear()
+      ..addAll(_itemsFromTags(event.tags));
 
-    for (final tag in event.tags) {
-      if (tag.length >= 2 && ['e', 'a', 't', 'r'].contains(tag[0])) {
-        _globalBookmarks.add(BookmarkItem.fromTag(tag));
+    _privateBookmarks.clear();
+    _privateItemsState = await _readPrivateItems(_lastKnownRemoteContent);
+  }
+
+  /// The bookmark items among [tags], in order.
+  static List<BookmarkItem> _itemsFromTags(List<List<String>> tags) => [
+    for (final tag in tags)
+      if (tag.length >= 2 && ['e', 'a', 't', 'r'].contains(tag[0]))
+        BookmarkItem.fromTag(tag),
+  ];
+
+  /// Decrypts [content] into [_privateBookmarks] and reports what happened.
+  ///
+  /// NIP-51 encrypts private items to the author's own key, so this needs only
+  /// the signer this device already has — every identity that can publish a
+  /// bookmark can also decrypt one.
+  Future<_PrivateItemsState> _readPrivateItems(String content) async {
+    if (content.isEmpty) return _PrivateItemsState.none;
+
+    // NIP-51 deprecated NIP-04 for this field and tells clients to detect it by
+    // the `iv` marker. Divine does not read that scheme; reporting it as
+    // unreadable is what stops the write path from guessing "not bookmarked".
+    if (content.contains('?iv=')) {
+      Log.warning(
+        'Bookmark list uses the deprecated NIP-04 private-item scheme - '
+        'private items left unread',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return _PrivateItemsState.unreadable;
+    }
+
+    final pubkey = _authService.currentPublicKeyHex;
+    final identity = _authService.currentIdentity;
+    if (pubkey == null || identity == null) {
+      return _PrivateItemsState.unreadable;
+    }
+
+    try {
+      final plaintext = await identity.nip44Decrypt(pubkey, content);
+      if (plaintext == null) {
+        Log.warning(
+          'Signer could not decrypt the private bookmark items',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return _PrivateItemsState.unreadable;
       }
+
+      final tags = _tagsFromPrivatePayload(plaintext);
+      if (tags == null) return _PrivateItemsState.unreadable;
+
+      _privateBookmarks.addAll(_itemsFromTags(tags));
+      Log.debug(
+        'Read ${_privateBookmarks.length} private bookmark items',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return _PrivateItemsState.readable;
+    } catch (e) {
+      Log.error(
+        'Failed to read private bookmark items: $e',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return _PrivateItemsState.unreadable;
+    }
+  }
+
+  /// Parses a NIP-51 private payload — a stringified tag array — or `null`
+  /// when it is not one.
+  static List<List<String>>? _tagsFromPrivatePayload(String plaintext) {
+    try {
+      final decoded = jsonDecode(plaintext);
+      if (decoded is! List) return null;
+
+      final tags = <List<String>>[];
+      for (final entry in decoded) {
+        if (entry is! List) return null;
+        tags.add([
+          for (final value in entry)
+            if (value is String) value,
+        ]);
+      }
+      return tags;
+    } catch (_) {
+      return null;
     }
   }
 
