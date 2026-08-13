@@ -1259,6 +1259,36 @@ void main() {
         );
       });
 
+      test('refuses a private tag carrying a non-string value', () async {
+        // Dropping the offending value instead would shift every position
+        // after it: `['e', id, null, petname]` re-encrypts as
+        // `['e', id, petname]`, promoting the label to the relay hint. The
+        // verbatim carry-through exists precisely to make losses like that
+        // impossible, so a payload this client cannot represent is unreadable.
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              [],
+              content: (await identity.nip44Encrypt(
+                pubkey,
+                jsonEncode([
+                  ['e', privateVideo, null, 'a petname'],
+                ]),
+              ))!,
+            ),
+          ],
+        );
+        final service = createService();
+
+        final result = await service.toggleVideoInGlobalBookmarks('wanted');
+
+        expect(
+          result.failure,
+          equals(BookmarkToggleFailure.privateItemsUnreadable),
+        );
+        expect(signedTags, isNull, reason: 'nothing may be published');
+      });
+
       test('never writes private items into SharedPreferences', () async {
         stubRelay(
           events: [

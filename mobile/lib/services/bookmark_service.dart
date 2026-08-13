@@ -929,10 +929,13 @@ class BookmarkService {
       final tags = <List<String>>[];
       for (final entry in decoded) {
         if (entry is! List) return null;
-        tags.add([
-          for (final value in entry)
-            if (value is String) value,
-        ]);
+        // Rejected rather than filtered. Dropping a non-string would shift
+        // every position after it — `['e', id, null, petname]` re-encrypts as
+        // `['e', id, petname]`, promoting the label to the relay hint — and
+        // silently rewriting an entry is exactly what carrying the array
+        // verbatim exists to prevent.
+        if (entry.any((value) => value is! String)) return null;
+        tags.add([for (final value in entry) value as String]);
       }
       return tags;
     } catch (_) {
