@@ -68,50 +68,67 @@ class MediaCacheImageProvider extends ImageProvider<MediaCacheImageProvider> {
     _ImageLoadHandle loadHandle, {
     required _SimpleDecoderCallback decode,
   }) async {
+    final ui.Codec? codec;
     try {
-      assert(
-        key == this,
-        'MediaCacheImageProvider.loadImage received a mismatched key.',
-      );
-
-      final existing = await cacheManager.getFileFromCache(_resolvedCacheKey);
-      if (existing != null && existing.file.existsSync()) {
-        if (loadHandle.isCancelled) {
-          return _abortCancelledLoad(key);
-        }
-        return _decodeFile(existing.file, decode: decode);
-      }
-
-      if (loadHandle.isCancelled) {
-        return _abortCancelledLoad(key);
-      }
-
-      final operation = cacheManager.cacheFileCancellable(
-        url,
-        key: _resolvedCacheKey,
-        authHeaders: authHeaders,
-      );
-      loadHandle.attach(operation);
-
-      final file = await operation.file;
-      if (loadHandle.isCancelled) {
-        return _abortCancelledLoad(key);
-      }
-      if (file == null) {
-        // The download completed but produced no file (network/DNS failure,
-        // non-2xx response, …). This is a genuine load failure, distinct from
-        // the benign scroll-away cancellation handled above via
-        // `_abortCancelledLoad` — the latter never throws.
-        throw MediaCacheImageLoadException(url);
-      }
-
-      return _decodeFile(file, decode: decode);
+      codec = await _resolveCodec(key, loadHandle, decode: decode);
     } catch (error) {
       scheduleMicrotask(() {
         PaintingBinding.instance.imageCache.evict(key);
       });
       rethrow;
     }
+    if (codec == null) {
+      // Returned outside the try because [_abortCancelledLoad] never
+      // completes: awaiting it there would strand this frame — and the file
+      // handles it captured — for the lifetime of the isolate.
+      return _abortCancelledLoad(key);
+    }
+    return codec;
+  }
+
+  /// Resolves the codec for [key], or `null` if the load was cancelled.
+  Future<ui.Codec?> _resolveCodec(
+    MediaCacheImageProvider key,
+    _ImageLoadHandle loadHandle, {
+    required _SimpleDecoderCallback decode,
+  }) async {
+    assert(
+      key == this,
+      'MediaCacheImageProvider.loadImage received a mismatched key.',
+    );
+
+    final existing = await cacheManager.getFileFromCache(_resolvedCacheKey);
+    if (existing != null && existing.file.existsSync()) {
+      if (loadHandle.isCancelled) {
+        return null;
+      }
+      return _decodeFile(existing.file, decode: decode);
+    }
+
+    if (loadHandle.isCancelled) {
+      return null;
+    }
+
+    final operation = cacheManager.cacheFileCancellable(
+      url,
+      key: _resolvedCacheKey,
+      authHeaders: authHeaders,
+    );
+    loadHandle.attach(operation);
+
+    final file = await operation.file;
+    if (loadHandle.isCancelled) {
+      return null;
+    }
+    if (file == null) {
+      // The download completed but produced no file (network/DNS failure,
+      // non-2xx response, …). This is a genuine load failure, distinct from
+      // the benign scroll-away cancellation handled above via
+      // `_abortCancelledLoad` — the latter never throws.
+      throw MediaCacheImageLoadException(url);
+    }
+
+    return _decodeFile(file, decode: decode);
   }
 
   /// Stops a load whose last listener was removed before it finished.

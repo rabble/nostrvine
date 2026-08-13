@@ -618,5 +618,117 @@ void main() {
 
       completer.removeListener(listener);
     });
+
+    test('evicts the image cache entry when decoding a cached file '
+        'fails', () async {
+      const url = 'https://example.com/decode-failure-cached.png';
+      final cacheManager = _MockMediaCacheManager();
+      final imageFile = const LocalFileSystem().file(
+        '$testTempPath/decode-failure-cached.png',
+      )..writeAsBytesSync(Uint8List.fromList(_transparentPng));
+
+      final fileInfo = MockFileInfo();
+      when(() => fileInfo.file).thenReturn(imageFile);
+      when(
+        () => cacheManager.getFileFromCache(url),
+      ).thenAnswer((_) async => fileInfo);
+
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final imageCache = PaintingBinding.instance.imageCache
+        ..putIfAbsent(
+          provider,
+          () => OneFrameImageStreamCompleter(Completer<ImageInfo>().future),
+        );
+      addTearDown(() => imageCache.evict(provider));
+      expect(imageCache.containsKey(provider), isTrue);
+
+      final errors = <Object>[];
+      final decodeAttempted = Completer<void>();
+      final completer = provider.loadImage(provider, (buffer, {getTargetSize}) {
+        if (!decodeAttempted.isCompleted) {
+          decodeAttempted.complete();
+        }
+        throw StateError('decode failed for a cached file');
+      });
+      final listener = ImageStreamListener(
+        (image, synchronousCall) {
+          image.dispose();
+        },
+        onError: (error, stackTrace) {
+          errors.add(error);
+        },
+      );
+
+      completer.addListener(listener);
+      await decodeAttempted.future;
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(errors, hasLength(1));
+      expect(errors.single, isA<StateError>());
+      expect(imageCache.containsKey(provider), isFalse);
+
+      completer.removeListener(listener);
+    });
+
+    test('evicts the image cache entry when decoding a downloaded file '
+        'fails', () async {
+      const url = 'https://example.com/decode-failure-downloaded.png';
+      final cacheManager = _MockMediaCacheManager();
+      final imageFile = File('$testTempPath/decode-failure-downloaded.png')
+        ..writeAsBytesSync(Uint8List.fromList(_transparentPng));
+      final download = FakeCancellableDownload(
+        url: url,
+        targetFile: imageFile,
+        headers: null,
+      );
+      final operation = CancellableCacheOperation.fromDownload(download);
+
+      when(
+        () => cacheManager.getFileFromCache(url),
+      ).thenAnswer((_) async => null);
+      when(
+        () => cacheManager.cacheFileCancellable(url, key: url),
+      ).thenReturn(operation);
+
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final imageCache = PaintingBinding.instance.imageCache
+        ..putIfAbsent(
+          provider,
+          () => OneFrameImageStreamCompleter(Completer<ImageInfo>().future),
+        );
+      addTearDown(() => imageCache.evict(provider));
+      expect(imageCache.containsKey(provider), isTrue);
+
+      final errors = <Object>[];
+      final decodeAttempted = Completer<void>();
+      final completer = provider.loadImage(provider, (buffer, {getTargetSize}) {
+        if (!decodeAttempted.isCompleted) {
+          decodeAttempted.complete();
+        }
+        throw StateError('decode failed for a downloaded file');
+      });
+      final listener = ImageStreamListener(
+        (image, synchronousCall) {
+          image.dispose();
+        },
+        onError: (error, stackTrace) {
+          errors.add(error);
+        },
+      );
+
+      completer.addListener(listener);
+      await Future<void>.delayed(Duration.zero);
+      download.completeWith(imageFile);
+      await decodeAttempted.future;
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(errors, hasLength(1));
+      expect(errors.single, isA<StateError>());
+      expect(imageCache.containsKey(provider), isFalse);
+
+      completer.removeListener(listener);
+    });
   });
 }
