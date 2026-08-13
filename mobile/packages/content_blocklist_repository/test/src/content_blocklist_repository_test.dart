@@ -2194,6 +2194,160 @@ void main() {
     );
   });
 
+  group('blockedPubkeysForAccount', () {
+    const ourPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+    const otherAccount =
+        '00000000000000000000000000000000000000000000000000000000000000aa';
+    const runtimeBlocked =
+        '0000000000000000000000000000000000000000000000000000000000000002';
+    const mutedByUs =
+        '0000000000000000000000000000000000000000000000000000000000000003';
+    const mutualMuter =
+        '0000000000000000000000000000000000000000000000000000000000000004';
+    const blockedByOther =
+        '0000000000000000000000000000000000000000000000000000000000000005';
+
+    test('is empty before any identity is adopted', () async {
+      final service = ContentBlocklistRepository();
+      await service.blockUser(runtimeBlocked);
+
+      expect(service.blockedPubkeys, contains(runtimeBlocked));
+      expect(service.blockedPubkeysForAccount(ourPubkey), isEmpty);
+    });
+
+    test('is empty for the empty pubkey', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+      final mockClient = _MockNostrClient();
+      when(
+        () => mockClient.subscribe(any()),
+      ).thenAnswer((_) => const Stream<Event>.empty());
+      await service.syncMuteListsInBackground(mockClient, ourPubkey);
+      await service.blockUser(runtimeBlocked, ourPubkey: ourPubkey);
+
+      expect(service.blockedPubkeysForAccount(''), isEmpty);
+    });
+
+    test(
+      'answers for the adopted account and withholds from every other one',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final service = ContentBlocklistRepository(prefs: prefs);
+        final mockClient = _MockNostrClient();
+        when(
+          () => mockClient.subscribe(any()),
+        ).thenAnswer((_) => const Stream<Event>.empty());
+        await service.syncMuteListsInBackground(mockClient, ourPubkey);
+        await service.blockUser(runtimeBlocked, ourPubkey: ourPubkey);
+
+        expect(
+          service.blockedPubkeysForAccount(ourPubkey),
+          contains(runtimeBlocked),
+        );
+        // A keepAlive repository can still hold account A's blocks while a
+        // session signs as B. Answering here would filter B's published
+        // follow list against A's blocks (#6903).
+        expect(service.blockedPubkeysForAccount(otherAccount), isEmpty);
+      },
+    );
+
+    test(
+      'excludes every hide bucket that is not an explicit block by us',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final service = ContentBlocklistRepository(prefs: prefs);
+
+        final muteController = StreamController<Event>();
+        final blockController = StreamController<Event>();
+        final mockMuteClient = _MockNostrClient();
+        final mockBlockClient = _MockNostrClient();
+        final mockSigner = _MockBlockListSigner();
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        await service.blockUser(runtimeBlocked, ourPubkey: ourPubkey);
+
+        when(
+          () => mockMuteClient.subscribe(any()),
+        ).thenAnswer((_) => muteController.stream);
+        await service.syncMuteListsInBackground(mockMuteClient, ourPubkey);
+        muteController
+          ..add(
+            Event(
+                ourPubkey,
+                10000,
+                [
+                  ['p', mutedByUs],
+                ],
+                '',
+                createdAt: now,
+              )
+              ..id = 'own-mute'
+              ..sig = 'sig',
+          )
+          ..add(
+            Event(
+                mutualMuter,
+                10000,
+                [
+                  ['p', ourPubkey],
+                ],
+                '',
+                createdAt: now,
+              )
+              ..id = 'mutual-mute'
+              ..sig = 'sig',
+          );
+
+        when(
+          () => mockBlockClient.subscribe(any()),
+        ).thenAnswer((_) => blockController.stream);
+        when(
+          () => mockBlockClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
+        when(() => mockSigner.isAuthenticated).thenReturn(false);
+        await service.syncBlockListsInBackground(
+          mockBlockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        blockController.add(
+          Event(
+              blockedByOther,
+              30000,
+              [
+                ['d', 'block'],
+                ['p', ourPubkey],
+              ],
+              'Block list',
+              createdAt: now,
+            )
+            ..id = 'blocked-by'
+            ..sig = 'sig',
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Every bucket below is hidden from feeds, and every one of them
+        // would be attacker- or third-party-controlled input to a Nostr
+        // event if it reached a write path. `blockedByOther` is the sharp
+        // one: including it would let anyone rewrite our published follow
+        // list just by blocking us.
+        expect(service.feedHiddenPubkeys, contains(blockedByOther));
+        expect(
+          service.blockedPubkeysForAccount(ourPubkey),
+          equals(<String>{runtimeBlocked}),
+        );
+
+        await muteController.close();
+        await blockController.close();
+      },
+    );
+  });
+
   group('ContentBlocklistRepository - Nostr publishing', () {
     late _MockNostrClient mockClient;
     late _MockBlockListSigner mockSigner;
