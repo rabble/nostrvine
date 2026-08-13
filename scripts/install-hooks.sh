@@ -432,8 +432,10 @@ for file in $CHANGED_FILES; do
 done
 
 # Remove duplicates, strip mobile/ prefix, and exclude integration tests
-# (integration tests require an emulator and can't mix with unit tests)
-TEST_FILES=$(echo "$TEST_FILES" | tr ' ' '\n' | sort -u | sed 's|^mobile/||' | grep -v '^$' | grep -v '^integration_test/' || true)
+# (integration tests require an emulator and can't mix with unit tests --
+# `flutter test` refuses the mixed invocation outright, so a changed file under
+# integration_test_manual/ used to fail the whole hook)
+TEST_FILES=$(echo "$TEST_FILES" | tr ' ' '\n' | sort -u | sed 's|^mobile/||' | grep -v '^$' | grep -vE '^integration_test(_manual)?/' || true)
 
 if [ -z "$TEST_FILES" ]; then
     echo "No corresponding test files found for changed files"
