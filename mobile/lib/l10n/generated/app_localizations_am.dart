@@ -9686,14 +9686,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataSaveForLaterSemanticLabel => 'ለበኋላ አዝራር አስቀምጥ';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'ቪዲዮ በማቅረብ ላይ...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'ቪዲዮ በማስቀመጥ ላይ...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'ቪዲዮን ወደ ረቂቆች እና $destination አስቀምጥ';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return 'ቪዲዮውን ወደ ረቂቆች አስቀምጥ። አሁንም እየተዘጋጀ ስለሆነ ወደ $destination ቅጂ አይታከልም።';
   }
 
   @override

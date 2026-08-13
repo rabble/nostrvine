@@ -9404,14 +9404,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataSaveForLaterSemanticLabel => '稍后发布按钮';
 
   @override
-  String get videoMetadataRenderingVideoHint => '正在渲染视频...';
-
-  @override
   String get videoMetadataSavingVideoHint => '正在保存视频...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return '把视频保存到草稿和$destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return '把视频保存到草稿。仍在渲染，因此不会保存到$destination。';
   }
 
   @override

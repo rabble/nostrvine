@@ -9507,14 +9507,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataSaveForLaterSemanticLabel => '나중에 저장 버튼';
 
   @override
-  String get videoMetadataRenderingVideoHint => '동영상 렌더링 중...';
-
-  @override
   String get videoMetadataSavingVideoHint => '동영상 저장 중...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return '동영상을 임시저장 및 $destination에 저장';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return '동영상을 임시보관함에 저장합니다. 아직 렌더링 중이라 $destination에는 복사되지 않습니다.';
   }
 
   @override

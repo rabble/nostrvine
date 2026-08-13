@@ -3297,10 +3297,17 @@
     "videoMetadataFailedToSaveSnackbar": "Opslaan mislukt",
     "videoMetadataGoToLibraryButton": "Naar bibliotheek",
     "videoMetadataSaveForLaterSemanticLabel": "Knop opslaan voor later",
-    "videoMetadataRenderingVideoHint": "Video renderen...",
     "videoMetadataSavingVideoHint": "Video opslaan...",
     "videoMetadataSaveToDraftsHint": "Video opslaan in concepten en {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsRenderingHint": "Video opslaan in concepten. Nog bezig met renderen, dus geen kopie in {destination}.",
+    "@videoMetadataSaveToDraftsRenderingHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

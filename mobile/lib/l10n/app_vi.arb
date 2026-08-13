@@ -5910,10 +5910,17 @@
   "videoMetadataFailedToSaveSnackbar": "Không lưu được",
   "videoMetadataGoToLibraryButton": "Đi tới Thư viện",
   "videoMetadataSaveForLaterSemanticLabel": "Nút lưu để làm sau",
-  "videoMetadataRenderingVideoHint": "Đang kết xuất video...",
   "videoMetadataSavingVideoHint": "Đang lưu video...",
   "videoMetadataSaveToDraftsHint": "Lưu video vào bản nháp và {destination}",
   "@videoMetadataSaveToDraftsHint": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataSaveToDraftsRenderingHint": "Lưu video vào bản nháp. Vẫn đang kết xuất nên không có bản sao trong {destination}.",
+  "@videoMetadataSaveToDraftsRenderingHint": {
     "placeholders": {
       "destination": {
         "type": "String"

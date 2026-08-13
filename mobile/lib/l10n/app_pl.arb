@@ -3297,10 +3297,17 @@
     "videoMetadataFailedToSaveSnackbar": "Nie udało się zapisać",
     "videoMetadataGoToLibraryButton": "Przejdź do biblioteki",
     "videoMetadataSaveForLaterSemanticLabel": "Przycisk zapisz na później",
-    "videoMetadataRenderingVideoHint": "Renderowanie wideo...",
     "videoMetadataSavingVideoHint": "Zapisywanie wideo...",
     "videoMetadataSaveToDraftsHint": "Zapisz wideo w wersjach roboczych i {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsRenderingHint": "Zapisz film w wersjach roboczych. Trwa renderowanie, więc kopia nie trafi do {destination}.",
+    "@videoMetadataSaveToDraftsRenderingHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

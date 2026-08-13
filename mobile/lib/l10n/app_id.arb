@@ -3211,11 +3211,18 @@
     "videoMetadataRemoveCollaboratorSemanticLabel": "Hapus kolaborator",
     "videoMetadataRemoveInspiredBySemanticLabel": "Hapus inspirasi",
     "videoMetadataRemoveSemanticLabel": "Hapus",
-    "videoMetadataRenderingVideoHint": "Merender video...",
     "videoMetadataSaveForLaterButton": "Simpan untuk Nanti",
     "videoMetadataSaveForLaterSemanticLabel": "Tombol simpan untuk nanti",
     "videoMetadataSaveToDraftsHint": "Simpan video ke draf dan {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsRenderingHint": "Simpan video ke draf. Masih dirender, jadi tidak ada salinan di {destination}.",
+    "@videoMetadataSaveToDraftsRenderingHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

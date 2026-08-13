@@ -56,9 +56,9 @@ class VideoMetadataCaptureBottomBar extends ConsumerWidget {
     // concurrent tap landing here is a narrow race, not the common path.
     await saveToGallery(context, ref);
 
-    final outcome = await ref
-        .read(videoEditorProvider.notifier)
-        .saveAsDraft(enforceCreateNewDraft: true);
+    final notifier = ref.read(videoEditorProvider.notifier);
+
+    final outcome = await notifier.saveAsDraft(enforceCreateNewDraft: true);
 
     // A save was already in flight (the button is normally disabled
     // meanwhile); there's nothing to report or navigate.
@@ -79,6 +79,16 @@ class VideoMetadataCaptureBottomBar extends ConsumerWidget {
     );
 
     if (draftSaved) {
+      // The draft is written, so a render still in flight has nothing left to
+      // contribute — the reopened draft renders again. Dropping it here rather
+      // than before the save keeps a failed save from stranding the user on a
+      // screen whose preview waits forever on a render that no longer exists.
+      // Cancelling bumps the render generation synchronously, and that is what
+      // makes the late completion discard itself instead of running
+      // autosaveChanges() and rewriting the autosave row saveAsDraft just
+      // removed; awaiting it would mean waiting for the very render the user is
+      // walking away from.
+      unawaited(notifier.cancelRenderVideo());
       router.go(VideoFeedPage.pathForIndex(0));
       // Clear editor state after navigation animation completes (~600ms)
       Future.delayed(
@@ -137,27 +147,34 @@ class _SaveForLaterButton extends ConsumerWidget {
       ),
     );
     final isSaving = state.isSavingDraft;
-    final isProcessing = state.isProcessing;
+    // Deliberately not gated on isProcessing: saving a draft needs no rendered
+    // file, and the render can take minutes when its C2PA signing step has no
+    // network to reach. Only a save already in flight disables the button.
+    final isRendering = state.isProcessing;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
-      opacity: !isProcessing ? 1 : 0.32,
+      opacity: !isSaving ? 1 : 0.32,
       child: Semantics(
         identifier: 'save_for_later_button',
         label: context.l10n.videoMetadataSaveForLaterSemanticLabel,
-        hint: isProcessing
-            ? context.l10n.videoMetadataRenderingVideoHint
-            : isSaving
+        hint: isSaving
             ? context.l10n.videoMetadataSavingVideoHint
+            : isRendering
+            // The gallery copy is made from the rendered file, which does not
+            // exist yet — promising it here would be a lie.
+            ? context.l10n.videoMetadataSaveToDraftsRenderingHint(
+                GallerySaveService.destinationName,
+              )
             : context.l10n.videoMetadataSaveToDraftsHint(
                 GallerySaveService.destinationName,
               ),
         button: true,
         excludeSemantics: true,
-        enabled: !isSaving && !isProcessing,
-        onTap: isSaving || isProcessing ? null : onTap,
+        enabled: !isSaving,
+        onTap: isSaving ? null : onTap,
         child: DivineButton(
-          onPressed: isSaving || isProcessing ? null : onTap,
+          onPressed: isSaving ? null : onTap,
           type: .secondary,
           label: context.l10n.videoMetadataSaveForLaterButton,
         ),

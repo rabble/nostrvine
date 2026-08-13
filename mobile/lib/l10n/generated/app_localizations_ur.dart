@@ -9907,14 +9907,16 @@ class AppLocalizationsUr extends AppLocalizations {
       'بعد کے لیے محفوظ کریں بٹن';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'ویڈیو رینڈر ہو رہی ہے...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'ویڈیو محفوظ ہو رہی ہے...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'ویڈیو مسودوں اور $destination میں محفوظ کریں';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return 'ویڈیو کو مسودوں میں محفوظ کریں۔ ابھی رینڈر ہو رہی ہے، اس لیے $destination میں کاپی شامل نہیں ہوگی۔';
   }
 
   @override

@@ -3204,11 +3204,18 @@
     "videoMetadataRemoveCollaboratorSemanticLabel": "コラボレーターを削除",
     "videoMetadataRemoveInspiredBySemanticLabel": "インスパイア元を削除",
     "videoMetadataRemoveSemanticLabel": "削除",
-    "videoMetadataRenderingVideoHint": "動画をレンダリング中...",
     "videoMetadataSaveForLaterButton": "後で保存",
     "videoMetadataSaveForLaterSemanticLabel": "後で保存ボタン",
     "videoMetadataSaveToDraftsHint": "動画を下書きと{destination}に保存",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsRenderingHint": "動画を下書きに保存します。レンダリング中のため、{destination}にはコピーされません。",
+    "@videoMetadataSaveToDraftsRenderingHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

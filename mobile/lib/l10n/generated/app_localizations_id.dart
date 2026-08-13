@@ -9865,14 +9865,16 @@ class AppLocalizationsId extends AppLocalizations {
       'Tombol simpan untuk nanti';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Merender video...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Menyimpan video...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Simpan video ke draf dan $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return 'Simpan video ke draf. Masih dirender, jadi tidak ada salinan di $destination.';
   }
 
   @override

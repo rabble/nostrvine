@@ -3297,10 +3297,17 @@
     "videoMetadataFailedToSaveSnackbar": "Speichern fehlgeschlagen",
     "videoMetadataGoToLibraryButton": "Zur Mediathek",
     "videoMetadataSaveForLaterSemanticLabel": "Button \"Für später speichern\"",
-    "videoMetadataRenderingVideoHint": "Video wird gerendert...",
     "videoMetadataSavingVideoHint": "Video wird gespeichert...",
     "videoMetadataSaveToDraftsHint": "Video als Entwurf speichern und {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsRenderingHint": "Video als Entwurf speichern. Wird noch gerendert, daher keine Kopie in {destination}.",
+    "@videoMetadataSaveToDraftsRenderingHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

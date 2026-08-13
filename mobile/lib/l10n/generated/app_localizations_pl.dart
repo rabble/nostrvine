@@ -10096,14 +10096,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przycisk zapisz na później';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Renderowanie wideo...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Zapisywanie wideo...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Zapisz wideo w wersjach roboczych i $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return 'Zapisz film w wersjach roboczych. Trwa renderowanie, więc kopia nie trafi do $destination.';
   }
 
   @override

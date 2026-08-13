@@ -2542,11 +2542,18 @@
     "videoMetadataRemoveCollaboratorSemanticLabel": "협업자 삭제",
     "videoMetadataRemoveInspiredBySemanticLabel": "영감 출처 삭제",
     "videoMetadataRemoveSemanticLabel": "삭제",
-    "videoMetadataRenderingVideoHint": "동영상 렌더링 중...",
     "videoMetadataSaveForLaterButton": "나중에 저장",
     "videoMetadataSaveForLaterSemanticLabel": "나중에 저장 버튼",
     "videoMetadataSaveToDraftsHint": "동영상을 임시저장 및 {destination}에 저장",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsRenderingHint": "동영상을 임시보관함에 저장합니다. 아직 렌더링 중이라 {destination}에는 복사되지 않습니다.",
+    "@videoMetadataSaveToDraftsRenderingHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

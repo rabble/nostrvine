@@ -9977,14 +9977,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Botão salvar para depois';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Renderizando vídeo...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Salvando vídeo...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Salvar vídeo nos rascunhos e $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return 'Salvar vídeo nos rascunhos. Ainda renderizando, então nenhuma cópia é adicionada a $destination.';
   }
 
   @override

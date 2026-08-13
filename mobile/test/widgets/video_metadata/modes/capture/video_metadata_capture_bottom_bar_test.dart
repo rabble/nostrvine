@@ -263,6 +263,112 @@ void main() {
       expect(saveAsDraftCalled, isTrue);
     });
 
+    testWidgets('Save draft stays enabled while the render is still running', (
+      tester,
+    ) async {
+      var saveAsDraftCalled = false;
+      var cancelRenderCalled = false;
+      // No finalRenderedClip yet: the render — including its network-bound
+      // C2PA signing step — has not finished. Offline that can take minutes,
+      // and a draft needs none of it.
+      final mockNotifier = _MockVideoEditorNotifier(
+        VideoEditorProviderState(title: 'Test', isProcessing: true),
+        onSaveAsDraft: () => saveAsDraftCalled = true,
+        onCancelRenderVideo: () => cancelRenderCalled = true,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+        ),
+      );
+
+      await tester.tap(find.text('Save for Later'));
+      await tester.pumpAndSettle();
+
+      expect(saveAsDraftCalled, isTrue);
+      // The in-flight render is dropped, so its completion cannot rewrite the
+      // autosave row that saveAsDraft just removed.
+      expect(cancelRenderCalled, isTrue);
+      // Nothing to copy to the gallery without a rendered file.
+      verifyNever(() => mockGallerySaveService.saveVideoToGallery(any()));
+    });
+
+    testWidgets('a failed save leaves the in-flight render running', (
+      tester,
+    ) async {
+      var cancelRenderCalled = false;
+      final mockNotifier = _MockVideoEditorNotifier(
+        VideoEditorProviderState(title: 'Test', isProcessing: true),
+        onCancelRenderVideo: () => cancelRenderCalled = true,
+        saveAsDraftResult: DraftSaveOutcome.failed,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+        ),
+      );
+
+      await tester.tap(find.text('Save for Later'));
+      await tester.pumpAndSettle();
+
+      // The user stays on the screen, so the render has to survive: cancelling
+      // it would leave the preview waiting on a render that no longer runs.
+      expect(cancelRenderCalled, isFalse);
+      expect(find.byType(VideoMetadataCaptureBottomBar), findsOneWidget);
+    });
+
+    testWidgets('Save draft is disabled while a save is already in flight', (
+      tester,
+    ) async {
+      final mockNotifier = _MockVideoEditorNotifier(
+        VideoEditorProviderState(title: 'Test', isSavingDraft: true),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+        ),
+      );
+
+      final animatedOpacity = tester.widget<AnimatedOpacity>(
+        find
+            .ancestor(
+              of: find.text('Save for Later'),
+              matching: find.byType(AnimatedOpacity),
+            )
+            .first,
+      );
+      expect(animatedOpacity.opacity, lessThan(1));
+
+      final button = tester.widget<DivineButton>(
+        find.ancestor(
+          of: find.text('Save for Later'),
+          matching: find.byType(DivineButton),
+        ),
+      );
+      expect(button.onPressed, isNull);
+    });
+
     testWidgets('save for later shows permission sheet on gallery denial', (
       tester,
     ) async {
@@ -815,12 +921,14 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
     this._state, {
     this.onPostVideo,
     this.onSaveAsDraft,
+    this.onCancelRenderVideo,
     this.saveAsDraftResult = DraftSaveOutcome.saved,
   });
 
   final VideoEditorProviderState _state;
   final VoidCallback? onPostVideo;
   final VoidCallback? onSaveAsDraft;
+  final VoidCallback? onCancelRenderVideo;
   final DraftSaveOutcome saveAsDraftResult;
 
   @override
@@ -837,5 +945,10 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
   }) async {
     onSaveAsDraft?.call();
     return saveAsDraftResult;
+  }
+
+  @override
+  Future<void> cancelRenderVideo() async {
+    onCancelRenderVideo?.call();
   }
 }

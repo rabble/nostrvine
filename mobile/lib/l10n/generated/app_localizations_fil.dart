@@ -10021,14 +10021,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoMetadataSaveForLaterSemanticLabel => 'Save for later button';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Nire-render ang video...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Sine-save ang video...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'I-save ang video sa drafts at $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return 'I-save ang video sa mga draft. Nagre-render pa, kaya walang kopyang idadagdag sa $destination.';
   }
 
   @override

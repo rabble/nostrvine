@@ -10045,14 +10045,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Bouton enregistrer pour plus tard';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Rendu de la vidéo...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Enregistrement de la vidéo...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Enregistrer la vidéo dans les brouillons et $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return 'Enregistrer la vidéo dans les brouillons. Rendu en cours, donc aucune copie n\'est ajoutée à $destination.';
   }
 
   @override

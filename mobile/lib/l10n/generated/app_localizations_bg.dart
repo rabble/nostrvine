@@ -10003,14 +10003,16 @@ class AppLocalizationsBg extends AppLocalizations {
       'Бутон за запазване за по-късно';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Изобразява се видео...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Видеото се запазва...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Запази видеото в чернови и $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsRenderingHint(String destination) {
+    return 'Запази видеото в чернови. Още се обработва, затова няма копие в $destination.';
   }
 
   @override

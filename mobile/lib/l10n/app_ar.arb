@@ -3204,11 +3204,18 @@
     "videoMetadataRemoveCollaboratorSemanticLabel": "إزالة المتعاون",
     "videoMetadataRemoveInspiredBySemanticLabel": "إزالة مصدر الإلهام",
     "videoMetadataRemoveSemanticLabel": "إزالة",
-    "videoMetadataRenderingVideoHint": "جاري تصيير الفيديو...",
     "videoMetadataSaveForLaterButton": "حفظ لاحقًا",
     "videoMetadataSaveForLaterSemanticLabel": "زر الحفظ لاحقًا",
     "videoMetadataSaveToDraftsHint": "حفظ الفيديو في المسودات و{destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsRenderingHint": "حفظ الفيديو في المسودات. لا يزال قيد المعالجة، لذا لن تُضاف نسخة إلى {destination}.",
+    "@videoMetadataSaveToDraftsRenderingHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

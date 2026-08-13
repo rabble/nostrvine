@@ -3297,10 +3297,17 @@
     "videoMetadataFailedToSaveSnackbar": "Salvare eșuată",
     "videoMetadataGoToLibraryButton": "Mergi la bibliotecă",
     "videoMetadataSaveForLaterSemanticLabel": "Buton salvează pentru mai târziu",
-    "videoMetadataRenderingVideoHint": "Se redă videoclipul...",
     "videoMetadataSavingVideoHint": "Se salvează videoclipul...",
     "videoMetadataSaveToDraftsHint": "Salvează videoclipul în schițe și {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsRenderingHint": "Salvează videoclipul în schițe. Randarea este în curs, deci nicio copie în {destination}.",
+    "@videoMetadataSaveToDraftsRenderingHint": {
         "placeholders": {
             "destination": {
                 "type": "String"
