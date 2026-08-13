@@ -20,10 +20,10 @@ class FeaturedTabVideosCubit extends Cubit<FeaturedTabVideosState> {
   FeaturedTabVideosCubit({
     required FeaturedTabsRepository repository,
     required String tabId,
-    FeaturedTabSurfaceTelemetry? telemetry,
+    required FeaturedTabSurfaceTelemetry telemetry,
   }) : _repository = repository,
        _tabId = tabId,
-       _telemetry = telemetry ?? FeaturedTabSurfaceTelemetry(configId: tabId),
+       _telemetry = telemetry,
        super(const FeaturedTabVideosState());
 
   final FeaturedTabsRepository _repository;

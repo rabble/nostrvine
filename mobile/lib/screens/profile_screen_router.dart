@@ -1,7 +1,6 @@
 // ABOUTME: Router-driven Instagram-style profile screen implementation
 // ABOUTME: Uses CustomScrollView with slivers for smooth scrolling, URL is source of truth
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +14,7 @@ import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_scope.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -459,10 +459,12 @@ class _ProfileDataView extends ConsumerWidget {
     final profile = ref.watch(userProfileReactiveProvider(userIdHex)).value;
 
     if (feedState.status == ProfileFeedStatus.ready) {
-      ScreenAnalyticsService().markDataLoaded(
-        'own_profile',
-        dataMetrics: {'video_count': feedState.videos.length},
-      );
+      ref
+          .read(screenAnalyticsServiceProvider)
+          .markDataLoaded(
+            'own_profile',
+            dataMetrics: {'video_count': feedState.videos.length},
+          );
     }
 
     return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(

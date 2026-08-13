@@ -3,32 +3,35 @@
 
 import 'dart:async';
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 
 /// Displays hashtag search results from HashtagSearchBloc.
 ///
 /// Must be used within a `BlocProvider<HashtagSearchBloc>`.
-class HashtagSearchView extends StatelessWidget {
+class HashtagSearchView extends ConsumerWidget {
   const HashtagSearchView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocConsumer<HashtagSearchBloc, HashtagSearchState>(
       listener: (context, state) {
         if (state.status == HashtagSearchStatus.success) {
-          ScreenAnalyticsService().markDataLoaded(
-            'search',
-            dataMetrics: {'hashtag_count': state.results.length},
-          );
+          ref
+              .read(screenAnalyticsServiceProvider)
+              .markDataLoaded(
+                'search',
+                dataMetrics: {'hashtag_count': state.results.length},
+              );
         }
       },
       builder: (context, state) {

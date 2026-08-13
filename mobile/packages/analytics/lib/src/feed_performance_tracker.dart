@@ -3,7 +3,6 @@
 
 import 'package:analytics/src/analytics_event_sink.dart';
 import 'package:analytics/src/firebase_analytics_event_sink.dart';
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:profile_repository/profile_repository.dart'
     show
         SearchSource,
@@ -23,27 +22,16 @@ import 'package:unified_logger/unified_logger.dart';
 const _maxSessionAge = Duration(seconds: 60);
 
 /// Service for tracking feed performance and user engagement
+///
+/// Feed-load sessions are keyed by feed type and shared across consumers — one
+/// widget starts a load that another completes — so the app resolves one
+/// instance through `feedPerformanceTrackerProvider` rather than constructing
+/// this per widget.
 class FeedPerformanceTracker {
-  factory FeedPerformanceTracker() => _instance ??= FeedPerformanceTracker._();
-  FeedPerformanceTracker._() : _analytics = FirebaseAnalyticsEventSink();
-
-  static FeedPerformanceTracker? _instance;
-
-  /// Resets the singleton so the next [FeedPerformanceTracker()] call returns a
-  /// fresh instance. Call in test `tearDown` to prevent state leaking between
-  /// test files when tests run in a shared isolate (e.g. VGV optimized runner).
-  @visibleForTesting
-  static void resetInstance() {
-    _instance?._activeSessions.clear();
-    _instance = null;
-  }
-
-  /// Creates a testable instance that does not touch Firebase.
-  ///
-  /// Pass a [sink] to assert on emitted events; defaults to a no-op sink.
-  @visibleForTesting
-  FeedPerformanceTracker.testInstance({AnalyticsEventSink? sink})
-    : _analytics = sink ?? const NoOpAnalyticsEventSink();
+  /// Creates a tracker. Defaults to the Firebase analytics sink in production;
+  /// pass a [sink] (e.g. [NoOpAnalyticsEventSink]) in tests.
+  FeedPerformanceTracker({AnalyticsEventSink? sink})
+    : _analytics = sink ?? FirebaseAnalyticsEventSink();
 
   final AnalyticsEventSink _analytics;
 

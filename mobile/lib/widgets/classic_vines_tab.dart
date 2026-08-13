@@ -35,7 +35,8 @@ import 'package:unified_logger/unified_logger.dart';
 class ClassicVinesTab extends ConsumerStatefulWidget {
   const ClassicVinesTab({super.key, this.feedTracker});
 
-  /// Optional analytics tracker (for testing, defaults to singleton).
+  /// Analytics tracker. Null unless a caller supplies one — this tab does not
+  /// report feed-load timing in production (see #4743).
   final FeedPerformanceTracker? feedTracker;
 
   @override

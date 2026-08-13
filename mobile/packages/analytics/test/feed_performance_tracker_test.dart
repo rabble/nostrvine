@@ -3,66 +3,88 @@
 
 import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:profile_repository/profile_repository.dart';
 
-class _MockFeedPerformanceTracker extends Mock
-    implements FeedPerformanceTracker {}
+class _RecordingAnalyticsEventSink implements AnalyticsEventSink {
+  final events = <({String name, Map<String, Object> parameters})>[];
+
+  @override
+  Future<void> setUserId(String? userId) async {}
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async {}
+
+  @override
+  Future<void> logEvent({
+    required String name,
+    required Map<String, Object> parameters,
+  }) async {
+    events.add((name: name, parameters: parameters));
+  }
+
+  @override
+  Future<void> logScreenView({
+    required String screenName,
+    String? screenClass,
+    Map<String, Object>? parameters,
+  }) async {}
+}
 
 void main() {
   group(FeedPerformanceTracker, () {
     group('video swipe tracking', () {
-      late _MockFeedPerformanceTracker tracker;
+      const videoId =
+          'abc123def456abc123def456abc123def456abc123def456abc123def456abcd';
+
+      late _RecordingAnalyticsEventSink sink;
+      late FeedPerformanceTracker tracker;
 
       setUp(() {
-        tracker = _MockFeedPerformanceTracker();
+        sink = _RecordingAnalyticsEventSink();
+        tracker = FeedPerformanceTracker(sink: sink);
       });
 
-      test('startVideoSwipeTracking calls startFeedLoad with video ID', () {
-        const videoId =
-            'abc123def456abc123def456abc123def456abc123def456abc123def456abcd';
+      test('startVideoSwipeTracking opens a session for the video', () {
         tracker.startVideoSwipeTracking(videoId);
 
-        verify(() => tracker.startVideoSwipeTracking(videoId)).called(1);
+        expect(tracker.activeSessionCount, 1);
       });
 
-      test('markVideoSwipeComplete calls markFeedDisplayed with video ID', () {
-        const videoId =
-            'abc123def456abc123def456abc123def456abc123def456abc123def456abcd';
-        tracker.markVideoSwipeComplete(videoId);
-
-        verify(() => tracker.markVideoSwipeComplete(videoId)).called(1);
-      });
-
-      test('swipe tracking uses video_swipe_ prefix for feed type', () {
-        // The real implementation constructs 'video_swipe_$videoId' as
-        // the feed type. Since the tracker is a singleton backed by
-        // FirebaseAnalytics (which requires Firebase init), we verify
-        // the method signatures exist and are callable via mock.
-        const videoId =
-            'def456abc123def456abc123def456abc123def456abc123def456abc123defg';
-
-        // Both methods should be callable without error
+      test('markVideoSwipeComplete closes the session it opened', () {
         tracker
           ..startVideoSwipeTracking(videoId)
           ..markVideoSwipeComplete(videoId);
 
-        verify(() => tracker.startVideoSwipeTracking(videoId)).called(1);
-        verify(() => tracker.markVideoSwipeComplete(videoId)).called(1);
+        expect(tracker.activeSessionCount, 0);
+      });
+
+      test('swipe tracking reports a video_swipe_ prefixed feed type', () {
+        tracker
+          ..startVideoSwipeTracking(videoId)
+          ..markVideoSwipeComplete(videoId);
+
+        expect(sink.events, hasLength(1));
+        expect(sink.events.single.name, 'feed_load_complete');
+        expect(
+          sink.events.single.parameters,
+          containsPair('feed_type', 'video_swipe_$videoId'),
+        );
       });
     });
 
     group('trackSearchSource', () {
+      late _RecordingAnalyticsEventSink sink;
       late FeedPerformanceTracker tracker;
 
       setUp(() {
-        // Real instance with analytics bypassed so the call path is
-        // exercised end-to-end without requiring Firebase init.
-        tracker = FeedPerformanceTracker.testInstance();
+        sink = _RecordingAnalyticsEventSink();
+        tracker = FeedPerformanceTracker(sink: sink);
       });
 
-      test('does not throw for any terminal source status', () {
-        // Each branch of the switch is exercised; pending is a no-op.
+      test('logs one event per terminal status and skips pending', () {
         tracker
           ..trackSearchSource(
             SearchSource.localCache,
@@ -83,6 +105,27 @@ void main() {
               latencyMs: 5000,
             ),
           );
+
+        // Pending adds no signal, so only the three terminal statuses log.
+        expect(
+          sink.events.map((e) => e.name),
+          everyElement('user_search_source'),
+        );
+        expect(sink.events.map((e) => e.parameters), [
+          {'source': SearchSource.localCache.name, 'status': 'skipped'},
+          {
+            'source': SearchSource.funnelcakeApi.name,
+            'status': 'success',
+            'result_count': 3,
+            'latency_ms': 42,
+          },
+          {
+            'source': SearchSource.nip50Relay.name,
+            'status': 'failed',
+            'reason': SearchSourceFailureReason.timeout.name,
+            'latency_ms': 5000,
+          },
+        ]);
       });
     });
   });

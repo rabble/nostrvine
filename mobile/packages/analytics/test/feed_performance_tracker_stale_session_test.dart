@@ -10,13 +10,8 @@ void main() {
     late FeedPerformanceTracker tracker;
 
     setUp(() {
-      // Reset to discard any stale singleton left by a previous test or test
-      // file when running in a shared isolate (VGV optimized runner).
-      FeedPerformanceTracker.resetInstance();
-      tracker = FeedPerformanceTracker.testInstance();
+      tracker = FeedPerformanceTracker(sink: const NoOpAnalyticsEventSink());
     });
-
-    tearDown(FeedPerformanceTracker.resetInstance);
 
     group('resetAllSessions', () {
       test('clears all active sessions', () {
@@ -73,16 +68,20 @@ void main() {
       });
     });
 
-    group('testInstance', () {
-      test('creates instance without Firebase dependency', () {
-        final instance = FeedPerformanceTracker.testInstance();
+    group('session lifecycle', () {
+      test('sessions do not leak between instances', () {
+        tracker.startFeedLoad('home');
 
-        instance
-          ..startFeedLoad('test')
-          ..markFirstVideosReceived('test', 3)
-          ..markFeedDisplayed('test', 3);
+        final other = FeedPerformanceTracker(
+          sink: const NoOpAnalyticsEventSink(),
+        );
 
-        expect(instance.activeSessionCount, 0);
+        // Guards the reason the app resolves one shared instance through
+        // `feedPerformanceTrackerProvider`: a second instance cannot complete
+        // a session the first one started.
+        expect(other.activeSessionCount, 0);
+        other.markFeedDisplayed('home', 3);
+        expect(tracker.activeSessionCount, 1);
       });
 
       test('tracks multiple independent sessions', () {

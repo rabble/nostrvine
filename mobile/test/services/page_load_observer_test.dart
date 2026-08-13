@@ -101,14 +101,14 @@ void main() {
     late PageLoadObserver observer;
 
     setUp(() {
-      ScreenAnalyticsService.resetInstance();
       sink = _RecordingAnalyticsEventSink();
       observer = PageLoadObserver(
-        analytics: ScreenAnalyticsService.testInstance(sink: sink),
+        analytics: ScreenAnalyticsService(
+          history: PageLoadHistory(),
+          sink: sink,
+        ),
       );
     });
-
-    tearDown(ScreenAnalyticsService.resetInstance);
 
     test('creates an instance', () {
       expect(observer, isA<NavigatorObserver>());

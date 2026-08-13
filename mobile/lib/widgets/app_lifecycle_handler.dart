@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:analytics/analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -117,8 +116,8 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         // Reset performance tracker sessions to prevent stale start
         // times from producing absurd load-time measurements (e.g.
         // 27+ hours) when providers re-fire on resume.
-        FeedPerformanceTracker().resetAllSessions();
-        ScreenAnalyticsService().resetAllSessions();
+        ref.read(feedPerformanceTrackerProvider).resetAllSessions();
+        ref.read(screenAnalyticsServiceProvider).resetAllSessions();
         ref.read(surfacePerformanceTrackerProvider).resetAllSessions();
 
         // Notify foreground state provider - enables visibility detection

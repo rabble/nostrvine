@@ -52,13 +52,11 @@ void main() {
     late ScreenAnalyticsService service;
 
     setUp(() {
-      // Reset to discard any stale singleton left by a previous test or test
-      // file when running in a shared isolate (VGV optimized runner).
-      ScreenAnalyticsService.resetInstance();
-      service = ScreenAnalyticsService.testInstance();
+      service = ScreenAnalyticsService(
+        history: PageLoadHistory(),
+        sink: const NoOpAnalyticsEventSink(),
+      );
     });
-
-    tearDown(ScreenAnalyticsService.resetInstance);
 
     group('resetAllSessions', () {
       test('clears all active sessions', () {
@@ -122,17 +120,21 @@ void main() {
       });
     });
 
-    group('testInstance', () {
-      test('creates instance without Firebase dependency', () {
-        final instance = ScreenAnalyticsService.testInstance();
+    group('session lifecycle', () {
+      test('sessions do not leak between instances', () {
+        service.startScreenLoad('HomeScreen');
 
-        instance
-          ..startScreenLoad('TestScreen')
-          ..markContentVisible('TestScreen')
-          ..markDataLoaded('TestScreen')
-          ..endScreen('TestScreen');
+        final other = ScreenAnalyticsService(
+          history: PageLoadHistory(),
+          sink: const NoOpAnalyticsEventSink(),
+        );
 
-        expect(instance.activeSessionCount, 0);
+        // Guards the reason the app resolves one shared instance through
+        // `screenAnalyticsServiceProvider`: a second instance cannot complete
+        // a session the first one started.
+        expect(other.activeSessionCount, 0);
+        other.markDataLoaded('HomeScreen');
+        expect(service.activeSessionCount, 1);
       });
 
       test('tracks multiple independent sessions', () {
@@ -153,7 +155,10 @@ void main() {
     group('trackScreenView', () {
       test('logs screen view through the analytics sink', () {
         final sink = RecordingAnalyticsEventSink();
-        final instance = ScreenAnalyticsService.testInstance(sink: sink);
+        final instance = ScreenAnalyticsService(
+          history: PageLoadHistory(),
+          sink: sink,
+        );
 
         instance.trackScreenView(
           'video_detail',

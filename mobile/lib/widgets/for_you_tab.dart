@@ -30,7 +30,8 @@ import 'package:unified_logger/unified_logger.dart';
 class ForYouTab extends ConsumerStatefulWidget {
   const ForYouTab({super.key, this.feedTracker});
 
-  /// Optional analytics tracker (for testing, defaults to singleton).
+  /// Analytics tracker. Null unless a caller supplies one — this tab does not
+  /// report feed-load timing in production (see #4743).
   final FeedPerformanceTracker? feedTracker;
 
   @override

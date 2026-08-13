@@ -18,6 +18,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
@@ -142,8 +143,9 @@ class _DeveloperOptionsScreenState
       const EnvironmentConfig(environment: AppEnvironment.poc),
     ];
 
-    final recentRecords = PageLoadHistory().getRecent(10);
-    final slowestRecords = PageLoadHistory().getSlowest(5);
+    final pageLoadHistory = ref.read(pageLoadHistoryProvider);
+    final recentRecords = pageLoadHistory.getRecent(10);
+    final slowestRecords = pageLoadHistory.getSlowest(5);
 
     return Scaffold(
       backgroundColor: context.vineColors.background,

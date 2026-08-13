@@ -16,6 +16,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/inline_reel_reply/inline_reel_reply_cubit.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -86,6 +87,7 @@ class ReelDmReplyBarHost extends ConsumerWidget {
           return _ReelDmReplyBar(
             dmReplyContext: dmReplyContext,
             ownerPubkey: ownerPubkey,
+            screenAnalytics: ref.read(screenAnalyticsServiceProvider),
             // The player owns pausing + the full-screen reaction overlay; the
             // bar just emits the signals, staying decoupled from its State.
             onComposerFocusChanged: bridge?.setComposerFocused,
@@ -129,12 +131,18 @@ class _ReelDmReplyBar extends StatefulWidget {
   const _ReelDmReplyBar({
     required this.dmReplyContext,
     required this.ownerPubkey,
+    required this.screenAnalytics,
     this.onComposerFocusChanged,
     this.onReaction,
   });
 
   final DmReplyContext dmReplyContext;
   final String ownerPubkey;
+
+  /// Shared screen-analytics service, resolved by the host so this plain
+  /// [StatefulWidget] does not reach into Riverpod for its dependencies.
+  final ScreenAnalyticsService screenAnalytics;
+
   final ValueChanged<bool>? onComposerFocusChanged;
 
   /// Triggers the player's full-screen reaction overlay for the given emoji.
@@ -180,7 +188,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     super.initState();
     _controller.addListener(_handleTextChanged);
     _focusNode.addListener(_handleFocusChanged);
-    ScreenAnalyticsService().trackInteraction(
+    widget.screenAnalytics.trackInteraction(
       ReelReplyConstants.analyticsScreen,
       'dm_reel_opened',
       params: {'is_group': _ctx.isGroup ? 1 : 0},
@@ -304,7 +312,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
       context.l10n.dmReelReactionSentAnnouncement(emoji),
       Directionality.of(context),
     );
-    ScreenAnalyticsService().trackInteraction(
+    widget.screenAnalytics.trackInteraction(
       ReelReplyConstants.analyticsScreen,
       'dm_reel_emoji_sent',
       params: {
@@ -369,7 +377,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
       final conversationPath = ConversationPage.pathForId(_ctx.conversationId);
       final participantPubkeys = List<String>.of(_ctx.participantPubkeys);
       _announce(context.l10n.dmReelReplySentAnnouncement);
-      ScreenAnalyticsService().trackInteraction(
+      widget.screenAnalytics.trackInteraction(
         ReelReplyConstants.analyticsScreen,
         'dm_reel_reply_sent',
         params: {'is_group': _ctx.isGroup ? 1 : 0},

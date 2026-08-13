@@ -1,7 +1,6 @@
 // ABOUTME: Screen displaying current user's followers list
 // ABOUTME: Uses MyFollowersBloc for list + MyFollowingBloc for follow button state
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +10,7 @@ import 'package:openvine/blocs/follow_list_search/follow_list_search_bloc.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -121,12 +121,14 @@ class _MyFollowersView extends ConsumerWidget {
           BlocListener<MyFollowersBloc, MyFollowersState>(
             listener: (context, state) {
               if (state.status == MyFollowersStatus.success) {
-                ScreenAnalyticsService().markDataLoaded(
-                  'followers',
-                  dataMetrics: {
-                    'followers_count': state.followersPubkeys.length,
-                  },
-                );
+                ref
+                    .read(screenAnalyticsServiceProvider)
+                    .markDataLoaded(
+                      'followers',
+                      dataMetrics: {
+                        'followers_count': state.followersPubkeys.length,
+                      },
+                    );
               }
             },
           ),

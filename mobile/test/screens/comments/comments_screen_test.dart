@@ -334,7 +334,10 @@ void main() {
 
       setUp(() {
         sink = _RecordingAnalyticsEventSink();
-        tracker = SurfacePerformanceTracker(sink: sink);
+        tracker = SurfacePerformanceTracker(
+          history: PageLoadHistory(),
+          sink: sink,
+        );
       });
 
       testWidgets(

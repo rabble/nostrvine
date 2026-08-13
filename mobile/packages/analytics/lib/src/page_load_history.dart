@@ -35,15 +35,13 @@ class PageLoadRecord {
   bool get isContentVisibleSlow => (contentVisibleMs ?? 0) > 1000;
 }
 
-/// Singleton ring buffer storing the last [maxRecords] page load records.
+/// Ring buffer storing the last [maxRecords] page load records.
 ///
-/// Used by [ScreenAnalyticsService] to record timing data and by
-/// Developer Options to display on-device performance history.
+/// Written by the screen and surface performance trackers, and read by
+/// Developer Options to display on-device performance history. Writers and
+/// readers must share one instance — the app resolves it through
+/// `pageLoadHistoryProvider` — or Developer Options shows an empty buffer.
 class PageLoadHistory {
-  factory PageLoadHistory() => _instance;
-  PageLoadHistory._internal();
-  static final PageLoadHistory _instance = PageLoadHistory._internal();
-
   static const int maxRecords = 50;
 
   final Queue<PageLoadRecord> _records = Queue<PageLoadRecord>();

@@ -1,6 +1,7 @@
 // ABOUTME: Tests authenticated identity fan-out to Analytics and Crashlytics.
 
 import 'package:analytics/analytics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 
@@ -138,5 +139,82 @@ void main() {
 
     expect(sink.userIds, isEmpty);
     expect(crashIds, isEmpty);
+  });
+
+  group('pageLoadHistoryProvider', () {
+    // The default Firebase sink resolves lazily and fails closed under
+    // `flutter test`, so the real providers are safe to read here unoverridden.
+    test('collects records from both performance trackers', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(screenAnalyticsServiceProvider)
+        ..startScreenLoad('explore')
+        ..markDataLoaded('explore');
+
+      final surface = container.read(surfacePerformanceTrackerProvider)
+        ..startSurfaceLoad('comments_sheet');
+      await surface.completeSurfaceLoad(
+        'comments_sheet',
+        result: SurfaceLoadResult.success,
+      );
+
+      // Developer Options reads this buffer back, so both writers have to land
+      // in the same one.
+      expect(
+        container.read(pageLoadHistoryProvider).records.map((r) => r.source),
+        containsAll(<String>[PageLoadSource.route, PageLoadSource.surface]),
+      );
+    });
+  });
+
+  group('feedPerformanceTrackerProvider', () {
+    test('hands every reader the same session-tracking instance', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // One consumer starts a feed load that another completes, and the app
+      // lifecycle handler resets them all on resume.
+      container.read(feedPerformanceTrackerProvider).startFeedLoad('popular');
+
+      expect(
+        container.read(feedPerformanceTrackerProvider).activeSessionCount,
+        1,
+      );
+    });
+  });
+
+  group('screenAnalyticsServiceProvider', () {
+    test('hands every reader the same session-tracking instance', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // The navigator observer starts a load that a screen completes later, so
+      // a second read must see the first read's in-flight session.
+      container.read(screenAnalyticsServiceProvider).startScreenLoad('explore');
+
+      expect(
+        container.read(screenAnalyticsServiceProvider).activeSessionCount,
+        1,
+      );
+    });
+
+    test('is replaceable by an override without touching static state', () {
+      final replacement = ScreenAnalyticsService(
+        history: PageLoadHistory(),
+        sink: const NoOpAnalyticsEventSink(),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          screenAnalyticsServiceProvider.overrideWithValue(replacement),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(screenAnalyticsServiceProvider),
+        same(replacement),
+      );
+    });
   });
 }

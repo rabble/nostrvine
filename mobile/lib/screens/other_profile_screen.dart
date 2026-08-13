@@ -1,7 +1,6 @@
 // ABOUTME: Profile screen for viewing other users with bottom navigation
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +16,7 @@ import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
@@ -162,7 +162,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   @override
   void initState() {
     super.initState();
-    FeedPerformanceTracker().startFeedLoad('profile');
+    ref.read(feedPerformanceTrackerProvider).startFeedLoad('profile');
     // The feed cubit cold-loads on mount (via ProfileFeedScope below); reading
     // it here would be a cross-route ProviderNotFoundException because the
     // cubit lives under build.
@@ -427,15 +427,17 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           final feedState = context.watch<ProfileFeedCubit>().state;
           // Track analytics when data is loaded
           if (feedState.status == ProfileFeedStatus.ready) {
-            ScreenAnalyticsService().markDataLoaded(
-              'other_profile',
-              dataMetrics: {'video_count': feedState.videos.length},
-            );
+            ref
+                .read(screenAnalyticsServiceProvider)
+                .markDataLoaded(
+                  'other_profile',
+                  dataMetrics: {'video_count': feedState.videos.length},
+                );
 
             if (!_hasTrackedFeedLoad) {
               _hasTrackedFeedLoad = true;
               final count = feedState.videos.length;
-              final tracker = FeedPerformanceTracker();
+              final tracker = ref.read(feedPerformanceTrackerProvider);
               tracker.markFirstVideosReceived('profile', count);
               tracker.markFeedDisplayed('profile', count);
             }

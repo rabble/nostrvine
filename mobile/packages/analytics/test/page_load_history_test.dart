@@ -7,11 +7,6 @@ void main() {
 
     setUp(() {
       history = PageLoadHistory();
-      history.clear();
-    });
-
-    tearDown(() {
-      history.clear();
     });
 
     group('addOrUpdate', () {

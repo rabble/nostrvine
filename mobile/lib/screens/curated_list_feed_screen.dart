@@ -1,7 +1,6 @@
 // ABOUTME: Screen for displaying videos from a curated NIP-51 kind 30005 list
 // ABOUTME: Shows videos in a grid with tap-to-play navigation
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +11,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
@@ -156,10 +156,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             );
           }
 
-          ScreenAnalyticsService().markDataLoaded(
-            'curated_list',
-            dataMetrics: {'video_count': videos.length},
-          );
+          ref
+              .read(screenAnalyticsServiceProvider)
+              .markDataLoaded(
+                'curated_list',
+                dataMetrics: {'video_count': videos.length},
+              );
 
           // If in video mode, show fullscreen video player
           if (_activeVideoIndex != null) {

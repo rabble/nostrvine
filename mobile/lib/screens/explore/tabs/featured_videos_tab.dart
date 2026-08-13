@@ -8,10 +8,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/featured_tabs/featured_tab_surface_telemetry.dart';
 import 'package:openvine/blocs/featured_tabs/featured_tab_videos_cubit.dart';
 import 'package:openvine/blocs/featured_tabs/featured_tabs_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -40,9 +42,14 @@ class FeaturedVideosTab extends ConsumerWidget {
       // deliberately absent from the public config — the visible fields are the
       // only retarget signal the client can see.
       key: ValueKey((repository, config)),
-      create: (_) =>
-          FeaturedTabVideosCubit(repository: repository, tabId: config.id)
-            ..load(),
+      create: (_) => FeaturedTabVideosCubit(
+        repository: repository,
+        tabId: config.id,
+        telemetry: FeaturedTabSurfaceTelemetry(
+          configId: config.id,
+          tracker: ref.read(surfacePerformanceTrackerProvider),
+        ),
+      )..load(),
       child: _FeaturedVideosRetryOnPoll(
         child: _FeaturedVideosView(config: config),
       ),
