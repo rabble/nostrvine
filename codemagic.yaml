@@ -429,8 +429,8 @@ definitions:
         maestro test \
           --format junit \
           --output report.xml \
-          e2e/maestro/tests/loginFreshInstall.yaml \
-          e2e/maestro/tests/removeKeys.yaml
+          e2e/maestro/flows/likeFlow.yaml \
+          e2e/maestro/flows/commentFlow.yaml
       # Script-level, not workflow-level: Codemagic rejects `test_report` as an
       # unknown workflow field ("extra fields not permitted").
       test_report: report.xml
@@ -476,6 +476,21 @@ definitions:
         xcrun simctl boot "$DEVICE_UDID" || true
         xcrun simctl bootstatus "$DEVICE_UDID" -b
         echo "Booted simulator: $DEVICE_UDID"
+
+        # Ask the simulator for reduced motion before the app is installed.
+        #
+        # XCUITest blocks every UI query until the app under test reaches
+        # quiescence, and a repeating AnimationController never settles — so a
+        # perpetual animation makes each query wait out XCUITest's internal
+        # timeout, measured at a fixed 3m31s (#7204). BrandedLoadingIndicator,
+        # the Explore `loading:` state, is one such animation.
+        #
+        # The app honours this via MediaQuery.disableAnimations, so setting it
+        # here is what lets the app go idle. Note the suite therefore exercises
+        # the reduced-motion variant of any gated animation, which is the
+        # deliberate trade: determinism over covering the animated path.
+        xcrun simctl spawn "$DEVICE_UDID" defaults write com.apple.Accessibility ReduceMotionEnabled -bool true
+        echo "Reduced motion enabled on $DEVICE_UDID"
     - &install_app_ios_simulator
       name: Install app on iOS Simulator
       script: |
