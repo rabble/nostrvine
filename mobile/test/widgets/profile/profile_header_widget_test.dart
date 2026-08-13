@@ -166,6 +166,10 @@ class MockAuthService extends Mock implements AuthService {
   final bool isRpcUpgradeInProgressValue;
   final bool tryRefreshResult;
 
+  /// Number of times [tryRefreshExpiredSession] was called. The override below
+  /// bypasses `noSuchMethod`, so mocktail's `verify` cannot see these calls.
+  int tryRefreshCallCount = 0;
+
   @override
   bool get isAnonymous => isAnonymousValue;
 
@@ -186,7 +190,10 @@ class MockAuthService extends Mock implements AuthService {
   bool get isRpcUpgradeInProgress => isRpcUpgradeInProgressValue;
 
   @override
-  Future<bool> tryRefreshExpiredSession() async => tryRefreshResult;
+  Future<bool> tryRefreshExpiredSession() async {
+    tryRefreshCallCount++;
+    return tryRefreshResult;
+  }
 }
 
 const String testUserHex = syntheticTestPubkey;
@@ -334,13 +341,18 @@ void main() {
       ThemeData? theme,
       bool disableAnimations = false,
       bool renderHeader = true,
+      MockAuthService? authService,
     }) {
-      final authService = MockAuthService(
-        isAnonymousValue: isAnonymous,
-        hasExpiredOAuthSessionValue: hasExpiredSession,
-        isRpcUpgradeInProgressValue: isRpcUpgradeInProgress,
-        tryRefreshResult: tryRefreshResult,
-      );
+      // Pass authService when the test needs the same instance across pumps —
+      // e.g. to read tryRefreshCallCount after the header has been unmounted.
+      final effectiveAuthService =
+          authService ??
+          MockAuthService(
+            isAnonymousValue: isAnonymous,
+            hasExpiredOAuthSessionValue: hasExpiredSession,
+            isRpcUpgradeInProgressValue: isRpcUpgradeInProgress,
+            tryRefreshResult: tryRefreshResult,
+          );
 
       final mockPublishBloc = _MockBackgroundPublishBloc();
       final publishState =
@@ -434,7 +446,7 @@ void main() {
                 ? Stream.value(profileStats)
                 : const Stream<ProfileStats?>.empty(),
           ),
-          authServiceProvider.overrideWithValue(authService),
+          authServiceProvider.overrideWithValue(effectiveAuthService),
           badgeRepositoryProvider.overrideWithValue(badgeRepository),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
@@ -2615,6 +2627,7 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
         final mockGoRouter = MockGoRouter();
         when(() => mockGoRouter.go(any())).thenReturn(null);
+        final authService = MockAuthService(hasExpiredOAuthSessionValue: true);
 
         await tester.pumpWidget(
           buildTestWidget(
@@ -2624,6 +2637,7 @@ void main() {
             hasExpiredSession: true,
             sharedPreferences: prefs,
             goRouter: mockGoRouter,
+            authService: authService,
           ),
         );
         await tester.pumpAndSettle();
@@ -2639,6 +2653,7 @@ void main() {
             hasExpiredSession: true,
             sharedPreferences: prefs,
             goRouter: mockGoRouter,
+            authService: authService,
             renderHeader: false,
           ),
         );
@@ -2657,6 +2672,7 @@ void main() {
           find.byType(VineBottomSheetPrompt),
           findsNWidgets(openSheets - 1),
         );
+        expect(authService.tryRefreshCallCount, 1);
         verifyNever(() => mockGoRouter.go(any()));
       });
     });
