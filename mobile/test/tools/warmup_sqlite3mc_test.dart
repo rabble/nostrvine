@@ -17,8 +17,7 @@ void main() {
         p.join(Directory.current.path, 'scripts', 'ci', 'warmup_sqlite3mc.sh'),
       );
       expect(realScript.existsSync(), isTrue);
-      scriptPath = p.join(sandbox.path, 'warmup_sqlite3mc.sh');
-      File(scriptPath).writeAsStringSync(realScript.readAsStringSync());
+      scriptPath = realScript.path;
     });
 
     tearDown(() {
@@ -26,21 +25,60 @@ void main() {
     });
 
     ProcessResult runWarmup({
-      required String command,
+      String? command,
       String attempts = '5',
       String sleepSecs = '0',
+      Map<String, String> environment = const {},
     }) {
+      final processEnvironment = {
+        ...Platform.environment,
+        'SQLITE3MC_WARMUP_ATTEMPTS': attempts,
+        'SQLITE3MC_WARMUP_SLEEP_SECS': sleepSecs,
+        ...environment,
+      };
+      if (command != null) {
+        processEnvironment['SQLITE3MC_WARMUP_CMD'] = command;
+      }
+
       return Process.runSync(
         'bash',
         [scriptPath],
-        environment: {
-          ...Platform.environment,
-          'SQLITE3MC_WARMUP_CMD': command,
-          'SQLITE3MC_WARMUP_ATTEMPTS': attempts,
-          'SQLITE3MC_WARMUP_SLEEP_SECS': sleepSecs,
-        },
+        environment: processEnvironment,
       );
     }
+
+    test('runs the default warmup command from the real project root', () {
+      final fakeBin = Directory(p.join(sandbox.path, 'bin'))..createSync();
+      final capture = File(p.join(sandbox.path, 'capture.txt'));
+      final fakeDart = File(p.join(fakeBin.path, 'dart'))
+        ..writeAsStringSync('''
+#!/usr/bin/env bash
+set -euo pipefail
+{
+  pwd
+  printf '%s\\n' "\$@"
+} > "${capture.path}"
+''');
+      final chmod = Process.runSync('chmod', ['755', fakeDart.path]);
+      expect(chmod.exitCode, equals(0), reason: chmod.stderr.toString());
+
+      final result = runWarmup(
+        attempts: '1',
+        environment: {
+          'PATH': '${fakeBin.path}:${Platform.environment['PATH']}',
+        },
+      );
+
+      expect(result.exitCode, equals(0), reason: result.stderr.toString());
+      expect(
+        capture.readAsLinesSync(),
+        equals([
+          Directory.current.path,
+          'run',
+          'tools/warmup_sqlite3mc.dart',
+        ]),
+      );
+    });
 
     test('succeeds on the first attempt without retrying', () {
       final result = runWarmup(command: 'true', attempts: '3');
@@ -100,6 +138,15 @@ test "$n" -ge 2
       expect(
         result.stderr.toString(),
         contains('SQLITE3MC_WARMUP_ATTEMPTS must be a positive integer'),
+      );
+    });
+
+    test('rejects an invalid sleep duration', () {
+      final result = runWarmup(command: 'true', sleepSecs: '-1');
+      expect(result.exitCode, equals(2));
+      expect(
+        result.stderr.toString(),
+        contains('SQLITE3MC_WARMUP_SLEEP_SECS must be a non-negative integer'),
       );
     });
   });

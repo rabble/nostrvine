@@ -2,8 +2,8 @@
 # ABOUTME: Retries the sqlite3mc native-asset hook before Mobile CI tests.
 # ABOUTME: A single dropped GitHub Releases GET must not fail the shard (#7197).
 
-# package:sqlite3 3.3.3 downloads libsqlite3mc.*.so from GitHub Releases in
-# one unretried GET. Linux test shards do that on a fresh VM. A truncated
+# package:sqlite3 downloads libsqlite3mc.*.so from GitHub Releases in one
+# unretried GET. Linux test shards do that on a fresh VM. A truncated
 # connection fails the hook and GitHub's merge queue ejects the PR.
 #
 # This script runs the hook through `dart run tools/warmup_sqlite3mc.dart`

@@ -253,7 +253,7 @@ jobs:
         # back to its defaults, reformatting 529 files.
         run: flutter pub get
       - name: ✨ Check formatting
-        run: dart format --output=none --set-exit-if-changed lib test integration_test
+        run: dart format --output=none --set-exit-if-changed lib test integration_test tools
   analyze:
     name: Analyze
     needs: changes
@@ -273,7 +273,7 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
       - name: 🕵️ Analyze code
-        run: flutter analyze lib test integration_test
+        run: flutter analyze lib test integration_test tools
   tests:
     name: Tests (shard ${{ strategy.job-index }}/${{ strategy.job-total }})
     needs: changes
@@ -299,10 +299,9 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
       - name: Restore dart hook downloads
-        # Native-asset hooks store downloaded libs under this tree (sqlite3,
-        # cupertino_http, objective_c, …). flutter-action cache: true does not
-        # keep it. merge_group can restore but not save (#7197), so only
-        # push-to-main warms the cache.
+        # Native-asset hooks store downloaded libs under this tree.
+        # flutter-action cache: true does not keep it. merge_group can restore
+        # but not save (#7197), so only push-to-main warms the cache.
         uses: actions/cache/restore@v4
         with:
           path: mobile/.dart_tool/hooks_runner/shared
@@ -314,7 +313,7 @@ jobs:
         # A cache hit skips that download; a miss still gets five attempts.
         run: bash scripts/ci/warmup_sqlite3mc.sh
       - name: Save dart hook downloads
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && strategy.job-index == 0
         uses: actions/cache/save@v4
         with:
           path: mobile/.dart_tool/hooks_runner/shared
