@@ -751,11 +751,9 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                     ),
                   ),
                 ),
-                // Deleting is deliberately absent: a soft delete is a local
-                // database write that completes within a few frames, so the
-                // scrim only ever reads as the whole screen flashing black.
-                // The clips leaving the grid plus the Undo snackbar are the
-                // feedback for it.
+                // Deleting is deliberately absent: a soft delete finishes in a
+                // few frames, so the scrim only read as the screen flashing
+                // black. Its feedback is the clips leaving the grid plus Undo.
                 if (clipsState.isSavingToGallery || isPreparing)
                   Material(
                     color: VineTheme.scrim65,
