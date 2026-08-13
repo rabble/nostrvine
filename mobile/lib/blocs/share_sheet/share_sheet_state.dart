@@ -82,10 +82,7 @@ class ShareSheetSaveResult extends ShareSheetActionResult {
 }
 
 class ShareSheetVideoClipImportResult extends ShareSheetActionResult {
-  ShareSheetVideoClipImportResult({
-    required this.succeeded,
-    this.libraryTitle,
-  });
+  ShareSheetVideoClipImportResult({required this.succeeded, this.libraryTitle});
 
   final bool succeeded;
   final String? libraryTitle;
@@ -132,6 +129,15 @@ class ShareSheetShareViaTriggered extends ShareSheetActionResult {
   final String? subject;
 }
 
+/// Whether the video is already in the user's global (kind 10003) bookmarks.
+///
+/// Starts [unknown] and stays there until a relay-reconciled read resolves it.
+/// [unknown] must render as the plain "Save" affordance rather than as
+/// [notSaved]: the two are indistinguishable to a reader, but conflating them
+/// would let an unresolved read claim the video is not bookmarked — which is
+/// exactly the mislabel this state exists to prevent.
+enum ShareSheetBookmarkStatus { unknown, saved, notSaved }
+
 /// State for the share sheet.
 class ShareSheetState extends Equatable {
   const ShareSheetState({
@@ -140,6 +146,7 @@ class ShareSheetState extends Equatable {
     this.selectedRecipients = const [],
     this.isSending = false,
     this.isSaving = false,
+    this.bookmarkStatus = ShareSheetBookmarkStatus.unknown,
     this.actionResult,
   });
 
@@ -162,6 +169,9 @@ class ShareSheetState extends Equatable {
   /// show that it is working rather than sitting inert (#7073).
   final bool isSaving;
 
+  /// Whether this video is already globally bookmarked, per a reconciled read.
+  final ShareSheetBookmarkStatus bookmarkStatus;
+
   /// One-shot action result for BlocListener consumption.
   /// Cleared on next state emission.
   final ShareSheetActionResult? actionResult;
@@ -179,6 +189,7 @@ class ShareSheetState extends Equatable {
     List<ShareableUser>? selectedRecipients,
     bool? isSending,
     bool? isSaving,
+    ShareSheetBookmarkStatus? bookmarkStatus,
     ShareSheetActionResult? actionResult,
     bool clearActionResult = false,
   }) {
@@ -188,6 +199,7 @@ class ShareSheetState extends Equatable {
       selectedRecipients: selectedRecipients ?? this.selectedRecipients,
       isSending: isSending ?? this.isSending,
       isSaving: isSaving ?? this.isSaving,
+      bookmarkStatus: bookmarkStatus ?? this.bookmarkStatus,
       actionResult: clearActionResult
           ? null
           : (actionResult ?? this.actionResult),
@@ -201,6 +213,7 @@ class ShareSheetState extends Equatable {
     selectedRecipients,
     isSending,
     isSaving,
+    bookmarkStatus,
     actionResult,
   ];
 }

@@ -1894,6 +1894,7 @@
   "authInviteErrorTemporary": "Bọn mình chưa xác nhận được mã mời của bạn. Quay lại mã mời và thử lại, hoặc liên hệ hỗ trợ.",
   "authInviteErrorUnknown": "Bọn mình không kích hoạt được mã mời của bạn. Quay lại mã mời, tham gia danh sách chờ, hoặc liên hệ hỗ trợ.",
   "shareSheetSave": "Lưu",
+  "shareSheetRemoveFromSaved": "Xóa khỏi mục đã lưu",
   "shareSheetSaveToGallery": "Lưu vào thư viện ảnh",
   "shareSheetSaveWithWatermark": "Lưu kèm watermark",
   "shareSheetSaveVideo": "Lưu video",

@@ -7,6 +7,7 @@
 abstract class ShareSheetBlocReportableSites {
   static const String onContactsLoadRequested = '_onContactsLoadRequested';
   static const String onSendRequested = '_onSendRequested';
+  static const String onBookmarkStatusRequested = '_onBookmarkStatusRequested';
   static const String onSaveRequested = '_onSaveRequested';
   static const String onAddVideoToClipsRequested =
       '_onAddVideoToClipsRequested';

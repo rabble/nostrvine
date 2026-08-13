@@ -1393,6 +1393,7 @@
     "authInviteErrorTemporary": "Não conseguimos confirmar seu convite agora. Volte para o seu código de convite e tente novamente ou contate o suporte.",
     "authInviteErrorUnknown": "Não conseguimos ativar seu convite. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.",
     "shareSheetSave": "Salvar",
+    "shareSheetRemoveFromSaved": "Remover dos salvos",
     "shareSheetSaveToGallery": "Salvar na galeria",
     "shareSheetSaveWithWatermark": "Salvar com marca d'água",
     "shareSheetSaveVideo": "Salvar vídeo",

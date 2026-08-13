@@ -3455,6 +3455,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareSheetSave => 'Simpan';
 
   @override
+  String get shareSheetRemoveFromSaved => 'Hapus dari tersimpan';
+
+  @override
   String get shareSheetSaveToGallery => 'Simpan ke Galeri';
 
   @override

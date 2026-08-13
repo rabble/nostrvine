@@ -3540,6 +3540,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareSheetSave => 'Запази';
 
   @override
+  String get shareSheetRemoveFromSaved => 'Премахни от запазени';
+
+  @override
   String get shareSheetSaveToGallery => 'Запази в галерията';
 
   @override

@@ -3308,6 +3308,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareSheetSave => '保存';
 
   @override
+  String get shareSheetRemoveFromSaved => '保存を外す';
+
+  @override
   String get shareSheetSaveToGallery => 'ギャラリーに保存';
 
   @override

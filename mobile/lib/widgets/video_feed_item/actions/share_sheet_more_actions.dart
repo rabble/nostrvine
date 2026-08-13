@@ -8,6 +8,7 @@ class _MoreActionsSection extends ConsumerWidget {
   const _MoreActionsSection({
     required this.video,
     required this.isOwnContent,
+    required this.bookmarkStatus,
     required this.onSave,
     required this.onSaveWithWatermark,
     required this.onAddToList,
@@ -28,6 +29,7 @@ class _MoreActionsSection extends ConsumerWidget {
 
   /// Whether the bookmark toggle is mid-flight (#7073).
   final bool isSavePending;
+  final ShareSheetBookmarkStatus bookmarkStatus;
   final VoidCallback onSave;
   final Future<void> Function()? onSaveOriginal;
   final Future<void> Function() onSaveWithWatermark;
@@ -46,6 +48,8 @@ class _MoreActionsSection extends ConsumerWidget {
     final showDebugTools = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.debugTools),
     );
+
+    final isSaved = bookmarkStatus == ShareSheetBookmarkStatus.saved;
 
     // The crosspost action only appears once the connections fetch
     // reports at least one connected platform.
@@ -69,9 +73,13 @@ class _MoreActionsSection extends ConsumerWidget {
           label: context.l10n.shareMenuDeleteVideo,
           onTap: onDeleteVideo!,
         ),
+      // `unknown` deliberately renders as "Save": an unresolved read must not
+      // claim the video is unsaved, and "Save" is the pre-existing wording.
       _ActionData(
         icon: DivineIconName.bookmarkSimple,
-        label: context.l10n.shareSheetSave,
+        label: isSaved
+            ? context.l10n.shareSheetRemoveFromSaved
+            : context.l10n.shareSheetSave,
         onTap: onSave,
         isPending: isSavePending,
       ),

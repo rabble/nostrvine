@@ -3499,6 +3499,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareSheetSave => 'Lưu';
 
   @override
+  String get shareSheetRemoveFromSaved => 'Xóa khỏi mục đã lưu';
+
+  @override
   String get shareSheetSaveToGallery => 'Lưu vào thư viện ảnh';
 
   @override

@@ -117,6 +117,9 @@ void main() {
       () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
     ).thenReturn(false);
     when(
+      () => mockBookmarkService.syncGlobalBookmarks(),
+    ).thenAnswer((_) async => true);
+    when(
       () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
     ).thenAnswer(
       (_) async => const BookmarkToggleResult(
@@ -202,6 +205,68 @@ void main() {
 
       expect(find.text('Save'), findsOneWidget);
     });
+
+    testWidgets(
+      'More actions row keeps Save when the reconciled read omits the video',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.shareSheetSave), findsOneWidget);
+        expect(find.text(l10n.shareSheetRemoveFromSaved), findsNothing);
+        verify(() => mockBookmarkService.syncGlobalBookmarks()).called(1);
+        verify(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(testVideo.id),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'More actions row offers Remove from saved once the reconciled read '
+      'finds the video',
+      (tester) async {
+        when(
+          () => mockBookmarkService.syncGlobalBookmarks(),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        ).thenReturn(true);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.shareSheetRemoveFromSaved), findsOneWidget);
+        expect(find.text(l10n.shareSheetSave), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'More actions row keeps Save when the reconcile is inconclusive',
+      (tester) async {
+        // The stale local cache says "bookmarked", but the relay read failed.
+        // Believing the cache here is the #7072 mislabel, so the row must not
+        // claim a saved state it could not confirm.
+        when(
+          () => mockBookmarkService.syncGlobalBookmarks(),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        ).thenReturn(true);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.shareSheetSave), findsOneWidget);
+        expect(find.text(l10n.shareSheetRemoveFromSaved), findsNothing);
+      },
+    );
 
     testWidgets('More actions row shows Copy action', (tester) async {
       await tester.pumpWidget(buildSubject());
@@ -359,6 +424,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
+      clearInteractions(mockBookmarkService);
 
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();

@@ -56,6 +56,10 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     on<ShareSheetRecipientToggled>(_onRecipientToggled);
     on<ShareSheetSendRequested>(_onSendRequested, transformer: droppable());
     on<ShareSheetSaveRequested>(_onSaveRequested, transformer: droppable());
+    on<ShareSheetBookmarkStatusRequested>(
+      _onBookmarkStatusRequested,
+      transformer: droppable(),
+    );
     on<ShareSheetAddVideoToClipsRequested>(
       _onAddVideoToClipsRequested,
       transformer: droppable(),
@@ -287,6 +291,63 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   }
 
   // --------------------------------------------------------------------------
+  // Bookmark status (picks the save/remove row before it is tapped)
+  // --------------------------------------------------------------------------
+
+  /// Resolves [ShareSheetState.bookmarkStatus] from a relay-reconciled read.
+  ///
+  /// Uses the non-authoritative [BookmarkService.syncGlobalBookmarks] rather
+  /// than the full-settlement form the toggle pays for. `requireAuthoritative`
+  /// exists to stop a partially-read list from becoming the base of a
+  /// replacing publish; a label publishes nothing, and the toggle reconciles
+  /// authoritatively again before it acts. `ProfileSavedVideosBloc` reads
+  /// bookmark state for display the same way.
+  ///
+  /// The status is left [ShareSheetBookmarkStatus.unknown] when the read is
+  /// inconclusive. Claiming "not saved" on a failed read is the mislabel this
+  /// handler exists to remove.
+  Future<void> _onBookmarkStatusRequested(
+    ShareSheetBookmarkStatusRequested event,
+    Emitter<ShareSheetState> emit,
+  ) async {
+    final bookmarkService = await _bookmarkServiceFuture;
+    if (bookmarkService == null || isClosed) return;
+
+    try {
+      final reconciled = await bookmarkService.syncGlobalBookmarks();
+      if (isClosed ||
+          !reconciled ||
+          state.bookmarkStatus != ShareSheetBookmarkStatus.unknown) {
+        return;
+      }
+
+      emit(
+        state.copyWith(
+          bookmarkStatus: bookmarkService.isVideoBookmarkedGlobally(_video.id)
+              ? ShareSheetBookmarkStatus.saved
+              : ShareSheetBookmarkStatus.notSaved,
+        ),
+      );
+    } catch (e, stackTrace) {
+      _addUnexpectedError(
+        e,
+        stackTrace,
+        ShareSheetBlocReportableSites.onBookmarkStatusRequested,
+      );
+      Log.warning(
+        'Could not resolve bookmark status: $e',
+        name: 'ShareSheetBloc',
+        category: LogCategory.ui,
+      );
+      Log.debug(
+        'Bookmark status stack trace: $stackTrace',
+        name: 'ShareSheetBloc',
+        category: LogCategory.ui,
+      );
+    }
+  }
+
+  // --------------------------------------------------------------------------
   // Save to bookmarks
   // --------------------------------------------------------------------------
 
@@ -335,6 +396,14 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           isSaving: false,
+          // Only a succeeded toggle reconciled with the relay. On failure
+          // `isBookmarked` falls back to the pre-toggle guess, so adopting it
+          // would launder a stale local read into a confident label.
+          bookmarkStatus: result.succeeded
+              ? (result.isBookmarked
+                    ? ShareSheetBookmarkStatus.saved
+                    : ShareSheetBookmarkStatus.notSaved)
+              : state.bookmarkStatus,
           actionResult: ShareSheetSaveResult(
             succeeded: result.succeeded,
             removed: result.succeeded && result.wasBookmarked,

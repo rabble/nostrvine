@@ -1393,6 +1393,7 @@
     "authInviteErrorTemporary": "Nie mogliśmy teraz potwierdzić twojego zaproszenia. Wróć do kodu zaproszenia i spróbuj ponownie, lub skontaktuj się z pomocą.",
     "authInviteErrorUnknown": "Nie mogliśmy aktywować twojego zaproszenia. Wróć do kodu zaproszenia, dołącz do listy oczekujących lub skontaktuj się z pomocą.",
     "shareSheetSave": "Zapisz",
+    "shareSheetRemoveFromSaved": "Usuń z zapisanych",
     "shareSheetSaveToGallery": "Zapisz w galerii",
     "shareSheetSaveWithWatermark": "Zapisz ze znakiem wodnym",
     "shareSheetSaveVideo": "Zapisz film",

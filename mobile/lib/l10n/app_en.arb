@@ -2092,6 +2092,10 @@
   "authInviteErrorTemporary": "We couldn't confirm your invite right now. Go back to your invite code and try again, or contact support.",
   "authInviteErrorUnknown": "We couldn't activate your invite. Go back to your invite code, join the waitlist, or contact support.",
   "shareSheetSave": "Save",
+  "shareSheetRemoveFromSaved": "Remove from saved",
+  "@shareSheetRemoveFromSaved": {
+    "description": "Share-sheet action label shown in place of \"Save\" once a relay-reconciled read confirms the video is already in the user's global bookmarks. It names the direction of the tap, which removes the bookmark."
+  },
   "shareSheetSaveToGallery": "Save to Gallery",
   "shareSheetSaveWithWatermark": "Save with Watermark",
   "shareSheetSaveVideo": "Save Video",

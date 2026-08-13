@@ -1655,6 +1655,7 @@
     "authInviteErrorTemporary": "ግብዣህን አሁን ማረጋገጥ አልቻልንም። ወደ የግብዣ ኮድዎ ይመለሱ እና እንደገና ይሞክሩ፣ ወይም ድጋፍን ያግኙ።",
     "authInviteErrorUnknown": "ግብዣህን ማግበር አልቻልንም። ወደ የግብዣ ኮድዎ ይመለሱ፣ የተጠባባቂ ዝርዝሩን ይቀላቀሉ ወይም ድጋፍ ሰጪን ያግኙ።",
     "shareSheetSave": "አስቀምጥ",
+    "shareSheetRemoveFromSaved": "ከዕልባቶች አስወግድ",
     "shareSheetSaveToGallery": "ወደ ማዕከለ-ስዕላት አስቀምጥ",
     "shareSheetSaveWithWatermark": "በውሃ ምልክት አስቀምጥ",
     "shareSheetSaveVideo": "ቪዲዮ አስቀምጥ",

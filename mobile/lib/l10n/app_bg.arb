@@ -1469,6 +1469,7 @@
     "authInviteErrorTemporary": "Не можахме да потвърдим поканата ти в момента. Върни се към кода за покана и опитай пак или се свържи с поддръжката.",
     "authInviteErrorUnknown": "Не успяхме да активираме поканата ти. Върни се към кода за покана, присъедини се към списъка с чакащи или се свържи с поддръжката.",
     "shareSheetSave": "Запази",
+    "shareSheetRemoveFromSaved": "Премахни от запазени",
     "shareSheetSaveToGallery": "Запази в галерията",
     "shareSheetSaveWithWatermark": "Запази с воден знак",
     "shareSheetSaveVideo": "Запази видео",

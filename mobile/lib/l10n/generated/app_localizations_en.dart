@@ -3491,6 +3491,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareSheetSave => 'Save';
 
   @override
+  String get shareSheetRemoveFromSaved => 'Remove from saved';
+
+  @override
   String get shareSheetSaveToGallery => 'Save to Gallery';
 
   @override

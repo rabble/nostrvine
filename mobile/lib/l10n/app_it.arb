@@ -1393,6 +1393,7 @@
     "authInviteErrorTemporary": "Non siamo riusciti a confermare il tuo invito in questo momento. Torna al tuo codice invito e riprova, oppure contatta l'assistenza.",
     "authInviteErrorUnknown": "Non siamo riusciti ad attivare il tuo invito. Torna al tuo codice invito, entra nella lista d'attesa o contatta l'assistenza.",
     "shareSheetSave": "Salva",
+    "shareSheetRemoveFromSaved": "Rimuovi dai salvati",
     "shareSheetSaveToGallery": "Salva in galleria",
     "shareSheetSaveWithWatermark": "Salva con filigrana",
     "shareSheetSaveVideo": "Salva video",

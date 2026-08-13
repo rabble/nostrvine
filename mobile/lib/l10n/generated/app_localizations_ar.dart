@@ -3460,6 +3460,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareSheetSave => 'حفظ';
 
   @override
+  String get shareSheetRemoveFromSaved => 'إزالة المحفوظ';
+
+  @override
   String get shareSheetSaveToGallery => 'حفظ في المعرض';
 
   @override

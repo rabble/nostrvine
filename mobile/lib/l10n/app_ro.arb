@@ -1393,6 +1393,7 @@
     "authInviteErrorTemporary": "N-am putut confirma invitația ta acum. Întoarce-te la codul tău și încearcă din nou, sau contactează asistența.",
     "authInviteErrorUnknown": "N-am putut activa invitația ta. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.",
     "shareSheetSave": "Salvează",
+    "shareSheetRemoveFromSaved": "Elimină din salvate",
     "shareSheetSaveToGallery": "Salvează în galerie",
     "shareSheetSaveWithWatermark": "Salvează cu filigran",
     "shareSheetSaveVideo": "Salvează videoclipul",

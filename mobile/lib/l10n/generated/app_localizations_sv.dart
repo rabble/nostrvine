@@ -3488,6 +3488,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareSheetSave => 'Spara';
 
   @override
+  String get shareSheetRemoveFromSaved => 'Ta bort från sparade';
+
+  @override
   String get shareSheetSaveToGallery => 'Spara i galleriet';
 
   @override

@@ -3461,6 +3461,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareSheetSave => 'Kaydet';
 
   @override
+  String get shareSheetRemoveFromSaved => 'Kaydı kaldır';
+
+  @override
   String get shareSheetSaveToGallery => 'Galeriye Kaydet';
 
   @override
