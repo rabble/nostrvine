@@ -43,6 +43,7 @@ void main() {
         ..setApplicationDocumentsPath('${tempDir.path}/documents')
         ..setApplicationSupportPath('${tempDir.path}/support');
       PathProviderPlatform.instance = mockPathProvider;
+      await TestHelpers.initHiveHome();
       await TestHelpers.cleanupHiveBox('pending_uploads');
       sourceVideoFile = File('${tempDir.path}/source_video.mp4')
         ..writeAsBytesSync([0, 1, 2, 3]);

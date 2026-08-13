@@ -14,6 +14,7 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+import '../helpers/test_helpers.dart';
 import '../mocks/mock_path_provider_platform.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
@@ -45,6 +46,7 @@ void main() {
         ..setApplicationDocumentsPath('${testDir.path}/documents')
         ..setApplicationSupportPath('${testDir.path}/support');
       await Directory('${testDir.path}/support').create(recursive: true);
+      await TestHelpers.initHiveHome();
 
       const channel = MethodChannel('dev.fluttercommunity.plus/connectivity');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

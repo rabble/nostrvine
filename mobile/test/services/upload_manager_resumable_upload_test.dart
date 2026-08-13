@@ -65,6 +65,7 @@ void main() {
         ..setApplicationDocumentsPath('${tempDir.path}/documents')
         ..setApplicationSupportPath('${tempDir.path}/support');
       PathProviderPlatform.instance = mockPathProvider;
+      await TestHelpers.initHiveHome();
       videoFile = File('${tempDir.path}/video.mp4')
         ..writeAsBytesSync(List<int>.generate(32, (index) => index));
 

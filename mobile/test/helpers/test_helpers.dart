@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
+import 'package:openvine/services/hive_storage_service.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -215,6 +216,17 @@ class TestHelpers {
     } catch (e) {
       // Box might not exist, that's fine
     }
+  }
+
+  /// Point Hive at the same home directory the app uses.
+  ///
+  /// `HiveStorageService` is the sole owner of Hive's process-global home path
+  /// and nothing else sets it (#6958), so a test that opens a box must call
+  /// this after installing its `PathProviderPlatform` mock.
+  static Future<void> initHiveHome() async {
+    HiveStorageService.resetForTesting();
+    addTearDown(HiveStorageService.resetForTesting);
+    await HiveStorageService.initialize();
   }
 
   /// Ensure a Hive box is completely empty

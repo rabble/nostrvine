@@ -2,7 +2,6 @@
 // ABOUTME: Handles transient failures, corrupted storage, and provides exponential backoff
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -12,8 +11,6 @@ import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/utils/async_utils.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Robust initialization helper for UploadManager
@@ -29,22 +26,6 @@ class UploadInitializationHelper {
   static int _failureCount = 0;
   static DateTime? _lastFailureTime;
   static Box<PendingUpload>? _cachedBox;
-
-  /// Get app-specific storage directory (sandboxed, always writable)
-  /// On web, returns null since IndexedDB is used directly
-  static Future<Directory?> _getAppStorageDir() async {
-    if (kIsWeb) {
-      // Web uses IndexedDB, no filesystem path needed
-      return null;
-    }
-
-    final base = await getApplicationSupportDirectory();
-    final appDir = Directory(p.join(base.path, 'openvine'));
-    if (!appDir.existsSync()) {
-      await appDir.create(recursive: true);
-    }
-    return appDir;
-  }
 
   /// Check if error is a permanent permission error (don't retry these)
   static bool _isPermanentPermissionError(dynamic error) {
@@ -137,37 +118,15 @@ class UploadInitializationHelper {
   }
 
   /// Initialize with exponential backoff retry
+  ///
+  /// Hive's home path is owned by `HiveStorageService` and set once in the
+  /// critical startup phase; re-pointing it here moved every box opened
+  /// afterwards into a second directory (#6958).
   static Future<Box<PendingUpload>> _initializeWithRetries() async {
-    Exception? lastError;
-
-    // Initialize Hive with proper app container directory FIRST
-    // Skip on web since it uses IndexedDB
-    if (!kIsWeb) {
-      try {
-        final storageDir = await _getAppStorageDir();
-        if (storageDir != null) {
-          Hive.init(storageDir.path);
-          Log.info(
-            'Hive initialized with app storage: ${storageDir.path}',
-            name: 'UploadInitHelper',
-            category: LogCategory.video,
-          );
-        }
-      } catch (e) {
-        Log.error(
-          'Failed to get app storage directory: $e',
-          name: 'UploadInitHelper',
-          category: LogCategory.video,
-        );
-        throw Exception('Cannot access app storage directory: $e');
-      }
-    } else {
-      Log.info(
-        'Web platform detected - using IndexedDB for storage',
-        name: 'UploadInitHelper',
-        category: LogCategory.video,
-      );
-    }
+    // Not `Exception?`: hive_ce throws `HiveError`, which extends `Error`, so
+    // narrowing here turned every Hive failure into an opaque cast TypeError
+    // instead of a retry.
+    Object? lastError;
 
     for (int attempt = 0; attempt <= _maxRetries; attempt++) {
       try {
@@ -246,7 +205,7 @@ class UploadInitializationHelper {
           throw Exception('Permanent permission error: $e');
         }
 
-        lastError = e as Exception;
+        lastError = e;
 
         if (attempt < _maxRetries) {
           final delay = _calculateBackoffDelay(attempt);

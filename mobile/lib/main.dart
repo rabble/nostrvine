@@ -23,7 +23,6 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart' show Intl;
 import 'package:invite_api_client/invite_api_client.dart';
@@ -107,6 +106,7 @@ import 'package:openvine/services/database_corruption_service.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/firebase_initialization.dart';
+import 'package:openvine/services/hive_storage_service.dart';
 import 'package:openvine/services/install_source_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/memory_pressure_handler.dart';
@@ -1531,7 +1531,7 @@ Future<void> _configurePlaybackAudioSession() async {
   );
 }
 
-Future<void> _initializeHiveStorage() => Hive.initFlutter();
+Future<void> _initializeHiveStorage() => HiveStorageService.initialize();
 
 Future<void> _initializeVideoCacheManifest() async {
   if (kIsWeb) return;

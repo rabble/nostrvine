@@ -13,6 +13,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/services/hive_storage_service.dart';
 
 import '../test/helpers/real_integration_test_helper.dart';
 
@@ -27,7 +28,7 @@ void main() {
 
     setUpAll(() async {
       await RealIntegrationTestHelper.setupTestEnvironment();
-      await Hive.initFlutter();
+      await HiveStorageService.initialize();
     });
 
     setUp(() async {

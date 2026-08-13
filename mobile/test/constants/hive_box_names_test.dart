@@ -68,8 +68,9 @@ class ProbeB {
         unorderedEquals(HiveBoxNames.all),
         reason:
             'HiveBoxNames.all is what CacheRecoveryService classifies as '
-            'disposable or durable. A member missing from it is a box no '
-            'wipe policy covers.',
+            'disposable or durable, and what HiveStorageService migrates out '
+            'of the legacy documents directory. A member missing from it is a '
+            'box no wipe policy covers and no migration rescues.',
       );
     });
 

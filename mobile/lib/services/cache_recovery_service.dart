@@ -150,9 +150,9 @@ class CacheRecoveryService {
   /// the push service yet plus the published-kinds schema marker, so losing it
   /// strands an unsynced edit.
   ///
-  /// Their files sit under `{appSupport}/openvine/` — the uploads-box
-  /// initializer re-points Hive's home path there during startup — which is
-  /// why [_clearAppSupportDirectory] has to protect them by path as well as
+  /// Their files sit under `{appSupport}/openvine/` — the one home path
+  /// `HiveStorageService` gives Hive — which is why
+  /// [_clearAppSupportDirectory] has to protect them by path as well as
   /// skipping them above.
   static const Set<String> _durableHiveBoxNames = {
     HiveBoxNames.pendingUploads,
