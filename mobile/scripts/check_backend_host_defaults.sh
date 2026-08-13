@@ -18,10 +18,11 @@
 #      an exemption once the ref is migrated, so it can't ossify green).
 #
 # Scope: config defaults + workflow dart-defines only. Hardcoded host literals in
-# repository/service source (e.g. the trending analytics GET in
-# curation_repository.dart, tracked by #5274) are intentionally NOT covered —
-# a source-literal scan would collide with the legacy NIP-05 `@openvine.co`
-# identity and content-URL matchers that must keep referencing openvine.co.
+# repository/service source are intentionally NOT covered — a source-literal scan
+# would collide with the legacy NIP-05 `@openvine.co` identity and content-URL
+# matchers that must keep referencing openvine.co. The one source-literal call
+# that did exist (the trending analytics GET in curation_repository.dart) was
+# deleted as dead code in #5286, so no live backend call is left uncovered.
 #
 # Portable: POSIX sh constructs + grep -E only (no grep -P / rg), so it runs on
 # both CI ubuntu and the macOS pre-push hook.
@@ -34,7 +35,7 @@ APP_CONFIG="$REPO_ROOT/mobile/lib/config/app_config.dart"
 WORKFLOWS_DIR="$REPO_ROOT/.github/workflows"
 
 # Allowlist of knowingly-legacy backend hosts, tuple "surface|host".
-# EMPTY after #5286 (mediaApiBaseUrl deleted, MEDIA_API_URL dart-defines dropped).
+# EMPTY after #6159 (mediaApiBaseUrl deleted, MEDIA_API_URL dart-defines dropped).
 # To exempt a future legacy default, add "<config|workflow>|<host>" with a
 # `# TODO(<tracking-issue>)` reason, and remove it once the host migrates.
 ALLOWED=(
