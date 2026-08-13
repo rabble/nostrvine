@@ -832,6 +832,10 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         selectedClipIds: crossesTrashBoundary ? const {} : null,
         selectedDuration: crossesTrashBoundary ? Duration.zero : null,
         clearOrganizeResult: true,
+        // A drag resolves its range against `sortedClips`. The list the
+        // finger started on is gone, so end the drag rather than run the
+        // anchor's range over positions the user never dragged across.
+        clearDragSelection: true,
       ),
     );
 

@@ -478,6 +478,7 @@ void main() {
         String id, {
         Duration duration = const Duration(seconds: 1),
         model.AspectRatio aspectRatio = .vertical,
+        String? categoryId,
       }) => DivineVideoClip(
         id: id,
         video: EditorVideo.file('/path/to/$id.mp4'),
@@ -486,6 +487,7 @@ void main() {
         recordedAt: DateTime(2026),
         targetAspectRatio: aspectRatio,
         originalAspectRatio: 9 / 16,
+        categoryId: categoryId,
       );
 
       final a = gridClip('a', duration: const Duration(seconds: 5));
@@ -733,6 +735,35 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(ClipsLibraryDragSelectionStarted(a)),
         expect: () => <ClipsLibraryState>[],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'forgets the drag when the filter swaps the list under it',
+        seed: () => seedWith([a, b, gridClip('e', categoryId: 'cat')]),
+        build: createBloc,
+        // The chip row sits outside the drag region, so a second finger can
+        // change the filter mid-drag. Without this the range would be walked
+        // over the new list, covering clips the finger never crossed.
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(
+            const ClipsLibraryFilterChanged(ClipLibraryCategoryFilter('cat')),
+          )
+          ..add(ClipsLibraryDragSelectionExtended(gridClip('e'))),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.dragSelection,
+            'dragSelection',
+            isNotNull,
+          ),
+          isA<ClipsLibraryState>()
+              .having((s) => s.dragSelection, 'dragSelection', isNull)
+              .having(
+                (s) => s.selectedClipIds.toList(),
+                'selectedClipIds',
+                equals(['a']),
+              ),
+        ],
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
