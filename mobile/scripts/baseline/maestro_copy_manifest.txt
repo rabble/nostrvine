@@ -95,6 +95,7 @@ profileSetupUsernameLabel	e2e/maestro/asserts/assertEditYourProfile.yaml
 profileSetupUsernameTakenIndicator	e2e/maestro/asserts/assertUserTaken.yaml
 profileShareProfile	e2e/maestro/tests/profileNavigation.yaml
 profileSupportButtonLabel	e2e/maestro/asserts/assertMenu.yaml
+profileVideoThumbnailLabel	e2e/maestro/tests/searchTags.yaml	rendered:Video thumbnail 1
 saveOriginalNotNow	e2e/maestro/flows/loginEmailPwd.yaml
 settingsTitle	e2e/maestro/asserts/assertMenu.yaml
 settingsTitle	e2e/maestro/tests/logout.yaml
