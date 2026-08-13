@@ -37,16 +37,21 @@ const _allowedScripts = <String, Set<String>>{
   'zh': {'CJK'},
 };
 
+/// Keys whose value is a Latin abbreviation several languages genuinely share.
+///
+/// Everything else that repeats across writing systems is a stale revision or
+/// a paste from the wrong locale, so the sharing guard below treats it as a
+/// failure rather than growing this list.
+const _sharedValueExemptKeys = <String>{
+  'categoryScienceFiction', // "SF" is the usual term in both ja and ko.
+  'categoryTelevision', // "TV" is the usual term in both ko and sv.
+  'rgbColorSemanticLabel', // "RGB" plus CJK punctuation in both ja and zh.
+};
+
 void main() {
   group('ARB script integrity', () {
     test('every locale uses only the scripts its language needs', () {
-      final arbFiles =
-          Directory('lib/l10n')
-              .listSync()
-              .whereType<File>()
-              .where((file) => file.path.endsWith('.arb'))
-              .toList()
-            ..sort((a, b) => a.path.compareTo(b.path));
+      final arbFiles = _arbFiles();
 
       expect(arbFiles, isNotEmpty, reason: 'no ARB files found');
 
@@ -85,7 +90,82 @@ void main() {
         }
       }
     });
+
+    test('no message repeats across locales that write different scripts', () {
+      final english = _messageValues(File('lib/l10n/app_en.arb'));
+
+      // key -> value -> the locales shipping exactly that value.
+      final byKey = <String, Map<String, List<String>>>{};
+      for (final file in _arbFiles()) {
+        final code = _localeCodeOf(file);
+        if (code == 'en') continue;
+        _messageValues(file).forEach((key, value) {
+          (byKey[key] ??= <String, List<String>>{})
+              .putIfAbsent(value, () => <String>[])
+              .add(code);
+        });
+      }
+
+      byKey.forEach((key, byValue) {
+        if (_sharedValueExemptKeys.contains(key)) return;
+
+        byValue.forEach((value, codes) {
+          if (codes.length < 2) return;
+          // Matching English is a separate concern with its own guards: brand
+          // names, protocol tokens and loanwords legitimately stay English in
+          // every locale. This test only looks at values that drifted from the
+          // current English source yet still agree with each other.
+          if (value == english[key]) return;
+          if (!_hasLetter(value)) return;
+
+          for (final code in codes) {
+            final needed = _allowedScripts[code] ?? const <String>{};
+            if (needed.isEmpty) continue;
+            if (value.runes.any((rune) => needed.contains(_scriptOf(rune)))) {
+              continue;
+            }
+
+            final others = codes.where((other) => other != code).join(', ');
+            fail(
+              'app_$code.arb shares $key with $others but the value uses none '
+              'of $needed: "$value". A value identical across locales that '
+              'write in different scripts is a stale revision or a paste from '
+              'the wrong locale, not a translation each language arrived at.',
+            );
+          }
+        });
+      });
+    });
   });
+}
+
+List<File> _arbFiles() {
+  return Directory('lib/l10n')
+      .listSync()
+      .whereType<File>()
+      .where((file) => file.path.endsWith('.arb'))
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+}
+
+/// Message keys to values, skipping `@`-prefixed metadata and plural maps.
+Map<String, String> _messageValues(File file) {
+  final arb = (jsonDecode(file.readAsStringSync()) as Map)
+      .cast<String, Object?>();
+  return <String, String>{
+    for (final entry in arb.entries)
+      if (!entry.key.startsWith('@') && entry.value is String)
+        entry.key: entry.value! as String,
+  };
+}
+
+/// Whether [value] carries any letter once placeholders are removed.
+///
+/// Placeholder-only values such as `{connected}/{total}` are the same in every
+/// language by construction, so they are not evidence of a missing translation.
+bool _hasLetter(String value) {
+  final withoutPlaceholders = value.replaceAll(RegExp(r'\{[^}]*\}'), '');
+  return withoutPlaceholders.runes.any((rune) => _scriptOf(rune) != null);
 }
 
 String _localeCodeOf(File file) {
