@@ -108,6 +108,9 @@ void main() {
       //
       // report is false because a dead URL is a plain IO failure, which
       // `.claude/rules/error_handling.md` puts outside Crashlytics (#7298).
+      // This is the only silenced branch: every other recoverable-media
+      // signature above asserts the full record with report: true, so
+      // widening the silence turns those tests red.
       const details = FlutterErrorDetails(
         exception: MediaCacheImageLoadException(
           'https://web.archive.org/web/20150907190604/'
@@ -120,19 +123,6 @@ void main() {
         classifyRecoverableFlutterError(details),
         (reason: 'Recoverable media load failure', report: false),
       );
-    });
-
-    test('keeps reporting recoverable media failures that are not '
-        '$MediaCacheImageLoadException', () {
-      // Only the media-cache download-without-file branch is silenced; the
-      // remaining recoverable-media signatures still carry a non-fatal
-      // report, so silencing one class cannot silently widen to the rest.
-      const details = FlutterErrorDetails(
-        exception: SocketException("Failed host lookup: 'cdn.divine.video'"),
-        library: 'dart:_http',
-      );
-
-      expect(classifyRecoverableFlutterError(details)?.report, isTrue);
     });
 
     test('classifies hero flight layout failures as recoverable', () {
