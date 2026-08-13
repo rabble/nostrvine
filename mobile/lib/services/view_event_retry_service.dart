@@ -96,8 +96,7 @@ class ViewEventRetryService {
 
       for (final row in retryable) {
         // View = playback start per spec: any watch is valid, no ≥1s gate.
-        // Only drop if duration is negative or missing d tag.
-
+        // A row without a d tag can never build an `a` tag, so it is dropped.
         final addressableDTag = row.videoAddressableDTag;
         if (addressableDTag == null || addressableDTag.isEmpty) {
           await _dao.deleteById(row.id);
