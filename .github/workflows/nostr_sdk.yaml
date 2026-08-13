@@ -25,3 +25,4 @@ jobs:
     with:
       working_directory: "mobile/packages/nostr_sdk"
       min_coverage: 20
+      flutter_version: "3.44.0"
