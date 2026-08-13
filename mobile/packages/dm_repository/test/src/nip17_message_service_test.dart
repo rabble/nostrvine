@@ -2020,7 +2020,7 @@ void main() {
     });
 
     // #6586. A 1:1 send costs four remote signer round trips, and no signer
-    // interface exposes a per-call timeout — Keycast bounds an op at 30s,
+    // interface exposes a per-call timeout — Keycast bounds an op at 20s,
     // Amber's NIP-55 intent path for nip44Encrypt/signEvent is human-gated and
     // unbounded, and a bunker may be unbounded too. Before these bounds existed
     // the chain could outrun the caller's publish backstop, which then fired

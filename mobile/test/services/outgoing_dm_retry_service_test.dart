@@ -2047,7 +2047,7 @@ void main() {
       );
     });
 
-    test('the recipient wrap build exceeds two Keycast round trips', () {
+    test('the bounded signer floor matches two Keycast round trips', () {
       // A 1:1 send costs four measured signer round trips: nip44Encrypt +
       // signEvent for the seal, per wrap. Sizing the recipient build below
       // two transport bounds would fail requests the transport itself would
@@ -2066,8 +2066,12 @@ void main() {
       // bound 30s → 20s; `recipientWrapBuild` deliberately held at 65s, so the
       // margin over the floor widened from 5s to 25s.
       expect(
+        DmSendBudget.boundedSignerFloor,
+        KeycastRpc.defaultRequestTimeout * 2 + const Duration(seconds: 5),
+      );
+      expect(
         DmSendBudget.recipientWrapBuild,
-        greaterThan(KeycastRpc.defaultRequestTimeout * 2),
+        greaterThan(DmSendBudget.boundedSignerFloor),
       );
     });
 

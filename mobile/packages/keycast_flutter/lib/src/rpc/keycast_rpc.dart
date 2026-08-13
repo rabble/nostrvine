@@ -83,7 +83,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   ///
   /// That evidence is **corroboration, not the guarantee**. This bound does
   /// not assume the server keeps its ceiling, because it no longer has to:
-  /// [RpcTimeoutException] makes a server 504 and a local [TimeoutException]
+  /// [RpcTimeoutException] makes a server 504 and a local request timeout
   /// classify identically downstream, so which side gives up first stopped
   /// being load-bearing. Sizing a client cap on an unverified server bound is
   /// what produced #6586; sizing it on the client's own transport costs, and
@@ -112,7 +112,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   bool _signCanonicalUnsupported = false;
 
   /// Maximum time to wait for a single-op RPC request before failing with a
-  /// [TimeoutException].
+  /// [RpcTimeoutException].
   final Duration requestTimeout;
 
   /// Maximum time to wait for the heavier `nip17_unwrap_batch` RPC.
@@ -124,8 +124,14 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     T Function(dynamic) fromResult, {
     bool logHttpErrors = true,
     Duration? timeout,
+    bool classifyLocalTimeout = true,
   }) async {
-    var response = await _sendRequest(method, params, timeout: timeout);
+    var response = await _sendRequest(
+      method,
+      params,
+      timeout: timeout,
+      classifyLocalTimeout: classifyLocalTimeout,
+    );
 
     if (response.statusCode == 401 && _onTokenRefresh != null) {
       Log.info(
@@ -146,7 +152,12 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       }
       if (newToken != null) {
         _accessToken = newToken;
-        response = await _sendRequest(method, params, timeout: timeout);
+        response = await _sendRequest(
+          method,
+          params,
+          timeout: timeout,
+          classifyLocalTimeout: classifyLocalTimeout,
+        );
       }
     }
 
@@ -183,6 +194,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     String method,
     List<dynamic> params, {
     Duration? timeout,
+    bool classifyLocalTimeout = true,
   }) async {
     Log.debug(
       '[Keycast RPC] Calling $method...',
@@ -190,16 +202,26 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       category: LogCategory.auth,
     );
     final stopwatch = Stopwatch()..start();
-    final response = await _client
-        .post(
-          Uri.parse(nostrApi),
-          headers: {
-            'Authorization': 'Bearer $_accessToken',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({'method': method, 'params': params}),
-        )
-        .timeout(timeout ?? requestTimeout);
+    final effectiveTimeout = timeout ?? requestTimeout;
+    http.Response response;
+    try {
+      response = await _client
+          .post(
+            Uri.parse(nostrApi),
+            headers: {
+              'Authorization': 'Bearer $_accessToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'method': method, 'params': params}),
+          )
+          .timeout(effectiveTimeout);
+    } on TimeoutException {
+      if (!classifyLocalTimeout) rethrow;
+      throw RpcTimeoutException(
+        'Local $method request timed out after ${effectiveTimeout.inSeconds}s',
+        method: method,
+      );
+    }
     stopwatch.stop();
     Log.debug(
       '[Keycast RPC] $method completed in '
@@ -347,9 +369,9 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   ///
   /// Returns `null` (rather than throwing) when the backend does not expose the
   /// verb yet — method-not-found surfaces as an [RpcException] — so callers fall
-  /// back to the per-wrap decrypt path. A [TimeoutException] is deliberately
-  /// allowed to propagate so a slow page is retried by the caller rather than
-  /// being mistaken for an empty result.
+  /// back to the per-wrap decrypt path. A local [TimeoutException] is
+  /// deliberately allowed to propagate so a slow page is retried by the caller
+  /// rather than being mistaken for an empty result.
   @override
   Future<List<GiftWrapUnwrapSlot>?> nip17UnwrapBatch(
     List<Map<String, dynamic>> giftWraps,
@@ -366,6 +388,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         // longer than a single op, so keep it on the longer bound rather than
         // the tighter single-op [requestTimeout].
         timeout: batchRequestTimeout,
+        classifyLocalTimeout: false,
       );
     } on RpcException {
       // Older keycast without the verb, or a server-level error: degrade so the
