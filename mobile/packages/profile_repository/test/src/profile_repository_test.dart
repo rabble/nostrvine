@@ -3622,6 +3622,51 @@ void main() {
       );
 
       test(
+        'searchUsersFromApi returns empty when cache enrichment throws',
+        () async {
+          // Arrange: the REST call succeeds, then the cache lookup fails.
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'ga',
+              limit: 10,
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'd' * 64,
+                displayName: 'GaryVee',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+          final throwingDao = MockUserProfilesDao();
+          when(
+            () => throwingDao.getProfile(any()),
+          ).thenThrow(Exception('cache read failed'));
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: throwingDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Act & Assert: the enrichment failure is absorbed by the same
+          // fallback that covers a failed REST call, per this method's
+          // documented contract. Without the `await` on _enrichFromCache the
+          // future escapes the `on Exception` and this call throws instead.
+          await expectLater(
+            repoWithFunnelcake.searchUsersFromApi(query: 'ga', limit: 10),
+            completion(isEmpty),
+          );
+        },
+      );
+
+      test(
         'uses Funnelcake first then WebSocket when both available',
         () async {
           // Arrange

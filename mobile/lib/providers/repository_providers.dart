@@ -374,6 +374,10 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
     httpClient: ref.watch(instrumentedHttpClientFactoryProvider)(),
     funnelcakeApiClient: funnelcakeClient,
     indexerRelays: env.indexerRelays,
+    nameServerBaseUrl: env.nameServerBaseUrl,
+    // Keycast keys its username namespace on the request Host, so the
+    // availability probe must name the same tenant the app signs in against.
+    keycastNip05Url: ref.watch(oauthConfigProvider).nip05Url,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
     blockFilter: blockFilter,
