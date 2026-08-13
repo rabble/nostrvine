@@ -2056,8 +2056,15 @@ void main() {
       // Strictly greater, not >=: the bound also covers the seal
       // construction, ephemeral keypair, NIP-44 encryption and wrap signature
       // that run alongside those round trips. At exactly 2x, two ops each
-      // returning just inside 30s would still trip it, which is the same
-      // no-margin shape #6586 was about.
+      // returning just inside the transport bound would still trip it, which
+      // is the same no-margin shape #6586 was about.
+      //
+      // This is the only place the two packages meet: `dm_repository` restates
+      // the transport bound as a literal because it cannot import
+      // `keycast_flutter`, so re-tuning one side without the other fails here
+      // rather than silently under-sizing the build. #7092 moved the transport
+      // bound 30s → 20s; `recipientWrapBuild` deliberately held at 65s, so the
+      // margin over the floor widened from 5s to 25s.
       expect(
         DmSendBudget.recipientWrapBuild,
         greaterThan(KeycastRpc.defaultRequestTimeout * 2),
