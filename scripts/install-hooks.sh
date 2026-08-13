@@ -337,6 +337,27 @@ if [ -n "$CHANGED_HOST_CFG" ]; then
     echo ""
 fi
 
+# Codemagic variable group guard (mirrors CI's check_codemagic_groups.sh).
+# Every group named under a workflow's `groups:` key must appear in the setup
+# checklist at the top of codemagic.yaml. Codemagic validates the whole file
+# before provisioning, so an undeclared group fails every workflow in it and no
+# in-script guard can catch it — that took the pipeline down for ~21 hours
+# (#7203). Trigger only on codemagic.yaml so unrelated pushes are not slowed.
+CHANGED_CODEMAGIC=$(git -C "$REPO_ROOT" diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
+    | grep -E '^codemagic\.yaml$' || true)
+if [ -n "$CHANGED_CODEMAGIC" ]; then
+    echo "codemagic.yaml changed; checking variable groups..."
+    if ! bash "$REPO_ROOT/mobile/scripts/check_codemagic_groups.sh"; then
+        echo ""
+        echo "Codemagic group guard failed — a referenced variable group is not"
+        echo "documented in the setup checklist at the top of codemagic.yaml."
+        echo "Create the group in the Codemagic project, then document it there."
+        exit 1
+    fi
+    echo "Codemagic variable groups OK"
+    echo ""
+fi
+
 # Get list of changed Dart files (excluding generated files)
 CHANGED_FILES=$(git -C "$REPO_ROOT" diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
     | grep '^mobile/.*\.dart$' \
