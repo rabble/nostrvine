@@ -10,8 +10,10 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_filter_builder.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -23,6 +25,9 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 class _MockAppDatabase extends Mock implements AppDatabase {}
 
 class _MockNostrEventsDao extends Mock implements NostrEventsDao {}
+
+class _MockRelayCapabilityService extends Mock
+    implements RelayCapabilityService {}
 
 class _FakeFilter extends Fake implements Filter {}
 
@@ -68,9 +73,9 @@ class _RecordingTrace implements PerformanceTrace {
 /// with the expected first-wins [completion] label and [eventCount] metric.
 ///
 /// The "exactly once" check on [stoppedTraces] is what enforces the trace
-/// completion guard's idempotency: if a later completion path leaked past the
-/// `traceCompleted` guard it would append a second stop (and overwrite the
-/// completion attribute), failing this helper.
+/// completion guard's idempotency: if a later completion path leaked past
+/// the FeedLoadTrace first-wins latch it would append a second stop (and
+/// overwrite the completion attribute), failing this helper.
 void _expectSingleCompletion(
   _RecordingPerformanceMonitor monitor, {
   required String traceName,
@@ -100,6 +105,7 @@ void main() {
     late _MockProfileRepository mockProfileRepository;
     late _MockAppDatabase mockDatabase;
     late _MockNostrEventsDao mockNostrEventsDao;
+    late _MockRelayCapabilityService mockRelayCapabilityService;
     late StreamController<Event> relayController;
     late VideoEventService videoEventService;
     late Completer<Map<String, UserProfile>> batchFetchCompleter;
@@ -112,6 +118,7 @@ void main() {
       mockProfileRepository = _MockProfileRepository();
       mockDatabase = _MockAppDatabase();
       mockNostrEventsDao = _MockNostrEventsDao();
+      mockRelayCapabilityService = _MockRelayCapabilityService();
       relayController = StreamController<Event>.broadcast();
       batchFetchCompleter = Completer<Map<String, UserProfile>>();
       performanceMonitor = _RecordingPerformanceMonitor();
@@ -119,6 +126,7 @@ void main() {
 
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+      when(() => mockNostrService.connectedRelays).thenReturn(const <String>[]);
       when(
         () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
@@ -145,6 +153,14 @@ void main() {
           pubkeys: any(named: 'pubkeys'),
         ),
       ).thenAnswer((_) => batchFetchCompleter.future);
+      when(
+        () => mockRelayCapabilityService.getRelayCapabilities(any()),
+      ).thenAnswer(
+        (invocation) async => RelayCapabilities(
+          relayUrl: invocation.positionalArguments.single as String,
+          rawData: const {},
+        ),
+      );
 
       videoEventService = VideoEventService(
         mockNostrService,
@@ -152,6 +168,7 @@ void main() {
         profileRepository: mockProfileRepository,
         eventRouter: EventRouter(mockDatabase),
         performanceMonitor: performanceMonitor,
+        videoFilterBuilder: VideoFilterBuilder(mockRelayCapabilityService),
       );
     });
 
@@ -367,6 +384,233 @@ void main() {
           );
         },
       );
+
+      test('cancelled: the feed is unsubscribed mid-load', () async {
+        withEmptyCache();
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        await videoEventService.unsubscribeFromVideoFeed();
+
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'cancelled',
+          eventCount: 0,
+        );
+      });
+
+      test('cancelled: the load is replaced by a newer one', () async {
+        withEmptyCache();
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        // Same type, different authors: replaces the in-flight load. Its trace
+        // must close here rather than stay open until the app is torn down,
+        // which is what made the abandoned sample session-length.
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['b' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        // The replacement's trace is still running, so exactly one stop for
+        // this name means the first load's — and only the first load's.
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'cancelled',
+          eventCount: 0,
+        );
+        expect(
+          performanceMonitor.startedTraces
+              .where((t) => t == 'feed_load_profile')
+              .length,
+          2,
+        );
+      });
+
+      test('disposed: load abandoned before any completion path', () async {
+        withEmptyCache();
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        // Nothing arrives and the 30s fuse never fires: without the pending
+        // registry this handle would stay open for the process lifetime.
+        videoEventService.dispose();
+
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'disposed',
+          eventCount: 0,
+        );
+      });
+
+      test(
+        'disposed: load still mid-setup has no subscription to tear down',
+        () async {
+          // Hangs the cache read so the load is disposed before it ever
+          // registers a stream subscription — the one abandoned load the
+          // teardown sweep cannot see.
+          final cacheRead = Completer<List<Event>>();
+          when(
+            () => mockNostrEventsDao.getEventsByFilter(
+              any(),
+              sortBy: any(named: 'sortBy'),
+            ),
+          ).thenAnswer((_) => cacheRead.future);
+
+          unawaited(
+            videoEventService.subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            ),
+          );
+          await pumpEventQueue();
+
+          videoEventService.dispose();
+
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_profile',
+            completion: 'disposed',
+            eventCount: 0,
+          );
+        },
+      );
+
+      test(
+        'disposed: does not re-complete a trace that already reported',
+        () async {
+          await videoEventService
+              .subscribeToVideoFeed(
+                subscriptionType: SubscriptionType.profile,
+                authors: ['a' * 64],
+              )
+              .timeout(const Duration(milliseconds: 100));
+
+          videoEventService.dispose();
+
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_profile',
+            completion: 'cache',
+            eventCount: 1,
+          );
+        },
+      );
+
+      test(
+        'disposed: cached events resolve after the service is gone',
+        () async {
+          // The cache read is the await a dispose races with. Resolving it
+          // afterwards ran the cache-first notifyListeners on a dead
+          // ChangeNotifier, which the load then swallowed as its own failure.
+          final cacheRead = Completer<List<Event>>();
+          when(
+            () => mockNostrEventsDao.getEventsByFilter(
+              any(),
+              sortBy: any(named: 'sortBy'),
+            ),
+          ).thenAnswer((_) => cacheRead.future);
+
+          unawaited(
+            videoEventService.subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            ),
+          );
+          await pumpEventQueue();
+
+          videoEventService.dispose();
+          cacheRead.complete([_cachedVideoEvent()]);
+          await pumpEventQueue();
+
+          expect(videoEventService.error, isNull);
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_profile',
+            completion: 'disposed',
+            eventCount: 0,
+          );
+        },
+      );
+
+      test(
+        'disposed: sorted load starts trace after dispose drain already ran',
+        () async {
+          final capabilitiesRead = Completer<RelayCapabilities>();
+          when(
+            () => mockRelayCapabilityService.getRelayCapabilities(any()),
+          ).thenAnswer((_) => capabilitiesRead.future);
+          withEmptyCache();
+
+          final subscribe = videoEventService.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.discovery,
+            sortBy: VideoSortField.loopCount,
+          );
+          await pumpEventQueue();
+
+          // The sorted filter is still awaiting NIP-11 capabilities, so the
+          // trace has not been registered and dispose drains an empty map.
+          videoEventService.dispose();
+          capabilitiesRead.complete(
+            RelayCapabilities(
+              relayUrl: 'wss://relay.divine.video',
+              rawData: const {},
+            ),
+          );
+          await subscribe.timeout(const Duration(milliseconds: 100));
+
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_discovery',
+            completion: 'disposed',
+            eventCount: 0,
+          );
+        },
+      );
+
+      test('setup_error: creating the relay subscription throws', () async {
+        withEmptyCache();
+        when(
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenThrow(StateError('relay unavailable'));
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        // Setup threw before anything was registered, so no teardown path can
+        // reach this handle — the catch has to close it or it survives to
+        // dispose and reports the session as the load's duration.
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'setup_error',
+          eventCount: 0,
+        );
+      });
     });
   });
 }
