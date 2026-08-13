@@ -67,6 +67,13 @@ class FunnelcakeApiClient {
   /// Default moderation profile sent with video-bearing Funnelcake requests.
   static const String defaultModerationProfile = 'default';
 
+  /// Server-side cap on the engagement-list endpoints, used as the default
+  /// page size for [getVideoLikers] because the list renders in one screen.
+  ///
+  /// Larger values are clamped to this by the API, so a video with more
+  /// likers is truncated here rather than paginated.
+  static const int maxVideoLikersLimit = 500;
+
   static const Set<String> _diagnosticStructuralKeys = {
     'categories',
     'data',
@@ -1681,6 +1688,78 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch video stats: $e');
+    }
+  }
+
+  /// Fetches the pubkeys that have liked a video, most recent first.
+  ///
+  /// [eventId] is the Nostr event ID (or d-tag) for the video.
+  /// [addressableId] is the optional `kind:pubkey:d-tag` coordinate; the
+  /// server resolves one itself when omitted, and an explicit value wins.
+  /// [limit] is clamped server-side to [maxVideoLikersLimit].
+  ///
+  /// Resolves the whole NIP-33 coordinate, not just the id passed in: the
+  /// `e`-tag arm expands across every sibling revision, so reactions left on
+  /// a superseded id before an edit are still returned (funnelcake#799).
+  /// Downvotes, same-author kind-5 retractions, and moderated accounts are
+  /// filtered out server-side, and pubkeys are deduplicated — so the result
+  /// is smaller than the headline reaction count, which counts every
+  /// reaction event.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not
+  ///   configured.
+  /// - [FunnelcakeException] if the event ID is empty.
+  /// - [FunnelcakeNotFoundException] if the video is unknown to the API.
+  /// - [FunnelcakeApiException] if the request fails.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<PaginatedPubkeys> getVideoLikers(
+    String eventId, {
+    String? addressableId,
+    int limit = maxVideoLikersLimit,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    if (eventId.isEmpty) {
+      throw const FunnelcakeException('Event ID cannot be empty');
+    }
+
+    final queryParams = <String, String>{'limit': limit.toString()};
+    if (addressableId != null && addressableId.isNotEmpty) {
+      queryParams['a'] = addressableId;
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/videos/$eventId/likers',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return PaginatedPubkeys.fromJson(data);
+      } else if (response.statusCode == 404) {
+        throw FunnelcakeNotFoundException(
+          resource: 'Video likers',
+          url: uri.toString(),
+        );
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch video likers',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch video likers: $e');
     }
   }
 

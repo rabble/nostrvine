@@ -3242,6 +3242,147 @@ void main() {
       });
     });
 
+    group('getVideoLikers', () {
+      const testEventId =
+          'abcdef1234567890abcdef1234567890'
+          'abcdef1234567890abcdef1234567890';
+      const addressableId = '34236:$testPubkey:d-tag';
+
+      const likersResponse = '''
+{
+  "data": [
+    {"pubkey": "liker1", "created_at": 1700000100, "event_id": "reaction1"},
+    {"pubkey": "liker2", "created_at": 1700000000, "event_id": "reaction2"}
+  ],
+  "pagination": {"next_cursor": null, "has_more": false}
+}
+''';
+
+      test('returns liker pubkeys in server order', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(likersResponse, 200));
+
+        final likers = await client.getVideoLikers(testEventId);
+
+        expect(likers.pubkeys, equals(['liker1', 'liker2']));
+        expect(likers.hasMore, isFalse);
+      });
+
+      test('constructs correct URL with the server-max limit', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(likersResponse, 200));
+
+        await client.getVideoLikers(testEventId);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/videos/$testEventId/likers'));
+        expect(
+          uri.queryParameters['limit'],
+          equals('${FunnelcakeApiClient.maxVideoLikersLimit}'),
+        );
+        expect(uri.queryParameters.containsKey('a'), isFalse);
+      });
+
+      test('sends the addressable coordinate as the a parameter', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(likersResponse, 200));
+
+        await client.getVideoLikers(testEventId, addressableId: addressableId);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['a'], equals(addressableId));
+      });
+
+      test('omits the a parameter when the coordinate is blank', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(likersResponse, 200));
+
+        await client.getVideoLikers(testEventId, addressableId: '');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters.containsKey('a'), isFalse);
+      });
+
+      test('throws FunnelcakeNotFoundException on 404', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Video not found', 404));
+
+        expect(
+          () => client.getVideoLikers(testEventId),
+          throwsA(isA<FunnelcakeNotFoundException>()),
+        );
+      });
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          () => emptyClient.getVideoLikers(testEventId),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test('throws FunnelcakeException when event ID is empty', () {
+        expect(
+          () => client.getVideoLikers(''),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Event ID cannot be empty'),
+            ),
+          ),
+        );
+      });
+
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
+
+        expect(
+          () => client.getVideoLikers(testEventId),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
+
+        expect(
+          () => client.getVideoLikers(testEventId),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+    });
+
     group('getVideoViews', () {
       const testEventId =
           'abcdef1234567890abcdef1234567890'
@@ -4804,11 +4945,9 @@ void main() {
         },
       );
 
-      test(
-        'returns UserProfileFound for has_vanish_request with populated '
-        'profile',
-        () async {
-          const response = '''
+      test('returns UserProfileFound for has_vanish_request with populated '
+          'profile', () async {
+        const response = '''
 {
   "users": [
     {
@@ -4819,24 +4958,23 @@ void main() {
   ]
 }
 ''';
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer((_) async => http.Response(response, 200));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response(response, 200));
 
-          final result = await client.getBulkProfiles(['pub1']);
+        final result = await client.getBulkProfiles(['pub1']);
 
-          expect(result.profiles, hasLength(1));
-          expect(result.profiles['pub1'], isA<UserProfileFound>());
-          expect(
-            (result.profiles['pub1']! as UserProfileFound).profile.name,
-            equals('Restored'),
-          );
-        },
-      );
+        expect(result.profiles, hasLength(1));
+        expect(result.profiles['pub1'], isA<UserProfileFound>());
+        expect(
+          (result.profiles['pub1']! as UserProfileFound).profile.name,
+          equals('Restored'),
+        );
+      });
 
       test(
         'returns UserProfileNotPublished for users with all-null profile',

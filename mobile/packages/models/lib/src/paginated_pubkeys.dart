@@ -20,6 +20,13 @@ class PaginatedPubkeys {
   ///   (key varies: `following`, `followers`, or `pubkeys`)
   /// - Envelope: `{"data": [...], "pagination": {"has_more": bool,
   ///   "next_cursor": string}}`
+  ///
+  /// Entries may be bare pubkey strings or objects carrying a `pubkey` key
+  /// alongside other fields — the engagement endpoints
+  /// (`/api/videos/{id}/likers`, `/reposters`) return
+  /// `{"pubkey": …, "created_at": …, "event_id": …}`. Objects without a
+  /// string `pubkey` are dropped rather than stringified, so a shape change
+  /// surfaces as a short list instead of rows of `{pubkey: …}` garbage.
   factory PaginatedPubkeys.fromJson(Map<String, dynamic> json) {
     final pagination = json['pagination'] as Map<String, dynamic>?;
 
@@ -34,9 +41,19 @@ class PaginatedPubkeys {
     final hasMore =
         json['has_more'] as bool? ?? pagination?['has_more'] as bool? ?? false;
 
+    final pubkeys = <String>[];
+    for (final entry in pubkeysData) {
+      if (entry is Map<String, dynamic>) {
+        final pubkey = entry['pubkey'];
+        if (pubkey is String && pubkey.isNotEmpty) pubkeys.add(pubkey);
+        continue;
+      }
+      pubkeys.add(entry.toString());
+    }
+
     return PaginatedPubkeys(
-      pubkeys: pubkeysData.map((e) => e.toString()).toList(),
-      total: json['total'] as int? ?? pubkeysData.length,
+      pubkeys: pubkeys,
+      total: json['total'] as int? ?? pubkeys.length,
       hasMore: hasMore,
       appliedQuery: json['query'] as String?,
     );

@@ -78,9 +78,7 @@ void main() {
       });
 
       test('handles empty JSON', () {
-        final result = PaginatedPubkeys.fromJson(
-          const <String, dynamic>{},
-        );
+        final result = PaginatedPubkeys.fromJson(const <String, dynamic>{});
 
         expect(result.pubkeys, isEmpty);
         expect(result.total, equals(0));
@@ -127,18 +125,41 @@ void main() {
 
         expect(result.hasMore, isTrue);
       });
+
+      // The engagement endpoints (/api/videos/{id}/likers, /reposters) return
+      // objects rather than bare strings — issue #6021.
+      test('reads the pubkey field out of object-shaped entries', () {
+        final result = PaginatedPubkeys.fromJson(const {
+          'data': [
+            {'pubkey': 'pub1', 'created_at': 1700000000, 'event_id': 'r1'},
+            {'pubkey': 'pub2', 'created_at': 1699999999, 'event_id': 'r2'},
+          ],
+          'pagination': {'has_more': false},
+        });
+
+        expect(result.pubkeys, equals(['pub1', 'pub2']));
+        expect(result.total, equals(2));
+      });
+
+      test('drops object entries with no usable pubkey', () {
+        final result = PaginatedPubkeys.fromJson(const {
+          'data': [
+            {'pubkey': 'pub1'},
+            {'created_at': 1700000000},
+            {'pubkey': ''},
+            {'pubkey': 42},
+          ],
+        });
+
+        expect(result.pubkeys, equals(['pub1']));
+        expect(result.total, equals(1));
+      });
     });
 
     group('equality', () {
       test('equal when same pubkeys, total, and hasMore', () {
-        const a = PaginatedPubkeys(
-          pubkeys: ['abc', 'def'],
-          total: 2,
-        );
-        const b = PaginatedPubkeys(
-          pubkeys: ['abc', 'def'],
-          total: 2,
-        );
+        const a = PaginatedPubkeys(pubkeys: ['abc', 'def'], total: 2);
+        const b = PaginatedPubkeys(pubkeys: ['abc', 'def'], total: 2);
 
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
@@ -152,14 +173,8 @@ void main() {
       });
 
       test('not equal when different total', () {
-        const a = PaginatedPubkeys(
-          pubkeys: ['abc'],
-          total: 1,
-        );
-        const b = PaginatedPubkeys(
-          pubkeys: ['abc'],
-          total: 99,
-        );
+        const a = PaginatedPubkeys(pubkeys: ['abc'], total: 1);
+        const b = PaginatedPubkeys(pubkeys: ['abc'], total: 99);
 
         expect(a, isNot(equals(b)));
       });

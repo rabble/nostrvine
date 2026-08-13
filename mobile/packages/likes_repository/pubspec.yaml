@@ -11,6 +11,8 @@ dependencies:
   db_client:
     path: ../db_client
   equatable: ^2.0.5
+  funnelcake_api_client:
+    path: ../funnelcake_api_client
   meta: ^1.16.0
   nostr_client:
     path: ../nostr_client
@@ -23,5 +25,8 @@ dependencies:
 dev_dependencies:
   drift: ^2.34.0
   mocktail: ^1.0.4
+  # Test-only: names PaginatedPubkeys when stubbing the Funnelcake client.
+  models:
+    path: ../models
   test: ^1.26.3
   very_good_analysis: ^10.0.0

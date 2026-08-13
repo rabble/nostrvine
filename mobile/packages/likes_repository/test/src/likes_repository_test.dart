@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:test/test.dart';
@@ -12,6 +14,8 @@ class MockNostrClient extends Mock implements NostrClient {}
 class MockLikesLocalStorage extends Mock implements LikesLocalStorage {}
 
 class MockEvent extends Mock implements Event {}
+
+class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 void main() {
   group('LikesRepository', () {
@@ -89,6 +93,7 @@ void main() {
       IsOnlineCallback? isOnline,
       QueueOfflineActionCallback? queueOfflineAction,
       BlockedLikerFilter? blockFilter,
+      FunnelcakeApiClient? funnelcakeApiClient,
       LikesRepositoryErrorReporter? errorReporter,
     }) {
       return LikesRepository(
@@ -97,6 +102,7 @@ void main() {
         isOnline: isOnline,
         queueOfflineAction: queueOfflineAction,
         blockFilter: blockFilter,
+        funnelcakeApiClient: funnelcakeApiClient,
         errorReporter: errorReporter,
       );
     }
@@ -2233,7 +2239,7 @@ void main() {
       );
 
       test(
-        'applies the same active liker filters as fetchEventLikers',
+        'excludes deleted, downvoted, and blocked reactions from the count',
         () async {
           const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
           const likerA = 'liker_a_pubkey_1234567890abcdef';
@@ -3757,6 +3763,162 @@ void main() {
           () => repository.fetchEventLikers(eventId: targetEventId),
           throwsA(isA<FetchLikersFailedException>()),
         );
+      });
+
+      // #6021: the relay filters only match the current event id and the
+      // coordinate, so reactions stranded on a superseded revision are
+      // invisible to them. Funnelcake resolves the whole coordinate.
+      group('Funnelcake source', () {
+        late _MockFunnelcakeApiClient mockFunnelcake;
+
+        setUp(() {
+          mockFunnelcake = _MockFunnelcakeApiClient();
+          when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        });
+
+        void stubLikers(List<String> pubkeys) {
+          when(
+            () => mockFunnelcake.getVideoLikers(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async => PaginatedPubkeys(pubkeys: pubkeys));
+        }
+
+        test('serves the API list without querying relays', () async {
+          stubLikers([likerC, likerA]);
+
+          repository = createRepository(funnelcakeApiClient: mockFunnelcake);
+
+          expect(
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            ),
+            equals([likerC, likerA]),
+          );
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
+        test('forwards the addressable coordinate to the API', () async {
+          stubLikers([likerA]);
+
+          repository = createRepository(funnelcakeApiClient: mockFunnelcake);
+          await repository.fetchEventLikers(
+            eventId: targetEventId,
+            addressableId: addressableId,
+          );
+
+          verify(
+            () => mockFunnelcake.getVideoLikers(
+              targetEventId,
+              addressableId: addressableId,
+            ),
+          ).called(1);
+        });
+
+        test('still hides blocked likers the API cannot know about', () async {
+          stubLikers([likerA, likerB, likerC]);
+
+          repository = createRepository(
+            funnelcakeApiClient: mockFunnelcake,
+            blockFilter: (pubkey) => pubkey == likerB,
+          );
+
+          expect(
+            await repository.fetchEventLikers(eventId: targetEventId),
+            equals([likerA, likerC]),
+          );
+        });
+
+        test('serves each API liker once, most recent first', () async {
+          stubLikers([likerC, likerA, likerC]);
+
+          repository = createRepository(funnelcakeApiClient: mockFunnelcake);
+
+          expect(
+            await repository.fetchEventLikers(eventId: targetEventId),
+            equals([likerC, likerA]),
+          );
+        });
+
+        test('falls back to relays when the API fails', () async {
+          when(
+            () => mockFunnelcake.getVideoLikers(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenThrow(const FunnelcakeException('boom'));
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createReaction(id: 'reaction_a', authorPubkey: likerA),
+            ],
+          );
+
+          repository = createRepository(funnelcakeApiClient: mockFunnelcake);
+
+          expect(
+            await repository.fetchEventLikers(eventId: targetEventId),
+            equals([likerA]),
+          );
+        });
+
+        test('falls back to relays when the API returns nobody', () async {
+          stubLikers([]);
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createReaction(id: 'reaction_a', authorPubkey: likerA),
+            ],
+          );
+
+          repository = createRepository(funnelcakeApiClient: mockFunnelcake);
+
+          expect(
+            await repository.fetchEventLikers(eventId: targetEventId),
+            equals([likerA]),
+          );
+        });
+
+        test('falls back to relays when the API is unconfigured', () async {
+          when(() => mockFunnelcake.isAvailable).thenReturn(false);
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createReaction(id: 'reaction_a', authorPubkey: likerA),
+            ],
+          );
+
+          repository = createRepository(funnelcakeApiClient: mockFunnelcake);
+
+          expect(
+            await repository.fetchEventLikers(eventId: targetEventId),
+            equals([likerA]),
+          );
+          verifyNever(
+            () => mockFunnelcake.getVideoLikers(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+        });
+
+        test('leaves getLikeCount on the relay resolver', () async {
+          stubLikers([likerA, likerB, likerC]);
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createReaction(id: 'reaction_a', authorPubkey: likerA),
+            ],
+          );
+
+          repository = createRepository(funnelcakeApiClient: mockFunnelcake);
+
+          expect(
+            await repository.getLikeCount(
+              targetEventId,
+              addressableId: addressableId,
+            ),
+            equals(1),
+          );
+        });
       });
     });
 
