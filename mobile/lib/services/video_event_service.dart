@@ -39,6 +39,7 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/effective_content_labels.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
+import 'package:openvine/services/feed_load_trace.dart';
 import 'package:openvine/services/feed_retry_scheduler.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -206,6 +207,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// subscription the user already left cannot fire recovery against a later
   /// live feed of the same type.
   final Map<SubscriptionType, Timer> _feedLoadTimeouts = {};
+
+  /// Feed-load traces that have started but not yet reported, keyed by the
+  /// subscription id the load belongs to. Closed when that subscription is
+  /// torn down, and drained by [dispose] for loads still mid-setup.
+  final Map<String, FeedLoadTrace> _pendingFeedLoadTraces = {};
 
   // Track subscription parameters per type
   final Map<SubscriptionType, Map<String, dynamic>> _subscriptionParams = {};
@@ -842,6 +848,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     Future.microtask(() {
       if (!_hasScheduledFrameUpdate) return; // Already processed
       _hasScheduledFrameUpdate = false;
+      // A load can be abandoned between scheduling and this microtask —
+      // notifying then throws "used after being disposed".
+      if (_isDisposed) return;
       notifyListeners();
     });
   }
@@ -2267,19 +2276,18 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         // reached a completion path — the service is disposed before the 30s
         // timeout fires — stayed open until the next load of that type
         // reported it, which is how a 23.6-hour `feed_load_profile` sample
-        // reached the console. A leaked handle now simply never reports
-        // (#7119).
-        final trace = _performanceMonitor.startOperationTrace(
-          'feed_load_${subscriptionType.name}',
+        // reached the console (#7119). Registered as pending so teardown can
+        // still close it rather than leaking the native handle (#7151).
+        final pendingTrace = FeedLoadTrace(
+          trace: _performanceMonitor.startOperationTrace(
+            'feed_load_${subscriptionType.name}',
+          ),
+          eventCount: () => eventCount,
         );
-        var traceCompleted = false;
+        _pendingFeedLoadTraces[subscriptionId] = pendingTrace;
         void completeFeedLoadTrace(String completion, {int? eventTotal}) {
-          if (traceCompleted) return;
-          traceCompleted = true;
-          trace
-            ..setMetric('event_count', eventTotal ?? eventCount)
-            ..putAttribute('completion', completion);
-          unawaited(trace.stop());
+          _pendingFeedLoadTraces.remove(subscriptionId);
+          pendingTrace.complete(completion, eventTotal: eventTotal);
         }
 
         Log.info(
@@ -4585,6 +4593,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
       for (final entry in _subscriptions.entries) {
+        _completeAbandonedFeedLoadTrace(entry.key);
         await entry.value.cancel();
       }
       _subscriptions.clear();
@@ -5453,6 +5462,17 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _feedLoadTimeouts.remove(subscriptionType)?.cancel();
   }
 
+  /// Closes the feed-load trace of a subscription that is being torn down
+  /// before its load reached a completion path.
+  ///
+  /// Reporting here rather than at [dispose] keeps the duration the load's
+  /// own: the 30s fuse is cancelled on teardown and its handler bails out on
+  /// a replaced subscription, so an abandoned load would otherwise stay open
+  /// until the process ends and report a session-length sample (#7151).
+  void _completeAbandonedFeedLoadTrace(String subscriptionId) {
+    _pendingFeedLoadTraces.remove(subscriptionId)?.complete('cancelled');
+  }
+
   /// Cancel subscription for a specific type
   Future<void> _cancelSubscription(SubscriptionType subscriptionType) async {
     // Kill the fuse before tearing down state so a later fire cannot unmap a
@@ -5466,6 +5486,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         name: 'VideoEventService',
         category: LogCategory.video,
       );
+
+      _completeAbandonedFeedLoadTrace(subscriptionId);
 
       final subscription = _subscriptions[subscriptionId];
       if (subscription != null) {
@@ -5834,6 +5856,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       timer.cancel();
     }
     _feedLoadTimeouts.clear();
+
+    // Loads still mid-setup have no subscription to tear down, so the sweep
+    // in _cancelExistingSubscriptions below cannot reach them.
+    for (final trace in _pendingFeedLoadTraces.values) {
+      trace.complete('disposed');
+    }
+    _pendingFeedLoadTraces.clear();
     _retryScheduler.dispose();
     _cancelRelayReadyRetrySubscription();
     _likeCountBatchTimer?.cancel();

@@ -367,6 +367,138 @@ void main() {
           );
         },
       );
+
+      test('cancelled: the feed is unsubscribed mid-load', () async {
+        withEmptyCache();
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        await videoEventService.unsubscribeFromVideoFeed();
+
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'cancelled',
+          eventCount: 0,
+        );
+      });
+
+      test('cancelled: the load is replaced by a newer one', () async {
+        withEmptyCache();
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        // Same type, different authors: replaces the in-flight load. Its trace
+        // must close here rather than stay open until the app is torn down,
+        // which is what made the abandoned sample session-length.
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['b' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        // The replacement's trace is still running, so exactly one stop for
+        // this name means the first load's — and only the first load's.
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'cancelled',
+          eventCount: 0,
+        );
+        expect(
+          performanceMonitor.startedTraces
+              .where((t) => t == 'feed_load_profile')
+              .length,
+          2,
+        );
+      });
+
+      test('disposed: load abandoned before any completion path', () async {
+        withEmptyCache();
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        // Nothing arrives and the 30s fuse never fires: without the pending
+        // registry this handle would stay open for the process lifetime.
+        videoEventService.dispose();
+
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'disposed',
+          eventCount: 0,
+        );
+      });
+
+      test(
+        'disposed: load still mid-setup has no subscription to tear down',
+        () async {
+          // Hangs the cache read so the load is disposed before it ever
+          // registers a stream subscription — the one abandoned load the
+          // teardown sweep cannot see.
+          final cacheRead = Completer<List<Event>>();
+          when(
+            () => mockNostrEventsDao.getEventsByFilter(
+              any(),
+              sortBy: any(named: 'sortBy'),
+            ),
+          ).thenAnswer((_) => cacheRead.future);
+
+          unawaited(
+            videoEventService.subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            ),
+          );
+          await pumpEventQueue();
+
+          videoEventService.dispose();
+
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_profile',
+            completion: 'disposed',
+            eventCount: 0,
+          );
+        },
+      );
+
+      test(
+        'disposed: does not re-complete a trace that already reported',
+        () async {
+          await videoEventService
+              .subscribeToVideoFeed(
+                subscriptionType: SubscriptionType.profile,
+                authors: ['a' * 64],
+              )
+              .timeout(const Duration(milliseconds: 100));
+
+          videoEventService.dispose();
+
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_profile',
+            completion: 'cache',
+            eventCount: 1,
+          );
+        },
+      );
     });
   });
 }
