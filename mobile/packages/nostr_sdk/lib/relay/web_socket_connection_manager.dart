@@ -376,15 +376,21 @@ class WebSocketConnectionManager {
     bool skipReconnect = false,
     DateTime? deadline,
   }) async {
+    if (_deadlineExpired(deadline)) return false;
+
+    final String encoded;
     try {
-      if (_deadlineExpired(deadline)) return false;
-      final encoded = jsonEncode(data);
-      return send(encoded, skipReconnect: skipReconnect, deadline: deadline);
+      encoded = jsonEncode(data);
     } catch (e) {
       log('JSON encode error: $e');
       _errorController.add('JSON encode error: $e');
       return false;
     }
+
+    // Sending stays outside the try: [send] reports its own failures as
+    // `false` plus a 'Send error' on [errorStream], and reporting one of
+    // those as a JSON encode error would be wrong.
+    return send(encoded, skipReconnect: skipReconnect, deadline: deadline);
   }
 
   /// Send a JSON-encodable message synchronously (no reconnection)
