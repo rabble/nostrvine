@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
-import 'generated/schema_v7.dart' as v7;
+import 'generated/schema_v8.dart' as v8;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -19,49 +19,56 @@ void main() {
   });
 
   group('schema validation', () {
-    test('current schema version is 7', () {
-      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 7);
+    test('current schema version is 8', () {
+      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 8);
     });
 
-    test('v7 schema is valid and up to date', () async {
+    test('v8 schema is valid and up to date', () async {
+      final schema = await verifier.schemaAt(8);
+      final db = AppDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 8);
+      await db.close();
+    });
+
+    test('v7 schema migrates to v8', () async {
       final schema = await verifier.schemaAt(7);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 7);
+      await verifier.migrateAndValidate(db, 8);
       await db.close();
     });
 
-    test('v6 schema migrates to v7', () async {
+    test('v6 schema migrates to v8', () async {
       final schema = await verifier.schemaAt(6);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 7);
+      await verifier.migrateAndValidate(db, 8);
       await db.close();
     });
 
-    test('v5 schema migrates to v7', () async {
+    test('v5 schema migrates to v8', () async {
       final schema = await verifier.schemaAt(5);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 7);
+      await verifier.migrateAndValidate(db, 8);
       await db.close();
     });
 
-    test('v3 schema migrates to v7', () async {
+    test('v3 schema migrates to v8', () async {
       final schema = await verifier.schemaAt(3);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 7);
+      await verifier.migrateAndValidate(db, 8);
       await db.close();
     });
 
-    test('v2 schema migrates to v7', () async {
+    test('v2 schema migrates to v8', () async {
       final schema = await verifier.schemaAt(2);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 7);
+      await verifier.migrateAndValidate(db, 8);
       await db.close();
     });
 
-    test('legacy v1 schema migrates to v7', () async {
+    test('legacy v1 schema migrates to v8', () async {
       final schema = await verifier.schemaAt(1);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 7);
+      await verifier.migrateAndValidate(db, 8);
       await db.close();
     });
 
@@ -89,7 +96,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 7);
+      await verifier.migrateAndValidate(db, 8);
 
       final rows = await db
           .customSelect(
@@ -112,9 +119,9 @@ void main() {
     test('v2 identity_events rows survive the upgrade unstamped', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 2,
-        newVersion: 7,
+        newVersion: 8,
         createOld: v2.DatabaseAtV2.new,
-        createNew: v7.DatabaseAtV7.new,
+        createNew: v8.DatabaseAtV8.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) => batch.insert(
           oldDb.identityEvents,
@@ -148,7 +155,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 7);
+        await verifier.migrateAndValidate(db, 8);
 
         final migrated = await db.clipsDao.getClipById('clip-1');
         expect(migrated?.id, 'clip-1');
@@ -169,7 +176,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 7);
+        await verifier.migrateAndValidate(db, 8);
 
         final migrated = await db.clipsDao.getClipById('clip-1');
         expect(migrated?.id, 'clip-1');
@@ -179,12 +186,12 @@ void main() {
       },
     );
 
-    test('v5 copies a distinct pre-v5 vine id into the d-tag column', () async {
+    test('v6 copies a distinct pre-v5 vine id into the d-tag column', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 3,
-        newVersion: 7,
+        newVersion: 8,
         createOld: v3.DatabaseAtV3.new,
-        createNew: v7.DatabaseAtV7.new,
+        createNew: v8.DatabaseAtV8.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) {
           batch
@@ -229,6 +236,56 @@ void main() {
       );
     });
 
+    test('v7 queued view rows gain a NULL phase at v8', () async {
+      final schema = await verifier.schemaAt(7);
+      schema.rawDatabase.execute(
+        'INSERT INTO pending_view_events '
+        '(id, video_id, video_pubkey, user_pubkey, watch_duration_ms, '
+        'traffic_source, status, created_at) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          'legacy-row',
+          'b' * 64,
+          'c' * 64,
+          'd' * 64,
+          4200,
+          'feed',
+          'pending',
+          1786483200,
+        ],
+      );
+
+      final db = AppDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 8);
+
+      final row = await db
+          .customSelect(
+            'SELECT phase FROM pending_view_events WHERE id = ?',
+            variables: [Variable.withString('legacy-row')],
+          )
+          .getSingle();
+      // Pre-phase rows must stay NULL: the replay path publishes them without
+      // a phase tag so the relay still counts their view.
+      expect(row.read<String?>('phase'), isNull);
+
+      // And post-upgrade rows can carry the two-phase marker.
+      await db.customStatement(
+        'INSERT INTO pending_view_events '
+        '(id, video_id, video_pubkey, user_pubkey, watch_duration_ms, '
+        'traffic_source, status, created_at, phase) '
+        "VALUES ('start-row', '${'b' * 64}', '${'c' * 64}', '${'d' * 64}', "
+        "0, 'feed', 'pending', 1786483201, 'start')",
+      );
+      final phased = await db
+          .customSelect(
+            'SELECT phase FROM pending_view_events WHERE id = ?',
+            variables: [Variable.withString('start-row')],
+          )
+          .getSingle();
+      expect(phased.read<String?>('phase'), 'start');
+      await db.close();
+    });
+
     test(
       'v5 restores the follower column on an original-v3 database',
       () async {
@@ -254,7 +311,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 7);
+        await verifier.migrateAndValidate(db, 8);
 
         final row = await db
             .customSelect(
@@ -292,7 +349,7 @@ void main() {
 
       final schema = await verifier.schemaAt(6);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 7);
+      await verifier.migrateAndValidate(db, 8);
 
       final rows = await db
           .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")

@@ -127,7 +127,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -179,6 +179,18 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         await _createConsolidatedIndexes();
       }
+      if (from < 8) {
+        // hadUpgrade suppresses the beforeOpen repair on this open, so the
+        // whole idempotent chain re-runs here for the same reason the
+        // from < 5 block re-runs it: a damaged older database upgrading
+        // straight to v8 would otherwise keep its damage until a later
+        // launch that happens to perform no upgrade.
+        await _repairSchemaV3();
+        await _repairSchemaV5();
+        await _repairSchemaV6();
+        await _createConsolidatedIndexes();
+        await _repairSchemaV8();
+      }
     },
     beforeOpen: (details) async {
       // v1 databases are normalized by onUpgrade. This guarded path remains
@@ -191,12 +203,18 @@ class AppDatabase extends _$AppDatabase {
         await _repairSchemaV5();
         await _repairSchemaV6();
         await _createConsolidatedIndexes();
+        await _repairSchemaV8();
       }
 
       // Run cleanup of expired data on every app startup
       await runStartupCleanup();
     },
   );
+
+  /// Adds the two-phase reporting column to the queued view-event outbox.
+  Future<void> _repairSchemaV8() async {
+    await _addColumnIfMissing('pending_view_events', 'phase', 'TEXT NULL');
+  }
 
   Future<void> _repairSchemaV3() async {
     await _addColumnIfMissing(
@@ -940,6 +958,7 @@ class AppDatabase extends _$AppDatabase {
           watch_duration_ms INTEGER NOT NULL,
           total_duration_ms INTEGER,
           loop_count INTEGER,
+          phase TEXT,
           traffic_source TEXT NOT NULL,
           source_detail TEXT,
           status TEXT NOT NULL,
@@ -1267,7 +1286,11 @@ class AppDatabase extends _$AppDatabase {
       'personal_reactions': ['addressable_id'],
       'profile_statistics': ['follower_counts_updated_at'],
       'identity_events': ['source_created_at', 'source_event_id'],
-      'pending_view_events': ['video_addressable_d_tag', 'video_event_kind'],
+      'pending_view_events': [
+        'video_addressable_d_tag',
+        'video_event_kind',
+        'phase',
+      ],
     };
 
     for (final entry in requiredColumns.entries) {

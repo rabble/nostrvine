@@ -1362,6 +1362,14 @@ class PendingViewEvents extends Table {
 
   IntColumn get loopCount => integer().nullable().named('loop_count')();
 
+  /// Two-phase reporting phase: `start` or `end`.
+  ///
+  /// NULL marks a pre-phase queued row: a legacy end-of-session event that
+  /// must replay WITHOUT a phase tag so the relay still counts its view.
+  /// A `start` row carries no watch time; an `end` row contributes loops
+  /// only — the relay counts the view on the matching `start` row.
+  TextColumn get phase => text().nullable().named('phase')();
+
   TextColumn get trafficSource => text().named('traffic_source')();
 
   TextColumn get sourceDetail => text().nullable().named('source_detail')();

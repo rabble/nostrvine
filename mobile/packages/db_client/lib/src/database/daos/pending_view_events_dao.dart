@@ -39,6 +39,7 @@ class PendingViewEvent {
     this.videoEventKind,
     this.totalDurationMs,
     this.loopCount,
+    this.phase,
     this.sourceDetail,
     this.retryCount = 0,
     this.lastError,
@@ -55,6 +56,10 @@ class PendingViewEvent {
   final int watchDurationMs;
   final int? totalDurationMs;
   final int? loopCount;
+
+  /// Two-phase reporting phase ('start' or 'end'); null for legacy
+  /// end-of-session rows that must replay without a phase tag.
+  final String? phase;
   final String trafficSource;
   final String? sourceDetail;
   final PendingViewEventStatus status;
@@ -74,6 +79,7 @@ class PendingViewEvent {
     int? watchDurationMs,
     int? totalDurationMs,
     int? loopCount,
+    String? phase,
     String? trafficSource,
     String? sourceDetail,
     PendingViewEventStatus? status,
@@ -92,6 +98,7 @@ class PendingViewEvent {
     watchDurationMs: watchDurationMs ?? this.watchDurationMs,
     totalDurationMs: totalDurationMs ?? this.totalDurationMs,
     loopCount: loopCount ?? this.loopCount,
+    phase: phase ?? this.phase,
     trafficSource: trafficSource ?? this.trafficSource,
     sourceDetail: sourceDetail ?? this.sourceDetail,
     status: status ?? this.status,
@@ -129,6 +136,7 @@ class PendingViewEventsDao extends DatabaseAccessor<AppDatabase>
       watchDurationMs: event.watchDurationMs,
       totalDurationMs: Value(event.totalDurationMs),
       loopCount: Value(event.loopCount),
+      phase: Value(event.phase),
       trafficSource: event.trafficSource,
       sourceDetail: Value(event.sourceDetail),
       status: event.status.name,
@@ -151,6 +159,7 @@ class PendingViewEventsDao extends DatabaseAccessor<AppDatabase>
       watchDurationMs: row.watchDurationMs,
       totalDurationMs: row.totalDurationMs,
       loopCount: row.loopCount,
+      phase: row.phase,
       trafficSource: row.trafficSource,
       sourceDetail: row.sourceDetail,
       status: _parseStatus(row.status),
