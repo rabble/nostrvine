@@ -137,10 +137,14 @@ enum _PrivateItemsState {
 /// The outcome of reading a kind-10003's `content`, returned rather than
 /// stored so the caller can apply it without suspending mid-update.
 class _PrivateItemsRead {
-  const _PrivateItemsRead({required this.state, required this.items});
+  const _PrivateItemsRead({required this.state, required this.tags});
 
   final _PrivateItemsState state;
-  final List<BookmarkItem> items;
+
+  /// The decrypted array verbatim, not just the entries this client models.
+  /// Re-encrypting from parsed items would silently drop another client's
+  /// non-item tags and any tag position past the fourth.
+  final List<List<String>> tags;
 }
 
 /// Service for the user's NIP-51 global bookmark list (kind 10003).
@@ -190,6 +194,11 @@ class BookmarkService {
   /// would move the user's private bookmarks into plaintext local storage —
   /// a disclosure of its own. They are re-read on every sync instead.
   final List<BookmarkItem> _privateBookmarks = [];
+
+  /// [_privateBookmarks]' source array, kept verbatim so a re-encryption
+  /// rewrites only the entry being removed. Never persisted, for the same
+  /// reason [_privateBookmarks] is not.
+  List<List<String>> _privateTags = const [];
 
   /// What became of the newest `content` we saw. Drives the write path's
   /// refusal to act on a list it cannot fully see.
@@ -351,6 +360,7 @@ class BookmarkService {
         if (answeredAuthoritatively) _absenceConfirmedAt = _now();
         _globalBookmarks.clear();
         _privateBookmarks.clear();
+        _privateTags = const [];
         _privateItemsState = _PrivateItemsState.none;
         _lastKnownRemoteContent = '';
       } else {
@@ -596,9 +606,14 @@ class BookmarkService {
       // A private item is removed from the encrypted array. Dropping only a
       // public copy would report "Removed" while every conforming client still
       // shows it bookmarked (#7136) — and the reverse is just as untrue, so an
-      // item the pre-fix leak left in *both* halves loses both.
+      // item the pre-fix leak left in *both* halves loses both. `removeWhere`
+      // rather than `remove`, which drops only the first of a duplicate pair.
       if (_privateBookmarks.contains(item)) {
-        final privateCandidate = [..._privateBookmarks]..remove(item);
+        final privateCandidate = [..._privateTags]
+          ..removeWhere(
+            (tag) =>
+                tag.length >= 2 && tag[0] == item.type && tag[1] == item.id,
+          );
         final published = await _publishGlobalBookmarks(
           [..._globalBookmarks]..removeWhere((candidate) => candidate == item),
           privateCandidate: privateCandidate,
@@ -678,7 +693,7 @@ class BookmarkService {
   /// incapable of disturbing another client's private bookmarks.
   Future<bool> _publishGlobalBookmarks(
     List<BookmarkItem> candidate, {
-    List<BookmarkItem>? privateCandidate,
+    List<List<String>>? privateCandidate,
   }) async {
     try {
       if (!_authService.isAuthenticated) {
@@ -724,9 +739,10 @@ class BookmarkService {
         ..clear()
         ..addAll(candidate);
       if (privateCandidate != null) {
+        _privateTags = privateCandidate;
         _privateBookmarks
           ..clear()
-          ..addAll(privateCandidate);
+          ..addAll(_itemsFromTags(privateCandidate));
         _lastKnownRemoteContent = content;
         _privateItemsState = privateCandidate.isEmpty
             ? _PrivateItemsState.none
@@ -758,7 +774,7 @@ class BookmarkService {
   /// re-encryption that silently produced the wrong bytes would destroy
   /// private bookmarks this client cannot reconstruct. Everything else keeps
   /// carrying the original ciphertext untouched.
-  Future<String?> _encryptPrivateItems(List<BookmarkItem> items) async {
+  Future<String?> _encryptPrivateItems(List<List<String>> items) async {
     // A list with no private items left carries no payload at all, rather than
     // the ciphertext of an empty array.
     if (items.isEmpty) return '';
@@ -767,7 +783,7 @@ class BookmarkService {
     final identity = _authService.currentIdentity;
     if (pubkey == null || identity == null) return null;
 
-    final plaintext = jsonEncode([for (final item in items) item.toTag()]);
+    final plaintext = jsonEncode(items);
     try {
       final ciphertext = await identity.nip44Encrypt(pubkey, plaintext);
       if (ciphertext == null || ciphertext.isEmpty) {
@@ -807,6 +823,7 @@ class BookmarkService {
   /// private items in `content` — a stringified tag array encrypted to the
   /// author's own key. The ciphertext is still captured verbatim so a
   /// public-item write can republish it untouched.
+  ///
   /// Nothing here mutates state until every await has resolved. Decryption
   /// suspends, and syncs are not serialized (#7163), so a `clear()` before the
   /// await and an `addAll` after it would let two adopts interleave into a
@@ -820,9 +837,10 @@ class BookmarkService {
     _globalBookmarks
       ..clear()
       ..addAll(_itemsFromTags(event.tags));
+    _privateTags = private.tags;
     _privateBookmarks
       ..clear()
-      ..addAll(private.items);
+      ..addAll(_itemsFromTags(private.tags));
     _privateItemsState = private.state;
   }
 
@@ -844,11 +862,11 @@ class BookmarkService {
   Future<_PrivateItemsRead> _readPrivateItems(String content) async {
     const unreadable = _PrivateItemsRead(
       state: _PrivateItemsState.unreadable,
-      items: [],
+      tags: [],
     );
 
     if (content.isEmpty) {
-      return const _PrivateItemsRead(state: _PrivateItemsState.none, items: []);
+      return const _PrivateItemsRead(state: _PrivateItemsState.none, tags: []);
     }
 
     // NIP-51 deprecated NIP-04 for this field and tells clients to detect it by
@@ -882,16 +900,12 @@ class BookmarkService {
       final tags = _tagsFromPrivatePayload(plaintext);
       if (tags == null) return unreadable;
 
-      final items = _itemsFromTags(tags);
       Log.debug(
-        'Read ${items.length} private bookmark items',
+        'Read ${_itemsFromTags(tags).length} private bookmark items',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return _PrivateItemsRead(
-        state: _PrivateItemsState.readable,
-        items: items,
-      );
+      return _PrivateItemsRead(state: _PrivateItemsState.readable, tags: tags);
     } catch (e) {
       Log.error(
         'Failed to read private bookmark items: $e',

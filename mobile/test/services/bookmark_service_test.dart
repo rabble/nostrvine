@@ -1157,6 +1157,36 @@ void main() {
         },
       );
 
+      test('a removal rewrites only the entry it removes', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              [],
+              content: await encryptToSelf([
+                ['title', 'Reading list'],
+                ['e', privateVideo],
+                ['e', 'keep-me', 'wss://relay.example', 'a petname', 'extra'],
+              ]),
+            ),
+          ],
+        );
+        final service = createService();
+
+        await service.toggleVideoInGlobalBookmarks(privateVideo);
+
+        expect(
+          await decryptToSelf(signedContent!),
+          equals([
+            ['title', 'Reading list'],
+            ['e', 'keep-me', 'wss://relay.example', 'a petname', 'extra'],
+          ]),
+          reason:
+              're-encrypting from parsed items would drop another client tag '
+              'this one does not model, and truncate the fifth position - '
+              'losses the byte-for-byte carry-through could never cause',
+        );
+      });
+
       test('clears content once the last private item is removed', () async {
         stubRelay(
           events: [
