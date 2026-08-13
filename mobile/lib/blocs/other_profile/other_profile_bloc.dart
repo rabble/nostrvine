@@ -76,7 +76,13 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   bool get isBlocked => _blocklistRepository.isBlocked(pubkey);
 
   /// Whether the current user is following the viewed profile.
-  bool get isFollowing => _followRepository.isFollowing(pubkey);
+  ///
+  /// A blocked account reports false. That matches `MyFollowingBloc`, which
+  /// every other follow surface reads and which already filters blocked
+  /// pubkeys, and it matches the kind 3 we publish (#6903). The profile ⋯
+  /// sheet gates its `Unfollow <name>` row on this, so without the check it
+  /// offers to unfollow an account the rest of the app says is not followed.
+  bool get isFollowing => !isBlocked && _followRepository.isFollowing(pubkey);
 
   Future<void> _onLoadRequested(
     OtherProfileLoadRequested event,
