@@ -432,6 +432,9 @@ definitions:
           --output report.xml \
           e2e/maestro/flows/likeFlow.yaml \
           e2e/maestro/flows/commentFlow.yaml
+      # Script-level, not workflow-level: Codemagic rejects `test_report` as an
+      # unknown workflow field ("extra fields not permitted").
+      test_report: report.xml
     - &boot_ios_simulator
       name: Boot iOS Simulator
       script: |
@@ -824,7 +827,6 @@ workflows:
       - ~/.maestro/tests/**/screen-hierarchy/**
       - ~/.maestro/tests/**/logs/maestro.log
       - ~/.maestro/tests/**/commands.json
-    test_report: report.xml
 
   e2e-smoke-android:
     name: E2E Smoke Tests (Android)
