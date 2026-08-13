@@ -14,6 +14,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/library/clip_category_actions.dart';
 import 'package:openvine/widgets/library/clip_category_chips.dart';
+import 'package:openvine/widgets/library/drag_select_region.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:openvine/widgets/library/pinch_zoom_grid.dart';
 import 'package:openvine/widgets/library/trashed_clips_list.dart';
@@ -270,7 +271,7 @@ class _FilterContent extends StatelessWidget {
       columnCount: state.gridColumnCount,
       backgroundColor: backgroundColor,
       selectedClipIds: state.selectedClipIds,
-      showSelectionIndicator: selectionEnabled,
+      selectionEnabled: selectionEnabled,
       disabledClipIds: state.disabledClipIds,
       selectedIsStopMotion: state.selectedIsStopMotion,
       scrollController: scrollController,
@@ -285,7 +286,6 @@ class _FilterContent extends StatelessWidget {
         }
         _showClipPreview(context, clip);
       },
-      onLongPressClip: (clip) => _showClipPreview(context, clip),
     );
   }
 
@@ -460,9 +460,8 @@ class _MasonryLayout extends StatelessWidget {
     required this.columnCount,
     required this.backgroundColor,
     required this.selectedClipIds,
-    required this.showSelectionIndicator,
+    required this.selectionEnabled,
     required this.onTapClip,
-    required this.onLongPressClip,
     this.disabledClipIds = const {},
     this.scrollController,
     this.targetAspectRatio,
@@ -474,11 +473,15 @@ class _MasonryLayout extends StatelessWidget {
   final int columnCount;
   final Color backgroundColor;
   final Set<String> selectedClipIds;
-  final bool showSelectionIndicator;
+
+  /// Whether the grid is picking clips rather than browsing them: tiles carry
+  /// a selection badge, a tap toggles one, and a long press drags a range of
+  /// them out.
+  final bool selectionEnabled;
+
   final Set<String> disabledClipIds;
   final ScrollController? scrollController;
   final ValueChanged<DivineVideoClip> onTapClip;
-  final ValueChanged<DivineVideoClip> onLongPressClip;
   final double? targetAspectRatio;
   final double topPadding;
 
@@ -509,35 +512,57 @@ class _MasonryLayout extends StatelessWidget {
           Directionality.of(context),
         );
       },
-      builder: (context, columns, controller) => MasonryGridView.count(
-        controller: controller,
-        padding: .only(
-          top: topPadding,
-          bottom: MediaQuery.viewPaddingOf(context).bottom,
+      builder: (context, columns, controller) => DragSelectRegion(
+        scrollController: controller,
+        onStarted: (index) => context.read<ClipsLibraryBloc>().add(
+          ClipsLibraryDragSelectionStarted(
+            clips[index],
+            targetAspectRatio: targetAspectRatio,
+            selectionEnabled: selectionEnabled,
+          ),
         ),
-        crossAxisCount: columns,
-        mainAxisSpacing: 4,
-        crossAxisSpacing: 4,
-        cacheExtent: MediaQuery.sizeOf(context).height * 2,
-        itemCount: clips.length,
-        itemBuilder: (context, index) {
-          final clip = clips[index];
-          final selectionIndex = selectionIndexById[clip.id] ?? -1;
-
-          return VideoClipThumbnailCard(
-            clip: clip,
-            selectionIndex: selectionIndex,
-            showSelectionIndicator: showSelectionIndicator,
-            disabled:
+        onExtended: (index) => context.read<ClipsLibraryBloc>().add(
+          ClipsLibraryDragSelectionExtended(clips[index]),
+        ),
+        onEnded: () => context.read<ClipsLibraryBloc>().add(
+          const ClipsLibraryDragSelectionEnded(),
+        ),
+        child: MasonryGridView.count(
+          controller: controller,
+          padding: .only(
+            top: topPadding,
+            bottom: MediaQuery.viewPaddingOf(context).bottom,
+          ),
+          crossAxisCount: columns,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          cacheExtent: MediaQuery.sizeOf(context).height * 2,
+          itemCount: clips.length,
+          itemBuilder: (context, index) {
+            final clip = clips[index];
+            final selectionIndex = selectionIndexById[clip.id] ?? -1;
+            final disabled =
                 disabledClipIds.contains(clip.id) ||
                 (targetAspectRatio != null &&
                     targetAspectRatio != clip.targetAspectRatio.value) ||
                 (selectedIsStopMotion != null &&
-                    clip.isStopMotion != selectedIsStopMotion),
-            onTap: () => onTapClip(clip),
-            onLongPress: () => onLongPressClip(clip),
-          );
-        },
+                    clip.isStopMotion != selectedIsStopMotion);
+
+            return DragSelectSlot(
+              index: index,
+              enabled: !disabled,
+              child: VideoClipThumbnailCard(
+                clip: clip,
+                selectionIndex: selectionIndex,
+                showSelectionIndicator: selectionEnabled,
+                disabled: disabled,
+                onTap: () => onTapClip(clip),
+                // No long press here: it belongs to the drag selection above,
+                // and a handler at this depth would win the arena from it.
+              ),
+            );
+          },
+        ),
       ),
     );
   }

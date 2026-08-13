@@ -166,6 +166,44 @@ final class ClipsLibraryOrganizeResult extends Equatable {
   List<Object?> get props => [action, clipIds, categoryName];
 }
 
+/// A long-press-and-drag range selection running on the clips grid.
+///
+/// Held for the length of the gesture so every move can be resolved against
+/// the same starting point: the range always runs from [anchorClipId] to the
+/// clip under the finger, and everything outside it falls back to
+/// [baseSelectedClipIds]. That is what lets the user drag back over a clip to
+/// undo it.
+final class ClipsLibraryDragSelection extends Equatable {
+  const ClipsLibraryDragSelection({
+    required this.anchorClipId,
+    required this.selecting,
+    required this.baseSelectedClipIds,
+    this.targetAspectRatio,
+  });
+
+  /// The clip the drag started on. One end of the range.
+  final String anchorClipId;
+
+  /// Whether the drag selects or deselects. Decided by the anchor: starting
+  /// on an unselected clip selects, starting on a selected one deselects.
+  final bool selecting;
+
+  /// The selection as it stood when the drag started.
+  final Set<String> baseSelectedClipIds;
+
+  /// Aspect ratio every clip the drag picks up has to match, or `null` while
+  /// the selection is still empty and the first clip decides it.
+  final double? targetAspectRatio;
+
+  @override
+  List<Object?> get props => [
+    anchorClipId,
+    selecting,
+    baseSelectedClipIds,
+    targetAspectRatio,
+  ];
+}
+
 /// Operation status for clips library actions.
 enum ClipsLibraryStatus {
   /// Initial state, no operation in progress.
@@ -255,6 +293,7 @@ final class ClipsLibraryState extends Equatable {
     this.categories = const [],
     this.filter = const ClipLibraryAllFilter(),
     this.lastOrganizeResult,
+    this.dragSelection,
   });
 
   /// Current operation status.
@@ -324,6 +363,10 @@ final class ClipsLibraryState extends Equatable {
   /// feedback), or `null` when there is nothing to report.
   final ClipsLibraryOrganizeResult? lastOrganizeResult;
 
+  /// The long-press-and-drag range selection in progress, or `null` when the
+  /// user is not dragging across the grid.
+  final ClipsLibraryDragSelection? dragSelection;
+
   /// The category the [filter] is showing, or `null` for the built-in
   /// filters and for a category that no longer exists.
   ClipCategory? get activeCategory {
@@ -358,12 +401,26 @@ final class ClipsLibraryState extends Equatable {
   /// selected. Drives the no-mixing rule — stop-motion stills and normal
   /// clips cannot coexist in one editor timeline, so once one type is
   /// selected the other becomes non-selectable.
-  bool? get selectedIsStopMotion {
-    if (selectedClipIds.isEmpty) return null;
+  bool? get selectedIsStopMotion => stopMotionTypeOf(selectedClipIds);
+
+  /// Type of the clips [clipIds] names — `true` when they are stop-motion,
+  /// `false` for normal video clips, `null` when the set names none of the
+  /// loaded clips. See [selectedIsStopMotion] for the current selection.
+  bool? stopMotionTypeOf(Set<String> clipIds) {
+    if (clipIds.isEmpty) return null;
     for (final clip in clips) {
-      if (selectedClipIds.contains(clip.id)) return clip.isStopMotion;
+      if (clipIds.contains(clip.id)) return clip.isStopMotion;
     }
     return null;
+  }
+
+  /// Combined duration of the clips [clipIds] names.
+  Duration durationOf(Set<String> clipIds) {
+    var total = Duration.zero;
+    for (final clip in clips) {
+      if (clipIds.contains(clip.id)) total += clip.duration;
+    }
+    return total;
   }
 
   /// Creates a copy of this state with the given fields replaced.
@@ -386,6 +443,8 @@ final class ClipsLibraryState extends Equatable {
     List<ClipCategory>? categories,
     ClipLibraryFilter? filter,
     ClipsLibraryOrganizeResult? lastOrganizeResult,
+    ClipsLibraryDragSelection? dragSelection,
+    bool clearDragSelection = false,
     bool clearOrganizeResult = false,
     bool clearGallerySaveResult = false,
     bool clearDeletedCount = false,
@@ -420,6 +479,9 @@ final class ClipsLibraryState extends Equatable {
       lastOrganizeResult: clearOrganizeResult
           ? null
           : (lastOrganizeResult ?? this.lastOrganizeResult),
+      dragSelection: clearDragSelection
+          ? null
+          : (dragSelection ?? this.dragSelection),
     );
   }
 
@@ -443,5 +505,6 @@ final class ClipsLibraryState extends Equatable {
     categories,
     filter,
     lastOrganizeResult,
+    dragSelection,
   ];
 }

@@ -4,6 +4,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -613,8 +614,174 @@ void main() {
         ).called(1);
       });
 
+      testWidgets('long-pressing a clip opens a drag selection', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            clips: [clip1, clip2],
+            sortedClips: [clip1, clip2],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(VideoClipThumbnailCard).first),
+        );
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+
+        verify(
+          () => mockBloc.add(ClipsLibraryDragSelectionStarted(clip1)),
+        ).called(1);
+
+        await gesture.up();
+        await tester.pump();
+
+        verify(
+          () => mockBloc.add(const ClipsLibraryDragSelectionEnded()),
+        ).called(1);
+      });
+
+      testWidgets('dragging on from the long press reaches the next clip', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            clips: [clip1, clip2],
+            sortedClips: [clip1, clip2],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        final cards = find.byType(VideoClipThumbnailCard);
+        final gesture = await tester.startGesture(
+          tester.getCenter(cards.first),
+        );
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+        await gesture.moveTo(tester.getCenter(cards.at(1)));
+        await tester.pump();
+
+        // The whole range is the bloc's to work out; the grid only reports
+        // which clip the finger has reached.
+        verify(
+          () => mockBloc.add(ClipsLibraryDragSelectionExtended(clip2)),
+        ).called(1);
+
+        await gesture.up();
+        await tester.pump();
+      });
+
+      testWidgets('holding the finger at the bottom scrolls on into the grid', (
+        tester,
+      ) async {
+        // Four rows of three, so most of the grid starts off screen and the
+        // range can only reach it by way of the edge auto-scroll.
+        final clips = [
+          for (var i = 0; i < 12; i++)
+            DivineVideoClip(
+              id: 'clip$i',
+              video: EditorVideo.file('/path/to/clip$i.mp4'),
+              duration: const Duration(seconds: 1),
+              recordedAt: DateTime(2026),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+        ];
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            clips: clips,
+            sortedClips: clips,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        final grid = tester.getRect(find.byType(MasonryGridView));
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(VideoClipThumbnailCard).at(1)),
+        );
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+        await gesture.moveTo(Offset(grid.center.dx, grid.bottom - 8));
+        await tester.pump();
+
+        // Long enough for the auto-scroll to run out of grid, which parks the
+        // finger over the last clip in the middle column.
+        for (var i = 0; i < 20; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        verify(
+          () => mockBloc.add(ClipsLibraryDragSelectionExtended(clips[10])),
+        ).called(1);
+
+        await gesture.up();
+        await tester.pump();
+      });
+
+      testWidgets('a clip that cannot join the selection starts no drag', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            clips: [clip1],
+            sortedClips: [clip1],
+          ),
+        );
+
+        // The editor's timeline is square, so the vertical clip is disabled.
+        await tester.pumpWidget(buildWidget(targetAspectRatio: 1));
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(VideoClipThumbnailCard).first),
+        );
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+        await gesture.up();
+        await tester.pump();
+
+        verifyNever(
+          () => mockBloc.add(
+            ClipsLibraryDragSelectionStarted(clip1, targetAspectRatio: 1),
+          ),
+        );
+      });
+
+      testWidgets('long-pressing while browsing starts a selection too', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            clips: [clip1, clip2],
+            sortedClips: [clip1, clip2],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget(selectionEnabled: false));
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(VideoClipThumbnailCard).first),
+        );
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+        await gesture.up();
+        await tester.pump();
+
+        // Browsing has no selection on screen to toggle against, which the
+        // bloc needs to know — it is the press that opens selection mode.
+        verify(
+          () => mockBloc.add(
+            ClipsLibraryDragSelectionStarted(clip1, selectionEnabled: false),
+          ),
+        ).called(1);
+      });
+
       testWidgets(
-        'long-press → trash closes preview and soft-deletes the clip',
+        'tap → trash closes preview and soft-deletes the clip',
         (tester) async {
           DivineVideoPlayerController.resetIdCounterForTesting();
           final messenger =
@@ -660,16 +827,16 @@ void main() {
             ProviderScope(
               child: MockGoRouterProvider(
                 goRouter: mockGoRouter,
-                child: buildWidget(),
+                child: buildWidget(selectionEnabled: false),
               ),
             ),
           );
 
-          // Long-press opens the VideoClipPreview overlay; tapping
-          // (default selectionEnabled=true) would only toggle selection.
-          // pumpAndSettle never settles here because the preview shows a
-          // CircularProgressIndicator while the player initializes.
-          await tester.longPress(find.byType(VideoClipThumbnailCard).first);
+          // Browsing, so a tap opens the VideoClipPreview overlay; the long
+          // press belongs to the drag selection. pumpAndSettle never settles
+          // here because the preview shows a CircularProgressIndicator while
+          // the player initializes.
+          await tester.tap(find.byType(VideoClipThumbnailCard).first);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 

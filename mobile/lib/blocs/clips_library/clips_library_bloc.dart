@@ -42,6 +42,9 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     on<ClipsLibraryLoadRequested>(_onLoadRequested, transformer: droppable());
     on<ClipsLibraryToggleSelection>(_onToggleSelection);
     on<ClipsLibraryClearSelection>(_onClearSelection);
+    on<ClipsLibraryDragSelectionStarted>(_onDragSelectionStarted);
+    on<ClipsLibraryDragSelectionExtended>(_onDragSelectionExtended);
+    on<ClipsLibraryDragSelectionEnded>(_onDragSelectionEnded);
     on<ClipsLibraryDeleteSelected>(_onDeleteSelected, transformer: droppable());
     on<ClipsLibraryDeleteClip>(_onDeleteClip, transformer: droppable());
     on<ClipsLibrarySaveToGallery>(_onSaveToGallery, transformer: droppable());
@@ -268,6 +271,100 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         selectedClipIds: selectedIds,
         selectedDuration: selectedDuration,
       ),
+    );
+  }
+
+  void _onDragSelectionStarted(
+    ClipsLibraryDragSelectionStarted event,
+    Emitter<ClipsLibraryState> emit,
+  ) {
+    final clip = event.clip;
+    // Disabled clips (already in the editor) cannot be toggled, so they are
+    // no anchor either.
+    if (state.disabledClipIds.contains(clip.id)) return;
+
+    final next = _withDragRange(
+      ClipsLibraryDragSelection(
+        anchorClipId: clip.id,
+        // A press that lands while the selection is out of sight cannot be
+        // toggling it — it is the one that brings the selection up.
+        selecting:
+            !event.selectionEnabled || !state.selectedClipIds.contains(clip.id),
+        baseSelectedClipIds: state.selectedClipIds,
+        targetAspectRatio: event.targetAspectRatio,
+      ),
+      focusClipId: clip.id,
+    );
+
+    emit(
+      event.selectionEnabled
+          ? next
+          : next.copyWith(
+              isLibrarySelectionMode: true,
+              didAutoOpenSelectionMode: false,
+            ),
+    );
+  }
+
+  void _onDragSelectionExtended(
+    ClipsLibraryDragSelectionExtended event,
+    Emitter<ClipsLibraryState> emit,
+  ) {
+    final drag = state.dragSelection;
+    if (drag == null) return;
+    emit(_withDragRange(drag, focusClipId: event.clip.id));
+  }
+
+  void _onDragSelectionEnded(
+    ClipsLibraryDragSelectionEnded event,
+    Emitter<ClipsLibraryState> emit,
+  ) {
+    if (state.dragSelection == null) return;
+    emit(state.copyWith(clearDragSelection: true));
+  }
+
+  /// The state a drag reaching [focusClipId] leaves behind.
+  ///
+  /// Runs the range from the anchor to the clip under the finger over the
+  /// selection the drag started from, so clips the finger has moved back past
+  /// return to whatever they were before it.
+  ClipsLibraryState _withDragRange(
+    ClipsLibraryDragSelection drag, {
+    required String focusClipId,
+  }) {
+    final clips = state.sortedClips;
+    final anchorIndex = clips.indexWhere((c) => c.id == drag.anchorClipId);
+    final focusIndex = clips.indexWhere((c) => c.id == focusClipId);
+    if (anchorIndex < 0 || focusIndex < 0) return state;
+
+    final selectedIds = Set<String>.from(drag.baseSelectedClipIds);
+    // Both constraints tighten as the range grows: with nothing selected yet,
+    // the first clip the drag picks up is what the rest has to match.
+    var isStopMotion = state.stopMotionTypeOf(drag.baseSelectedClipIds);
+    var aspectRatio = drag.targetAspectRatio;
+    final step = focusIndex >= anchorIndex ? 1 : -1;
+
+    for (var i = anchorIndex; ; i += step) {
+      final clip = clips[i];
+      if (!state.disabledClipIds.contains(clip.id)) {
+        if (!drag.selecting) {
+          selectedIds.remove(clip.id);
+        } else if ((isStopMotion == null ||
+                clip.isStopMotion == isStopMotion) &&
+            (aspectRatio == null ||
+                aspectRatio == clip.targetAspectRatio.value)) {
+          selectedIds.add(clip.id);
+          isStopMotion ??= clip.isStopMotion;
+          aspectRatio ??= clip.targetAspectRatio.value;
+        }
+      }
+      if (i == focusIndex) break;
+    }
+
+    return state.copyWith(
+      selectedClipIds: selectedIds,
+      selectedDuration: state.durationOf(selectedIds),
+      dragSelection: drag,
     );
   }
 
