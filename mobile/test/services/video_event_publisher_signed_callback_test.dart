@@ -147,13 +147,12 @@ void main() {
             tags: any(named: 'tags'),
           ),
         ).thenAnswer((invocation) async {
-          signedEvent = Event(
+          return signedEvent = Event(
             testPubkey,
             NIP71VideoKinds.getPreferredAddressableKind(),
             invocation.namedArguments[#tags] as List<List<String>>,
             'test content',
           );
-          return signedEvent;
         });
         when(
           () => nostrClient.publishEventAwaitOk(

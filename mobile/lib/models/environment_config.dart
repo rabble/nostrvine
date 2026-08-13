@@ -74,6 +74,7 @@ AppEnvironment get buildTimeDefaultEnvironment {
 enum AppEnvironment { poc, staging, test, production, local }
 
 /// Configuration for the current app environment
+@immutable
 class EnvironmentConfig {
   const EnvironmentConfig({required this.environment});
 

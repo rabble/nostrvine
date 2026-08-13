@@ -1394,7 +1394,7 @@ class _CreatorAnalyticsSummary {
   final VideoPerformance? mostDiscussed;
   final VideoPerformance? mostReposted;
 
-  static _CreatorAnalyticsSummary build({
+  factory _CreatorAnalyticsSummary.build({
     required _CreatorAnalyticsData data,
     required _AnalyticsWindow window,
   }) {

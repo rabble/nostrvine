@@ -298,9 +298,9 @@ class VideoEvents extends _$VideoEvents {
               nip50Sort:
                   NIP50SortMode.hot, // Recent events with high engagement
             )
-            .catchError((Object error) {
+            .catchError((Object error, StackTrace stackTrace) {
               if (error is! RelayNotReadyException) {
-                throw error;
+                Error.throwWithStackTrace(error, stackTrace);
               }
               Log.warning(
                 'VideoEvents: Discovery subscription deferred until relay connection is ready',

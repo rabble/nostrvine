@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -11,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Represents a bookmarked item
+@immutable
 class BookmarkItem {
   const BookmarkItem({
     required this.type,
@@ -32,7 +34,7 @@ class BookmarkItem {
     return tag;
   }
 
-  static BookmarkItem fromTag(List<String> tag) {
+  factory BookmarkItem.fromTag(List<String> tag) {
     return BookmarkItem(
       type: tag[0],
       id: tag[1],
@@ -48,7 +50,7 @@ class BookmarkItem {
     'petname': petname,
   };
 
-  static BookmarkItem fromJson(Map<String, dynamic> json) => BookmarkItem(
+  factory BookmarkItem.fromJson(Map<String, dynamic> json) => BookmarkItem(
     type: json['type'] as String,
     id: json['id'] as String,
     relay: json['relay'] as String?,

@@ -6,6 +6,8 @@
 // extraction paths; remove when AudioExtractionService accepts an injected
 // editor dependency.
 @Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:io';
 import 'dart:ui';
 

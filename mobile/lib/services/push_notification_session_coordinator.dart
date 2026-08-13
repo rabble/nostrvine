@@ -230,9 +230,7 @@ class PushNotificationSessionCoordinator {
           name: 'PushNotificationSync',
           category: LogCategory.system,
         );
-        for (final operation in operationsToWait) {
-          _scheduleDeregisterAfterRegistration(operation);
-        }
+        operationsToWait.forEach(_scheduleDeregisterAfterRegistration);
         return;
       }
     }

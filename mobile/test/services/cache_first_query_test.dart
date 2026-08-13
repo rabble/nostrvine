@@ -166,9 +166,7 @@ void main() {
     });
 
     Future<void> cacheEvents(List<Event> events) async {
-      for (final event in events) {
-        eventRouter.handleEvent(event);
-      }
+      events.forEach(eventRouter.handleEvent);
       await eventRouter.drainForTesting();
     }
 
@@ -450,9 +448,7 @@ void main() {
     });
 
     Future<void> cacheEvents(List<Event> events) async {
-      for (final event in events) {
-        eventRouter.handleEvent(event);
-      }
+      events.forEach(eventRouter.handleEvent);
       await eventRouter.drainForTesting();
     }
 

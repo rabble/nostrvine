@@ -14,7 +14,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           currentEnvironmentProvider.overrideWithValue(
-            const EnvironmentConfig(environment: AppEnvironment.production),
+            EnvironmentConfig.production,
           ),
         ],
       );

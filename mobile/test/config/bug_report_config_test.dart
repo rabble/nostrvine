@@ -289,9 +289,10 @@ void main() {
       // (measured) rather than hanging the suite, which is what a larger
       // exponent would do. Unambiguous classes run it in ~0ms.
       final stopwatch = Stopwatch()..start();
-      for (final key in ['token${'_a' * 28}', 'token${'Aa' * 28}']) {
-        sanitizeDiagnosticText(key);
-      }
+      [
+        'token${'_a' * 28}',
+        'token${'Aa' * 28}',
+      ].forEach(sanitizeDiagnosticText);
       stopwatch.stop();
 
       expect(stopwatch.elapsedMilliseconds, lessThan(1000));

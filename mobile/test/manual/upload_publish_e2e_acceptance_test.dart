@@ -34,6 +34,8 @@
 // leaks the un-stubbed HttpOverrides into every later merged test (real sockets,
 // order-dependent "pending timers" flakes). Matches nip98_relay_acceptance_test.
 @Tags(['skip_very_good_optimization', 'integration'])
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -450,9 +452,7 @@ Future<(int, Uint8List)> _getBlob(String sha256Hex) async {
     final request = await client.getUrl(Uri.parse('$_blossomBase/$sha256Hex'));
     final response = await request.close();
     final builder = BytesBuilder();
-    await for (final chunk in response) {
-      builder.add(chunk);
-    }
+    await response.forEach(builder.add);
     return (response.statusCode, builder.toBytes());
   } finally {
     client.close();

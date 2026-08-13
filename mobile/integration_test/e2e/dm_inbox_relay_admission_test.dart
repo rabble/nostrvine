@@ -4,6 +4,8 @@
 // ABOUTME: Requires: NO Docker stack — every dependency here is local.
 
 @Tags(['service'])
+library;
+
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:drift/native.dart';

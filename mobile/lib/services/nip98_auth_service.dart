@@ -341,9 +341,7 @@ class Nip98AuthService {
         .map((entry) => entry.key)
         .toList();
 
-    for (final key in expiredKeys) {
-      _tokenCache.remove(key);
-    }
+    expiredKeys.forEach(_tokenCache.remove);
 
     if (expiredKeys.isNotEmpty) {
       Log.debug(

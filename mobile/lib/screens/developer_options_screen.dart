@@ -137,7 +137,7 @@ class _DeveloperOptionsScreenState
 
     // All available environment configurations
     final environments = [
-      const EnvironmentConfig(environment: AppEnvironment.production),
+      EnvironmentConfig.production,
       const EnvironmentConfig(environment: AppEnvironment.staging),
       const EnvironmentConfig(environment: AppEnvironment.test),
       const EnvironmentConfig(environment: AppEnvironment.poc),

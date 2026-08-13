@@ -109,7 +109,7 @@ class MuteListEntry {
     'note': note,
   };
 
-  static MuteListEntry fromJson(Map<String, dynamic> json) => MuteListEntry(
+  factory MuteListEntry.fromJson(Map<String, dynamic> json) => MuteListEntry(
     type: json['type'] as String,
     value: json['value'] as String,
     reason: ContentFilterReason.values.firstWhere(

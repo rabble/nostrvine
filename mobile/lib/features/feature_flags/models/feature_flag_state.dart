@@ -1,8 +1,10 @@
 // ABOUTME: Immutable state container for feature flag values
 // ABOUTME: Manages flag state with copy-on-write semantics and type safety
 
+import 'package:meta/meta.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 
+@immutable
 class FeatureFlagState {
   const FeatureFlagState(this._flags);
 

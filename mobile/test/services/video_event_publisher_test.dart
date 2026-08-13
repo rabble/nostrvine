@@ -163,7 +163,7 @@ void main() {
             thumbnailPath: 'https://example.com/thumbnail.jpg',
             title: 'Test Video',
             description: 'Test description',
-            hashtags: ['test', 'video'],
+            hashtags: const ['test', 'video'],
             videoWidth: 1920,
             videoHeight: 1080,
           ).copyWith(
@@ -588,13 +588,12 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
-        publishedEvent = Event(
+        return publishedEvent = Event(
           testPubkey,
           NIP71VideoKinds.getPreferredAddressableKind(),
           capturedTags,
           'test content',
         );
-        return publishedEvent;
       });
 
       when(

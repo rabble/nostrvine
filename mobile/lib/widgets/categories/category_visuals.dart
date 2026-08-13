@@ -27,7 +27,7 @@ class CategoryVisuals {
   /// relying on [CategoryGlyph]'s `errorBuilder` — is what keeps the load from
   /// ever being attempted: a missing-asset load surfaces the failure to the
   /// zone as a non-fatal even when `errorBuilder` handles the visual (#6116).
-  static CategoryVisuals forCategory(VideoCategory category, int index) {
+  factory CategoryVisuals.forCategory(VideoCategory category, int index) {
     final name = category.name.toLowerCase();
     final featured = _featuredCategoryVisuals[name];
     if (featured != null) {

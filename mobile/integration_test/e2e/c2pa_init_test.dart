@@ -6,6 +6,8 @@
 // ABOUTME: cert is never produced, so the assertion below fails there.
 
 @Tags(['service'])
+library;
+
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

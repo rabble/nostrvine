@@ -5,6 +5,8 @@
 // ABOUTME: POST_NOTIFICATIONS pre-granted so no native dialog blocks the UI.
 
 @Tags(['service'])
+library;
+
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

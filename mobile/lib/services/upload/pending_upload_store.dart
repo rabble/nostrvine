@@ -197,9 +197,7 @@ class PendingUploadStore {
         .where((entry) => entry.value.nostrPubkey == ownerPubkey)
         .map((entry) => entry.key)
         .toList();
-    for (final id in queueIds) {
-      _pendingSaveQueue.remove(id);
-    }
+    queueIds.forEach(_pendingSaveQueue.remove);
     if (_pendingSaveQueue.isEmpty) {
       _saveQueueTimer?.cancel();
       _saveQueueTimer = null;

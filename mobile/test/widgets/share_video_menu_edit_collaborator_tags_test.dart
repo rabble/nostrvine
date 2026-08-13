@@ -98,13 +98,12 @@ void main() {
       capturedTags = List<List<String>>.from(
         invocation.namedArguments[#tags] as List<List<String>>,
       );
-      signedEvent = Event(
+      return signedEvent = Event(
         ownerPubkey,
         NIP71VideoKinds.addressableShortVideo,
         capturedTags,
         invocation.namedArguments[#content] as String,
       );
-      return signedEvent;
     });
 
     when(

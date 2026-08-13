@@ -1,5 +1,14 @@
 include: ../analysis_options.yaml
 
+analyzer:
+  errors:
+    # Test doubles expose a `Object? somethingError` knob that a test sets to
+    # make the fake fail, then `throw` it. The knob has to carry both an
+    # `Exception` and an `Error` — several suites inject `StateError`
+    # precisely because the production code treats the two differently — and
+    # Dart has no supertype of both to narrow it to. Enforced in `lib`.
+    only_throw_errors: ignore
+
 linter:
   rules:
     # Tests legitimately use print() for diagnostic output — exempt here.

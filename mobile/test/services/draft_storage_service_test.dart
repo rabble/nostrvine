@@ -50,7 +50,7 @@ void main() {
         clipsDao: database.clipsDao,
       );
 
-      for (final basename in [
+      const [
         'video.mp4',
         'video1.mp4',
         'video2.mp4',
@@ -60,9 +60,7 @@ void main() {
         'a2.mp4',
         'b1.mp4',
         'old_video.mp4',
-      ]) {
-        createDocumentFile(basename);
-      }
+      ].forEach(createDocumentFile);
     });
 
     tearDown(() async {

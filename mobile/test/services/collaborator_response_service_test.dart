@@ -61,13 +61,12 @@ void main() {
       ),
     ).thenAnswer((invocation) async {
       final tags = invocation.namedArguments[#tags] as List<List<String>>;
-      signedEvent = Event(
+      return signedEvent = Event(
         collaboratorPubkey,
         CollaborationEventKinds.collaboratorResponse,
         tags,
         '',
       );
-      return signedEvent;
     });
     when(
       () => nostrClient.publishEvent(any()),

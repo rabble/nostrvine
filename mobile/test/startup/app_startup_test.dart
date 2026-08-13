@@ -49,9 +49,9 @@ void main() {
       ];
 
       // None of these should throw
-      for (final breadcrumb in testBreadcrumbs) {
-        CrashReportingService.instance.logInitializationStep(breadcrumb);
-      }
+      testBreadcrumbs.forEach(
+        CrashReportingService.instance.logInitializationStep,
+      );
 
       // Also test regular logging
       CrashReportingService.instance.log('Startup timeout detected');

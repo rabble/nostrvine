@@ -102,6 +102,9 @@ class Directory {
     bool followLinks = true,
   }) => const Stream.empty();
 
+  // Mirrors `dart:io`'s `Directory.systemTemp`, which is a static getter. This
+  // stub has to keep the same shape for the conditional import to line up.
+  // ignore: prefer_constructors_over_static_methods
   static Directory get systemTemp => Directory('/tmp');
 }
 

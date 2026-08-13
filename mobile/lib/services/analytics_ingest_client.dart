@@ -114,7 +114,7 @@ class ProductAnalyticsEvent {
 
   String toPayloadJson() => jsonEncode(toJson());
 
-  static ProductAnalyticsEvent fromPayloadJson(String payloadJson) {
+  factory ProductAnalyticsEvent.fromPayloadJson(String payloadJson) {
     final decoded = jsonDecode(payloadJson) as Map<String, dynamic>;
     final properties =
         (decoded['properties'] as Map<String, dynamic>?) ??

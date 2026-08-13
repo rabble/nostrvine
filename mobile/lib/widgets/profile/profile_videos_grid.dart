@@ -77,7 +77,7 @@ class ActiveUploadsView extends Equatable {
 
   /// Projects the bloc's [BackgroundPublishState] into the shape the grid
   /// renders. Used as the selector callback in [_ProfileVideosGridState.build].
-  static ActiveUploadsView fromState(BackgroundPublishState state) {
+  factory ActiveUploadsView.fromState(BackgroundPublishState state) {
     return ActiveUploadsView([
       for (final upload in state.uploads)
         if (upload.result == null)

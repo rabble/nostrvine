@@ -46,9 +46,7 @@ class NostrTagEnrichmentAttemptTracker {
     final now = _now();
     final enriched = {for (final id in enrichedIds) id.toLowerCase()};
 
-    for (final id in enriched) {
-      _nextAttemptAtById.remove(id);
-    }
+    enriched.forEach(_nextAttemptAtById.remove);
 
     for (final id in attemptedIds) {
       final key = id.toLowerCase();

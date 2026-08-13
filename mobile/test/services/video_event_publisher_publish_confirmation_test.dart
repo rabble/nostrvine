@@ -452,8 +452,7 @@ void main() {
         final tags = invocation.namedArguments[#tags] as List<List<String>>;
         if (kind == audioEventKind) {
           audioTags = tags;
-          signedAudioEvent = Event(testPubkey, audioEventKind, tags, '');
-          return signedAudioEvent;
+          return signedAudioEvent = Event(testPubkey, audioEventKind, tags, '');
         }
 
         videoTags = tags;

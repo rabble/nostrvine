@@ -3,6 +3,8 @@
 // shared-process bundling cannot isolate. Same pattern as the reverse/split
 // service tests.
 @Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

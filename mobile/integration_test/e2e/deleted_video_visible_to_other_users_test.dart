@@ -5,6 +5,8 @@
 // ABOUTME: drives Postgres, the Keycast API, and the relay directly.
 
 @Tags(['service'])
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

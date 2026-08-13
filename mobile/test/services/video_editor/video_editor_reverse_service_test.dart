@@ -1,6 +1,8 @@
 // Permanent: swaps PathProviderPlatform.instance and ProVideoEditor.instance;
 // keep isolated until VideoEditorReverseService accepts injected dependencies.
 @Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

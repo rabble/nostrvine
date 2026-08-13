@@ -90,25 +90,28 @@ class _VideoMetadataEditBottomBarState
           messenger.showSnackBar(snackBar);
         }
       } else if (result is VideoUpdateFailure) {
-        throw result.error;
+        _reportUpdateFailure(result.error);
       }
     } catch (e) {
-      Log.error(
-        'Failed to update video: $e',
-        name: 'VideoMetadataEditBottomBar',
-        category: LogCategory.ui,
-      );
-
-      if (mounted) {
-        setState(() => _isUpdating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.shareMenuFailedToUpdateVideo('$e'),
-            error: true,
-          ),
-        );
-      }
+      _reportUpdateFailure(e);
     }
+  }
+
+  void _reportUpdateFailure(Object error) {
+    Log.error(
+      'Failed to update video: $error',
+      name: 'VideoMetadataEditBottomBar',
+      category: LogCategory.ui,
+    );
+
+    if (!mounted) return;
+    setState(() => _isUpdating = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        context.l10n.shareMenuFailedToUpdateVideo('$error'),
+        error: true,
+      ),
+    );
   }
 
   Future<void> _confirmDelete() async {

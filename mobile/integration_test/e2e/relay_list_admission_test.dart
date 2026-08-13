@@ -4,6 +4,8 @@
 // ABOUTME: Requires: NO Docker stack — every dependency here is local.
 
 @Tags(['service'])
+library;
+
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';

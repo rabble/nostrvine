@@ -158,8 +158,9 @@ void main() {
         child: buildLocalizedWidget(
           BlocProvider<SupporterCubit>(
             create: (_) {
-              cubit = SupporterCubit(repository: _FakeRepository(controller));
-              return cubit;
+              return cubit = SupporterCubit(
+                repository: _FakeRepository(controller),
+              );
             },
             child: const SupporterScreenView(),
           ),

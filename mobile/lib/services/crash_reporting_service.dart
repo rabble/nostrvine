@@ -12,6 +12,11 @@ import 'package:unified_logger/unified_logger.dart';
 /// Crash reporting service for production error tracking
 class CrashReportingService {
   static CrashReportingService? _instance;
+
+  // A constructor cannot be a getter, and the alternative the rule implies —
+  // `factory CrashReportingService()` — would hide that every call hands back
+  // the same object. `.instance` is the repo-wide singleton accessor.
+  // ignore: prefer_constructors_over_static_methods
   static CrashReportingService get instance =>
       _instance ??= CrashReportingService._();
 

@@ -91,7 +91,7 @@ void main() {
       expect(
         service.wasSeenRecently(
           'vid-recent',
-          within: const Duration(),
+          within: Duration.zero,
         ),
         isFalse,
       );

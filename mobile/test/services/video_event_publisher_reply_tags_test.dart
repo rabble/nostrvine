@@ -128,13 +128,12 @@ void main() {
       ),
     ).thenAnswer((invocation) async {
       capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
-      publishedEvent = Event(
+      return publishedEvent = Event(
         testPubkey,
         NIP71VideoKinds.getPreferredAddressableKind(),
         capturedTags,
         'reply title',
       );
-      return publishedEvent;
     });
 
     when(

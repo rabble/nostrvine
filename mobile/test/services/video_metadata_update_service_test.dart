@@ -100,13 +100,12 @@ void main() {
         invocation.namedArguments[#tags] as List<List<String>>,
       );
       capturedCreatedAt = invocation.namedArguments[#createdAt] as int? ?? 0;
-      signedEvent = Event(
+      return signedEvent = Event(
         _ownerPubkey,
         NIP71VideoKinds.addressableShortVideo,
         capturedTags,
         invocation.namedArguments[#content] as String,
       );
-      return signedEvent;
     });
 
     when(

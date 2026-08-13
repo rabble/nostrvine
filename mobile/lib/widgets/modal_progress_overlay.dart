@@ -20,7 +20,7 @@ class ModalProgressOverlay {
   final OverlayEntry _entry;
   bool _dismissed = false;
 
-  static ModalProgressOverlay show(BuildContext context) {
+  factory ModalProgressOverlay.show(BuildContext context) {
     final entry = OverlayEntry(
       builder: (context) => const _ProgressBarrier(),
     );

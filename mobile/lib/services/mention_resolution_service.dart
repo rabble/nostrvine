@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
@@ -15,6 +16,7 @@ final _linkifiedTokenRegex = RegExp(
   caseSensitive: false,
 );
 
+@immutable
 class MentionBinding {
   const MentionBinding({
     required this.display,

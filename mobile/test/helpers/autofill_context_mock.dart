@@ -13,7 +13,7 @@ class AutofillContextRecorder {
   AutofillContextRecorder._();
 
   /// Installs the mock handler and returns the recorder.
-  static AutofillContextRecorder install() {
+  factory AutofillContextRecorder.install() {
     final recorder = AutofillContextRecorder._();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.textInput, (call) async {

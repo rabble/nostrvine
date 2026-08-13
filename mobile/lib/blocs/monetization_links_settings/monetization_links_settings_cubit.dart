@@ -135,9 +135,7 @@ class MonetizationLinksSettingsCubit
         name: 'MonetizationLinksSettingsCubit',
         category: LogCategory.system,
       );
-      for (final link in visibleLinks) {
-        _trackConfiguredLink(link);
-      }
+      visibleLinks.forEach(_trackConfiguredLink);
       emit(
         _stateFromProfile(
           currentProfile: saved,

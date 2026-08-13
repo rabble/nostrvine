@@ -12,6 +12,7 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
+@immutable
 class MentionNip05Claim {
   const MentionNip05Claim({required this.pubkey, required this.nip05});
 

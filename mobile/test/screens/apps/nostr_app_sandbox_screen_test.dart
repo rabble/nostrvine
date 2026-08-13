@@ -1169,11 +1169,10 @@ class _HistoryAwareWebViewPlatform extends WebViewPlatform {
   PlatformWebViewController createPlatformWebViewController(
     PlatformWebViewControllerCreationParams params,
   ) {
-    controller = _HistoryAwareWebViewController(
+    return controller = _HistoryAwareWebViewController(
       params,
       canGoBackInitially: canGoBackInitially,
     );
-    return controller;
   }
 
   @override
@@ -1205,8 +1204,7 @@ class _BootstrapAwareWebViewPlatform extends WebViewPlatform {
   PlatformWebViewController createPlatformWebViewController(
     PlatformWebViewControllerCreationParams params,
   ) {
-    controller = _BootstrapAwareWebViewController(params);
-    return controller;
+    return controller = _BootstrapAwareWebViewController(params);
   }
 
   @override
