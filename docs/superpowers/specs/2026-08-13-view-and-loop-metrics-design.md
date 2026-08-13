@@ -1,7 +1,7 @@
 # View and loop metrics
 
 **Date:** 2026-08-13
-**Status:** Design — decisions settled
+**Status:** Design — one open decision (integral vs fractional loops)
 **Target:** No freeze applies; ships on the normal release path
 
 ## Problem
@@ -44,8 +44,9 @@ Anonymous coverage is split, and the split is the confusing part. Because view
 events are Nostr-signed, anonymous viewers appear in `total_views` via CDN
 delivery — 42% of all views — but are entirely absent from everything derived
 from `view_interactions`: `unique_viewers`, `loops`, and the daily stats that
-feed the leaderboard. So the headline view count sees them and the hero loop
-metric does not.
+feed the leaderboard. So the view count sees them and the loop count does not —
+which is why loops, the metric unique to Divine, is the worse-measured of the
+two.
 
 Numbers are not cosmetic here.
 [The video-card view-count spec](2026-08-08-video-card-view-count-display-design.md)
@@ -73,9 +74,27 @@ comparable to nothing).
 viewers are roughly half of daily users and are currently invisible. This is the
 single largest correction available and every other platform already does it.
 
-**4. Loops is the hero number.** Largest, Vine-native, and unique to Divine —
-no other platform can quote a loop count. It is already what the video card
-renders.
+**4. Loops is the signature number; views is the largest number.** These are
+not the same claim, and conflating them was an error in an earlier draft of
+this document.
+
+Loops runs at **0.63–0.71 per view** in current data, and 91% of
+`view_counts` rows carry fewer loops than views. That is inherent to the
+definitions rather than a measurement artefact: a view is a playback start, a
+loop is a *completed* playthrough, so every viewer who scrolls away mid-play
+contributes a view and no loop. Rewatching does not close the gap, because
+most sessions never finish one pass.
+
+So:
+
+- **Views is the headline** where size and comparability matter — it is the
+  bigger number and the one other platforms report.
+- **Loops is the signature** — Vine-native, unique to Divine, and the only
+  metric no competitor can quote. It is what the video card already renders
+  and it should stay there.
+
+Publishing loops as "the big number" would understate Divine by roughly a
+third against its own view count.
 
 **5. A displayed number is never reduced — but it may be withheld.** These are
 different acts and only one of them is a lie.
@@ -121,12 +140,25 @@ view   := one playback start, deduplicated per viewing session
 session:= a continuous period of engagement with one video by one viewer
 ```
 
-`loops >= views` always holds. Both are emitted per viewing session, so one
-session reports one view and N loops.
+One session reports one view and N loops, where **N is frequently zero** — a
+viewer who starts playback and leaves before the video completes produces a
+view and no loop. `loops >= views` does **not** hold, at either the row or the
+aggregate level: 91% of current `view_counts` rows carry fewer loops than
+views, and the aggregate ratio sits at 0.63–0.71 loops per view.
 
-The existing `view_interactions.loops` column already stores a fractional
-playthrough count (observed range 0 to 218.2, mean 0.99), so the loop metric is
-derivable from data collected today. It is `views` that changes definition.
+**Open: is a loop integral or fractional?** The existing
+`view_counts.total_loops` is a `Float64` and `view_interactions.loops` a
+`Float32` (observed range 0 to 218.2, mean 0.99), so today a partial pass
+contributes a fraction. The definition above says a loop is a *completed*
+playthrough, which implies integer semantics. Flooring would drop the reported
+figure — the median view event sits at 0.75 of a pass and would round to zero.
+
+Keeping the fractional value is recommended: it is what already ships, it is
+strictly larger, and "2.4 loops" is defensible for a format where partial
+replays are real viewing. But the word "loop" then means *playthrough
+fraction*, not *completed playthrough*, and the definition block must say so
+rather than leaving the two in conflict. This needs a decision before
+implementation.
 
 ### Display versus ranking
 
@@ -199,33 +231,52 @@ Stacked against today's reported numbers:
 | #7210 view-event fix (merged) | ×1.7 recovery on the signed-in share | ×1.7 recovery |
 | View = playback start | ×2–3 on the signed-in share | — |
 | Anonymous counted | already counted (42% of views) | **new — CDN deliveries begin contributing** |
-| Loops promoted as headline | — | larger again than views |
+| Loops as signature metric | — | stays ~0.65x views; not a multiplier |
 
 Views grow mostly from the redefinition, since anonymous views already flow into
 `total_views`. Loops grow mostly from anonymous, since loops are currently
 signed-in only and CDN deliveries have never contributed one.
 
-The compounding matters more than either figure: loops is the hero number, and
-it is the metric that has been missing 42% of its audience entirely.
+Views is the larger figure and grows fastest, so it is the number to lead with
+where size matters. Loops gains most in *relative* terms, because it is the
+metric that has been missing 42% of its audience entirely — but it starts from
+~0.65x views and does not overtake it.
 
-The effect compounds with the display floor. `publicLoopCountFloor` is 1000, and
-today most videos fall below it — which is why the video-card spec had to
-suppress counts in the first place. An order-of-magnitude correction moves a
-large share of the catalogue above the floor, so counts start appearing on cards
-that currently show only a date. The suppression rule stops being load-bearing
-because fewer numbers are embarrassing, rather than because the rule changed.
+### The display floor is set far too high
 
-That is the same lever from both ends: the Aug 8 spec hid small numbers because
-small numbers were suppressing adoption; this work makes the numbers correct, so
-there are fewer to hide. The floor should be re-examined after rollout — at
-truthful volumes 1000 may be set too low or too high, and it is deliberately a
-one-line constant.
+`publicLoopCountFloor` is 1000. Measured against the catalogue:
+
+| Threshold | Videos at or above | Share of 2,201,983 |
+|---|---|---|
+| 1000 (today's floor) | 961 | **0.04%** |
+| 333 (floor reached at ×3) | 2,441 | 0.11% |
+| 100 (floor reached at ×10) | 12,571 | 0.57% |
+
+So the public count is effectively **never** shown — 9,996 videos in 10,000
+render a date instead. And correcting the metrics does not fix that: an
+order-of-magnitude improvement moves it from 0.04% to 0.57%, a 13× increase in
+how many cards show a number and still under one percent of the catalogue.
+
+An earlier draft of this document claimed the correction would move "a large
+share of the catalogue" above the floor. That is false, and the real conclusion
+is the opposite: **1000 is mis-set by roughly two orders of magnitude** for
+Divine's actual volumes, and no plausible metrics correction reaches it.
+
+This matters because of what the floor was for. The video-card spec suppressed
+small counts to stop them discouraging viewers, citing that crossing ~100 views
+roughly doubles new-creator retention. At a floor of 1000, essentially no
+creator ever sees the encouraging version. Re-tuning the constant is a
+one-line change and is likely worth more than any measurement work in this
+document.
 
 ## Testing
 
 - Unit tests pinning `view`/`loop`/`session` boundaries: a scroll-past with no
   playback start emits nothing; one session with N playthroughs emits one view
-  and N loops; `loops >= views` holds as an invariant.
+  and N loops, including the N=0 case where playback starts and never
+  completes a pass. Do **not** assert `loops >= views`; it is false in
+  production data and the test should pin that a view with zero loops is
+  valid.
 - A test asserting the display path applies no filtering — the property most
   likely to be broken later by someone adding a well-meant cap.
 - Ranking-path tests over adversarial input: a single session with hundreds of
