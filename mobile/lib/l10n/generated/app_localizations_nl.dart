@@ -800,20 +800,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupProfilePublished => 'Profiel succesvol gepubliceerd!';
 
   @override
-  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+  String get profileSetupUnsavedChangesTitle => 'Wijzigingen opslaan?';
 
   @override
   String get profileSetupUnsavedChangesSubtitle =>
-      'Save your edits before leaving, or discard them and keep moving.';
+      'Sla je wijzigingen op voordat je weggaat, of gooi ze weg en ga verder.';
 
   @override
-  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+  String get profileSetupUnsavedChangesSaveButton => 'Wijzigingen opslaan';
 
   @override
-  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+  String get profileSetupUnsavedChangesDiscardButton => 'Wijzigingen weggooien';
 
   @override
-  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+  String get profileSetupUnsavedChangesKeepButton => 'Verder bewerken';
 
   @override
   String get profileSetupCreateNewProfile => 'Nieuw profiel aanmaken?';
@@ -854,7 +854,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (optioneel)';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'Website (optioneel)';
 
   @override
   String get profileSetupPublicKeyLabel => 'Publieke sleutel (npub)';
@@ -1064,37 +1064,37 @@ class AppLocalizationsNl extends AppLocalizations {
       'Gebruik het gebruikersnaamveld hierboven voor divine.video';
 
   @override
-  String get nostrSettingsNip05Address => 'NIP-05 address';
+  String get nostrSettingsNip05Address => 'NIP-05-adres';
 
   @override
   String get nostrSettingsNip05AddressSubtitle =>
-      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+      'Gebruik je divine.video-gebruikersnaam, of laat je handle wijzen naar een NIP-05-adres op een domein dat je zelf beheert.';
 
   @override
   String get nostrSettingsNip05AddressHint => 'you@example.com';
 
   @override
-  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+  String get nostrSettingsNip05SaveAction => 'NIP-05 opslaan';
 
   @override
-  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+  String get nostrSettingsNip05Saved => 'NIP-05 opgeslagen';
 
   @override
   String get nostrSettingsNip05SaveFailed =>
-      'Couldn\'t save NIP-05. Please try again.';
+      'NIP-05 kon niet worden opgeslagen. Probeer het opnieuw.';
 
   @override
-  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+  String get profileSetupNip05ConfirmTitle => 'Je eigen NIP-05 gebruiken?';
 
   @override
   String get profileSetupNip05ConfirmBody =>
-      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+      'NIP-05 koppelt een naam als jij@jouwdomein.nl aan je Nostr-identiteit. Je moet het domein beheren en een verificatiebestand op het juiste pad zetten. Klopt er iets niet, dan vinden mensen je niet meer en verdwijnt je geverifieerde handle. Ga alleen verder als je dit al hebt ingesteld.';
 
   @override
-  String get profileSetupNip05ConfirmContinue => 'Continue';
+  String get profileSetupNip05ConfirmContinue => 'Doorgaan';
 
   @override
-  String get profileSetupNip05ConfirmCancel => 'Cancel';
+  String get profileSetupNip05ConfirmCancel => 'Annuleren';
 
   @override
   String get profileSetupProfilePicturePreview => 'Voorbeeld profielfoto';
@@ -1200,13 +1200,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Geïntegreerde apps';
 
   @override
-  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+  String get featuredTabEmpty => 'Hier staat nog niets. Kom binnenkort terug.';
 
   @override
-  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+  String get featuredTabLoadFailed => 'Deze collectie kon niet worden geladen.';
 
   @override
-  String get featuredTabRetry => 'Try again';
+  String get featuredTabRetry => 'Probeer opnieuw';
 
   @override
   String get exploreNoVideosAvailable => 'Geen video\'s beschikbaar';
@@ -1320,10 +1320,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'Ondertiteling uit';
 
   @override
-  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+  String get videoSettingsCaptionsOnForVideo =>
+      'Ondertiteling aan voor deze video';
 
   @override
-  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+  String get videoSettingsCaptionsOffForVideo =>
+      'Ondertiteling uit voor deze video';
 
   @override
   String get contentWarningLabel => 'Inhoudswaarschuwing';
@@ -1540,7 +1542,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'This video was removed for breaking our content rules.';
+      'Deze video is verwijderd omdat hij onze contentregels overtrad.';
 
   @override
   String get videoErrorVerifyAgeBody =>
@@ -1645,19 +1647,20 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get videoCollaboratorPendingDecoration => 'Pending';
+  String get videoCollaboratorPendingDecoration => 'In afwachting';
 
   @override
-  String get videoCollaboratorPendingSemanticLabel => 'Pending collaborator';
+  String get videoCollaboratorPendingSemanticLabel =>
+      'Samenwerker in afwachting';
 
   @override
   String videoCollaboratorWithPendingSuffix(String label, int pending) {
-    return '$label ($pending pending)';
+    return '$label ($pending in afwachting)';
   }
 
   @override
   String profileChipTapHint(String name) {
-    return '$name. Tap to view profile.';
+    return '$name. Tik om het profiel te bekijken.';
   }
 
   @override
@@ -2567,36 +2570,34 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wanneer iemand die je volgt post';
 
   @override
-  String get notificationSettingsSystem => 'System';
+  String get notificationSettingsSystem => 'Systeem';
 
   @override
   String get notificationSettingsSystemSubtitle =>
-      'App updates and system messages';
+      'App-updates en systeemberichten';
 
   @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Push Notifications';
+  String get notificationSettingsPushNotificationsSection => 'Pushmeldingen';
 
   @override
-  String get notificationSettingsPushNotifications => 'Push Notifications';
+  String get notificationSettingsPushNotifications => 'Pushmeldingen';
 
   @override
   String get notificationSettingsPushNotificationsSubtitle =>
-      'Receive notifications when app is closed';
+      'Meldingen ontvangen als de app dicht is';
 
   @override
-  String get notificationSettingsSound => 'Sound';
+  String get notificationSettingsSound => 'Geluid';
 
   @override
   String get notificationSettingsSoundSubtitle =>
-      'Play sound for notifications';
+      'Geluid afspelen bij meldingen';
 
   @override
-  String get notificationSettingsVibration => 'Vibration';
+  String get notificationSettingsVibration => 'Trillen';
 
   @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Vibrate for notifications';
+  String get notificationSettingsVibrationSubtitle => 'Trillen bij meldingen';
 
   @override
   String get notificationSettingsActions => 'Acties';
@@ -2925,17 +2926,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authCreateNewAccount => 'Nieuw Divine-account aanmaken';
 
   @override
-  String get authCreateNewAccountShort => 'Create new account';
+  String get authCreateNewAccountShort => 'Nieuw account maken';
 
   @override
   String get authSignInDifferentAccount => 'Inloggen met een ander account';
 
   @override
-  String get authUseAnotherAccount => 'Use another account';
+  String get authUseAnotherAccount => 'Een ander account gebruiken';
 
   @override
   String authContinueAs(String displayName) {
-    return 'Continue as $displayName';
+    return 'Doorgaan als $displayName';
   }
 
   @override
@@ -2948,13 +2949,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+      'Door hieronder een optie te kiezen bevestig je dat je minstens 16 jaar bent (of de ';
 
   @override
-  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+  String get authTermsAgeAuthorizationCta => 'Divine-leeftijdsverificatie';
 
   @override
-  String get authTermsAfterAgeAuthorization => ') and agree to the ';
+  String get authTermsAfterAgeAuthorization =>
+      ' hebt afgerond) en ga je akkoord met de ';
 
   @override
   String get authTermsOfService => 'Servicevoorwaarden';
@@ -3170,15 +3172,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authVerificationResendExpired =>
-      'That signup expired. Start again to get a fresh code.';
+      'Die aanmelding is verlopen. Begin opnieuw voor een verse code.';
 
   @override
   String get authVerificationResendUnavailable =>
-      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+      'Opnieuw versturen kan nu niet. Gebruik de 6-cijferige code uit de e-mail die we al hebben gestuurd.';
 
   @override
   String get authVerificationPollingStopped =>
-      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+      'We controleren niet meer voor je. Vul de 6-cijferige code uit je e-mail in om het inloggen af te ronden.';
 
   @override
   String get authWelcomeToDivine => 'Welkom bij Divine!';
@@ -3256,7 +3258,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deel je e-mailadres en we sturen updates zodra toegang opengaat.';
 
   @override
-  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+  String get authJoinWaitlistNewsletterOptIn =>
+      'Stuur me inspiratie van Divine';
 
   @override
   String get authInviteAccessHelp => 'Hulp bij invite-toegang';
@@ -4070,11 +4073,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteFailedRelayRejected =>
-      'The relay wouldn\'t accept this delete request. Try again in a moment.';
+      'De relay accepteerde dit verwijderverzoek niet. Probeer het zo nog eens.';
 
   @override
   String get shareMenuDeleteFailedRelayNoResponse =>
-      'Couldn\'t reach the relay. Check your connection and try again.';
+      'De relay was niet bereikbaar. Controleer je verbinding en probeer het opnieuw.';
 
   @override
   String get shareMenuDeletePartiallyConfirmed =>
@@ -4388,10 +4391,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Verwijderd uit Sounds';
 
   @override
-  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+  String get soundsSaveFailed =>
+      'Dat geluid kon niet worden opgeslagen. Probeer het opnieuw.';
 
   @override
-  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+  String get soundsRemoveFailed =>
+      'Dat geluid kon niet worden verwijderd. Probeer het opnieuw.';
 
   @override
   String get soundSyncStatusSyncing => 'Je sounds worden gesynchroniseerd…';
@@ -4449,11 +4454,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Couldn\'t load videos.';
+  String get profileFeedError => 'Video\'s konden niet worden geladen.';
 
   @override
   String get profileFeedLoadMoreError =>
-      'Couldn\'t load more videos. Pull to refresh.';
+      'Meer video\'s konden niet worden geladen. Trek omlaag om te vernieuwen.';
 
   @override
   String get notificationsTabAll => 'Alles';
@@ -5001,10 +5006,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get reportOtherRequiresDetails =>
-      'Please describe the issue when selecting Other';
+      'Beschrijf het probleem als je Overig kiest';
 
   @override
-  String get reportDetailsRequired => 'Please describe the issue';
+  String get reportDetailsRequired => 'Beschrijf het probleem';
 
   @override
   String get reportReasonSpam => 'Spam of ongewenste inhoud';
@@ -5345,11 +5350,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'de inlogservice was niet bereikbaar';
 
   @override
-  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+  String get keyManagementRestrictedTitle =>
+      'Je sleutels worden beheerd door Divine';
 
   @override
   String get keyManagementRestrictedBody =>
-      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+      'Om je account veilig te houden zijn sleutelback-up en het importeren van een andere sleutel hier niet beschikbaar.';
 
   @override
   String get keyManagementPasteKey => 'Plak je privésleutel';
@@ -5954,7 +5960,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxSearchHint => 'Berichten zoeken';
 
   @override
-  String get inboxSupportRowTitle => 'Divine Moderation';
+  String get inboxSupportRowTitle => 'Divine-moderatie';
 
   @override
   String get inboxSupportRowSubtitle =>
@@ -6084,7 +6090,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dmSendBlockedMessage =>
-      'You can only message official Divine accounts';
+      'Je kunt alleen officiële Divine-accounts een bericht sturen';
 
   @override
   String get dmSendBlockedRetiredMessage =>
@@ -6119,7 +6125,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmConversationLoadError => 'Berichten konden niet worden geladen';
 
   @override
-  String get dmMessageInputHint => 'Say something…';
+  String get dmMessageInputHint => 'Zeg iets…';
 
   @override
   String get dmMessageBubbleSentHint => 'Verzonden bericht';
@@ -6153,7 +6159,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmMessageActionCancelSend => 'Stoppen met proberen';
 
   @override
-  String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
+  String get dmReactionAddCustomA11yLabel => 'Eigen emoji-reactie toevoegen';
 
   @override
   String dmReelReplyComposerHint(String name) {
@@ -6185,25 +6191,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {
-    return 'Your reaction: $emoji';
+    return 'Jouw reactie: $emoji';
   }
 
   @override
   String dmReactionChipOtherA11yLabel(String name, String emoji) {
-    return '$name reacted with $emoji';
+    return '$name reageerde met $emoji';
   }
 
   @override
   String dmReactionChipPendingA11yLabel(String emoji) {
-    return 'Sending reaction: $emoji';
+    return 'Reactie versturen: $emoji';
   }
 
   @override
   String get dmReactionChipFailedA11yLabel =>
-      'Reaction failed, double tap to retry';
+      'Reactie mislukt, dubbeltik om opnieuw te proberen';
 
   @override
-  String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
+  String get dmReactionChipRetryAnnouncement => 'Reactie opnieuw proberen';
 
   @override
   String get dmReactionsSheetTitle => 'Reacties';
@@ -6420,7 +6426,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNoteServiceUnavailable =>
-      'The content credential service didn\'t respond. This isn\'t your connection.';
+      'De dienst voor contentcredentials gaf geen antwoord. Het ligt niet aan je verbinding.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Opnieuw genereren';
@@ -6651,7 +6657,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Concept dupliceren mislukt';
 
   @override
-  String get libraryDraftInProgressBadge => 'In progress';
+  String get libraryDraftInProgressBadge => 'Bezig';
 
   @override
   String get libraryDraftActionPost => 'Plaatsen';
@@ -7280,7 +7286,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChangedAfterDeletion =>
-      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+      'Een deel van de verwijderverzoeken is geaccepteerd, maar het opruimen stopte omdat je van account wisselde. Log weer in op het oorspronkelijke account om het af te ronden.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
@@ -7315,7 +7321,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountRelayConfirmationFailed =>
-      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+      'We konden het verwijderen van het account bij geen enkele relay bevestigen. Controleer je verbinding en probeer het opnieuw.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Alle inhoud verwijderen';
@@ -7700,7 +7706,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get supportFieldLimitReached =>
-      'That\'s the maximum length. Anything past this wasn\'t added.';
+      'Dat is de maximale lengte. Alles daarna is niet toegevoegd.';
 
   @override
   String get bugReportSubjectHint => 'Korte samenvatting van het probleem';
@@ -7733,19 +7739,19 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dank je! We hebben je rapport ontvangen en gebruiken het om Divine beter te maken.';
 
   @override
-  String get bugReportAttachImages => 'Attach images';
+  String get bugReportAttachImages => 'Afbeeldingen toevoegen';
 
   @override
   String bugReportImagesCount(int count, int max) {
-    return '$count of $max images selected';
+    return '$count van $max afbeeldingen geselecteerd';
   }
 
   @override
-  String get bugReportRemoveImage => 'Remove image';
+  String get bugReportRemoveImage => 'Afbeelding verwijderen';
 
   @override
   String get bugReportUploadFailed =>
-      'We couldn\'t upload the selected image. Try again or send the report without it.';
+      'We konden de gekozen afbeelding niet uploaden. Probeer het opnieuw of stuur de melding zonder.';
 
   @override
   String get bugReportSendFailed =>
@@ -7993,26 +7999,26 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get blueskyUsernameRequired =>
-      'Set up a divine.video handle before publishing to Bluesky';
+      'Stel een divine.video-handle in voordat je op Bluesky publiceert';
 
   @override
   String get blueskyUsernameRequiredSubtitle =>
-      'Bluesky publishing needs a claimed username.divine.video handle.';
+      'Publiceren op Bluesky vraagt om een geclaimde handle gebruikersnaam.divine.video.';
 
   @override
   String get blueskyUsernameSyncPending =>
-      'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.';
+      'Je Divine-handle is geclaimd. We koppelen hem aan Bluesky – probeer het zo nog eens.';
 
   @override
   String get blueskyStatusUnavailableRetry =>
-      'We could not check your Divine handle. Try again.';
+      'We konden je Divine-handle niet controleren. Probeer het opnieuw.';
 
   @override
-  String get blueskySetUpHandle => 'Set up';
+  String get blueskySetUpHandle => 'Instellen';
 
   @override
   String get blueskyTemporarilyUnavailable =>
-      'Bluesky publishing is temporarily unavailable. Please try again.';
+      'Publiceren op Bluesky is tijdelijk niet beschikbaar. Probeer het opnieuw.';
 
   @override
   String get invitesTitle => 'Vrienden uitnodigen';
@@ -8022,18 +8028,18 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count invites ready to generate',
-      one: '1 invite ready to generate',
+      other: '$count uitnodigingen klaar om te maken',
+      one: '1 uitnodiging klaar om te maken',
     );
     return '$_temp0';
   }
 
   @override
   String get invitesGenerateCardSubtitle =>
-      'Generate a code when you are ready to share one.';
+      'Maak een code zodra je er een wilt delen.';
 
   @override
-  String get invitesGenerateButtonLabel => 'Generate invite';
+  String get invitesGenerateButtonLabel => 'Uitnodiging maken';
 
   @override
   String get invitesNoneAvailable =>
@@ -8090,22 +8096,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Ontdek iets interessants';
 
   @override
-  String get searchPeopleSectionHeader => 'People';
+  String get searchPeopleSectionHeader => 'Mensen';
 
   @override
-  String get searchPeopleLoadingLabel => 'Loading people results';
+  String get searchPeopleLoadingLabel => 'Resultaten voor mensen laden';
 
   @override
   String get searchTagsSectionHeader => 'Tags';
 
   @override
-  String get searchTagsLoadingLabel => 'Loading tag results';
+  String get searchTagsLoadingLabel => 'Resultaten voor tags laden';
 
   @override
-  String get searchVideosSectionHeader => 'Videos';
+  String get searchVideosSectionHeader => 'Video\'s';
 
   @override
-  String get searchVideosLoadingLabel => 'Loading video results';
+  String get searchVideosLoadingLabel => 'Resultaten voor video\'s laden';
 
   @override
   String get searchVideosSortOptionsLabel => 'Videoresultaten sorteren';
@@ -8319,10 +8325,10 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count of your vines',
-      one: 'your vine',
+      other: '$count van jouw vines',
+      one: 'jouw vine',
     );
-    return '$actorName added $_temp0 to $listName';
+    return '$actorName heeft $_temp0 toegevoegd aan $listName';
   }
 
   @override
@@ -8354,47 +8360,48 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commentReplyToPrefix => 'Re:';
 
   @override
-  String get commentHideKeyboard => 'Hide keyboard';
+  String get commentHideKeyboard => 'Toetsenbord verbergen';
 
   @override
-  String get commentsErrorLoadFailed => 'Failed to load comments';
+  String get commentsErrorLoadFailed => 'Reacties konden niet worden geladen';
 
   @override
-  String get commentsErrorNotAuthenticatedComment =>
-      'Please sign in to comment';
+  String get commentsErrorNotAuthenticatedComment => 'Log in om te reageren';
 
   @override
-  String get commentsErrorPostCommentFailed => 'Failed to post comment';
+  String get commentsErrorPostCommentFailed =>
+      'Reactie kon niet worden geplaatst';
 
   @override
-  String get commentsErrorPostReplyFailed => 'Failed to post reply';
+  String get commentsErrorPostReplyFailed =>
+      'Antwoord kon niet worden geplaatst';
 
   @override
-  String get commentsErrorEditFailed => 'Failed to edit comment';
+  String get commentsErrorEditFailed => 'Reactie kon niet worden bewerkt';
 
   @override
-  String get commentsErrorNotAuthenticatedInteract =>
-      'Please sign in to interact';
+  String get commentsErrorNotAuthenticatedInteract => 'Log in om mee te doen';
 
   @override
-  String get commentsErrorVoteFailed => 'Failed to vote on comment';
+  String get commentsErrorVoteFailed => 'Stemmen op de reactie is mislukt';
 
   @override
-  String get commentsErrorReportFailed => 'Failed to report comment';
+  String get commentsErrorReportFailed => 'Reactie kon niet worden gemeld';
 
   @override
-  String get commentsErrorBlockFailed => 'Failed to block user';
+  String get commentsErrorBlockFailed =>
+      'Gebruiker kon niet worden geblokkeerd';
 
   @override
-  String get commentsErrorDeleteFailed => 'Failed to delete comment';
+  String get commentsErrorDeleteFailed => 'Reactie kon niet worden verwijderd';
 
   @override
   String commentsHeaderCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Comments',
-      one: '$count Comment',
+      other: '$count reacties',
+      one: '$count reactie',
     );
     return '$_temp0';
   }
@@ -8407,46 +8414,46 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je videoreactie wordt geplaatst';
 
   @override
-  String get commentsSortNew => 'New';
+  String get commentsSortNew => 'Nieuw';
 
   @override
   String get commentsSortTop => 'Top';
 
   @override
-  String get commentsSortOld => 'Old';
+  String get commentsSortOld => 'Oud';
 
   @override
-  String get commentsSortSemanticLabel => 'Comments sorting';
+  String get commentsSortSemanticLabel => 'Sortering van reacties';
 
   @override
-  String get commentReply => 'Reply';
+  String get commentReply => 'Antwoorden';
 
   @override
-  String get commentReplySemanticLabel => 'Reply to comment';
+  String get commentReplySemanticLabel => 'Op reactie antwoorden';
 
   @override
-  String get commentUpvoteLabel => 'Upvote comment';
+  String get commentUpvoteLabel => 'Reactie omhoog stemmen';
 
   @override
-  String get commentRemoveUpvoteLabel => 'Remove upvote';
+  String get commentRemoveUpvoteLabel => 'Stem omhoog intrekken';
 
   @override
-  String get commentDownvoteLabel => 'Downvote comment';
+  String get commentDownvoteLabel => 'Reactie omlaag stemmen';
 
   @override
-  String get commentRemoveDownvoteLabel => 'Remove downvote';
+  String get commentRemoveDownvoteLabel => 'Stem omlaag intrekken';
 
   @override
-  String get commentsInputHint => 'Add comment...';
+  String get commentsInputHint => 'Reactie toevoegen...';
 
   @override
-  String get commentsInputHintEdit => 'Edit comment...';
+  String get commentsInputHintEdit => 'Reactie bewerken...';
 
   @override
-  String get commentsEmptyTitle => 'No comments yet';
+  String get commentsEmptyTitle => 'Nog geen reacties';
 
   @override
-  String get commentsEmptySubtitle => 'Get the party started!';
+  String get commentsEmptySubtitle => 'Zet jij het feest in gang!';
 
   @override
   String get draftUntitled => 'Naamloos';
@@ -9587,7 +9594,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Selecteer het audiofragment voor je video';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Gemeenschap';
@@ -9881,7 +9888,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get publishAudioReuseDegradedWarning =>
-      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+      'Je video staat online, maar het geluid is niet gepubliceerd. Bewerk de video om het te delen.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Samenwerkers';
@@ -10359,178 +10366,178 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileBadgeFooterLink => 'Maak je eigen badge';
 
   @override
-  String get minorAccountReviewWelcomePageTitle => 'Family guide';
+  String get minorAccountReviewWelcomePageTitle => 'Gezinsgids';
 
   @override
   String get minorAccountReviewWelcomeCta =>
-      'Not 16 yet? That\'s OK. Here\'s what you can do.';
+      'Nog geen 16? Geen probleem. Dit kun je doen.';
 
   @override
-  String get minorAccountReviewWelcomeTitle => 'Not 16 yet? That\'s OK.';
+  String get minorAccountReviewWelcomeTitle => 'Nog geen 16? Geen probleem.';
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Dat je naar deze pagina bent doorgeklikt in plaats van gewoon het antwoord te kiezen waarmee je binnenkwam, dat telt. Het laat eerlijkheid, ruggengraat en echte zorg voor de mensen om je heen zien.\n\nDe regels voor mensen onder de 16 verschillen afhankelijk van waar je woont. Bij Divine willen we dat gezinnen er samen over praten en bepalen hoe gezond socialmediagebruik eruitziet.';
 
   @override
-  String get minorAccountReviewModerationTitle => 'We need one more step';
+  String get minorAccountReviewModerationTitle =>
+      'We hebben nog één stap nodig';
 
   @override
   String get minorAccountReviewModerationBody =>
-      'We were asked to take a closer look at this account because it may belong to someone under 16. This flow keeps the next steps private and points you to the right path for your age.';
+      'We zijn gevraagd dit account beter te bekijken, omdat het van iemand onder de 16 kan zijn. Deze route houdt de volgende stappen privé en wijst je het pad dat bij jouw leeftijd past.';
 
   @override
   String get minorAccountReviewRulesTitle =>
-      'The rules are not the same everywhere';
+      'De regels zijn niet overal hetzelfde';
 
   @override
   String get minorAccountReviewRulesBody =>
-      'Different countries and regions treat teen social media use differently. That is why we ask families to slow down, check the facts, and choose the next step together.';
+      'Landen en regio\'s gaan verschillend om met tieners op sociale media. Daarom vragen we gezinnen om even rustig aan te doen, de feiten te checken en samen de volgende stap te kiezen.';
 
   @override
-  String get minorAccountReviewApproachTitle => 'How Divine thinks about it';
+  String get minorAccountReviewApproachTitle => 'Hoe Divine erover denkt';
 
   @override
   String get minorAccountReviewApproachBody =>
-      'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.';
+      'Wij denken dat gezonde techgewoontes ontstaan door te pauzeren, na te denken en je aandacht naar betere dingen te verleggen – niet door kinderen te bespioneren of ouders tot toezichthouders te maken. Onderzoek wijst dezelfde kant op.';
 
   @override
-  String get minorAccountReviewLearnMoreTitle => 'More for families';
+  String get minorAccountReviewLearnMoreTitle => 'Meer voor gezinnen';
 
   @override
-  String get minorAccountReviewKidsPolicyCta => 'Read Divine\'s kids policy';
+  String get minorAccountReviewKidsPolicyCta =>
+      'Lees het kinderbeleid van Divine';
 
   @override
-  String get minorAccountReviewChooseAgeBandTitle =>
-      'Choose the path that fits';
+  String get minorAccountReviewChooseAgeBandTitle => 'Kies het pad dat past';
 
   @override
-  String get minorAccountReviewUnder13Cta => 'Under 13';
+  String get minorAccountReviewUnder13Cta => 'Onder de 13';
 
   @override
-  String get minorAccountReviewTeenCta => 'Age 13-15';
+  String get minorAccountReviewTeenCta => '13-15 jaar';
 
   @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Helpful for families';
+  String get minorAccountReviewFamilyResourcesTitle => 'Handig voor gezinnen';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
-      'Visit the Divine family guide for practical tips, conversation tools, and resources for helping teens use social media more safely.';
+      'Bekijk de gezinsgids van Divine voor praktische tips, gesprekshulpmiddelen en materiaal waarmee tieners sociale media veiliger gebruiken.';
 
   @override
   String get minorAccountReviewFamilyResourcesCta =>
-      'Get family guides and tips';
+      'Bekijk gezinsgidsen en tips';
 
   @override
   String get minorAccountReviewFooter =>
-      'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.';
+      'Ben je 16 of ouder en hier per ongeluk beland? Neem contact op met Divine-support, dan kijkt een echt mens ernaar.';
 
   @override
-  String get minorAccountReviewTitle => 'Account Review';
+  String get minorAccountReviewTitle => 'Accountbeoordeling';
 
   @override
   String get minorAccountReviewCheckingStatusTitle =>
-      'Checking account status...';
+      'Accountstatus controleren...';
 
   @override
   String get minorAccountReviewCheckingStatusBody =>
-      'Please wait while we confirm this account\'s current review status.';
+      'Even wachten terwijl we de huidige beoordelingsstatus van dit account bevestigen.';
 
   @override
-  String get minorAccountReviewDefaultTitle => 'Account review required';
+  String get minorAccountReviewDefaultTitle => 'Accountbeoordeling nodig';
 
   @override
   String get minorAccountReviewDefaultBody =>
-      'We need to review this account before it can use Divine normally.';
+      'We moeten dit account beoordelen voordat het Divine normaal kan gebruiken.';
 
   @override
   String minorAccountReviewCaseId(String caseId) {
-    return 'Case ID: $caseId';
+    return 'Zaaknummer: $caseId';
   }
 
   @override
-  String get minorAccountReviewCaseIdShortLabel => 'Case ID';
+  String get minorAccountReviewCaseIdShortLabel => 'Zaaknummer';
 
   @override
-  String get minorAccountReviewRestrictionsTitle =>
-      'What is restricted right now';
+  String get minorAccountReviewRestrictionsTitle => 'Wat nu beperkt is';
 
   @override
   String get minorAccountReviewRestrictionPosting =>
-      'Posting and publishing are paused';
+      'Posten en publiceren staat op pauze';
 
   @override
   String get minorAccountReviewRestrictionEngagement =>
-      'Comments, likes, reposts, and follows are paused';
+      'Reacties, likes, reposts en volgen staan op pauze';
 
   @override
   String get minorAccountReviewRestrictionMessaging =>
-      'Starting or replying to regular messages is paused';
+      'Gewone berichten starten of beantwoorden staat op pauze';
 
   @override
   String get minorAccountReviewRestrictionSupport =>
-      'Support and your moderation message remain available';
+      'Support en je moderatiebericht blijven beschikbaar';
 
   @override
-  String get minorAccountReviewOpenSupportCenter => 'Open Support Center';
+  String get minorAccountReviewOpenSupportCenter => 'Supportcentrum openen';
 
   @override
   String get minorAccountReviewOpenModerationMessage =>
-      'Open Moderation Message';
+      'Moderatiebericht openen';
 
   @override
-  String get minorAccountReviewOpenReviewPage => 'Open review page';
+  String get minorAccountReviewOpenReviewPage => 'Beoordelingspagina openen';
 
   @override
-  String get minorAccountReviewCheckAgain => 'Check Again';
+  String get minorAccountReviewCheckAgain => 'Opnieuw controleren';
 
   @override
-  String get minorAccountReviewLogOut => 'Log out';
+  String get minorAccountReviewLogOut => 'Uitloggen';
 
   @override
-  String get minorAccountReviewNextStepTitle => 'Next step';
+  String get minorAccountReviewNextStepTitle => 'Volgende stap';
 
   @override
   String get minorAccountReviewNextStepBody =>
-      'Open the support center or your moderation message if you need help with this review.';
+      'Open het supportcentrum of je moderatiebericht als je hulp nodig hebt bij deze beoordeling.';
 
   @override
-  String get minorAccountReviewInProgressTitle => 'Review in progress';
+  String get minorAccountReviewInProgressTitle => 'Beoordeling loopt';
 
   @override
   String get minorAccountReviewInProgressBody =>
-      'We have what we need for now. Our team is reviewing this case before restoring normal account access.';
+      'Voorlopig hebben we wat we nodig hebben. Ons team bekijkt deze zaak voordat het account weer normaal toegang krijgt.';
 
   @override
-  String get minorAccountReviewUnder13Title => 'Under-13 accounts';
+  String get minorAccountReviewUnder13Title => 'Accounts onder de 13';
 
   @override
   String minorAccountReviewUnder13Body(String supportEmail) {
-    return 'If this account belongs to someone under 13, a parent or guardian must email $supportEmail and include the case ID.';
+    return 'Als dit account van iemand onder de 13 is, moet een ouder of voogd mailen naar $supportEmail met vermelding van het zaaknummer.';
   }
 
   @override
   String get minorAccountReviewUnder13PublicTitle =>
-      'We can\'t give you an account yet';
+      'We kunnen je nog geen account geven';
 
   @override
   String get minorAccountReviewUnder13PublicBody =>
-      'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
+      'Divine is niet gemaakt voor kinderen onder de 13, en de regels voor sociale media wereldwijd binden ons de handen.\n\nVeel dingen op internet duwen je richting liegen om te krijgen wat je wilt, en daar hebben we een hekel aan. Dat is de verkeerde les voor het leven, en die gaan we je hier niet leren.';
 
   @override
   String get minorAccountReviewUnder13FamilyTitle =>
-      'What your family can do instead';
+      'Wat je gezin in plaats daarvan kan doen';
 
   @override
   String get minorAccountReviewUnder13FamilyBody =>
-      'A parent or guardian can hold the account and do the posting, and you can absolutely be in the videos with them. We want families to enjoy Divine in whatever way is right for them.';
+      'Een ouder of voogd kan het account beheren en posten, en jij mag natuurlijk gewoon in de video\'s staan. We willen dat gezinnen van Divine genieten op de manier die bij hen past.';
 
   @override
-  String get minorAccountReviewUnder13ComeBackTitle => 'When you turn 13';
+  String get minorAccountReviewUnder13ComeBackTitle => 'Als je 13 wordt';
 
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
-      'Depending on the rules where you live, you may be able to come back and apply for your own account. In that case, if you’re between 13 and 15, you’ll need consent from a parent or guardian.';
+      'Afhankelijk van de regels waar je woont kun je dan misschien terugkomen en een eigen account aanvragen. Ben je dan tussen de 13 en 15, dan heb je toestemming van een ouder of voogd nodig.';
 
   @override
   String get minorAccountReviewUnder13HonestyTitle =>
@@ -10550,19 +10557,19 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenBody =>
-      'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.';
+      'Als dit account van iemand van 13 tot 15 is, gebruik dan het moderatiebericht of de supportroute om de instructies voor ouderlijke toestemming te volgen.';
 
   @override
   String get minorAccountReviewParentConsentTitle =>
-      'If the account will belong to someone 13 to 15';
+      'Als het account van iemand van 13 tot 15 wordt';
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Een ouder of voogd moet Divine-support mailen met een korte privévideo. Ons team bekijkt hem en helpt met de volgende stappen.\n\nAls contact met een ouder of voogd niet mogelijk is of iemand in gevaar zou brengen, mail Divine-support en laat het ons weten.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'Dit is een pauze terwijl het Divine-supportteam de video bekijkt. Als hij wordt goedgekeurd, helpen ze je met het opzetten van het nieuwe account.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>
@@ -10578,343 +10585,347 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentChecklist =>
-      'What the video should show';
+      'Wat de video moet laten zien';
 
   @override
   String get minorAccountReviewParentConsentChecklistKid =>
-      'The teen in the video';
+      'De tiener in de video';
 
   @override
   String get minorAccountReviewParentConsentChecklistPermission =>
-      'A parent or guardian speaking on camera';
+      'Een ouder of voogd die in de camera praat';
 
   @override
   String get minorAccountReviewParentConsentChecklistAgeBand =>
-      'A clear statement that the teen is 13 to 15 and has permission to use Divine';
+      'Een duidelijke verklaring dat de tiener 13 tot 15 is en toestemming heeft om Divine te gebruiken';
 
   @override
   String get minorAccountReviewParentConsentChecklistSupervision =>
-      'A clear statement that the parent or guardian knows about the account and will supervise its use';
+      'Een duidelijke verklaring dat de ouder of voogd van het account weet en toezicht houdt op het gebruik';
 
   @override
-  String get minorAccountReviewParentConsentPrivacy => 'How to send it';
+  String get minorAccountReviewParentConsentPrivacy => 'Hoe je het stuurt';
 
   @override
   String get minorAccountReviewParentConsentNeverPost =>
-      'Attach the video when you email Divine support';
+      'Voeg de video toe als bijlage bij je mail aan Divine-support';
 
   @override
   String get minorAccountReviewParentConsentDoNotSave =>
-      'Keep the video private and do not post it in the app';
+      'Houd de video privé en post hem niet in de app';
 
   @override
   String get minorAccountReviewParentConsentOneMove =>
-      'Our team will review it and reply with next steps';
+      'Ons team bekijkt hem en reageert met de volgende stappen';
 
   @override
-  String get minorAccountReviewParentConsentEmailCta => 'Email Divine support';
+  String get minorAccountReviewParentConsentEmailCta => 'Mail Divine-support';
 
   @override
   String get minorAccountReviewParentConsentEmailSubject =>
-      'Divine Greenlight review help (ages 13-15)';
+      'Hulp bij Divine Greenlight-beoordeling (13-15 jaar)';
 
   @override
   String get minorAccountReviewParentConsentEmailBody =>
-      'Hi Divine support,\n\nI am contacting Divine about Divine Greenlight for a teen who is 13-15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.';
+      'Hallo Divine-support,\n\nik neem contact op over Divine Greenlight voor een tiener van 13-15 jaar.\n\nIk heb een korte privévideo bijgevoegd die laat zien:\n- de tiener\n- een ouder of voogd die in de camera praat\n- dat de tiener toestemming heeft om Divine te gebruiken\n- dat de ouder of voogd van het account weet en toezicht houdt op het gebruik\n\nLand(en) van verblijf:\n\nHandige context:\n\nBedankt.';
 
   @override
   String get minorAccountReviewParentSupportInstructions =>
-      'Parent Support Instructions';
+      'Supportinstructies voor ouders';
 
   @override
-  String get minorAccountReviewContinue => 'Continue';
+  String get minorAccountReviewContinue => 'Doorgaan';
 
   @override
   String get minorAccountReviewErrorTitle =>
-      'We could not load your account review status.';
+      'We konden de beoordelingsstatus van je account niet laden.';
 
   @override
-  String get minorAccountReviewErrorBody => 'Please try again in a moment.';
+  String get minorAccountReviewErrorBody => 'Probeer het zo nog eens.';
 
   @override
-  String get minorAccountReviewTryAgain => 'Try Again';
+  String get minorAccountReviewTryAgain => 'Probeer opnieuw';
 
   @override
-  String get minorAccountReviewParentContactTitle => 'Parent Contact';
+  String get minorAccountReviewParentContactTitle => 'Contact met ouder';
 
   @override
   String get minorAccountReviewParentContactHeading =>
-      'Add a parent or guardian email';
+      'Voeg het e-mailadres van een ouder of voogd toe';
 
   @override
   String minorAccountReviewParentContactBody(String caseId) {
-    return 'We will use this address for the parental consent review on case $caseId.';
+    return 'We gebruiken dit adres voor de beoordeling van de ouderlijke toestemming in zaak $caseId.';
   }
 
   @override
   String get minorAccountReviewParentContactFieldLabel =>
-      'Parent or guardian email';
+      'E-mailadres van ouder of voogd';
 
   @override
-  String get minorAccountReviewSubmitting => 'Submitting...';
+  String get minorAccountReviewSubmitting => 'Versturen...';
 
   @override
-  String get minorAccountReviewSubmitEmail => 'Submit Email';
+  String get minorAccountReviewSubmitEmail => 'E-mail versturen';
 
   @override
-  String get minorAccountReviewBackToReview => 'Back to Account Review';
+  String get minorAccountReviewBackToReview =>
+      'Terug naar de accountbeoordeling';
 
   @override
-  String get minorAccountReviewSubmissionReceivedTitle => 'Email submitted';
+  String get minorAccountReviewSubmissionReceivedTitle => 'E-mail verstuurd';
 
   @override
   String minorAccountReviewSubmissionReceivedBody(String email) {
-    return 'We submitted $email for review. We\'ll email this address to confirm. Once your parent or guardian responds, your case will move forward. Use Check Again from the account review screen for updates.';
+    return 'We hebben $email ter beoordeling ingediend. We mailen dit adres ter bevestiging. Zodra je ouder of voogd reageert, gaat je zaak verder. Gebruik Opnieuw controleren op het accountbeoordelingsscherm voor updates.';
   }
 
   @override
   String get minorAccountReviewSubmissionReceivedLocalBody =>
-      'We received the parent or guardian contact for this account. Our team will review it before restoring access.';
+      'We hebben het contact van de ouder of voogd voor dit account ontvangen. Ons team bekijkt het voordat de toegang wordt hersteld.';
 
   @override
   String get minorAccountReviewMissingCase =>
-      'We could not find an active review case for this account.';
+      'We konden geen actieve beoordelingszaak voor dit account vinden.';
 
   @override
   String get minorAccountReviewParentContactError =>
-      'Could not submit the parent email. Please try again.';
+      'Het e-mailadres van de ouder kon niet worden verstuurd. Probeer het opnieuw.';
 
   @override
-  String get minorAccountReviewUnder13SupportTitle => 'Parent Support';
+  String get minorAccountReviewUnder13SupportTitle => 'Support voor ouders';
 
   @override
   String get minorAccountReviewUnder13Heading =>
-      'A parent or guardian must contact Divine';
+      'Een ouder of voogd moet contact opnemen met Divine';
 
   @override
   String get minorAccountReviewUnder13SupportBody =>
-      'For likely under-13 accounts, the next step is parent or guardian contact by email.';
+      'Bij accounts die waarschijnlijk van iemand onder de 13 zijn, is de volgende stap contact per e-mail door een ouder of voogd.';
 
   @override
-  String get minorAccountReviewSupportEmailLabel => 'Support email';
+  String get minorAccountReviewSupportEmailLabel => 'E-mailadres van support';
 
   @override
-  String get minorAccountReviewCopySupportEmail => 'Copy support email';
+  String get minorAccountReviewCopySupportEmail =>
+      'E-mailadres van support kopiëren';
 
   @override
-  String get minorAccountReviewSupportEmailCopied => 'Support email copied';
+  String get minorAccountReviewSupportEmailCopied =>
+      'E-mailadres van support gekopieerd';
 
   @override
-  String get minorAccountReviewCopyCaseId => 'Copy case ID';
+  String get minorAccountReviewCopyCaseId => 'Zaaknummer kopiëren';
 
   @override
-  String get minorAccountReviewCaseIdCopied => 'Case ID copied';
+  String get minorAccountReviewCaseIdCopied => 'Zaaknummer gekopieerd';
 
   @override
-  String get minorAccountReviewUnavailable => 'Unavailable';
+  String get minorAccountReviewUnavailable => 'Niet beschikbaar';
 
   @override
   String get minorAccountReviewUnder13Instructions =>
-      'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.';
+      'Vraag de ouder of voogd om het zaaknummer te vermelden en uit te leggen dat het over deze accountbeoordeling gaat.';
 
   @override
   String minorAccountReviewUnder13EmailSubject(String caseId) {
-    return 'Under-13 account review for case $caseId';
+    return 'Accountbeoordeling onder de 13 voor zaak $caseId';
   }
 
   @override
   String minorAccountReviewUnder13EmailBody(String caseId) {
-    return 'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review case $caseId.\n\nThanks.';
+    return 'Hallo Divine-support,\n\nik ben de ouder of voogd van een kind onder de 13 en neem contact op over accountbeoordelingszaak $caseId.\n\nBedankt.';
   }
 
   @override
   String get devOptionsMinorReviewSimulationTitle =>
-      'Minor Account Review Simulation';
+      'Simulatie accountbeoordeling minderjarige';
 
   @override
-  String get devOptionsMinorReviewCurrentStateLabel => 'Current state';
+  String get devOptionsMinorReviewCurrentStateLabel => 'Huidige status';
 
   @override
   String devOptionsMinorReviewStateRestricted(String state) {
-    return 'Restricted ($state)';
+    return 'Beperkt ($state)';
   }
 
   @override
-  String get devOptionsMinorReviewStateActive => 'Active';
+  String get devOptionsMinorReviewStateActive => 'Actief';
 
   @override
-  String get devOptionsMinorReviewStateLoading => 'Loading...';
+  String get devOptionsMinorReviewStateLoading => 'Laden...';
 
   @override
-  String get devOptionsMinorReviewStateError => 'Error loading state';
+  String get devOptionsMinorReviewStateError =>
+      'Fout bij het laden van de status';
 
   @override
-  String get devOptionsMinorReviewClearTitle => 'Clear simulation override';
+  String get devOptionsMinorReviewClearTitle =>
+      'Simulatie-overschrijving wissen';
 
   @override
   String get devOptionsMinorReviewClearSubtitle =>
-      'Use backend or default active state again';
+      'Weer de backend of de standaard actieve status gebruiken';
 
   @override
-  String get devOptionsMinorReviewTeenTitle => 'Simulate 13-15 review case';
+  String get devOptionsMinorReviewTeenTitle =>
+      'Beoordelingszaak 13-15 simuleren';
 
   @override
   String get devOptionsMinorReviewTeenSubtitle =>
-      'Restricted account with parent contact path';
+      'Beperkt account met route voor oudercontact';
 
   @override
   String get devOptionsMinorReviewUnder13Title =>
-      'Simulate under-13 support case';
+      'Supportzaak onder de 13 simuleren';
 
   @override
   String get devOptionsMinorReviewUnder13Subtitle =>
-      'Restricted account with parent-email-only instructions';
+      'Beperkt account met instructies alleen via e-mail van de ouder';
 
   @override
   String get devOptionsMinorReviewClearedToast =>
-      'Minor account review simulation cleared';
+      'Simulatie accountbeoordeling minderjarige gewist';
 
   @override
   String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulated 13-15 review case enabled';
+      'Gesimuleerde beoordelingszaak 13-15 ingeschakeld';
 
   @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
-      'Simulated under-13 support case enabled';
+      'Gesimuleerde supportzaak onder de 13 ingeschakeld';
 
   @override
   String get devOptionsProtectedMinorSimulationTitle =>
-      'Protected Minor Simulation';
+      'Simulatie beschermde minderjarige';
 
   @override
-  String get devOptionsProtectedMinorCurrentStateLabel => 'Current state';
+  String get devOptionsProtectedMinorCurrentStateLabel => 'Huidige status';
 
   @override
   String get devOptionsProtectedMinorStateProtected =>
-      'Protected minor (13-15)';
+      'Beschermde minderjarige (13-15)';
 
   @override
-  String get devOptionsProtectedMinorStateNotProtected => 'Not protected';
+  String get devOptionsProtectedMinorStateNotProtected => 'Niet beschermd';
 
   @override
-  String get devOptionsProtectedMinorStateLoading => 'Loading…';
+  String get devOptionsProtectedMinorStateLoading => 'Laden…';
 
   @override
-  String get devOptionsProtectedMinorStateError => 'Error reading state';
+  String get devOptionsProtectedMinorStateError =>
+      'Fout bij het lezen van de status';
 
   @override
   String get devOptionsProtectedMinorOverrideNone =>
-      'No override (real account state)';
+      'Geen overschrijving (echte accountstatus)';
 
   @override
   String get devOptionsProtectedMinorOverrideProtected =>
-      'Override: forced protected';
+      'Overschrijving: beschermd afgedwongen';
 
   @override
   String get devOptionsProtectedMinorOverrideNotProtected =>
-      'Override: forced not protected';
+      'Overschrijving: niet beschermd afgedwongen';
 
   @override
   String get devOptionsProtectedMinorSimulateTitle =>
-      'Simulate protected minor (13-15)';
+      'Beschermde minderjarige simuleren (13-15)';
 
   @override
   String get devOptionsProtectedMinorSimulateSubtitle =>
-      'Force the protected-minor state to QA the #175/#176 protections';
+      'Dwing de status beschermde minderjarige af om de beveiligingen #175/#176 te testen';
 
   @override
   String get devOptionsProtectedMinorSimulateNonMinorTitle =>
-      'Simulate non-minor';
+      'Meerderjarige simuleren';
 
   @override
   String get devOptionsProtectedMinorSimulateNonMinorSubtitle =>
-      'Force not-protected (explicit negative, distinct from no override)';
+      'Dwing niet beschermd af (een expliciet nee, anders dan geen overschrijving)';
 
   @override
-  String get devOptionsProtectedMinorClearTitle => 'Clear override';
+  String get devOptionsProtectedMinorClearTitle => 'Overschrijving wissen';
 
   @override
   String get devOptionsProtectedMinorClearSubtitle =>
-      'Return to the real Keycast-driven account state';
+      'Terug naar de echte accountstatus vanuit Keycast';
 
   @override
   String get devOptionsProtectedMinorEnabledToast =>
-      'Protected-minor state forced on';
+      'Status beschermde minderjarige afgedwongen';
 
   @override
   String get devOptionsProtectedMinorNonMinorToast =>
-      'Protected-minor state forced off';
+      'Status beschermde minderjarige uitgezet';
 
   @override
   String get devOptionsProtectedMinorClearedToast =>
-      'Protected-minor override cleared';
+      'Overschrijving beschermde minderjarige gewist';
 
   @override
-  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+  String get devOptionsInviteAvailabilityTitle => 'Aanmelduitnodigingen';
 
   @override
-  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+  String get devOptionsInviteAvailabilityCurrentLabel => 'Huidige status';
 
   @override
-  String get devOptionsInviteAvailabilityServerLoading =>
-      'Server value: loading';
+  String get devOptionsInviteAvailabilityServerLoading => 'Serverwaarde: laden';
 
   @override
-  String get devOptionsInviteAvailabilityServerEnabled =>
-      'Server value: enabled';
+  String get devOptionsInviteAvailabilityServerEnabled => 'Serverwaarde: aan';
 
   @override
-  String get devOptionsInviteAvailabilityServerDisabled =>
-      'Server value: disabled';
+  String get devOptionsInviteAvailabilityServerDisabled => 'Serverwaarde: uit';
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Server value: unknown (defaults enabled)';
+      'Serverwaarde: onbekend (standaard aan)';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
-      'Override: use server value';
+      'Overschrijving: serverwaarde gebruiken';
 
   @override
   String get devOptionsInviteAvailabilityOverrideEnabled =>
-      'Override: force enabled';
+      'Overschrijving: aan afdwingen';
 
   @override
   String get devOptionsInviteAvailabilityOverrideDisabled =>
-      'Override: force disabled';
+      'Overschrijving: uit afdwingen';
 
   @override
-  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+  String get devOptionsInviteAvailabilityUseServer => 'Serverwaarde gebruiken';
 
   @override
   String get devOptionsInviteAvailabilityUseServerSubtitle =>
-      'Follow the invite service onboardingMode';
+      'De onboardingMode van de uitnodigingsdienst volgen';
 
   @override
-  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+  String get devOptionsInviteAvailabilityForceEnabled => 'Aan afdwingen';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
-      'Show signup invite gates and management locally';
+      'Toon lokaal de drempels en het beheer van aanmelduitnodigingen';
 
   @override
-  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+  String get devOptionsInviteAvailabilityForceDisabled => 'Uit afdwingen';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
-      'Hide signup invite UI locally without changing the server';
+      'Verberg de uitnodigingsinterface lokaal zonder de server te wijzigen';
 
   @override
   String get devOptionsInviteAvailabilityUseServerToast =>
-      'Signup invites now follow the server';
+      'Aanmelduitnodigingen volgen nu de server';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledToast =>
-      'Signup invites forced on';
+      'Aanmelduitnodigingen afgedwongen op aan';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledToast =>
-      'Signup invites forced off';
+      'Aanmelduitnodigingen afgedwongen op uit';
 
   @override
   String get commentsRecordVideoButtonLabel => 'Videoreactie opnemen';
@@ -10960,11 +10971,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Visit website: $url';
+    return 'Website bezoeken: $url';
   }
 
   @override
-  String get profileCouldNotOpenWebsite => 'Could not open website';
+  String get profileCouldNotOpenWebsite => 'Website kon niet worden geopend';
 
   @override
   String get videoMetadataEditCoverTitle => 'Omslag bewerken';
@@ -11006,7 +11017,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authUnder16ChoicesCta => 'Dit zijn je keuzes.';
 
   @override
-  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+  String get minorAccountReviewUnder13WhyTitle => 'Dit is waarom';
 
   @override
   String get generalSettingsHoldToRecord => 'Ingedrukt houden om op te nemen';
@@ -11030,7 +11041,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get dmMessageSendLabel => 'Send message';
+  String get dmMessageSendLabel => 'Bericht versturen';
 
   @override
   String get emojiPickerSearchHint => 'Zoeken';
@@ -11170,124 +11181,137 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backgroundUploadNotificationTitle => 'Video uploaden';
 
   @override
-  String get monetizationSettingsTitle => 'Creator Support';
+  String get monetizationSettingsTitle => 'Steun voor creators';
 
   @override
-  String get monetizationSettingsSubtitle => 'Add tip and subscription links';
+  String get monetizationSettingsSubtitle =>
+      'Voeg links voor fooien en abonnementen toe';
 
   @override
-  String get monetizationSettingsIntroTitle => 'Outbound links only';
+  String get monetizationSettingsIntroTitle => 'Alleen externe links';
 
   @override
   String get monetizationSettingsIntroBody =>
-      'Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.';
+      'Voeg bestemmingen toe die je zelf beheert. Divine verwerkt de betaling nooit en ontgrendelt via deze links geen content in de app.';
 
   @override
   String monetizationSettingsConfiguredCount(int count) {
-    return '$count active link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actieve links op je profiel',
+      one: '1 actieve link op je profiel',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get monetizationSettingsTipSection => 'Send a tip';
+  String get monetizationSettingsTipSection => 'Fooi sturen';
 
   @override
-  String get monetizationSettingsSubscriptionSection => 'Subscribe / support';
+  String get monetizationSettingsSubscriptionSection => 'Abonneren / steunen';
 
   @override
-  String get monetizationSettingsSave => 'Save support links';
+  String get monetizationSettingsSave => 'Steunlinks opslaan';
 
   @override
-  String get monetizationSettingsSaving => 'Saving...';
+  String get monetizationSettingsSaving => 'Opslaan...';
 
   @override
-  String get monetizationSettingsSaved => 'Support links updated';
+  String get monetizationSettingsSaved => 'Steunlinks bijgewerkt';
 
   @override
   String get monetizationSettingsSaveFailed =>
-      'Could not save support links. Check your connection and try again.';
+      'Steunlinks konden niet worden opgeslagen. Controleer je verbinding en probeer het opnieuw.';
 
   @override
-  String get monetizationSettingsErrorEmpty => 'Add a handle or URL.';
+  String get monetizationSettingsErrorEmpty => 'Voeg een handle of URL toe.';
 
   @override
   String get monetizationSettingsErrorInvalid =>
-      'That link does not look right.';
+      'Die link ziet er niet goed uit.';
 
   @override
   String get monetizationSettingsErrorWrongProvider =>
-      'Use a link for this provider.';
+      'Gebruik een link van deze dienst.';
 
   @override
-  String get monetizationSettingsHintCashApp => '\$cashtag or cash.app link';
+  String get monetizationSettingsHintCashApp => '\$cashtag of cash.app-link';
 
   @override
-  String get monetizationSettingsHintPayPal => 'PayPal.me handle or link';
+  String get monetizationSettingsHintPayPal => 'PayPal.me-handle of link';
 
   @override
-  String get monetizationSettingsHintVenmo => 'Venmo handle or link';
+  String get monetizationSettingsHintVenmo => 'Venmo-handle of link';
 
   @override
-  String get monetizationSettingsHintPatreon => 'Patreon handle or link';
+  String get monetizationSettingsHintPatreon => 'Patreon-handle of link';
 
   @override
-  String get monetizationSettingsHintSubstack => 'Substack domain or link';
+  String get monetizationSettingsHintSubstack => 'Substack-domein of link';
 
   @override
-  String get monetizationSettingsHintMedium => 'Medium handle or link';
+  String get monetizationSettingsHintMedium => 'Medium-handle of link';
 
   @override
   String get monetizationSettingsHintOpenCollective =>
-      'Open Collective slug or link';
+      'Open Collective-slug of link';
 
   @override
-  String get profileSupportSheetTitle => 'Support this creator';
+  String get profileSupportSheetTitle => 'Steun deze creator';
 
   @override
   String get profileSupportSheetBody =>
-      'These links open outside Divine. Nothing here unlocks content in the app.';
+      'Deze links openen buiten Divine. Niets hiervan ontgrendelt content in de app.';
 
   @override
-  String get profileSupportTipSection => 'Send a tip';
+  String get profileSupportTipSection => 'Fooi sturen';
 
   @override
-  String get profileSupportSubscriptionSection => 'Subscribe / support';
+  String get profileSupportSubscriptionSection => 'Abonneren / steunen';
 
   @override
-  String get profileSupportButtonLabel => 'Support';
+  String get profileSupportButtonLabel => 'Steunen';
 
   @override
-  String get monetizationTipsSettingsTitle => 'Tips';
+  String get monetizationTipsSettingsTitle => 'Fooien';
 
   @override
-  String get monetizationTipsSettingsSubtitle => 'Add optional tip links';
+  String get monetizationTipsSettingsSubtitle => 'Voeg optionele fooilinks toe';
 
   @override
-  String get monetizationTipsSettingsIntroTitle => 'Optional tips only';
+  String get monetizationTipsSettingsIntroTitle => 'Alleen optionele fooien';
 
   @override
   String get monetizationTipsSettingsIntroBody =>
-      'Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.';
+      'Fooien zijn optionele cadeautjes tussen mensen. Ze ontgrendelen geen content, abonnementen, functies, ranking, zichtbaarheid of toegang in Divine.';
 
   @override
   String monetizationTipsSettingsConfiguredCount(int count) {
-    return '$count active tip link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actieve fooilinks op je profiel',
+      one: '1 actieve fooilink op je profiel',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get monetizationTipsSettingsSave => 'Save tip links';
+  String get monetizationTipsSettingsSave => 'Fooilinks opslaan';
 
   @override
-  String get monetizationTipsSettingsSaved => 'Tip links updated';
+  String get monetizationTipsSettingsSaved => 'Fooilinks bijgewerkt';
 
   @override
-  String get profileTipButtonLabel => 'Tip';
+  String get profileTipButtonLabel => 'Fooi';
 
   @override
-  String get profileTipSheetTitle => 'Tip this creator';
+  String get profileTipSheetTitle => 'Geef deze creator een fooi';
 
   @override
   String get profileTipSheetBody =>
-      'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+      'Fooilinks openen buiten Divine. Ze zijn optioneel en ontgrendelen geen content, abonnementen, functies of toegang in Divine.';
 
   @override
   String get settingsStorageTitle => 'Opslag';
@@ -11590,78 +11614,79 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileNotifyUpdateFailed => 'Kon niet opslaan. Opnieuw proberen?';
 
   @override
-  String get savedSoundYourLabel => 'Your label';
+  String get savedSoundYourLabel => 'Jouw label';
 
   @override
-  String get savedSoundAddHashtags => 'Add hashtags';
+  String get savedSoundAddHashtags => 'Hashtags toevoegen';
 
   @override
-  String get savedSoundDeviceOnly => 'Saved on this device';
+  String get savedSoundDeviceOnly => 'Opgeslagen op dit apparaat';
 
   @override
   String get savedSoundDetailsRetry =>
-      'Couldn’t save those details. Tap to retry.';
+      'Die gegevens konden niet worden opgeslagen. Tik om opnieuw te proberen.';
 
   @override
-  String get savedSoundFallbackTitle => 'Saved sound';
+  String get savedSoundFallbackTitle => 'Opgeslagen geluid';
 
   @override
-  String get savedSoundPreviewAction => 'Preview sound';
+  String get savedSoundPreviewAction => 'Geluid beluisteren';
 
   @override
-  String get savedSoundEditAction => 'Edit sound details';
+  String get savedSoundEditAction => 'Geluidsgegevens bewerken';
 
   @override
-  String get savedSoundRemoveAction => 'Remove saved sound';
+  String get savedSoundRemoveAction => 'Opgeslagen geluid verwijderen';
 
   @override
-  String get savedSoundClearHashtagFilter => 'Clear hashtag filter';
+  String get savedSoundClearHashtagFilter => 'Hashtagfilter wissen';
 
   @override
-  String get soundAllowRemix => 'Allow others to remix this sound';
+  String get soundAllowRemix => 'Laat anderen dit geluid remixen';
 
   @override
-  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+  String get soundReuseUnavailable => 'Dit geluid kan nu niet worden geremixt.';
 
   @override
-  String get soundPublicCredit => 'Public sound credit';
+  String get soundPublicCredit => 'Openbare geluidsvermelding';
 
   @override
-  String get soundCreditRequired => 'Add public sound credit before posting.';
+  String get soundCreditRequired =>
+      'Voeg een openbare geluidsvermelding toe voordat je post.';
 
   @override
-  String get soundSharedAs => 'Shared as';
+  String get soundSharedAs => 'Gedeeld als';
 
   @override
-  String get soundOwnWork => 'I made this sound';
+  String get soundOwnWork => 'Dit geluid heb ik gemaakt';
 
   @override
   String soundCreatorBy(String creator) {
-    return 'By $creator';
+    return 'Door $creator';
   }
 
   @override
   String soundSharedBy(String publisher) {
-    return 'Shared by $publisher';
+    return 'Gedeeld door $publisher';
   }
 
   @override
-  String get soundRemixingAllowed => 'Remixing allowed';
+  String get soundRemixingAllowed => 'Remixen toegestaan';
 
   @override
-  String get soundCreditOnly => 'Credit only';
+  String get soundCreditOnly => 'Alleen vermelding';
 
   @override
-  String get soundCreditTitleLabel => 'Sound title';
+  String get soundCreditTitleLabel => 'Titel van het geluid';
 
   @override
-  String get soundCreditCreatorLabel => 'Creator';
+  String get soundCreditCreatorLabel => 'Maker';
 
   @override
-  String get soundCreditSourceUrlLabel => 'Source URL';
+  String get soundCreditSourceUrlLabel => 'Bron-URL';
 
   @override
-  String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+  String get soundCreditPublicHashtagsLabel => 'Openbare hashtags';
 
   @override
   String get videoMetadataTagsPickerCancelSemanticLabel =>

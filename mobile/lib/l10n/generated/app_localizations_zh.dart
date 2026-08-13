@@ -751,20 +751,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupProfilePublished => '资料发布成功！';
 
   @override
-  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+  String get profileSetupUnsavedChangesTitle => '保存更改？';
 
   @override
-  String get profileSetupUnsavedChangesSubtitle =>
-      'Save your edits before leaving, or discard them and keep moving.';
+  String get profileSetupUnsavedChangesSubtitle => '离开前保存你的修改，或者放弃它们继续。';
 
   @override
-  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+  String get profileSetupUnsavedChangesSaveButton => '保存更改';
 
   @override
-  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+  String get profileSetupUnsavedChangesDiscardButton => '放弃更改';
 
   @override
-  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+  String get profileSetupUnsavedChangesKeepButton => '继续编辑';
 
   @override
   String get profileSetupCreateNewProfile => '创建新资料？';
@@ -1126,13 +1125,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exploreTabIntegratedApps => '集成应用';
 
   @override
-  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+  String get featuredTabEmpty => '这里还没有内容。稍后再来看看。';
 
   @override
-  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+  String get featuredTabLoadFailed => '无法加载此合集。';
 
   @override
-  String get featuredTabRetry => 'Try again';
+  String get featuredTabRetry => '重试';
 
   @override
   String get exploreNoVideosAvailable => '暂无视频';
@@ -1242,10 +1241,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoSettingsCaptionsOff => '字幕已关闭';
 
   @override
-  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+  String get videoSettingsCaptionsOnForVideo => '已为此视频开启字幕';
 
   @override
-  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+  String get videoSettingsCaptionsOffForVideo => '已为此视频关闭字幕';
 
   @override
   String get contentWarningLabel => '内容警告';
@@ -2770,7 +2769,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get analyticsDiagnosticsUseFixture => '使用示例数据';
 
   @override
-  String get analyticsNa => 'N/A';
+  String get analyticsNa => '不适用';
 
   @override
   String get authCreateNewAccount => '创建新的 Divine 账号';
@@ -3003,16 +3002,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authVerificationResendFailed => '邮件重发失败，请重试。';
 
   @override
-  String get authVerificationResendExpired =>
-      'That signup expired. Start again to get a fresh code.';
+  String get authVerificationResendExpired => '该注册已过期。请重新开始以获取新验证码。';
 
   @override
   String get authVerificationResendUnavailable =>
-      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+      '目前无法重新发送。请使用我们已发送到你邮箱的 6 位验证码。';
 
   @override
-  String get authVerificationPollingStopped =>
-      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+  String get authVerificationPollingStopped => '我们已停止为你检查。请输入邮件中的 6 位验证码完成登录。';
 
   @override
   String get authWelcomeToDivine => '欢迎来到 Divine！';
@@ -4144,10 +4141,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundsRemovedFromLibrary => '已从声音库移除';
 
   @override
-  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+  String get soundsSaveFailed => '无法保存该声音。请重试。';
 
   @override
-  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+  String get soundsRemoveFailed => '无法移除该声音。请重试。';
 
   @override
   String get soundSyncStatusSyncing => '正在同步你的声音…';
@@ -5643,7 +5640,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get inboxSearchHint => '搜索消息';
 
   @override
-  String get inboxSupportRowTitle => 'Divine Moderation';
+  String get inboxSupportRowTitle => 'Divine 审核';
 
   @override
   String get inboxSupportRowSubtitle => 'Bug、内容管理、账号问题——我们都在听。';
@@ -5746,12 +5743,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'You were invited to collaborate on $title: $url\n\nOpen diVine to review and accept.';
+    return '你受邀参与合作制作 $title：$url\n\n打开 diVine 查看并接受。';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'You were invited to collaborate on a video: $url\n\nOpen diVine to review and accept.';
+    return '你受邀参与合作制作一个视频：$url\n\n打开 diVine 查看并接受。';
   }
 
   @override
@@ -6090,7 +6087,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNoteServiceUnavailable =>
-      'The content credential service didn\'t respond. This isn\'t your connection.';
+      '内容凭证服务没有响应。这不是你的网络问题。';
 
   @override
   String get videoMetadataC2paMissingRegenerate => '重新生成';
@@ -6311,7 +6308,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => '复制草稿失败';
 
   @override
-  String get libraryDraftInProgressBadge => 'In progress';
+  String get libraryDraftInProgressBadge => '进行中';
 
   @override
   String get libraryDraftActionPost => '发布';
@@ -6902,7 +6899,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChangedAfterDeletion =>
-      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+      '部分删除请求已被接受，但因为你切换了账号，清理已停止。请重新登录原账号以完成。';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
@@ -6935,7 +6932,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteAccountRelayConfirmationFailed =>
-      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+      '我们无法通过中继确认账号删除。请检查网络连接后重试。';
 
   @override
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
@@ -7290,8 +7287,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportRequiredHelper => '必填';
 
   @override
-  String get supportFieldLimitReached =>
-      'That\'s the maximum length. Anything past this wasn\'t added.';
+  String get supportFieldLimitReached => '已达到最大长度。超出的部分未被添加。';
 
   @override
   String get bugReportSubjectHint => '简要概括问题';
@@ -7881,10 +7877,10 @@ class AppLocalizationsZh extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count of your vines',
-      one: 'your vine',
+      other: '你的 $count 个 vine',
+      one: '你的 vine',
     );
-    return '$actorName added $_temp0 to $listName';
+    return '$actorName 将$_temp0添加到了 $listName';
   }
 
   @override
@@ -9339,8 +9335,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataAudioReuseSubtitle => '让其他人保存并二次使用这个视频的音频。';
 
   @override
-  String get publishAudioReuseDegradedWarning =>
-      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+  String get publishAudioReuseDegradedWarning => '你的视频已发布，但声音未能发布。编辑视频以分享声音。';
 
   @override
   String get videoMetadataCollaboratorsLabel => '添加协作者';
@@ -10228,71 +10223,61 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsProtectedMinorClearedToast => '未成年保护覆盖已清除';
 
   @override
-  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+  String get devOptionsInviteAvailabilityTitle => '注册邀请';
 
   @override
-  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+  String get devOptionsInviteAvailabilityCurrentLabel => '当前状态';
 
   @override
-  String get devOptionsInviteAvailabilityServerLoading =>
-      'Server value: loading';
+  String get devOptionsInviteAvailabilityServerLoading => '服务器值：加载中';
 
   @override
-  String get devOptionsInviteAvailabilityServerEnabled =>
-      'Server value: enabled';
+  String get devOptionsInviteAvailabilityServerEnabled => '服务器值：已启用';
 
   @override
-  String get devOptionsInviteAvailabilityServerDisabled =>
-      'Server value: disabled';
+  String get devOptionsInviteAvailabilityServerDisabled => '服务器值：已禁用';
 
   @override
-  String get devOptionsInviteAvailabilityServerUnknown =>
-      'Server value: unknown (defaults enabled)';
+  String get devOptionsInviteAvailabilityServerUnknown => '服务器值：未知（默认启用）';
 
   @override
-  String get devOptionsInviteAvailabilityOverrideNone =>
-      'Override: use server value';
+  String get devOptionsInviteAvailabilityOverrideNone => '覆盖：使用服务器值';
 
   @override
-  String get devOptionsInviteAvailabilityOverrideEnabled =>
-      'Override: force enabled';
+  String get devOptionsInviteAvailabilityOverrideEnabled => '覆盖：强制启用';
 
   @override
-  String get devOptionsInviteAvailabilityOverrideDisabled =>
-      'Override: force disabled';
+  String get devOptionsInviteAvailabilityOverrideDisabled => '覆盖：强制禁用';
 
   @override
-  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+  String get devOptionsInviteAvailabilityUseServer => '使用服务器值';
 
   @override
   String get devOptionsInviteAvailabilityUseServerSubtitle =>
-      'Follow the invite service onboardingMode';
+      '跟随邀请服务的 onboardingMode';
 
   @override
-  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+  String get devOptionsInviteAvailabilityForceEnabled => '强制启用';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
-      'Show signup invite gates and management locally';
+      '在本地显示注册邀请门槛和管理界面';
 
   @override
-  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+  String get devOptionsInviteAvailabilityForceDisabled => '强制禁用';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
-      'Hide signup invite UI locally without changing the server';
+      '在本地隐藏注册邀请界面，不改动服务器';
 
   @override
-  String get devOptionsInviteAvailabilityUseServerToast =>
-      'Signup invites now follow the server';
+  String get devOptionsInviteAvailabilityUseServerToast => '注册邀请现在跟随服务器';
 
   @override
-  String get devOptionsInviteAvailabilityForceEnabledToast =>
-      'Signup invites forced on';
+  String get devOptionsInviteAvailabilityForceEnabledToast => '注册邀请已强制启用';
 
   @override
-  String get devOptionsInviteAvailabilityForceDisabledToast =>
-      'Signup invites forced off';
+  String get devOptionsInviteAvailabilityForceDisabledToast => '注册邀请已强制禁用';
 
   @override
   String get commentsRecordVideoButtonLabel => '录制视频评论';
@@ -10926,78 +10911,77 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileNotifyUpdateFailed => '没能保存，再试一次？';
 
   @override
-  String get savedSoundYourLabel => 'Your label';
+  String get savedSoundYourLabel => '你的标签';
 
   @override
-  String get savedSoundAddHashtags => 'Add hashtags';
+  String get savedSoundAddHashtags => '添加话题标签';
 
   @override
-  String get savedSoundDeviceOnly => 'Saved on this device';
+  String get savedSoundDeviceOnly => '已保存在本设备';
 
   @override
-  String get savedSoundDetailsRetry =>
-      'Couldn’t save those details. Tap to retry.';
+  String get savedSoundDetailsRetry => '无法保存这些信息。点按重试。';
 
   @override
-  String get savedSoundFallbackTitle => 'Saved sound';
+  String get savedSoundFallbackTitle => '已保存的声音';
 
   @override
-  String get savedSoundPreviewAction => 'Preview sound';
+  String get savedSoundPreviewAction => '试听声音';
 
   @override
-  String get savedSoundEditAction => 'Edit sound details';
+  String get savedSoundEditAction => '编辑声音信息';
 
   @override
-  String get savedSoundRemoveAction => 'Remove saved sound';
+  String get savedSoundRemoveAction => '移除已保存的声音';
 
   @override
-  String get savedSoundClearHashtagFilter => 'Clear hashtag filter';
+  String get savedSoundClearHashtagFilter => '清除话题标签筛选';
 
   @override
-  String get soundAllowRemix => 'Allow others to remix this sound';
+  String get soundAllowRemix => '允许他人混剪此声音';
 
   @override
-  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+  String get soundReuseUnavailable => '此声音目前无法混剪。';
 
   @override
-  String get soundPublicCredit => 'Public sound credit';
+  String get soundPublicCredit => '公开声音署名';
 
   @override
-  String get soundCreditRequired => 'Add public sound credit before posting.';
+  String get soundCreditRequired => '发布前请添加公开声音署名。';
 
   @override
-  String get soundSharedAs => 'Shared as';
+  String get soundSharedAs => '分享为';
 
   @override
-  String get soundOwnWork => 'I made this sound';
+  String get soundOwnWork => '这个声音是我做的';
 
   @override
   String soundCreatorBy(String creator) {
-    return 'By $creator';
+    return '作者：$creator';
   }
 
   @override
   String soundSharedBy(String publisher) {
-    return 'Shared by $publisher';
+    return '由 $publisher 分享';
   }
 
   @override
-  String get soundRemixingAllowed => 'Remixing allowed';
+  String get soundRemixingAllowed => '允许混剪';
 
   @override
-  String get soundCreditOnly => 'Credit only';
+  String get soundCreditOnly => '仅署名';
 
   @override
-  String get soundCreditTitleLabel => 'Sound title';
+  String get soundCreditTitleLabel => '声音标题';
 
   @override
-  String get soundCreditCreatorLabel => 'Creator';
+  String get soundCreditCreatorLabel => '创作者';
 
   @override
-  String get soundCreditSourceUrlLabel => 'Source URL';
+  String get soundCreditSourceUrlLabel => '来源 URL';
 
   @override
-  String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+  String get soundCreditPublicHashtagsLabel => '公开话题标签';
 
   @override
   String get videoMetadataTagsPickerCancelSemanticLabel => '取消标签选择';

@@ -779,20 +779,20 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupProfilePublished => 'መገለጫ በተሳካ ሁኔታ ታትሟል!';
 
   @override
-  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+  String get profileSetupUnsavedChangesTitle => 'ለውጦቹ ይቀመጡ?';
 
   @override
   String get profileSetupUnsavedChangesSubtitle =>
-      'Save your edits before leaving, or discard them and keep moving.';
+      'ከመውጣትህ በፊት ለውጦችህን አስቀምጥ፣ ወይም ጣላቸውና ቀጥል።';
 
   @override
-  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+  String get profileSetupUnsavedChangesSaveButton => 'ለውጦቹን አስቀምጥ';
 
   @override
-  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+  String get profileSetupUnsavedChangesDiscardButton => 'ለውጦቹን ጣል';
 
   @override
-  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+  String get profileSetupUnsavedChangesKeepButton => 'አርትዖቱን ቀጥል';
 
   @override
   String get profileSetupCreateNewProfile => 'አዲስ መገለጫ ይፈጠር?';
@@ -831,7 +831,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupBioLabel => 'ባዮ (አማራጭ)';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'ድረ-ገጽ (አማራጭ)';
 
   @override
   String get profileSetupPublicKeyLabel => 'የህዝብ ቁልፍ (npub)';
@@ -1036,37 +1036,37 @@ class AppLocalizationsAm extends AppLocalizations {
       'ለdivine.video ከላይ ያለውን የተጠቃሚ ስም መስክ ይጠቀሙ';
 
   @override
-  String get nostrSettingsNip05Address => 'NIP-05 address';
+  String get nostrSettingsNip05Address => 'የNIP-05 አድራሻ';
 
   @override
   String get nostrSettingsNip05AddressSubtitle =>
-      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+      'የdivine.video የተጠቃሚ ስምህን ተጠቀም፣ ወይም መለያህን በምትቆጣጠረው ጎራ ላይ ወዳለ የNIP-05 አድራሻ አመልክት።';
 
   @override
   String get nostrSettingsNip05AddressHint => 'you@example.com';
 
   @override
-  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+  String get nostrSettingsNip05SaveAction => 'NIP-05 አስቀምጥ';
 
   @override
-  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+  String get nostrSettingsNip05Saved => 'NIP-05 ተቀምጧል';
 
   @override
   String get nostrSettingsNip05SaveFailed =>
-      'Couldn\'t save NIP-05. Please try again.';
+      'NIP-05 ማስቀመጥ አልተቻለም። እባክህ እንደገና ሞክር።';
 
   @override
-  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+  String get profileSetupNip05ConfirmTitle => 'የራስህን NIP-05 ትጠቀማለህ?';
 
   @override
   String get profileSetupNip05ConfirmBody =>
-      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+      'NIP-05 እንደ you@yourdomain.com ያለ ስምን ከNostr ማንነትህ ጋር ያገናኛል። ጎራውን መቆጣጠርና የማረጋገጫ ፋይል በትክክለኛው መንገድ ማስቀመጥ አለብህ። ስህተት ካለ ሰዎች ሊያገኙህ አይችሉም፣ የተረጋገጠው መለያህም ይጠፋል። ይህን አዘጋጅተህ ከሆነ ብቻ ቀጥል።';
 
   @override
-  String get profileSetupNip05ConfirmContinue => 'Continue';
+  String get profileSetupNip05ConfirmContinue => 'ቀጥል';
 
   @override
-  String get profileSetupNip05ConfirmCancel => 'Cancel';
+  String get profileSetupNip05ConfirmCancel => 'ሰርዝ';
 
   @override
   String get profileSetupProfilePicturePreview => 'የመገለጫ ስዕል ቅድመ እይታ';
@@ -1170,13 +1170,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreTabIntegratedApps => 'የተዋሃዱ መተግበሪያዎች';
 
   @override
-  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+  String get featuredTabEmpty => 'እስካሁን እዚህ ምንም የለም። በቅርቡ ተመልሰህ ተመልከት።';
 
   @override
-  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+  String get featuredTabLoadFailed => 'ይህን ስብስብ መጫን አልተቻለም።';
 
   @override
-  String get featuredTabRetry => 'Try again';
+  String get featuredTabRetry => 'እንደገና ሞክር';
 
   @override
   String get exploreNoVideosAvailable => 'ምንም ቪዲዮዎች የሉም';
@@ -1289,10 +1289,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'መግለጫ ጽሑፎች ጠፍተዋል';
 
   @override
-  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+  String get videoSettingsCaptionsOnForVideo => 'ለዚህ ቪዲዮ የጽሑፍ መግለጫዎች በርተዋል';
 
   @override
-  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+  String get videoSettingsCaptionsOffForVideo => 'ለዚህ ቪዲዮ የጽሑፍ መግለጫዎች ጠፍተዋል';
 
   @override
   String get contentWarningLabel => 'የይዘት ማስጠንቀቂያ';
@@ -1500,7 +1500,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'This video was removed for breaking our content rules.';
+      'ይህ ቪዲዮ የይዘት ደንቦቻችንን በመጣሱ ተወግዷል።';
 
   @override
   String get videoErrorVerifyAgeBody => 'ይህን ቪዲዮ ለማየት እድሜዎን ያረጋግጡ።';
@@ -1601,19 +1601,19 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get videoCollaboratorPendingDecoration => 'Pending';
+  String get videoCollaboratorPendingDecoration => 'በመጠባበቅ ላይ';
 
   @override
-  String get videoCollaboratorPendingSemanticLabel => 'Pending collaborator';
+  String get videoCollaboratorPendingSemanticLabel => 'በመጠባበቅ ላይ ያለ ተባባሪ';
 
   @override
   String videoCollaboratorWithPendingSuffix(String label, int pending) {
-    return '$label ($pending pending)';
+    return '$label ($pending በመጠባበቅ ላይ)';
   }
 
   @override
   String profileChipTapHint(String name) {
-    return '$name. Tap to view profile.';
+    return '$name። መገለጫውን ለማየት ንካ።';
   }
 
   @override
@@ -2513,36 +2513,33 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationSettingsNewPostsSubtitle => 'የምትከታተለው ሰው ሲለጥፍ';
 
   @override
-  String get notificationSettingsSystem => 'System';
+  String get notificationSettingsSystem => 'ሲስተም';
 
   @override
   String get notificationSettingsSystemSubtitle =>
-      'App updates and system messages';
+      'የመተግበሪያ ዝማኔዎችና የሲስተም መልእክቶች';
 
   @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Push Notifications';
+  String get notificationSettingsPushNotificationsSection => 'የግፊት ማሳወቂያዎች';
 
   @override
-  String get notificationSettingsPushNotifications => 'Push Notifications';
+  String get notificationSettingsPushNotifications => 'የግፊት ማሳወቂያዎች';
 
   @override
   String get notificationSettingsPushNotificationsSubtitle =>
-      'Receive notifications when app is closed';
+      'መተግበሪያው ሲዘጋ ማሳወቂያዎችን ተቀበል';
 
   @override
-  String get notificationSettingsSound => 'Sound';
+  String get notificationSettingsSound => 'ድምፅ';
 
   @override
-  String get notificationSettingsSoundSubtitle =>
-      'Play sound for notifications';
+  String get notificationSettingsSoundSubtitle => 'ለማሳወቂያዎች ድምፅ አጫውት';
 
   @override
-  String get notificationSettingsVibration => 'Vibration';
+  String get notificationSettingsVibration => 'ንዝረት';
 
   @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Vibrate for notifications';
+  String get notificationSettingsVibrationSubtitle => 'ለማሳወቂያዎች ንዘር';
 
   @override
   String get notificationSettingsActions => 'ድርጊቶች';
@@ -2863,17 +2860,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authCreateNewAccount => 'አዲስ Divine መለያ ይፍጠሩ';
 
   @override
-  String get authCreateNewAccountShort => 'Create new account';
+  String get authCreateNewAccountShort => 'አዲስ መለያ ፍጠር';
 
   @override
   String get authSignInDifferentAccount => 'በተለየ መለያ ይግቡ';
 
   @override
-  String get authUseAnotherAccount => 'Use another account';
+  String get authUseAnotherAccount => 'ሌላ መለያ ተጠቀም';
 
   @override
   String authContinueAs(String displayName) {
-    return 'Continue as $displayName';
+    return 'እንደ $displayName ቀጥል';
   }
 
   @override
@@ -2884,14 +2881,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'እዚህ መግባት እነዚያ ረቂቆች እና ክሊፖች ይደብቃቸዋል';
 
   @override
-  String get authTermsPrefix =>
-      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+  String get authTermsPrefix => 'ከታች አማራጭ በመምረጥህ ቢያንስ 16 ዓመት እንደሆንህ (ወይም ';
 
   @override
-  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+  String get authTermsAgeAuthorizationCta => 'የDivine የዕድሜ ፈቃድ';
 
   @override
-  String get authTermsAfterAgeAuthorization => ') and agree to the ';
+  String get authTermsAfterAgeAuthorization => ' እንዳጠናቀቅህ) ታረጋግጣለህ፣ እንዲሁም ';
 
   @override
   String get authTermsOfService => 'የአገልግሎት ውል';
@@ -3101,15 +3097,15 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get authVerificationResendExpired =>
-      'That signup expired. Start again to get a fresh code.';
+      'ያ ምዝገባ ጊዜው አልፎበታል። አዲስ ኮድ ለማግኘት እንደገና ጀምር።';
 
   @override
   String get authVerificationResendUnavailable =>
-      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+      'አሁን እንደገና መላክ አይቻልም። ቀደም ብለን በላክንልህ ኢሜይል ውስጥ ያለውን የ6 አኃዝ ኮድ ተጠቀም።';
 
   @override
   String get authVerificationPollingStopped =>
-      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+      'ስለአንተ ማረጋገጡን አቁመናል። መግባትን ለማጠናቀቅ ከኢሜይልህ ውስጥ ያለውን የ6 አኃዝ ኮድ አስገባ።';
 
   @override
   String get authWelcomeToDivine => 'እንኳን ወደ Divine በደህና መጣህ!';
@@ -3185,7 +3181,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'ኢሜልዎን ያጋሩ እና መዳረሻ ሲከፈት ማሻሻያዎችን እንልካለን።';
 
   @override
-  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+  String get authJoinWaitlistNewsletterOptIn => 'የDivine መነሳሳት ላክልኝ';
 
   @override
   String get authInviteAccessHelp => 'የመዳረሻ እገዛን ጋብዝ';
@@ -3975,11 +3971,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareMenuDeleteFailedRelayRejected =>
-      'The relay wouldn\'t accept this delete request. Try again in a moment.';
+      'ሪሌው ይህን የመሰረዝ ጥያቄ አልተቀበለውም። ከጥቂት ቆይታ በኋላ እንደገና ሞክር።';
 
   @override
   String get shareMenuDeleteFailedRelayNoResponse =>
-      'ቅብብሎሹን መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
+      'ሪሌውን ማግኘት አልተቻለም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
 
   @override
   String get shareMenuDeletePartiallyConfirmed =>
@@ -4285,10 +4281,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'ከድምፆች ተወገደ';
 
   @override
-  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+  String get soundsSaveFailed => 'ያን ድምፅ ማስቀመጥ አልተቻለም። እንደገና ሞክር።';
 
   @override
-  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+  String get soundsRemoveFailed => 'ያን ድምፅ ማስወገድ አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get soundSyncStatusSyncing => 'ድምፆችዎ በማመሳሰል ላይ…';
@@ -4345,11 +4341,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Couldn\'t load videos.';
+  String get profileFeedError => 'ቪዲዮዎችን መጫን አልተቻለም።';
 
   @override
   String get profileFeedLoadMoreError =>
-      'Couldn\'t load more videos. Pull to refresh.';
+      'ተጨማሪ ቪዲዮዎችን መጫን አልተቻለም። ለማደስ ወደታች ሳብ።';
 
   @override
   String get notificationsTabAll => 'ሁሉም';
@@ -4883,10 +4879,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportSelectReason => 'እባክዎ ይህን ይዘት ሪፖርት ለማድረግ ምክንያት ይምረጡ';
 
   @override
-  String get reportOtherRequiresDetails => '«ሌላ» ሲመርጡ እባክዎ ችግሩን ይግለጹ';
+  String get reportOtherRequiresDetails => '«ሌላ» ስትመርጥ እባክህ ችግሩን ግለጽ';
 
   @override
-  String get reportDetailsRequired => 'እባክዎ ችግሩን ይግለጹ';
+  String get reportDetailsRequired => 'እባክህ ችግሩን ግለጽ';
 
   @override
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';
@@ -5209,11 +5205,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementKeycastGenericFailure => 'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም';
 
   @override
-  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+  String get keyManagementRestrictedTitle => 'ቁልፎችህ በDivine ይተዳደራሉ';
 
   @override
   String get keyManagementRestrictedBody =>
-      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+      'መለያህን ደኅንነቱ የተጠበቀ ለማድረግ፣ የቁልፍ ምትኬና ሌላ ቁልፍ ማስመጣት እዚህ አይገኙም።';
 
   @override
   String get keyManagementPasteKey => 'እባክህ የግል ቁልፍህን ለጥፍ';
@@ -5810,7 +5806,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxSearchHint => 'መልዕክቶችን ፈልግ';
 
   @override
-  String get inboxSupportRowTitle => 'Divine Moderation';
+  String get inboxSupportRowTitle => 'የDivine ቁጥጥር';
 
   @override
   String get inboxSupportRowSubtitle => 'ሳንካዎች፣ ማጣራት፣ የመለያ ጉዳዮች — እያዳመጥን ነው።';
@@ -5935,7 +5931,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get dmSendBlockedMessage =>
-      'You can only message official Divine accounts';
+      'መልእክት መላክ የምትችለው ለኦፊሴላዊ የDivine መለያዎች ብቻ ነው';
 
   @override
   String get dmSendBlockedRetiredMessage =>
@@ -5967,7 +5963,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmConversationLoadError => 'መልዕክቶችን መጫን አልተቻለም';
 
   @override
-  String get dmMessageInputHint => 'Say something…';
+  String get dmMessageInputHint => 'አንድ ነገር በል…';
 
   @override
   String get dmMessageBubbleSentHint => 'የተላከ መልእክት';
@@ -6000,7 +5996,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmMessageActionCancelSend => 'መሞከር አቁም';
 
   @override
-  String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
+  String get dmReactionAddCustomA11yLabel => 'ብጁ የኢሞጂ ምላሽ አክል';
 
   @override
   String dmReelReplyComposerHint(String name) {
@@ -6032,25 +6028,24 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {
-    return 'Your reaction: $emoji';
+    return 'የአንተ ምላሽ፦ $emoji';
   }
 
   @override
   String dmReactionChipOtherA11yLabel(String name, String emoji) {
-    return '$name reacted with $emoji';
+    return '$name በ$emoji ምላሽ ሰጥቷል';
   }
 
   @override
   String dmReactionChipPendingA11yLabel(String emoji) {
-    return 'Sending reaction: $emoji';
+    return 'ምላሽ በመላክ ላይ፦ $emoji';
   }
 
   @override
-  String get dmReactionChipFailedA11yLabel =>
-      'Reaction failed, double tap to retry';
+  String get dmReactionChipFailedA11yLabel => 'ምላሹ አልተሳካም፣ እንደገና ለመሞከር ሁለቴ ንካ';
 
   @override
-  String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
+  String get dmReactionChipRetryAnnouncement => 'ምላሹን እንደገና በመሞከር ላይ';
 
   @override
   String get dmReactionsSheetTitle => 'ምላሾች';
@@ -6246,10 +6241,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Couldn\'t update the cover. Try again.';
+      'ሽፋኑን ማዘመን አልተቻለም። እንደገና ሞክር።';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'ሽፋን ተዘምኗል';
 
   @override
   String get videoMetadataC2paMissingTitle => 'ያለ የእውነተኛነት ማረጋገጫ ይለጠፍ?';
@@ -6264,7 +6259,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNoteServiceUnavailable =>
-      'The content credential service didn\'t respond. This isn\'t your connection.';
+      'የይዘት ማረጋገጫ አገልግሎቱ ምላሽ አልሰጠም። ይህ የአንተ ግንኙነት ችግር አይደለም።';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'እንደገና ፍጠር';
@@ -6488,7 +6483,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'ረቂቅን ማባዛት አልተሳካም።';
 
   @override
-  String get libraryDraftInProgressBadge => 'In progress';
+  String get libraryDraftInProgressBadge => 'በሂደት ላይ';
 
   @override
   String get libraryDraftActionPost => 'ለጥፍ';
@@ -7102,7 +7097,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChangedAfterDeletion =>
-      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+      'አንዳንድ የመሰረዝ ጥያቄዎች ተቀባይነት አግኝተዋል፣ ነገር ግን መለያ ስለቀየርክ ጽዳቱ ቆሟል። ለማጠናቀቅ ወደ መጀመሪያው መለያ በድጋሚ ግባ።';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
@@ -7136,7 +7131,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountRelayConfirmationFailed =>
-      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+      'የመለያ መሰረዝን ከየትኛውም ሪሌ ጋር ማረጋገጥ አልቻልንም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';
@@ -7513,7 +7508,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get supportFieldLimitReached =>
-      'That\'s the maximum length. Anything past this wasn\'t added.';
+      'ይህ ከፍተኛው ርዝመት ነው። ከዚህ በኋላ ያለው አልተጨመረም።';
 
   @override
   String get bugReportSubjectHint => 'የችግሩ አጭር ማጠቃለያ';
@@ -7545,19 +7540,19 @@ class AppLocalizationsAm extends AppLocalizations {
       'እናመሰግናለን! ሪፖርትዎን ተቀብለናል፣ Divineን ለማሻሻል እንጠቀምበታለን።';
 
   @override
-  String get bugReportAttachImages => 'Attach images';
+  String get bugReportAttachImages => 'ምስሎችን አያይዝ';
 
   @override
   String bugReportImagesCount(int count, int max) {
-    return '$count of $max images selected';
+    return 'ከ$max ምስሎች $count ተመርጠዋል';
   }
 
   @override
-  String get bugReportRemoveImage => 'Remove image';
+  String get bugReportRemoveImage => 'ምስሉን አስወግድ';
 
   @override
   String get bugReportUploadFailed =>
-      'We couldn\'t upload the selected image. Try again or send the report without it.';
+      'የተመረጠውን ምስል መስቀል አልቻልንም። እንደገና ሞክር ወይም ሪፖርቱን ያለ እሱ ላክ።';
 
   @override
   String get bugReportSendFailed => 'የሳንካ ሪፖርት መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።';
@@ -7793,26 +7788,26 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get blueskyUsernameRequired =>
-      'Set up a divine.video handle before publishing to Bluesky';
+      'ወደ Bluesky ከማተምህ በፊት የdivine.video መለያ አዘጋጅ';
 
   @override
   String get blueskyUsernameRequiredSubtitle =>
-      'Bluesky publishing needs a claimed username.divine.video handle.';
+      'በBluesky ማተም የተያዘ username.divine.video መለያ ይፈልጋል።';
 
   @override
   String get blueskyUsernameSyncPending =>
-      'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.';
+      'የDivine መለያህ ተይዟል። ከBluesky ጋር በማገናኘት ላይ ነን — ከጥቂት ቆይታ በኋላ እንደገና ሞክር።';
 
   @override
   String get blueskyStatusUnavailableRetry =>
-      'We could not check your Divine handle. Try again.';
+      'የDivine መለያህን ማረጋገጥ አልቻልንም። እንደገና ሞክር።';
 
   @override
-  String get blueskySetUpHandle => 'Set up';
+  String get blueskySetUpHandle => 'አዘጋጅ';
 
   @override
   String get blueskyTemporarilyUnavailable =>
-      'Bluesky publishing is temporarily unavailable. Please try again.';
+      'በBluesky ማተም ለጊዜው አይገኝም። እባክህ እንደገና ሞክር።';
 
   @override
   String get invitesTitle => 'ጓደኞችን ይጋብዙ';
@@ -7822,17 +7817,17 @@ class AppLocalizationsAm extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ግብዣዎች ለማመንጨት ዝግጁ ናቸው',
-      one: '$count ግብዣ ለማመንጨት ዝግጁ ነው',
+      other: '$count ግብዣዎች ለመፍጠር ዝግጁ ናቸው',
+      one: '$count ግብዣ ለመፍጠር ዝግጁ ነው',
     );
     return '$_temp0';
   }
 
   @override
-  String get invitesGenerateCardSubtitle => 'አንድ ለማጋራት ዝግጁ ሲሆኑ ኮድ ይፍጠሩ።';
+  String get invitesGenerateCardSubtitle => 'አንዱን ለማጋራት ስትዘጋጅ ኮድ ፍጠር።';
 
   @override
-  String get invitesGenerateButtonLabel => 'ግብዣ ይፍጠሩ';
+  String get invitesGenerateButtonLabel => 'ግብዣ ፍጠር';
 
   @override
   String get invitesNoneAvailable => 'አሁን ምንም ግብዣዎች የሉም';
@@ -7891,19 +7886,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get searchPeopleSectionHeader => 'ሰዎች';
 
   @override
-  String get searchPeopleLoadingLabel => 'የሰዎች ውጤቶችን በመጫን ላይ';
+  String get searchPeopleLoadingLabel => 'የሰዎች ውጤቶች በመጫን ላይ';
 
   @override
   String get searchTagsSectionHeader => 'መለያዎች';
 
   @override
-  String get searchTagsLoadingLabel => 'የመለያ ውጤቶችን በመጫን ላይ';
+  String get searchTagsLoadingLabel => 'የመለያ ውጤቶች በመጫን ላይ';
 
   @override
   String get searchVideosSectionHeader => 'ቪዲዮዎች';
 
   @override
-  String get searchVideosLoadingLabel => 'የቪዲዮ ውጤቶችን በመጫን ላይ';
+  String get searchVideosLoadingLabel => 'የቪዲዮ ውጤቶች በመጫን ላይ';
 
   @override
   String get searchVideosSortOptionsLabel => 'የቪዲዮ ውጤቶችን ደርድር';
@@ -8116,10 +8111,10 @@ class AppLocalizationsAm extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count of your vines',
-      one: 'your vine',
+      other: '$count ቫይኖችህን',
+      one: 'ቫይንህን',
     );
-    return '$actorName added $_temp0 to $listName';
+    return '$actorName $_temp0 ወደ $listName ጨምሯል';
   }
 
   @override
@@ -8151,47 +8146,45 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commentReplyToPrefix => 'ድጋሚ፡';
 
   @override
-  String get commentHideKeyboard => 'Hide keyboard';
+  String get commentHideKeyboard => 'የቁልፍ ሰሌዳውን ደብቅ';
 
   @override
-  String get commentsErrorLoadFailed => 'Failed to load comments';
+  String get commentsErrorLoadFailed => 'አስተያየቶችን መጫን አልተሳካም';
 
   @override
-  String get commentsErrorNotAuthenticatedComment =>
-      'Please sign in to comment';
+  String get commentsErrorNotAuthenticatedComment => 'አስተያየት ለመስጠት እባክህ ግባ';
 
   @override
-  String get commentsErrorPostCommentFailed => 'Failed to post comment';
+  String get commentsErrorPostCommentFailed => 'አስተያየቱን ማተም አልተሳካም';
 
   @override
-  String get commentsErrorPostReplyFailed => 'Failed to post reply';
+  String get commentsErrorPostReplyFailed => 'ምላሹን ማተም አልተሳካም';
 
   @override
-  String get commentsErrorEditFailed => 'Failed to edit comment';
+  String get commentsErrorEditFailed => 'አስተያየቱን ማረም አልተሳካም';
 
   @override
-  String get commentsErrorNotAuthenticatedInteract =>
-      'Please sign in to interact';
+  String get commentsErrorNotAuthenticatedInteract => 'ለመሳተፍ እባክህ ግባ';
 
   @override
-  String get commentsErrorVoteFailed => 'Failed to vote on comment';
+  String get commentsErrorVoteFailed => 'በአስተያየቱ ላይ መምረጥ አልተሳካም';
 
   @override
-  String get commentsErrorReportFailed => 'Failed to report comment';
+  String get commentsErrorReportFailed => 'አስተያየቱን ሪፖርት ማድረግ አልተሳካም';
 
   @override
-  String get commentsErrorBlockFailed => 'Failed to block user';
+  String get commentsErrorBlockFailed => 'ተጠቃሚውን ማገድ አልተሳካም';
 
   @override
-  String get commentsErrorDeleteFailed => 'Failed to delete comment';
+  String get commentsErrorDeleteFailed => 'አስተያየቱን መሰረዝ አልተሳካም';
 
   @override
   String commentsHeaderCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Comments',
-      one: '$count Comment',
+      other: '$count አስተያየቶች',
+      one: '$count አስተያየት',
     );
     return '$_temp0';
   }
@@ -8203,46 +8196,46 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commentsVideoReplyPendingSemanticLabel => 'የቪዲዮ ምላሽዎ በመለጠፍ ላይ ነው';
 
   @override
-  String get commentsSortNew => 'New';
+  String get commentsSortNew => 'አዲስ';
 
   @override
-  String get commentsSortTop => 'Top';
+  String get commentsSortTop => 'ከፍተኛ';
 
   @override
-  String get commentsSortOld => 'Old';
+  String get commentsSortOld => 'አሮጌ';
 
   @override
-  String get commentsSortSemanticLabel => 'Comments sorting';
+  String get commentsSortSemanticLabel => 'የአስተያየቶች ቅደም ተከተል';
 
   @override
-  String get commentReply => 'Reply';
+  String get commentReply => 'መልስ';
 
   @override
-  String get commentReplySemanticLabel => 'Reply to comment';
+  String get commentReplySemanticLabel => 'ለአስተያየቱ መልስ ስጥ';
 
   @override
-  String get commentUpvoteLabel => 'Upvote comment';
+  String get commentUpvoteLabel => 'አስተያየቱን ደግፍ';
 
   @override
-  String get commentRemoveUpvoteLabel => 'Remove upvote';
+  String get commentRemoveUpvoteLabel => 'ድጋፉን አስወግድ';
 
   @override
-  String get commentDownvoteLabel => 'Downvote comment';
+  String get commentDownvoteLabel => 'አስተያየቱን ተቃወም';
 
   @override
-  String get commentRemoveDownvoteLabel => 'Remove downvote';
+  String get commentRemoveDownvoteLabel => 'ተቃውሞውን አስወግድ';
 
   @override
-  String get commentsInputHint => 'Add comment...';
+  String get commentsInputHint => 'አስተያየት አክል...';
 
   @override
-  String get commentsInputHintEdit => 'Edit comment...';
+  String get commentsInputHintEdit => 'አስተያየቱን አርም...';
 
   @override
-  String get commentsEmptyTitle => 'No comments yet';
+  String get commentsEmptyTitle => 'እስካሁን አስተያየት የለም';
 
   @override
-  String get commentsEmptySubtitle => 'Get the party started!';
+  String get commentsEmptySubtitle => 'ድግሱን ጀምር!';
 
   @override
   String get draftUntitled => 'ርዕስ አልባ';
@@ -9342,7 +9335,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => 'ለቪዲዮዎ የድምጽ ክፍሉን ይምረጡ';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'ማህበረሰብ';
@@ -9621,7 +9614,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get publishAudioReuseDegradedWarning =>
-      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+      'ቪዲዮህ ወጥቷል፣ ነገር ግን ድምፁ አልታተመም። ለማጋራት ቪዲዮውን አርም።';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'ተባባሪዎች';
@@ -10076,178 +10069,169 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileBadgeFooterLink => 'የራስህን ባጅ ሥራ';
 
   @override
-  String get minorAccountReviewWelcomePageTitle => 'Family guide';
+  String get minorAccountReviewWelcomePageTitle => 'የቤተሰብ መመሪያ';
 
   @override
   String get minorAccountReviewWelcomeCta =>
-      'Not 16 yet? That\'s OK. Here\'s what you can do.';
+      'እስካሁን 16 አልሞላህም? ችግር የለም። ማድረግ የምትችለው ይኸው።';
 
   @override
-  String get minorAccountReviewWelcomeTitle => 'Not 16 yet? That\'s OK.';
+  String get minorAccountReviewWelcomeTitle => 'እስካሁን 16 አልሞላህም? ችግር የለም።';
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'ወደዚህ ገጽ ገብተህ ማንበብን መረጥክ እንጂ በቀላሉ የሚያስገባህን መልስ አልመረጥክም፤ ይህ ትርጉም አለው። ታማኝነትን፣ ጥንካሬንና በዙሪያህ ላሉ ሰዎች እውነተኛ አሳቢነትን ያሳያል።\n\nከ16 ዓመት በታች ላሉ ሰዎች ያሉት ደንቦች በምትኖርበት ቦታ ይለያያሉ። በDivine ቤተሰቦች አብረው እንዲወያዩና ጤናማ የማኅበራዊ ሚዲያ አጠቃቀም ምን እንደሚመስል አብረው እንዲወስኑ እንፈልጋለን።';
 
   @override
-  String get minorAccountReviewModerationTitle => 'We need one more step';
+  String get minorAccountReviewModerationTitle => 'አንድ ተጨማሪ ደረጃ ያስፈልገናል';
 
   @override
   String get minorAccountReviewModerationBody =>
-      'We were asked to take a closer look at this account because it may belong to someone under 16. This flow keeps the next steps private and points you to the right path for your age.';
+      'ይህ መለያ ከ16 ዓመት በታች የሆነ ሰው ሊሆን ስለሚችል በጥልቀት እንድንመለከተው ተጠይቀናል። ይህ ሂደት ቀጣይ ደረጃዎችን በግል ይይዛል፣ ለዕድሜህ ወደሚስማማው መንገድም ይመራሃል።';
 
   @override
-  String get minorAccountReviewRulesTitle =>
-      'The rules are not the same everywhere';
+  String get minorAccountReviewRulesTitle => 'ደንቦቹ በሁሉም ቦታ አንድ አይደሉም';
 
   @override
   String get minorAccountReviewRulesBody =>
-      'Different countries and regions treat teen social media use differently. That is why we ask families to slow down, check the facts, and choose the next step together.';
+      'የተለያዩ አገሮችና ክልሎች ታዳጊዎች ማኅበራዊ ሚዲያን እንዴት እንደሚጠቀሙ በተለያየ መንገድ ይመለከቱታል። ስለዚህ ቤተሰቦች ትንሽ እንዲረጋጉ፣ እውነታዎቹን እንዲያረጋግጡና ቀጣዩን ደረጃ አብረው እንዲመርጡ እንጠይቃለን።';
 
   @override
-  String get minorAccountReviewApproachTitle => 'How Divine thinks about it';
+  String get minorAccountReviewApproachTitle => 'Divine እንዴት እንደሚያየው';
 
   @override
   String get minorAccountReviewApproachBody =>
-      'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.';
+      'ጤናማ የቴክኖሎጂ ልማዶች የሚመጡት ቆም ብሎ በማሰብና ትኩረትን ወደ የተሻሉ ነገሮች በመመለስ እንጂ ልጆችን በመሰለልና ወላጆችን ጠባቂ በማድረግ አይደለም ብለን እናምናለን። ጥናቶችም ይህንኑ ይደግፋሉ።';
 
   @override
-  String get minorAccountReviewLearnMoreTitle => 'More for families';
+  String get minorAccountReviewLearnMoreTitle => 'ለቤተሰቦች ተጨማሪ';
 
   @override
-  String get minorAccountReviewKidsPolicyCta => 'Read Divine\'s kids policy';
+  String get minorAccountReviewKidsPolicyCta => 'የDivineን የልጆች ፖሊሲ አንብብ';
 
   @override
-  String get minorAccountReviewChooseAgeBandTitle =>
-      'Choose the path that fits';
+  String get minorAccountReviewChooseAgeBandTitle => 'የሚስማማህን መንገድ ምረጥ';
 
   @override
-  String get minorAccountReviewUnder13Cta => 'Under 13';
+  String get minorAccountReviewUnder13Cta => 'ከ13 በታች';
 
   @override
-  String get minorAccountReviewTeenCta => 'Age 13-15';
+  String get minorAccountReviewTeenCta => 'ከ13 እስከ 15 ዓመት';
 
   @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Helpful for families';
+  String get minorAccountReviewFamilyResourcesTitle => 'ለቤተሰቦች ጠቃሚ';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
-      'Visit the Divine family guide for practical tips, conversation tools, and resources for helping teens use social media more safely.';
+      'ታዳጊዎች ማኅበራዊ ሚዲያን በበለጠ ደኅንነት እንዲጠቀሙ የሚረዱ ተግባራዊ ምክሮችን፣ የውይይት መሣሪያዎችንና ግብዓቶችን ለማግኘት የDivine የቤተሰብ መመሪያን ጎብኝ።';
 
   @override
-  String get minorAccountReviewFamilyResourcesCta =>
-      'Get family guides and tips';
+  String get minorAccountReviewFamilyResourcesCta => 'የቤተሰብ መመሪያዎችንና ምክሮችን አግኝ';
 
   @override
   String get minorAccountReviewFooter =>
-      'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.';
+      '16 ወይም ከዚያ በላይ ከሆንህና በስህተት እዚህ ከደረስክ፣ እውነተኛ ሰው እንዲመረምረው የDivine ድጋፍን አግኝ።';
 
   @override
-  String get minorAccountReviewTitle => 'Account Review';
+  String get minorAccountReviewTitle => 'የመለያ ግምገማ';
 
   @override
-  String get minorAccountReviewCheckingStatusTitle =>
-      'Checking account status...';
+  String get minorAccountReviewCheckingStatusTitle => 'የመለያ ሁኔታ በመፈተሽ ላይ...';
 
   @override
   String get minorAccountReviewCheckingStatusBody =>
-      'Please wait while we confirm this account\'s current review status.';
+      'የዚህን መለያ የአሁኑን የግምገማ ሁኔታ እስክናረጋግጥ እባክህ ጠብቅ።';
 
   @override
-  String get minorAccountReviewDefaultTitle => 'Account review required';
+  String get minorAccountReviewDefaultTitle => 'የመለያ ግምገማ ያስፈልጋል';
 
   @override
   String get minorAccountReviewDefaultBody =>
-      'We need to review this account before it can use Divine normally.';
+      'ይህ መለያ Divineን በመደበኛነት ከመጠቀሙ በፊት ልንገመግመው ይገባል።';
 
   @override
   String minorAccountReviewCaseId(String caseId) {
-    return 'Case ID: $caseId';
+    return 'የጉዳይ መለያ፦ $caseId';
   }
 
   @override
-  String get minorAccountReviewCaseIdShortLabel => 'Case ID';
+  String get minorAccountReviewCaseIdShortLabel => 'የጉዳይ መለያ';
 
   @override
-  String get minorAccountReviewRestrictionsTitle =>
-      'What is restricted right now';
+  String get minorAccountReviewRestrictionsTitle => 'አሁን የተገደበው ምንድን ነው';
 
   @override
-  String get minorAccountReviewRestrictionPosting =>
-      'Posting and publishing are paused';
+  String get minorAccountReviewRestrictionPosting => 'መለጠፍና ማተም ቆመዋል';
 
   @override
   String get minorAccountReviewRestrictionEngagement =>
-      'Comments, likes, reposts, and follows are paused';
+      'አስተያየቶች፣ መውደዶች፣ ድጋሚ ልጥፎችና መከታተያዎች ቆመዋል';
 
   @override
   String get minorAccountReviewRestrictionMessaging =>
-      'Starting or replying to regular messages is paused';
+      'መደበኛ መልእክቶችን መጀመር ወይም መመለስ ቆሟል';
 
   @override
   String get minorAccountReviewRestrictionSupport =>
-      'Support and your moderation message remain available';
+      'ድጋፍና የቁጥጥር መልእክትህ አሁንም ይገኛሉ';
 
   @override
-  String get minorAccountReviewOpenSupportCenter => 'Open Support Center';
+  String get minorAccountReviewOpenSupportCenter => 'የድጋፍ ማዕከልን ክፈት';
 
   @override
-  String get minorAccountReviewOpenModerationMessage =>
-      'Open Moderation Message';
+  String get minorAccountReviewOpenModerationMessage => 'የቁጥጥር መልእክቱን ክፈት';
 
   @override
-  String get minorAccountReviewOpenReviewPage => 'Open review page';
+  String get minorAccountReviewOpenReviewPage => 'የግምገማ ገጹን ክፈት';
 
   @override
-  String get minorAccountReviewCheckAgain => 'Check Again';
+  String get minorAccountReviewCheckAgain => 'እንደገና ፈትሽ';
 
   @override
-  String get minorAccountReviewLogOut => 'Log out';
+  String get minorAccountReviewLogOut => 'ውጣ';
 
   @override
-  String get minorAccountReviewNextStepTitle => 'Next step';
+  String get minorAccountReviewNextStepTitle => 'ቀጣይ ደረጃ';
 
   @override
   String get minorAccountReviewNextStepBody =>
-      'Open the support center or your moderation message if you need help with this review.';
+      'በዚህ ግምገማ እርዳታ ከፈለግህ የድጋፍ ማዕከሉን ወይም የቁጥጥር መልእክትህን ክፈት።';
 
   @override
-  String get minorAccountReviewInProgressTitle => 'Review in progress';
+  String get minorAccountReviewInProgressTitle => 'ግምገማው በሂደት ላይ ነው';
 
   @override
   String get minorAccountReviewInProgressBody =>
-      'We have what we need for now. Our team is reviewing this case before restoring normal account access.';
+      'ለአሁኑ የሚያስፈልገን አለን። መደበኛውን የመለያ መዳረሻ ከመመለሱ በፊት ቡድናችን ይህን ጉዳይ እየገመገመ ነው።';
 
   @override
-  String get minorAccountReviewUnder13Title => 'Under-13 accounts';
+  String get minorAccountReviewUnder13Title => 'ከ13 ዓመት በታች መለያዎች';
 
   @override
   String minorAccountReviewUnder13Body(String supportEmail) {
-    return 'If this account belongs to someone under 13, a parent or guardian must email $supportEmail and include the case ID.';
+    return 'ይህ መለያ ከ13 ዓመት በታች የሆነ ሰው ከሆነ፣ ወላጅ ወይም አሳዳጊ ወደ $supportEmail ኢሜይል መላክና የጉዳይ መለያውን ማካተት አለበት።';
   }
 
   @override
-  String get minorAccountReviewUnder13PublicTitle =>
-      'We can\'t give you an account yet';
+  String get minorAccountReviewUnder13PublicTitle => 'ገና መለያ ልንሰጥህ አንችልም';
 
   @override
   String get minorAccountReviewUnder13PublicBody =>
-      'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
+      'Divine ከ13 ዓመት በታች ላሉ ልጆች የተሠራ አይደለም፣ በዓለም ዙሪያ ያሉ የማኅበራዊ ሚዲያ ደንቦችም እጃችንን ያስራሉ።\n\nበኢንተርኔት ላይ ብዙ ነገሮች የፈለግከውን ለማግኘት እንድትዋሽ ይገፋፉሃል፣ እኛ ደግሞ ይህን እንጠላለን። ለሕይወት የተሳሳተ ትምህርት ነው፣ እዚህም አናስተምርህም።';
 
   @override
-  String get minorAccountReviewUnder13FamilyTitle =>
-      'What your family can do instead';
+  String get minorAccountReviewUnder13FamilyTitle => 'ቤተሰብህ በምትኩ ምን ማድረግ ይችላል';
 
   @override
   String get minorAccountReviewUnder13FamilyBody =>
-      'A parent or guardian can hold the account and do the posting, and you can absolutely be in the videos with them. We want families to enjoy Divine in whatever way is right for them.';
+      'ወላጅ ወይም አሳዳጊ መለያውን ይዞ መለጠፍ ይችላል፣ አንተም ከእነሱ ጋር በቪዲዮዎቹ ውስጥ በእርግጠኝነት መሆን ትችላለህ። ቤተሰቦች Divineን ለእነሱ በሚስማማ መንገድ እንዲደሰቱበት እንፈልጋለን።';
 
   @override
-  String get minorAccountReviewUnder13ComeBackTitle => 'When you turn 13';
+  String get minorAccountReviewUnder13ComeBackTitle => '13 ዓመት ስትሞላህ';
 
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
-      'Depending on the rules where you live, you may be able to come back and apply for your own account. In that case, if you’re between 13 and 15, you’ll need consent from a parent or guardian.';
+      'በምትኖርበት ቦታ ባሉ ደንቦች መሠረት፣ ተመልሰህ የራስህን መለያ ማመልከት ትችል ይሆናል። በዚያን ጊዜ ከ13 እስከ 15 ከሆንክ የወላጅ ወይም የአሳዳጊ ፈቃድ ያስፈልግሃል።';
 
   @override
   String get minorAccountReviewUnder13HonestyTitle =>
@@ -10266,19 +10250,19 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenBody =>
-      'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.';
+      'ይህ መለያ ከ13 እስከ 15 ዓመት የሆነ ሰው ከሆነ፣ የወላጅ ፈቃድ መመሪያዎችን ለመከተል የቁጥጥር መልእክቱን ወይም የድጋፍ መንገዱን ተጠቀም።';
 
   @override
   String get minorAccountReviewParentConsentTitle =>
-      'If the account will belong to someone 13 to 15';
+      'መለያው ከ13 እስከ 15 ዓመት ለሆነ ሰው የሚሆን ከሆነ';
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'ወላጅ ወይም ሞግዚት ለDivine ድጋፍ አጭር የግል ቪዲዮ በኢሜይል መላክ አለበት። ቡድናችን ይገመግመዋል፣ በቀጣይ ደረጃዎችም ይረዳሃል።\n\nወላጅ ወይም ሞግዚትን ማግኘት የማይቻል ከሆነ ወይም ማንንም አደጋ ላይ የሚጥል ከሆነ፣ ለDivine ድጋፍ ኢሜይል ልከህ አሳውቀን።';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'ይህ የDivine ድጋፍ ቡድን ቪዲዮውን እስኪገመግም ድረስ ያለ ማቆሚያ ነው። ከጸደቀ፣ አዲሱን መለያ በማዘጋጀት ሂደት ውስጥ ይመሩሃል።';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>
@@ -10293,344 +10277,322 @@ class AppLocalizationsAm extends AppLocalizations {
       'እንዲሁም ህጉን መከተል አለብን፣ እና እነዚያ ደንቦች አንድ ሰው በሚኖርበት ቦታ ላይ ተመስርተው ይለያያሉ። ስለዚህ ደንቦቹ የሉም ከማስመሰል ይልቅ፣ ወላጅ ወይም ሞግዚት የሂደቱ አካል እንዲሆን እንጠይቃለን።';
 
   @override
-  String get minorAccountReviewParentConsentChecklist =>
-      'What the video should show';
+  String get minorAccountReviewParentConsentChecklist => 'ቪዲዮው ምን ማሳየት አለበት';
 
   @override
-  String get minorAccountReviewParentConsentChecklistKid =>
-      'The teen in the video';
+  String get minorAccountReviewParentConsentChecklistKid => 'ታዳጊውን በቪዲዮው ውስጥ';
 
   @override
   String get minorAccountReviewParentConsentChecklistPermission =>
-      'A parent or guardian speaking on camera';
+      'በካሜራ ፊት የሚናገር ወላጅ ወይም አሳዳጊ';
 
   @override
   String get minorAccountReviewParentConsentChecklistAgeBand =>
-      'A clear statement that the teen is 13 to 15 and has permission to use Divine';
+      'ታዳጊው ከ13 እስከ 15 መሆኑንና Divineን ለመጠቀም ፈቃድ እንዳለው የሚገልጽ ግልጽ አነጋገር';
 
   @override
   String get minorAccountReviewParentConsentChecklistSupervision =>
-      'A clear statement that the parent or guardian knows about the account and will supervise its use';
+      'ወላጁ ወይም አሳዳጊው ስለ መለያው እንደሚያውቅና አጠቃቀሙን እንደሚቆጣጠር የሚገልጽ ግልጽ አነጋገር';
 
   @override
-  String get minorAccountReviewParentConsentPrivacy => 'How to send it';
+  String get minorAccountReviewParentConsentPrivacy => 'እንዴት እንደሚላክ';
 
   @override
   String get minorAccountReviewParentConsentNeverPost =>
-      'Attach the video when you email Divine support';
+      'ለDivine ድጋፍ ኢሜይል ስትልክ ቪዲዮውን አያይዝ';
 
   @override
   String get minorAccountReviewParentConsentDoNotSave =>
-      'Keep the video private and do not post it in the app';
+      'ቪዲዮውን በግል ያዝ፣ በመተግበሪያው ውስጥም አትለጥፈው';
 
   @override
   String get minorAccountReviewParentConsentOneMove =>
-      'Our team will review it and reply with next steps';
+      'ቡድናችን ይገመግመዋል፣ በቀጣይ ደረጃዎችም ይመልስልሃል';
 
   @override
-  String get minorAccountReviewParentConsentEmailCta => 'Email Divine support';
+  String get minorAccountReviewParentConsentEmailCta => 'ለDivine ድጋፍ ኢሜይል ላክ';
 
   @override
   String get minorAccountReviewParentConsentEmailSubject =>
-      'Divine Greenlight review help (ages 13-15)';
+      'የDivine Greenlight ግምገማ እርዳታ (ከ13 እስከ 15 ዓመት)';
 
   @override
   String get minorAccountReviewParentConsentEmailBody =>
-      'Hi Divine support,\n\nI am contacting Divine about Divine Greenlight for a teen who is 13-15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.';
+      'ሰላም የDivine ድጋፍ ቡድን፣\n\nከ13 እስከ 15 ዓመት ስለሆነ ታዳጊ በተመለከተ ስለ Divine Greenlight እያገኘኋችሁ ነው።\n\nየሚከተለውን የሚያሳይ አጭር የግል ቪዲዮ አያይዣለሁ፦\n- ታዳጊውን\n- በካሜራ ፊት የሚናገር ወላጅ ወይም አሳዳጊ\n- ታዳጊው Divineን ለመጠቀም ፈቃድ እንዳለው\n- ወላጁ ወይም አሳዳጊው ስለ መለያው እንደሚያውቅና አጠቃቀሙን እንደሚቆጣጠር\n\nየመኖሪያ አገር/አገሮች፦\n\nጠቃሚ ዳራ፦\n\nአመሰግናለሁ።';
 
   @override
-  String get minorAccountReviewParentSupportInstructions =>
-      'Parent Support Instructions';
+  String get minorAccountReviewParentSupportInstructions => 'የወላጅ ድጋፍ መመሪያዎች';
 
   @override
-  String get minorAccountReviewContinue => 'Continue';
+  String get minorAccountReviewContinue => 'ቀጥል';
 
   @override
-  String get minorAccountReviewErrorTitle =>
-      'We could not load your account review status.';
+  String get minorAccountReviewErrorTitle => 'የመለያህን የግምገማ ሁኔታ መጫን አልቻልንም።';
 
   @override
-  String get minorAccountReviewErrorBody => 'Please try again in a moment.';
+  String get minorAccountReviewErrorBody => 'እባክህ ከጥቂት ቆይታ በኋላ እንደገና ሞክር።';
 
   @override
-  String get minorAccountReviewTryAgain => 'Try Again';
+  String get minorAccountReviewTryAgain => 'እንደገና ሞክር';
 
   @override
-  String get minorAccountReviewParentContactTitle => 'Parent Contact';
+  String get minorAccountReviewParentContactTitle => 'የወላጅ አድራሻ';
 
   @override
   String get minorAccountReviewParentContactHeading =>
-      'Add a parent or guardian email';
+      'የወላጅ ወይም የአሳዳጊ ኢሜይል አክል';
 
   @override
   String minorAccountReviewParentContactBody(String caseId) {
-    return 'We will use this address for the parental consent review on case $caseId.';
+    return 'ይህን አድራሻ በጉዳይ $caseId ላይ ላለው የወላጅ ፈቃድ ግምገማ እንጠቀማለን።';
   }
 
   @override
-  String get minorAccountReviewParentContactFieldLabel =>
-      'Parent or guardian email';
+  String get minorAccountReviewParentContactFieldLabel => 'የወላጅ ወይም የአሳዳጊ ኢሜይል';
 
   @override
-  String get minorAccountReviewSubmitting => 'Submitting...';
+  String get minorAccountReviewSubmitting => 'በመላክ ላይ...';
 
   @override
-  String get minorAccountReviewSubmitEmail => 'Submit Email';
+  String get minorAccountReviewSubmitEmail => 'ኢሜይሉን ላክ';
 
   @override
-  String get minorAccountReviewBackToReview => 'Back to Account Review';
+  String get minorAccountReviewBackToReview => 'ወደ መለያ ግምገማ ተመለስ';
 
   @override
-  String get minorAccountReviewSubmissionReceivedTitle => 'Email submitted';
+  String get minorAccountReviewSubmissionReceivedTitle => 'ኢሜይሉ ተልኳል';
 
   @override
   String minorAccountReviewSubmissionReceivedBody(String email) {
-    return 'We submitted $email for review. We\'ll email this address to confirm. Once your parent or guardian responds, your case will move forward. Use Check Again from the account review screen for updates.';
+    return '$emailን ለግምገማ አስገብተናል። ለማረጋገጥ ወደዚህ አድራሻ ኢሜይል እንልካለን። ወላጅህ ወይም አሳዳጊህ ምላሽ ሲሰጥ ጉዳይህ ወደፊት ይሄዳል። ለዝማኔዎች ከመለያ ግምገማ ገጹ ላይ «እንደገና ፈትሽ»ን ተጠቀም።';
   }
 
   @override
   String get minorAccountReviewSubmissionReceivedLocalBody =>
-      'We received the parent or guardian contact for this account. Our team will review it before restoring access.';
+      'ለዚህ መለያ የወላጅ ወይም የአሳዳጊ አድራሻ ደርሶናል። መዳረሻውን ከመመለሱ በፊት ቡድናችን ይገመግመዋል።';
 
   @override
   String get minorAccountReviewMissingCase =>
-      'We could not find an active review case for this account.';
+      'ለዚህ መለያ ንቁ የግምገማ ጉዳይ ማግኘት አልቻልንም።';
 
   @override
   String get minorAccountReviewParentContactError =>
-      'Could not submit the parent email. Please try again.';
+      'የወላጁን ኢሜይል መላክ አልተቻለም። እባክህ እንደገና ሞክር።';
 
   @override
-  String get minorAccountReviewUnder13SupportTitle => 'Parent Support';
+  String get minorAccountReviewUnder13SupportTitle => 'የወላጅ ድጋፍ';
 
   @override
   String get minorAccountReviewUnder13Heading =>
-      'A parent or guardian must contact Divine';
+      'ወላጅ ወይም አሳዳጊ Divineን ማግኘት አለበት';
 
   @override
   String get minorAccountReviewUnder13SupportBody =>
-      'For likely under-13 accounts, the next step is parent or guardian contact by email.';
+      'ከ13 ዓመት በታች ሳይሆኑ ለማይቀሩ መለያዎች፣ ቀጣዩ ደረጃ የወላጅ ወይም የአሳዳጊ ኢሜይል ግንኙነት ነው።';
 
   @override
-  String get minorAccountReviewSupportEmailLabel => 'Support email';
+  String get minorAccountReviewSupportEmailLabel => 'የድጋፍ ኢሜይል';
 
   @override
-  String get minorAccountReviewCopySupportEmail => 'Copy support email';
+  String get minorAccountReviewCopySupportEmail => 'የድጋፍ ኢሜይሉን ቅዳ';
 
   @override
-  String get minorAccountReviewSupportEmailCopied => 'Support email copied';
+  String get minorAccountReviewSupportEmailCopied => 'የድጋፍ ኢሜይሉ ተቀድቷል';
 
   @override
-  String get minorAccountReviewCopyCaseId => 'Copy case ID';
+  String get minorAccountReviewCopyCaseId => 'የጉዳይ መለያውን ቅዳ';
 
   @override
-  String get minorAccountReviewCaseIdCopied => 'Case ID copied';
+  String get minorAccountReviewCaseIdCopied => 'የጉዳይ መለያው ተቀድቷል';
 
   @override
-  String get minorAccountReviewUnavailable => 'Unavailable';
+  String get minorAccountReviewUnavailable => 'አይገኝም';
 
   @override
   String get minorAccountReviewUnder13Instructions =>
-      'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.';
+      'ወላጁ ወይም አሳዳጊው የጉዳይ መለያውን እንዲያካትትና ስለዚህ የመለያ ግምገማ Divineን እያገኘ መሆኑን እንዲያብራራ ጠይቅ።';
 
   @override
   String minorAccountReviewUnder13EmailSubject(String caseId) {
-    return 'Under-13 account review for case $caseId';
+    return 'ለጉዳይ $caseId ከ13 ዓመት በታች የመለያ ግምገማ';
   }
 
   @override
   String minorAccountReviewUnder13EmailBody(String caseId) {
-    return 'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review case $caseId.\n\nThanks.';
+    return 'ሰላም የDivine ድጋፍ ቡድን፣\n\nከ13 ዓመት በታች የሆነ ልጅ ወላጅ ወይም አሳዳጊ ነኝ፣ ስለ መለያ ግምገማ ጉዳይ $caseId እያገኘኋችሁ ነው።\n\nአመሰግናለሁ።';
   }
 
   @override
   String get devOptionsMinorReviewSimulationTitle =>
-      'Minor Account Review Simulation';
+      'የአካለ መጠን ያልደረሰ መለያ ግምገማ ማስመሰያ';
 
   @override
-  String get devOptionsMinorReviewCurrentStateLabel => 'Current state';
+  String get devOptionsMinorReviewCurrentStateLabel => 'የአሁኑ ሁኔታ';
 
   @override
   String devOptionsMinorReviewStateRestricted(String state) {
-    return 'Restricted ($state)';
+    return 'የተገደበ ($state)';
   }
 
   @override
-  String get devOptionsMinorReviewStateActive => 'Active';
+  String get devOptionsMinorReviewStateActive => 'ንቁ';
 
   @override
-  String get devOptionsMinorReviewStateLoading => 'Loading...';
+  String get devOptionsMinorReviewStateLoading => 'በመጫን ላይ...';
 
   @override
-  String get devOptionsMinorReviewStateError => 'Error loading state';
+  String get devOptionsMinorReviewStateError => 'ሁኔታውን በመጫን ላይ ስህተት';
 
   @override
-  String get devOptionsMinorReviewClearTitle => 'Clear simulation override';
+  String get devOptionsMinorReviewClearTitle => 'የማስመሰያ ሽፋንን አጽዳ';
 
   @override
   String get devOptionsMinorReviewClearSubtitle =>
-      'Use backend or default active state again';
+      'እንደገና የኋላ አገልግሎቱን ወይም ነባሪውን ንቁ ሁኔታ ተጠቀም';
 
   @override
-  String get devOptionsMinorReviewTeenTitle => 'Simulate 13-15 review case';
+  String get devOptionsMinorReviewTeenTitle => 'የ13–15 ግምገማ ጉዳይ አስመስል';
 
   @override
-  String get devOptionsMinorReviewTeenSubtitle =>
-      'Restricted account with parent contact path';
+  String get devOptionsMinorReviewTeenSubtitle => 'የተገደበ መለያ ከወላጅ አድራሻ መንገድ ጋር';
 
   @override
-  String get devOptionsMinorReviewUnder13Title =>
-      'Simulate under-13 support case';
+  String get devOptionsMinorReviewUnder13Title => 'ከ13 በታች የድጋፍ ጉዳይ አስመስል';
 
   @override
   String get devOptionsMinorReviewUnder13Subtitle =>
-      'Restricted account with parent-email-only instructions';
+      'የተገደበ መለያ በወላጅ ኢሜይል ብቻ መመሪያዎች';
 
   @override
   String get devOptionsMinorReviewClearedToast =>
-      'Minor account review simulation cleared';
+      'የአካለ መጠን ያልደረሰ መለያ ግምገማ ማስመሰያ ጸድቷል';
 
   @override
   String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulated 13-15 review case enabled';
+      'የተመሰለው የ13–15 ግምገማ ጉዳይ በርቷል';
 
   @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
-      'Simulated under-13 support case enabled';
+      'የተመሰለው ከ13 በታች የድጋፍ ጉዳይ በርቷል';
 
   @override
-  String get devOptionsProtectedMinorSimulationTitle =>
-      'Protected Minor Simulation';
+  String get devOptionsProtectedMinorSimulationTitle => 'የተጠበቀ ታዳጊ ማስመሰያ';
 
   @override
-  String get devOptionsProtectedMinorCurrentStateLabel => 'Current state';
+  String get devOptionsProtectedMinorCurrentStateLabel => 'የአሁኑ ሁኔታ';
 
   @override
-  String get devOptionsProtectedMinorStateProtected =>
-      'Protected minor (13-15)';
+  String get devOptionsProtectedMinorStateProtected => 'የተጠበቀ ታዳጊ (13–15)';
 
   @override
-  String get devOptionsProtectedMinorStateNotProtected => 'Not protected';
+  String get devOptionsProtectedMinorStateNotProtected => 'ያልተጠበቀ';
 
   @override
-  String get devOptionsProtectedMinorStateLoading => 'Loading…';
+  String get devOptionsProtectedMinorStateLoading => 'በመጫን ላይ…';
 
   @override
-  String get devOptionsProtectedMinorStateError => 'Error reading state';
+  String get devOptionsProtectedMinorStateError => 'ሁኔታውን በማንበብ ላይ ስህተት';
 
   @override
-  String get devOptionsProtectedMinorOverrideNone =>
-      'No override (real account state)';
+  String get devOptionsProtectedMinorOverrideNone => 'ሽፋን የለም (እውነተኛ የመለያ ሁኔታ)';
 
   @override
-  String get devOptionsProtectedMinorOverrideProtected =>
-      'Override: forced protected';
+  String get devOptionsProtectedMinorOverrideProtected => 'ሽፋን፦ የተጠበቀ ተገዷል';
 
   @override
-  String get devOptionsProtectedMinorOverrideNotProtected =>
-      'Override: forced not protected';
+  String get devOptionsProtectedMinorOverrideNotProtected => 'ሽፋን፦ ያልተጠበቀ ተገዷል';
 
   @override
-  String get devOptionsProtectedMinorSimulateTitle =>
-      'Simulate protected minor (13-15)';
+  String get devOptionsProtectedMinorSimulateTitle => 'የተጠበቀ ታዳጊ አስመስል (13–15)';
 
   @override
   String get devOptionsProtectedMinorSimulateSubtitle =>
-      'Force the protected-minor state to QA the #175/#176 protections';
+      'የ#175/#176 ጥበቃዎችን ለመፈተሽ የተጠበቀ-ታዳጊ ሁኔታን አስገድድ';
 
   @override
-  String get devOptionsProtectedMinorSimulateNonMinorTitle =>
-      'Simulate non-minor';
+  String get devOptionsProtectedMinorSimulateNonMinorTitle => 'አዋቂ አስመስል';
 
   @override
   String get devOptionsProtectedMinorSimulateNonMinorSubtitle =>
-      'Force not-protected (explicit negative, distinct from no override)';
+      'ያልተጠበቀን አስገድድ (ግልጽ አሉታዊ፣ ሽፋን ከሌለው የተለየ)';
 
   @override
-  String get devOptionsProtectedMinorClearTitle => 'Clear override';
+  String get devOptionsProtectedMinorClearTitle => 'ሽፋኑን አጽዳ';
 
   @override
   String get devOptionsProtectedMinorClearSubtitle =>
-      'Return to the real Keycast-driven account state';
+      'ወደ እውነተኛው በKeycast የሚመራ የመለያ ሁኔታ ተመለስ';
 
   @override
-  String get devOptionsProtectedMinorEnabledToast =>
-      'Protected-minor state forced on';
+  String get devOptionsProtectedMinorEnabledToast => 'የተጠበቀ-ታዳጊ ሁኔታ ተገዷል';
 
   @override
-  String get devOptionsProtectedMinorNonMinorToast =>
-      'Protected-minor state forced off';
+  String get devOptionsProtectedMinorNonMinorToast => 'የተጠበቀ-ታዳጊ ሁኔታ ጠፍቷል';
 
   @override
-  String get devOptionsProtectedMinorClearedToast =>
-      'Protected-minor override cleared';
+  String get devOptionsProtectedMinorClearedToast => 'የተጠበቀ-ታዳጊ ሽፋን ጸድቷል';
 
   @override
-  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+  String get devOptionsInviteAvailabilityTitle => 'የምዝገባ ግብዣዎች';
 
   @override
-  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+  String get devOptionsInviteAvailabilityCurrentLabel => 'የአሁኑ ሁኔታ';
 
   @override
-  String get devOptionsInviteAvailabilityServerLoading =>
-      'Server value: loading';
+  String get devOptionsInviteAvailabilityServerLoading => 'የአገልጋይ እሴት፦ በመጫን ላይ';
 
   @override
-  String get devOptionsInviteAvailabilityServerEnabled =>
-      'Server value: enabled';
+  String get devOptionsInviteAvailabilityServerEnabled => 'የአገልጋይ እሴት፦ በርቷል';
 
   @override
-  String get devOptionsInviteAvailabilityServerDisabled =>
-      'Server value: disabled';
+  String get devOptionsInviteAvailabilityServerDisabled => 'የአገልጋይ እሴት፦ ጠፍቷል';
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Server value: unknown (defaults enabled)';
+      'የአገልጋይ እሴት፦ አይታወቅም (በነባሪ በርቷል)';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
-      'Override: use server value';
+      'ሽፋን፦ የአገልጋዩን እሴት ተጠቀም';
 
   @override
-  String get devOptionsInviteAvailabilityOverrideEnabled =>
-      'Override: force enabled';
+  String get devOptionsInviteAvailabilityOverrideEnabled => 'ሽፋን፦ ማብራት አስገድድ';
 
   @override
-  String get devOptionsInviteAvailabilityOverrideDisabled =>
-      'Override: force disabled';
+  String get devOptionsInviteAvailabilityOverrideDisabled => 'ሽፋን፦ ማጥፋት አስገድድ';
 
   @override
-  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+  String get devOptionsInviteAvailabilityUseServer => 'የአገልጋዩን እሴት ተጠቀም';
 
   @override
   String get devOptionsInviteAvailabilityUseServerSubtitle =>
-      'Follow the invite service onboardingMode';
+      'የግብዣ አገልግሎቱን onboardingMode ተከተል';
 
   @override
-  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+  String get devOptionsInviteAvailabilityForceEnabled => 'ማብራት አስገድድ';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
-      'Show signup invite gates and management locally';
+      'የምዝገባ ግብዣ በሮችንና አስተዳደሩን በአካባቢው አሳይ';
 
   @override
-  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+  String get devOptionsInviteAvailabilityForceDisabled => 'ማጥፋት አስገድድ';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
-      'Hide signup invite UI locally without changing the server';
+      'አገልጋዩን ሳትቀይር የምዝገባ ግብዣ ገጽታን በአካባቢው ደብቅ';
 
   @override
   String get devOptionsInviteAvailabilityUseServerToast =>
-      'Signup invites now follow the server';
+      'የምዝገባ ግብዣዎች አሁን አገልጋዩን ይከተላሉ';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledToast =>
-      'Signup invites forced on';
+      'የምዝገባ ግብዣዎች በግድ በርተዋል';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledToast =>
-      'Signup invites forced off';
+      'የምዝገባ ግብዣዎች በግድ ጠፍተዋል';
 
   @override
   String get commentsRecordVideoButtonLabel => 'የቪዲዮ አስተያየት ቅረጽ';
@@ -10675,14 +10637,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Visit website: $url';
+    return 'ድረ-ገጹን ጎብኝ፦ $url';
   }
 
   @override
-  String get profileCouldNotOpenWebsite => 'Could not open website';
+  String get profileCouldNotOpenWebsite => 'ድረ-ገጹን መክፈት አልተቻለም';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'ሽፋን አርትዕ';
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel => 'የሽፋን ለውጦችን አስወግድ';
@@ -10693,7 +10655,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'የሽፋን ፍሬም ለመምረጥ በቪዲዮው ውስጥ ፈልግ';
 
   @override
   String get videoMetadataTagsPickerSearchHint => 'መለያዎችን ይፈልጉ ወይም ያክሉ';
@@ -10719,7 +10681,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authUnder16ChoicesCta => 'ምርጫዎችህ እነሆ።';
 
   @override
-  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+  String get minorAccountReviewUnder13WhyTitle => 'ምክንያቱ ይኸው';
 
   @override
   String get generalSettingsHoldToRecord => 'ለቀረጻ ይያዙ';
@@ -10742,7 +10704,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get dmMessageSendLabel => 'Send message';
+  String get dmMessageSendLabel => 'መልእክት ላክ';
 
   @override
   String get emojiPickerSearchHint => 'ፍለጋ';
@@ -10878,124 +10840,135 @@ class AppLocalizationsAm extends AppLocalizations {
   String get backgroundUploadNotificationTitle => 'ቪዲዮ በመስቀል ላይ';
 
   @override
-  String get monetizationSettingsTitle => 'Creator Support';
+  String get monetizationSettingsTitle => 'የፈጣሪ ድጋፍ';
 
   @override
-  String get monetizationSettingsSubtitle => 'Add tip and subscription links';
+  String get monetizationSettingsSubtitle => 'የጉርሻና የደንበኝነት ምዝገባ አገናኞችን አክል';
 
   @override
-  String get monetizationSettingsIntroTitle => 'Outbound links only';
+  String get monetizationSettingsIntroTitle => 'የውጭ አገናኞች ብቻ';
 
   @override
   String get monetizationSettingsIntroBody =>
-      'Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.';
+      'አንተ የምትቆጣጠራቸውን መድረሻዎች አክል። Divine ክፍያውን ፈጽሞ አያስተናግድም፣ በእነዚህ አገናኞችም በመተግበሪያ ውስጥ ያለ ይዘት አይከፍትም።';
 
   @override
   String monetizationSettingsConfiguredCount(int count) {
-    return '$count active link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'በመገለጫህ ላይ $count ንቁ አገናኞች',
+      one: 'በመገለጫህ ላይ $count ንቁ አገናኝ',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get monetizationSettingsTipSection => 'Send a tip';
+  String get monetizationSettingsTipSection => 'ጉርሻ ላክ';
 
   @override
-  String get monetizationSettingsSubscriptionSection => 'Subscribe / support';
+  String get monetizationSettingsSubscriptionSection => 'ደንበኛ ሁን / ደግፍ';
 
   @override
-  String get monetizationSettingsSave => 'Save support links';
+  String get monetizationSettingsSave => 'የድጋፍ አገናኞችን አስቀምጥ';
 
   @override
-  String get monetizationSettingsSaving => 'Saving...';
+  String get monetizationSettingsSaving => 'በማስቀመጥ ላይ...';
 
   @override
-  String get monetizationSettingsSaved => 'Support links updated';
+  String get monetizationSettingsSaved => 'የድጋፍ አገናኞች ተዘምነዋል';
 
   @override
   String get monetizationSettingsSaveFailed =>
-      'Could not save support links. Check your connection and try again.';
+      'የድጋፍ አገናኞችን ማስቀመጥ አልተቻለም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
 
   @override
-  String get monetizationSettingsErrorEmpty => 'Add a handle or URL.';
+  String get monetizationSettingsErrorEmpty => 'መለያ ወይም URL አክል።';
 
   @override
-  String get monetizationSettingsErrorInvalid =>
-      'That link does not look right.';
+  String get monetizationSettingsErrorInvalid => 'ይህ አገናኝ ትክክል አይመስልም።';
 
   @override
   String get monetizationSettingsErrorWrongProvider =>
-      'Use a link for this provider.';
+      'ለዚህ አቅራቢ የሚሆን አገናኝ ተጠቀም።';
 
   @override
-  String get monetizationSettingsHintCashApp => '\$cashtag or cash.app link';
+  String get monetizationSettingsHintCashApp => '\$cashtag ወይም የcash.app አገናኝ';
 
   @override
-  String get monetizationSettingsHintPayPal => 'PayPal.me handle or link';
+  String get monetizationSettingsHintPayPal => 'የPayPal.me መለያ ወይም አገናኝ';
 
   @override
-  String get monetizationSettingsHintVenmo => 'Venmo handle or link';
+  String get monetizationSettingsHintVenmo => 'የVenmo መለያ ወይም አገናኝ';
 
   @override
-  String get monetizationSettingsHintPatreon => 'Patreon handle or link';
+  String get monetizationSettingsHintPatreon => 'የPatreon መለያ ወይም አገናኝ';
 
   @override
-  String get monetizationSettingsHintSubstack => 'Substack domain or link';
+  String get monetizationSettingsHintSubstack => 'የSubstack ጎራ ወይም አገናኝ';
 
   @override
-  String get monetizationSettingsHintMedium => 'Medium handle or link';
+  String get monetizationSettingsHintMedium => 'የMedium መለያ ወይም አገናኝ';
 
   @override
   String get monetizationSettingsHintOpenCollective =>
-      'Open Collective slug or link';
+      'የOpen Collective መለያ ወይም አገናኝ';
 
   @override
-  String get profileSupportSheetTitle => 'Support this creator';
+  String get profileSupportSheetTitle => 'ይህን ፈጣሪ ደግፍ';
 
   @override
   String get profileSupportSheetBody =>
-      'These links open outside Divine. Nothing here unlocks content in the app.';
+      'እነዚህ አገናኞች ከDivine ውጭ ይከፈታሉ። እዚህ ያለ ምንም ነገር በመተግበሪያው ውስጥ ይዘት አይከፍትም።';
 
   @override
-  String get profileSupportTipSection => 'Send a tip';
+  String get profileSupportTipSection => 'ጉርሻ ላክ';
 
   @override
-  String get profileSupportSubscriptionSection => 'Subscribe / support';
+  String get profileSupportSubscriptionSection => 'ደንበኛ ሁን / ደግፍ';
 
   @override
-  String get profileSupportButtonLabel => 'Support';
+  String get profileSupportButtonLabel => 'ደግፍ';
 
   @override
-  String get monetizationTipsSettingsTitle => 'Tips';
+  String get monetizationTipsSettingsTitle => 'ጉርሻዎች';
 
   @override
-  String get monetizationTipsSettingsSubtitle => 'Add optional tip links';
+  String get monetizationTipsSettingsSubtitle => 'አማራጭ የጉርሻ አገናኞችን አክል';
 
   @override
-  String get monetizationTipsSettingsIntroTitle => 'Optional tips only';
+  String get monetizationTipsSettingsIntroTitle => 'አማራጭ ጉርሻዎች ብቻ';
 
   @override
   String get monetizationTipsSettingsIntroBody =>
-      'Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.';
+      'ጉርሻዎች በተጠቃሚዎች መካከል የሚደረጉ አማራጭ ስጦታዎች ናቸው። በDivine ውስጥ ይዘት፣ የደንበኝነት ምዝገባ፣ ባህሪያት፣ ደረጃ፣ ታይነት ወይም መዳረሻ አይከፍቱም።';
 
   @override
   String monetizationTipsSettingsConfiguredCount(int count) {
-    return '$count active tip link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'በመገለጫህ ላይ $count ንቁ የጉርሻ አገናኞች',
+      one: 'በመገለጫህ ላይ $count ንቁ የጉርሻ አገናኝ',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get monetizationTipsSettingsSave => 'Save tip links';
+  String get monetizationTipsSettingsSave => 'የጉርሻ አገናኞችን አስቀምጥ';
 
   @override
-  String get monetizationTipsSettingsSaved => 'Tip links updated';
+  String get monetizationTipsSettingsSaved => 'የጉርሻ አገናኞች ተዘምነዋል';
 
   @override
-  String get profileTipButtonLabel => 'Tip';
+  String get profileTipButtonLabel => 'ጉርሻ';
 
   @override
-  String get profileTipSheetTitle => 'Tip this creator';
+  String get profileTipSheetTitle => 'ለዚህ ፈጣሪ ጉርሻ ስጥ';
 
   @override
   String get profileTipSheetBody =>
-      'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+      'የጉርሻ አገናኞች ከDivine ውጭ ይከፈታሉ። አማራጭ ናቸው፣ በDivine ውስጥም ይዘት፣ የደንበኝነት ምዝገባ፣ ባህሪያት ወይም መዳረሻ አይከፍቱም።';
 
   @override
   String get settingsStorageTitle => 'ማከማቻ';
@@ -11283,78 +11256,78 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileNotifyUpdateFailed => 'ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ?';
 
   @override
-  String get savedSoundYourLabel => 'Your label';
+  String get savedSoundYourLabel => 'የአንተ መለያ ጽሑፍ';
 
   @override
-  String get savedSoundAddHashtags => 'Add hashtags';
+  String get savedSoundAddHashtags => 'ሃሽታጎችን አክል';
 
   @override
-  String get savedSoundDeviceOnly => 'Saved on this device';
+  String get savedSoundDeviceOnly => 'በዚህ መሣሪያ ላይ ተቀምጧል';
 
   @override
   String get savedSoundDetailsRetry =>
-      'Couldn’t save those details. Tap to retry.';
+      'እነዚያን ዝርዝሮች ማስቀመጥ አልተቻለም። እንደገና ለመሞከር ንካ።';
 
   @override
-  String get savedSoundFallbackTitle => 'Saved sound';
+  String get savedSoundFallbackTitle => 'የተቀመጠ ድምፅ';
 
   @override
-  String get savedSoundPreviewAction => 'Preview sound';
+  String get savedSoundPreviewAction => 'ድምፁን አዳምጥ';
 
   @override
-  String get savedSoundEditAction => 'Edit sound details';
+  String get savedSoundEditAction => 'የድምፅ ዝርዝሮችን አርም';
 
   @override
-  String get savedSoundRemoveAction => 'Remove saved sound';
+  String get savedSoundRemoveAction => 'የተቀመጠውን ድምፅ አስወግድ';
 
   @override
-  String get savedSoundClearHashtagFilter => 'Clear hashtag filter';
+  String get savedSoundClearHashtagFilter => 'የሃሽታግ ማጣሪያን አጽዳ';
 
   @override
-  String get soundAllowRemix => 'Allow others to remix this sound';
+  String get soundAllowRemix => 'ሌሎች ይህን ድምፅ እንዲቀላቅሉ ፍቀድ';
 
   @override
-  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+  String get soundReuseUnavailable => 'ይህ ድምፅ አሁን መቀላቀል አይችልም።';
 
   @override
-  String get soundPublicCredit => 'Public sound credit';
+  String get soundPublicCredit => 'የይፋ ድምፅ ምስጋና';
 
   @override
-  String get soundCreditRequired => 'Add public sound credit before posting.';
+  String get soundCreditRequired => 'ከመለጠፍህ በፊት የይፋ ድምፅ ምስጋና አክል።';
 
   @override
-  String get soundSharedAs => 'Shared as';
+  String get soundSharedAs => 'የተጋራው እንደ';
 
   @override
-  String get soundOwnWork => 'I made this sound';
+  String get soundOwnWork => 'ይህን ድምፅ የሠራሁት እኔ ነኝ';
 
   @override
   String soundCreatorBy(String creator) {
-    return 'By $creator';
+    return 'በ$creator';
   }
 
   @override
   String soundSharedBy(String publisher) {
-    return 'Shared by $publisher';
+    return 'በ$publisher ተጋርቷል';
   }
 
   @override
-  String get soundRemixingAllowed => 'Remixing allowed';
+  String get soundRemixingAllowed => 'መቀላቀል ተፈቅዷል';
 
   @override
-  String get soundCreditOnly => 'Credit only';
+  String get soundCreditOnly => 'ምስጋና ብቻ';
 
   @override
-  String get soundCreditTitleLabel => 'Sound title';
+  String get soundCreditTitleLabel => 'የድምፅ ርዕስ';
 
   @override
-  String get soundCreditCreatorLabel => 'Creator';
+  String get soundCreditCreatorLabel => 'ፈጣሪ';
 
   @override
-  String get soundCreditSourceUrlLabel => 'Source URL';
+  String get soundCreditSourceUrlLabel => 'የምንጭ URL';
 
   @override
-  String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+  String get soundCreditPublicHashtagsLabel => 'የይፋ ሃሽታጎች';
 
   @override
   String get videoMetadataTagsPickerCancelSemanticLabel => 'የመለያ ምርጫን ሰርዝ';

@@ -433,11 +433,11 @@
   "profileSetupBackLabel": "Quay lại",
   "profileSetupAboutNostr": "Về Nostr",
   "profileSetupProfilePublished": "Đã đăng hồ sơ thành công!",
-  "profileSetupUnsavedChangesTitle": "Save changes?",
-  "profileSetupUnsavedChangesSubtitle": "Save your edits before leaving, or discard them and keep moving.",
-  "profileSetupUnsavedChangesSaveButton": "Save changes",
-  "profileSetupUnsavedChangesDiscardButton": "Discard changes",
-  "profileSetupUnsavedChangesKeepButton": "Keep editing",
+  "profileSetupUnsavedChangesTitle": "Lưu thay đổi?",
+  "profileSetupUnsavedChangesSubtitle": "Lưu chỉnh sửa của bạn trước khi rời đi, hoặc bỏ chúng và đi tiếp.",
+  "profileSetupUnsavedChangesSaveButton": "Lưu thay đổi",
+  "profileSetupUnsavedChangesDiscardButton": "Bỏ thay đổi",
+  "profileSetupUnsavedChangesKeepButton": "Tiếp tục chỉnh sửa",
   "profileSetupCreateNewProfile": "Tạo hồ sơ mới?",
   "profileSetupNoExistingProfile": "Bọn mình không tìm thấy hồ sơ nào trên các relay của bạn. Đăng bây giờ sẽ tạo một hồ sơ mới. Tiếp tục chứ?",
   "profileSetupPublishButton": "Đăng",
@@ -579,6 +579,9 @@
   "exploreTabForYou": "Dành cho bạn",
   "exploreTabLists": "Danh sách",
   "exploreTabIntegratedApps": "Ứng dụng tích hợp",
+  "featuredTabEmpty": "Chưa có gì ở đây. Quay lại sau nhé.",
+  "featuredTabLoadFailed": "Không tải được bộ sưu tập này.",
+  "featuredTabRetry": "Thử lại",
   "exploreNoVideosAvailable": "Không có video nào",
   "exploreErrorPrefix": "Lỗi: {error}",
   "@exploreErrorPrefix": {
@@ -645,6 +648,8 @@
   "videoSettingsAutoAdvanceOff": "Đã tắt tự động chuyển video",
   "videoSettingsCaptionsOn": "Đã bật phụ đề",
   "videoSettingsCaptionsOff": "Đã tắt phụ đề",
+  "videoSettingsCaptionsOnForVideo": "Đã bật phụ đề cho video này",
+  "videoSettingsCaptionsOffForVideo": "Đã tắt phụ đề cho video này",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -1644,7 +1649,7 @@
     }
   },
   "analyticsDiagnosticsUseFixture": "Dùng dữ liệu mẫu",
-  "analyticsNa": "N/A",
+  "analyticsNa": "Không có",
   "authCreateNewAccount": "Tạo tài khoản Divine mới",
   "authCreateNewAccountShort": "Tạo tài khoản mới",
   "@authCreateNewAccountShort": {
@@ -1768,6 +1773,9 @@
     }
   },
   "authVerificationResendFailed": "Bọn mình không gửi lại được email. Thử lại nhé.",
+  "authVerificationResendExpired": "Lượt đăng ký đó đã hết hạn. Bắt đầu lại để nhận mã mới.",
+  "authVerificationResendUnavailable": "Hiện không gửi lại được. Hãy dùng mã 6 chữ số trong email chúng tôi đã gửi cho bạn.",
+  "authVerificationPollingStopped": "Chúng tôi đã ngừng kiểm tra giúp bạn. Nhập mã 6 chữ số trong email để hoàn tất đăng nhập.",
   "authWelcomeToDivine": "Chào mừng đến với Divine!",
   "authEmailVerified": "Email của bạn đã được xác minh.",
   "authSigningYouIn": "Đang đăng nhập cho bạn",
@@ -2394,6 +2402,8 @@
   "savedSoundRemoveConfirmTitle": "Xóa âm thanh này?",
   "savedSoundRemoveConfirmMessage": "Nó biến mất khỏi thư viện của bạn, nhưng bạn có thể lưu lại từ bất kỳ video nào dùng nó.",
   "soundsRemovedFromLibrary": "Đã xóa khỏi Âm thanh",
+  "soundsSaveFailed": "Không lưu được âm thanh đó. Thử lại nhé.",
+  "soundsRemoveFailed": "Không gỡ được âm thanh đó. Thử lại nhé.",
   "soundsFailedToLoad": "Không tải được âm thanh",
   "soundsRetry": "Thử lại",
   "soundsScreenLabel": "Màn hình âm thanh",
@@ -3217,7 +3227,7 @@
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
   },
-  "inboxSupportRowTitle": "Divine Moderation",
+  "inboxSupportRowTitle": "Kiểm duyệt Divine",
   "@inboxSupportRowTitle": {
     "description": "Title of the pinned Divine Moderation support row at the top of the Messages inbox. A brand account name, so it is intentionally identical in every locale."
   },
@@ -3702,6 +3712,7 @@
   "@videoMetadataC2paMissingNote": {
     "description": "Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons."
   },
+  "videoMetadataC2paMissingNoteServiceUnavailable": "Dịch vụ chứng nhận nội dung không phản hồi. Đây không phải lỗi kết nối của bạn.",
   "videoMetadataC2paMissingRegenerate": "Tạo lại",
   "@videoMetadataC2paMissingRegenerate": {
     "description": "Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again."
@@ -3820,7 +3831,7 @@
   "libraryDraftDeleteFailedSnackbar": "Không xóa được bản nháp",
   "libraryDraftDuplicatedSnackbar": "Đã nhân bản bản nháp",
   "libraryDraftDuplicateFailedSnackbar": "Không nhân bản được bản nháp",
-  "libraryDraftInProgressBadge": "In progress",
+  "libraryDraftInProgressBadge": "Đang thực hiện",
   "libraryDraftActionPost": "Đăng",
   "libraryDraftActionEdit": "Sửa",
   "libraryDraftActionDuplicate": "Nhân bản",
@@ -3880,7 +3891,7 @@
   "categoryGalleryCouldNotLoadVideos": "Không tải được video",
   "categoryGalleryNoVideosInCategory": "Không có video nào trong danh mục này",
   "categoryGallerySortOptionsLabel": "Tùy chọn sắp xếp danh mục",
-  "categoryGallerySortHot": "Hot",
+  "categoryGallerySortHot": "Nổi bật",
   "categoryGallerySortNew": "Mới",
   "categoryGallerySortClassic": "Kinh điển",
   "categoryGallerySortForYou": "Dành cho bạn",
@@ -4142,6 +4153,7 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
+  "deleteAccountAccountChangedAfterDeletion": "Một số yêu cầu xóa đã được chấp nhận, nhưng việc dọn dẹp đã dừng vì bạn đổi tài khoản. Đăng nhập lại tài khoản ban đầu để hoàn tất.",
   "deleteAccountBurnUsernameFailed": "Không nhả được tên người dùng của bạn. Tài khoản của bạn chưa bị xóa. Thử lại, hoặc bỏ chọn tùy chọn đó.",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -4178,6 +4190,7 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountContentDeletionFailed": "Không xóa được nội dung khỏi các relay",
+  "deleteAccountRelayConfirmationFailed": "Chúng tôi không xác nhận được việc xóa tài khoản với relay nào. Kiểm tra kết nối và thử lại.",
   "deleteAccountDeleteAllContentButton": "Xóa tất cả nội dung",
   "deleteAccountDeletionIncomplete": "Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.",
   "@deleteAccountDeletionIncomplete": {
@@ -4425,6 +4438,7 @@
   "supportPublicSubmissionTitle": "Bài đăng GitHub công khai",
   "supportPublicSubmissionMessage": "Mọi nội dung bạn gửi tại đây sẽ được đăng lên kho mã nguồn mở của chúng tôi trên GitHub để các nhà phát triển có thể xử lý. Bài đăng và tài khoản bạn đang đăng nhập sẽ hiển thị công khai với tất cả mọi người.",
   "supportRequiredHelper": "Bắt buộc",
+  "supportFieldLimitReached": "Đó là độ dài tối đa. Phần vượt quá đã không được thêm vào.",
   "bugReportSubjectHint": "Tóm tắt ngắn gọn vấn đề",
   "bugReportDescriptionRequiredLabel": "Chuyện gì đã xảy ra? *",
   "bugReportDescriptionHint": "Mô tả vấn đề bạn gặp phải",
@@ -4627,7 +4641,7 @@
   "searchVideosSectionHeader": "Video",
   "searchVideosLoadingLabel": "Đang tải kết quả video",
   "searchVideosSortOptionsLabel": "Sắp xếp kết quả video",
-  "searchVideosSortTrending": "Hot",
+  "searchVideosSortTrending": "Nổi bật",
   "@searchVideosSortTrending": {
     "description": "Label for the video search sort option that shows currently popular or trending results."
   },
@@ -4844,7 +4858,7 @@
     }
   },
   "notificationPostedNewVine": "{actorName} đã đăng một vine mới",
-  "notificationAddedYourVideosToList": "{actorName} added {count, plural, =1{your vine} other{{count} of your vines}} to {listName}",
+  "notificationAddedYourVideosToList": "{actorName} đã thêm {count, plural, =1{vine của bạn} other{{count} vine của bạn}} vào {listName}",
   "@notificationAddedYourVideosToList": {
     "description": "Shown when someone adds the user's videos to a public curated list. Uses an ICU plural so locales with more than two plural categories can inflect correctly.",
     "placeholders": {
@@ -5175,7 +5189,7 @@
       }
     }
   },
-  "videoEditorCameraLabel": "Camera",
+  "videoEditorCameraLabel": "Máy quay",
   "videoEditorOpenCameraSemanticLabel": "Mở camera",
   "videoEditorLibraryLabel": "Thư viện",
   "videoEditorTextLabel": "Chữ",
@@ -5874,6 +5888,7 @@
   "videoMetadataContentWarningDoneButton": "Xong",
   "videoMetadataAudioReuseTitle": "Xuất bản âm thanh này",
   "videoMetadataAudioReuseSubtitle": "Cho phép người khác lưu và dùng lại âm thanh của video này.",
+  "publishAudioReuseDegradedWarning": "Video của bạn đã lên, nhưng âm thanh chưa đăng được. Chỉnh sửa video để chia sẻ âm thanh.",
   "videoMetadataCollaboratorsLabel": "Thêm cộng tác viên",
   "videoMetadataAddCollaboratorSemanticLabel": "Mời cộng tác viên",
   "videoMetadataCollaboratorsHelpTooltip": "Cộng tác viên hoạt động thế nào",
@@ -6236,24 +6251,24 @@
   "devOptionsProtectedMinorEnabledToast": "Đã ép bật trạng thái vị thành niên được bảo vệ",
   "devOptionsProtectedMinorNonMinorToast": "Đã ép tắt trạng thái vị thành niên được bảo vệ",
   "devOptionsProtectedMinorClearedToast": "Đã xóa ghi đè vị thành niên được bảo vệ",
-  "devOptionsInviteAvailabilityTitle": "Signup invites",
-  "devOptionsInviteAvailabilityCurrentLabel": "Current state",
-  "devOptionsInviteAvailabilityServerLoading": "Server value: loading",
-  "devOptionsInviteAvailabilityServerEnabled": "Server value: enabled",
-  "devOptionsInviteAvailabilityServerDisabled": "Server value: disabled",
-  "devOptionsInviteAvailabilityServerUnknown": "Server value: unknown (defaults enabled)",
-  "devOptionsInviteAvailabilityOverrideNone": "Override: use server value",
-  "devOptionsInviteAvailabilityOverrideEnabled": "Override: force enabled",
-  "devOptionsInviteAvailabilityOverrideDisabled": "Override: force disabled",
-  "devOptionsInviteAvailabilityUseServer": "Use server value",
-  "devOptionsInviteAvailabilityUseServerSubtitle": "Follow the invite service onboardingMode",
-  "devOptionsInviteAvailabilityForceEnabled": "Force enabled",
-  "devOptionsInviteAvailabilityForceEnabledSubtitle": "Show signup invite gates and management locally",
-  "devOptionsInviteAvailabilityForceDisabled": "Force disabled",
-  "devOptionsInviteAvailabilityForceDisabledSubtitle": "Hide signup invite UI locally without changing the server",
-  "devOptionsInviteAvailabilityUseServerToast": "Signup invites now follow the server",
-  "devOptionsInviteAvailabilityForceEnabledToast": "Signup invites forced on",
-  "devOptionsInviteAvailabilityForceDisabledToast": "Signup invites forced off",
+  "devOptionsInviteAvailabilityTitle": "Lời mời đăng ký",
+  "devOptionsInviteAvailabilityCurrentLabel": "Trạng thái hiện tại",
+  "devOptionsInviteAvailabilityServerLoading": "Giá trị máy chủ: đang tải",
+  "devOptionsInviteAvailabilityServerEnabled": "Giá trị máy chủ: đã bật",
+  "devOptionsInviteAvailabilityServerDisabled": "Giá trị máy chủ: đã tắt",
+  "devOptionsInviteAvailabilityServerUnknown": "Giá trị máy chủ: không rõ (mặc định bật)",
+  "devOptionsInviteAvailabilityOverrideNone": "Ghi đè: dùng giá trị máy chủ",
+  "devOptionsInviteAvailabilityOverrideEnabled": "Ghi đè: buộc bật",
+  "devOptionsInviteAvailabilityOverrideDisabled": "Ghi đè: buộc tắt",
+  "devOptionsInviteAvailabilityUseServer": "Dùng giá trị máy chủ",
+  "devOptionsInviteAvailabilityUseServerSubtitle": "Theo onboardingMode của dịch vụ lời mời",
+  "devOptionsInviteAvailabilityForceEnabled": "Buộc bật",
+  "devOptionsInviteAvailabilityForceEnabledSubtitle": "Hiển thị cổng lời mời đăng ký và phần quản lý ở máy này",
+  "devOptionsInviteAvailabilityForceDisabled": "Buộc tắt",
+  "devOptionsInviteAvailabilityForceDisabledSubtitle": "Ẩn giao diện lời mời đăng ký ở máy này mà không đổi máy chủ",
+  "devOptionsInviteAvailabilityUseServerToast": "Lời mời đăng ký giờ theo máy chủ",
+  "devOptionsInviteAvailabilityForceEnabledToast": "Đã buộc bật lời mời đăng ký",
+  "devOptionsInviteAvailabilityForceDisabledToast": "Đã buộc tắt lời mời đăng ký",
   "commentsRecordVideoButtonLabel": "Quay bình luận video",
   "@commentsRecordVideoButtonLabel": {
     "description": "Semantics label for the button that opens the recorder to create a video reply in comments."
@@ -6615,7 +6630,7 @@
   "@monetizationTipsSettingsSaved": {
     "description": "App Store-safe snackbar shown after optional tip links are saved."
   },
-  "profileTipButtonLabel": "Tip",
+  "profileTipButtonLabel": "Ủng hộ",
   "@profileTipButtonLabel": {
     "description": "App Store-safe compact button label on a profile that opens optional creator tip links."
   },
@@ -6878,6 +6893,31 @@
   "profileNotifyBellOff": "Nhận thông báo về vine mới",
   "profileNotifyBellOn": "Ngừng thông báo về vine mới",
   "profileNotifyUpdateFailed": "Không lưu được. Thử lại nhé?",
+  "savedSoundYourLabel": "Nhãn của bạn",
+  "savedSoundAddHashtags": "Thêm hashtag",
+  "savedSoundDeviceOnly": "Đã lưu trên thiết bị này",
+  "savedSoundDetailsRetry": "Không lưu được các chi tiết đó. Chạm để thử lại.",
+  "savedSoundFallbackTitle": "Âm thanh đã lưu",
+  "savedSoundPreviewAction": "Nghe thử âm thanh",
+  "savedSoundEditAction": "Chỉnh sửa chi tiết âm thanh",
+  "savedSoundRemoveAction": "Gỡ âm thanh đã lưu",
+  "savedSoundClearHashtagFilter": "Xóa bộ lọc hashtag",
+  "soundAllowRemix": "Cho phép người khác remix âm thanh này",
+  "soundReuseUnavailable": "Hiện chưa thể remix âm thanh này.",
+  "soundPublicCredit": "Ghi công âm thanh công khai",
+  "soundCreditRequired": "Thêm ghi công âm thanh công khai trước khi đăng.",
+  "soundSharedAs": "Chia sẻ dưới dạng",
+  "soundOwnWork": "Tôi tạo ra âm thanh này",
+  "soundCreatorBy": "Bởi {creator}",
+  "@soundCreatorBy": {"placeholders": {"creator": {"type": "String"}}},
+  "soundSharedBy": "Chia sẻ bởi {publisher}",
+  "@soundSharedBy": {"placeholders": {"publisher": {"type": "String"}}},
+  "soundRemixingAllowed": "Cho phép remix",
+  "soundCreditOnly": "Chỉ ghi công",
+  "soundCreditTitleLabel": "Tên âm thanh",
+  "soundCreditCreatorLabel": "Người tạo",
+  "soundCreditSourceUrlLabel": "URL nguồn",
+  "soundCreditPublicHashtagsLabel": "Hashtag công khai",
   "relaySettingsRemoveDefaultRelayTitle": "Xoá relay của Divine?",
   "relaySettingsRemoveDefaultRelayMessage": "Xoá relay của Divine sẽ làm giảm trải nghiệm trong ứng dụng. Video, đăng bài và đồng bộ có thể kém ổn định hơn. Chỉ nên làm điều này nếu bạn đã quen dùng Nostr.\n\n{relayUrl}",
   "@relaySettingsRemoveDefaultRelayMessage": {

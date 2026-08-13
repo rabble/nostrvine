@@ -408,69 +408,9 @@ void main() {
   });
 }
 
-// Add keys here only when a translation pass is intentionally deferred.
-const _knownUntranslatedDebt = <String>{
-  // Email-verification recovery copy (resend expired, resend unavailable,
-  // polling stopped); translation is deferred to the next auth localization
-  // pass.
-  'authVerificationResendExpired',
-  'authVerificationResendUnavailable',
-  'authVerificationPollingStopped',
-  // Partial account-deletion copy after a confirmed deletion request;
-  // translation is deferred to the next account-management localization pass.
-  'deleteAccountAccountChangedAfterDeletion',
-  // Relay-confirmation failure copy for account deletion; translation is
-  // deferred to the next account-management localization pass.
-  'deleteAccountRelayConfirmationFailed',
-  // Support form character-cap helper; translation is deferred to the
-  // support-flow localization pass tracked by #7100.
-  'supportFieldLimitReached',
-  // Warning shown when a requested reusable sound fails to publish; translation
-  // is deferred to the next sound-library localization pass.
-  'publishAudioReuseDegradedWarning',
-  // Featured Explore tab empty/failure copy; translation is deferred to the
-  // next localization pass tracked in #6901. The tab's own label is
-  // server-supplied via a locale map and never routes through these ARB files.
-  'featuredTabEmpty',
-  'featuredTabLoadFailed',
-  'featuredTabRetry',
-  // Saved-sound organization and public-credit copy; translation is deferred
-  // to the next sound-library localization pass.
-  'savedSoundYourLabel',
-  'savedSoundAddHashtags',
-  'savedSoundDeviceOnly',
-  'savedSoundDetailsRetry',
-  'savedSoundFallbackTitle',
-  'savedSoundPreviewAction',
-  'savedSoundEditAction',
-  'savedSoundRemoveAction',
-  'savedSoundClearHashtagFilter',
-  'soundAllowRemix',
-  'soundReuseUnavailable',
-  'soundPublicCredit',
-  'soundCreditRequired',
-  'soundSharedAs',
-  'soundOwnWork',
-  'soundCreatorBy',
-  'soundSharedBy',
-  'soundRemixingAllowed',
-  'soundCreditOnly',
-  'soundCreditTitleLabel',
-  'soundCreditCreatorLabel',
-  'soundCreditSourceUrlLabel',
-  'soundCreditPublicHashtagsLabel',
-  'soundsSaveFailed',
-  'soundsRemoveFailed',
-  // Distinguishes a signing-service failure from a genuinely offline device on
-  // the missing-content-credential sheet. English-only until the next
-  // localization pass; offline devices still get the fully translated
-  // videoMetadataC2paMissingNote.
-  'videoMetadataC2paMissingNoteServiceUnavailable',
-  // Scoped feed-caption snackbar copy; translation is deferred to the next
-  // playback-controls localization pass.
-  'videoSettingsCaptionsOnForVideo',
-  'videoSettingsCaptionsOffForVideo',
-};
+// Every locale now defines every template key. Keep this set empty: adding a
+// key here hides a real translation gap from CI.
+const _knownUntranslatedDebt = <String>{};
 
 const _profileBadgeSheetKeys = <String>{
   'profileBadgeAwardedBy',
