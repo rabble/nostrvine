@@ -400,28 +400,38 @@ definitions:
       name: Install Maestro CLI
       script: |
         set -e
+        # Pinned. An unpinned get.maestro.mobile.dev install lets an upstream
+        # release break CI with no commit on our side.
+        #
+        # 2.8.0, not the 2.1.0 that #6948 verified: 2.1.0 cannot start its iOS
+        # driver on Xcode 26.x at all. The XCTest runner installs, reports
+        # success, and never binds port 7001 (mobile-dev-inc/Maestro#2932), so
+        # every flow fails before its first assertion. Codemagic's image is on
+        # Xcode 26.4.1, which puts 2.1.0 squarely in that hole. 2.8.0 carries
+        # the iOS 26 driver fixes and was verified green on this image
+        # (build 6a7bb0d4e702412428f4e733, 2/2 flows passed).
+        #
+        # Bump deliberately, re-verify on a real build, then merge the bump.
+        export MAESTRO_VERSION=2.8.0
         curl -Ls "https://get.maestro.mobile.dev" | bash
         export PATH="$PATH:$HOME/.maestro/bin"
         maestro --version
+        xcodebuild -version
     - &run_maestro_smoke_tests
       name: Run Maestro Smoke Tests
       script: |
         set -e
         export PATH="$PATH:$HOME/.maestro/bin"
-        # Credentials come from the `maestro_e2e_credentials` group, never the
-        # repo. Fail here rather than letting Maestro resolve a missing
-        # variable to `undefined` and report it as a selector failure.
-        for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
-          if [ -z "$(eval echo \"\$$var\")" ]; then
-            echo "Missing $var — add it to the maestro_e2e_credentials group." >&2
-            exit 1
-          fi
-        done
+        # Flow files are passed individually rather than as suites/*.yaml.
+        # Maestro reports a suite file as ONE <testcase> named after the suite,
+        # with no per-flow detail — so a failure says only "the suite failed"
+        # and `test_report` cannot name the flow. Per-flow invocation yields one
+        # <testcase> each, carrying name, file, timing and tags.
         maestro test \
-          -e USER_EMAIL="$MAESTRO_USER_EMAIL" \
-          -e USER_PWD="$MAESTRO_USER_PWD" \
-          -e SEARCH_USER="$MAESTRO_SEARCH_USER" \
-          e2e/maestro/suites/smoke.yaml
+          --format junit \
+          --output report.xml \
+          e2e/maestro/flows/likeFlow.yaml \
+          e2e/maestro/flows/commentFlow.yaml
     - &boot_ios_simulator
       name: Boot iOS Simulator
       script: |
@@ -750,16 +760,22 @@ workflows:
   e2e-smoke-ios:
     name: E2E Smoke Tests (iOS)
     working_directory: mobile
-    max_build_duration: 60
+    # Measured, not guessed: a full green run is ~12 min (build 6a7bb0d4). 60
+    # turned a hung Maestro driver into an hour of billed mac_mini_m2.
+    max_build_duration: 25
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.0
-      xcode: latest
+      # Pinned alongside MAESTRO_VERSION. The compatibility contract has two
+      # sides: 2.1.0 cannot drive Xcode 26.x, and `latest` floating means a
+      # Codemagic image bump can break the suite with no commit on our side —
+      # the exact failure the Maestro pin exists to prevent. 26.4 is the image
+      # the 2.8.0 pairing was verified green on.
+      xcode: 26.4
       cocoapods: default
       groups:
         - zendesk_credentials
         - proofmode_credentials
-        - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
         BUNDLE_ID: co.openvine.app
@@ -768,7 +784,22 @@ workflows:
         - $HOME/Library/Caches/CocoaPods
         - $HOME/.pub-cache
     triggering:
-      events: []
+      # Runs on every PR to main. NOT a required check: per team decision it
+      # stays non-blocking until a flake baseline exists (target ≥30 runs at
+      # ≥95%). Note #7204 — a fixed 3m31s hierarchy stall on the Explore screen
+      # makes flows a coin flip, so a baseline collected before that is fixed
+      # measures the stall rather than the app.
+      #
+      # If PR builds do not fire after merge, check the GitHub webhook for the
+      # Codemagic app before touching this YAML — a misconfigured webhook
+      # presents exactly like a YAML mistake.
+      events:
+        - pull_request
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: false
+      cancel_previous_builds: true
     scripts:
       - *check_signing_endpoint
       - *check_supporters_config
@@ -785,7 +816,15 @@ workflows:
     artifacts:
       - build/ios/iphonesimulator/Runner.app
       - /tmp/xcodebuild_logs/*.log
-      - ~/.maestro/tests/**
+      - report.xml
+      # Per-step screenshots, screen-hierarchy JSON and maestro.log — richer
+      # for triage than the JUnit. device-simulator.log is excluded: it is
+      # ~153 MB per flow and swamps the artifact bundle.
+      - ~/.maestro/tests/**/screenshots/**
+      - ~/.maestro/tests/**/screen-hierarchy/**
+      - ~/.maestro/tests/**/logs/maestro.log
+      - ~/.maestro/tests/**/commands.json
+    test_report: report.xml
 
   e2e-smoke-android:
     name: E2E Smoke Tests (Android)
@@ -798,7 +837,6 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
-        - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
         BUNDLE_ID: co.openvine.app
