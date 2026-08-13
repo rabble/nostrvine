@@ -6432,13 +6432,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Berhenti memilih klip';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Urutkan klip';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Pilih klip';
 
   @override
   String get libraryGridSizeLabel => 'Ukuran kisi';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Urutan & ukuran kisi';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Tindakan pustaka lainnya';
 
   @override
   String libraryGridSizeColumns(int count) {

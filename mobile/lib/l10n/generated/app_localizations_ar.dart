@@ -6421,13 +6421,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'إيقاف تحديد المقاطع';
 
   @override
-  String get librarySortClipsSemanticLabel => 'فرز المقاطع';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'تحديد المقاطع';
 
   @override
   String get libraryGridSizeLabel => 'حجم الشبكة';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'الفرز وحجم الشبكة';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'المزيد من إجراءات المكتبة';
 
   @override
   String libraryGridSizeColumns(int count) {

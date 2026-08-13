@@ -6163,13 +6163,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => '停止选择片段';
 
   @override
-  String get librarySortClipsSemanticLabel => '对片段排序';
-
-  @override
   String get librarySelectClipsSemanticLabel => '选择片段';
 
   @override
   String get libraryGridSizeLabel => '网格大小';
+
+  @override
+  String get libraryDisplayOptionsLabel => '排序和网格大小';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => '更多作品库操作';
 
   @override
   String libraryGridSizeColumns(int count) {

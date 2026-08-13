@@ -6191,13 +6191,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'クリップの選択を終了';
 
   @override
-  String get librarySortClipsSemanticLabel => 'クリップを並べ替える';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'クリップを選択';
 
   @override
   String get libraryGridSizeLabel => 'グリッドのサイズ';
+
+  @override
+  String get libraryDisplayOptionsLabel => '並び替えとグリッドサイズ';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'ライブラリのその他の操作';
 
   @override
   String libraryGridSizeColumns(int count) {

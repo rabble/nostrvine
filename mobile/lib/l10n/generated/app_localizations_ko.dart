@@ -6213,13 +6213,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => '클립 선택 종료';
 
   @override
-  String get librarySortClipsSemanticLabel => '클립 정렬';
-
-  @override
   String get librarySelectClipsSemanticLabel => '클립 선택';
 
   @override
   String get libraryGridSizeLabel => '그리드 크기';
+
+  @override
+  String get libraryDisplayOptionsLabel => '정렬 및 그리드 크기';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => '라이브러리 추가 작업';
 
   @override
   String libraryGridSizeColumns(int count) {

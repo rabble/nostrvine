@@ -6619,13 +6619,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zakończ wybieranie klipów';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Sortuj klipy';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Wybierz klipy';
 
   @override
   String get libraryGridSizeLabel => 'Rozmiar siatki';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Sortowanie i rozmiar siatki';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Więcej akcji biblioteki';
 
   @override
   String libraryGridSizeColumns(int count) {

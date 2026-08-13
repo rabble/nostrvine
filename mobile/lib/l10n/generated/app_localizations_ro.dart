@@ -6623,13 +6623,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Oprește selectarea clipurilor';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Sortează clipurile';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Selectează clipuri';
 
   @override
   String get libraryGridSizeLabel => 'Dimensiunea grilei';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Sortare și dimensiunea grilei';
+
+  @override
+  String get libraryMoreActionsSemanticLabel =>
+      'Mai multe acțiuni în bibliotecă';
 
   @override
   String libraryGridSizeColumns(int count) {

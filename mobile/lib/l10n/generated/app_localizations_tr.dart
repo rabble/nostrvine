@@ -6432,13 +6432,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Klip seçimini bitir';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Klipleri sırala';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Klip seç';
 
   @override
   String get libraryGridSizeLabel => 'Izgara boyutu';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Sıralama ve ızgara boyutu';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Diğer kütüphane işlemleri';
 
   @override
   String libraryGridSizeColumns(int count) {

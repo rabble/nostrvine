@@ -6473,13 +6473,16 @@ class AppLocalizationsUr extends AppLocalizations {
       'کلپس منتخب کرنا بند کریں';
 
   @override
-  String get librarySortClipsSemanticLabel => 'کلپس ترتیب دیں';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'کلپس منتخب کریں';
 
   @override
   String get libraryGridSizeLabel => 'گرڈ کا سائز';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'ترتیب اور گرڈ سائز';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'لائبریری کی مزید کارروائیاں';
 
   @override
   String libraryGridSizeColumns(int count) {

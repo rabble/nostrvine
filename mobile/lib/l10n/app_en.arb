@@ -4054,10 +4054,6 @@
   "@libraryStopSelectingClipsSemanticLabel": {
     "description": "Accessibility label for the library toolbar button that exits clip-selection mode."
   },
-  "librarySortClipsSemanticLabel": "Sort clips",
-  "@librarySortClipsSemanticLabel": {
-    "description": "Accessibility label for the library toolbar button that opens clip sorting options."
-  },
   "librarySelectClipsSemanticLabel": "Select clips",
   "@librarySelectClipsSemanticLabel": {
     "description": "Accessibility label for the library toolbar button that enters clip-selection mode."
@@ -4065,6 +4061,14 @@
   "libraryGridSizeLabel": "Grid size",
   "@libraryGridSizeLabel": {
     "description": "Row in the library sort menu that opens the clip grid size options. The same choice can be made by pinching the grid, which assistive technology cannot perform."
+  },
+  "libraryDisplayOptionsLabel": "Sort & grid size",
+  "@libraryDisplayOptionsLabel": {
+    "description": "Names the library action that opens the sorting and grid size options. Used twice: as the accessibility label of the toolbar button, and as the visible label of its overflow-menu row when the toolbar is too narrow to show that button."
+  },
+  "libraryMoreActionsSemanticLabel": "More library actions",
+  "@libraryMoreActionsSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that opens the actions which did not fit in the toolbar."
   },
   "libraryGridSizeColumns": "{count, plural, =1{1 column} other{{count} columns}}",
   "@libraryGridSizeColumns": {

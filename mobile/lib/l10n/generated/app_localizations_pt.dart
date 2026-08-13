@@ -6509,13 +6509,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Parar de selecionar clipes';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Ordenar clipes';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Selecionar clipes';
 
   @override
   String get libraryGridSizeLabel => 'Tamanho da grade';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Ordenação e tamanho da grade';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Mais ações da biblioteca';
 
   @override
   String libraryGridSizeColumns(int count) {

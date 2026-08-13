@@ -6544,13 +6544,16 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ihinto ang pagpili ng mga clip';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Ayusin ang mga clip';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Pumili ng mga clip';
 
   @override
   String get libraryGridSizeLabel => 'Laki ng grid';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Pagkakasunod-sunod at laki ng grid';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Higit pang aksyon sa library';
 
   @override
   String libraryGridSizeColumns(int count) {

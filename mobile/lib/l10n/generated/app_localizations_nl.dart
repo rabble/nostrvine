@@ -6496,13 +6496,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Stoppen met clips selecteren';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Clips sorteren';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Clips selecteren';
 
   @override
   String get libraryGridSizeLabel => 'Rastergrootte';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Sortering en rastergrootte';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Meer bibliotheekacties';
 
   @override
   String libraryGridSizeColumns(int count) {

@@ -6475,13 +6475,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Dừng chọn clip';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Sắp xếp clip';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Chọn clip';
 
   @override
   String get libraryGridSizeLabel => 'Kích thước lưới';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Sắp xếp và cỡ lưới';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Thao tác thư viện khác';
 
   @override
   String libraryGridSizeColumns(int count) {

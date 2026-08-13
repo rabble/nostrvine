@@ -6515,13 +6515,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Berhenti memilih klip';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Isih klip';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Pilih klip';
 
   @override
   String get libraryGridSizeLabel => 'Saiz grid';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Susunan & saiz grid';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Lagi tindakan pustaka';
 
   @override
   String libraryGridSizeColumns(int count) {

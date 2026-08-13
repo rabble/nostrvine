@@ -6544,13 +6544,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Clip-Auswahl beenden';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Clips sortieren';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Clips auswählen';
 
   @override
   String get libraryGridSizeLabel => 'Rastergröße';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Sortierung & Rastergröße';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Weitere Bibliotheksaktionen';
 
   @override
   String libraryGridSizeColumns(int count) {

@@ -95,8 +95,6 @@ List<Object?> _captureAnnouncements(WidgetTester tester) {
 
 void main() {
   final en = AppLocalizationsEn();
-  final displayOptionsLabel =
-      '${en.librarySortClipsSemanticLabel}. ${en.libraryGridSizeLabel}';
 
   group(LibraryScreen, () {
     late _MockGallerySaveService mockGallerySaveService;
@@ -241,7 +239,7 @@ void main() {
         await tester.pumpWidget(buildWidget(initialTabIndex: 1));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.bySemanticsLabel(displayOptionsLabel));
+        await tester.tap(find.bySemanticsLabel(en.libraryDisplayOptionsLabel));
         await tester.pumpAndSettle();
         await tester.tap(find.text(en.libraryGridSizeLabel));
         await tester.pumpAndSettle();

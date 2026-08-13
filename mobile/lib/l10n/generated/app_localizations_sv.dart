@@ -6461,13 +6461,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Sluta välja klipp';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Sortera klipp';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Välj klipp';
 
   @override
   String get libraryGridSizeLabel => 'Rutnätets storlek';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Sortering och rutnätsstorlek';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Fler biblioteksåtgärder';
 
   @override
   String libraryGridSizeColumns(int count) {

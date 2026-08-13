@@ -11327,12 +11327,6 @@ abstract class AppLocalizations {
   /// **'Stop selecting clips'**
   String get libraryStopSelectingClipsSemanticLabel;
 
-  /// Accessibility label for the library toolbar button that opens clip sorting options.
-  ///
-  /// In en, this message translates to:
-  /// **'Sort clips'**
-  String get librarySortClipsSemanticLabel;
-
   /// Accessibility label for the library toolbar button that enters clip-selection mode.
   ///
   /// In en, this message translates to:
@@ -11344,6 +11338,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Grid size'**
   String get libraryGridSizeLabel;
+
+  /// Names the library action that opens the sorting and grid size options. Used twice: as the accessibility label of the toolbar button, and as the visible label of its overflow-menu row when the toolbar is too narrow to show that button.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort & grid size'**
+  String get libraryDisplayOptionsLabel;
+
+  /// Accessibility label for the library toolbar button that opens the actions which did not fit in the toolbar.
+  ///
+  /// In en, this message translates to:
+  /// **'More library actions'**
+  String get libraryMoreActionsSemanticLabel;
 
   /// Option in the library grid size menu, naming how many columns of clips the grid shows. The range is 2 to 5. English never selects the singular arm in that range, but other locales do — Filipino selects `one` at 2, 3 and 5 — so every arm must interpolate {count} rather than spell out a digit.
   ///

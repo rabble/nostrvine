@@ -6547,13 +6547,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Arrêter de sélectionner des clips';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Trier les clips';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Sélectionner des clips';
 
   @override
   String get libraryGridSizeLabel => 'Taille de la grille';
+
+  @override
+  String get libraryDisplayOptionsLabel => 'Tri et taille de grille';
+
+  @override
+  String get libraryMoreActionsSemanticLabel =>
+      'Plus d\'actions de la bibliothèque';
 
   @override
   String libraryGridSizeColumns(int count) {
