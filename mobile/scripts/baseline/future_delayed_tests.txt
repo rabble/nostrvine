@@ -23,7 +23,6 @@ test/services/curated_list_service_crud_test.dart
 test/services/curated_list_service_playlist_test.dart
 test/services/curated_list_service_query_test.dart
 test/services/curated_list_service_video_management_test.dart
-test/services/performance_monitoring_service_test.dart
 test/services/reactive_pagination_test.dart
 test/services/relay_capability_service_test.dart
 test/services/seen_videos_service_test.dart

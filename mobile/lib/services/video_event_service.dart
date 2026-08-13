@@ -2269,22 +2269,25 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         bool eoseReceived = false;
         bool timeoutReported = false;
 
-        // Start performance trace for feed loading
-        final traceName = 'feed_load_${subscriptionType.name}';
+        // Operation-scoped so two loads of the same subscription type keep
+        // independent traces. Under the name-keyed API a load that never
+        // reached a completion path — the service is disposed before the 30s
+        // timeout fires — stayed open until the next load of that type
+        // reported it, which is how a 23.6-hour `feed_load_profile` sample
+        // reached the console. A leaked handle now simply never reports
+        // (#7119).
+        final trace = _performanceMonitor.startOperationTrace(
+          'feed_load_${subscriptionType.name}',
+        );
         var traceCompleted = false;
         void completeFeedLoadTrace(String completion, {int? eventTotal}) {
           if (traceCompleted) return;
           traceCompleted = true;
-          _performanceMonitor.setMetric(
-            traceName,
-            'event_count',
-            eventTotal ?? eventCount,
-          );
-          _performanceMonitor.putAttribute(traceName, 'completion', completion);
-          unawaited(_performanceMonitor.stopTrace(traceName));
+          trace
+            ..setMetric('event_count', eventTotal ?? eventCount)
+            ..putAttribute('completion', completion);
+          unawaited(trace.stop());
         }
-
-        await _performanceMonitor.startTrace(traceName);
 
         Log.info(
           '📡 Creating subscription for $subscriptionType at ${subscriptionStartTime.toIso8601String()}',

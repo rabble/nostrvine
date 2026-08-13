@@ -32,21 +32,6 @@ class _FakePerformanceMonitor implements PerformanceTraceMonitor {
     startedOperations.add(traceName);
     return trace;
   }
-
-  @override
-  Future<void> startTrace(String traceName) async {}
-
-  @override
-  Future<void> stopTrace(String traceName) async {}
-
-  @override
-  void incrementMetric(String traceName, String metricName, int value) {}
-
-  @override
-  void setMetric(String traceName, String metricName, int value) {}
-
-  @override
-  void putAttribute(String traceName, String attribute, String value) {}
 }
 
 void main() {

@@ -33,35 +33,35 @@ class _RecordingPerformanceMonitor implements PerformanceTraceMonitor {
   final attributes = <String, Map<String, String>>{};
 
   @override
-  void incrementMetric(String traceName, String metricName, int value) {
-    metrics.putIfAbsent(traceName, () => {})[metricName] =
-        (metrics[traceName]?[metricName] ?? 0) + value;
-  }
-
-  @override
-  void putAttribute(String traceName, String attribute, String value) {
-    attributes.putIfAbsent(traceName, () => {})[attribute] = value;
-  }
-
-  @override
-  void setMetric(String traceName, String metricName, int value) {
-    metrics.putIfAbsent(traceName, () => {})[metricName] = value;
-  }
-
-  @override
-  Future<void> startTrace(String traceName) async {
+  PerformanceTrace startOperationTrace(String traceName) {
     startedTraces.add(traceName);
+    return _RecordingTrace(this, traceName);
+  }
+}
+
+/// Records a single handle's calls back into its [_RecordingPerformanceMonitor]
+/// under the trace name, so the assertions stay keyed by name even though the
+/// production code now addresses traces by handle.
+class _RecordingTrace implements PerformanceTrace {
+  _RecordingTrace(this._monitor, this._traceName);
+
+  final _RecordingPerformanceMonitor _monitor;
+  final String _traceName;
+
+  @override
+  void putAttribute(String attribute, String value) {
+    _monitor.attributes.putIfAbsent(_traceName, () => {})[attribute] = value;
   }
 
   @override
-  Future<void> stopTrace(String traceName) async {
-    stoppedTraces.add(traceName);
+  void setMetric(String metric, int value) {
+    _monitor.metrics.putIfAbsent(_traceName, () => {})[metric] = value;
   }
 
   @override
-  PerformanceTrace startOperationTrace(String traceName) =>
-      // VideoEventService uses the name-keyed trace API, not the handle API.
-      throw UnimplementedError();
+  Future<void> stop() async {
+    _monitor.stoppedTraces.add(_traceName);
+  }
 }
 
 /// Asserts a feed-load trace was started once, stopped exactly once, and closed

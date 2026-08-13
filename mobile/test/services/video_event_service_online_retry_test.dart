@@ -97,17 +97,8 @@ void main() {
       when(() => mockNostrService.unsubscribe(any())).thenAnswer((_) async {});
 
       when(
-        () => mockPerformanceMonitor.startTrace(any()),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockPerformanceMonitor.stopTrace(any()),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockPerformanceMonitor.setMetric(any(), any(), any()),
-      ).thenReturn(null);
-      when(
-        () => mockPerformanceMonitor.putAttribute(any(), any(), any()),
-      ).thenReturn(null);
+        () => mockPerformanceMonitor.startOperationTrace(any()),
+      ).thenReturn(const NoOpPerformanceTraceMonitor().startOperationTrace(''));
 
       service = VideoEventService(
         mockNostrService,

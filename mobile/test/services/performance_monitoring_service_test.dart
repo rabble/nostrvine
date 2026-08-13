@@ -155,63 +155,6 @@ void main() {
       expect(service.isEnabled, isFalse);
     });
 
-    test('should handle trace start and stop without error', () async {
-      await service.initialize();
-
-      // These should not throw even if Firebase isn't configured
-      await service.startTrace('test_trace');
-      await service.stopTrace('test_trace');
-
-      expect(true, true);
-    });
-
-    test('should handle metrics without error', () async {
-      await service.initialize();
-      await service.startTrace('test_trace');
-
-      // These should not throw even if Firebase isn't configured
-      service.setMetric('test_trace', 'test_metric', 100);
-      service.incrementMetric('test_trace', 'counter', 1);
-
-      await service.stopTrace('test_trace');
-      expect(true, true);
-    });
-
-    test('should handle attributes without error', () async {
-      await service.initialize();
-      await service.startTrace('test_trace');
-
-      // This should not throw even if Firebase isn't configured
-      service.putAttribute('test_trace', 'test_attr', 'test_value');
-
-      await service.stopTrace('test_trace');
-      expect(true, true);
-    });
-
-    test('trace convenience method should work', () async {
-      await service.initialize();
-
-      // Test the trace wrapper
-      final result = await service.trace('test_operation', () async {
-        await Future.delayed(const Duration(milliseconds: 10));
-        return 'success';
-      });
-
-      expect(result, 'success');
-    });
-
-    test('trace convenience method should handle errors', () async {
-      await service.initialize();
-
-      // Test that errors are propagated
-      expect(
-        () => service.trace('error_operation', () async {
-          throw Exception('Test error');
-        }),
-        throwsException,
-      );
-    });
-
     test(
       'startOperationTrace returns a handle that tags and stops cleanly',
       () async {
