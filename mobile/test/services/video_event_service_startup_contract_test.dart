@@ -68,9 +68,9 @@ class _RecordingTrace implements PerformanceTrace {
 /// with the expected first-wins [completion] label and [eventCount] metric.
 ///
 /// The "exactly once" check on [stoppedTraces] is what enforces the trace
-/// completion guard's idempotency: if a later completion path leaked past the
-/// `traceCompleted` guard it would append a second stop (and overwrite the
-/// completion attribute), failing this helper.
+/// completion guard's idempotency: if a later completion path leaked past
+/// the FeedLoadTrace first-wins latch it would append a second stop (and
+/// overwrite the completion attribute), failing this helper.
 void _expectSingleCompletion(
   _RecordingPerformanceMonitor monitor, {
   required String traceName,

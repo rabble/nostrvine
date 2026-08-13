@@ -2271,13 +2271,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         bool eoseReceived = false;
         bool timeoutReported = false;
 
-        // Operation-scoped so two loads of the same subscription type keep
-        // independent traces. Under the name-keyed API a load that never
-        // reached a completion path — the service is disposed before the 30s
-        // timeout fires — stayed open until the next load of that type
-        // reported it, which is how a 23.6-hour `feed_load_profile` sample
-        // reached the console (#7119). Registered as pending so teardown can
-        // still close it rather than leaking the native handle (#7151).
+        // Operation-scoped so two loads of the same type keep independent
+        // traces (#7119), and registered as pending so every teardown path
+        // closes the native handle instead of leaking it (#7151).
         final pendingTrace = FeedLoadTrace(
           trace: _performanceMonitor.startOperationTrace(
             'feed_load_${subscriptionType.name}',
