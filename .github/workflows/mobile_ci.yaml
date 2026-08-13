@@ -49,6 +49,29 @@ jobs:
       - name: Verify generated skills and lifecycle hooks
         run: bash .codex/scripts/test-config.sh
 
+  codemagic-groups:
+    # Deliberately ungated — no `needs: changes`, no `if:`.
+    #
+    # The scope detector classifies `codemagic.yaml` as out-of-app-scope, so a
+    # PR touching only that file (#7191, the revert of the outage, is exactly
+    # that shape) resolves app=false and skips every gated job. Gating this
+    # check would therefore switch it off for the one change it exists to
+    # police. Adding codemagic.yaml to the detector instead would drag the full
+    # app test matrix along for a config edit.
+    #
+    # It costs a checkout plus a second of grep, so running it unconditionally
+    # is cheaper than reasoning about when it should run.
+    name: Codemagic Variable Groups
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🔑 Verify every Codemagic variable group is documented
+        # Static — no simulator, no build, no credentials — so fork PRs get it
+        # too. Codemagic validates the whole config before provisioning, so an
+        # undeclared group fails every workflow in the file and no in-script
+        # guard can catch it (#7203).
+        run: bash mobile/scripts/check_codemagic_groups.sh
+
   generated-files:
     name: Generated Files
     needs: changes
@@ -91,12 +114,6 @@ jobs:
         run: bash scripts/check_ios_shipping_versions.sh
       - name: 🌐 Verify backend-host defaults stay on *.divine.video
         run: bash scripts/check_backend_host_defaults.sh
-      - name: 🔑 Verify every Codemagic variable group is documented
-        # Static check over codemagic.yaml — no simulator, no build, no
-        # credentials — so it runs on fork PRs too. Codemagic validates the
-        # whole config before provisioning, so an undeclared group fails every
-        # workflow in the file and no in-script guard can catch it.
-        run: bash scripts/check_codemagic_groups.sh
       - name: 🪵 Verify no raw logging in production code
         run: bash scripts/check_raw_logging.sh
       - name: 🌐 Verify no untagged test mutates HttpOverrides.global
