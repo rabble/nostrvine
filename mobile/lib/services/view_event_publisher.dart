@@ -78,7 +78,7 @@ class ViewEventPublisher {
     // start counts, even if the session ends before completing a loop
     // (N=0 loops is valid). Only reject inverted ranges.
     if (endSeconds < startSeconds) {
-      return _drop(ViewEventDropReason.belowMinimumWatchTime, video.id, method);
+      return _drop(ViewEventDropReason.invalidWatchRange, video.id, method);
     }
 
     if (!_authService.isAuthenticated) {
@@ -181,7 +181,7 @@ class ViewEventPublisher {
     final validSegments = segments.where((s) => s.$2 >= s.$1).toList();
 
     if (validSegments.isEmpty) {
-      return _drop(ViewEventDropReason.belowMinimumWatchTime, video.id, method);
+      return _drop(ViewEventDropReason.invalidWatchRange, video.id, method);
     }
 
     if (!_authService.isAuthenticated) {

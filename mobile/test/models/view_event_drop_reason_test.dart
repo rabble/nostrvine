@@ -7,7 +7,6 @@ import 'package:openvine/models/view_event_drop_reason.dart';
 void main() {
   group(ViewEventDropReason, () {
     test('expected skips are not structural', () {
-      expect(ViewEventDropReason.belowMinimumWatchTime.isStructural, isFalse);
       expect(ViewEventDropReason.notAuthenticated.isStructural, isFalse);
       expect(ViewEventDropReason.relayRejected.isStructural, isFalse);
     });
@@ -16,6 +15,10 @@ void main() {
       expect(ViewEventDropReason.missingAddressableDTag.isStructural, isTrue);
       expect(ViewEventDropReason.signingFailed.isStructural, isTrue);
       expect(ViewEventDropReason.unexpectedError.isStructural, isTrue);
+    });
+
+    test('an inverted watch range is structural, not an expected skip', () {
+      expect(ViewEventDropReason.invalidWatchRange.isStructural, isTrue);
     });
 
     test('every reason states its reportability', () {
