@@ -492,9 +492,11 @@ class _MasonryLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Walked rather than indexed: `Set.elementAt` restarts the iterator every
+    // time, and a drag selection is large enough for that to cost frames.
+    var selectionIndex = 0;
     final selectionIndexById = <String, int>{
-      for (var i = 0; i < selectedClipIds.length; i++)
-        selectedClipIds.elementAt(i): i + 1,
+      for (final id in selectedClipIds) id: ++selectionIndex,
     };
     return PinchZoomGrid(
       columnCount: columnCount,
