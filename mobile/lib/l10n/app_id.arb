@@ -456,7 +456,7 @@
     "videoGridEditVideo": "Ubah Video",
     "videoGridEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "videoGridDeleteVideo": "Hapus Video",
-    "videoGridDeleteVideoSubtitle": "Hapus konten ini secara permanen",
+    "videoGridDeleteVideoSubtitle": "Hapus video ini dari Divine. Video ini mungkin masih muncul di klien Nostr lain.",
     "videoGridDeletingContent": "Menghapus konten...",
     "videoGridDeleteFailure": "Gagal menghapus konten: {error}",
     "@videoGridDeleteFailure": {
@@ -1568,7 +1568,7 @@
     "shareMenuEditVideo": "Ubah Video",
     "shareMenuEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "shareMenuDeleteVideo": "Hapus Video",
-    "shareMenuDeleteVideoSubtitle": "Hapus konten ini secara permanen",
+    "shareMenuDeleteVideoSubtitle": "Hapus video ini dari Divine. Video ini mungkin masih muncul di klien Nostr lain.",
     "shareMenuVideoInTheseLists": "Video ada di daftar ini:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {

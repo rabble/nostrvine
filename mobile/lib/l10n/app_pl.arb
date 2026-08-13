@@ -456,7 +456,7 @@
     "videoGridEditVideo": "Edytuj film",
     "videoGridEditVideoSubtitle": "Zaktualizuj tytuł, opis i hashtagi",
     "videoGridDeleteVideo": "Usuń film",
-    "videoGridDeleteVideoSubtitle": "Trwale usuń tę treść",
+    "videoGridDeleteVideoSubtitle": "Usuń ten film z Divine. Może nadal pojawiać się w innych klientach Nostr.",
     "videoGridDeletingContent": "Usuwanie treści...",
     "videoGridDeleteFailure": "Nie udało się usunąć treści: {error}",
     "@videoGridDeleteFailure": {
@@ -1571,7 +1571,7 @@
     "shareMenuEditVideo": "Edytuj film",
     "shareMenuEditVideoSubtitle": "Zaktualizuj tytuł, opis i hashtagi",
     "shareMenuDeleteVideo": "Usuń film",
-    "shareMenuDeleteVideoSubtitle": "Trwale usuń tę treść",
+    "shareMenuDeleteVideoSubtitle": "Usuń ten film z Divine. Może nadal pojawiać się w innych klientach Nostr.",
     "shareMenuVideoInTheseLists": "Film jest na tych listach:",
     "shareMenuVideoCount": "{count, plural, one{1 film} few{{count} filmy} many{{count} filmów} other{{count} filmu}}",
     "@shareMenuVideoCount": {

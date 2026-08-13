@@ -456,7 +456,7 @@
     "videoGridEditVideo": "動画を編集",
     "videoGridEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "videoGridDeleteVideo": "動画を削除",
-    "videoGridDeleteVideoSubtitle": "このコンテンツを完全に削除する",
+    "videoGridDeleteVideoSubtitle": "この動画をDivineから削除します。他のNostrクライアントには、まだ表示される場合があります。",
     "videoGridDeletingContent": "コンテンツを削除中...",
     "videoGridDeleteFailure": "コンテンツの削除がうまくいかなかった: {error}",
     "@videoGridDeleteFailure": {
@@ -1561,7 +1561,7 @@
     "shareMenuEditVideo": "動画を編集",
     "shareMenuEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "shareMenuDeleteVideo": "動画を削除",
-    "shareMenuDeleteVideoSubtitle": "このコンテンツを完全に削除",
+    "shareMenuDeleteVideoSubtitle": "この動画をDivineから削除します。他のNostrクライアントには、まだ表示される場合があります。",
     "shareMenuVideoInTheseLists": "この動画が入ってるリスト:",
     "shareMenuVideoCount": "{count}本の動画",
     "@shareMenuVideoCount": {

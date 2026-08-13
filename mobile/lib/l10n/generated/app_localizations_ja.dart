@@ -1079,7 +1079,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoGridDeleteVideo => '動画を削除';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'このコンテンツを完全に削除する';
+  String get videoGridDeleteVideoSubtitle =>
+      'この動画をDivineから削除します。他のNostrクライアントには、まだ表示される場合があります。';
 
   @override
   String get videoGridDeletingContent => 'コンテンツを削除中...';
@@ -3791,7 +3792,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteVideo => '動画を削除';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'このコンテンツを完全に削除';
+  String get shareMenuDeleteVideoSubtitle =>
+      'この動画をDivineから削除します。他のNostrクライアントには、まだ表示される場合があります。';
 
   @override
   String get shareMenuVideoInTheseLists => 'この動画が入ってるリスト:';

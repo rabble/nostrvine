@@ -1134,7 +1134,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteVideo => 'Videoyu Sil';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
+  String get videoGridDeleteVideoSubtitle =>
+      'Bu videoyu Divine\'dan kaldır. Diğer Nostr istemcilerinde hâlâ görünebilir.';
 
   @override
   String get videoGridDeletingContent => 'İçerik siliniyor...';
@@ -3974,7 +3975,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Videoyu Sil';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
+  String get shareMenuDeleteVideoSubtitle =>
+      'Bu videoyu Divine\'dan kaldır. Diğer Nostr istemcilerinde hâlâ görünebilir.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Video şu listelerde:';

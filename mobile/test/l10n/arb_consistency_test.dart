@@ -38,7 +38,7 @@ void main() {
       }
     });
 
-    test('owner delete confirmation keeps Divine and Nostr disclosure', () {
+    test('owner delete copy keeps Divine and Nostr disclosure', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
           l10nDir
@@ -48,23 +48,31 @@ void main() {
               .toList()
             ..sort((a, b) => a.path.compareTo(b.path));
 
+      const keys = [
+        'shareMenuDeleteConfirmation',
+        'videoGridDeleteVideoSubtitle',
+        'shareMenuDeleteVideoSubtitle',
+      ];
+
       for (final file in arbFiles) {
         final arb = _readArb(file);
-        final value = arb['shareMenuDeleteConfirmation'];
 
-        expect(
-          value,
-          isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
-          reason:
-              '${file.path} must define owner delete confirmation disclosure',
-        );
-        expect(
-          value,
-          allOf(contains('Divine'), contains('Nostr')),
-          reason:
-              '${file.path} owner delete confirmation must preserve both the '
-              'Divine deletion and third-party Nostr visibility disclosure',
-        );
+        for (final key in keys) {
+          final value = arb[key];
+
+          expect(
+            value,
+            isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+            reason: '${file.path} must define $key',
+          );
+          expect(
+            value,
+            allOf(contains('Divine'), contains('Nostr')),
+            reason:
+                '${file.path} $key must preserve both the Divine deletion and '
+                'third-party Nostr visibility disclosure',
+          );
+        }
       }
     });
 

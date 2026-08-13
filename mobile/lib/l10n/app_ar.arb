@@ -456,7 +456,7 @@
     "videoGridEditVideo": "تعديل الفيديو",
     "videoGridEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "videoGridDeleteVideo": "حذف الفيديو",
-    "videoGridDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
+    "videoGridDeleteVideoSubtitle": "أزل هذا الفيديو من Divine. قد يظل يظهر في عملاء Nostr آخرين.",
     "videoGridDeletingContent": "جاري حذف المحتوى...",
     "videoGridDeleteFailure": "فشل حذف المحتوى: {error}",
     "@videoGridDeleteFailure": {
@@ -1561,7 +1561,7 @@
     "shareMenuEditVideo": "تعديل الفيديو",
     "shareMenuEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "shareMenuDeleteVideo": "حذف الفيديو",
-    "shareMenuDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
+    "shareMenuDeleteVideoSubtitle": "أزل هذا الفيديو من Divine. قد يظل يظهر في عملاء Nostr آخرين.",
     "shareMenuVideoInTheseLists": "الفيديو في هذه القوائم:",
     "shareMenuVideoCount": "{count} فيديو",
     "@shareMenuVideoCount": {

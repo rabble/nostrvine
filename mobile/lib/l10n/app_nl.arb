@@ -456,7 +456,7 @@
     "videoGridEditVideo": "Video bewerken",
     "videoGridEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "videoGridDeleteVideo": "Video verwijderen",
-    "videoGridDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
+    "videoGridDeleteVideoSubtitle": "Deze video uit Divine verwijderen. Hij kan nog steeds verschijnen in andere Nostr-clients.",
     "videoGridDeletingContent": "Inhoud verwijderen...",
     "videoGridDeleteFailure": "Inhoud verwijderen mislukt: {error}",
     "@videoGridDeleteFailure": {
@@ -1571,7 +1571,7 @@
     "shareMenuEditVideo": "Video bewerken",
     "shareMenuEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "shareMenuDeleteVideo": "Video verwijderen",
-    "shareMenuDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
+    "shareMenuDeleteVideoSubtitle": "Deze video uit Divine verwijderen. Hij kan nog steeds verschijnen in andere Nostr-clients.",
     "shareMenuVideoInTheseLists": "Video staat in deze lijsten:",
     "shareMenuVideoCount": "{count} video's",
     "@shareMenuVideoCount": {

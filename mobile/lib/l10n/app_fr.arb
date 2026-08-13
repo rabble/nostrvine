@@ -456,7 +456,7 @@
     "videoGridEditVideo": "Modifier la vidéo",
     "videoGridEditVideoSubtitle": "Mettre à jour titre, description et hashtags",
     "videoGridDeleteVideo": "Supprimer la vidéo",
-    "videoGridDeleteVideoSubtitle": "Retirer ce contenu définitivement",
+    "videoGridDeleteVideoSubtitle": "Retirer cette vidéo de Divine. Elle peut encore apparaître dans d'autres clients Nostr.",
     "videoGridDeletingContent": "Suppression du contenu...",
     "videoGridDeleteFailure": "Échec de la suppression : {error}",
     "@videoGridDeleteFailure": {
@@ -1571,7 +1571,7 @@
     "shareMenuEditVideo": "Modifier la vidéo",
     "shareMenuEditVideoSubtitle": "Mettre à jour titre, description et hashtags",
     "shareMenuDeleteVideo": "Supprimer la vidéo",
-    "shareMenuDeleteVideoSubtitle": "Retirer ce contenu définitivement",
+    "shareMenuDeleteVideoSubtitle": "Retirer cette vidéo de Divine. Elle peut encore apparaître dans d'autres clients Nostr.",
     "shareMenuVideoInTheseLists": "La vidéo est dans ces listes :",
     "shareMenuVideoCount": "{count} vidéos",
     "@shareMenuVideoCount": {

@@ -456,7 +456,7 @@
     "videoGridEditVideo": "Redigera video",
     "videoGridEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "videoGridDeleteVideo": "Ta bort video",
-    "videoGridDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
+    "videoGridDeleteVideoSubtitle": "Ta bort den här videon från Divine. Den kan fortfarande visas i andra Nostr-klienter.",
     "videoGridDeletingContent": "Tar bort innehåll...",
     "videoGridDeleteFailure": "Kunde inte ta bort innehåll: {error}",
     "@videoGridDeleteFailure": {
@@ -1571,7 +1571,7 @@
     "shareMenuEditVideo": "Redigera video",
     "shareMenuEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "shareMenuDeleteVideo": "Ta bort video",
-    "shareMenuDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
+    "shareMenuDeleteVideoSubtitle": "Ta bort den här videon från Divine. Den kan fortfarande visas i andra Nostr-klienter.",
     "shareMenuVideoInTheseLists": "Videon finns i de här listorna:",
     "shareMenuVideoCount": "{count} videor",
     "@shareMenuVideoCount": {

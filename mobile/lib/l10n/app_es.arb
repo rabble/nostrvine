@@ -456,7 +456,7 @@
     "videoGridEditVideo": "Editar video",
     "videoGridEditVideoSubtitle": "Actualizá título, descripción y hashtags",
     "videoGridDeleteVideo": "Eliminar video",
-    "videoGridDeleteVideoSubtitle": "Sacá este contenido para siempre",
+    "videoGridDeleteVideoSubtitle": "Sacá este video de Divine. Es posible que siga apareciendo en otros clientes Nostr.",
     "videoGridDeletingContent": "Eliminando contenido...",
     "videoGridDeleteFailure": "No se pudo eliminar el contenido: {error}",
     "@videoGridDeleteFailure": {
@@ -1575,7 +1575,7 @@
     "shareMenuEditVideo": "Editar video",
     "shareMenuEditVideoSubtitle": "Actualizá título, descripción y hashtags",
     "shareMenuDeleteVideo": "Eliminar video",
-    "shareMenuDeleteVideoSubtitle": "Sacá este contenido para siempre",
+    "shareMenuDeleteVideoSubtitle": "Sacá este video de Divine. Es posible que siga apareciendo en otros clientes Nostr.",
     "shareMenuVideoInTheseLists": "El video está en estas listas:",
     "shareMenuVideoCount": "{count} videos",
     "@shareMenuVideoCount": {

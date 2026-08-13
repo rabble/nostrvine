@@ -1083,7 +1083,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteVideo => '영상 삭제';
 
   @override
-  String get videoGridDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
+  String get videoGridDeleteVideoSubtitle =>
+      '이 영상을 Divine에서 삭제해요. 다른 Nostr 클라이언트에는 계속 표시될 수 있어요.';
 
   @override
   String get videoGridDeletingContent => '콘텐츠 삭제 중...';
@@ -3809,7 +3810,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideo => '영상 삭제';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
+  String get shareMenuDeleteVideoSubtitle =>
+      '이 영상을 Divine에서 삭제해요. 다른 Nostr 클라이언트에는 계속 표시될 수 있어요.';
 
   @override
   String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
