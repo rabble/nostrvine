@@ -277,8 +277,11 @@ void main() {
             'account listed as a follow (#6903)',
       );
 
-      // Suppressed at the publish boundary only: the local follow survives,
-      // so unblocking restores it rather than costing it permanently.
+      // Suppressed at the publish boundary only: blocking never drops the
+      // follow from local state synchronously. It does go once the filtered
+      // kind 3 is read back on the next initialize() — pinned in
+      // follow_repository_test.dart, not reachable from this relay, which
+      // serves nothing back.
       expect(stack.follows.followingPubkeys, contains(targetPubkey));
     });
 

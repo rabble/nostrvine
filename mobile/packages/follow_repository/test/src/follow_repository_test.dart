@@ -668,8 +668,9 @@ void main() {
     // #6903: blocking hid the account in-app but left it in the published
     // kind 3, so Divine's own public follower APIs kept reporting the follow.
     // The omission happens at the publish boundary only — the local list is
-    // untouched, which is what makes unblocking restore the follow and what
-    // keeps every in-app reader on its existing behaviour.
+    // untouched by the filter, so blocking never costs the follow
+    // synchronously. The round-trip that does drop it is pinned separately
+    // in 'the filtered kind 3 read back replaces the local list' below.
     group('blocked pubkeys are omitted from the published contact list', () {
       late List<ContactList> publishedLists;
       late Set<String> blocked;
@@ -840,6 +841,81 @@ void main() {
           ),
         );
         expect(publishedLists, isEmpty);
+      });
+
+      // The filter is a publish-boundary property, and this is where it
+      // stops being one. Relays hold the filtered event from the publish
+      // onwards, so the next initialize() reads it back and replaces the
+      // local list with it — the entry is a strict subset, so the
+      // catastrophic-reduction guard correctly declines to merge. Pinned so
+      // that "unblocking restores the follow" is never read as durable: it
+      // holds for the session that blocked, not past the next launch.
+      // Whether it should be restorable at all is open with T&S (#6903).
+      test('the filtered kind 3 read back replaces the local list', () async {
+        blocked.add(testTargetPubkey);
+        var relayContactList = Event(
+          testCurrentUserPubkey,
+          EventKind.contactList,
+          [
+            ['p', testTargetPubkey],
+            ['p', testTargetPubkey2],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        when(
+          () => mockNostrClient.sendContactList(
+            captureAny(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final list = invocation.positionalArguments[0] as ContactList;
+          publishedLists.add(list);
+          // What the relay now serves to everyone, including us.
+          return relayContactList = Event(
+            testCurrentUserPubkey,
+            EventKind.contactList,
+            [
+              for (final contact in list.list()) ['p', contact.publicKey],
+            ],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 1,
+          );
+        });
+
+        FollowRepository session() => FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          indexerRelayUrls: const [],
+          blockedPubkeys: (_) => blocked,
+          queryContactList:
+              ({
+                required eventStream,
+                required pubkey,
+                fallbackTimeoutSeconds = 10,
+              }) async => relayContactList,
+        );
+
+        repository = session();
+        await repository.initialize();
+        await repository.republishContactList();
+        expect(publishedPubkeys(publishedLists.single), [testTargetPubkey2]);
+        expect(
+          repository.followingPubkeys,
+          contains(testTargetPubkey),
+          reason: 'still intact for the rest of this session',
+        );
+        await repository.dispose();
+
+        repository = session();
+        await repository.initialize();
+
+        expect(repository.followingPubkeys, [testTargetPubkey2]);
+        expect(repository.isFollowing(testTargetPubkey), isFalse);
       });
     });
 

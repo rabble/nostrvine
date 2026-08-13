@@ -380,8 +380,8 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     // Severing the follow is not this bloc's job: FollowRepository drops
     // blocked accounts from the kind 3 it publishes, and the app-level
     // reconciler triggers that republish (#6903). Doing it here as well
-    // would remove the follow locally, so unblocking could not restore it —
-    // and only two of the four block entry points would behave that way.
+    // would drop the follow locally the moment the user blocks, and only
+    // two of the four block entry points would behave that way.
     await _blocklistRepository.blockUser(pubkey, ourPubkey: _currentUserPubkey);
   }
 
