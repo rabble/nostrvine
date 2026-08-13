@@ -1,5 +1,5 @@
 import 'dart:io'
-    if (dart.library.html) 'package:openvine/utils/platform_io_web.dart'
+    if (dart.library.js_interop) 'package:openvine/utils/platform_io_web.dart'
     as io;
 
 import 'package:web_socket_channel/web_socket_channel.dart';
