@@ -1,0 +1,253 @@
+# View and loop metrics
+
+**Date:** 2026-08-13
+**Status:** Design — one open decision (anonymous signal transport)
+**Target:** No freeze applies; ships on the normal release path
+
+## Problem
+
+Divine has no shared definition of a view, and three discovery surfaces that
+each rank on a different theory of merit. None of it was decided — it accreted
+as data became available, and old formulas were carried forward by refactors
+rather than revisited.
+
+| Date | Event |
+|---|---|
+| 2026-01-05 | Trending formula written: `engagement × decay`, **no views term** |
+| 2026-01-16 | Kind-22236 view ingestion ships — 11 days *later* |
+| 2026-04-13 | Leaderboard rebuilt, uses `views + unique_viewers × 2` |
+| 2026-06-15 | A **second** trending formula added, view-velocity |
+| 2026-08-05 | Popular rebuilt, uses views as a linear term |
+
+Two contradictory trending formulas are live simultaneously on
+near-identically-named objects. The one the API serves
+(`trending_videos_snapshot`, via `client.rs:3541`) is the view-velocity one —
+not the one the object naming suggests.
+
+The kind-22236 outage (#7210) exposed this. When mobile view reporting stopped,
+`views`, `unique_viewers` and `loops` all fell ~60–69% in six days, which moved
+Trending, Popular and the creator Leaderboard while Divine had no way to notice.
+Detection is being added separately (divine-funnelcake#917).
+
+Underneath the outage sits a permanent undercount. Two independent estimates
+put recorded views at roughly a third of reality:
+
+- Recorded views imply an 8–18% per-user interaction rate against a 1–5%
+  short-form industry norm.
+- Recorded views run at ~1.0 per CDN download, for a format where one download
+  serves many playthroughs.
+
+Causes are definitional, not defects: a view today requires **≥1s of actual
+playback** by a **signed-in** user. Anonymous viewers — roughly half of daily
+users — emit nothing at all, because view events are Nostr-signed.
+
+Numbers are not cosmetic here.
+[The video-card view-count spec](2026-08-08-video-card-view-count-display-design.md)
+measured that crossing ~100 views roughly doubles the chance a new creator keeps
+posting (31% → 61%), and that 80% of new creators never reach it. Understated
+counts suppress the behaviour the product depends on.
+
+## Decisions
+
+**1. Two metrics, not one.** Views and loops answer different questions and
+must stop being conflated.
+
+- **Loops** — every playthrough. Depth. Unbounded by nature.
+- **Views** — one per playback start, per session. Reach. Bounded per person.
+
+**2. A view is a playback start.** Not ≥1s, not a completed loop. This matches
+TikTok and Reels, so a creator arriving from either reads Divine's numbers in
+familiar units. It is also the largest defensible definition.
+
+Rejected: *completed loop* (strictest option; 60.3% of current view events never
+complete one, so it would cut recorded views to ~40%) and *≥1s* (today's rule,
+comparable to nothing).
+
+**3. Both metrics count everyone.** Signed-in and anonymous alike. Anonymous
+viewers are roughly half of daily users and are currently invisible. This is the
+single largest correction available and every other platform already does it.
+
+**4. Loops is the hero number.** Largest, Vine-native, and unique to Divine —
+no other platform can quote a loop count. It is already what the video card
+renders.
+
+**5. A displayed number is never reduced — but it may be withheld.** These are
+different acts and only one of them is a lie.
+
+- **Never reduce.** No damping, capping, or silent dedup on any number that is
+  shown. A creator can count their own loops; a shaved number is a trust
+  violation and a discoverable one.
+- **Withholding is legitimate.** Showing nothing is an editorial choice, not a
+  false statement.
+  [The video-card spec](2026-08-08-video-card-view-count-display-design.md)
+  already establishes this: a public count renders only at or above
+  `publicLoopCountFloor` (1000), because below that it reads as a warning rather
+  than a recommendation, and small numbers were themselves suppressing adoption.
+- **A creator always sees their own true number**, however small — correcting a
+  creator's underestimate of their audience is what keeps them posting
+  (Bernstein et al., CHI 2013).
+
+The three rules compose: raw counts everywhere they appear, a floor governing
+whether a *public* count appears at all, and no floor on a creator's own view of
+their own work.
+
+**6. Anti-spam lives entirely in ranking.** Nobody is owed a slot on Popular, so
+ranking can be as aggressive as it needs to be. Because public counts never
+move, aggressive filtering produces no creator-facing complaint — which makes it
+easier to be strict, not harder.
+
+**7. Each surface gets one stated job and one formula.** The duplicate and
+contradictory ranking objects are removed, not left alongside.
+
+| Surface | Job, in words a user could repeat |
+|---|---|
+| Trending | Rising fastest right now |
+| Popular | Most-watched over a window |
+| Leaderboard | Best creators over a period |
+
+## Design
+
+### Metric definitions
+
+```
+loop   := one completed playthrough of the video
+view   := one playback start, deduplicated per viewing session
+session:= a continuous period of engagement with one video by one viewer
+```
+
+`loops >= views` always holds. Both are emitted per viewing session, so one
+session reports one view and N loops.
+
+The existing `view_interactions.loops` column already stores a fractional
+playthrough count (observed range 0 to 218.2, mean 0.99), so the loop metric is
+derivable from data collected today. It is `views` that changes definition.
+
+### Display versus ranking
+
+Two pipelines from one event stream, and they must not be collapsed:
+
+- **Display path** — raw sums. What a viewer or creator sees on a video, a
+  profile, or in analytics. No filtering of any kind. Whether a public count is
+  *shown* is governed separately by `publicLoopCountFloor`; that gate decides
+  visibility, never magnitude.
+- **Ranking path** — the same events, then anti-spam, then damping. Feeds
+  Trending, Popular, Leaderboard, and recommendations.
+
+A single event contributes fully to display and conditionally to ranking. The
+divergence is intentional and should be documented wherever both appear, so a
+creator asking "why am I not on Popular with 50k loops" gets a real answer.
+
+### Ranking inputs
+
+Ranking damps loops and trusts views, because views are bounded per person and
+loops are not — one observed session already carries 218 loops, which under raw
+weighting outranks 218 distinct viewers.
+
+Retained from current behaviour: `log1p(loops) × 0.5`, already used by
+`popular_score` and the leaderboard. This is not a new brake; it is the existing
+one, kept deliberately rather than by accident.
+
+Anonymous events carry weaker identity guarantees than signed ones and should
+therefore weigh less in ranking than signed-in events. They still count fully
+for display. The exact weighting is a tuning question, not an architectural one.
+
+### Anonymous signal — the open decision
+
+Counting anonymous viewers requires a client-side signal that does not depend on
+a Nostr key. Two options, with materially different properties:
+
+**A. CDN-derived.** Infer views and loops from media delivery logs, which
+already flow to `cdn_view_counts`.
+
+- No client work, no new endpoint, no new abuse surface.
+- Cannot see loops: one download serves many playthroughs, so replays are
+  invisible. Undercounts exactly the metric chosen as the hero.
+- Cache hits and range requests distort counts; observed daily totals swing
+  21k–110k, which is not the shape of a trustworthy signal.
+
+**B. Unsigned client beacon.** The client posts view/loop events without a Nostr
+signature, identified by an ephemeral device-scoped id.
+
+- Measures the real thing: playback starts and completed loops as the player
+  observed them, identically to the signed path.
+- Requires a new ingest endpoint and rate limiting; an unsigned endpoint is a
+  new abuse surface, which is precisely why decision 6 keeps anti-spam in
+  ranking rather than display.
+- Needs a privacy decision on the ephemeral identifier's lifetime and scope.
+
+**Recommendation: B.** Option A structurally cannot count loops, and loops is
+the hero metric. A signal that cannot measure the headline number is not a
+candidate. B should reuse the existing client-side counting logic so signed and
+anonymous paths cannot drift apart in definition.
+
+This decision is deferred, not assumed. Everything else in this design holds
+under either choice.
+
+### Expected movement
+
+Stacked against today's reported numbers:
+
+| Change | Effect |
+|---|---|
+| #7210 view-event fix (merged) | ×1.7 recovery of the outage loss |
+| View = playback start | ×2–3 |
+| Count anonymous viewers | ×2 |
+| Loops promoted as headline | Larger again than views |
+
+Roughly an order of magnitude over what is reported today, with every step
+explainable to a partner, a creator, or a journalist.
+
+The effect compounds with the display floor. `publicLoopCountFloor` is 1000, and
+today most videos fall below it — which is why the video-card spec had to
+suppress counts in the first place. An order-of-magnitude correction moves a
+large share of the catalogue above the floor, so counts start appearing on cards
+that currently show only a date. The suppression rule stops being load-bearing
+because fewer numbers are embarrassing, rather than because the rule changed.
+
+That is the same lever from both ends: the Aug 8 spec hid small numbers because
+small numbers were suppressing adoption; this work makes the numbers correct, so
+there are fewer to hide. The floor should be re-examined after rollout — at
+truthful volumes 1000 may be set too low or too high, and it is deliberately a
+one-line constant.
+
+## Testing
+
+- Unit tests pinning `view`/`loop`/`session` boundaries: a scroll-past with no
+  playback start emits nothing; one session with N playthroughs emits one view
+  and N loops; `loops >= views` holds as an invariant.
+- A test asserting the display path applies no filtering — the property most
+  likely to be broken later by someone adding a well-meant cap.
+- Ranking-path tests over adversarial input: a single session with hundreds of
+  loops must not outrank many distinct viewers.
+- Parity test between the signed and anonymous paths, so the two cannot drift to
+  different definitions of the same word.
+- The divine-funnelcake#917 detector already covers per-client reporting
+  collapse and should stay green through the rollout.
+
+## Out of scope
+
+- Recomputing historical rankings for 2026-08-08 onward. The events were never
+  sent and cannot be recovered; the on-device backlog replays with publish-time
+  timestamps, so it lands on rollout day rather than the days it happened.
+  Historical daily leaderboards for that window stay wrong permanently.
+- Gorse recommendation retraining. Recommendations consumed the biased sample
+  during the outage; the extent is unmeasured and is its own piece of work.
+- The sybil-shaped reaction traffic since 2026-08-06. It inflates engagement
+  terms rather than view terms and is tracked separately.
+
+## Open risk
+
+**Rollout-day spike.** The #7210 fix replays every stranded on-device backlog at
+publish time. Expect a one-day artificial peak that is recovered history, not
+growth, and do not read any view metric on that day without accounting for it.
+
+**Numbers move for two reasons at once.** The redefinition and the outage
+recovery land close together, so a jump will be hard to attribute. Ship the
+detector and record a pre-change baseline first, or the effect of each becomes
+unrecoverable.
+
+**An unsigned ingest endpoint is a new abuse surface.** Decision 6 contains the
+blast radius — inflated anonymous traffic cannot move rankings — but it can move
+*displayed* counts, which decision 5 says are never reduced. If displayed
+anonymous counts are successfully inflated, the only remedies are at ingest.
+This tension is real and should be settled before B ships.
