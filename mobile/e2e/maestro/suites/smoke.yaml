@@ -13,8 +13,9 @@ name: Divine Smoke regression test
 #                   layout
 #
 # `loginEmailPwd` and `searchUserFlow` need credentials present on the runners.
-# `likeFlow` and `commentFlow` are credential-free and are what the PR gate
-# runs, after #7204 stopped the Explore snapshot stall.
+# `likeFlow` and `commentFlow` are credential-free but stay off the PR gate:
+# after the reduced-motion fix they still hit a blocked main thread on
+# Codemagic (4m11s, "process main thread busy for 30.0s"). #7204 stays open.
 
 # Account management tests
 - runFlow: ../tests/loginFreshInstall.yaml

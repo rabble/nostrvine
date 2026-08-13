@@ -15,10 +15,10 @@ its `removeKeys` cleanup, and `loginEmailPwd` — plus all three social flows:
 
 The full smoke suite is the manual target. The PR gate in Codemagic runs
 `tests/loginFreshInstall.yaml` and `tests/removeKeys.yaml` as individual files so the
-JUnit report keeps per-flow names and timings. Each of those wraps
-`loginFreshInstall` and `removeKeys`, so account creation and teardown stay
-covered. The iOS simulator is set to reduced motion so XCUITest can reach
-quiescence (#7204).
+JUnit report keeps per-flow names and timings. `likeFlow` and `commentFlow` stay
+off the gate: after the reduced-motion fix they still fail on Codemagic with a
+blocked main thread (#7204). The iOS simulator is still set to reduced motion
+so XCUITest can settle on the flows that do run.
 
 Nothing is held back from `smoke.yaml`. The last two were restored by
 [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) —
