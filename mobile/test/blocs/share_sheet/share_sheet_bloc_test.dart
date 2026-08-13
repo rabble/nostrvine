@@ -113,6 +113,9 @@ void main() {
       when(
         () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
       ).thenReturn(false);
+      when(
+        () => mockBookmarkService.hasUnreadablePrivateItems,
+      ).thenReturn(false);
       when(() => mockSharingService.recentlySharedWith).thenReturn([]);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
       when(
@@ -1518,6 +1521,31 @@ void main() {
             ShareSheetBookmarkStatus.notSaved,
           ),
         ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'stays unknown when the list has private items it could not read',
+        setUp: () {
+          when(
+            () => mockBookmarkService.syncGlobalBookmarks(),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockBookmarkService.hasUnreadablePrivateItems,
+          ).thenReturn(true);
+          // The public half says "not bookmarked", but the encrypted half is
+          // exactly where the video might be — claiming notSaved here is the
+          // mislabel that precedes the disclosure (#7136).
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(false);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetBookmarkStatusRequested()),
+        expect: () => <ShareSheetState>[],
+        verify: (bloc) => expect(
+          bloc.state.bookmarkStatus,
+          ShareSheetBookmarkStatus.unknown,
+        ),
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(

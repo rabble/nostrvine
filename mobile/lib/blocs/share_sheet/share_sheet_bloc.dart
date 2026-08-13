@@ -321,6 +321,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         return;
       }
 
+      // A list whose private items stayed encrypted cannot answer this: the
+      // video may well be bookmarked inside `content`. Leaving the status
+      // unresolved is the same call the inconclusive-read path makes above.
+      if (bookmarkService.hasUnreadablePrivateItems) return;
+
       emit(
         state.copyWith(
           bookmarkStatus: bookmarkService.isVideoBookmarkedGlobally(_video.id)
