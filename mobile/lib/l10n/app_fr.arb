@@ -5146,8 +5146,8 @@
   "libraryCategoryEmptySubtitle": "Sélectionne quelques clips et déplace-les dans cette catégorie.",
   "libraryArchiveEmptyTitle": "Rien d'archivé",
   "libraryArchiveEmptySubtitle": "Les clips archivés patientent ici, à l'écart de ta bibliothèque principale.",
-  "libraryClipsMovedToCategory": "{count, plural, =1{1 clip déplacé vers {name}} other{{count} clips déplacés vers {name}}}",
-  "libraryClipsRemovedFromCategory": "{count, plural, =1{1 clip retiré de sa catégorie} other{{count} clips retirés de leur catégorie}}",
-  "libraryClipsArchived": "{count, plural, =1{1 clip archivé} other{{count} clips archivés}}",
-  "libraryClipsUnarchived": "{count, plural, =1{1 clip de retour dans ta bibliothèque} other{{count} clips de retour dans ta bibliothèque}}"
+  "libraryClipsMovedToCategory": "{count, plural, =1{{count} clip déplacé vers {name}} other{{count} clips déplacés vers {name}}}",
+  "libraryClipsRemovedFromCategory": "{count, plural, =1{{count} clip retiré de sa catégorie} other{{count} clips retirés de leur catégorie}}",
+  "libraryClipsArchived": "{count, plural, =1{{count} clip archivé} other{{count} clips archivés}}",
+  "libraryClipsUnarchived": "{count, plural, =1{{count} clip de retour dans ta bibliothèque} other{{count} clips de retour dans ta bibliothèque}}"
 }

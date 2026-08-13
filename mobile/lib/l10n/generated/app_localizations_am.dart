@@ -11679,7 +11679,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ክሊፖች ወደ $name ተንቀሳቅሰዋል',
-      one: '1 ክሊፕ ወደ $name ተንቀሳቅሷል',
+      one: '$count ክሊፕ ወደ $name ተንቀሳቅሷል',
     );
     return '$_temp0';
   }
@@ -11690,7 +11690,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ክሊፖች ከምድባቸው ወጥተዋል',
-      one: '1 ክሊፕ ከምድቡ ወጥቷል',
+      one: '$count ክሊፕ ከምድቡ ወጥቷል',
     );
     return '$_temp0';
   }
@@ -11701,7 +11701,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ክሊፖች በመዝገብ ተቀምጠዋል',
-      one: '1 ክሊፕ በመዝገብ ተቀምጧል',
+      one: '$count ክሊፕ በመዝገብ ተቀምጧል',
     );
     return '$_temp0';
   }
@@ -11712,7 +11712,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ክሊፖች ወደ ቤተ-መጻሕፍትዎ ተመልሰዋል',
-      one: '1 ክሊፕ ወደ ቤተ-መጻሕፍትዎ ተመልሷል',
+      one: '$count ክሊፕ ወደ ቤተ-መጻሕፍትዎ ተመልሷል',
     );
     return '$_temp0';
   }

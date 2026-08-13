@@ -5271,8 +5271,8 @@
   "libraryCategoryEmptySubtitle": "ጥቂት ክሊፖችን ይምረጡና ወደዚህ ምድብ ያንቀሳቅሱ።",
   "libraryArchiveEmptyTitle": "በመዝገብ ውስጥ ምንም የለም",
   "libraryArchiveEmptySubtitle": "በመዝገብ የተቀመጡ ክሊፖች ከዋናው ቤተ-መጻሕፍትዎ ተለይተው እዚህ ይጠብቃሉ።",
-  "libraryClipsMovedToCategory": "{count, plural, =1{1 ክሊፕ ወደ {name} ተንቀሳቅሷል} other{{count} ክሊፖች ወደ {name} ተንቀሳቅሰዋል}}",
-  "libraryClipsRemovedFromCategory": "{count, plural, =1{1 ክሊፕ ከምድቡ ወጥቷል} other{{count} ክሊፖች ከምድባቸው ወጥተዋል}}",
-  "libraryClipsArchived": "{count, plural, =1{1 ክሊፕ በመዝገብ ተቀምጧል} other{{count} ክሊፖች በመዝገብ ተቀምጠዋል}}",
-  "libraryClipsUnarchived": "{count, plural, =1{1 ክሊፕ ወደ ቤተ-መጻሕፍትዎ ተመልሷል} other{{count} ክሊፖች ወደ ቤተ-መጻሕፍትዎ ተመልሰዋል}}"
+  "libraryClipsMovedToCategory": "{count, plural, =1{{count} ክሊፕ ወደ {name} ተንቀሳቅሷል} other{{count} ክሊፖች ወደ {name} ተንቀሳቅሰዋል}}",
+  "libraryClipsRemovedFromCategory": "{count, plural, =1{{count} ክሊፕ ከምድቡ ወጥቷል} other{{count} ክሊፖች ከምድባቸው ወጥተዋል}}",
+  "libraryClipsArchived": "{count, plural, =1{{count} ክሊፕ በመዝገብ ተቀምጧል} other{{count} ክሊፖች በመዝገብ ተቀምጠዋል}}",
+  "libraryClipsUnarchived": "{count, plural, =1{{count} ክሊፕ ወደ ቤተ-መጻሕፍትዎ ተመልሷል} other{{count} ክሊፖች ወደ ቤተ-መጻሕፍትዎ ተመልሰዋል}}"
 }

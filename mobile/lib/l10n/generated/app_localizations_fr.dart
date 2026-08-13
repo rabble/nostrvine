@@ -12098,7 +12098,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clips déplacés vers $name',
-      one: '1 clip déplacé vers $name',
+      one: '$count clip déplacé vers $name',
     );
     return '$_temp0';
   }
@@ -12109,7 +12109,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clips retirés de leur catégorie',
-      one: '1 clip retiré de sa catégorie',
+      one: '$count clip retiré de sa catégorie',
     );
     return '$_temp0';
   }
@@ -12120,7 +12120,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clips archivés',
-      one: '1 clip archivé',
+      one: '$count clip archivé',
     );
     return '$_temp0';
   }
@@ -12131,7 +12131,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clips de retour dans ta bibliothèque',
-      one: '1 clip de retour dans ta bibliothèque',
+      one: '$count clip de retour dans ta bibliothèque',
     );
     return '$_temp0';
   }

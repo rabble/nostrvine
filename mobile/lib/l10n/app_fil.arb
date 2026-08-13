@@ -3732,8 +3732,8 @@
   "libraryCategoryEmptySubtitle": "Pumili ng ilang clip at ilipat sila sa kategoryang ito.",
   "libraryArchiveEmptyTitle": "Walang naka-archive",
   "libraryArchiveEmptySubtitle": "Naghihintay dito ang mga naka-archive na clip, hiwalay sa pangunahing library mo.",
-  "libraryClipsMovedToCategory": "{count, plural, =1{1 clip ang inilipat sa {name}} other{{count} clip ang inilipat sa {name}}}",
-  "libraryClipsRemovedFromCategory": "{count, plural, =1{1 clip ang inalis sa kategorya nito} other{{count} clip ang inalis sa kategorya nila}}",
-  "libraryClipsArchived": "{count, plural, =1{1 clip ang na-archive} other{{count} clip ang na-archive}}",
-  "libraryClipsUnarchived": "{count, plural, =1{1 clip ang bumalik sa library mo} other{{count} clip ang bumalik sa library mo}}"
+  "libraryClipsMovedToCategory": "{count, plural, =1{{count} clip ang inilipat sa {name}} other{{count} clip ang inilipat sa {name}}}",
+  "libraryClipsRemovedFromCategory": "{count, plural, =1{{count} clip ang inalis sa kategorya nito} other{{count} clip ang inalis sa kategorya nila}}",
+  "libraryClipsArchived": "{count, plural, =1{{count} clip ang na-archive} other{{count} clip ang na-archive}}",
+  "libraryClipsUnarchived": "{count, plural, =1{{count} clip ang bumalik sa library mo} other{{count} clip ang bumalik sa library mo}}"
 }

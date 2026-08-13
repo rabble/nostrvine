@@ -12068,7 +12068,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clip ang inilipat sa $name',
-      one: '1 clip ang inilipat sa $name',
+      one: '$count clip ang inilipat sa $name',
     );
     return '$_temp0';
   }
@@ -12079,7 +12079,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clip ang inalis sa kategorya nila',
-      one: '1 clip ang inalis sa kategorya nito',
+      one: '$count clip ang inalis sa kategorya nito',
     );
     return '$_temp0';
   }
@@ -12090,7 +12090,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clip ang na-archive',
-      one: '1 clip ang na-archive',
+      one: '$count clip ang na-archive',
     );
     return '$_temp0';
   }
@@ -12101,7 +12101,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count clip ang bumalik sa library mo',
-      one: '1 clip ang bumalik sa library mo',
+      one: '$count clip ang bumalik sa library mo',
     );
     return '$_temp0';
   }
