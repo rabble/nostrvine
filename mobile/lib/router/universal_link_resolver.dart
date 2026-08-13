@@ -137,6 +137,13 @@ const _customSchemeRoutablePrefixes = <String>{
 /// either because the URI is not a universal link, or because its handling is
 /// deferred to the [DeepLinkService] stream listener.
 ///
+/// Resolving to a path is not the same as being allowed to reach it: the
+/// returned path is a *destination*, which [appRouterRedirect] then runs
+/// through the auth and minor-account-review gates like any other location.
+/// Returning it from the redirect instead was terminal, and let a
+/// restricted-minor account reach `/profile`, `/hashtag`, `/search` and
+/// `/list` by opening the shared https link (#7146).
+///
 /// Video deep links (`/video/:id`) intentionally return `null`: the listener
 /// uses `router.push` to keep the home feed underneath the detail page so
 /// back-navigation returns to the main screen. Rewriting in the router

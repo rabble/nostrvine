@@ -227,10 +227,11 @@ bool minorAccountReviewStatusAffectsRouting(
 /// loading-screen ↔ review-screen loop (issue #5195) or feeding an
 /// un-rewritten universal-link URL into the matcher (Page Not Found).
 ///
-/// The divine:// step resolves a destination and then *keeps going*, so the
-/// gating below still applies to it. go_router calls this at most once per
+/// Both deep-link steps resolve a destination and then *keep going*, so the
+/// gating below still applies to them. go_router calls this at most once per
 /// navigation, so returning a destination early would put the caller past
-/// every gate — see [divineSchemeRedirectTarget].
+/// every gate — see [divineSchemeRedirectTarget] and
+/// [universalLinkToRouterPath].
 String? appRouterRedirect(Ref ref, GoRouterState state) {
   final authService = ref.read(authServiceProvider);
 
@@ -259,26 +260,33 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
     }
   }
 
-  // Non-null only for a divine:// URI whose destination still has to clear the
-  // gates. Every `return deepLinkRewrite` below is a plain `return null` for
-  // ordinary in-app navigation, so nothing changes off the deep-link path.
-  final deepLinkRewrite = divineScheme?.path;
-
   // Rewrite divine.video universal-link URLs to internal paths before the
   // auth/match logic runs. Android delivers the full intent URL (scheme +
   // host + path) to GoRouter, which only matches on path. Without this
   // step, paths that differ between the public URL contract and the
   // internal route table (notably `/search/*` → `/search-results/:query`)
   // would fall through to GoRouter's "Page Not Found" page.
+  //
+  // Resolved here but not returned, for the same reason as the divine://
+  // step above. Returning it was terminal, and terminal meant a
+  // restricted-minor account reached /profile, /hashtag, /search and /list by
+  // opening the https link instead of navigating to the path (#7146).
   final universalRedirect = universalLinkToRouterPath(state.uri);
   if (universalRedirect != null) {
     Log.info(
-      'Router redirect: universal link ${state.uri} → $universalRedirect',
+      'Router redirect: universal link '
+      '${redactUriStringForLogs(state.uri.toString())} → $universalRedirect',
       name: 'AppRouter',
       category: LogCategory.ui,
     );
-    return universalRedirect;
   }
+
+  // Non-null only for a deep link whose destination still has to clear the
+  // gates. The two resolvers are mutually exclusive — one matches `divine://`
+  // and the other `http(s)://` — so at most one is ever set. Every
+  // `return deepLinkRewrite` below is a plain `return null` for ordinary
+  // in-app navigation, so nothing changes off the deep-link path.
+  final deepLinkRewrite = divineScheme?.path ?? universalRedirect;
 
   final location = deepLinkRewrite ?? state.matchedLocation;
   final authState = authService.authState;
