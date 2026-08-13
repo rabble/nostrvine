@@ -52,7 +52,10 @@ void main() {
     late ScreenAnalyticsService service;
 
     setUp(() {
-      service = ScreenAnalyticsService(sink: const NoOpAnalyticsEventSink());
+      service = ScreenAnalyticsService(
+        history: PageLoadHistory(),
+        sink: const NoOpAnalyticsEventSink(),
+      );
     });
 
     group('resetAllSessions', () {
@@ -122,6 +125,7 @@ void main() {
         service.startScreenLoad('HomeScreen');
 
         final other = ScreenAnalyticsService(
+          history: PageLoadHistory(),
           sink: const NoOpAnalyticsEventSink(),
         );
 
@@ -151,7 +155,10 @@ void main() {
     group('trackScreenView', () {
       test('logs screen view through the analytics sink', () {
         final sink = RecordingAnalyticsEventSink();
-        final instance = ScreenAnalyticsService(sink: sink);
+        final instance = ScreenAnalyticsService(
+          history: PageLoadHistory(),
+          sink: sink,
+        );
 
         instance.trackScreenView(
           'video_detail',

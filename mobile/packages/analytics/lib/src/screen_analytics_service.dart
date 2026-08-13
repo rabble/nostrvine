@@ -22,11 +22,17 @@ const _maxScreenSessionAge = Duration(seconds: 60);
 /// resolves one instance through `screenAnalyticsServiceProvider` rather than
 /// constructing this per widget.
 class ScreenAnalyticsService {
-  /// Creates a service. Defaults to the Firebase analytics sink in production;
-  /// pass a [sink] (e.g. [NoOpAnalyticsEventSink]) in tests.
-  ScreenAnalyticsService({AnalyticsEventSink? sink})
-    : _sink = sink ?? FirebaseAnalyticsEventSink();
+  /// Creates a service writing timing records into [history].
+  ///
+  /// Defaults to the Firebase analytics sink in production; pass a [sink]
+  /// (e.g. [NoOpAnalyticsEventSink]) in tests.
+  ScreenAnalyticsService({
+    required PageLoadHistory history,
+    AnalyticsEventSink? sink,
+  }) : _history = history,
+       _sink = sink ?? FirebaseAnalyticsEventSink();
 
+  final PageLoadHistory _history;
   final AnalyticsEventSink _sink;
 
   final Map<String, _ScreenSession> _activeSessions = {};
@@ -100,7 +106,7 @@ class ScreenAnalyticsService {
     );
 
     // Record to page load history
-    PageLoadHistory().addOrUpdate(
+    _history.addOrUpdate(
       PageLoadRecord(
         screenName: screenName,
         timestamp: session.loadStartTime,
@@ -152,7 +158,7 @@ class ScreenAnalyticsService {
     final contentVisibleMs = session.contentVisibleTime
         ?.difference(session.loadStartTime)
         .inMilliseconds;
-    PageLoadHistory().addOrUpdate(
+    _history.addOrUpdate(
       PageLoadRecord(
         screenName: screenName,
         timestamp: session.loadStartTime,

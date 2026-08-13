@@ -114,6 +114,15 @@ final analyticsIdentityCoordinatorProvider =
       ),
     );
 
+/// Provides the app's shared [PageLoadHistory] ring buffer.
+///
+/// Replaces the former `PageLoadHistory()` singleton. Both performance
+/// trackers write into it and Developer Options reads it back, so they must
+/// resolve the same buffer.
+final pageLoadHistoryProvider = Provider<PageLoadHistory>(
+  (ref) => PageLoadHistory(),
+);
+
 /// Provides the app's shared [SurfacePerformanceTracker].
 ///
 /// Replaces the former `SurfacePerformanceTracker()` factory singleton. A
@@ -122,7 +131,8 @@ final analyticsIdentityCoordinatorProvider =
 /// handler, and the tracker is mockable through a provider override in tests
 /// instead of reaching into static state.
 final surfacePerformanceTrackerProvider = Provider<SurfacePerformanceTracker>(
-  (ref) => SurfacePerformanceTracker(),
+  (ref) =>
+      SurfacePerformanceTracker(history: ref.watch(pageLoadHistoryProvider)),
 );
 
 /// Provides the app's shared [ScreenAnalyticsService].
@@ -132,7 +142,7 @@ final surfacePerformanceTrackerProvider = Provider<SurfacePerformanceTracker>(
 /// the navigator observer and completed later by the screen itself; a
 /// per-consumer instance would drop every session in between.
 final screenAnalyticsServiceProvider = Provider<ScreenAnalyticsService>(
-  (ref) => ScreenAnalyticsService(),
+  (ref) => ScreenAnalyticsService(history: ref.watch(pageLoadHistoryProvider)),
 );
 
 /// Provides the app's shared [ErrorAnalyticsTracker].

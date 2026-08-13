@@ -43,6 +43,7 @@ void main() {
       telemetry = FeaturedTabSurfaceTelemetry(
         configId: 'ft_a1b2c3d4',
         tracker: SurfacePerformanceTracker(
+          history: PageLoadHistory(),
           sink: sink,
           now: () => DateTime(2026, 6, 12, 12),
         ),

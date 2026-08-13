@@ -11,11 +11,15 @@ import 'package:analytics/analytics.dart';
 /// is the only thing that varies.
 class FeaturedTabSurfaceTelemetry {
   /// Creates a telemetry adapter for the tab identified by [configId].
+  ///
+  /// [tracker] is required so this adapter shares the app's surface-load
+  /// sessions and page-load buffer instead of starting sessions on a private
+  /// tracker nothing else can complete or read.
   FeaturedTabSurfaceTelemetry({
     required String configId,
-    SurfacePerformanceTracker? tracker,
+    required SurfacePerformanceTracker tracker,
   }) : _configId = configId,
-       _tracker = tracker ?? SurfacePerformanceTracker();
+       _tracker = tracker;
 
   final String _configId;
   final SurfacePerformanceTracker _tracker;

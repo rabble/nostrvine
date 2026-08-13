@@ -39,7 +39,10 @@ class _RecordingAnalyticsSink implements AnalyticsEventSink {
 
 /// A cubit whose analytics writes go nowhere, for the tab-ordering tests.
 ExploreTabsCubit _buildCubit() => ExploreTabsCubit(
-  screenAnalytics: ScreenAnalyticsService(sink: const NoOpAnalyticsEventSink()),
+  screenAnalytics: ScreenAnalyticsService(
+    history: PageLoadHistory(),
+    sink: const NoOpAnalyticsEventSink(),
+  ),
 );
 
 void main() {
@@ -144,7 +147,10 @@ void main() {
 
       setUp(() {
         analyticsSink = _RecordingAnalyticsSink();
-        analytics = ScreenAnalyticsService(sink: analyticsSink);
+        analytics = ScreenAnalyticsService(
+          history: PageLoadHistory(),
+          sink: analyticsSink,
+        );
         topHashtags = _MockTopHashtagsLoader();
         cubit = ExploreTabsCubit(
           screenAnalytics: analytics,

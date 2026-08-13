@@ -103,7 +103,10 @@ void main() {
     setUp(() {
       sink = _RecordingAnalyticsEventSink();
       observer = PageLoadObserver(
-        analytics: ScreenAnalyticsService(sink: sink),
+        analytics: ScreenAnalyticsService(
+          history: PageLoadHistory(),
+          sink: sink,
+        ),
       );
     });
 

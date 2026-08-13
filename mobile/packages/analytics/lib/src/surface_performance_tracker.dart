@@ -27,14 +27,19 @@ const Set<String> _safeSurfaceParamKeys = {
 
 /// Tracks perceived load performance for user-visible surfaces.
 class SurfacePerformanceTracker {
-  /// Creates a tracker. Defaults to the Firebase analytics sink in production;
-  /// pass a [sink] (e.g. [NoOpAnalyticsEventSink]) and [now] clock in tests.
+  /// Creates a tracker writing timing records into [history].
+  ///
+  /// Defaults to the Firebase analytics sink in production; pass a [sink]
+  /// (e.g. [NoOpAnalyticsEventSink]) and [now] clock in tests.
   SurfacePerformanceTracker({
+    required PageLoadHistory history,
     AnalyticsEventSink? sink,
     DateTime Function()? now,
-  }) : _sink = sink ?? FirebaseAnalyticsEventSink(),
+  }) : _history = history,
+       _sink = sink ?? FirebaseAnalyticsEventSink(),
        _now = now ?? DateTime.now;
 
+  final PageLoadHistory _history;
   AnalyticsEventSink _sink;
   final DateTime Function() _now;
   final Map<String, _SurfaceLoadSession> _activeSessions = {};
@@ -123,7 +128,7 @@ class SurfacePerformanceTracker {
     };
 
     await _logSurfaceLoad(parameters);
-    PageLoadHistory().addOrUpdate(
+    _history.addOrUpdate(
       PageLoadRecord(
         screenName: safeName,
         timestamp: session.startedAt,

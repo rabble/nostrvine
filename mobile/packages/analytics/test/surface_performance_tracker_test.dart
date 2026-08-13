@@ -36,6 +36,7 @@ void main() {
   group(SurfacePerformanceTracker, () {
     late RecordingAnalyticsEventSink sink;
     late DateTime now;
+    late PageLoadHistory history;
     late SurfacePerformanceTracker tracker;
 
     void elapse(Duration duration) {
@@ -43,14 +44,14 @@ void main() {
     }
 
     setUp(() {
-      PageLoadHistory().clear();
+      history = PageLoadHistory();
       sink = RecordingAnalyticsEventSink();
       now = DateTime(2026, 6, 12, 12);
-      tracker = SurfacePerformanceTracker(sink: sink, now: () => now);
-    });
-
-    tearDown(() {
-      PageLoadHistory().clear();
+      tracker = SurfacePerformanceTracker(
+        history: history,
+        sink: sink,
+        now: () => now,
+      );
     });
 
     test('logs one surface_load event with semantic parameters', () async {
@@ -116,7 +117,7 @@ void main() {
         metrics: const {AnalyticsParam.itemCount: 7},
       );
 
-      final record = PageLoadHistory().records.single;
+      final record = history.records.single;
       expect(record.screenName, AnalyticsSurface.commentsSheet);
       expect(record.timestamp, startedAt);
       expect(record.contentVisibleMs, 90);

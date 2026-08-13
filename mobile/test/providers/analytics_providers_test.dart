@@ -141,6 +141,33 @@ void main() {
     expect(crashIds, isEmpty);
   });
 
+  group('pageLoadHistoryProvider', () {
+    // The default Firebase sink resolves lazily and fails closed under
+    // `flutter test`, so the real providers are safe to read here unoverridden.
+    test('collects records from both performance trackers', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(screenAnalyticsServiceProvider)
+        ..startScreenLoad('explore')
+        ..markDataLoaded('explore');
+
+      final surface = container.read(surfacePerformanceTrackerProvider)
+        ..startSurfaceLoad('comments_sheet');
+      await surface.completeSurfaceLoad(
+        'comments_sheet',
+        result: SurfaceLoadResult.success,
+      );
+
+      // Developer Options reads this buffer back, so both writers have to land
+      // in the same one.
+      expect(
+        container.read(pageLoadHistoryProvider).records.map((r) => r.source),
+        containsAll(<String>[PageLoadSource.route, PageLoadSource.surface]),
+      );
+    });
+  });
+
   group('screenAnalyticsServiceProvider', () {
     test('hands every reader the same session-tracking instance', () {
       final container = ProviderContainer();
@@ -158,6 +185,7 @@ void main() {
 
     test('is replaceable by an override without touching static state', () {
       final replacement = ScreenAnalyticsService(
+        history: PageLoadHistory(),
         sink: const NoOpAnalyticsEventSink(),
       );
       final container = ProviderContainer(
