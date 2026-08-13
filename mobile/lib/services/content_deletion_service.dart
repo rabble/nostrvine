@@ -166,7 +166,7 @@ class ContentDeletionService {
   static List<ContentDeletion> parseDeletionHistory(String? historyJson) {
     if (historyJson == null) return const [];
 
-    final List<dynamic> deletionsJson = jsonDecode(historyJson);
+    final deletionsJson = jsonDecode(historyJson) as List<dynamic>;
     return deletionsJson
         .map((json) => ContentDeletion.fromJson(json as Map<String, dynamic>))
         .toList(growable: false);

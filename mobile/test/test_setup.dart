@@ -123,17 +123,17 @@ final Map<String, String> _secureStorageStore = <String, String>{};
 Future<Object?>? _secureStorageHandler(MethodCall methodCall) async {
   switch (methodCall.method) {
     case 'read':
-      final String? key = methodCall.arguments['key'];
+      final key = methodCall.arguments['key'] as String?;
       return _secureStorageStore[key];
     case 'write':
-      final String? key = methodCall.arguments['key'];
-      final String? value = methodCall.arguments['value'];
+      final key = methodCall.arguments['key'] as String?;
+      final value = methodCall.arguments['value'] as String?;
       if (key != null && value != null) {
         _secureStorageStore[key] = value;
       }
       return null;
     case 'delete':
-      final String? key = methodCall.arguments['key'];
+      final key = methodCall.arguments['key'] as String?;
       _secureStorageStore.remove(key);
       return null;
     case 'deleteAll':
@@ -142,7 +142,7 @@ Future<Object?>? _secureStorageHandler(MethodCall methodCall) async {
     case 'readAll':
       return _secureStorageStore;
     case 'containsKey':
-      final String? key = methodCall.arguments['key'];
+      final key = methodCall.arguments['key'] as String?;
       return _secureStorageStore.containsKey(key);
     case 'getCapabilities':
       return {'basicSecureStorage': true};

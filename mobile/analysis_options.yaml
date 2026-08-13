@@ -24,7 +24,6 @@ analyzer:
     inference_failure_on_function_return_type: ignore
     inference_failure_on_instance_creation: ignore
     inference_failure_on_untyped_parameter: ignore
-    invalid_assignment: ignore
     join_return_with_assignment: ignore
     library_annotations: ignore
     list_element_type_not_assignable: ignore

@@ -637,7 +637,7 @@ class BookmarkService {
     final globalBookmarksJson = _prefs.getString(globalBookmarksStorageKey);
     if (globalBookmarksJson != null) {
       try {
-        final List<dynamic> bookmarksData = jsonDecode(globalBookmarksJson);
+        final bookmarksData = jsonDecode(globalBookmarksJson) as List<dynamic>;
         _globalBookmarks.clear();
         _globalBookmarks.addAll(
           bookmarksData.map(

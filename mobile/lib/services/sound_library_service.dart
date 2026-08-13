@@ -78,7 +78,7 @@ class SoundLibraryService {
       final customSoundsJson = prefs.getString(_customSoundsKey);
 
       if (customSoundsJson != null) {
-        final List<dynamic> jsonList = jsonDecode(customSoundsJson);
+        final jsonList = jsonDecode(customSoundsJson) as List<dynamic>;
         _customSounds = jsonList
             .map((json) => VineSound.fromJson(json as Map<String, dynamic>))
             .toList();

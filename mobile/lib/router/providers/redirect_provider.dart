@@ -46,7 +46,7 @@ final hasFollowingInCacheProvider = Provider<bool>((ref) {
   }
 
   try {
-    final List<dynamic> decoded = jsonDecode(value);
+    final decoded = jsonDecode(value) as List<dynamic>;
     Log.debug(
       'Current user following list has ${decoded.length} entries',
       name: 'RedirectGuards',
