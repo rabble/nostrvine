@@ -127,6 +127,34 @@ $refs
       expect(r.stderr, contains('retired_credentials'));
     });
 
+    test('counts a documented group that is not *_credentials', () {
+      // The checklist is the contract. A name-suffix allowlist would reject a
+      // documented group such as firebase and force a script edit to match
+      // the error text ("document it in the setup checklist").
+      final r = run(
+        yaml(documented: ['firebase'], referenced: ['firebase']),
+      );
+      expect(r.exitCode, 0, reason: '${r.stdout}${r.stderr}');
+    });
+
+    test('comments inside a groups block do not drop later entries', () {
+      // Treating a comment as the end of `groups:` silently drops every name
+      // after it — the false negative this guard exists to prevent.
+      final base = yaml(
+        documented: ['zendesk_credentials', 'supporters_credentials'],
+        referenced: ['zendesk_credentials'],
+      );
+      final r = run(
+        base.replaceFirst(
+          '        - zendesk_credentials',
+          '        - zendesk_credentials\n'
+              '        # keep scanning\n'
+              '        - supporters_credentials',
+        ),
+      );
+      expect(r.exitCode, 0, reason: '${r.stdout}${r.stderr}');
+    });
+
     test('only the header counts as documentation', () {
       // A group named further down the file — in a comment beside its own
       // `groups:` entry, say — must not satisfy the checklist requirement.
