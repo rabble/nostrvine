@@ -778,54 +778,37 @@ void main() {
       expect(await identity.getPublicKey(), equals(testPublicKey));
     });
 
-    test('signEvent throws StateError naming the missing signer', () async {
+    // This identity is live — it is built on an offline Divine-OAuth restore
+    // and becomes the app-wide NostrClient's signer. Because it reports a real
+    // pubkey, `hasKeys` and `isReadyForActiveClient` are both true for it, so
+    // it reaches signer call sites that catch only `Exception`, or do not
+    // catch locally at all. These five must therefore return null rather than
+    // throw; the warning log is what makes the skipped gate visible.
+    test('signEvent returns null rather than throwing', () async {
       final event = Event(testPublicKey, 1, const <List<String>>[], 'hi');
 
-      await expectLater(
-        identity.signEvent(event),
-        throwsA(
-          isA<StateError>().having(
-            (e) => e.message,
-            'message',
-            allOf(contains('No signer'), contains('sign an event')),
-          ),
-        ),
-      );
+      expect(await identity.signEvent(event), isNull);
     });
 
-    test('encrypt throws instead of returning null', () async {
-      await expectLater(
-        identity.encrypt(testPublicKey, 'plaintext'),
-        throwsStateError,
-      );
+    test('encrypt returns null rather than throwing', () async {
+      expect(await identity.encrypt(testPublicKey, 'plaintext'), isNull);
     });
 
-    test('decrypt throws instead of returning null', () async {
-      await expectLater(
-        identity.decrypt(testPublicKey, 'ciphertext'),
-        throwsStateError,
-      );
+    test('decrypt returns null rather than throwing', () async {
+      expect(await identity.decrypt(testPublicKey, 'ciphertext'), isNull);
     });
 
-    test('nip44Encrypt throws instead of returning null', () async {
-      await expectLater(
-        identity.nip44Encrypt(testPublicKey, 'plaintext'),
-        throwsStateError,
-      );
+    test('nip44Encrypt returns null rather than throwing', () async {
+      expect(await identity.nip44Encrypt(testPublicKey, 'plaintext'), isNull);
     });
 
-    test('nip44Decrypt throws instead of returning null', () async {
-      await expectLater(
-        identity.nip44Decrypt(testPublicKey, 'ciphertext'),
-        throwsStateError,
-      );
+    test('nip44Decrypt returns null rather than throwing', () async {
+      expect(await identity.nip44Decrypt(testPublicKey, 'ciphertext'), isNull);
     });
 
-    // Regression guard. signCanonicalPayload must NOT join the throwing
-    // group: its null means "capability unsupported" (same as Bunker/Amber/
-    // NIP-07), and NostrCreatorBindingService calls it with no try/catch, so
-    // a throw would escape to that service's callers rather than being read
-    // as "skip the creator binding".
+    // Regression guard: signCanonicalPayload's null means "capability
+    // unsupported" (same as Bunker/Amber/NIP-07, whose protocols have no such
+    // verb), not "skipped gate" — so it must stay null and stay unlogged.
     test(
       'signCanonicalPayload still returns null, and does not throw',
       () async {
