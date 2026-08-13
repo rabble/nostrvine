@@ -72,7 +72,6 @@ class VideoProcessingService {
           final blobData = response.data;
 
           if (blobData is Map) {
-            // final sha256 = blobData['sha256'] as String?; // TODO: Use if needed for integrity verification
             final mediaUrl = blobData['url'] as String?;
             final hlsUrl = blobData['hls'] as String?;
             final thumbnailUrl = blobData['thumbnail'] as String?;

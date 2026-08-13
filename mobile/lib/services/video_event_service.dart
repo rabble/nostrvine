@@ -13,11 +13,8 @@
 /// 7. Sorting - Engagement-based, chronological, special handling
 /// 8. Retry & Recovery - Connection error detection, automatic retry
 /// 9. Search - NIP-50 video search implementation
-///
-/// TODO: This class violates Single Responsibility Principle
-/// TODO: Planned refactoring into 7 focused services (see docs/REFACTORING_ROADMAP.md)
-///
-/// Current size: 3,277 lines, 71 methods, 48 state fields
+// TODO(#4742): Split this god-file into focused services; it violates the
+// Single Responsibility Principle.
 library;
 
 import 'dart:async';
@@ -230,10 +227,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   // Frame-based batching for progressive UI updates
   bool _hasScheduledFrameUpdate = false;
-
-  // Search state - TODO: These fields are maintained for future search state tracking
-  // bool _isSearching = false;
-  // String? _currentSearchQuery;
 
   // Track following feed status
   final Map<SubscriptionType, bool> _isFollowingFeed = {};
@@ -6049,8 +6042,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       throw ArgumentError('Search query cannot be empty');
     }
 
-    // _isSearching = true;
-    // _currentSearchQuery = query.trim();
     _eventLists[SubscriptionType.search]?.clear();
 
     try {
@@ -6120,7 +6111,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         },
       );
     } catch (e) {
-      // _isSearching = false;
       Log.error(
         'Failed to start search: $e',
         name: 'VideoEventService',
@@ -6158,8 +6148,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// Clear search results and reset search state
   void clearSearchResults() {
     _eventLists[SubscriptionType.search]?.clear();
-    // _currentSearchQuery = null;
-    // _isSearching = false;
 
     // Cancel search subscription if active
     _subscriptions['search']?.cancel();
