@@ -2627,6 +2627,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       } catch (e, stackTrace) {
         if (pendingClaimId != null) {
           _pendingSubscriptionIds.remove(pendingClaimId);
+          // Setup threw before any completion path and leaves no subscription
+          // for teardown to sweep, so only dispose would reach this handle —
+          // and report the session, not the load, as its duration.
+          _completeAbandonedFeedLoadTrace(pendingClaimId, 'setup_error');
         }
         Log.error(
           '❌ Failed to create direct subscription: $e',
@@ -4589,7 +4593,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
       for (final entry in _subscriptions.entries) {
-        _completeAbandonedFeedLoadTrace(entry.key);
+        _completeAbandonedFeedLoadTrace(entry.key, 'cancelled');
         await entry.value.cancel();
       }
       _subscriptions.clear();
@@ -5459,14 +5463,17 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   }
 
   /// Closes the feed-load trace of a subscription that is being torn down
-  /// before its load reached a completion path.
+  /// before its load reached a completion path, reporting it as [completion].
   ///
   /// Reporting here rather than at [dispose] keeps the duration the load's
   /// own: the 30s fuse is cancelled on teardown and its handler bails out on
   /// a replaced subscription, so an abandoned load would otherwise stay open
   /// until the process ends and report a session-length sample (#7151).
-  void _completeAbandonedFeedLoadTrace(String subscriptionId) {
-    _pendingFeedLoadTraces.remove(subscriptionId)?.complete('cancelled');
+  void _completeAbandonedFeedLoadTrace(
+    String subscriptionId,
+    String completion,
+  ) {
+    _pendingFeedLoadTraces.remove(subscriptionId)?.complete(completion);
   }
 
   /// Cancel subscription for a specific type
@@ -5483,7 +5490,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
 
-      _completeAbandonedFeedLoadTrace(subscriptionId);
+      _completeAbandonedFeedLoadTrace(subscriptionId, 'cancelled');
 
       final subscription = _subscriptions[subscriptionId];
       if (subscription != null) {

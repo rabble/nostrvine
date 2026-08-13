@@ -499,6 +499,30 @@ void main() {
           );
         },
       );
+
+      test('setup_error: creating the relay subscription throws', () async {
+        withEmptyCache();
+        when(
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenThrow(StateError('relay unavailable'));
+
+        await videoEventService
+            .subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            )
+            .timeout(const Duration(milliseconds: 100));
+
+        // Setup threw before anything was registered, so no teardown path can
+        // reach this handle — the catch has to close it or it survives to
+        // dispose and reports the session as the load's duration.
+        _expectSingleCompletion(
+          performanceMonitor,
+          traceName: 'feed_load_profile',
+          completion: 'setup_error',
+          eventCount: 0,
+        );
+      });
     });
   });
 }
