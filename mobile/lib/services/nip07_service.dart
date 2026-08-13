@@ -49,15 +49,28 @@ class Nip07SignResult {
 /// Service for managing NIP-07 browser extension interactions
 class Nip07Service {
   factory Nip07Service() => _instance;
-  Nip07Service._internal();
+  Nip07Service._internal() : _extensionOverride = null;
+
+  /// Test seam: binds the service to [extension] instead of `window.nostr`,
+  /// so the extension-facing paths can be exercised off-web.
+  @visibleForTesting
+  Nip07Service.withExtension(nip07.NostrExtension extension)
+    : _extensionOverride = extension;
+
   static final Nip07Service _instance = Nip07Service._internal();
+
+  final nip07.NostrExtension? _extensionOverride;
 
   String? _currentPublicKey;
   bool _isConnected = false;
   Map<String, dynamic>? _userRelays;
 
+  /// The extension this service talks to, or null when none is present.
+  nip07.NostrExtension? get _extension => _extensionOverride ?? nip07.nostr;
+
   /// Check if NIP-07 extension is available
   bool get isAvailable {
+    if (_extensionOverride != null) return true;
     // Only available on web platform
     if (!kIsWeb) return false;
     return nip07.isNip07Available;
@@ -78,7 +91,7 @@ class Nip07Service {
 
     // Try to detect specific extensions based on available features
     try {
-      final ext = nip07.nostr!;
+      final ext = _extension!;
 
       // Check for Alby-specific features
       if (ext.nip04 != null) {
@@ -109,7 +122,7 @@ class Nip07Service {
 
       // Request public key from extension
       final pubkey = await nip07.safeNip07Call(() async {
-        return nip07.nostr!.getPublicKey();
+        return _extension!.getPublicKey();
       }, 'get public key');
 
       // Validate the public key format
@@ -123,27 +136,7 @@ class Nip07Service {
       _currentPublicKey = pubkey;
       _isConnected = true;
 
-      // Try to get user's relays (optional feature)
-      // TODO: Fix tear-off issue with getRelays extension method
-      // Currently disabled due to dart:js_interop limitation with external extension type tear-offs
-      try {
-        // if (nip07.nostr!.getRelays != null) {
-        //   final jsRelays = await nip07.nostr!.getRelays!().toDart;
-        //   _userRelays = jsRelays.dartify() as Map<String, dynamic>?;
-        // }
-        Log.debug(
-          'Retrieved ${_userRelays?.length ?? 0} relays from extension (disabled)',
-          name: 'Nip07Service',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          'Extension does not support getRelays: $e',
-          name: 'Nip07Service',
-          category: LogCategory.system,
-        );
-        // Not a critical error, continue without relays
-      }
+      await _loadUserRelays();
 
       Log.info(
         'NIP-07 authentication successful',
@@ -177,6 +170,40 @@ class Nip07Service {
     }
   }
 
+  /// Read the extension's relay list into [userRelays].
+  ///
+  /// `getRelays` is optional in NIP-07, so an extension that omits it — or one
+  /// that fails the call — leaves [userRelays] null instead of failing the
+  /// connection.
+  Future<void> _loadUserRelays() async {
+    _userRelays = null;
+    try {
+      final pending = _extension!.getRelays();
+      if (pending == null) {
+        Log.debug(
+          'Extension does not implement getRelays',
+          name: 'Nip07Service',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      _userRelays = await pending;
+      Log.debug(
+        'Retrieved ${_userRelays?.length ?? 0} relays from extension',
+        name: 'Nip07Service',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.warning(
+        'Could not read relays from extension: $e',
+        name: 'Nip07Service',
+        category: LogCategory.system,
+      );
+      // Not a critical error, continue without relays
+    }
+  }
+
   /// Sign a Nostr event using the browser extension
   Future<Nip07SignResult> signEvent(Map<String, dynamic> unsignedEvent) async {
     if (!isConnected) {
@@ -198,7 +225,7 @@ class Nip07Service {
 
       // Sign the event
       final signedJsEvent = await nip07.safeNip07Call(
-        () => nip07.nostr!.signEvent(jsEvent.toMap()),
+        () => _extension!.signEvent(jsEvent.toMap()),
         'sign event',
       );
 
@@ -247,12 +274,12 @@ class Nip07Service {
 
   /// Encrypt a message using NIP-04 (if extension supports it)
   Future<String?> encryptMessage(String recipientPubkey, String message) async {
-    if (!isConnected || nip07.nostr?.nip04 == null) {
+    if (!isConnected || _extension?.nip04 == null) {
       return null;
     }
 
     try {
-      final encrypted = await nip07.nostr!.nip04!.encrypt(
+      final encrypted = await _extension!.nip04!.encrypt(
         recipientPubkey,
         message,
       );
@@ -272,12 +299,12 @@ class Nip07Service {
     String senderPubkey,
     String encryptedMessage,
   ) async {
-    if (!isConnected || nip07.nostr?.nip04 == null) {
+    if (!isConnected || _extension?.nip04 == null) {
       return null;
     }
 
     try {
-      final decrypted = await nip07.nostr!.nip04!.decrypt(
+      final decrypted = await _extension!.nip04!.decrypt(
         senderPubkey,
         encryptedMessage,
       );
@@ -301,11 +328,11 @@ class Nip07Service {
     String recipientPubkey,
     String message,
   ) async {
-    if (!isConnected || nip07.nostr?.nip44 == null) {
+    if (!isConnected || _extension?.nip44 == null) {
       return null;
     }
     try {
-      return await nip07.nostr!.nip44!.encrypt(recipientPubkey, message);
+      return await _extension!.nip44!.encrypt(recipientPubkey, message);
     } catch (e, stackTrace) {
       Log.error(
         'NIP-44 encryption failed: $e',
@@ -322,11 +349,11 @@ class Nip07Service {
     String senderPubkey,
     String encryptedMessage,
   ) async {
-    if (!isConnected || nip07.nostr?.nip44 == null) {
+    if (!isConnected || _extension?.nip44 == null) {
       return null;
     }
     try {
-      return await nip07.nostr!.nip44!.decrypt(senderPubkey, encryptedMessage);
+      return await _extension!.nip44!.decrypt(senderPubkey, encryptedMessage);
     } catch (e, stackTrace) {
       Log.error(
         'NIP-44 decryption failed: $e',
@@ -359,7 +386,7 @@ class Nip07Service {
     'extensionName': extensionName,
     'hasRelays': _userRelays != null,
     'relayCount': _userRelays?.length ?? 0,
-    'hasNip04': nip07.nostr?.nip04 != null,
-    'hasNip44': nip07.nostr?.nip44 != null,
+    'hasNip04': _extension?.nip04 != null,
+    'hasNip44': _extension?.nip44 != null,
   };
 }
