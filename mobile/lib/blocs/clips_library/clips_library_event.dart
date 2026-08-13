@@ -47,6 +47,55 @@ final class ClipsLibraryClearSelection extends ClipsLibraryEvent {
   const ClipsLibraryClearSelection();
 }
 
+/// Event dispatched when a long press on [clip] opens a drag selection.
+///
+/// The clip is toggled right away, and whether it went into or out of the
+/// selection decides what the rest of the drag does — see
+/// [ClipsLibraryDragSelection.selecting].
+final class ClipsLibraryDragSelectionStarted extends ClipsLibraryEvent {
+  const ClipsLibraryDragSelectionStarted(
+    this.clip, {
+    this.targetAspectRatio,
+    this.selectionEnabled = true,
+  });
+
+  /// The clip under the finger when the long press was recognized.
+  final DivineVideoClip clip;
+
+  /// Aspect ratio the drag is confined to, e.g. the one the editor's timeline
+  /// is already committed to. `null` lets the first picked clip decide it.
+  final double? targetAspectRatio;
+
+  /// Whether the grid was already picking clips when the press landed.
+  ///
+  /// A long press while browsing opens selection mode, and always picks the
+  /// clip up rather than toggling it: the selection it would toggle against
+  /// is one the user cannot see, since clips already in the editor arrive
+  /// pre-selected with their badges hidden.
+  final bool selectionEnabled;
+
+  @override
+  List<Object?> get props => [clip, targetAspectRatio, selectionEnabled];
+}
+
+/// Event dispatched while a drag selection moves, once per clip the finger
+/// reaches. Selects everything between the anchor and [clip] — and only that,
+/// so dragging back over a clip takes it out again.
+final class ClipsLibraryDragSelectionExtended extends ClipsLibraryEvent {
+  const ClipsLibraryDragSelectionExtended(this.clip);
+
+  /// The clip currently under the finger.
+  final DivineVideoClip clip;
+
+  @override
+  List<Object?> get props => [clip];
+}
+
+/// Event dispatched when the finger lifts and the drag selection is over.
+final class ClipsLibraryDragSelectionEnded extends ClipsLibraryEvent {
+  const ClipsLibraryDragSelectionEnded();
+}
+
 /// Event to delete all selected clips.
 final class ClipsLibraryDeleteSelected extends ClipsLibraryEvent {
   const ClipsLibraryDeleteSelected();

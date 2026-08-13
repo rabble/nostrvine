@@ -8,6 +8,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/models/clip_category.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -468,6 +469,323 @@ void main() {
             'selectedClipIds',
             equals({'sm1', 'sm2'}),
           ),
+        ],
+      );
+    });
+
+    group('drag selection', () {
+      DivineVideoClip gridClip(
+        String id, {
+        Duration duration = const Duration(seconds: 1),
+        model.AspectRatio aspectRatio = .vertical,
+        String? categoryId,
+      }) => DivineVideoClip(
+        id: id,
+        video: EditorVideo.file('/path/to/$id.mp4'),
+        thumbnailPath: '/path/to/$id.jpg',
+        duration: duration,
+        recordedAt: DateTime(2026),
+        targetAspectRatio: aspectRatio,
+        originalAspectRatio: 9 / 16,
+        categoryId: categoryId,
+      );
+
+      final a = gridClip('a', duration: const Duration(seconds: 5));
+      final b = gridClip('b', duration: const Duration(seconds: 3));
+      final c = gridClip('c', duration: const Duration(seconds: 2));
+      final d = gridClip('d', duration: const Duration(seconds: 4));
+
+      ClipsLibraryState seedWith(
+        List<DivineVideoClip> clips, {
+        Set<String> selectedClipIds = const {},
+        Set<String> disabledClipIds = const {},
+      }) => ClipsLibraryState(
+        status: ClipsLibraryStatus.loaded,
+        clips: clips,
+        sortedClips: clips,
+        selectedClipIds: selectedClipIds,
+        disabledClipIds: disabledClipIds,
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'selects every clip between the anchor and the one under the finger',
+        seed: () => seedWith([a, b, c, d]),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(ClipsLibraryDragSelectionExtended(c)),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['a']),
+          ),
+          isA<ClipsLibraryState>()
+              .having(
+                (s) => s.selectedClipIds.toList(),
+                'selectedClipIds',
+                equals(['a', 'b', 'c']),
+              )
+              .having(
+                (s) => s.selectedDuration,
+                'selectedDuration',
+                equals(const Duration(seconds: 10)),
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'numbers the range from the anchor outwards when dragging back up',
+        seed: () => seedWith([a, b, c, d]),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(d))
+          ..add(ClipsLibraryDragSelectionExtended(b)),
+        expect: () => [
+          isA<ClipsLibraryState>(),
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['d', 'c', 'b']),
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'drops the clips the finger has moved back past',
+        seed: () => seedWith([a, b, c, d]),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(ClipsLibraryDragSelectionExtended(d))
+          ..add(ClipsLibraryDragSelectionExtended(b)),
+        expect: () => [
+          isA<ClipsLibraryState>(),
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['a', 'b', 'c', 'd']),
+          ),
+          isA<ClipsLibraryState>()
+              .having(
+                (s) => s.selectedClipIds.toList(),
+                'selectedClipIds',
+                equals(['a', 'b']),
+              )
+              .having(
+                (s) => s.selectedDuration,
+                'selectedDuration',
+                equals(const Duration(seconds: 8)),
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'keeps what was selected before the drag',
+        seed: () => seedWith([a, b, c, d], selectedClipIds: const {'d'}),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(ClipsLibraryDragSelectionExtended(b)),
+        expect: () => [
+          isA<ClipsLibraryState>(),
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['d', 'a', 'b']),
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'deselects the range when the drag starts on a selected clip',
+        seed: () =>
+            seedWith([a, b, c, d], selectedClipIds: const {'a', 'b', 'c'}),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(ClipsLibraryDragSelectionExtended(b)),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['b', 'c']),
+          ),
+          isA<ClipsLibraryState>()
+              .having(
+                (s) => s.selectedClipIds.toList(),
+                'selectedClipIds',
+                equals(['c']),
+              )
+              .having(
+                (s) => s.selectedDuration,
+                'selectedDuration',
+                equals(const Duration(seconds: 2)),
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'passes over clips that would mix stop-motion into the selection',
+        seed: () => seedWith([a, createStopMotionClip(id: 'sm1'), c]),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(ClipsLibraryDragSelectionExtended(c)),
+        expect: () => [
+          isA<ClipsLibraryState>(),
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['a', 'c']),
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'passes over clips of another aspect ratio than the editor holds',
+        seed: () => seedWith([a, gridClip('sq', aspectRatio: .square), c]),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(
+            // The editor's timeline is vertical, so the square clip in the
+            // middle of the range cannot join it.
+            ClipsLibraryDragSelectionStarted(a, targetAspectRatio: 9 / 16),
+          )
+          ..add(ClipsLibraryDragSelectionExtended(c)),
+        expect: () => [
+          isA<ClipsLibraryState>(),
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['a', 'c']),
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'leaves clips already in the editor alone',
+        seed: () => seedWith(
+          [a, b, c],
+          selectedClipIds: const {'b'},
+          disabledClipIds: const {'b'},
+        ),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(ClipsLibraryDragSelectionExtended(c)),
+        expect: () => [
+          isA<ClipsLibraryState>(),
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['b', 'a', 'c']),
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'opens selection mode when the press lands while browsing',
+        seed: () => seedWith([a, b]),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ClipsLibraryDragSelectionStarted(a, selectionEnabled: false),
+        ),
+        expect: () => [
+          isA<ClipsLibraryState>()
+              .having(
+                (s) => s.isLibrarySelectionMode,
+                'isLibrarySelectionMode',
+                isTrue,
+              )
+              .having(
+                (s) => s.selectedClipIds.toList(),
+                'selectedClipIds',
+                equals(['a']),
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'picks up a clip the editor pre-selected out of sight',
+        // Opening the library from the editor pre-selects its clips with the
+        // badges hidden, so this press has nothing visible to toggle off.
+        seed: () => seedWith([a, b], selectedClipIds: const {'a'}),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a, selectionEnabled: false))
+          ..add(ClipsLibraryDragSelectionExtended(b)),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['a']),
+          ),
+          isA<ClipsLibraryState>().having(
+            (s) => s.selectedClipIds.toList(),
+            'selectedClipIds',
+            equals(['a', 'b']),
+          ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'starts no drag on a clip already in the editor',
+        seed: () => seedWith([a, b], disabledClipIds: const {'a'}),
+        build: createBloc,
+        act: (bloc) => bloc.add(ClipsLibraryDragSelectionStarted(a)),
+        expect: () => <ClipsLibraryState>[],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'forgets the drag when the filter swaps the list under it',
+        seed: () => seedWith([a, b, gridClip('e', categoryId: 'cat')]),
+        build: createBloc,
+        // The chip row sits outside the drag region, so a second finger can
+        // change the filter mid-drag. Without this the range would be walked
+        // over the new list, covering clips the finger never crossed.
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(
+            const ClipsLibraryFilterChanged(ClipLibraryCategoryFilter('cat')),
+          )
+          ..add(ClipsLibraryDragSelectionExtended(gridClip('e'))),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.dragSelection,
+            'dragSelection',
+            isNotNull,
+          ),
+          isA<ClipsLibraryState>()
+              .having((s) => s.dragSelection, 'dragSelection', isNull)
+              .having(
+                (s) => s.selectedClipIds.toList(),
+                'selectedClipIds',
+                equals(['a']),
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'forgets the drag once the finger lifts',
+        seed: () => seedWith([a, b]),
+        build: createBloc,
+        act: (bloc) => bloc
+          ..add(ClipsLibraryDragSelectionStarted(a))
+          ..add(const ClipsLibraryDragSelectionEnded()),
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.dragSelection,
+            'dragSelection',
+            isNotNull,
+          ),
+          isA<ClipsLibraryState>()
+              .having((s) => s.dragSelection, 'dragSelection', isNull)
+              .having(
+                (s) => s.selectedClipIds.toList(),
+                'selectedClipIds',
+                equals(['a']),
+              ),
         ],
       );
     });

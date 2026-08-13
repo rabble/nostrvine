@@ -17,7 +17,6 @@ class VideoClipThumbnailCard extends StatefulWidget {
   const VideoClipThumbnailCard({
     required this.clip,
     this.onTap,
-    this.onLongPress,
     this.selectionIndex = -1,
     this.showSelectionIndicator = true,
     this.disabled = false,
@@ -41,10 +40,6 @@ class VideoClipThumbnailCard extends StatefulWidget {
   /// is non-interactive (e.g. in the trash bin view where restore /
   /// delete-now actions live outside the thumbnail).
   final VoidCallback? onTap;
-
-  /// Callback invoked when the card is long-pressed. When `null`, no
-  /// long-press handler is registered.
-  final VoidCallback? onLongPress;
 
   /// Whether to show the duration badge at the bottom-left corner.
   final bool showDurationBadge;
@@ -105,7 +100,6 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
       selected: _isSelected,
       enabled: !widget.disabled,
       onTap: widget.disabled ? null : widget.onTap,
-      onLongPress: widget.disabled ? null : widget.onLongPress,
       hint: widget.disabled
           ? l10n.videoClipSemanticHintDisabled
           : _isSelected
@@ -117,7 +111,6 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
         child: GestureDetector(
           excludeFromSemantics: true,
           onTap: widget.disabled ? null : widget.onTap,
-          onLongPress: widget.disabled ? null : widget.onLongPress,
           child: ClipRRect(
             borderRadius: .circular(4),
             child: AspectRatio(

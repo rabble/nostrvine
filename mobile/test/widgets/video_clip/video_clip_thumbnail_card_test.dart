@@ -46,7 +46,6 @@ void main() {
       int selectionIndex = -1,
       bool disabled = false,
       VoidCallback? onTap,
-      VoidCallback? onLongPress,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -58,7 +57,6 @@ void main() {
             selectionIndex: selectionIndex,
             disabled: disabled,
             onTap: onTap ?? () {},
-            onLongPress: onLongPress ?? () {},
           ),
         ),
       );
@@ -174,16 +172,6 @@ void main() {
         expect(tapped, isTrue);
       });
 
-      testWidgets('calls onLongPress when long-pressed', (tester) async {
-        var longPressed = false;
-        await tester.pumpWidget(
-          buildWidget(onLongPress: () => longPressed = true),
-        );
-
-        await tester.longPress(find.byType(VideoClipThumbnailCard));
-        expect(longPressed, isTrue);
-      });
-
       testWidgets('does not call onTap when disabled', (tester) async {
         var tapped = false;
         await tester.pumpWidget(
@@ -192,16 +180,6 @@ void main() {
 
         await tester.tap(find.byType(VideoClipThumbnailCard));
         expect(tapped, isFalse);
-      });
-
-      testWidgets('does not call onLongPress when disabled', (tester) async {
-        var longPressed = false;
-        await tester.pumpWidget(
-          buildWidget(disabled: true, onLongPress: () => longPressed = true),
-        );
-
-        await tester.longPress(find.byType(VideoClipThumbnailCard));
-        expect(longPressed, isFalse);
       });
     });
 
@@ -228,7 +206,6 @@ void main() {
         );
         final semanticsData = semantics.getSemanticsData();
         expect(semanticsData.hasAction(SemanticsAction.tap), isTrue);
-        expect(semanticsData.hasAction(SemanticsAction.longPress), isTrue);
         expect(find.bySemanticsLabel('5.00'), findsNothing);
       });
 

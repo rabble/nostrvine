@@ -285,6 +285,7 @@ void main() {
         const <ClipCategory>[],
         const ClipLibraryAllFilter(),
         null,
+        null,
       ]);
     });
   });
