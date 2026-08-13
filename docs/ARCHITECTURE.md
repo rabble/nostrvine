@@ -89,33 +89,44 @@ dependency when it is one of:
 - a **native plugin** — it ships a `flutter: plugin:` block and talks over a
   `MethodChannel` (`background_uploader`, `caption_generator`,
   `divine_quick_actions`, `image_metadata_stripper`), or wraps one
-  (`keycast_flutter`, `media_cache`, `nostr_key_manager`, `sound_service`,
-  `analytics`, `iap_repository`, `permissions_service`);
-- a **presentation-layer package** — it exports widgets
-  (`divine_ui`, `divine_camera`, `divine_video_player`,
-  `infinite_video_feed`, `tv_static_effect`);
+  (`keycast_flutter`, `nostr_key_manager`, `media_cache`,
+  `permissions_service`, `sound_service`);
+- a **presentation-layer package** — it exports widgets (`divine_ui`,
+  `infinite_video_feed`, `tv_static_effect`, plus `divine_camera` and
+  `divine_video_player`, which are both plugin and widget);
 - a consumer of a **Flutter-only API with no pure-Dart substitute** —
-  `dm_repository` (`compute`, `kReleaseMode`), `unified_logger`
-  (`kDebugMode`/`kIsWeb`/`debugPrint`), `blurhash_service` (`foundation.dart`),
-  `nostr_sdk` (Android NIP-55 external signer).
+  `unified_logger` (`kDebugMode`/`kIsWeb`/`debugPrint`), `blurhash_service`
+  (`dart:ui` — `ui.Image`, `ui.Color`), `iap_repository`
+  (`defaultTargetPlatform`), `analytics` (`NavigatorObserver`,
+  `WidgetsBinding`), `nostr_sdk` (Android NIP-55 external signer).
 
-Anything else is out of policy. To re-derive the current set — the list above
-is hand-maintained and can drift:
+Anything else is out of policy, and **CI enforces it**:
+`mobile/scripts/check_package_flutter_boundary.sh` freezes the set in
+`mobile/scripts/baseline/package_flutter_deps.txt` (shrink-only — a package
+re-adding the entry fails the `generated-files` job). That baseline, not this
+page, is the machine-checked list; each entry carries a reason naming the
+concrete Flutter surface it uses. Regenerate only after *removing* a
+dependency:
 
 ```bash
-awk 'FNR==1{d=0;hit=0} /^dependencies:/{d=1;next} /^[^ ]/{d=0}
-     !hit&&d&&/^  flutter(_web_plugins)?:$/{getline
-       if($0~/sdk: flutter/){print FILENAME;hit=1}}' mobile/packages/*/pubspec.yaml
+UPDATE_BASELINE=1 bash mobile/scripts/check_package_flutter_boundary.sh
 ```
 
 `flutter_test` under `dev_dependencies:` is **not** counted — test-only Flutter
-is fine, and six packages on `main` already ship exactly that shape.
+is fine, and 15 of the 37 packages with no runtime Flutter dependency already
+ship exactly that shape.
 
-In the API group, everything except `nostr_sdk` is a removal candidate:
-`unified_logger` needs an injected console sink, `blurhash_service` imports
-`foundation.dart` for almost nothing, and `dm_repository` needs `compute`
-replaced. None of the three decouples anything on its own while `nostr_sdk` is
-still in the way, which is the second point below.
+`dm_repository` used to be in the API group and no longer is: it needed only
+`compute` and `kReleaseMode`, both now pure-Dart shims in its own `lib/src/`
+(`compute.dart` ports Flutter's implementation, conditional import and all;
+`build_mode.dart` reuses Flutter's exact `kReleaseMode` definition so the
+`_classifyDiagnostics` const still folds away under AOT product mode). That is
+the worked example for the rest of the group. `unified_logger` is the next
+candidate — it needs an injected console sink, since `debugPrint`'s throttling
+has no drop-in replacement. The others are genuinely bound: `dart:ui`,
+`defaultTargetPlatform`, and `NavigatorObserver` have no pure-Dart substitute
+at all. None of these decouples anything at runtime while `nostr_sdk` is still
+in the way, which is the second point below.
 
 Two things are worth knowing before doing more of this work:
 
