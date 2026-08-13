@@ -1184,7 +1184,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoGridDeleteVideo => 'Usuń film';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Trwale usuń tę treść';
+  String get videoGridDeleteVideoSubtitle =>
+      'Usuń ten film z Divine. Może nadal pojawiać się w innych klientach Nostr.';
 
   @override
   String get videoGridDeletingContent => 'Usuwanie treści...';
@@ -4108,9 +4109,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideo => 'Usuń film';
-
-  @override
-  String get shareMenuDeleteVideoSubtitle => 'Trwale usuń tę treść';
 
   @override
   String get shareMenuVideoInTheseLists => 'Film jest na tych listach:';

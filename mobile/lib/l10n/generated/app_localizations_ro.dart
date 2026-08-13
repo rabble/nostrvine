@@ -1199,7 +1199,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoGridDeleteVideo => 'Șterge videoclipul';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Elimină definitiv acest conținut';
+  String get videoGridDeleteVideoSubtitle =>
+      'Elimină acest videoclip din Divine. Poate apărea în continuare în alți clienți Nostr.';
 
   @override
   String get videoGridDeletingContent => 'Se șterge conținutul...';
@@ -4115,9 +4116,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideo => 'Șterge videoclipul';
-
-  @override
-  String get shareMenuDeleteVideoSubtitle => 'Elimină definitiv acest conținut';
 
   @override
   String get shareMenuVideoInTheseLists => 'Videoclipul e în aceste liste:';

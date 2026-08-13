@@ -1746,7 +1746,6 @@
     "shareMenuEditVideo": "Редактиране на видео",
     "shareMenuEditVideoSubtitle": "Актуализирай заглавие, описание и хаштагове",
     "shareMenuDeleteVideo": "Изтрий видеото",
-    "shareMenuDeleteVideoSubtitle": "Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.",
     "shareMenuVideoInTheseLists": "Видеото е в тези списъци:",
     "shareMenuVideoCount": "{count} видеа",
     "@shareMenuVideoCount": {

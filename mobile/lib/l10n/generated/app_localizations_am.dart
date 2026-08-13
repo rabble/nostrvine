@@ -3922,10 +3922,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuDeleteVideo => 'ቪዲዮ ሰርዝ';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      'ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።';
-
-  @override
   String get shareMenuVideoInTheseLists => 'ቪዲዮው በእነዚህ ዝርዝሮች ውስጥ ነው፡-';
 
   @override

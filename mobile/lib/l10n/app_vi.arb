@@ -2208,7 +2208,6 @@
   "shareMenuEditVideo": "Chỉnh sửa video",
   "shareMenuEditVideoSubtitle": "Cập nhật tiêu đề, mô tả và hashtag",
   "shareMenuDeleteVideo": "Xóa video",
-  "shareMenuDeleteVideoSubtitle": "Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.",
   "shareMenuVideoInTheseLists": "Video nằm trong các danh sách này:",
   "shareMenuVideoCount": "{count} video",
   "@shareMenuVideoCount": {

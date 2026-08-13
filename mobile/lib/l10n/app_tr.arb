@@ -456,7 +456,7 @@
     "videoGridEditVideo": "Videoyu Düzenle",
     "videoGridEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "videoGridDeleteVideo": "Videoyu Sil",
-    "videoGridDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
+    "videoGridDeleteVideoSubtitle": "Bu videoyu Divine'dan kaldır. Diğer Nostr istemcilerinde hâlâ görünebilir.",
     "videoGridDeletingContent": "İçerik siliniyor...",
     "videoGridDeleteFailure": "İçerik silinemedi: {error}",
     "@videoGridDeleteFailure": {
@@ -1568,7 +1568,6 @@
     "shareMenuEditVideo": "Videoyu Düzenle",
     "shareMenuEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "shareMenuDeleteVideo": "Videoyu Sil",
-    "shareMenuDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
     "shareMenuVideoInTheseLists": "Video şu listelerde:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {

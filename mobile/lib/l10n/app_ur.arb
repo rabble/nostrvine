@@ -2208,7 +2208,6 @@
   "shareMenuEditVideo": "ویڈیو میں ترمیم کریں",
   "shareMenuEditVideoSubtitle": "عنوان، تفصیل اور ہیش ٹیگز اپڈیٹ کریں",
   "shareMenuDeleteVideo": "ویڈیو حذف کریں",
-  "shareMenuDeleteVideoSubtitle": "یہ ویڈیو Divine سے ہٹائیں۔ یہ دیگر Nostr کلائنٹس پر پھر بھی نظر آ سکتی ہے۔",
   "shareMenuVideoInTheseLists": "ویڈیو ان فہرستوں میں ہے:",
   "shareMenuVideoCount": "{count} ویڈیوز",
   "@shareMenuVideoCount": {

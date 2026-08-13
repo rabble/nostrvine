@@ -456,7 +456,7 @@
     "videoGridEditVideo": "Editează videoclipul",
     "videoGridEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "videoGridDeleteVideo": "Șterge videoclipul",
-    "videoGridDeleteVideoSubtitle": "Elimină definitiv acest conținut",
+    "videoGridDeleteVideoSubtitle": "Elimină acest videoclip din Divine. Poate apărea în continuare în alți clienți Nostr.",
     "videoGridDeletingContent": "Se șterge conținutul...",
     "videoGridDeleteFailure": "N-am putut șterge conținutul: {error}",
     "@videoGridDeleteFailure": {
@@ -1571,7 +1571,6 @@
     "shareMenuEditVideo": "Editează videoclipul",
     "shareMenuEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "shareMenuDeleteVideo": "Șterge videoclipul",
-    "shareMenuDeleteVideoSubtitle": "Elimină definitiv acest conținut",
     "shareMenuVideoInTheseLists": "Videoclipul e în aceste liste:",
     "shareMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
     "@shareMenuVideoCount": {

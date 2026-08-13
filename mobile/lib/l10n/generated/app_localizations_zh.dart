@@ -3791,10 +3791,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuDeleteVideo => '删除视频';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      '从 Divine 删除此视频。它可能仍会出现在其他 Nostr 客户端上。';
-
-  @override
   String get shareMenuVideoInTheseLists => '视频已在这些列表中：';
 
   @override

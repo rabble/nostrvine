@@ -2208,7 +2208,6 @@
   "shareMenuEditVideo": "编辑视频",
   "shareMenuEditVideoSubtitle": "更新标题、简介和话题标签",
   "shareMenuDeleteVideo": "删除视频",
-  "shareMenuDeleteVideoSubtitle": "从 Divine 删除此视频。它可能仍会出现在其他 Nostr 客户端上。",
   "shareMenuVideoInTheseLists": "视频已在这些列表中：",
   "shareMenuVideoCount": "{count} 个视频",
   "@shareMenuVideoCount": {

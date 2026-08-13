@@ -2208,7 +2208,6 @@
   "shareMenuEditVideo": "Sunting Video",
   "shareMenuEditVideoSubtitle": "Kemas kini tajuk, keterangan dan hashtag",
   "shareMenuDeleteVideo": "Padam Video",
-  "shareMenuDeleteVideoSubtitle": "Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.",
   "shareMenuVideoInTheseLists": "Video berada dalam senarai ini:",
   "shareMenuVideoCount": "{count} video",
   "@shareMenuVideoCount": {
