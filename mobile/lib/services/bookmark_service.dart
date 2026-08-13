@@ -134,6 +134,15 @@ enum _PrivateItemsState {
   unreadable,
 }
 
+/// The outcome of reading a kind-10003's `content`, returned rather than
+/// stored so the caller can apply it without suspending mid-update.
+class _PrivateItemsRead {
+  const _PrivateItemsRead({required this.state, required this.items});
+
+  final _PrivateItemsState state;
+  final List<BookmarkItem> items;
+}
+
 /// Service for the user's NIP-51 global bookmark list (kind 10003).
 class BookmarkService {
   BookmarkService({
@@ -798,16 +807,23 @@ class BookmarkService {
   /// private items in `content` — a stringified tag array encrypted to the
   /// author's own key. The ciphertext is still captured verbatim so a
   /// public-item write can republish it untouched.
+  /// Nothing here mutates state until every await has resolved. Decryption
+  /// suspends, and syncs are not serialized (#7163), so a `clear()` before the
+  /// await and an `addAll` after it would let two adopts interleave into a
+  /// duplicated item — which `List.remove` then only half removes, leaving the
+  /// relay holding a bookmark the user was told was gone.
   Future<void> _adoptGlobalBookmarksFromEvent(Event event) async {
-    _lastKnownRemoteContent = event.content == _legacyProseContent
-        ? ''
-        : event.content;
+    final content = event.content == _legacyProseContent ? '' : event.content;
+    final private = await _readPrivateItems(content);
+
+    _lastKnownRemoteContent = content;
     _globalBookmarks
       ..clear()
       ..addAll(_itemsFromTags(event.tags));
-
-    _privateBookmarks.clear();
-    _privateItemsState = await _readPrivateItems(_lastKnownRemoteContent);
+    _privateBookmarks
+      ..clear()
+      ..addAll(private.items);
+    _privateItemsState = private.state;
   }
 
   /// The bookmark items among [tags], in order.
@@ -817,13 +833,23 @@ class BookmarkService {
         BookmarkItem.fromTag(tag),
   ];
 
-  /// Decrypts [content] into [_privateBookmarks] and reports what happened.
+  /// Decrypts [content] into private items, and reports what happened.
+  ///
+  /// Returns the items rather than storing them, so the caller can apply the
+  /// whole read in one synchronous step.
   ///
   /// NIP-51 encrypts private items to the author's own key, so this needs only
   /// the signer this device already has — every identity that can publish a
   /// bookmark can also decrypt one.
-  Future<_PrivateItemsState> _readPrivateItems(String content) async {
-    if (content.isEmpty) return _PrivateItemsState.none;
+  Future<_PrivateItemsRead> _readPrivateItems(String content) async {
+    const unreadable = _PrivateItemsRead(
+      state: _PrivateItemsState.unreadable,
+      items: [],
+    );
+
+    if (content.isEmpty) {
+      return const _PrivateItemsRead(state: _PrivateItemsState.none, items: []);
+    }
 
     // NIP-51 deprecated NIP-04 for this field and tells clients to detect it by
     // the `iv` marker. Divine does not read that scheme; reporting it as
@@ -835,14 +861,12 @@ class BookmarkService {
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return _PrivateItemsState.unreadable;
+      return unreadable;
     }
 
     final pubkey = _authService.currentPublicKeyHex;
     final identity = _authService.currentIdentity;
-    if (pubkey == null || identity == null) {
-      return _PrivateItemsState.unreadable;
-    }
+    if (pubkey == null || identity == null) return unreadable;
 
     try {
       final plaintext = await identity.nip44Decrypt(pubkey, content);
@@ -852,26 +876,29 @@ class BookmarkService {
           name: 'BookmarkService',
           category: LogCategory.system,
         );
-        return _PrivateItemsState.unreadable;
+        return unreadable;
       }
 
       final tags = _tagsFromPrivatePayload(plaintext);
-      if (tags == null) return _PrivateItemsState.unreadable;
+      if (tags == null) return unreadable;
 
-      _privateBookmarks.addAll(_itemsFromTags(tags));
+      final items = _itemsFromTags(tags);
       Log.debug(
-        'Read ${_privateBookmarks.length} private bookmark items',
+        'Read ${items.length} private bookmark items',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return _PrivateItemsState.readable;
+      return _PrivateItemsRead(
+        state: _PrivateItemsState.readable,
+        items: items,
+      );
     } catch (e) {
       Log.error(
         'Failed to read private bookmark items: $e',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return _PrivateItemsState.unreadable;
+      return unreadable;
     }
   }
 

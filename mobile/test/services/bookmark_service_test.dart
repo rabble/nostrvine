@@ -1124,6 +1124,39 @@ void main() {
         );
       });
 
+      test(
+        'a sync racing the toggle cannot duplicate a private item',
+        () async {
+          stubRelay(
+            events: [
+              bookmarkListEvent(
+                [],
+                content: await encryptToSelf([
+                  ['e', privateVideo],
+                ]),
+              ),
+            ],
+          );
+          final service = createService();
+
+          // The display read and the toggle share one service instance and
+          // neither is serialized, so both reach the decrypt await together.
+          final racingSync = service.syncGlobalBookmarks();
+          final toggle = service.toggleVideoInGlobalBookmarks(privateVideo);
+          await racingSync;
+          final result = await toggle;
+
+          expect(result.succeeded, isTrue);
+          expect(
+            signedContent,
+            isEmpty,
+            reason:
+                'a private item adopted twice survives List.remove, so the '
+                'relay keeps the bookmark the user was told was removed',
+          );
+        },
+      );
+
       test('clears content once the last private item is removed', () async {
         stubRelay(
           events: [
