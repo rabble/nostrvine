@@ -1285,7 +1285,7 @@ class CuratedListService extends ChangeNotifier {
     final listsJson = _prefs.getString(listsStorageKey);
     if (listsJson != null) {
       try {
-        final List<dynamic> listsData = jsonDecode(listsJson);
+        final listsData = jsonDecode(listsJson) as List<dynamic>;
         _lists.clear();
         _lists.addAll(
           listsData.map(
@@ -1312,7 +1312,7 @@ class CuratedListService extends ChangeNotifier {
     final subscribedJson = _prefs.getString(subscribedListsStorageKey);
     if (subscribedJson != null) {
       try {
-        final List<dynamic> subscribedData = jsonDecode(subscribedJson);
+        final subscribedData = jsonDecode(subscribedJson) as List<dynamic>;
         _subscribedListIds.clear();
         _subscribedListIds.addAll(subscribedData.cast<String>());
         Log.debug(

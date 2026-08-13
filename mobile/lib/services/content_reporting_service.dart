@@ -726,7 +726,7 @@ class ContentReportingService {
     final historyJson = _prefs.getString(reportsStorageKey);
     if (historyJson != null) {
       try {
-        final List<dynamic> reportsJson = jsonDecode(historyJson);
+        final reportsJson = jsonDecode(historyJson) as List<dynamic>;
         _reportHistory.clear();
         _reportHistory.addAll(
           reportsJson.map(

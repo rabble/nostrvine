@@ -156,7 +156,7 @@ class SeenVideosService {
     try {
       final metricsJson = _prefs!.getString(_seenVideosMetricsKey);
       if (metricsJson != null) {
-        final List<dynamic> metricsList = jsonDecode(metricsJson);
+        final metricsList = jsonDecode(metricsJson) as List<dynamic>;
         _seenVideos.clear();
         _seenLastSeen.clear();
         for (final json in metricsList) {
