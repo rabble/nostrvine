@@ -607,6 +607,8 @@ VideosRepository videosRepository(Ref ref) {
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalReactionsDao from databaseProvider (for local storage)
+/// - FunnelcakeApiClient for the "Liked by" list, which resolves the whole
+///   addressable coordinate rather than one revision id (#6021)
 @Riverpod(keepAlive: true)
 LikesRepository likesRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -638,6 +640,7 @@ LikesRepository likesRepository(Ref ref) {
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlockedAuthorFilter(ref),
+    funnelcakeApiClient: ref.watch(funnelcakeApiClientProvider),
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
         CrashReportingService.instance.recordError(

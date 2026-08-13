@@ -963,6 +963,8 @@ String _$videosRepositoryHash() => r'44fb1b8a6951fbad33b2b95047ec9e7edbb65c54';
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalReactionsDao from databaseProvider (for local storage)
+/// - FunnelcakeApiClient for the "Liked by" list, which resolves the whole
+///   addressable coordinate rather than one revision id (#6021)
 
 @ProviderFor(likesRepository)
 final likesRepositoryProvider = LikesRepositoryProvider._();
@@ -975,6 +977,8 @@ final likesRepositoryProvider = LikesRepositoryProvider._();
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalReactionsDao from databaseProvider (for local storage)
+/// - FunnelcakeApiClient for the "Liked by" list, which resolves the whole
+///   addressable coordinate rather than one revision id (#6021)
 
 final class LikesRepositoryProvider
     extends
@@ -988,6 +992,8 @@ final class LikesRepositoryProvider
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
   /// - PersonalReactionsDao from databaseProvider (for local storage)
+  /// - FunnelcakeApiClient for the "Liked by" list, which resolves the whole
+  ///   addressable coordinate rather than one revision id (#6021)
   LikesRepositoryProvider._()
     : super(
         from: null,
@@ -1021,4 +1027,4 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'd8126449ef36a6be85a7a2bb01f052f0ccb1f315';
+String _$likesRepositoryHash() => r'19f00b27d5baa76a2990616ebdc1251a48bfcdb9';
