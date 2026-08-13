@@ -46,7 +46,9 @@ class FollowRepository {
     QueueOfflineFollowCallback? queueOfflineAction,
     QueryContactListCallback? queryContactList,
     RelayFactory? relayFactory,
+    BlockedPubkeysCallback? blockedPubkeys,
   }) : _nostrClient = nostrClient,
+       _blockedPubkeys = blockedPubkeys,
        _isCacheInitialized = isCacheInitialized,
        _getCachedEventsByKind = getCachedEventsByKind,
        _cacheUserEvent = cacheUserEvent,
@@ -82,6 +84,11 @@ class FollowRepository {
 
   /// Factory for creating relay instances (injectable for testing).
   final RelayFactory _relayFactory;
+
+  /// Callback supplying the accounts the signing user has blocked.
+  ///
+  /// Null leaves the published contact list unfiltered.
+  final BlockedPubkeysCallback? _blockedPubkeys;
 
   /// Default relay factory — creates a real [RelayBase].
   static RelayBase _defaultRelayFactory(String url, RelayStatus status) =>
@@ -2366,6 +2373,54 @@ class FollowRepository {
     );
   }
 
+  /// Republish the contact list without changing who is followed.
+  ///
+  /// Blocking never runs through follow/unfollow, and nothing republishes
+  /// kind 3 on a schedule, so a block that contradicts the follow list would
+  /// otherwise sit on relays until the user's next unrelated follow — which
+  /// may never come. The app layer calls this to settle that contradiction
+  /// (#6903); the omission itself happens in [_publishableFollows].
+  ///
+  /// Throws if the user is not authenticated.
+  Future<void> republishContactList() async {
+    if (!_nostrClient.hasKeys) {
+      throw Exception('User not authenticated');
+    }
+    await _broadcastContactList();
+  }
+
+  /// The follows to publish: [_followingPubkeys] minus the accounts the
+  /// signing user has blocked.
+  ///
+  /// Blocking hides an account throughout the app, but leaving it in the
+  /// published kind 3 tells every other client — and Divine's own public,
+  /// unauthenticated follower APIs — that the user still follows them
+  /// (#6903).
+  ///
+  /// The local list is deliberately **not** mutated. That keeps every
+  /// in-app reader on today's behaviour, and it makes unblocking restore
+  /// the follow on the next publish rather than costing it permanently.
+  List<String> _publishableFollows() {
+    final blocked = _blockedPubkeys?.call(_nostrClient.publicKey);
+    if (blocked == null || blocked.isEmpty) return _followingPubkeys;
+
+    final publishable = _followingPubkeys
+        .where((pubkey) => !blocked.contains(pubkey))
+        .toList();
+
+    final omittedCount = _followingPubkeys.length - publishable.length;
+    if (omittedCount > 0) {
+      Log.info(
+        'Omitting $omittedCount blocked pubkey(s) from the published '
+        'contact list',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+
+    return publishable;
+  }
+
   /// Broadcast updated contact list to network (Kind 3 event)
   Future<void> _broadcastContactList() async {
     // Last line of defence: [executeFollowAction] appends without validating,
@@ -2378,9 +2433,8 @@ class FollowRepository {
     );
     _emitFollowingList();
 
-    // Create ContactList with all followed pubkeys
     final contactList = ContactList();
-    for (final pubkey in _followingPubkeys) {
+    for (final pubkey in _publishableFollows()) {
       contactList.add(Contact(publicKey: pubkey));
     }
 
