@@ -95,11 +95,22 @@ class LibraryToolbar extends StatelessWidget {
   /// Around four characters and an ellipsis at the default text scale. Below
   /// that the title is ellipsis with no word left to read, which is the state
   /// #7165 reported at 320-360dp.
+  ///
+  /// Reserving it grows on [DivineIcon]'s capped curve rather than the raw
+  /// text scaler: the title is the one row child whose full text nobody needs
+  /// to read — every locale says the same word — while the actions beside it
+  /// are the reason the screen is open. Left uncapped, a 2x scale would spend
+  /// 160px holding four characters and push a button into the menu on a
+  /// phone wide enough to show it.
   static const _minTitleWidth = 72.0;
 
   /// Outer width of a `small` [DivineIconButton] — its 40px chip inside a
   /// 48px tap target. Scales with the text scaler, on [DivineIcon]'s capped
   /// curve, exactly as the button itself does.
+  ///
+  /// Type-independent: a destructive button pads by the border width that a
+  /// bordered one paints instead, so both land on the same outer bounds.
+  /// `library_toolbar_test` pins that, like [_chipChrome].
   static const _iconButtonWidth = 48.0;
 
   /// Width a `small` [DivineButton] adds around its label: 4px outer padding,
@@ -216,13 +227,20 @@ class LibraryToolbar extends StatelessWidget {
 
     final iconButtonExtent = _iconButtonExtent(context);
     final titleExtent =
-        MediaQuery.textScalerOf(context).scale(_minTitleWidth) +
-        _titlePadding * 2;
+        DivineIcon.scaleSize(context, _minTitleWidth) + _titlePadding * 2;
     final extents = [
       for (final action in actions) _actionExtent(context, action),
     ];
 
+    // The first collapse swaps the front action for a more button, so it only
+    // narrows the row by whatever that action is wider than one. An icon-only
+    // action is exactly as wide, which makes collapsing it alone a pure loss:
+    // same row, one extra tap to reach it. There the row starts narrowing at
+    // the second collapse, and the first is skipped.
+    final firstUsefulOverflow = extents.first > iconButtonExtent ? 1 : 2;
+
     for (var overflow = 0; overflow < actions.length; overflow++) {
+      if (overflow > 0 && overflow < firstUsefulOverflow) continue;
       // Leading button and title.
       var width = iconButtonExtent + titleExtent;
       var children = 2;
@@ -237,9 +255,10 @@ class LibraryToolbar extends StatelessWidget {
       if (width + _spacing * (children - 1) <= maxWidth) return overflow;
     }
 
-    // Nothing fits: keep the primary action anyway. It is capped instead —
-    // see [_primaryMaxWidth].
-    return actions.length - 1;
+    // Nothing fits: collapse everything the row can spare and keep the
+    // primary action anyway. It is capped instead — see [_primaryMaxWidth].
+    final most = actions.length - 1;
+    return most < firstUsefulOverflow ? 0 : most;
   }
 
   /// Width left for the primary action once every other row child has taken

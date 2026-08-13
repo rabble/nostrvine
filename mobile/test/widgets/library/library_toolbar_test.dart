@@ -312,10 +312,12 @@ void main() {
       testWidgets('keeps the primary action when only part of the row fits', (
         tester,
       ) async {
-        // A large text scale eats the room the icon buttons need, but not the
-        // room for Select — the least important actions leave first.
+        // A large text scale on a small phone eats the room the icon buttons
+        // need, but not the room for Select — the least important actions
+        // leave first.
         await tester.pumpWidget(
           buildWidget(
+            width: narrowWidth,
             textScaler: const TextScaler.linear(2),
             onManageActiveCategory: () {},
           ),
@@ -413,6 +415,77 @@ void main() {
         }
       });
 
+      testWidgets('does not collapse a lone icon-only action', (tester) async {
+        // Collapsing one icon action swaps it for a more button of the same
+        // width: the row would be no narrower and sorting would cost a tap
+        // more. Below the width where both fit, the row keeps them both.
+        await tester.pumpWidget(buildWidget(width: narrowWidth));
+
+        expect(iconButton(DivineIconName.dotsThree), findsNothing);
+        expect(iconButton(DivineIconName.funnelSimple), findsOneWidget);
+        expect(find.text(en.librarySelect), findsOneWidget);
+      });
+
+      testWidgets('keeps the same actions past the icon scaling cap', (
+        tester,
+      ) async {
+        // Selecting offers only icon actions, so every width the toolbar
+        // estimates — buttons and the title it holds back for — is on
+        // DivineIcon's capped curve. Past the cap a larger text scale must
+        // not push another action into the menu.
+        for (var width = 280.0; width <= 520.0; width += 5) {
+          final visible = <int>[];
+          for (final scale in [1.3, 2.0]) {
+            await tester.pumpWidget(
+              buildWidget(
+                width: width,
+                textScaler: TextScaler.linear(scale),
+                isLibrarySelectionMode: true,
+                onMoveSelectedClips: () {},
+                onDeleteSelectedClips: () {},
+              ),
+            );
+            visible.add(
+              find
+                  .byWidgetPredicate((widget) => widget is DivineIconButton)
+                  .evaluate()
+                  .length,
+            );
+          }
+
+          expect(
+            visible.first,
+            equals(visible.last),
+            reason: 'row lost an action between 1.3x and 2x at ${width}dp',
+          );
+        }
+      });
+
+      testWidgets('estimates an icon button at the width it renders', (
+        tester,
+      ) async {
+        // Every icon action is estimated as one 48px tap target, whatever its
+        // type: a destructive button pads by the border width a secondary one
+        // paints instead, so both land on the same outer bounds. If that stops
+        // holding, the estimate goes under and the row overflows.
+        await tester.pumpWidget(
+          buildWidget(
+            isLibrarySelectionMode: true,
+            onMoveSelectedClips: () {},
+            onDeleteSelectedClips: () {},
+          ),
+        );
+
+        expect(
+          tester.getSize(iconButton(DivineIconName.folderOpen)).width,
+          equals(48),
+        );
+        expect(
+          tester.getSize(iconButton(DivineIconName.trash)).width,
+          equals(48),
+        );
+      });
+
       testWidgets('estimates a Select chip no narrower than it renders', (
         tester,
       ) async {
@@ -476,7 +549,11 @@ void main() {
       ) async {
         var pressed = false;
         await tester.pumpWidget(
-          buildWidget(width: narrowWidth, onOpenSortMenu: () => pressed = true),
+          buildWidget(
+            width: narrowWidth,
+            onOpenSortMenu: () => pressed = true,
+            onManageActiveCategory: () {},
+          ),
         );
 
         await tester.tap(iconButton(DivineIconName.dotsThree));
