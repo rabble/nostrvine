@@ -438,7 +438,7 @@ void main() {
             startSeconds: 0,
             endSeconds: 30,
             source: ViewTrafficSource.home,
-            loopCount: 5.0,
+            loopCount: 2.4,
           );
 
           final captured = verify(
@@ -451,7 +451,41 @@ void main() {
 
           final tags = captured[0] as List<List<String>>;
           final loopsTag = tags.firstWhere((t) => t[0] == 'loops');
-          expect(double.parse(loopsTag[1]), closeTo(5, 0.01));
+          expect(double.parse(loopsTag[1]), closeTo(2.4, 0.0001));
+        },
+      );
+
+      test(
+        'a partial pass reaches the tag as a fraction, not rounded',
+        () async {
+          final video = createTestVideoEvent(
+            id: 'partial_pass_video_id',
+            pubkey: creatorPubkey,
+            vineId: 'partial_pass_vine_id',
+          );
+
+          // The median signed view event is 0.75 of a pass. Rounding or
+          // flooring anywhere on the publish path turns that into 1 or 0, so
+          // the value has to survive verbatim.
+          await publisher.publishViewEvent(
+            video: video,
+            startSeconds: 0,
+            endSeconds: 5,
+            source: ViewTrafficSource.home,
+            loopCount: 0.75,
+          );
+
+          final captured = verify(
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: captureAny(named: 'tags'),
+            ),
+          ).captured;
+
+          final tags = captured[0] as List<List<String>>;
+          final loopsTag = tags.firstWhere((t) => t[0] == 'loops');
+          expect(double.parse(loopsTag[1]), closeTo(0.75, 0.0001));
         },
       );
 
