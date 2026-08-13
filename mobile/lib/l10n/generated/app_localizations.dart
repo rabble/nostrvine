@@ -11339,7 +11339,7 @@ abstract class AppLocalizations {
   /// **'Grid size'**
   String get libraryGridSizeLabel;
 
-  /// Row in the library overflow menu that opens the sorting and grid size options. Used when the toolbar is too narrow to show that button.
+  /// Names the library action that opens the sorting and grid size options. Used twice: as the accessibility label of the toolbar button, and as the visible label of its overflow-menu row when the toolbar is too narrow to show that button.
   ///
   /// In en, this message translates to:
   /// **'Sort & grid size'**

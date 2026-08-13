@@ -4064,7 +4064,7 @@
   },
   "libraryDisplayOptionsLabel": "Sort & grid size",
   "@libraryDisplayOptionsLabel": {
-    "description": "Row in the library overflow menu that opens the sorting and grid size options. Used when the toolbar is too narrow to show that button."
+    "description": "Names the library action that opens the sorting and grid size options. Used twice: as the accessibility label of the toolbar button, and as the visible label of its overflow-menu row when the toolbar is too narrow to show that button."
   },
   "libraryMoreActionsSemanticLabel": "More library actions",
   "@libraryMoreActionsSemanticLabel": {
