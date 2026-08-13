@@ -15,9 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/curated_list_relay_gateway.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -29,22 +29,6 @@ typedef OnListSubscribedCallback =
 /// Callback type for list unsubscription events
 /// Called with listId when a list is unsubscribed
 typedef OnListUnsubscribedCallback = void Function(String listId);
-
-enum _UnsealItemTagsStatus { notSealed, unsealed, failed }
-
-final class _UnsealedItemTags {
-  const _UnsealedItemTags._(this.status, [this.tags]);
-
-  const _UnsealedItemTags.notSealed() : this._(_UnsealItemTagsStatus.notSealed);
-
-  const _UnsealedItemTags.unsealed(List<List<String>> tags)
-    : this._(_UnsealItemTagsStatus.unsealed, tags);
-
-  const _UnsealedItemTags.failed() : this._(_UnsealItemTagsStatus.failed);
-
-  final _UnsealItemTagsStatus status;
-  final List<List<String>>? tags;
-}
 
 /// Service for managing NIP-51 curated lists.
 ///
@@ -64,7 +48,11 @@ class CuratedListService extends ChangeNotifier {
        _prefs = prefs,
        _onListSubscribed = onListSubscribed,
        _onListUnsubscribed = onListUnsubscribed,
-       _relaySyncTimeout = relaySyncTimeout {
+       _relaySyncTimeout = relaySyncTimeout,
+       _relayGateway = CuratedListRelayGateway(
+         nostrService: nostrService,
+         authService: authService,
+       ) {
     _loadLists();
     _loadSubscribedListIds();
   }
@@ -72,6 +60,7 @@ class CuratedListService extends ChangeNotifier {
   final AuthService _authService;
   final SharedPreferences _prefs;
   final Duration _relaySyncTimeout;
+  final CuratedListRelayGateway _relayGateway;
 
   /// Callback invoked when a list is subscribed (for video cache sync)
   OnListSubscribedCallback? _onListSubscribed;
@@ -149,7 +138,7 @@ class CuratedListService extends ChangeNotifier {
   /// only on a null [CuratedList.nostrEventId] made lists vanish from the
   /// "My Lists" UI the moment they reached the relay.
   List<CuratedList> get myLists {
-    final currentPubkey = _currentAuthenticatedPubkey();
+    final currentPubkey = _relayGateway.currentAuthenticatedPubkey();
     return _lists
         .where(
           (list) =>
@@ -302,7 +291,7 @@ class CuratedListService extends ChangeNotifier {
 
       final now = DateTime.now();
       final listId = id ?? _generateListId(now);
-      final ownerPubkey = _currentAuthenticatedPubkey();
+      final ownerPubkey = _relayGateway.currentAuthenticatedPubkey();
 
       final newList = CuratedList(
         id: listId,
@@ -357,7 +346,8 @@ class CuratedListService extends ChangeNotifier {
   }
 
   Future<bool> _commitListMutation(CuratedList updatedList) async {
-    if (!updatedList.isPublic && !_privateItemPayloadFits(updatedList)) {
+    if (!updatedList.isPublic &&
+        !_relayGateway.privateItemPayloadFits(updatedList)) {
       return false;
     }
 
@@ -640,7 +630,7 @@ class CuratedListService extends ChangeNotifier {
       }
 
       if (plaintextEventId != null) {
-        await _redactPlaintextListEvent(plaintextEventId);
+        await _relayGateway.redactPlaintextListEvent(plaintextEventId);
       }
 
       // A successful publish already persisted the edit: _publishListToNostr
@@ -713,7 +703,7 @@ class CuratedListService extends ChangeNotifier {
       // kinds need the NIP-09 request. A list that never published has no
       // event to delete — [nostrEventId] is how we know.
       if (list.nostrEventId != null) {
-        if (!await _publishListDeletion(listId)) {
+        if (!await _relayGateway.publishListDeletion(listId)) {
           return false;
         }
       }
@@ -737,83 +727,6 @@ class CuratedListService extends ChangeNotifier {
       );
       return false;
     }
-  }
-
-  /// Asks relays to drop the plaintext list event a privacy flip replaced.
-  ///
-  /// The sealed replacement already overwrote the coordinate on every relay
-  /// that accepted it; this reaches the relays that did not, so the worst
-  /// case of a partial flip is a relay serving nothing rather than a relay
-  /// still serving the items in plain `e` tags.
-  ///
-  /// Deliberately an `e` tag on [plaintextEventId] and never an `a` tag on the
-  /// coordinate: NIP-09 has relays honour a coordinate deletion for every
-  /// version up to the request's `created_at`, which would take the sealed
-  /// replacement down with the original.
-  ///
-  /// Best effort by contract. NIP-09 is a request relays SHOULD honour, and
-  /// anything that already read the public copy keeps it, so the caller must
-  /// not gate the flip on the result — the flip is already committed by the
-  /// time this runs.
-  Future<void> _redactPlaintextListEvent(String plaintextEventId) async {
-    final event = await _authService.createAndSignEvent(
-      kind: EventKind.eventDeletion,
-      content: '',
-      tags: [
-        ['e', plaintextEventId],
-        ['k', '30005'],
-      ],
-    );
-    if (event == null) {
-      Log.warning(
-        'Could not sign redaction for public list event $plaintextEventId',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    final result = await _nostrService.publishEvent(event);
-    final failureReason = result.failureReason;
-    if (failureReason != null) {
-      Log.warning(
-        'Failed to redact public list event $plaintextEventId: '
-        '$failureReason',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  Future<bool> _publishListDeletion(String listId) async {
-    final currentPubkey = _currentAuthenticatedPubkey();
-    if (currentPubkey == null || currentPubkey.isEmpty) {
-      return false;
-    }
-
-    final event = await _authService.createAndSignEvent(
-      kind: EventKind.eventDeletion,
-      content: 'Deleted curated list $listId',
-      tags: [
-        ['a', '30005:$currentPubkey:$listId'],
-        ['k', '30005'],
-      ],
-    );
-    if (event == null) return false;
-
-    // Confirmed, for the same reason as the confirmed publish path: both
-    // callers drop or flip local state when this returns false, and a queued
-    // deletion that lands after the rollback would delete the list the user
-    // still has.
-    final outcome = await _nostrService.publishEventAwaitOk(event);
-    if (outcome.acceptedByAny) return true;
-
-    Log.warning(
-      'Failed to publish curated list deletion: ${outcome.summary}',
-      name: 'CuratedListService',
-      category: LogCategory.system,
-    );
-    return false;
   }
 
   /// Removes [listId] locally, re-resolving its position by ID.
@@ -1190,7 +1103,7 @@ class CuratedListService extends ChangeNotifier {
 
   /// Check whether the current user owns a locally cached curated list.
   bool isOwnedList(String listId) {
-    final currentPubkey = _currentAuthenticatedPubkey();
+    final currentPubkey = _relayGateway.currentAuthenticatedPubkey();
     if (currentPubkey == null || currentPubkey.isEmpty) {
       return false;
     }
@@ -1206,19 +1119,6 @@ class CuratedListService extends ChangeNotifier {
     }
 
     return ownerPubkey == currentPubkey;
-  }
-
-  String? _currentAuthenticatedPubkey() {
-    if (!_authService.isAuthenticated) {
-      return null;
-    }
-
-    final currentPubkey = _authService.currentPublicKeyHex;
-    if (currentPubkey == null || currentPubkey.isEmpty) {
-      return null;
-    }
-
-    return currentPubkey;
   }
 
   /// Get readable summary of lists containing a video
@@ -1250,66 +1150,6 @@ class CuratedListService extends ChangeNotifier {
       description: 'My favorite vines and videos',
       isPublic: false,
     );
-  }
-
-  /// NIP-44 encrypts [list]'s item tags to their owner.
-  ///
-  /// Encrypting to our own pubkey is what makes a list readable on our other
-  /// devices and opaque to everyone else, including the relay storing it.
-  /// Returns `null` when there is nobody to encrypt to or the signer refuses,
-  /// which callers must treat as "do not publish": a private list published
-  /// without this would expose exactly what it is meant to hide.
-  Future<String?> _sealItemTags(CuratedList list) async {
-    final ownerPubkey = _currentAuthenticatedPubkey();
-    if (ownerPubkey == null || ownerPubkey.isEmpty) {
-      Log.warning(
-        'Cannot seal private list ${list.id} - no authenticated pubkey',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-
-    final plaintext = _privateItemPlaintext(list);
-    if (!_privateItemPayloadFits(list)) {
-      Log.error(
-        'Cannot seal private list ${list.id} - item payload exceeds the '
-        'NIP-44 plaintext limit',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-
-    final signer = _nostrService.signer;
-    final signerPubkey = await signer.getPublicKey();
-    if (signerPubkey == null || signerPubkey != ownerPubkey) {
-      Log.error(
-        'Cannot seal private list ${list.id} - signer does not match the '
-        'authenticated account',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-
-    final sealed = await signer.nip44Encrypt(signerPubkey, plaintext);
-    if (sealed == null) {
-      Log.error(
-        'NIP-44 encryption failed for private list ${list.id}',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-    }
-    return sealed;
-  }
-
-  String _privateItemPlaintext(CuratedList list) {
-    return jsonEncode(CuratedListConverter.toItemTags(list));
-  }
-
-  bool _privateItemPayloadFits(CuratedList list) {
-    return utf8.encode(_privateItemPlaintext(list)).length <= 65535;
   }
 
   /// Publishes [list] as a NIP-51 kind 30005 event.
@@ -1352,7 +1192,7 @@ class CuratedListService extends ChangeNotifier {
         content = list.description ?? 'Curated video list: ${list.name}';
         tags = CuratedListConverter.toEventTags(list);
       } else {
-        final sealed = await _sealItemTags(list);
+        final sealed = await _relayGateway.sealItemTags(list);
         if (sealed == null) return false;
         content = sealed;
         tags = CuratedListConverter.toPrivateMetadataTags(list);
@@ -1672,358 +1512,6 @@ class CuratedListService extends ChangeNotifier {
     }
   }
 
-  /// Stream public curated lists from Nostr relays for discovery
-  /// Yields lists immediately as they arrive - no waiting for EOSE
-  /// Handles deduplication by 'd' tag (keeps newest version)
-  /// Use [until] to paginate backwards (set to oldest createdAt from previous batch)
-  /// Use [limit] to control how many events to request (default: 500)
-  /// Use [excludeIds] to skip lists already known (for pagination)
-  Stream<List<CuratedList>> streamPublicListsFromRelays({
-    DateTime? until,
-    int limit = 500,
-    Set<String>? excludeIds,
-  }) async* {
-    Log.info(
-      '📋 Streaming public curated lists from relays (limit: $limit)${until != null ? ' (until: $until)' : ''}'
-      '${excludeIds != null ? ' (excluding ${excludeIds.length} known)' : ''}...',
-      name: 'CuratedListService',
-      category: LogCategory.system,
-    );
-
-    // Track lists by d-tag for deduplication (keep newest)
-    final listsByDTag = <String, CuratedList>{};
-    final skipIds = excludeIds ?? <String>{};
-    var totalEventsReceived = 0;
-    var listsWithVideos = 0;
-    var rejectedCount = 0;
-
-    // Build filter - use until for pagination (convert DateTime to Unix timestamp)
-    // Include limit to ensure relays return a reasonable number of events
-    final filter = Filter(
-      kinds: [30005], // NIP-51 curated lists
-      until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
-      limit: limit,
-    );
-
-    Log.info(
-      '📋 Filter: ${filter.toJson()}',
-      name: 'CuratedListService',
-      category: LogCategory.system,
-    );
-
-    final subscription = _nostrService.subscribe([filter]);
-
-    await for (final event in subscription) {
-      totalEventsReceived++;
-      // Log progress every 100 events (reduced spam)
-      if (totalEventsReceived % 100 == 0) {
-        Log.info(
-          '📋 Progress: $totalEventsReceived events, $listsWithVideos with videos, '
-          '$rejectedCount empty',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-      }
-      final curatedList = _eventToCuratedList(event);
-
-      // Track rejected lists for summary (don't log each one)
-      if (curatedList == null || curatedList.videoEventIds.isEmpty) {
-        rejectedCount++;
-      }
-
-      if (curatedList != null && curatedList.videoEventIds.isNotEmpty) {
-        listsWithVideos++;
-        final dTag = curatedList.id;
-
-        // Skip lists we already know about (for pagination)
-        if (skipIds.contains(dTag)) {
-          continue;
-        }
-
-        final existing = listsByDTag[dTag];
-
-        // Keep newest version
-        if (existing == null ||
-            curatedList.updatedAt.isAfter(existing.updatedAt)) {
-          listsByDTag[dTag] = curatedList;
-
-          // Yield current accumulated list sorted by video count
-          final sortedLists = listsByDTag.values.toList()
-            ..sort(
-              (a, b) =>
-                  b.videoEventIds.length.compareTo(a.videoEventIds.length),
-            );
-          yield sortedLists;
-        }
-      }
-    }
-
-    // Log final stats when stream completes
-    Log.info(
-      '📋 Stream complete: received $totalEventsReceived events, '
-      '$listsWithVideos had videos, ${listsByDTag.length} unique lists',
-      name: 'CuratedListService',
-      category: LogCategory.system,
-    );
-  }
-
-  /// Fetches a single public curated list (kind 30005) by author + d-tag.
-  ///
-  /// Queries local cache + relays via [NostrClient.queryEvents]. Returns
-  /// `null` when no matching list event is found. No result limit is set,
-  /// so a stale cached version and a newer relay version can both arrive —
-  /// the winner follows NIP-01 replaceable/addressable ordering (newer
-  /// `created_at`, lowest event id on a tie; see [_replacesList]). Author +
-  /// d-tag are re-checked on each result because queryEvents merges cache
-  /// hits, whose filter support can be looser than a relay's.
-  Future<CuratedList?> fetchPublicList({
-    required String authorPubkey,
-    required String listId,
-  }) async {
-    final events = await _nostrService.queryEvents([
-      Filter(
-        kinds: [30005], // NIP-51 curated lists
-        authors: [authorPubkey],
-        d: [listId],
-      ),
-    ]);
-
-    CuratedList? winner;
-    for (final event in events) {
-      final list = _eventToCuratedList(event);
-      if (list == null || list.id != listId || list.pubkey != authorPubkey) {
-        continue;
-      }
-      if (winner == null || _replacesList(list, winner)) {
-        winner = list;
-      }
-    }
-    return winner;
-  }
-
-  /// NIP-01 replaceable/addressable ordering: a newer `created_at` wins; on an
-  /// equal timestamp the lowest event id (first in lexical order) is retained.
-  bool _replacesList(CuratedList candidate, CuratedList current) {
-    if (candidate.updatedAt.isAfter(current.updatedAt)) return true;
-    if (candidate.updatedAt.isBefore(current.updatedAt)) return false;
-    return (candidate.nostrEventId ?? '').compareTo(
-          current.nostrEventId ?? '',
-        ) <
-        0;
-  }
-
-  /// Fetch public curated lists from Nostr relays for discovery (legacy)
-  /// Prefer streamPublicListsFromRelays for immediate results
-  /// WARNING: This waits forever since Nostr streams don't close - use stream version
-  Future<List<CuratedList>> fetchPublicListsFromRelays({
-    List<String>? searchTags,
-  }) async {
-    final lists = <CuratedList>[];
-    await for (final update in streamPublicListsFromRelays()) {
-      lists
-        ..clear()
-        ..addAll(update);
-    }
-
-    // Apply tag filter if specified
-    if (searchTags != null && searchTags.isNotEmpty) {
-      return lists.where((list) {
-        return list.tags.any((tag) => searchTags.contains(tag.toLowerCase()));
-      }).toList();
-    }
-
-    return lists;
-  }
-
-  /// Fetch public lists from any user that contain a specific video
-  /// Uses Nostr #e filter to find kind 30005 events referencing the video
-  /// Returns list of CuratedList objects (progressive loading via stream version)
-  Future<List<CuratedList>> fetchPublicListsContainingVideo(
-    String videoEventId,
-  ) async {
-    Log.info(
-      '📋 Fetching public lists containing video: $videoEventId',
-      name: 'CuratedListService',
-      category: LogCategory.system,
-    );
-
-    StreamSubscription<Event>? relaySubscription;
-    Timer? timeoutTimer;
-    try {
-      final completer = Completer<void>();
-      final receivedEvents = <Event>[];
-
-      // Build filter for lists containing this video
-      final filter = Filter(
-        kinds: [30005], // NIP-51 curated lists
-        e: [videoEventId], // Lists that reference this video event
-        limit: 50,
-      );
-
-      // Subscribe to matching events
-      final subscription = _nostrService.subscribe([filter]);
-
-      // Set a timeout for the subscription
-      timeoutTimer = Timer(const Duration(seconds: 10), () {
-        Log.debug(
-          'Public lists containing video fetch timeout, processing received events',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        if (!completer.isCompleted) {
-          final subscription = relaySubscription;
-          relaySubscription = null;
-          unawaited(subscription?.cancel());
-          completer.complete();
-        }
-      });
-
-      relaySubscription = subscription.listen(
-        (event) {
-          receivedEvents.add(event);
-          Log.debug(
-            'Received public list containing video: ${event.id}',
-            name: 'CuratedListService',
-            category: LogCategory.system,
-          );
-        },
-        onDone: () {
-          timeoutTimer?.cancel();
-          if (!completer.isCompleted) {
-            completer.complete();
-          }
-        },
-        onError: (error) {
-          Log.error(
-            'Error fetching public lists containing video: $error',
-            name: 'CuratedListService',
-            category: LogCategory.system,
-          );
-          timeoutTimer?.cancel();
-          if (!completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      await completer.future;
-
-      // Process received events into CuratedList objects
-      final publicLists = <CuratedList>[];
-
-      if (receivedEvents.isNotEmpty) {
-        // Group events by 'd' tag to handle replaceable events (keep newest)
-        final eventsByDTag = <String, Event>{};
-
-        for (final event in receivedEvents) {
-          final dTag = CuratedListConverter.extractDTag(event);
-          if (dTag != null) {
-            final existingEvent = eventsByDTag[dTag];
-            if (existingEvent == null ||
-                event.createdAt > existingEvent.createdAt) {
-              eventsByDTag[dTag] = event;
-            }
-          }
-        }
-
-        Log.debug(
-          'Processing ${eventsByDTag.length} unique public lists containing video',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-
-        for (final event in eventsByDTag.values) {
-          final curatedList = _eventToCuratedList(event);
-          if (curatedList != null) {
-            publicLists.add(curatedList);
-          }
-        }
-      }
-
-      Log.info(
-        '✅ Found ${publicLists.length} public lists containing video',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-
-      return publicLists;
-    } catch (e) {
-      Log.error(
-        'Failed to fetch public lists containing video: $e',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return [];
-    } finally {
-      timeoutTimer?.cancel();
-      await relaySubscription?.cancel();
-    }
-  }
-
-  /// Stream public lists containing a specific video for progressive loading
-  /// Emits CuratedList objects as they arrive from relays
-  Stream<CuratedList> streamPublicListsContainingVideo(String videoEventId) {
-    Log.info(
-      '📋 Streaming public lists containing video: $videoEventId',
-      name: 'CuratedListService',
-      category: LogCategory.system,
-    );
-
-    // Build filter for lists containing this video
-    final filter = Filter(
-      kinds: [30005], // NIP-51 curated lists
-      e: [videoEventId], // Lists that reference this video event
-      limit: 50,
-    );
-
-    // Track seen d-tags to handle replaceable events
-    final seenDTags = <String, Event>{};
-
-    // Subscribe and transform events to CuratedList objects
-    return _nostrService
-        .subscribe([filter])
-        .map((event) {
-          final dTag = CuratedListConverter.extractDTag(event);
-          if (dTag == null) return null;
-
-          // Check if we've seen a newer version of this list
-          final existing = seenDTags[dTag];
-          if (existing != null && existing.createdAt >= event.createdAt) {
-            return null; // Skip older version
-          }
-          seenDTags[dTag] = event;
-
-          return _eventToCuratedList(event);
-        })
-        .where((list) => list != null)
-        .cast<CuratedList>();
-  }
-
-  /// Convert a Nostr event to a CuratedList object
-  /// Returns null if event is invalid or cannot be parsed
-  CuratedList? _eventToCuratedList(Event event) {
-    final curatedList = CuratedListConverter.fromEvent(event);
-    if (curatedList == null) {
-      Log.warning(
-        'Failed to parse list event: ${event.id}',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-
-    if (curatedList.videoEventIds.isNotEmpty) {
-      Log.debug(
-        '📋 Found list "${curatedList.id}" with '
-        '${curatedList.videoEventIds.length} videos',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-    }
-
-    return curatedList;
-  }
-
   /// Process list events received from relays
   Future<void> _processReceivedListEvents(List<Event> events) async {
     // Group events by 'd' tag to handle replaceable events
@@ -2068,7 +1556,7 @@ class CuratedListService extends ChangeNotifier {
   Future<void> _backfillUnpublishedLists() async {
     if (!_authService.isAuthenticated) return;
 
-    final owner = _currentAuthenticatedPubkey();
+    final owner = _relayGateway.currentAuthenticatedPubkey();
     if (owner == null) return;
 
     final stranded = _lists
@@ -2107,63 +1595,11 @@ class CuratedListService extends ChangeNotifier {
     }
   }
 
-  /// Recovers the item tags a private list sealed into [event]'s content.
-  ///
-  /// A failed unseal is distinct from a public list: merging a sealed event as
-  /// public would drop the private items locally and publish them in plain tags
-  /// on the next edit.
-  Future<_UnsealedItemTags> _unsealItemTags(Event event) async {
-    if (event.content.isEmpty || _hasPublicItemTags(event.tags)) {
-      return const _UnsealedItemTags.notSealed();
-    }
-    if (!CuratedListConverter.isEncryptedItemPayload(event.content)) {
-      return const _UnsealedItemTags.notSealed();
-    }
-
-    final ownerPubkey = _currentAuthenticatedPubkey();
-    // Only our own lists are encrypted to us. Asking the signer about
-    // everyone else's costs a round trip per list to be told no.
-    if (ownerPubkey == null || event.pubkey != ownerPubkey) {
-      return const _UnsealedItemTags.failed();
-    }
-
-    try {
-      final signer = _nostrService.signer;
-      if (await signer.getPublicKey() != ownerPubkey) {
-        return const _UnsealedItemTags.failed();
-      }
-      final plaintext = CuratedListConverter.isNip44Payload(event.content)
-          ? await signer.nip44Decrypt(ownerPubkey, event.content)
-          : await signer.decrypt(ownerPubkey, event.content);
-      if (plaintext == null) return const _UnsealedItemTags.failed();
-
-      final decoded = jsonDecode(plaintext);
-      if (decoded is! List) return const _UnsealedItemTags.failed();
-      return _UnsealedItemTags.unsealed([
-        for (final dynamic tag in decoded)
-          if (tag is List) tag.map((dynamic value) => '$value').toList(),
-      ]);
-    } on Object catch (e) {
-      Log.debug(
-        'Content of list event ${event.id} is not sealed item tags: $e',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return const _UnsealedItemTags.failed();
-    }
-  }
-
-  bool _hasPublicItemTags(List<List<String>> tags) {
-    return tags.any(
-      (tag) => tag.isNotEmpty && (tag.first == 'e' || tag.first == 'a'),
-    );
-  }
-
   /// Process a single list event from Nostr
   Future<void> _processListEvent(Event event) async {
     try {
-      final unsealedItemTags = await _unsealItemTags(event);
-      if (unsealedItemTags.status == _UnsealItemTagsStatus.failed) {
+      final unsealedItemTags = await _relayGateway.unsealItemTags(event);
+      if (unsealedItemTags.status == UnsealItemTagsStatus.failed) {
         Log.warning(
           'Skipping list event ${event.id} because its private items '
           'could not be unsealed',
@@ -2177,7 +1613,7 @@ class CuratedListService extends ChangeNotifier {
         event,
         privateTags: unsealedItemTags.tags,
         isPrivateEvent:
-            unsealedItemTags.status == _UnsealItemTagsStatus.unsealed,
+            unsealedItemTags.status == UnsealItemTagsStatus.unsealed,
       );
       if (curatedList == null) {
         Log.warning(
@@ -2195,7 +1631,7 @@ class CuratedListService extends ChangeNotifier {
       if (existingListIndex != -1) {
         // Update existing list if relay version is newer
         final existingList = _lists[existingListIndex];
-        final ownerPubkey = _currentAuthenticatedPubkey();
+        final ownerPubkey = _relayGateway.currentAuthenticatedPubkey();
         final isSameOwner =
             existingList.pubkey == event.pubkey ||
             (existingList.pubkey == null &&
@@ -2286,4 +1722,36 @@ class CuratedListService extends ChangeNotifier {
       );
     }
   }
+
+  /// See [CuratedListRelayGateway.streamPublicListsFromRelays].
+  Stream<List<CuratedList>> streamPublicListsFromRelays({
+    DateTime? until,
+    int limit = 500,
+    Set<String>? excludeIds,
+  }) => _relayGateway.streamPublicListsFromRelays(
+    until: until,
+    limit: limit,
+    excludeIds: excludeIds,
+  );
+
+  /// See [CuratedListRelayGateway.fetchPublicList].
+  Future<CuratedList?> fetchPublicList({
+    required String authorPubkey,
+    required String listId,
+  }) =>
+      _relayGateway.fetchPublicList(authorPubkey: authorPubkey, listId: listId);
+
+  /// See [CuratedListRelayGateway.fetchPublicListsFromRelays].
+  Future<List<CuratedList>> fetchPublicListsFromRelays({
+    List<String>? searchTags,
+  }) => _relayGateway.fetchPublicListsFromRelays(searchTags: searchTags);
+
+  /// See [CuratedListRelayGateway.fetchPublicListsContainingVideo].
+  Future<List<CuratedList>> fetchPublicListsContainingVideo(
+    String videoEventId,
+  ) => _relayGateway.fetchPublicListsContainingVideo(videoEventId);
+
+  /// See [CuratedListRelayGateway.streamPublicListsContainingVideo].
+  Stream<CuratedList> streamPublicListsContainingVideo(String videoEventId) =>
+      _relayGateway.streamPublicListsContainingVideo(videoEventId);
 }
