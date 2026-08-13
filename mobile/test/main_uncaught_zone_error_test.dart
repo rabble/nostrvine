@@ -40,6 +40,25 @@ void main() {
       expect(filed, isEmpty);
     });
 
+    test('reports a socket failure the app inflicted on itself', () async {
+      // Narrowed in review: only a DNS failure is dropped here, so a leaked
+      // or double-closed descriptor still reaches Crashlytics (#7310).
+      const error = SocketException(
+        'OS Error: Bad file descriptor',
+        osError: OSError('Bad file descriptor', 9),
+      );
+
+      await app.handleUncaughtZoneError(
+        error,
+        StackTrace.current,
+        recordError: recorder(),
+      );
+
+      expect(filed, hasLength(1));
+      expect(filed.single.error, same(error));
+      expect(filed.single.reason, 'runZonedGuarded');
+    });
+
     test('still reports an unexpected error', () async {
       final error = StateError('No public key available');
 
