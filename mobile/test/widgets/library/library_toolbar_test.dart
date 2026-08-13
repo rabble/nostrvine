@@ -492,20 +492,32 @@ void main() {
         // The toolbar decides the collapse while building, so it estimates
         // the chip as label + 40px of chrome. An estimate below the rendered
         // width would overflow the row instead of collapsing it.
+        //
+        // Both halves are measured off the rendered chip. A `TextPainter` of
+        // the test's own would resolve whichever font `google_fonts` has
+        // registered by the time it runs — a real one once an earlier test
+        // has pumped, the fallback on a cold cache — so comparing one against
+        // a rendered width makes the pin depend on what ran first.
         await tester.pumpWidget(buildWidget());
 
-        final painter = TextPainter(
-          text: TextSpan(
-            text: en.librarySelect,
-            style: VineTheme.titleMediumFont(),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        final estimate = painter.width + 40;
-        painter.dispose();
-
+        final label = tester.getSize(find.text(en.librarySelect)).width;
         final rendered = tester.getSize(find.byType(DivineButton).first).width;
-        expect(estimate, greaterThanOrEqualTo(rendered));
+        expect(rendered - label, moreOrLessEquals(40, epsilon: 0.01));
+
+        // ...and the label the toolbar measures is styled like the one it
+        // renders, so the two widths are of the same text.
+        final chipStyle = tester
+            .widget<Text>(find.text(en.librarySelect))
+            .style;
+        final measured = VineTheme.titleMediumFont();
+        expect(chipStyle?.fontFamily, equals(measured.fontFamily));
+        expect(
+          chipStyle?.fontFamilyFallback,
+          equals(measured.fontFamilyFallback),
+        );
+        expect(chipStyle?.fontSize, equals(measured.fontSize));
+        expect(chipStyle?.fontWeight, equals(measured.fontWeight));
+        expect(chipStyle?.letterSpacing, equals(measured.letterSpacing));
       });
     });
 
