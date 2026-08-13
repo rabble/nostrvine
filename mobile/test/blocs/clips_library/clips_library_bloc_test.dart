@@ -1639,6 +1639,38 @@ void main() {
         },
       );
 
+      // Deleting a category unfiles its clips rather than removing them, so
+      // nothing the user picked has left the library and the selection has
+      // no reason to reset.
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'deleting a category keeps the clips selected',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.deleteCategory(travel.id),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [onScreen, offScreen]);
+        },
+        build: createBloc,
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [onScreen, offScreen],
+          sortedClips: [onScreen, offScreen],
+          selectedClipIds: const {'on-screen', 'off-screen'},
+          selectedDuration: const Duration(seconds: 4),
+          categories: [travel],
+        ),
+        act: (bloc) => bloc.add(ClipsLibraryCategoryDeleted(travel.id)),
+        verify: (bloc) {
+          expect(bloc.state.selectedClipIds, {'on-screen', 'off-screen'});
+          expect(bloc.state.selectedDuration, const Duration(seconds: 4));
+        },
+      );
+
       // The toolbar hands over only the clips the grid is showing, so the
       // rest of a cross-filter selection has to come out the other side of
       // the reload intact.

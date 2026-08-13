@@ -804,7 +804,9 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         event.categoryId,
       );
       if (!deleted) return;
-      await _reloadAfterOrganize(emit);
+      // Deleting a category leaves its clips alone — they only lose their
+      // filing — so nothing drops out of the selection here.
+      await _reloadAfterOrganize(emit, organizedIds: const {});
     } catch (e, stackTrace) {
       _handleOrganizeFailure('delete category', e, stackTrace, emit);
     }
@@ -878,11 +880,13 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   ///
   /// [organizedIds] leave the selection, since those clips have usually just
   /// left the view. Clips selected under another filter stay selected, the
-  /// same way switching filters keeps them.
+  /// same way switching filters keeps them. Required rather than defaulted:
+  /// an empty set keeps the whole selection, which is a decision each caller
+  /// should have to state rather than inherit.
   Future<void> _reloadAfterOrganize(
     Emitter<ClipsLibraryState> emit, {
+    required Set<String> organizedIds,
     ClipsLibraryOrganizeResult? result,
-    Set<String> organizedIds = const {},
   }) async {
     final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
     final categories = await _clipLibraryService.getCategories();
