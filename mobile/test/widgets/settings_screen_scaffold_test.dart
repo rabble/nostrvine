@@ -10,22 +10,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockLocaleCubit extends MockCubit<LocaleState> implements LocaleCubit {}
 
+class _MockNotificationPreferencesService extends Mock
+    implements NotificationPreferencesService {}
+
 void main() {
   group('Settings Screen Scaffold Structure', () {
     late _MockAuthService mockAuthService;
     late _MockLocaleCubit mockLocaleCubit;
+    late _MockNotificationPreferencesService mockPrefsService;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
@@ -33,6 +39,10 @@ void main() {
       sharedPreferences = await SharedPreferences.getInstance();
       mockAuthService = _MockAuthService();
       mockLocaleCubit = _MockLocaleCubit();
+      mockPrefsService = _MockNotificationPreferencesService();
+      when(
+        mockPrefsService.loadPreferences,
+      ).thenAnswer((_) async => const NotificationPreferences());
       when(() => mockLocaleCubit.state).thenReturn(const LocaleState());
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.isAnonymous).thenReturn(false);
@@ -155,6 +165,11 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
             notificationRepositoryProvider.overrideWithValue(null),
+            // The real store starts an `openBox('notifications')` this test
+            // never pumps to completion, stranding it for the whole isolate.
+            notificationPreferencesServiceProvider.overrideWithValue(
+              mockPrefsService,
+            ),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -182,6 +197,11 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
             notificationRepositoryProvider.overrideWithValue(null),
+            // The real store starts an `openBox('notifications')` this test
+            // never pumps to completion, stranding it for the whole isolate.
+            notificationPreferencesServiceProvider.overrideWithValue(
+              mockPrefsService,
+            ),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
