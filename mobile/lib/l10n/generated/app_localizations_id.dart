@@ -769,20 +769,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupProfilePublished => 'Profil berhasil dipublikasikan!';
 
   @override
-  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+  String get profileSetupUnsavedChangesTitle => 'Simpan perubahan?';
 
   @override
   String get profileSetupUnsavedChangesSubtitle =>
-      'Save your edits before leaving, or discard them and keep moving.';
+      'Simpan hasil editanmu sebelum keluar, atau buang saja dan lanjut.';
 
   @override
-  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+  String get profileSetupUnsavedChangesSaveButton => 'Simpan perubahan';
 
   @override
-  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+  String get profileSetupUnsavedChangesDiscardButton => 'Buang perubahan';
 
   @override
-  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+  String get profileSetupUnsavedChangesKeepButton => 'Lanjut mengedit';
 
   @override
   String get profileSetupCreateNewProfile => 'Buat profil baru?';
@@ -824,7 +824,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (Opsional)';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'Situs web (opsional)';
 
   @override
   String get profileSetupPublicKeyLabel => 'Kunci publik (npub)';
@@ -1031,37 +1031,37 @@ class AppLocalizationsId extends AppLocalizations {
       'Pakai kolom username di atas untuk divine.video';
 
   @override
-  String get nostrSettingsNip05Address => 'NIP-05 address';
+  String get nostrSettingsNip05Address => 'Alamat NIP-05';
 
   @override
   String get nostrSettingsNip05AddressSubtitle =>
-      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+      'Pakai nama pengguna divine.video kamu, atau arahkan handle kamu ke alamat NIP-05 di domain yang kamu kelola.';
 
   @override
   String get nostrSettingsNip05AddressHint => 'you@example.com';
 
   @override
-  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+  String get nostrSettingsNip05SaveAction => 'Simpan NIP-05';
 
   @override
-  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+  String get nostrSettingsNip05Saved => 'NIP-05 tersimpan';
 
   @override
   String get nostrSettingsNip05SaveFailed =>
-      'Couldn\'t save NIP-05. Please try again.';
+      'NIP-05 gagal disimpan. Coba lagi.';
 
   @override
-  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+  String get profileSetupNip05ConfirmTitle => 'Pakai NIP-05 milikmu sendiri?';
 
   @override
   String get profileSetupNip05ConfirmBody =>
-      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+      'NIP-05 menghubungkan nama seperti kamu@domainmu.com dengan identitas Nostr kamu. Kamu harus mengelola domainnya dan menaruh berkas verifikasi di jalur yang benar. Kalau salah, orang tidak bisa menemukanmu dan handle terverifikasimu hilang. Lanjutkan hanya kalau kamu sudah menyiapkannya.';
 
   @override
-  String get profileSetupNip05ConfirmContinue => 'Continue';
+  String get profileSetupNip05ConfirmContinue => 'Lanjut';
 
   @override
-  String get profileSetupNip05ConfirmCancel => 'Cancel';
+  String get profileSetupNip05ConfirmCancel => 'Batal';
 
   @override
   String get profileSetupProfilePicturePreview => 'Pratinjau foto profil';
@@ -1166,13 +1166,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Aplikasi Terintegrasi';
 
   @override
-  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+  String get featuredTabEmpty => 'Belum ada apa-apa di sini. Cek lagi nanti.';
 
   @override
-  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+  String get featuredTabLoadFailed => 'Koleksi ini gagal dimuat.';
 
   @override
-  String get featuredTabRetry => 'Try again';
+  String get featuredTabRetry => 'Coba lagi';
 
   @override
   String get exploreNoVideosAvailable => 'Tidak ada video tersedia';
@@ -1279,10 +1279,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'Teks nonaktif';
 
   @override
-  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+  String get videoSettingsCaptionsOnForVideo => 'Takarir aktif untuk video ini';
 
   @override
-  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+  String get videoSettingsCaptionsOffForVideo =>
+      'Takarir nonaktif untuk video ini';
 
   @override
   String get contentWarningLabel => 'Peringatan Konten';
@@ -1497,7 +1498,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'This video was removed for breaking our content rules.';
+      'Video ini dihapus karena melanggar aturan konten kami.';
 
   @override
   String get videoErrorVerifyAgeBody =>
@@ -1601,19 +1602,20 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get videoCollaboratorPendingDecoration => 'Pending';
+  String get videoCollaboratorPendingDecoration => 'Menunggu';
 
   @override
-  String get videoCollaboratorPendingSemanticLabel => 'Pending collaborator';
+  String get videoCollaboratorPendingSemanticLabel =>
+      'Kolaborator yang menunggu';
 
   @override
   String videoCollaboratorWithPendingSuffix(String label, int pending) {
-    return '$label ($pending pending)';
+    return '$label ($pending menunggu)';
   }
 
   @override
   String profileChipTapHint(String name) {
-    return '$name. Tap to view profile.';
+    return '$name. Ketuk untuk melihat profil.';
   }
 
   @override
@@ -2519,36 +2521,35 @@ class AppLocalizationsId extends AppLocalizations {
       'Saat orang yang kamu pantau memposting';
 
   @override
-  String get notificationSettingsSystem => 'System';
+  String get notificationSettingsSystem => 'Sistem';
 
   @override
   String get notificationSettingsSystemSubtitle =>
-      'App updates and system messages';
+      'Pembaruan aplikasi dan pesan sistem';
 
   @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Push Notifications';
+  String get notificationSettingsPushNotificationsSection => 'Notifikasi push';
 
   @override
-  String get notificationSettingsPushNotifications => 'Push Notifications';
+  String get notificationSettingsPushNotifications => 'Notifikasi push';
 
   @override
   String get notificationSettingsPushNotificationsSubtitle =>
-      'Receive notifications when app is closed';
+      'Terima notifikasi walau aplikasi tertutup';
 
   @override
-  String get notificationSettingsSound => 'Sound';
+  String get notificationSettingsSound => 'Suara';
 
   @override
   String get notificationSettingsSoundSubtitle =>
-      'Play sound for notifications';
+      'Mainkan suara untuk notifikasi';
 
   @override
-  String get notificationSettingsVibration => 'Vibration';
+  String get notificationSettingsVibration => 'Getaran';
 
   @override
   String get notificationSettingsVibrationSubtitle =>
-      'Vibrate for notifications';
+      'Bergetar saat ada notifikasi';
 
   @override
   String get notificationSettingsActions => 'Aksi';
@@ -2875,17 +2876,17 @@ class AppLocalizationsId extends AppLocalizations {
   String get authCreateNewAccount => 'Buat akun Divine baru';
 
   @override
-  String get authCreateNewAccountShort => 'Create new account';
+  String get authCreateNewAccountShort => 'Buat akun baru';
 
   @override
   String get authSignInDifferentAccount => 'Masuk dengan akun yang berbeda';
 
   @override
-  String get authUseAnotherAccount => 'Use another account';
+  String get authUseAnotherAccount => 'Pakai akun lain';
 
   @override
   String authContinueAs(String displayName) {
-    return 'Continue as $displayName';
+    return 'Lanjut sebagai $displayName';
   }
 
   @override
@@ -2898,13 +2899,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+      'Dengan memilih salah satu opsi di bawah, kamu mengonfirmasi bahwa usiamu minimal 16 tahun (atau sudah menyelesaikan ';
 
   @override
-  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+  String get authTermsAgeAuthorizationCta => 'otorisasi usia Divine';
 
   @override
-  String get authTermsAfterAgeAuthorization => ') and agree to the ';
+  String get authTermsAfterAgeAuthorization => ') dan menyetujui ';
 
   @override
   String get authTermsOfService => 'Ketentuan Layanan';
@@ -3119,15 +3120,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get authVerificationResendExpired =>
-      'That signup expired. Start again to get a fresh code.';
+      'Pendaftaran itu sudah kedaluwarsa. Mulai lagi untuk mendapat kode baru.';
 
   @override
   String get authVerificationResendUnavailable =>
-      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+      'Pengiriman ulang belum tersedia sekarang. Pakai kode 6 digit dari email yang sudah kami kirim.';
 
   @override
   String get authVerificationPollingStopped =>
-      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+      'Kami berhenti mengecek untukmu. Masukkan kode 6 digit dari emailmu untuk menyelesaikan proses masuk.';
 
   @override
   String get authWelcomeToDivine => 'Selamat datang di Divine!';
@@ -3205,7 +3206,8 @@ class AppLocalizationsId extends AppLocalizations {
       'Bagikan emailmu dan kami akan mengirim pembaruan saat akses terbuka.';
 
   @override
-  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+  String get authJoinWaitlistNewsletterOptIn =>
+      'Kirimi aku inspirasi dari Divine';
 
   @override
   String get authInviteAccessHelp => 'Bantuan akses undangan';
@@ -4015,11 +4017,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get shareMenuDeleteFailedRelayRejected =>
-      'The relay wouldn\'t accept this delete request. Try again in a moment.';
+      'Relay tidak menerima permintaan hapus ini. Coba lagi sebentar lagi.';
 
   @override
   String get shareMenuDeleteFailedRelayNoResponse =>
-      'Couldn\'t reach the relay. Check your connection and try again.';
+      'Relay tidak bisa dihubungi. Periksa koneksimu dan coba lagi.';
 
   @override
   String get shareMenuDeletePartiallyConfirmed =>
@@ -4333,10 +4335,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Dihapus dari Suara';
 
   @override
-  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+  String get soundsSaveFailed => 'Suara itu gagal disimpan. Coba lagi.';
 
   @override
-  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+  String get soundsRemoveFailed => 'Suara itu gagal dihapus. Coba lagi.';
 
   @override
   String get soundSyncStatusSyncing => 'Menyinkronkan suaramu…';
@@ -4394,11 +4396,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Couldn\'t load videos.';
+  String get profileFeedError => 'Video gagal dimuat.';
 
   @override
   String get profileFeedLoadMoreError =>
-      'Couldn\'t load more videos. Pull to refresh.';
+      'Video lainnya gagal dimuat. Tarik untuk menyegarkan.';
 
   @override
   String get notificationsTabAll => 'Semua';
@@ -4946,10 +4948,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get reportOtherRequiresDetails =>
-      'Please describe the issue when selecting Other';
+      'Jelaskan masalahnya kalau memilih Lainnya';
 
   @override
-  String get reportDetailsRequired => 'Please describe the issue';
+  String get reportDetailsRequired => 'Jelaskan masalahnya';
 
   @override
   String get reportReasonSpam => 'Spam atau Konten Tidak Diinginkan';
@@ -5289,11 +5291,11 @@ class AppLocalizationsId extends AppLocalizations {
       'layanan login tidak dapat dihubungi';
 
   @override
-  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+  String get keyManagementRestrictedTitle => 'Kuncimu dikelola oleh Divine';
 
   @override
   String get keyManagementRestrictedBody =>
-      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+      'Demi keamanan akunmu, pencadangan kunci dan impor kunci lain tidak tersedia di sini.';
 
   @override
   String get keyManagementPasteKey => 'Silakan tempel kunci privatmu';
@@ -5896,7 +5898,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxSearchHint => 'Cari pesan';
 
   @override
-  String get inboxSupportRowTitle => 'Divine Moderation';
+  String get inboxSupportRowTitle => 'Moderasi Divine';
 
   @override
   String get inboxSupportRowSubtitle =>
@@ -6022,7 +6024,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get dmSendBlockedMessage =>
-      'You can only message official Divine accounts';
+      'Kamu hanya bisa mengirim pesan ke akun resmi Divine';
 
   @override
   String get dmSendBlockedRetiredMessage =>
@@ -6056,7 +6058,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmConversationLoadError => 'Pesan tidak dapat dimuat';
 
   @override
-  String get dmMessageInputHint => 'Say something…';
+  String get dmMessageInputHint => 'Tulis sesuatu…';
 
   @override
   String get dmMessageBubbleSentHint => 'Pesan terkirim';
@@ -6089,7 +6091,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmMessageActionCancelSend => 'Berhenti mencoba';
 
   @override
-  String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
+  String get dmReactionAddCustomA11yLabel => 'Tambahkan reaksi emoji kustom';
 
   @override
   String dmReelReplyComposerHint(String name) {
@@ -6121,25 +6123,25 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {
-    return 'Your reaction: $emoji';
+    return 'Reaksimu: $emoji';
   }
 
   @override
   String dmReactionChipOtherA11yLabel(String name, String emoji) {
-    return '$name reacted with $emoji';
+    return '$name bereaksi dengan $emoji';
   }
 
   @override
   String dmReactionChipPendingA11yLabel(String emoji) {
-    return 'Sending reaction: $emoji';
+    return 'Mengirim reaksi: $emoji';
   }
 
   @override
   String get dmReactionChipFailedA11yLabel =>
-      'Reaction failed, double tap to retry';
+      'Reaksi gagal, ketuk dua kali untuk mencoba lagi';
 
   @override
-  String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
+  String get dmReactionChipRetryAnnouncement => 'Mencoba reaksi lagi';
 
   @override
   String get dmReactionsSheetTitle => 'Reaksi';
@@ -6358,7 +6360,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNoteServiceUnavailable =>
-      'The content credential service didn\'t respond. This isn\'t your connection.';
+      'Layanan kredensial konten tidak merespons. Ini bukan masalah koneksimu.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Buat ulang';
@@ -6582,7 +6584,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'Gagal menduplikat draf';
 
   @override
-  String get libraryDraftInProgressBadge => 'In progress';
+  String get libraryDraftInProgressBadge => 'Sedang berjalan';
 
   @override
   String get libraryDraftActionPost => 'Posting';
@@ -7209,7 +7211,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChangedAfterDeletion =>
-      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+      'Sebagian permintaan hapus sudah diterima, tapi pembersihan berhenti karena kamu berganti akun. Masuk lagi ke akun awal untuk menyelesaikannya.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
@@ -7244,7 +7246,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountRelayConfirmationFailed =>
-      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+      'Kami tidak bisa memastikan penghapusan akun dengan relay mana pun. Periksa koneksimu dan coba lagi.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Hapus Semua Konten';
@@ -7628,7 +7630,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get supportFieldLimitReached =>
-      'That\'s the maximum length. Anything past this wasn\'t added.';
+      'Itu panjang maksimalnya. Sisanya tidak ikut ditambahkan.';
 
   @override
   String get bugReportSubjectHint => 'Ringkasan singkat masalahnya';
@@ -7660,19 +7662,19 @@ class AppLocalizationsId extends AppLocalizations {
       'Terima kasih! Laporanmu sudah kami terima dan akan kami pakai untuk membuat Divine lebih baik.';
 
   @override
-  String get bugReportAttachImages => 'Attach images';
+  String get bugReportAttachImages => 'Lampirkan gambar';
 
   @override
   String bugReportImagesCount(int count, int max) {
-    return '$count of $max images selected';
+    return '$count dari $max gambar dipilih';
   }
 
   @override
-  String get bugReportRemoveImage => 'Remove image';
+  String get bugReportRemoveImage => 'Hapus gambar';
 
   @override
   String get bugReportUploadFailed =>
-      'We couldn\'t upload the selected image. Try again or send the report without it.';
+      'Kami gagal mengunggah gambar yang dipilih. Coba lagi atau kirim laporannya tanpa gambar.';
 
   @override
   String get bugReportSendFailed =>
@@ -7917,26 +7919,26 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get blueskyUsernameRequired =>
-      'Set up a divine.video handle before publishing to Bluesky';
+      'Siapkan handle divine.video sebelum memposting ke Bluesky';
 
   @override
   String get blueskyUsernameRequiredSubtitle =>
-      'Bluesky publishing needs a claimed username.divine.video handle.';
+      'Memposting ke Bluesky butuh handle namapengguna.divine.video yang sudah diklaim.';
 
   @override
   String get blueskyUsernameSyncPending =>
-      'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.';
+      'Handle Divine kamu sudah diklaim. Kami sedang menghubungkannya ke Bluesky — coba lagi sebentar lagi.';
 
   @override
   String get blueskyStatusUnavailableRetry =>
-      'We could not check your Divine handle. Try again.';
+      'Kami tidak bisa memeriksa handle Divine kamu. Coba lagi.';
 
   @override
-  String get blueskySetUpHandle => 'Set up';
+  String get blueskySetUpHandle => 'Siapkan';
 
   @override
   String get blueskyTemporarilyUnavailable =>
-      'Bluesky publishing is temporarily unavailable. Please try again.';
+      'Memposting ke Bluesky sementara tidak tersedia. Coba lagi.';
 
   @override
   String get invitesTitle => 'Undang Teman';
@@ -7946,18 +7948,17 @@ class AppLocalizationsId extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count invites ready to generate',
-      one: '1 invite ready to generate',
+      other: '$count undangan siap dibuat',
     );
     return '$_temp0';
   }
 
   @override
   String get invitesGenerateCardSubtitle =>
-      'Generate a code when you are ready to share one.';
+      'Buat kode kalau kamu sudah siap membagikannya.';
 
   @override
-  String get invitesGenerateButtonLabel => 'Generate invite';
+  String get invitesGenerateButtonLabel => 'Buat undangan';
 
   @override
   String get invitesNoneAvailable => 'Tidak ada undangan tersedia saat ini';
@@ -8015,22 +8016,22 @@ class AppLocalizationsId extends AppLocalizations {
       'Temukan sesuatu yang menarik';
 
   @override
-  String get searchPeopleSectionHeader => 'People';
+  String get searchPeopleSectionHeader => 'Orang';
 
   @override
-  String get searchPeopleLoadingLabel => 'Loading people results';
+  String get searchPeopleLoadingLabel => 'Memuat hasil orang';
 
   @override
-  String get searchTagsSectionHeader => 'Tags';
+  String get searchTagsSectionHeader => 'Tag';
 
   @override
-  String get searchTagsLoadingLabel => 'Loading tag results';
+  String get searchTagsLoadingLabel => 'Memuat hasil tag';
 
   @override
-  String get searchVideosSectionHeader => 'Videos';
+  String get searchVideosSectionHeader => 'Video';
 
   @override
-  String get searchVideosLoadingLabel => 'Loading video results';
+  String get searchVideosLoadingLabel => 'Memuat hasil video';
 
   @override
   String get searchVideosSortOptionsLabel => 'Urutkan hasil video';
@@ -8244,10 +8245,9 @@ class AppLocalizationsId extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count of your vines',
-      one: 'your vine',
+      other: '$count vine kamu',
     );
-    return '$actorName added $_temp0 to $listName';
+    return '$actorName menambahkan $_temp0 ke $listName';
   }
 
   @override
@@ -8278,47 +8278,46 @@ class AppLocalizationsId extends AppLocalizations {
   String get commentReplyToPrefix => 'Bls:';
 
   @override
-  String get commentHideKeyboard => 'Hide keyboard';
+  String get commentHideKeyboard => 'Sembunyikan papan ketik';
 
   @override
-  String get commentsErrorLoadFailed => 'Failed to load comments';
+  String get commentsErrorLoadFailed => 'Komentar gagal dimuat';
 
   @override
   String get commentsErrorNotAuthenticatedComment =>
-      'Please sign in to comment';
+      'Masuk dulu untuk berkomentar';
 
   @override
-  String get commentsErrorPostCommentFailed => 'Failed to post comment';
+  String get commentsErrorPostCommentFailed => 'Komentar gagal diposting';
 
   @override
-  String get commentsErrorPostReplyFailed => 'Failed to post reply';
+  String get commentsErrorPostReplyFailed => 'Balasan gagal diposting';
 
   @override
-  String get commentsErrorEditFailed => 'Failed to edit comment';
+  String get commentsErrorEditFailed => 'Komentar gagal diedit';
 
   @override
   String get commentsErrorNotAuthenticatedInteract =>
-      'Please sign in to interact';
+      'Masuk dulu untuk berinteraksi';
 
   @override
-  String get commentsErrorVoteFailed => 'Failed to vote on comment';
+  String get commentsErrorVoteFailed => 'Gagal memberi suara pada komentar';
 
   @override
-  String get commentsErrorReportFailed => 'Failed to report comment';
+  String get commentsErrorReportFailed => 'Komentar gagal dilaporkan';
 
   @override
-  String get commentsErrorBlockFailed => 'Failed to block user';
+  String get commentsErrorBlockFailed => 'Pengguna gagal diblokir';
 
   @override
-  String get commentsErrorDeleteFailed => 'Failed to delete comment';
+  String get commentsErrorDeleteFailed => 'Komentar gagal dihapus';
 
   @override
   String commentsHeaderCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Comments',
-      one: '$count Comment',
+      other: '$count Komentar',
     );
     return '$_temp0';
   }
@@ -8331,46 +8330,46 @@ class AppLocalizationsId extends AppLocalizations {
       'Balasan video Anda sedang diposting';
 
   @override
-  String get commentsSortNew => 'New';
+  String get commentsSortNew => 'Terbaru';
 
   @override
-  String get commentsSortTop => 'Top';
+  String get commentsSortTop => 'Teratas';
 
   @override
-  String get commentsSortOld => 'Old';
+  String get commentsSortOld => 'Terlama';
 
   @override
-  String get commentsSortSemanticLabel => 'Comments sorting';
+  String get commentsSortSemanticLabel => 'Urutan komentar';
 
   @override
-  String get commentReply => 'Reply';
+  String get commentReply => 'Balas';
 
   @override
-  String get commentReplySemanticLabel => 'Reply to comment';
+  String get commentReplySemanticLabel => 'Balas komentar';
 
   @override
-  String get commentUpvoteLabel => 'Upvote comment';
+  String get commentUpvoteLabel => 'Beri suara positif untuk komentar';
 
   @override
-  String get commentRemoveUpvoteLabel => 'Remove upvote';
+  String get commentRemoveUpvoteLabel => 'Hapus suara positif';
 
   @override
-  String get commentDownvoteLabel => 'Downvote comment';
+  String get commentDownvoteLabel => 'Beri suara negatif untuk komentar';
 
   @override
-  String get commentRemoveDownvoteLabel => 'Remove downvote';
+  String get commentRemoveDownvoteLabel => 'Hapus suara negatif';
 
   @override
-  String get commentsInputHint => 'Add comment...';
+  String get commentsInputHint => 'Tambahkan komentar...';
 
   @override
-  String get commentsInputHintEdit => 'Edit comment...';
+  String get commentsInputHintEdit => 'Edit komentar...';
 
   @override
-  String get commentsEmptyTitle => 'No comments yet';
+  String get commentsEmptyTitle => 'Belum ada komentar';
 
   @override
-  String get commentsEmptySubtitle => 'Get the party started!';
+  String get commentsEmptySubtitle => 'Ayo mulai keramaiannya!';
 
   @override
   String get draftUntitled => 'Tanpa judul';
@@ -9794,7 +9793,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get publishAudioReuseDegradedWarning =>
-      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+      'Videomu sudah tayang, tapi suaranya belum terbit. Edit videonya untuk membagikan suaranya.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Kolaborator';
@@ -10267,178 +10266,177 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileBadgeFooterLink => 'Buat lencanamu sendiri';
 
   @override
-  String get minorAccountReviewWelcomePageTitle => 'Family guide';
+  String get minorAccountReviewWelcomePageTitle => 'Panduan keluarga';
 
   @override
   String get minorAccountReviewWelcomeCta =>
-      'Not 16 yet? That\'s OK. Here\'s what you can do.';
+      'Belum 16 tahun? Nggak apa-apa. Ini yang bisa kamu lakukan.';
 
   @override
-  String get minorAccountReviewWelcomeTitle => 'Not 16 yet? That\'s OK.';
+  String get minorAccountReviewWelcomeTitle => 'Belum 16 tahun? Nggak apa-apa.';
 
   @override
   String get minorAccountReviewWelcomeBody =>
       'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
 
   @override
-  String get minorAccountReviewModerationTitle => 'We need one more step';
+  String get minorAccountReviewModerationTitle =>
+      'Kami butuh satu langkah lagi';
 
   @override
   String get minorAccountReviewModerationBody =>
-      'We were asked to take a closer look at this account because it may belong to someone under 16. This flow keeps the next steps private and points you to the right path for your age.';
+      'Kami diminta memeriksa akun ini lebih teliti karena mungkin milik seseorang di bawah 16 tahun. Alur ini menjaga langkah berikutnya tetap privat dan menunjukkan jalur yang tepat untuk usiamu.';
 
   @override
   String get minorAccountReviewRulesTitle =>
-      'The rules are not the same everywhere';
+      'Aturannya tidak sama di mana-mana';
 
   @override
   String get minorAccountReviewRulesBody =>
-      'Different countries and regions treat teen social media use differently. That is why we ask families to slow down, check the facts, and choose the next step together.';
+      'Setiap negara dan wilayah punya cara berbeda soal remaja memakai media sosial. Karena itu kami meminta keluarga untuk pelan-pelan, memeriksa faktanya, dan memilih langkah berikutnya bersama.';
 
   @override
-  String get minorAccountReviewApproachTitle => 'How Divine thinks about it';
+  String get minorAccountReviewApproachTitle => 'Bagaimana Divine memandangnya';
 
   @override
   String get minorAccountReviewApproachBody =>
-      'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.';
+      'Menurut kami, kebiasaan sehat dengan teknologi lahir dari berhenti sejenak, merenung, dan mengalihkan perhatian ke hal yang lebih baik — bukan dari memata-matai anak atau menjadikan orang tua sebagai pengawas. Penelitian pun mendukung itu.';
 
   @override
-  String get minorAccountReviewLearnMoreTitle => 'More for families';
+  String get minorAccountReviewLearnMoreTitle => 'Lebih banyak untuk keluarga';
 
   @override
-  String get minorAccountReviewKidsPolicyCta => 'Read Divine\'s kids policy';
+  String get minorAccountReviewKidsPolicyCta =>
+      'Baca kebijakan Divine untuk anak';
 
   @override
-  String get minorAccountReviewChooseAgeBandTitle =>
-      'Choose the path that fits';
+  String get minorAccountReviewChooseAgeBandTitle => 'Pilih jalur yang cocok';
 
   @override
-  String get minorAccountReviewUnder13Cta => 'Under 13';
+  String get minorAccountReviewUnder13Cta => 'Di bawah 13';
 
   @override
-  String get minorAccountReviewTeenCta => 'Age 13-15';
+  String get minorAccountReviewTeenCta => 'Usia 13-15';
 
   @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Helpful for families';
+  String get minorAccountReviewFamilyResourcesTitle => 'Berguna untuk keluarga';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
-      'Visit the Divine family guide for practical tips, conversation tools, and resources for helping teens use social media more safely.';
+      'Kunjungi panduan keluarga Divine untuk tips praktis, alat percakapan, dan materi yang membantu remaja memakai media sosial dengan lebih aman.';
 
   @override
   String get minorAccountReviewFamilyResourcesCta =>
-      'Get family guides and tips';
+      'Dapatkan panduan dan tips keluarga';
 
   @override
   String get minorAccountReviewFooter =>
-      'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.';
+      'Kalau usiamu 16 tahun atau lebih dan kamu sampai ke sini karena keliru, hubungi dukungan Divine supaya orang sungguhan bisa memeriksanya.';
 
   @override
-  String get minorAccountReviewTitle => 'Account Review';
+  String get minorAccountReviewTitle => 'Peninjauan akun';
 
   @override
   String get minorAccountReviewCheckingStatusTitle =>
-      'Checking account status...';
+      'Memeriksa status akun...';
 
   @override
   String get minorAccountReviewCheckingStatusBody =>
-      'Please wait while we confirm this account\'s current review status.';
+      'Tunggu sebentar sementara kami memastikan status peninjauan akun ini.';
 
   @override
-  String get minorAccountReviewDefaultTitle => 'Account review required';
+  String get minorAccountReviewDefaultTitle => 'Peninjauan akun diperlukan';
 
   @override
   String get minorAccountReviewDefaultBody =>
-      'We need to review this account before it can use Divine normally.';
+      'Kami perlu meninjau akun ini sebelum bisa memakai Divine seperti biasa.';
 
   @override
   String minorAccountReviewCaseId(String caseId) {
-    return 'Case ID: $caseId';
+    return 'ID kasus: $caseId';
   }
 
   @override
-  String get minorAccountReviewCaseIdShortLabel => 'Case ID';
+  String get minorAccountReviewCaseIdShortLabel => 'ID kasus';
 
   @override
-  String get minorAccountReviewRestrictionsTitle =>
-      'What is restricted right now';
+  String get minorAccountReviewRestrictionsTitle => 'Yang dibatasi saat ini';
 
   @override
   String get minorAccountReviewRestrictionPosting =>
-      'Posting and publishing are paused';
+      'Memposting dan menerbitkan dihentikan sementara';
 
   @override
   String get minorAccountReviewRestrictionEngagement =>
-      'Comments, likes, reposts, and follows are paused';
+      'Komentar, suka, repost, dan mengikuti dihentikan sementara';
 
   @override
   String get minorAccountReviewRestrictionMessaging =>
-      'Starting or replying to regular messages is paused';
+      'Memulai atau membalas pesan biasa dihentikan sementara';
 
   @override
   String get minorAccountReviewRestrictionSupport =>
-      'Support and your moderation message remain available';
+      'Dukungan dan pesan moderasimu tetap tersedia';
 
   @override
-  String get minorAccountReviewOpenSupportCenter => 'Open Support Center';
+  String get minorAccountReviewOpenSupportCenter => 'Buka pusat dukungan';
 
   @override
-  String get minorAccountReviewOpenModerationMessage =>
-      'Open Moderation Message';
+  String get minorAccountReviewOpenModerationMessage => 'Buka pesan moderasi';
 
   @override
-  String get minorAccountReviewOpenReviewPage => 'Open review page';
+  String get minorAccountReviewOpenReviewPage => 'Buka halaman peninjauan';
 
   @override
-  String get minorAccountReviewCheckAgain => 'Check Again';
+  String get minorAccountReviewCheckAgain => 'Periksa lagi';
 
   @override
-  String get minorAccountReviewLogOut => 'Log out';
+  String get minorAccountReviewLogOut => 'Keluar';
 
   @override
-  String get minorAccountReviewNextStepTitle => 'Next step';
+  String get minorAccountReviewNextStepTitle => 'Langkah berikutnya';
 
   @override
   String get minorAccountReviewNextStepBody =>
-      'Open the support center or your moderation message if you need help with this review.';
+      'Buka pusat dukungan atau pesan moderasimu kalau kamu butuh bantuan soal peninjauan ini.';
 
   @override
-  String get minorAccountReviewInProgressTitle => 'Review in progress';
+  String get minorAccountReviewInProgressTitle => 'Peninjauan sedang berjalan';
 
   @override
   String get minorAccountReviewInProgressBody =>
-      'We have what we need for now. Our team is reviewing this case before restoring normal account access.';
+      'Untuk sekarang kami sudah punya yang dibutuhkan. Tim kami sedang meninjau kasus ini sebelum mengembalikan akses akun seperti biasa.';
 
   @override
-  String get minorAccountReviewUnder13Title => 'Under-13 accounts';
+  String get minorAccountReviewUnder13Title => 'Akun di bawah 13 tahun';
 
   @override
   String minorAccountReviewUnder13Body(String supportEmail) {
-    return 'If this account belongs to someone under 13, a parent or guardian must email $supportEmail and include the case ID.';
+    return 'Kalau akun ini milik seseorang di bawah 13 tahun, orang tua atau wali harus mengirim email ke $supportEmail dan menyertakan ID kasus.';
   }
 
   @override
   String get minorAccountReviewUnder13PublicTitle =>
-      'We can\'t give you an account yet';
+      'Kami belum bisa memberimu akun';
 
   @override
   String get minorAccountReviewUnder13PublicBody =>
-      'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
+      'Divine tidak dibuat untuk anak di bawah 13 tahun, dan aturan media sosial di berbagai negara mengikat tangan kami.\n\nBanyak hal di internet mendorongmu berbohong demi mendapat yang kamu mau, dan kami benci itu. Itu pelajaran yang salah untuk hidup, dan kami tidak akan mengajarkannya di sini.';
 
   @override
   String get minorAccountReviewUnder13FamilyTitle =>
-      'What your family can do instead';
+      'Yang bisa dilakukan keluargamu sebagai gantinya';
 
   @override
   String get minorAccountReviewUnder13FamilyBody =>
-      'A parent or guardian can hold the account and do the posting, and you can absolutely be in the videos with them. We want families to enjoy Divine in whatever way is right for them.';
+      'Orang tua atau wali bisa memegang akunnya dan yang memposting, dan kamu tentu boleh ikut tampil di videonya bersama mereka. Kami ingin keluarga menikmati Divine dengan cara yang pas buat mereka.';
 
   @override
-  String get minorAccountReviewUnder13ComeBackTitle => 'When you turn 13';
+  String get minorAccountReviewUnder13ComeBackTitle => 'Saat kamu berusia 13';
 
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
-      'Depending on the rules where you live, you may be able to come back and apply for your own account. In that case, if you’re between 13 and 15, you’ll need consent from a parent or guardian.';
+      'Tergantung aturan di tempat tinggalmu, kamu mungkin bisa kembali dan mengajukan akun sendiri. Kalau saat itu usiamu 13 sampai 15, kamu butuh izin dari orang tua atau wali.';
 
   @override
   String get minorAccountReviewUnder13HonestyTitle =>
@@ -10458,11 +10456,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenBody =>
-      'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.';
+      'Kalau akun ini milik seseorang berusia 13 sampai 15 tahun, pakai pesan moderasi atau jalur dukungan untuk mengikuti petunjuk izin orang tua.';
 
   @override
   String get minorAccountReviewParentConsentTitle =>
-      'If the account will belong to someone 13 to 15';
+      'Kalau akunnya akan dipakai seseorang berusia 13 sampai 15';
 
   @override
   String get minorAccountReviewParentConsentBody =>
@@ -10486,343 +10484,344 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentChecklist =>
-      'What the video should show';
+      'Yang harus terlihat di video';
 
   @override
   String get minorAccountReviewParentConsentChecklistKid =>
-      'The teen in the video';
+      'Remaja yang bersangkutan di video';
 
   @override
   String get minorAccountReviewParentConsentChecklistPermission =>
-      'A parent or guardian speaking on camera';
+      'Orang tua atau wali yang berbicara di depan kamera';
 
   @override
   String get minorAccountReviewParentConsentChecklistAgeBand =>
-      'A clear statement that the teen is 13 to 15 and has permission to use Divine';
+      'Pernyataan jelas bahwa remaja tersebut berusia 13 sampai 15 dan diizinkan memakai Divine';
 
   @override
   String get minorAccountReviewParentConsentChecklistSupervision =>
-      'A clear statement that the parent or guardian knows about the account and will supervise its use';
+      'Pernyataan jelas bahwa orang tua atau wali tahu soal akun ini dan akan mengawasi penggunaannya';
 
   @override
-  String get minorAccountReviewParentConsentPrivacy => 'How to send it';
+  String get minorAccountReviewParentConsentPrivacy => 'Cara mengirimnya';
 
   @override
   String get minorAccountReviewParentConsentNeverPost =>
-      'Attach the video when you email Divine support';
+      'Lampirkan videonya saat mengirim email ke dukungan Divine';
 
   @override
   String get minorAccountReviewParentConsentDoNotSave =>
-      'Keep the video private and do not post it in the app';
+      'Simpan videonya secara privat dan jangan diposting di aplikasi';
 
   @override
   String get minorAccountReviewParentConsentOneMove =>
-      'Our team will review it and reply with next steps';
+      'Tim kami akan meninjaunya dan membalas dengan langkah berikutnya';
 
   @override
-  String get minorAccountReviewParentConsentEmailCta => 'Email Divine support';
+  String get minorAccountReviewParentConsentEmailCta => 'Email dukungan Divine';
 
   @override
   String get minorAccountReviewParentConsentEmailSubject =>
-      'Divine Greenlight review help (ages 13-15)';
+      'Bantuan peninjauan Divine Greenlight (usia 13-15)';
 
   @override
   String get minorAccountReviewParentConsentEmailBody =>
-      'Hi Divine support,\n\nI am contacting Divine about Divine Greenlight for a teen who is 13-15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.';
+      'Halo tim dukungan Divine,\n\nsaya menghubungi Divine soal Divine Greenlight untuk remaja berusia 13-15.\n\nSaya melampirkan video privat singkat yang memperlihatkan:\n- remaja tersebut\n- orang tua atau wali yang berbicara di depan kamera\n- bahwa remaja tersebut diizinkan memakai Divine\n- bahwa orang tua atau wali tahu soal akun ini dan akan mengawasi penggunaannya\n\nNegara tempat tinggal:\n\nKonteks tambahan:\n\nTerima kasih.';
 
   @override
   String get minorAccountReviewParentSupportInstructions =>
-      'Parent Support Instructions';
+      'Petunjuk dukungan untuk orang tua';
 
   @override
-  String get minorAccountReviewContinue => 'Continue';
+  String get minorAccountReviewContinue => 'Lanjut';
 
   @override
   String get minorAccountReviewErrorTitle =>
-      'We could not load your account review status.';
+      'Kami tidak bisa memuat status peninjauan akunmu.';
 
   @override
-  String get minorAccountReviewErrorBody => 'Please try again in a moment.';
+  String get minorAccountReviewErrorBody => 'Coba lagi sebentar lagi.';
 
   @override
-  String get minorAccountReviewTryAgain => 'Try Again';
+  String get minorAccountReviewTryAgain => 'Coba lagi';
 
   @override
-  String get minorAccountReviewParentContactTitle => 'Parent Contact';
+  String get minorAccountReviewParentContactTitle => 'Kontak orang tua';
 
   @override
   String get minorAccountReviewParentContactHeading =>
-      'Add a parent or guardian email';
+      'Tambahkan email orang tua atau wali';
 
   @override
   String minorAccountReviewParentContactBody(String caseId) {
-    return 'We will use this address for the parental consent review on case $caseId.';
+    return 'Kami akan memakai alamat ini untuk peninjauan izin orang tua pada kasus $caseId.';
   }
 
   @override
   String get minorAccountReviewParentContactFieldLabel =>
-      'Parent or guardian email';
+      'Email orang tua atau wali';
 
   @override
-  String get minorAccountReviewSubmitting => 'Submitting...';
+  String get minorAccountReviewSubmitting => 'Mengirim...';
 
   @override
-  String get minorAccountReviewSubmitEmail => 'Submit Email';
+  String get minorAccountReviewSubmitEmail => 'Kirim email';
 
   @override
-  String get minorAccountReviewBackToReview => 'Back to Account Review';
+  String get minorAccountReviewBackToReview => 'Kembali ke peninjauan akun';
 
   @override
-  String get minorAccountReviewSubmissionReceivedTitle => 'Email submitted';
+  String get minorAccountReviewSubmissionReceivedTitle => 'Email terkirim';
 
   @override
   String minorAccountReviewSubmissionReceivedBody(String email) {
-    return 'We submitted $email for review. We\'ll email this address to confirm. Once your parent or guardian responds, your case will move forward. Use Check Again from the account review screen for updates.';
+    return 'Kami mengirim $email untuk ditinjau. Kami akan mengirim email konfirmasi ke alamat itu. Begitu orang tua atau walimu membalas, kasusmu berlanjut. Pakai Periksa lagi di layar peninjauan akun untuk melihat perkembangannya.';
   }
 
   @override
   String get minorAccountReviewSubmissionReceivedLocalBody =>
-      'We received the parent or guardian contact for this account. Our team will review it before restoring access.';
+      'Kami sudah menerima kontak orang tua atau wali untuk akun ini. Tim kami akan meninjaunya sebelum mengembalikan akses.';
 
   @override
   String get minorAccountReviewMissingCase =>
-      'We could not find an active review case for this account.';
+      'Kami tidak menemukan kasus peninjauan yang aktif untuk akun ini.';
 
   @override
   String get minorAccountReviewParentContactError =>
-      'Could not submit the parent email. Please try again.';
+      'Email orang tua gagal dikirim. Coba lagi.';
 
   @override
-  String get minorAccountReviewUnder13SupportTitle => 'Parent Support';
+  String get minorAccountReviewUnder13SupportTitle => 'Dukungan orang tua';
 
   @override
   String get minorAccountReviewUnder13Heading =>
-      'A parent or guardian must contact Divine';
+      'Orang tua atau wali harus menghubungi Divine';
 
   @override
   String get minorAccountReviewUnder13SupportBody =>
-      'For likely under-13 accounts, the next step is parent or guardian contact by email.';
+      'Untuk akun yang kemungkinan di bawah 13 tahun, langkah berikutnya adalah orang tua atau wali menghubungi lewat email.';
 
   @override
-  String get minorAccountReviewSupportEmailLabel => 'Support email';
+  String get minorAccountReviewSupportEmailLabel => 'Email dukungan';
 
   @override
-  String get minorAccountReviewCopySupportEmail => 'Copy support email';
+  String get minorAccountReviewCopySupportEmail => 'Salin email dukungan';
 
   @override
-  String get minorAccountReviewSupportEmailCopied => 'Support email copied';
+  String get minorAccountReviewSupportEmailCopied => 'Email dukungan disalin';
 
   @override
-  String get minorAccountReviewCopyCaseId => 'Copy case ID';
+  String get minorAccountReviewCopyCaseId => 'Salin ID kasus';
 
   @override
-  String get minorAccountReviewCaseIdCopied => 'Case ID copied';
+  String get minorAccountReviewCaseIdCopied => 'ID kasus disalin';
 
   @override
-  String get minorAccountReviewUnavailable => 'Unavailable';
+  String get minorAccountReviewUnavailable => 'Tidak tersedia';
 
   @override
   String get minorAccountReviewUnder13Instructions =>
-      'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.';
+      'Minta orang tua atau wali menyertakan ID kasus dan menjelaskan bahwa mereka menghubungi Divine soal peninjauan akun ini.';
 
   @override
   String minorAccountReviewUnder13EmailSubject(String caseId) {
-    return 'Under-13 account review for case $caseId';
+    return 'Peninjauan akun di bawah 13 untuk kasus $caseId';
   }
 
   @override
   String minorAccountReviewUnder13EmailBody(String caseId) {
-    return 'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review case $caseId.\n\nThanks.';
+    return 'Halo tim dukungan Divine,\n\nsaya orang tua atau wali dari anak di bawah 13 tahun dan menghubungi Divine soal kasus peninjauan akun $caseId.\n\nTerima kasih.';
   }
 
   @override
   String get devOptionsMinorReviewSimulationTitle =>
-      'Minor Account Review Simulation';
+      'Simulasi peninjauan akun anak di bawah umur';
 
   @override
-  String get devOptionsMinorReviewCurrentStateLabel => 'Current state';
+  String get devOptionsMinorReviewCurrentStateLabel => 'Status saat ini';
 
   @override
   String devOptionsMinorReviewStateRestricted(String state) {
-    return 'Restricted ($state)';
+    return 'Dibatasi ($state)';
   }
 
   @override
-  String get devOptionsMinorReviewStateActive => 'Active';
+  String get devOptionsMinorReviewStateActive => 'Aktif';
 
   @override
-  String get devOptionsMinorReviewStateLoading => 'Loading...';
+  String get devOptionsMinorReviewStateLoading => 'Memuat...';
 
   @override
-  String get devOptionsMinorReviewStateError => 'Error loading state';
+  String get devOptionsMinorReviewStateError => 'Gagal memuat status';
 
   @override
-  String get devOptionsMinorReviewClearTitle => 'Clear simulation override';
+  String get devOptionsMinorReviewClearTitle =>
+      'Bersihkan penggantian simulasi';
 
   @override
   String get devOptionsMinorReviewClearSubtitle =>
-      'Use backend or default active state again';
+      'Pakai lagi backend atau status aktif bawaan';
 
   @override
-  String get devOptionsMinorReviewTeenTitle => 'Simulate 13-15 review case';
+  String get devOptionsMinorReviewTeenTitle =>
+      'Simulasikan kasus peninjauan 13-15';
 
   @override
   String get devOptionsMinorReviewTeenSubtitle =>
-      'Restricted account with parent contact path';
+      'Akun dibatasi dengan jalur kontak orang tua';
 
   @override
   String get devOptionsMinorReviewUnder13Title =>
-      'Simulate under-13 support case';
+      'Simulasikan kasus dukungan di bawah 13';
 
   @override
   String get devOptionsMinorReviewUnder13Subtitle =>
-      'Restricted account with parent-email-only instructions';
+      'Akun dibatasi dengan petunjuk hanya lewat email orang tua';
 
   @override
   String get devOptionsMinorReviewClearedToast =>
-      'Minor account review simulation cleared';
+      'Simulasi peninjauan akun anak di bawah umur dibersihkan';
 
   @override
   String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulated 13-15 review case enabled';
+      'Simulasi kasus peninjauan 13-15 diaktifkan';
 
   @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
-      'Simulated under-13 support case enabled';
+      'Simulasi kasus dukungan di bawah 13 diaktifkan';
 
   @override
   String get devOptionsProtectedMinorSimulationTitle =>
-      'Protected Minor Simulation';
+      'Simulasi anak di bawah umur yang dilindungi';
 
   @override
-  String get devOptionsProtectedMinorCurrentStateLabel => 'Current state';
+  String get devOptionsProtectedMinorCurrentStateLabel => 'Status saat ini';
 
   @override
   String get devOptionsProtectedMinorStateProtected =>
-      'Protected minor (13-15)';
+      'Anak di bawah umur yang dilindungi (13-15)';
 
   @override
-  String get devOptionsProtectedMinorStateNotProtected => 'Not protected';
+  String get devOptionsProtectedMinorStateNotProtected => 'Tidak dilindungi';
 
   @override
-  String get devOptionsProtectedMinorStateLoading => 'Loading…';
+  String get devOptionsProtectedMinorStateLoading => 'Memuat…';
 
   @override
-  String get devOptionsProtectedMinorStateError => 'Error reading state';
+  String get devOptionsProtectedMinorStateError => 'Gagal membaca status';
 
   @override
   String get devOptionsProtectedMinorOverrideNone =>
-      'No override (real account state)';
+      'Tanpa penggantian (status akun sebenarnya)';
 
   @override
   String get devOptionsProtectedMinorOverrideProtected =>
-      'Override: forced protected';
+      'Penggantian: dipaksa dilindungi';
 
   @override
   String get devOptionsProtectedMinorOverrideNotProtected =>
-      'Override: forced not protected';
+      'Penggantian: dipaksa tidak dilindungi';
 
   @override
   String get devOptionsProtectedMinorSimulateTitle =>
-      'Simulate protected minor (13-15)';
+      'Simulasikan anak di bawah umur yang dilindungi (13-15)';
 
   @override
   String get devOptionsProtectedMinorSimulateSubtitle =>
-      'Force the protected-minor state to QA the #175/#176 protections';
+      'Paksa status anak-dilindungi untuk menguji proteksi #175/#176';
 
   @override
   String get devOptionsProtectedMinorSimulateNonMinorTitle =>
-      'Simulate non-minor';
+      'Simulasikan orang dewasa';
 
   @override
   String get devOptionsProtectedMinorSimulateNonMinorSubtitle =>
-      'Force not-protected (explicit negative, distinct from no override)';
+      'Paksa tidak dilindungi (penolakan eksplisit, beda dengan tanpa penggantian)';
 
   @override
-  String get devOptionsProtectedMinorClearTitle => 'Clear override';
+  String get devOptionsProtectedMinorClearTitle => 'Bersihkan penggantian';
 
   @override
   String get devOptionsProtectedMinorClearSubtitle =>
-      'Return to the real Keycast-driven account state';
+      'Kembali ke status akun sebenarnya dari Keycast';
 
   @override
   String get devOptionsProtectedMinorEnabledToast =>
-      'Protected-minor state forced on';
+      'Status anak-dilindungi dipaksa aktif';
 
   @override
   String get devOptionsProtectedMinorNonMinorToast =>
-      'Protected-minor state forced off';
+      'Status anak-dilindungi dipaksa nonaktif';
 
   @override
   String get devOptionsProtectedMinorClearedToast =>
-      'Protected-minor override cleared';
+      'Penggantian anak-dilindungi dibersihkan';
 
   @override
-  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+  String get devOptionsInviteAvailabilityTitle => 'Undangan pendaftaran';
 
   @override
-  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+  String get devOptionsInviteAvailabilityCurrentLabel => 'Status saat ini';
 
   @override
   String get devOptionsInviteAvailabilityServerLoading =>
-      'Server value: loading';
+      'Nilai server: memuat';
 
   @override
-  String get devOptionsInviteAvailabilityServerEnabled =>
-      'Server value: enabled';
+  String get devOptionsInviteAvailabilityServerEnabled => 'Nilai server: aktif';
 
   @override
   String get devOptionsInviteAvailabilityServerDisabled =>
-      'Server value: disabled';
+      'Nilai server: nonaktif';
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Server value: unknown (defaults enabled)';
+      'Nilai server: tidak diketahui (bawaan aktif)';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
-      'Override: use server value';
+      'Penggantian: pakai nilai server';
 
   @override
   String get devOptionsInviteAvailabilityOverrideEnabled =>
-      'Override: force enabled';
+      'Penggantian: paksa aktif';
 
   @override
   String get devOptionsInviteAvailabilityOverrideDisabled =>
-      'Override: force disabled';
+      'Penggantian: paksa nonaktif';
 
   @override
-  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+  String get devOptionsInviteAvailabilityUseServer => 'Pakai nilai server';
 
   @override
   String get devOptionsInviteAvailabilityUseServerSubtitle =>
-      'Follow the invite service onboardingMode';
+      'Ikuti onboardingMode dari layanan undangan';
 
   @override
-  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+  String get devOptionsInviteAvailabilityForceEnabled => 'Paksa aktif';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
-      'Show signup invite gates and management locally';
+      'Tampilkan gerbang undangan pendaftaran dan pengelolaannya secara lokal';
 
   @override
-  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+  String get devOptionsInviteAvailabilityForceDisabled => 'Paksa nonaktif';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
-      'Hide signup invite UI locally without changing the server';
+      'Sembunyikan antarmuka undangan pendaftaran secara lokal tanpa mengubah server';
 
   @override
   String get devOptionsInviteAvailabilityUseServerToast =>
-      'Signup invites now follow the server';
+      'Undangan pendaftaran kini mengikuti server';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledToast =>
-      'Signup invites forced on';
+      'Undangan pendaftaran dipaksa aktif';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledToast =>
-      'Signup invites forced off';
+      'Undangan pendaftaran dipaksa nonaktif';
 
   @override
   String get commentsRecordVideoButtonLabel => 'Rekam komentar video';
@@ -10867,11 +10866,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Visit website: $url';
+    return 'Kunjungi situs web: $url';
   }
 
   @override
-  String get profileCouldNotOpenWebsite => 'Could not open website';
+  String get profileCouldNotOpenWebsite => 'Situs web tidak bisa dibuka';
 
   @override
   String get videoMetadataEditCoverTitle => 'Edit sampul';
@@ -10913,7 +10912,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get authUnder16ChoicesCta => 'Ini pilihan-pilihanmu.';
 
   @override
-  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+  String get minorAccountReviewUnder13WhyTitle => 'Ini alasannya';
 
   @override
   String get generalSettingsHoldToRecord => 'Tahan untuk merekam';
@@ -10937,7 +10936,7 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get dmMessageSendLabel => 'Send message';
+  String get dmMessageSendLabel => 'Kirim pesan';
 
   @override
   String get emojiPickerSearchHint => 'Cari';
@@ -11077,124 +11076,137 @@ class AppLocalizationsId extends AppLocalizations {
   String get backgroundUploadNotificationTitle => 'Mengunggah video';
 
   @override
-  String get monetizationSettingsTitle => 'Creator Support';
+  String get monetizationSettingsTitle => 'Dukungan kreator';
 
   @override
-  String get monetizationSettingsSubtitle => 'Add tip and subscription links';
+  String get monetizationSettingsSubtitle =>
+      'Tambahkan tautan tip dan langganan';
 
   @override
-  String get monetizationSettingsIntroTitle => 'Outbound links only';
+  String get monetizationSettingsIntroTitle => 'Hanya tautan keluar';
 
   @override
   String get monetizationSettingsIntroBody =>
-      'Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.';
+      'Tambahkan tujuan yang kamu kelola sendiri. Divine tidak pernah memproses pembayaran dan tidak membuka konten di aplikasi lewat tautan ini.';
 
   @override
   String monetizationSettingsConfiguredCount(int count) {
-    return '$count active link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tautan aktif di profilmu',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get monetizationSettingsTipSection => 'Send a tip';
+  String get monetizationSettingsTipSection => 'Kirim tip';
 
   @override
-  String get monetizationSettingsSubscriptionSection => 'Subscribe / support';
+  String get monetizationSettingsSubscriptionSection => 'Langganan / dukung';
 
   @override
-  String get monetizationSettingsSave => 'Save support links';
+  String get monetizationSettingsSave => 'Simpan tautan dukungan';
 
   @override
-  String get monetizationSettingsSaving => 'Saving...';
+  String get monetizationSettingsSaving => 'Menyimpan...';
 
   @override
-  String get monetizationSettingsSaved => 'Support links updated';
+  String get monetizationSettingsSaved => 'Tautan dukungan diperbarui';
 
   @override
   String get monetizationSettingsSaveFailed =>
-      'Could not save support links. Check your connection and try again.';
+      'Tautan dukungan gagal disimpan. Periksa koneksimu dan coba lagi.';
 
   @override
-  String get monetizationSettingsErrorEmpty => 'Add a handle or URL.';
+  String get monetizationSettingsErrorEmpty => 'Tambahkan handle atau URL.';
 
   @override
   String get monetizationSettingsErrorInvalid =>
-      'That link does not look right.';
+      'Tautan itu sepertinya tidak benar.';
 
   @override
   String get monetizationSettingsErrorWrongProvider =>
-      'Use a link for this provider.';
+      'Pakai tautan untuk penyedia ini.';
 
   @override
-  String get monetizationSettingsHintCashApp => '\$cashtag or cash.app link';
+  String get monetizationSettingsHintCashApp =>
+      '\$cashtag atau tautan cash.app';
 
   @override
-  String get monetizationSettingsHintPayPal => 'PayPal.me handle or link';
+  String get monetizationSettingsHintPayPal => 'Handle atau tautan PayPal.me';
 
   @override
-  String get monetizationSettingsHintVenmo => 'Venmo handle or link';
+  String get monetizationSettingsHintVenmo => 'Handle atau tautan Venmo';
 
   @override
-  String get monetizationSettingsHintPatreon => 'Patreon handle or link';
+  String get monetizationSettingsHintPatreon => 'Handle atau tautan Patreon';
 
   @override
-  String get monetizationSettingsHintSubstack => 'Substack domain or link';
+  String get monetizationSettingsHintSubstack => 'Domain atau tautan Substack';
 
   @override
-  String get monetizationSettingsHintMedium => 'Medium handle or link';
+  String get monetizationSettingsHintMedium => 'Handle atau tautan Medium';
 
   @override
   String get monetizationSettingsHintOpenCollective =>
-      'Open Collective slug or link';
+      'Slug atau tautan Open Collective';
 
   @override
-  String get profileSupportSheetTitle => 'Support this creator';
+  String get profileSupportSheetTitle => 'Dukung kreator ini';
 
   @override
   String get profileSupportSheetBody =>
-      'These links open outside Divine. Nothing here unlocks content in the app.';
+      'Tautan ini terbuka di luar Divine. Tidak ada di sini yang membuka konten di aplikasi.';
 
   @override
-  String get profileSupportTipSection => 'Send a tip';
+  String get profileSupportTipSection => 'Kirim tip';
 
   @override
-  String get profileSupportSubscriptionSection => 'Subscribe / support';
+  String get profileSupportSubscriptionSection => 'Langganan / dukung';
 
   @override
-  String get profileSupportButtonLabel => 'Support';
+  String get profileSupportButtonLabel => 'Dukung';
 
   @override
-  String get monetizationTipsSettingsTitle => 'Tips';
+  String get monetizationTipsSettingsTitle => 'Tip';
 
   @override
-  String get monetizationTipsSettingsSubtitle => 'Add optional tip links';
+  String get monetizationTipsSettingsSubtitle =>
+      'Tambahkan tautan tip yang bersifat opsional';
 
   @override
-  String get monetizationTipsSettingsIntroTitle => 'Optional tips only';
+  String get monetizationTipsSettingsIntroTitle => 'Hanya tip opsional';
 
   @override
   String get monetizationTipsSettingsIntroBody =>
-      'Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.';
+      'Tip adalah hadiah opsional antarpengguna. Tip tidak membuka konten, langganan, fitur, peringkat, visibilitas, atau akses di Divine.';
 
   @override
   String monetizationTipsSettingsConfiguredCount(int count) {
-    return '$count active tip link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tautan tip aktif di profilmu',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get monetizationTipsSettingsSave => 'Save tip links';
+  String get monetizationTipsSettingsSave => 'Simpan tautan tip';
 
   @override
-  String get monetizationTipsSettingsSaved => 'Tip links updated';
+  String get monetizationTipsSettingsSaved => 'Tautan tip diperbarui';
 
   @override
   String get profileTipButtonLabel => 'Tip';
 
   @override
-  String get profileTipSheetTitle => 'Tip this creator';
+  String get profileTipSheetTitle => 'Beri tip ke kreator ini';
 
   @override
   String get profileTipSheetBody =>
-      'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+      'Tautan tip terbuka di luar Divine. Sifatnya opsional dan tidak membuka konten, langganan, fitur, atau akses di Divine.';
 
   @override
   String get settingsStorageTitle => 'Penyimpanan';
@@ -11493,78 +11505,79 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileNotifyUpdateFailed => 'Gagal menyimpan. Coba lagi?';
 
   @override
-  String get savedSoundYourLabel => 'Your label';
+  String get savedSoundYourLabel => 'Labelmu';
 
   @override
-  String get savedSoundAddHashtags => 'Add hashtags';
+  String get savedSoundAddHashtags => 'Tambahkan tagar';
 
   @override
-  String get savedSoundDeviceOnly => 'Saved on this device';
+  String get savedSoundDeviceOnly => 'Tersimpan di perangkat ini';
 
   @override
   String get savedSoundDetailsRetry =>
-      'Couldn’t save those details. Tap to retry.';
+      'Detail itu gagal disimpan. Ketuk untuk mencoba lagi.';
 
   @override
-  String get savedSoundFallbackTitle => 'Saved sound';
+  String get savedSoundFallbackTitle => 'Suara tersimpan';
 
   @override
-  String get savedSoundPreviewAction => 'Preview sound';
+  String get savedSoundPreviewAction => 'Dengarkan suaranya';
 
   @override
-  String get savedSoundEditAction => 'Edit sound details';
+  String get savedSoundEditAction => 'Edit detail suara';
 
   @override
-  String get savedSoundRemoveAction => 'Remove saved sound';
+  String get savedSoundRemoveAction => 'Hapus suara tersimpan';
 
   @override
-  String get savedSoundClearHashtagFilter => 'Clear hashtag filter';
+  String get savedSoundClearHashtagFilter => 'Bersihkan filter tagar';
 
   @override
-  String get soundAllowRemix => 'Allow others to remix this sound';
+  String get soundAllowRemix => 'Izinkan orang lain me-remix suara ini';
 
   @override
-  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+  String get soundReuseUnavailable => 'Suara ini belum bisa di-remix sekarang.';
 
   @override
-  String get soundPublicCredit => 'Public sound credit';
+  String get soundPublicCredit => 'Kredit suara publik';
 
   @override
-  String get soundCreditRequired => 'Add public sound credit before posting.';
+  String get soundCreditRequired =>
+      'Tambahkan kredit suara publik sebelum memposting.';
 
   @override
-  String get soundSharedAs => 'Shared as';
+  String get soundSharedAs => 'Dibagikan sebagai';
 
   @override
-  String get soundOwnWork => 'I made this sound';
+  String get soundOwnWork => 'Suara ini buatanku';
 
   @override
   String soundCreatorBy(String creator) {
-    return 'By $creator';
+    return 'Oleh $creator';
   }
 
   @override
   String soundSharedBy(String publisher) {
-    return 'Shared by $publisher';
+    return 'Dibagikan oleh $publisher';
   }
 
   @override
-  String get soundRemixingAllowed => 'Remixing allowed';
+  String get soundRemixingAllowed => 'Remix diizinkan';
 
   @override
-  String get soundCreditOnly => 'Credit only';
+  String get soundCreditOnly => 'Hanya kredit';
 
   @override
-  String get soundCreditTitleLabel => 'Sound title';
+  String get soundCreditTitleLabel => 'Judul suara';
 
   @override
-  String get soundCreditCreatorLabel => 'Creator';
+  String get soundCreditCreatorLabel => 'Kreator';
 
   @override
-  String get soundCreditSourceUrlLabel => 'Source URL';
+  String get soundCreditSourceUrlLabel => 'URL sumber';
 
   @override
-  String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+  String get soundCreditPublicHashtagsLabel => 'Tagar publik';
 
   @override
   String get videoMetadataTagsPickerCancelSemanticLabel =>

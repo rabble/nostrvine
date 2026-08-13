@@ -433,11 +433,11 @@
   "profileSetupBackLabel": "واپس",
   "profileSetupAboutNostr": "Nostr کے بارے میں",
   "profileSetupProfilePublished": "پروفائل کامیابی سے شائع ہو گیا!",
-  "profileSetupUnsavedChangesTitle": "Save changes?",
-  "profileSetupUnsavedChangesSubtitle": "Save your edits before leaving, or discard them and keep moving.",
-  "profileSetupUnsavedChangesSaveButton": "Save changes",
-  "profileSetupUnsavedChangesDiscardButton": "Discard changes",
-  "profileSetupUnsavedChangesKeepButton": "Keep editing",
+  "profileSetupUnsavedChangesTitle": "تبدیلیاں محفوظ کریں؟",
+  "profileSetupUnsavedChangesSubtitle": "جانے سے پہلے اپنی تبدیلیاں محفوظ کریں، یا انہیں رد کر کے آگے بڑھیں۔",
+  "profileSetupUnsavedChangesSaveButton": "تبدیلیاں محفوظ کریں",
+  "profileSetupUnsavedChangesDiscardButton": "تبدیلیاں رد کریں",
+  "profileSetupUnsavedChangesKeepButton": "ترمیم جاری رکھیں",
   "profileSetupCreateNewProfile": "نیا پروفائل بنائیں؟",
   "profileSetupNoExistingProfile": "آپ کے ریلے پر کوئی موجودہ پروفائل نہیں ملا۔ شائع کرنے سے نیا پروفائل بن جائے گا۔ جاری رکھیں؟",
   "profileSetupPublishButton": "شائع کریں",
@@ -579,6 +579,9 @@
   "exploreTabForYou": "آپ کے لیے",
   "exploreTabLists": "فہرستیں",
   "exploreTabIntegratedApps": "مربوط ایپس",
+  "featuredTabEmpty": "یہاں ابھی کچھ نہیں ہے۔ جلد دوبارہ دیکھیں۔",
+  "featuredTabLoadFailed": "یہ مجموعہ لوڈ نہیں ہو سکا۔",
+  "featuredTabRetry": "دوبارہ کوشش کریں",
   "exploreNoVideosAvailable": "کوئی ویڈیو دستیاب نہیں",
   "exploreErrorPrefix": "خرابی: {error}",
   "@exploreErrorPrefix": {
@@ -645,6 +648,8 @@
   "videoSettingsAutoAdvanceOff": "خودکار آگے بڑھنا آف",
   "videoSettingsCaptionsOn": "کیپشن آن",
   "videoSettingsCaptionsOff": "کیپشن آف",
+  "videoSettingsCaptionsOnForVideo": "اس ویڈیو کے لیے کیپشنز آن ہیں",
+  "videoSettingsCaptionsOffForVideo": "اس ویڈیو کے لیے کیپشنز آف ہیں",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -1644,7 +1649,7 @@
     }
   },
   "analyticsDiagnosticsUseFixture": "فکسچر ڈیٹا استعمال کریں",
-  "analyticsNa": "N/A",
+  "analyticsNa": "لاگو نہیں",
   "authCreateNewAccount": "نیا Divine اکاؤنٹ بنائیں",
   "authCreateNewAccountShort": "نیا اکاؤنٹ بنائیں",
   "@authCreateNewAccountShort": {
@@ -1768,6 +1773,9 @@
     }
   },
   "authVerificationResendFailed": "ہم ای میل دوبارہ نہیں بھیج سکے۔ دوبارہ کوشش کریں۔",
+  "authVerificationResendExpired": "یہ سائن اپ ختم ہو گیا۔ نیا کوڈ حاصل کرنے کے لیے دوبارہ شروع کریں۔",
+  "authVerificationResendUnavailable": "ابھی دوبارہ بھیجنا دستیاب نہیں ہے۔ جو ای میل ہم پہلے ہی بھیج چکے ہیں، اس میں موجود 6 ہندسوں کا کوڈ استعمال کریں۔",
+  "authVerificationPollingStopped": "ہم نے آپ کے لیے چیک کرنا بند کر دیا ہے۔ سائن ان مکمل کرنے کے لیے اپنی ای میل میں موجود 6 ہندسوں کا کوڈ درج کریں۔",
   "authWelcomeToDivine": "Divine میں خوش آمدید!",
   "authEmailVerified": "آپ کی ای میل کی تصدیق ہو گئی ہے۔",
   "authSigningYouIn": "آپ کو سائن ان کیا جا رہا ہے",
@@ -2394,6 +2402,8 @@
   "savedSoundRemoveConfirmTitle": "کیا یہ آواز ہٹا دیں؟",
   "savedSoundRemoveConfirmMessage": "یہ آپ کی لائبریری سے ہٹ جائے گی، لیکن آپ اسے استعمال کرنے والی کسی بھی ویڈیو سے دوبارہ محفوظ کر سکتے ہیں۔",
   "soundsRemovedFromLibrary": "آوازوں سے ہٹا دی گئی",
+  "soundsSaveFailed": "وہ ساؤنڈ محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+  "soundsRemoveFailed": "وہ ساؤنڈ ہٹایا نہیں جا سکا۔ دوبارہ کوشش کریں۔",
   "soundsFailedToLoad": "آوازیں لوڈ نہیں ہو سکیں",
   "soundsRetry": "دوبارہ کوشش کریں",
   "soundsScreenLabel": "آوازوں کی اسکرین",
@@ -3217,7 +3227,7 @@
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
   },
-  "inboxSupportRowTitle": "Divine Moderation",
+  "inboxSupportRowTitle": "Divine ماڈریشن",
   "@inboxSupportRowTitle": {
     "description": "Title of the pinned Divine Moderation support row at the top of the Messages inbox. A brand account name, so it is intentionally identical in every locale."
   },
@@ -3702,6 +3712,7 @@
   "@videoMetadataC2paMissingNote": {
     "description": "Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons."
   },
+  "videoMetadataC2paMissingNoteServiceUnavailable": "کنٹینٹ کریڈنشل سروس نے جواب نہیں دیا۔ یہ آپ کے کنکشن کا مسئلہ نہیں ہے۔",
   "videoMetadataC2paMissingRegenerate": "دوبارہ بنائیں",
   "@videoMetadataC2paMissingRegenerate": {
     "description": "Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again."
@@ -3820,7 +3831,7 @@
   "libraryDraftDeleteFailedSnackbar": "مسودہ حذف نہیں ہو سکا",
   "libraryDraftDuplicatedSnackbar": "مسودہ نقل ہو گیا",
   "libraryDraftDuplicateFailedSnackbar": "مسودہ نقل نہیں ہو سکا",
-  "libraryDraftInProgressBadge": "In progress",
+  "libraryDraftInProgressBadge": "جاری ہے",
   "libraryDraftActionPost": "پوسٹ کریں",
   "libraryDraftActionEdit": "ترمیم",
   "libraryDraftActionDuplicate": "نقل کریں",
@@ -4142,6 +4153,7 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
+  "deleteAccountAccountChangedAfterDeletion": "کچھ حذف کرنے کی درخواستیں قبول ہو گئیں، لیکن صفائی رک گئی کیونکہ آپ نے اکاؤنٹ تبدیل کر لیا۔ مکمل کرنے کے لیے اصل اکاؤنٹ میں دوبارہ سائن ان کریں۔",
   "deleteAccountBurnUsernameFailed": "آپ کا صارف نام نہیں چھوڑا جا سکا۔ آپ کا اکاؤنٹ حذف نہیں ہوا۔ دوبارہ کوشش کریں، یا آپشن ان چیک کریں۔",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -4178,6 +4190,7 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountContentDeletionFailed": "ریلے سے مواد حذف نہیں ہو سکا",
+  "deleteAccountRelayConfirmationFailed": "ہم کسی ریلے سے اکاؤنٹ کے حذف ہونے کی تصدیق نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
   "deleteAccountDeleteAllContentButton": "تمام مواد حذف کریں",
   "deleteAccountDeletionIncomplete": "ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔",
   "@deleteAccountDeletionIncomplete": {
@@ -4425,6 +4438,7 @@
   "supportPublicSubmissionTitle": "عوامی GitHub پوسٹ",
   "supportPublicSubmissionMessage": "آپ یہاں جو کچھ بھی جمع کرائیں گے وہ ہمارے اوپن سورس GitHub ریپوزٹری میں پوسٹ کیا جائے گا تاکہ ڈویلپرز اس پر کام کر سکیں۔ یہ پوسٹ اور وہ اکاؤنٹ جس سے آپ سائن اِن ہیں، سب کو عوامی طور پر نظر آئیں گے۔",
   "supportRequiredHelper": "درکار",
+  "supportFieldLimitReached": "یہ زیادہ سے زیادہ لمبائی ہے۔ اس کے بعد کچھ بھی شامل نہیں کیا گیا۔",
   "bugReportSubjectHint": "مسئلے کا مختصر خلاصہ",
   "bugReportDescriptionRequiredLabel": "کیا ہوا؟ *",
   "bugReportDescriptionHint": "جو مسئلہ آیا اسے بیان کریں",
@@ -4844,7 +4858,7 @@
     }
   },
   "notificationPostedNewVine": "{actorName} نے نئی ویڈیو پوسٹ کی",
-  "notificationAddedYourVideosToList": "{actorName} added {count, plural, =1{your vine} other{{count} of your vines}} to {listName}",
+  "notificationAddedYourVideosToList": "{actorName} نے {count, plural, =1{آپ کی وائن} other{آپ کی {count} وائنز}} کو {listName} میں شامل کیا",
   "@notificationAddedYourVideosToList": {
     "description": "Shown when someone adds the user's videos to a public curated list. Uses an ICU plural so locales with more than two plural categories can inflect correctly.",
     "placeholders": {
@@ -5874,6 +5888,7 @@
   "videoMetadataContentWarningDoneButton": "ہو گیا",
   "videoMetadataAudioReuseTitle": "یہ آواز شائع کریں",
   "videoMetadataAudioReuseSubtitle": "دوسروں کو اس ویڈیو کی آڈیو محفوظ اور دوبارہ استعمال کرنے دیں۔",
+  "publishAudioReuseDegradedWarning": "آپ کی ویڈیو لگ گئی ہے، لیکن ساؤنڈ شائع نہیں ہوا۔ اسے شیئر کرنے کے لیے ویڈیو میں ترمیم کریں۔",
   "videoMetadataCollaboratorsLabel": "شریک کار شامل کریں",
   "videoMetadataAddCollaboratorSemanticLabel": "شریک کار کو دعوت دیں",
   "videoMetadataCollaboratorsHelpTooltip": "شریک کار کیسے کام کرتے ہیں",
@@ -6236,24 +6251,24 @@
   "devOptionsProtectedMinorEnabledToast": "محفوظ نابالغ حالت زبردستی فعال",
   "devOptionsProtectedMinorNonMinorToast": "محفوظ نابالغ حالت زبردستی بند",
   "devOptionsProtectedMinorClearedToast": "محفوظ نابالغ اووررائیڈ صاف ہو گیا",
-  "devOptionsInviteAvailabilityTitle": "Signup invites",
-  "devOptionsInviteAvailabilityCurrentLabel": "Current state",
-  "devOptionsInviteAvailabilityServerLoading": "Server value: loading",
-  "devOptionsInviteAvailabilityServerEnabled": "Server value: enabled",
-  "devOptionsInviteAvailabilityServerDisabled": "Server value: disabled",
-  "devOptionsInviteAvailabilityServerUnknown": "Server value: unknown (defaults enabled)",
-  "devOptionsInviteAvailabilityOverrideNone": "Override: use server value",
-  "devOptionsInviteAvailabilityOverrideEnabled": "Override: force enabled",
-  "devOptionsInviteAvailabilityOverrideDisabled": "Override: force disabled",
-  "devOptionsInviteAvailabilityUseServer": "Use server value",
-  "devOptionsInviteAvailabilityUseServerSubtitle": "Follow the invite service onboardingMode",
-  "devOptionsInviteAvailabilityForceEnabled": "Force enabled",
-  "devOptionsInviteAvailabilityForceEnabledSubtitle": "Show signup invite gates and management locally",
-  "devOptionsInviteAvailabilityForceDisabled": "Force disabled",
-  "devOptionsInviteAvailabilityForceDisabledSubtitle": "Hide signup invite UI locally without changing the server",
-  "devOptionsInviteAvailabilityUseServerToast": "Signup invites now follow the server",
-  "devOptionsInviteAvailabilityForceEnabledToast": "Signup invites forced on",
-  "devOptionsInviteAvailabilityForceDisabledToast": "Signup invites forced off",
+  "devOptionsInviteAvailabilityTitle": "سائن اپ دعوت نامے",
+  "devOptionsInviteAvailabilityCurrentLabel": "موجودہ حالت",
+  "devOptionsInviteAvailabilityServerLoading": "سرور ویلیو: لوڈ ہو رہی ہے",
+  "devOptionsInviteAvailabilityServerEnabled": "سرور ویلیو: فعال",
+  "devOptionsInviteAvailabilityServerDisabled": "سرور ویلیو: غیر فعال",
+  "devOptionsInviteAvailabilityServerUnknown": "سرور ویلیو: نامعلوم (بطور ڈیفالٹ فعال)",
+  "devOptionsInviteAvailabilityOverrideNone": "اوور رائیڈ: سرور ویلیو استعمال کریں",
+  "devOptionsInviteAvailabilityOverrideEnabled": "اوور رائیڈ: زبردستی فعال",
+  "devOptionsInviteAvailabilityOverrideDisabled": "اوور رائیڈ: زبردستی غیر فعال",
+  "devOptionsInviteAvailabilityUseServer": "سرور ویلیو استعمال کریں",
+  "devOptionsInviteAvailabilityUseServerSubtitle": "دعوت سروس کے onboardingMode کی پیروی کریں",
+  "devOptionsInviteAvailabilityForceEnabled": "زبردستی فعال کریں",
+  "devOptionsInviteAvailabilityForceEnabledSubtitle": "سائن اپ دعوت گیٹس اور انتظام مقامی طور پر دکھائیں",
+  "devOptionsInviteAvailabilityForceDisabled": "زبردستی غیر فعال کریں",
+  "devOptionsInviteAvailabilityForceDisabledSubtitle": "سرور کو تبدیل کیے بغیر سائن اپ دعوت UI مقامی طور پر چھپائیں",
+  "devOptionsInviteAvailabilityUseServerToast": "سائن اپ دعوت نامے اب سرور کی پیروی کرتے ہیں",
+  "devOptionsInviteAvailabilityForceEnabledToast": "سائن اپ دعوت نامے زبردستی فعال",
+  "devOptionsInviteAvailabilityForceDisabledToast": "سائن اپ دعوت نامے زبردستی غیر فعال",
   "commentsRecordVideoButtonLabel": "ویڈیو تبصرہ ریکارڈ کریں",
   "@commentsRecordVideoButtonLabel": {
     "description": "Semantics label for the button that opens the recorder to create a video reply in comments."
@@ -6878,6 +6893,31 @@
   "profileNotifyBellOff": "نئی ویڈیوز کی اطلاع دیں",
   "profileNotifyBellOn": "نئی ویڈیوز کی اطلاعات بند کریں",
   "profileNotifyUpdateFailed": "محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں؟",
+  "savedSoundYourLabel": "آپ کا لیبل",
+  "savedSoundAddHashtags": "ہیش ٹیگز شامل کریں",
+  "savedSoundDeviceOnly": "اس ڈیوائس پر محفوظ",
+  "savedSoundDetailsRetry": "وہ تفصیلات محفوظ نہیں ہو سکیں۔ دوبارہ کوشش کے لیے تھپتھپائیں۔",
+  "savedSoundFallbackTitle": "محفوظ شدہ ساؤنڈ",
+  "savedSoundPreviewAction": "ساؤنڈ سنیں",
+  "savedSoundEditAction": "ساؤنڈ کی تفصیلات میں ترمیم کریں",
+  "savedSoundRemoveAction": "محفوظ شدہ ساؤنڈ ہٹائیں",
+  "savedSoundClearHashtagFilter": "ہیش ٹیگ فلٹر صاف کریں",
+  "soundAllowRemix": "دوسروں کو اس ساؤنڈ کو ری مکس کرنے دیں",
+  "soundReuseUnavailable": "اس ساؤنڈ کو ابھی ری مکس نہیں کیا جا سکتا۔",
+  "soundPublicCredit": "عوامی ساؤنڈ کریڈٹ",
+  "soundCreditRequired": "پوسٹ کرنے سے پہلے عوامی ساؤنڈ کریڈٹ شامل کریں۔",
+  "soundSharedAs": "بطور شیئر کیا گیا",
+  "soundOwnWork": "یہ ساؤنڈ میں نے بنایا ہے",
+  "soundCreatorBy": "بذریعہ {creator}",
+  "@soundCreatorBy": {"placeholders": {"creator": {"type": "String"}}},
+  "soundSharedBy": "{publisher} کی جانب سے شیئر کیا گیا",
+  "@soundSharedBy": {"placeholders": {"publisher": {"type": "String"}}},
+  "soundRemixingAllowed": "ری مکسنگ کی اجازت ہے",
+  "soundCreditOnly": "صرف کریڈٹ",
+  "soundCreditTitleLabel": "ساؤنڈ کا عنوان",
+  "soundCreditCreatorLabel": "تخلیق کار",
+  "soundCreditSourceUrlLabel": "ماخذ URL",
+  "soundCreditPublicHashtagsLabel": "عوامی ہیش ٹیگز",
   "relaySettingsRemoveDefaultRelayTitle": "Divine کا ریلے ہٹائیں؟",
   "relaySettingsRemoveDefaultRelayMessage": "Divine کا ریلے ہٹانے سے ایپ کا تجربہ خراب ہو جائے گا۔ ویڈیوز، پوسٹنگ اور سنک کم قابلِ بھروسہ ہو سکتے ہیں۔ یہ صرف تجربہ کار Nostr صارفین کو کرنا چاہیے۔\n\n{relayUrl}",
   "@relaySettingsRemoveDefaultRelayMessage": {

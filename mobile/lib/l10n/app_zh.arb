@@ -433,11 +433,11 @@
   "profileSetupBackLabel": "返回",
   "profileSetupAboutNostr": "关于 Nostr",
   "profileSetupProfilePublished": "资料发布成功！",
-  "profileSetupUnsavedChangesTitle": "Save changes?",
-  "profileSetupUnsavedChangesSubtitle": "Save your edits before leaving, or discard them and keep moving.",
-  "profileSetupUnsavedChangesSaveButton": "Save changes",
-  "profileSetupUnsavedChangesDiscardButton": "Discard changes",
-  "profileSetupUnsavedChangesKeepButton": "Keep editing",
+  "profileSetupUnsavedChangesTitle": "保存更改？",
+  "profileSetupUnsavedChangesSubtitle": "离开前保存你的修改，或者放弃它们继续。",
+  "profileSetupUnsavedChangesSaveButton": "保存更改",
+  "profileSetupUnsavedChangesDiscardButton": "放弃更改",
+  "profileSetupUnsavedChangesKeepButton": "继续编辑",
   "profileSetupCreateNewProfile": "创建新资料？",
   "profileSetupNoExistingProfile": "我们没有在你的中继上找到已有资料。发布会创建一份新资料，继续吗？",
   "profileSetupPublishButton": "发布",
@@ -579,6 +579,9 @@
   "exploreTabForYou": "为你推荐",
   "exploreTabLists": "列表",
   "exploreTabIntegratedApps": "集成应用",
+  "featuredTabEmpty": "这里还没有内容。稍后再来看看。",
+  "featuredTabLoadFailed": "无法加载此合集。",
+  "featuredTabRetry": "重试",
   "exploreNoVideosAvailable": "暂无视频",
   "exploreErrorPrefix": "错误：{error}",
   "@exploreErrorPrefix": {
@@ -645,6 +648,8 @@
   "videoSettingsAutoAdvanceOff": "自动连播已关闭",
   "videoSettingsCaptionsOn": "字幕已开启",
   "videoSettingsCaptionsOff": "字幕已关闭",
+  "videoSettingsCaptionsOnForVideo": "已为此视频开启字幕",
+  "videoSettingsCaptionsOffForVideo": "已为此视频关闭字幕",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -1644,7 +1649,7 @@
     }
   },
   "analyticsDiagnosticsUseFixture": "使用示例数据",
-  "analyticsNa": "N/A",
+  "analyticsNa": "不适用",
   "authCreateNewAccount": "创建新的 Divine 账号",
   "authCreateNewAccountShort": "创建新账号",
   "@authCreateNewAccountShort": {
@@ -1768,6 +1773,9 @@
     }
   },
   "authVerificationResendFailed": "邮件重发失败，请重试。",
+  "authVerificationResendExpired": "该注册已过期。请重新开始以获取新验证码。",
+  "authVerificationResendUnavailable": "目前无法重新发送。请使用我们已发送到你邮箱的 6 位验证码。",
+  "authVerificationPollingStopped": "我们已停止为你检查。请输入邮件中的 6 位验证码完成登录。",
   "authWelcomeToDivine": "欢迎来到 Divine！",
   "authEmailVerified": "你的邮箱已通过验证。",
   "authSigningYouIn": "正在为你登录",
@@ -2394,6 +2402,8 @@
   "savedSoundRemoveConfirmTitle": "要移除这个声音吗？",
   "savedSoundRemoveConfirmMessage": "它会从你的音库中消失，但你可以从任何用到它的视频里重新保存。",
   "soundsRemovedFromLibrary": "已从声音库移除",
+  "soundsSaveFailed": "无法保存该声音。请重试。",
+  "soundsRemoveFailed": "无法移除该声音。请重试。",
   "soundsFailedToLoad": "声音加载失败",
   "soundsRetry": "重试",
   "soundsScreenLabel": "声音页面",
@@ -3217,7 +3227,7 @@
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
   },
-  "inboxSupportRowTitle": "Divine Moderation",
+  "inboxSupportRowTitle": "Divine 审核",
   "@inboxSupportRowTitle": {
     "description": "Title of the pinned Divine Moderation support row at the top of the Messages inbox. A brand account name, so it is intentionally identical in every locale."
   },
@@ -3334,7 +3344,7 @@
   "@inboxConversationCollabInvitePreview": {
     "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
   },
-  "collaboratorInviteDmBody": "You were invited to collaborate on {title}: {url}\n\nOpen diVine to review and accept.",
+  "collaboratorInviteDmBody": "你受邀参与合作制作 {title}：{url}\n\n打开 diVine 查看并接受。",
   "@collaboratorInviteDmBody": {
     "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
     "placeholders": {
@@ -3348,7 +3358,7 @@
       }
     }
   },
-  "collaboratorInviteDmBodyUntitled": "You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.",
+  "collaboratorInviteDmBodyUntitled": "你受邀参与合作制作一个视频：{url}\n\n打开 diVine 查看并接受。",
   "@collaboratorInviteDmBodyUntitled": {
     "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
     "placeholders": {
@@ -3702,6 +3712,7 @@
   "@videoMetadataC2paMissingNote": {
     "description": "Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons."
   },
+  "videoMetadataC2paMissingNoteServiceUnavailable": "内容凭证服务没有响应。这不是你的网络问题。",
   "videoMetadataC2paMissingRegenerate": "重新生成",
   "@videoMetadataC2paMissingRegenerate": {
     "description": "Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again."
@@ -3820,7 +3831,7 @@
   "libraryDraftDeleteFailedSnackbar": "删除草稿失败",
   "libraryDraftDuplicatedSnackbar": "草稿已复制",
   "libraryDraftDuplicateFailedSnackbar": "复制草稿失败",
-  "libraryDraftInProgressBadge": "In progress",
+  "libraryDraftInProgressBadge": "进行中",
   "libraryDraftActionPost": "发布",
   "libraryDraftActionEdit": "编辑",
   "libraryDraftActionDuplicate": "创建副本",
@@ -4142,6 +4153,7 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
+  "deleteAccountAccountChangedAfterDeletion": "部分删除请求已被接受，但因为你切换了账号，清理已停止。请重新登录原账号以完成。",
   "deleteAccountBurnUsernameFailed": "无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -4178,6 +4190,7 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountContentDeletionFailed": "从中继删除内容失败",
+  "deleteAccountRelayConfirmationFailed": "我们无法通过中继确认账号删除。请检查网络连接后重试。",
   "deleteAccountDeleteAllContentButton": "删除所有内容",
   "deleteAccountDeletionIncomplete": "我们没能完成账号删除，请重试。",
   "@deleteAccountDeletionIncomplete": {
@@ -4425,6 +4438,7 @@
   "supportPublicSubmissionTitle": "公开的 GitHub 帖子",
   "supportPublicSubmissionMessage": "你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。该帖子和你登录使用的账号都会被所有人公开查看。",
   "supportRequiredHelper": "必填",
+  "supportFieldLimitReached": "已达到最大长度。超出的部分未被添加。",
   "bugReportSubjectHint": "简要概括问题",
   "bugReportDescriptionRequiredLabel": "发生了什么？*",
   "bugReportDescriptionHint": "描述你遇到的问题",
@@ -4844,7 +4858,7 @@
     }
   },
   "notificationPostedNewVine": "{actorName} 发布了新视频",
-  "notificationAddedYourVideosToList": "{actorName} added {count, plural, =1{your vine} other{{count} of your vines}} to {listName}",
+  "notificationAddedYourVideosToList": "{actorName} 将{count, plural, =1{你的 vine} other{你的 {count} 个 vine}}添加到了 {listName}",
   "@notificationAddedYourVideosToList": {
     "description": "Shown when someone adds the user's videos to a public curated list. Uses an ICU plural so locales with more than two plural categories can inflect correctly.",
     "placeholders": {
@@ -5874,6 +5888,7 @@
   "videoMetadataContentWarningDoneButton": "完成",
   "videoMetadataAudioReuseTitle": "发布这个声音",
   "videoMetadataAudioReuseSubtitle": "让其他人保存并二次使用这个视频的音频。",
+  "publishAudioReuseDegradedWarning": "你的视频已发布，但声音未能发布。编辑视频以分享声音。",
   "videoMetadataCollaboratorsLabel": "添加协作者",
   "videoMetadataAddCollaboratorSemanticLabel": "邀请协作者",
   "videoMetadataCollaboratorsHelpTooltip": "协作者如何运作",
@@ -6236,24 +6251,24 @@
   "devOptionsProtectedMinorEnabledToast": "已强制开启未成年保护状态",
   "devOptionsProtectedMinorNonMinorToast": "已强制关闭未成年保护状态",
   "devOptionsProtectedMinorClearedToast": "未成年保护覆盖已清除",
-  "devOptionsInviteAvailabilityTitle": "Signup invites",
-  "devOptionsInviteAvailabilityCurrentLabel": "Current state",
-  "devOptionsInviteAvailabilityServerLoading": "Server value: loading",
-  "devOptionsInviteAvailabilityServerEnabled": "Server value: enabled",
-  "devOptionsInviteAvailabilityServerDisabled": "Server value: disabled",
-  "devOptionsInviteAvailabilityServerUnknown": "Server value: unknown (defaults enabled)",
-  "devOptionsInviteAvailabilityOverrideNone": "Override: use server value",
-  "devOptionsInviteAvailabilityOverrideEnabled": "Override: force enabled",
-  "devOptionsInviteAvailabilityOverrideDisabled": "Override: force disabled",
-  "devOptionsInviteAvailabilityUseServer": "Use server value",
-  "devOptionsInviteAvailabilityUseServerSubtitle": "Follow the invite service onboardingMode",
-  "devOptionsInviteAvailabilityForceEnabled": "Force enabled",
-  "devOptionsInviteAvailabilityForceEnabledSubtitle": "Show signup invite gates and management locally",
-  "devOptionsInviteAvailabilityForceDisabled": "Force disabled",
-  "devOptionsInviteAvailabilityForceDisabledSubtitle": "Hide signup invite UI locally without changing the server",
-  "devOptionsInviteAvailabilityUseServerToast": "Signup invites now follow the server",
-  "devOptionsInviteAvailabilityForceEnabledToast": "Signup invites forced on",
-  "devOptionsInviteAvailabilityForceDisabledToast": "Signup invites forced off",
+  "devOptionsInviteAvailabilityTitle": "注册邀请",
+  "devOptionsInviteAvailabilityCurrentLabel": "当前状态",
+  "devOptionsInviteAvailabilityServerLoading": "服务器值：加载中",
+  "devOptionsInviteAvailabilityServerEnabled": "服务器值：已启用",
+  "devOptionsInviteAvailabilityServerDisabled": "服务器值：已禁用",
+  "devOptionsInviteAvailabilityServerUnknown": "服务器值：未知（默认启用）",
+  "devOptionsInviteAvailabilityOverrideNone": "覆盖：使用服务器值",
+  "devOptionsInviteAvailabilityOverrideEnabled": "覆盖：强制启用",
+  "devOptionsInviteAvailabilityOverrideDisabled": "覆盖：强制禁用",
+  "devOptionsInviteAvailabilityUseServer": "使用服务器值",
+  "devOptionsInviteAvailabilityUseServerSubtitle": "跟随邀请服务的 onboardingMode",
+  "devOptionsInviteAvailabilityForceEnabled": "强制启用",
+  "devOptionsInviteAvailabilityForceEnabledSubtitle": "在本地显示注册邀请门槛和管理界面",
+  "devOptionsInviteAvailabilityForceDisabled": "强制禁用",
+  "devOptionsInviteAvailabilityForceDisabledSubtitle": "在本地隐藏注册邀请界面，不改动服务器",
+  "devOptionsInviteAvailabilityUseServerToast": "注册邀请现在跟随服务器",
+  "devOptionsInviteAvailabilityForceEnabledToast": "注册邀请已强制启用",
+  "devOptionsInviteAvailabilityForceDisabledToast": "注册邀请已强制禁用",
   "commentsRecordVideoButtonLabel": "录制视频评论",
   "@commentsRecordVideoButtonLabel": {
     "description": "Semantics label for the button that opens the recorder to create a video reply in comments."
@@ -6878,6 +6893,31 @@
   "profileNotifyBellOff": "接收新视频通知",
   "profileNotifyBellOn": "停止新视频通知",
   "profileNotifyUpdateFailed": "没能保存，再试一次？",
+  "savedSoundYourLabel": "你的标签",
+  "savedSoundAddHashtags": "添加话题标签",
+  "savedSoundDeviceOnly": "已保存在本设备",
+  "savedSoundDetailsRetry": "无法保存这些信息。点按重试。",
+  "savedSoundFallbackTitle": "已保存的声音",
+  "savedSoundPreviewAction": "试听声音",
+  "savedSoundEditAction": "编辑声音信息",
+  "savedSoundRemoveAction": "移除已保存的声音",
+  "savedSoundClearHashtagFilter": "清除话题标签筛选",
+  "soundAllowRemix": "允许他人混剪此声音",
+  "soundReuseUnavailable": "此声音目前无法混剪。",
+  "soundPublicCredit": "公开声音署名",
+  "soundCreditRequired": "发布前请添加公开声音署名。",
+  "soundSharedAs": "分享为",
+  "soundOwnWork": "这个声音是我做的",
+  "soundCreatorBy": "作者：{creator}",
+  "@soundCreatorBy": {"placeholders": {"creator": {"type": "String"}}},
+  "soundSharedBy": "由 {publisher} 分享",
+  "@soundSharedBy": {"placeholders": {"publisher": {"type": "String"}}},
+  "soundRemixingAllowed": "允许混剪",
+  "soundCreditOnly": "仅署名",
+  "soundCreditTitleLabel": "声音标题",
+  "soundCreditCreatorLabel": "创作者",
+  "soundCreditSourceUrlLabel": "来源 URL",
+  "soundCreditPublicHashtagsLabel": "公开话题标签",
   "relaySettingsRemoveDefaultRelayTitle": "移除 Divine 中继？",
   "relaySettingsRemoveDefaultRelayMessage": "移除 Divine 的中继会让应用体验变差。视频、发布和同步可能变得不太可靠。建议只有熟悉 Nostr 的用户才这么做。\n\n{relayUrl}",
   "@relaySettingsRemoveDefaultRelayMessage": {

@@ -798,20 +798,20 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupProfilePublished => 'پروفائل کامیابی سے شائع ہو گیا!';
 
   @override
-  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+  String get profileSetupUnsavedChangesTitle => 'تبدیلیاں محفوظ کریں؟';
 
   @override
   String get profileSetupUnsavedChangesSubtitle =>
-      'Save your edits before leaving, or discard them and keep moving.';
+      'جانے سے پہلے اپنی تبدیلیاں محفوظ کریں، یا انہیں رد کر کے آگے بڑھیں۔';
 
   @override
-  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+  String get profileSetupUnsavedChangesSaveButton => 'تبدیلیاں محفوظ کریں';
 
   @override
-  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+  String get profileSetupUnsavedChangesDiscardButton => 'تبدیلیاں رد کریں';
 
   @override
-  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+  String get profileSetupUnsavedChangesKeepButton => 'ترمیم جاری رکھیں';
 
   @override
   String get profileSetupCreateNewProfile => 'نیا پروفائل بنائیں؟';
@@ -1198,13 +1198,13 @@ class AppLocalizationsUr extends AppLocalizations {
   String get exploreTabIntegratedApps => 'مربوط ایپس';
 
   @override
-  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+  String get featuredTabEmpty => 'یہاں ابھی کچھ نہیں ہے۔ جلد دوبارہ دیکھیں۔';
 
   @override
-  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+  String get featuredTabLoadFailed => 'یہ مجموعہ لوڈ نہیں ہو سکا۔';
 
   @override
-  String get featuredTabRetry => 'Try again';
+  String get featuredTabRetry => 'دوبارہ کوشش کریں';
 
   @override
   String get exploreNoVideosAvailable => 'کوئی ویڈیو دستیاب نہیں';
@@ -1318,10 +1318,11 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'کیپشن آف';
 
   @override
-  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+  String get videoSettingsCaptionsOnForVideo => 'اس ویڈیو کے لیے کیپشنز آن ہیں';
 
   @override
-  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+  String get videoSettingsCaptionsOffForVideo =>
+      'اس ویڈیو کے لیے کیپشنز آف ہیں';
 
   @override
   String get contentWarningLabel => 'مواد انتباہ';
@@ -2905,7 +2906,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get analyticsDiagnosticsUseFixture => 'فکسچر ڈیٹا استعمال کریں';
 
   @override
-  String get analyticsNa => 'N/A';
+  String get analyticsNa => 'لاگو نہیں';
 
   @override
   String get authCreateNewAccount => 'نیا Divine اکاؤنٹ بنائیں';
@@ -3157,15 +3158,15 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get authVerificationResendExpired =>
-      'That signup expired. Start again to get a fresh code.';
+      'یہ سائن اپ ختم ہو گیا۔ نیا کوڈ حاصل کرنے کے لیے دوبارہ شروع کریں۔';
 
   @override
   String get authVerificationResendUnavailable =>
-      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+      'ابھی دوبارہ بھیجنا دستیاب نہیں ہے۔ جو ای میل ہم پہلے ہی بھیج چکے ہیں، اس میں موجود 6 ہندسوں کا کوڈ استعمال کریں۔';
 
   @override
   String get authVerificationPollingStopped =>
-      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+      'ہم نے آپ کے لیے چیک کرنا بند کر دیا ہے۔ سائن ان مکمل کرنے کے لیے اپنی ای میل میں موجود 6 ہندسوں کا کوڈ درج کریں۔';
 
   @override
   String get authWelcomeToDivine => 'Divine میں خوش آمدید!';
@@ -4378,10 +4379,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'آوازوں سے ہٹا دی گئی';
 
   @override
-  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+  String get soundsSaveFailed =>
+      'وہ ساؤنڈ محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
 
   @override
-  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+  String get soundsRemoveFailed =>
+      'وہ ساؤنڈ ہٹایا نہیں جا سکا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get soundSyncStatusSyncing => 'آپ کی آوازیں ہم آہنگ ہو رہی ہیں…';
@@ -5937,7 +5940,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get inboxSearchHint => 'پیغامات تلاش کریں';
 
   @override
-  String get inboxSupportRowTitle => 'Divine Moderation';
+  String get inboxSupportRowTitle => 'Divine ماڈریشن';
 
   @override
   String get inboxSupportRowSubtitle =>
@@ -6398,7 +6401,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNoteServiceUnavailable =>
-      'The content credential service didn\'t respond. This isn\'t your connection.';
+      'کنٹینٹ کریڈنشل سروس نے جواب نہیں دیا۔ یہ آپ کے کنکشن کا مسئلہ نہیں ہے۔';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'دوبارہ بنائیں';
@@ -6624,7 +6627,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'مسودہ نقل نہیں ہو سکا';
 
   @override
-  String get libraryDraftInProgressBadge => 'In progress';
+  String get libraryDraftInProgressBadge => 'جاری ہے';
 
   @override
   String get libraryDraftActionPost => 'پوسٹ کریں';
@@ -7249,7 +7252,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChangedAfterDeletion =>
-      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+      'کچھ حذف کرنے کی درخواستیں قبول ہو گئیں، لیکن صفائی رک گئی کیونکہ آپ نے اکاؤنٹ تبدیل کر لیا۔ مکمل کرنے کے لیے اصل اکاؤنٹ میں دوبارہ سائن ان کریں۔';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
@@ -7284,7 +7287,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deleteAccountRelayConfirmationFailed =>
-      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+      'ہم کسی ریلے سے اکاؤنٹ کے حذف ہونے کی تصدیق نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'تمام مواد حذف کریں';
@@ -7672,7 +7675,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get supportFieldLimitReached =>
-      'That\'s the maximum length. Anything past this wasn\'t added.';
+      'یہ زیادہ سے زیادہ لمبائی ہے۔ اس کے بعد کچھ بھی شامل نہیں کیا گیا۔';
 
   @override
   String get bugReportSubjectHint => 'مسئلے کا مختصر خلاصہ';
@@ -8288,10 +8291,10 @@ class AppLocalizationsUr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count of your vines',
-      one: 'your vine',
+      other: 'آپ کی $count وائنز',
+      one: 'آپ کی وائن',
     );
-    return '$actorName added $_temp0 to $listName';
+    return '$actorName نے $_temp0 کو $listName میں شامل کیا';
   }
 
   @override
@@ -9836,7 +9839,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get publishAudioReuseDegradedWarning =>
-      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+      'آپ کی ویڈیو لگ گئی ہے، لیکن ساؤنڈ شائع نہیں ہوا۔ اسے شیئر کرنے کے لیے ویڈیو میں ترمیم کریں۔';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'شریک کار شامل کریں';
@@ -10798,71 +10801,71 @@ class AppLocalizationsUr extends AppLocalizations {
       'محفوظ نابالغ اووررائیڈ صاف ہو گیا';
 
   @override
-  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+  String get devOptionsInviteAvailabilityTitle => 'سائن اپ دعوت نامے';
 
   @override
-  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+  String get devOptionsInviteAvailabilityCurrentLabel => 'موجودہ حالت';
 
   @override
   String get devOptionsInviteAvailabilityServerLoading =>
-      'Server value: loading';
+      'سرور ویلیو: لوڈ ہو رہی ہے';
 
   @override
-  String get devOptionsInviteAvailabilityServerEnabled =>
-      'Server value: enabled';
+  String get devOptionsInviteAvailabilityServerEnabled => 'سرور ویلیو: فعال';
 
   @override
   String get devOptionsInviteAvailabilityServerDisabled =>
-      'Server value: disabled';
+      'سرور ویلیو: غیر فعال';
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Server value: unknown (defaults enabled)';
+      'سرور ویلیو: نامعلوم (بطور ڈیفالٹ فعال)';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
-      'Override: use server value';
+      'اوور رائیڈ: سرور ویلیو استعمال کریں';
 
   @override
   String get devOptionsInviteAvailabilityOverrideEnabled =>
-      'Override: force enabled';
+      'اوور رائیڈ: زبردستی فعال';
 
   @override
   String get devOptionsInviteAvailabilityOverrideDisabled =>
-      'Override: force disabled';
+      'اوور رائیڈ: زبردستی غیر فعال';
 
   @override
-  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+  String get devOptionsInviteAvailabilityUseServer => 'سرور ویلیو استعمال کریں';
 
   @override
   String get devOptionsInviteAvailabilityUseServerSubtitle =>
-      'Follow the invite service onboardingMode';
+      'دعوت سروس کے onboardingMode کی پیروی کریں';
 
   @override
-  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+  String get devOptionsInviteAvailabilityForceEnabled => 'زبردستی فعال کریں';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
-      'Show signup invite gates and management locally';
+      'سائن اپ دعوت گیٹس اور انتظام مقامی طور پر دکھائیں';
 
   @override
-  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+  String get devOptionsInviteAvailabilityForceDisabled =>
+      'زبردستی غیر فعال کریں';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
-      'Hide signup invite UI locally without changing the server';
+      'سرور کو تبدیل کیے بغیر سائن اپ دعوت UI مقامی طور پر چھپائیں';
 
   @override
   String get devOptionsInviteAvailabilityUseServerToast =>
-      'Signup invites now follow the server';
+      'سائن اپ دعوت نامے اب سرور کی پیروی کرتے ہیں';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledToast =>
-      'Signup invites forced on';
+      'سائن اپ دعوت نامے زبردستی فعال';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledToast =>
-      'Signup invites forced off';
+      'سائن اپ دعوت نامے زبردستی غیر فعال';
 
   @override
   String get commentsRecordVideoButtonLabel => 'ویڈیو تبصرہ ریکارڈ کریں';
@@ -11538,78 +11541,80 @@ class AppLocalizationsUr extends AppLocalizations {
       'محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں؟';
 
   @override
-  String get savedSoundYourLabel => 'Your label';
+  String get savedSoundYourLabel => 'آپ کا لیبل';
 
   @override
-  String get savedSoundAddHashtags => 'Add hashtags';
+  String get savedSoundAddHashtags => 'ہیش ٹیگز شامل کریں';
 
   @override
-  String get savedSoundDeviceOnly => 'Saved on this device';
+  String get savedSoundDeviceOnly => 'اس ڈیوائس پر محفوظ';
 
   @override
   String get savedSoundDetailsRetry =>
-      'Couldn’t save those details. Tap to retry.';
+      'وہ تفصیلات محفوظ نہیں ہو سکیں۔ دوبارہ کوشش کے لیے تھپتھپائیں۔';
 
   @override
-  String get savedSoundFallbackTitle => 'Saved sound';
+  String get savedSoundFallbackTitle => 'محفوظ شدہ ساؤنڈ';
 
   @override
-  String get savedSoundPreviewAction => 'Preview sound';
+  String get savedSoundPreviewAction => 'ساؤنڈ سنیں';
 
   @override
-  String get savedSoundEditAction => 'Edit sound details';
+  String get savedSoundEditAction => 'ساؤنڈ کی تفصیلات میں ترمیم کریں';
 
   @override
-  String get savedSoundRemoveAction => 'Remove saved sound';
+  String get savedSoundRemoveAction => 'محفوظ شدہ ساؤنڈ ہٹائیں';
 
   @override
-  String get savedSoundClearHashtagFilter => 'Clear hashtag filter';
+  String get savedSoundClearHashtagFilter => 'ہیش ٹیگ فلٹر صاف کریں';
 
   @override
-  String get soundAllowRemix => 'Allow others to remix this sound';
+  String get soundAllowRemix => 'دوسروں کو اس ساؤنڈ کو ری مکس کرنے دیں';
 
   @override
-  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+  String get soundReuseUnavailable =>
+      'اس ساؤنڈ کو ابھی ری مکس نہیں کیا جا سکتا۔';
 
   @override
-  String get soundPublicCredit => 'Public sound credit';
+  String get soundPublicCredit => 'عوامی ساؤنڈ کریڈٹ';
 
   @override
-  String get soundCreditRequired => 'Add public sound credit before posting.';
+  String get soundCreditRequired =>
+      'پوسٹ کرنے سے پہلے عوامی ساؤنڈ کریڈٹ شامل کریں۔';
 
   @override
-  String get soundSharedAs => 'Shared as';
+  String get soundSharedAs => 'بطور شیئر کیا گیا';
 
   @override
-  String get soundOwnWork => 'I made this sound';
+  String get soundOwnWork => 'یہ ساؤنڈ میں نے بنایا ہے';
 
   @override
   String soundCreatorBy(String creator) {
-    return 'By $creator';
+    return 'بذریعہ $creator';
   }
 
   @override
   String soundSharedBy(String publisher) {
-    return 'Shared by $publisher';
+    return '$publisher کی جانب سے شیئر کیا گیا';
   }
 
   @override
-  String get soundRemixingAllowed => 'Remixing allowed';
+  String get soundRemixingAllowed => 'ری مکسنگ کی اجازت ہے';
 
   @override
-  String get soundCreditOnly => 'Credit only';
+  String get soundCreditOnly => 'صرف کریڈٹ';
 
   @override
-  String get soundCreditTitleLabel => 'Sound title';
+  String get soundCreditTitleLabel => 'ساؤنڈ کا عنوان';
 
   @override
-  String get soundCreditCreatorLabel => 'Creator';
+  String get soundCreditCreatorLabel => 'تخلیق کار';
 
   @override
-  String get soundCreditSourceUrlLabel => 'Source URL';
+  String get soundCreditSourceUrlLabel => 'ماخذ URL';
 
   @override
-  String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+  String get soundCreditPublicHashtagsLabel => 'عوامی ہیش ٹیگز';
 
   @override
   String get videoMetadataTagsPickerCancelSemanticLabel =>

@@ -799,20 +799,20 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupProfilePublished => 'Profil berjaya diterbitkan!';
 
   @override
-  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+  String get profileSetupUnsavedChangesTitle => 'Simpan perubahan?';
 
   @override
   String get profileSetupUnsavedChangesSubtitle =>
-      'Save your edits before leaving, or discard them and keep moving.';
+      'Simpan suntingan anda sebelum pergi, atau buang dan teruskan.';
 
   @override
-  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+  String get profileSetupUnsavedChangesSaveButton => 'Simpan perubahan';
 
   @override
-  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+  String get profileSetupUnsavedChangesDiscardButton => 'Buang perubahan';
 
   @override
-  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+  String get profileSetupUnsavedChangesKeepButton => 'Terus menyunting';
 
   @override
   String get profileSetupCreateNewProfile => 'Cipta profil baharu?';
@@ -944,7 +944,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupBannerColorYellow => 'Kuning';
 
   @override
-  String get profileSetupBannerColorViolet => 'Violet';
+  String get profileSetupBannerColorViolet => 'Ungu';
 
   @override
   String get profileSetupBannerColorPink => 'Merah jambu';
@@ -1199,13 +1199,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Apl Bersepadu';
 
   @override
-  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+  String get featuredTabEmpty =>
+      'Belum ada apa-apa di sini. Datang semula tidak lama lagi.';
 
   @override
-  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+  String get featuredTabLoadFailed => 'Koleksi ini tidak dapat dimuatkan.';
 
   @override
-  String get featuredTabRetry => 'Try again';
+  String get featuredTabRetry => 'Cuba lagi';
 
   @override
   String get exploreNoVideosAvailable => 'Tiada video tersedia';
@@ -1319,10 +1320,12 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'Sarikata dimatikan';
 
   @override
-  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+  String get videoSettingsCaptionsOnForVideo =>
+      'Sari kata dihidupkan untuk video ini';
 
   @override
-  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+  String get videoSettingsCaptionsOffForVideo =>
+      'Sari kata dimatikan untuk video ini';
 
   @override
   String get contentWarningLabel => 'Amaran Kandungan';
@@ -2929,7 +2932,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get analyticsDiagnosticsUseFixture => 'Guna data lekapan';
 
   @override
-  String get analyticsNa => 'N/A';
+  String get analyticsNa => 'Tiada';
 
   @override
   String get authCreateNewAccount => 'Cipta akaun Divine baharu';
@@ -3181,15 +3184,15 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get authVerificationResendExpired =>
-      'That signup expired. Start again to get a fresh code.';
+      'Pendaftaran itu telah tamat tempoh. Mulakan semula untuk dapatkan kod baharu.';
 
   @override
   String get authVerificationResendUnavailable =>
-      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+      'Penghantaran semula tidak tersedia sekarang. Gunakan kod 6 digit daripada e-mel yang telah kami hantar kepada anda.';
 
   @override
   String get authVerificationPollingStopped =>
-      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+      'Kami berhenti menyemak untuk anda. Masukkan kod 6 digit daripada e-mel anda untuk selesaikan log masuk.';
 
   @override
   String get authWelcomeToDivine => 'Selamat datang ke Divine!';
@@ -4404,10 +4407,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Dialih keluar daripada Bunyi';
 
   @override
-  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+  String get soundsSaveFailed => 'Bunyi itu tidak dapat disimpan. Cuba lagi.';
 
   @override
-  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+  String get soundsRemoveFailed => 'Bunyi itu tidak dapat dibuang. Cuba lagi.';
 
   @override
   String get soundSyncStatusSyncing => 'Menyegerakkan bunyi anda…';
@@ -4865,7 +4868,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get navExploreNewVideos => 'Video Baharu';
 
   @override
-  String get navExploreTrending => 'Trending';
+  String get navExploreTrending => 'Sedang Hangat';
 
   @override
   String get navExploreForYou => 'Untuk Anda';
@@ -5977,7 +5980,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get inboxSearchHint => 'Cari mesej';
 
   @override
-  String get inboxSupportRowTitle => 'Divine Moderation';
+  String get inboxSupportRowTitle => 'Pemantauan Divine';
 
   @override
   String get inboxSupportRowSubtitle =>
@@ -6441,7 +6444,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNoteServiceUnavailable =>
-      'The content credential service didn\'t respond. This isn\'t your connection.';
+      'Perkhidmatan kelayakan kandungan tidak menjawab. Ini bukan masalah sambungan anda.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Jana semula';
@@ -6483,7 +6486,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoEditorStickers => 'Pelekat';
 
   @override
-  String get trendingTitle => 'Trending';
+  String get trendingTitle => 'Sedang Hangat';
 
   @override
   String get libraryDeleteConfirm => 'Padam';
@@ -6665,7 +6668,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'Gagal menduplikasi draf';
 
   @override
-  String get libraryDraftInProgressBadge => 'In progress';
+  String get libraryDraftInProgressBadge => 'Sedang berjalan';
 
   @override
   String get libraryDraftActionPost => 'Siarkan';
@@ -7297,7 +7300,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChangedAfterDeletion =>
-      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+      'Sebahagian permintaan pemadaman diterima, tetapi pembersihan terhenti kerana anda menukar akaun. Log masuk semula ke akaun asal untuk menyelesaikannya.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
@@ -7332,7 +7335,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deleteAccountRelayConfirmationFailed =>
-      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+      'Kami tidak dapat mengesahkan pemadaman akaun dengan mana-mana relay. Semak sambungan anda dan cuba lagi.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Padam Semua Kandungan';
@@ -7717,7 +7720,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get supportFieldLimitReached =>
-      'That\'s the maximum length. Anything past this wasn\'t added.';
+      'Itu panjang maksimum. Apa-apa selepas ini tidak ditambah.';
 
   @override
   String get bugReportSubjectHint => 'Ringkasan ringkas isu itu';
@@ -8334,10 +8337,10 @@ class AppLocalizationsMs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count of your vines',
-      one: 'your vine',
+      other: '$count vine anda',
+      one: 'vine anda',
     );
-    return '$actorName added $_temp0 to $listName';
+    return '$actorName menambah $_temp0 ke $listName';
   }
 
   @override
@@ -8822,7 +8825,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoEditorTuneTemperature => 'Suhu';
 
   @override
-  String get videoEditorTuneTint => 'Tint';
+  String get videoEditorTuneTint => 'Ton';
 
   @override
   String get videoEditorTuneFade => 'Pudar';
@@ -9889,7 +9892,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get publishAudioReuseDegradedWarning =>
-      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+      'Video anda sudah naik, tetapi bunyinya tidak diterbitkan. Sunting video untuk berkongsi bunyi itu.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Tambah kolaborator';
@@ -10858,71 +10861,71 @@ class AppLocalizationsMs extends AppLocalizations {
       'Penggantian bawah umur dilindungi dikosongkan';
 
   @override
-  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+  String get devOptionsInviteAvailabilityTitle => 'Jemputan pendaftaran';
 
   @override
-  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+  String get devOptionsInviteAvailabilityCurrentLabel => 'Keadaan semasa';
 
   @override
   String get devOptionsInviteAvailabilityServerLoading =>
-      'Server value: loading';
+      'Nilai pelayan: sedang dimuatkan';
 
   @override
   String get devOptionsInviteAvailabilityServerEnabled =>
-      'Server value: enabled';
+      'Nilai pelayan: dihidupkan';
 
   @override
   String get devOptionsInviteAvailabilityServerDisabled =>
-      'Server value: disabled';
+      'Nilai pelayan: dimatikan';
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Server value: unknown (defaults enabled)';
+      'Nilai pelayan: tidak diketahui (lalai dihidupkan)';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
-      'Override: use server value';
+      'Tulis ganti: guna nilai pelayan';
 
   @override
   String get devOptionsInviteAvailabilityOverrideEnabled =>
-      'Override: force enabled';
+      'Tulis ganti: paksa hidup';
 
   @override
   String get devOptionsInviteAvailabilityOverrideDisabled =>
-      'Override: force disabled';
+      'Tulis ganti: paksa mati';
 
   @override
-  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+  String get devOptionsInviteAvailabilityUseServer => 'Guna nilai pelayan';
 
   @override
   String get devOptionsInviteAvailabilityUseServerSubtitle =>
-      'Follow the invite service onboardingMode';
+      'Ikut onboardingMode perkhidmatan jemputan';
 
   @override
-  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+  String get devOptionsInviteAvailabilityForceEnabled => 'Paksa hidup';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
-      'Show signup invite gates and management locally';
+      'Tunjukkan get jemputan pendaftaran dan pengurusannya secara setempat';
 
   @override
-  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+  String get devOptionsInviteAvailabilityForceDisabled => 'Paksa mati';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
-      'Hide signup invite UI locally without changing the server';
+      'Sembunyikan UI jemputan pendaftaran secara setempat tanpa mengubah pelayan';
 
   @override
   String get devOptionsInviteAvailabilityUseServerToast =>
-      'Signup invites now follow the server';
+      'Jemputan pendaftaran kini mengikut pelayan';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledToast =>
-      'Signup invites forced on';
+      'Jemputan pendaftaran dipaksa hidup';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledToast =>
-      'Signup invites forced off';
+      'Jemputan pendaftaran dipaksa mati';
 
   @override
   String get commentsRecordVideoButtonLabel => 'Rakam komen video';
@@ -11600,78 +11603,80 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileNotifyUpdateFailed => 'Tidak dapat disimpan. Cuba lagi?';
 
   @override
-  String get savedSoundYourLabel => 'Your label';
+  String get savedSoundYourLabel => 'Label anda';
 
   @override
-  String get savedSoundAddHashtags => 'Add hashtags';
+  String get savedSoundAddHashtags => 'Tambah hashtag';
 
   @override
-  String get savedSoundDeviceOnly => 'Saved on this device';
+  String get savedSoundDeviceOnly => 'Disimpan pada peranti ini';
 
   @override
   String get savedSoundDetailsRetry =>
-      'Couldn’t save those details. Tap to retry.';
+      'Butiran itu tidak dapat disimpan. Ketik untuk cuba lagi.';
 
   @override
-  String get savedSoundFallbackTitle => 'Saved sound';
+  String get savedSoundFallbackTitle => 'Bunyi tersimpan';
 
   @override
-  String get savedSoundPreviewAction => 'Preview sound';
+  String get savedSoundPreviewAction => 'Dengar bunyi';
 
   @override
-  String get savedSoundEditAction => 'Edit sound details';
+  String get savedSoundEditAction => 'Sunting butiran bunyi';
 
   @override
-  String get savedSoundRemoveAction => 'Remove saved sound';
+  String get savedSoundRemoveAction => 'Buang bunyi tersimpan';
 
   @override
-  String get savedSoundClearHashtagFilter => 'Clear hashtag filter';
+  String get savedSoundClearHashtagFilter => 'Kosongkan penapis hashtag';
 
   @override
-  String get soundAllowRemix => 'Allow others to remix this sound';
+  String get soundAllowRemix => 'Benarkan orang lain me-remix bunyi ini';
 
   @override
-  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+  String get soundReuseUnavailable =>
+      'Bunyi ini tidak boleh di-remix sekarang.';
 
   @override
-  String get soundPublicCredit => 'Public sound credit';
+  String get soundPublicCredit => 'Kredit bunyi awam';
 
   @override
-  String get soundCreditRequired => 'Add public sound credit before posting.';
+  String get soundCreditRequired =>
+      'Tambah kredit bunyi awam sebelum menyiarkan.';
 
   @override
-  String get soundSharedAs => 'Shared as';
+  String get soundSharedAs => 'Dikongsi sebagai';
 
   @override
-  String get soundOwnWork => 'I made this sound';
+  String get soundOwnWork => 'Saya yang buat bunyi ini';
 
   @override
   String soundCreatorBy(String creator) {
-    return 'By $creator';
+    return 'Oleh $creator';
   }
 
   @override
   String soundSharedBy(String publisher) {
-    return 'Shared by $publisher';
+    return 'Dikongsi oleh $publisher';
   }
 
   @override
-  String get soundRemixingAllowed => 'Remixing allowed';
+  String get soundRemixingAllowed => 'Remix dibenarkan';
 
   @override
-  String get soundCreditOnly => 'Credit only';
+  String get soundCreditOnly => 'Kredit sahaja';
 
   @override
-  String get soundCreditTitleLabel => 'Sound title';
+  String get soundCreditTitleLabel => 'Tajuk bunyi';
 
   @override
-  String get soundCreditCreatorLabel => 'Creator';
+  String get soundCreditCreatorLabel => 'Pencipta';
 
   @override
-  String get soundCreditSourceUrlLabel => 'Source URL';
+  String get soundCreditSourceUrlLabel => 'URL sumber';
 
   @override
-  String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+  String get soundCreditPublicHashtagsLabel => 'Hashtag awam';
 
   @override
   String get videoMetadataTagsPickerCancelSemanticLabel =>

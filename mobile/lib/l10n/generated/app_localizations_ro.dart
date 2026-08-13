@@ -831,20 +831,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupProfilePublished => 'Profil publicat cu succes!';
 
   @override
-  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+  String get profileSetupUnsavedChangesTitle => 'Salvezi modificările?';
 
   @override
   String get profileSetupUnsavedChangesSubtitle =>
-      'Save your edits before leaving, or discard them and keep moving.';
+      'Salvează modificările înainte să pleci sau renunță la ele și mergi mai departe.';
 
   @override
-  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+  String get profileSetupUnsavedChangesSaveButton => 'Salvează modificările';
 
   @override
-  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+  String get profileSetupUnsavedChangesDiscardButton => 'Renunță la modificări';
 
   @override
-  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+  String get profileSetupUnsavedChangesKeepButton => 'Continuă editarea';
 
   @override
   String get profileSetupCreateNewProfile => 'Creezi un profil nou?';
@@ -885,7 +885,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (opțional)';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'Site web (opțional)';
 
   @override
   String get profileSetupPublicKeyLabel => 'Cheie publică (npub)';
@@ -1095,37 +1095,37 @@ class AppLocalizationsRo extends AppLocalizations {
       'Folosește câmpul de nume de utilizator de mai sus pentru divine.video';
 
   @override
-  String get nostrSettingsNip05Address => 'NIP-05 address';
+  String get nostrSettingsNip05Address => 'Adresă NIP-05';
 
   @override
   String get nostrSettingsNip05AddressSubtitle =>
-      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+      'Folosește numele tău de utilizator divine.video sau îndreaptă-ți identificatorul către o adresă NIP-05 de pe un domeniu pe care îl controlezi.';
 
   @override
   String get nostrSettingsNip05AddressHint => 'you@example.com';
 
   @override
-  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+  String get nostrSettingsNip05SaveAction => 'Salvează NIP-05';
 
   @override
-  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+  String get nostrSettingsNip05Saved => 'NIP-05 salvat';
 
   @override
   String get nostrSettingsNip05SaveFailed =>
-      'Couldn\'t save NIP-05. Please try again.';
+      'Nu am putut salva NIP-05. Încearcă din nou.';
 
   @override
-  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+  String get profileSetupNip05ConfirmTitle => 'Folosești propriul NIP-05?';
 
   @override
   String get profileSetupNip05ConfirmBody =>
-      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+      'NIP-05 leagă un nume precum tu@domeniultau.ro de identitatea ta Nostr. Trebuie să controlezi domeniul și să găzduiești un fișier de verificare la calea corectă. Dacă e greșit, oamenii nu te mai găsesc, iar identificatorul verificat dispare. Continuă doar dacă ai configurat asta.';
 
   @override
-  String get profileSetupNip05ConfirmContinue => 'Continue';
+  String get profileSetupNip05ConfirmContinue => 'Continuă';
 
   @override
-  String get profileSetupNip05ConfirmCancel => 'Cancel';
+  String get profileSetupNip05ConfirmCancel => 'Anulează';
 
   @override
   String get profileSetupProfilePicturePreview =>
@@ -1231,13 +1231,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Aplicații integrate';
 
   @override
-  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+  String get featuredTabEmpty => 'Încă nu e nimic aici. Revino în curând.';
 
   @override
-  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+  String get featuredTabLoadFailed => 'Nu am putut încărca această colecție.';
 
   @override
-  String get featuredTabRetry => 'Try again';
+  String get featuredTabRetry => 'Încearcă din nou';
 
   @override
   String get exploreNoVideosAvailable => 'Niciun videoclip disponibil';
@@ -1351,10 +1351,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'Subtitrări dezactivate';
 
   @override
-  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+  String get videoSettingsCaptionsOnForVideo =>
+      'Subtitrările sunt pornite pentru acest videoclip';
 
   @override
-  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+  String get videoSettingsCaptionsOffForVideo =>
+      'Subtitrările sunt oprite pentru acest videoclip';
 
   @override
   String get contentWarningLabel => 'Atenționare de conținut';
@@ -1572,7 +1574,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoErrorContentRestrictedBody =>
-      'This video was removed for breaking our content rules.';
+      'Acest videoclip a fost eliminat pentru încălcarea regulilor noastre de conținut.';
 
   @override
   String get videoErrorVerifyAgeBody =>
@@ -1678,19 +1680,20 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get videoCollaboratorPendingDecoration => 'Pending';
+  String get videoCollaboratorPendingDecoration => 'În așteptare';
 
   @override
-  String get videoCollaboratorPendingSemanticLabel => 'Pending collaborator';
+  String get videoCollaboratorPendingSemanticLabel =>
+      'Colaborator în așteptare';
 
   @override
   String videoCollaboratorWithPendingSuffix(String label, int pending) {
-    return '$label ($pending pending)';
+    return '$label ($pending în așteptare)';
   }
 
   @override
   String profileChipTapHint(String name) {
-    return '$name. Tap to view profile.';
+    return '$name. Atinge pentru a vedea profilul.';
   }
 
   @override
@@ -2649,36 +2652,33 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când cineva pe care îl urmărești postează';
 
   @override
-  String get notificationSettingsSystem => 'System';
+  String get notificationSettingsSystem => 'Sistem';
 
   @override
   String get notificationSettingsSystemSubtitle =>
-      'App updates and system messages';
+      'Actualizări ale aplicației și mesaje de sistem';
 
   @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Push Notifications';
+  String get notificationSettingsPushNotificationsSection => 'Notificări push';
 
   @override
-  String get notificationSettingsPushNotifications => 'Push Notifications';
+  String get notificationSettingsPushNotifications => 'Notificări push';
 
   @override
   String get notificationSettingsPushNotificationsSubtitle =>
-      'Receive notifications when app is closed';
+      'Primește notificări și când aplicația e închisă';
 
   @override
-  String get notificationSettingsSound => 'Sound';
+  String get notificationSettingsSound => 'Sunet';
 
   @override
-  String get notificationSettingsSoundSubtitle =>
-      'Play sound for notifications';
+  String get notificationSettingsSoundSubtitle => 'Redă sunet la notificări';
 
   @override
-  String get notificationSettingsVibration => 'Vibration';
+  String get notificationSettingsVibration => 'Vibrații';
 
   @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Vibrate for notifications';
+  String get notificationSettingsVibrationSubtitle => 'Vibrează la notificări';
 
   @override
   String get notificationSettingsActions => 'Acțiuni';
@@ -3009,17 +3009,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authCreateNewAccount => 'Creează un cont Divine nou';
 
   @override
-  String get authCreateNewAccountShort => 'Create new account';
+  String get authCreateNewAccountShort => 'Creează cont nou';
 
   @override
   String get authSignInDifferentAccount => 'Autentifică-te cu un alt cont';
 
   @override
-  String get authUseAnotherAccount => 'Use another account';
+  String get authUseAnotherAccount => 'Folosește alt cont';
 
   @override
   String authContinueAs(String displayName) {
-    return 'Continue as $displayName';
+    return 'Continuă ca $displayName';
   }
 
   @override
@@ -3032,13 +3032,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+      'Alegând o opțiune de mai jos, confirmi că ai cel puțin 16 ani (sau ai finalizat ';
 
   @override
-  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+  String get authTermsAgeAuthorizationCta => 'autorizarea de vârstă Divine';
 
   @override
-  String get authTermsAfterAgeAuthorization => ') and agree to the ';
+  String get authTermsAfterAgeAuthorization => ') și ești de acord cu ';
 
   @override
   String get authTermsOfService => 'Termenii serviciului';
@@ -3254,15 +3254,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authVerificationResendExpired =>
-      'That signup expired. Start again to get a fresh code.';
+      'Înregistrarea a expirat. Începe din nou ca să primești un cod proaspăt.';
 
   @override
   String get authVerificationResendUnavailable =>
-      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+      'Retrimiterea nu e disponibilă acum. Folosește codul din 6 cifre din e-mailul pe care ți l-am trimis deja.';
 
   @override
   String get authVerificationPollingStopped =>
-      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+      'Am oprit verificarea automată. Introdu codul din 6 cifre din e-mail ca să finalizezi autentificarea.';
 
   @override
   String get authWelcomeToDivine => 'Bun venit pe Divine!';
@@ -3340,7 +3340,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Dă-ne emailul tău și âți vom trimite noutăți pe măsură ce se deschide accesul.';
 
   @override
-  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+  String get authJoinWaitlistNewsletterOptIn =>
+      'Trimiteți-mi inspirație de la Divine';
 
   @override
   String get authInviteAccessHelp => 'Ajutor pentru accesul prin invitație';
@@ -4172,11 +4173,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuDeleteFailedRelayRejected =>
-      'The relay wouldn\'t accept this delete request. Try again in a moment.';
+      'Releul nu a acceptat această cerere de ștergere. Încearcă din nou în scurt timp.';
 
   @override
   String get shareMenuDeleteFailedRelayNoResponse =>
-      'Couldn\'t reach the relay. Check your connection and try again.';
+      'Nu am putut contacta releul. Verifică conexiunea și încearcă din nou.';
 
   @override
   String get shareMenuDeletePartiallyConfirmed =>
@@ -4493,10 +4494,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Eliminat din Sunete';
 
   @override
-  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+  String get soundsSaveFailed =>
+      'Nu am putut salva acel sunet. Încearcă din nou.';
 
   @override
-  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+  String get soundsRemoveFailed =>
+      'Nu am putut elimina acel sunet. Încearcă din nou.';
 
   @override
   String get soundSyncStatusSyncing => 'Se sincronizează sunetele tale…';
@@ -4554,11 +4557,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Couldn\'t load videos.';
+  String get profileFeedError => 'Nu am putut încărca videoclipurile.';
 
   @override
   String get profileFeedLoadMoreError =>
-      'Couldn\'t load more videos. Pull to refresh.';
+      'Nu am putut încărca mai multe videoclipuri. Trage în jos pentru reîmprospătare.';
 
   @override
   String get notificationsTabAll => 'Toate';
@@ -5117,10 +5120,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get reportOtherRequiresDetails =>
-      'Please describe the issue when selecting Other';
+      'Descrie problema când alegi „Altele”';
 
   @override
-  String get reportDetailsRequired => 'Please describe the issue';
+  String get reportDetailsRequired => 'Descrie problema';
 
   @override
   String get reportReasonSpam => 'Spam sau conținut nedorit';
@@ -5466,11 +5469,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'serviciul de autentificare nu a putut fi contactat';
 
   @override
-  String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
+  String get keyManagementRestrictedTitle =>
+      'Cheile tale sunt gestionate de Divine';
 
   @override
   String get keyManagementRestrictedBody =>
-      'To keep your account safe, key backup and importing a different key aren\'t available here.';
+      'Ca să îți păstrăm contul în siguranță, salvarea cheii și importul altei chei nu sunt disponibile aici.';
 
   @override
   String get keyManagementPasteKey => 'Lipește cheia ta privată';
@@ -6085,7 +6089,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxSearchHint => 'Caută mesaje';
 
   @override
-  String get inboxSupportRowTitle => 'Divine Moderation';
+  String get inboxSupportRowTitle => 'Moderare Divine';
 
   @override
   String get inboxSupportRowSubtitle =>
@@ -6213,7 +6217,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dmSendBlockedMessage =>
-      'You can only message official Divine accounts';
+      'Poți trimite mesaje doar conturilor oficiale Divine';
 
   @override
   String get dmSendBlockedRetiredMessage =>
@@ -6246,7 +6250,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmConversationLoadError => 'Mesajele nu au putut fi încărcate';
 
   @override
-  String get dmMessageInputHint => 'Say something…';
+  String get dmMessageInputHint => 'Spune ceva…';
 
   @override
   String get dmMessageBubbleSentHint => 'Mesaj trimis';
@@ -6279,7 +6283,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmMessageActionCancelSend => 'Nu mai încerca';
 
   @override
-  String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
+  String get dmReactionAddCustomA11yLabel =>
+      'Adaugă o reacție emoji personalizată';
 
   @override
   String dmReelReplyComposerHint(String name) {
@@ -6311,25 +6316,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {
-    return 'Your reaction: $emoji';
+    return 'Reacția ta: $emoji';
   }
 
   @override
   String dmReactionChipOtherA11yLabel(String name, String emoji) {
-    return '$name reacted with $emoji';
+    return '$name a reacționat cu $emoji';
   }
 
   @override
   String dmReactionChipPendingA11yLabel(String emoji) {
-    return 'Sending reaction: $emoji';
+    return 'Se trimite reacția: $emoji';
   }
 
   @override
   String get dmReactionChipFailedA11yLabel =>
-      'Reaction failed, double tap to retry';
+      'Reacția a eșuat, atinge de două ori pentru a reîncerca';
 
   @override
-  String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
+  String get dmReactionChipRetryAnnouncement => 'Se reîncearcă reacția';
 
   @override
   String get dmReactionsSheetTitle => 'Reacții';
@@ -6548,7 +6553,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNoteServiceUnavailable =>
-      'The content credential service didn\'t respond. This isn\'t your connection.';
+      'Serviciul de acreditări de conținut nu a răspuns. Nu e vina conexiunii tale.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerează';
@@ -6776,7 +6781,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut duplica ciorna';
 
   @override
-  String get libraryDraftInProgressBadge => 'In progress';
+  String get libraryDraftInProgressBadge => 'În lucru';
 
   @override
   String get libraryDraftActionPost => 'Publică';
@@ -7416,7 +7421,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChangedAfterDeletion =>
-      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+      'Unele cereri de ștergere au fost acceptate, dar curățarea s-a oprit fiindcă ai schimbat contul. Autentifică-te din nou în contul inițial ca să finalizezi.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
@@ -7452,7 +7457,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountRelayConfirmationFailed =>
-      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+      'Nu am putut confirma ștergerea contului cu niciun releu. Verifică conexiunea și încearcă din nou.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';
@@ -7839,7 +7844,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get supportFieldLimitReached =>
-      'That\'s the maximum length. Anything past this wasn\'t added.';
+      'Aceasta e lungimea maximă. Ce depășește nu a fost adăugat.';
 
   @override
   String get bugReportSubjectHint => 'Scurt rezumat al problemei';
@@ -7874,19 +7879,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Mulțumim! Am primit raportul tău și îl vom folosi ca să facem Divine mai bun.';
 
   @override
-  String get bugReportAttachImages => 'Attach images';
+  String get bugReportAttachImages => 'Atașează imagini';
 
   @override
   String bugReportImagesCount(int count, int max) {
-    return '$count of $max images selected';
+    return '$count din $max imagini selectate';
   }
 
   @override
-  String get bugReportRemoveImage => 'Remove image';
+  String get bugReportRemoveImage => 'Elimină imaginea';
 
   @override
   String get bugReportUploadFailed =>
-      'We couldn\'t upload the selected image. Try again or send the report without it.';
+      'Nu am putut încărca imaginea selectată. Încearcă din nou sau trimite raportul fără ea.';
 
   @override
   String get bugReportSendFailed =>
@@ -8135,26 +8140,26 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get blueskyUsernameRequired =>
-      'Set up a divine.video handle before publishing to Bluesky';
+      'Configurează un identificator divine.video înainte să publici pe Bluesky';
 
   @override
   String get blueskyUsernameRequiredSubtitle =>
-      'Bluesky publishing needs a claimed username.divine.video handle.';
+      'Publicarea pe Bluesky necesită un identificator revendicat nume.divine.video.';
 
   @override
   String get blueskyUsernameSyncPending =>
-      'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.';
+      'Identificatorul tău Divine e revendicat. Îl legăm de Bluesky – încearcă din nou în scurt timp.';
 
   @override
   String get blueskyStatusUnavailableRetry =>
-      'We could not check your Divine handle. Try again.';
+      'Nu am putut verifica identificatorul tău Divine. Încearcă din nou.';
 
   @override
-  String get blueskySetUpHandle => 'Set up';
+  String get blueskySetUpHandle => 'Configurează';
 
   @override
   String get blueskyTemporarilyUnavailable =>
-      'Bluesky publishing is temporarily unavailable. Please try again.';
+      'Publicarea pe Bluesky e temporar indisponibilă. Încearcă din nou.';
 
   @override
   String get invitesTitle => 'Invită prieteni';
@@ -8164,18 +8169,19 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count invites ready to generate',
-      one: '1 invite ready to generate',
+      other: '$count de invitații gata de generat',
+      few: '$count invitații gata de generat',
+      one: '1 invitație gata de generat',
     );
     return '$_temp0';
   }
 
   @override
   String get invitesGenerateCardSubtitle =>
-      'Generate a code when you are ready to share one.';
+      'Generează un cod când ești gata să îl împarți.';
 
   @override
-  String get invitesGenerateButtonLabel => 'Generate invite';
+  String get invitesGenerateButtonLabel => 'Generează invitație';
 
   @override
   String get invitesNoneAvailable => 'Nicio invitație disponibilă acum';
@@ -8233,22 +8239,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Descoperă ceva interesant';
 
   @override
-  String get searchPeopleSectionHeader => 'People';
+  String get searchPeopleSectionHeader => 'Persoane';
 
   @override
-  String get searchPeopleLoadingLabel => 'Loading people results';
+  String get searchPeopleLoadingLabel =>
+      'Se încarcă rezultatele pentru persoane';
 
   @override
-  String get searchTagsSectionHeader => 'Tags';
+  String get searchTagsSectionHeader => 'Etichete';
 
   @override
-  String get searchTagsLoadingLabel => 'Loading tag results';
+  String get searchTagsLoadingLabel => 'Se încarcă rezultatele pentru etichete';
 
   @override
-  String get searchVideosSectionHeader => 'Videos';
+  String get searchVideosSectionHeader => 'Videoclipuri';
 
   @override
-  String get searchVideosLoadingLabel => 'Loading video results';
+  String get searchVideosLoadingLabel =>
+      'Se încarcă rezultatele pentru videoclipuri';
 
   @override
   String get searchVideosSortOptionsLabel => 'Sortează rezultatele video';
@@ -8462,10 +8470,11 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count of your vines',
-      one: 'your vine',
+      other: '$count de vine-uri ale tale',
+      few: '$count vine-uri ale tale',
+      one: 'vine-ul tău',
     );
-    return '$actorName added $_temp0 to $listName';
+    return '$actorName a adăugat $_temp0 în $listName';
   }
 
   @override
@@ -8498,47 +8507,49 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commentReplyToPrefix => 'Re:';
 
   @override
-  String get commentHideKeyboard => 'Hide keyboard';
+  String get commentHideKeyboard => 'Ascunde tastatura';
 
   @override
-  String get commentsErrorLoadFailed => 'Failed to load comments';
+  String get commentsErrorLoadFailed => 'Nu am putut încărca comentariile';
 
   @override
   String get commentsErrorNotAuthenticatedComment =>
-      'Please sign in to comment';
+      'Autentifică-te ca să comentezi';
 
   @override
-  String get commentsErrorPostCommentFailed => 'Failed to post comment';
+  String get commentsErrorPostCommentFailed =>
+      'Nu am putut publica comentariul';
 
   @override
-  String get commentsErrorPostReplyFailed => 'Failed to post reply';
+  String get commentsErrorPostReplyFailed => 'Nu am putut publica răspunsul';
 
   @override
-  String get commentsErrorEditFailed => 'Failed to edit comment';
+  String get commentsErrorEditFailed => 'Nu am putut edita comentariul';
 
   @override
   String get commentsErrorNotAuthenticatedInteract =>
-      'Please sign in to interact';
+      'Autentifică-te ca să interacționezi';
 
   @override
-  String get commentsErrorVoteFailed => 'Failed to vote on comment';
+  String get commentsErrorVoteFailed => 'Nu am putut vota comentariul';
 
   @override
-  String get commentsErrorReportFailed => 'Failed to report comment';
+  String get commentsErrorReportFailed => 'Nu am putut raporta comentariul';
 
   @override
-  String get commentsErrorBlockFailed => 'Failed to block user';
+  String get commentsErrorBlockFailed => 'Nu am putut bloca utilizatorul';
 
   @override
-  String get commentsErrorDeleteFailed => 'Failed to delete comment';
+  String get commentsErrorDeleteFailed => 'Nu am putut șterge comentariul';
 
   @override
   String commentsHeaderCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Comments',
-      one: '$count Comment',
+      other: '$count de comentarii',
+      few: '$count comentarii',
+      one: '$count comentariu',
     );
     return '$_temp0';
   }
@@ -8551,46 +8562,46 @@ class AppLocalizationsRo extends AppLocalizations {
       'Răspunsul tău video se publică';
 
   @override
-  String get commentsSortNew => 'New';
+  String get commentsSortNew => 'Noi';
 
   @override
   String get commentsSortTop => 'Top';
 
   @override
-  String get commentsSortOld => 'Old';
+  String get commentsSortOld => 'Vechi';
 
   @override
-  String get commentsSortSemanticLabel => 'Comments sorting';
+  String get commentsSortSemanticLabel => 'Sortarea comentariilor';
 
   @override
-  String get commentReply => 'Reply';
+  String get commentReply => 'Răspunde';
 
   @override
-  String get commentReplySemanticLabel => 'Reply to comment';
+  String get commentReplySemanticLabel => 'Răspunde la comentariu';
 
   @override
-  String get commentUpvoteLabel => 'Upvote comment';
+  String get commentUpvoteLabel => 'Votează pozitiv comentariul';
 
   @override
-  String get commentRemoveUpvoteLabel => 'Remove upvote';
+  String get commentRemoveUpvoteLabel => 'Retrage votul pozitiv';
 
   @override
-  String get commentDownvoteLabel => 'Downvote comment';
+  String get commentDownvoteLabel => 'Votează negativ comentariul';
 
   @override
-  String get commentRemoveDownvoteLabel => 'Remove downvote';
+  String get commentRemoveDownvoteLabel => 'Retrage votul negativ';
 
   @override
-  String get commentsInputHint => 'Add comment...';
+  String get commentsInputHint => 'Adaugă un comentariu...';
 
   @override
-  String get commentsInputHintEdit => 'Edit comment...';
+  String get commentsInputHintEdit => 'Editează comentariul...';
 
   @override
-  String get commentsEmptyTitle => 'No comments yet';
+  String get commentsEmptyTitle => 'Încă nu sunt comentarii';
 
   @override
-  String get commentsEmptySubtitle => 'Get the party started!';
+  String get commentsEmptySubtitle => 'Dă tu startul!';
 
   @override
   String get draftUntitled => 'Fără titlu';
@@ -10039,7 +10050,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get publishAudioReuseDegradedWarning =>
-      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+      'Videoclipul tău e publicat, dar sunetul nu. Editează videoclipul ca să îl împarți.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Colaboratori';
@@ -10521,178 +10532,181 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileBadgeFooterLink => 'Fă-ți propria insignă';
 
   @override
-  String get minorAccountReviewWelcomePageTitle => 'Family guide';
+  String get minorAccountReviewWelcomePageTitle => 'Ghid pentru familii';
 
   @override
   String get minorAccountReviewWelcomeCta =>
-      'Not 16 yet? That\'s OK. Here\'s what you can do.';
+      'Încă nu ai 16 ani? E în regulă. Uite ce poți face.';
 
   @override
-  String get minorAccountReviewWelcomeTitle => 'Not 16 yet? That\'s OK.';
+  String get minorAccountReviewWelcomeTitle =>
+      'Încă nu ai 16 ani? E în regulă.';
 
   @override
   String get minorAccountReviewWelcomeBody =>
       'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
 
   @override
-  String get minorAccountReviewModerationTitle => 'We need one more step';
+  String get minorAccountReviewModerationTitle => 'Mai avem nevoie de un pas';
 
   @override
   String get minorAccountReviewModerationBody =>
-      'We were asked to take a closer look at this account because it may belong to someone under 16. This flow keeps the next steps private and points you to the right path for your age.';
+      'Ni s-a cerut să ne uităm mai atent la acest cont fiindcă ar putea aparține unei persoane sub 16 ani. Acest flux păstrează pașii următori privați și îți arată drumul potrivit pentru vârsta ta.';
 
   @override
   String get minorAccountReviewRulesTitle =>
-      'The rules are not the same everywhere';
+      'Regulile nu sunt aceleași peste tot';
 
   @override
   String get minorAccountReviewRulesBody =>
-      'Different countries and regions treat teen social media use differently. That is why we ask families to slow down, check the facts, and choose the next step together.';
+      'Țările și regiunile tratează diferit folosirea rețelelor sociale de către adolescenți. De aceea le cerem familiilor să încetinească, să verifice faptele și să aleagă împreună pasul următor.';
 
   @override
-  String get minorAccountReviewApproachTitle => 'How Divine thinks about it';
+  String get minorAccountReviewApproachTitle => 'Cum vede Divine lucrurile';
 
   @override
   String get minorAccountReviewApproachBody =>
-      'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.';
+      'Credem că obiceiurile sănătoase cu tehnologia vin din a te opri, a reflecta și a-ți muta atenția spre lucruri mai bune, nu din a-i spiona pe copii sau a-i transforma pe părinți în supraveghetori. Și cercetările susțin asta.';
 
   @override
-  String get minorAccountReviewLearnMoreTitle => 'More for families';
+  String get minorAccountReviewLearnMoreTitle => 'Mai multe pentru familii';
 
   @override
-  String get minorAccountReviewKidsPolicyCta => 'Read Divine\'s kids policy';
+  String get minorAccountReviewKidsPolicyCta =>
+      'Citește politica Divine pentru copii';
 
   @override
-  String get minorAccountReviewChooseAgeBandTitle =>
-      'Choose the path that fits';
+  String get minorAccountReviewChooseAgeBandTitle => 'Alege drumul potrivit';
 
   @override
-  String get minorAccountReviewUnder13Cta => 'Under 13';
+  String get minorAccountReviewUnder13Cta => 'Sub 13 ani';
 
   @override
-  String get minorAccountReviewTeenCta => 'Age 13-15';
+  String get minorAccountReviewTeenCta => '13-15 ani';
 
   @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Helpful for families';
+  String get minorAccountReviewFamilyResourcesTitle => 'Util pentru familii';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
-      'Visit the Divine family guide for practical tips, conversation tools, and resources for helping teens use social media more safely.';
+      'Vezi ghidul Divine pentru familii, cu sfaturi practice, instrumente de discuție și resurse care îi ajută pe adolescenți să folosească rețelele sociale mai în siguranță.';
 
   @override
   String get minorAccountReviewFamilyResourcesCta =>
-      'Get family guides and tips';
+      'Obține ghiduri și sfaturi pentru familii';
 
   @override
   String get minorAccountReviewFooter =>
-      'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.';
+      'Dacă ai 16 ani sau mai mult și ai ajuns aici din greșeală, contactează asistența Divine ca să verifice un om real.';
 
   @override
-  String get minorAccountReviewTitle => 'Account Review';
+  String get minorAccountReviewTitle => 'Verificarea contului';
 
   @override
   String get minorAccountReviewCheckingStatusTitle =>
-      'Checking account status...';
+      'Se verifică starea contului...';
 
   @override
   String get minorAccountReviewCheckingStatusBody =>
-      'Please wait while we confirm this account\'s current review status.';
+      'Așteaptă puțin cât confirmăm starea actuală a verificării acestui cont.';
 
   @override
-  String get minorAccountReviewDefaultTitle => 'Account review required';
+  String get minorAccountReviewDefaultTitle =>
+      'E necesară verificarea contului';
 
   @override
   String get minorAccountReviewDefaultBody =>
-      'We need to review this account before it can use Divine normally.';
+      'Trebuie să verificăm acest cont înainte să poată folosi Divine normal.';
 
   @override
   String minorAccountReviewCaseId(String caseId) {
-    return 'Case ID: $caseId';
+    return 'ID caz: $caseId';
   }
 
   @override
-  String get minorAccountReviewCaseIdShortLabel => 'Case ID';
+  String get minorAccountReviewCaseIdShortLabel => 'ID caz';
 
   @override
-  String get minorAccountReviewRestrictionsTitle =>
-      'What is restricted right now';
+  String get minorAccountReviewRestrictionsTitle => 'Ce e restricționat acum';
 
   @override
   String get minorAccountReviewRestrictionPosting =>
-      'Posting and publishing are paused';
+      'Postarea și publicarea sunt oprite';
 
   @override
   String get minorAccountReviewRestrictionEngagement =>
-      'Comments, likes, reposts, and follows are paused';
+      'Comentariile, aprecierile, repostările și urmăririle sunt oprite';
 
   @override
   String get minorAccountReviewRestrictionMessaging =>
-      'Starting or replying to regular messages is paused';
+      'Începerea și răspunsul la mesajele obișnuite sunt oprite';
 
   @override
   String get minorAccountReviewRestrictionSupport =>
-      'Support and your moderation message remain available';
+      'Asistența și mesajul de la moderare rămân disponibile';
 
   @override
-  String get minorAccountReviewOpenSupportCenter => 'Open Support Center';
+  String get minorAccountReviewOpenSupportCenter =>
+      'Deschide centrul de asistență';
 
   @override
   String get minorAccountReviewOpenModerationMessage =>
-      'Open Moderation Message';
+      'Deschide mesajul de la moderare';
 
   @override
-  String get minorAccountReviewOpenReviewPage => 'Open review page';
+  String get minorAccountReviewOpenReviewPage =>
+      'Deschide pagina de verificare';
 
   @override
-  String get minorAccountReviewCheckAgain => 'Check Again';
+  String get minorAccountReviewCheckAgain => 'Verifică din nou';
 
   @override
-  String get minorAccountReviewLogOut => 'Log out';
+  String get minorAccountReviewLogOut => 'Deconectează-te';
 
   @override
-  String get minorAccountReviewNextStepTitle => 'Next step';
+  String get minorAccountReviewNextStepTitle => 'Pasul următor';
 
   @override
   String get minorAccountReviewNextStepBody =>
-      'Open the support center or your moderation message if you need help with this review.';
+      'Deschide centrul de asistență sau mesajul de la moderare dacă ai nevoie de ajutor cu această verificare.';
 
   @override
-  String get minorAccountReviewInProgressTitle => 'Review in progress';
+  String get minorAccountReviewInProgressTitle => 'Verificare în curs';
 
   @override
   String get minorAccountReviewInProgressBody =>
-      'We have what we need for now. Our team is reviewing this case before restoring normal account access.';
+      'Deocamdată avem ce ne trebuie. Echipa noastră analizează acest caz înainte de a reda accesul normal la cont.';
 
   @override
-  String get minorAccountReviewUnder13Title => 'Under-13 accounts';
+  String get minorAccountReviewUnder13Title => 'Conturi sub 13 ani';
 
   @override
   String minorAccountReviewUnder13Body(String supportEmail) {
-    return 'If this account belongs to someone under 13, a parent or guardian must email $supportEmail and include the case ID.';
+    return 'Dacă acest cont aparține unei persoane sub 13 ani, un părinte sau tutore trebuie să scrie la $supportEmail și să includă ID-ul cazului.';
   }
 
   @override
   String get minorAccountReviewUnder13PublicTitle =>
-      'We can\'t give you an account yet';
+      'Încă nu îți putem da un cont';
 
   @override
   String get minorAccountReviewUnder13PublicBody =>
-      'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
+      'Divine nu e construit pentru copii sub 13 ani, iar regulile rețelelor sociale din întreaga lume ne leagă mâinile.\n\nMulte lucruri de pe internet te împing să minți ca să obții ce vrei, iar noi detestăm asta. E lecția greșită pentru viață și nu ți-o vom preda aici.';
 
   @override
   String get minorAccountReviewUnder13FamilyTitle =>
-      'What your family can do instead';
+      'Ce poate face familia ta în schimb';
 
   @override
   String get minorAccountReviewUnder13FamilyBody =>
-      'A parent or guardian can hold the account and do the posting, and you can absolutely be in the videos with them. We want families to enjoy Divine in whatever way is right for them.';
+      'Un părinte sau tutore poate deține contul și poate posta, iar tu poți apărea liniștit în videoclipuri alături de ei. Vrem ca familiile să se bucure de Divine așa cum le e lor bine.';
 
   @override
-  String get minorAccountReviewUnder13ComeBackTitle => 'When you turn 13';
+  String get minorAccountReviewUnder13ComeBackTitle => 'Când împlinești 13 ani';
 
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
-      'Depending on the rules where you live, you may be able to come back and apply for your own account. In that case, if you’re between 13 and 15, you’ll need consent from a parent or guardian.';
+      'În funcție de regulile din locul unde trăiești, s-ar putea să poți reveni și să ceri propriul cont. În acel caz, dacă ai între 13 și 15 ani, îți va trebui acordul unui părinte sau tutore.';
 
   @override
   String get minorAccountReviewUnder13HonestyTitle =>
@@ -10711,11 +10725,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenBody =>
-      'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.';
+      'Dacă acest cont aparține unei persoane între 13 și 15 ani, folosește mesajul de la moderare sau calea de asistență pentru instrucțiunile privind acordul părintesc.';
 
   @override
   String get minorAccountReviewParentConsentTitle =>
-      'If the account will belong to someone 13 to 15';
+      'Dacă contul va aparține unei persoane între 13 și 15 ani';
 
   @override
   String get minorAccountReviewParentConsentBody =>
@@ -10739,343 +10753,350 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentChecklist =>
-      'What the video should show';
+      'Ce trebuie să arate videoclipul';
 
   @override
   String get minorAccountReviewParentConsentChecklistKid =>
-      'The teen in the video';
+      'Adolescentul din videoclip';
 
   @override
   String get minorAccountReviewParentConsentChecklistPermission =>
-      'A parent or guardian speaking on camera';
+      'Un părinte sau tutore vorbind în fața camerei';
 
   @override
   String get minorAccountReviewParentConsentChecklistAgeBand =>
-      'A clear statement that the teen is 13 to 15 and has permission to use Divine';
+      'O declarație clară că adolescentul are între 13 și 15 ani și are permisiunea de a folosi Divine';
 
   @override
   String get minorAccountReviewParentConsentChecklistSupervision =>
-      'A clear statement that the parent or guardian knows about the account and will supervise its use';
+      'O declarație clară că părintele sau tutorele știe de cont și îi va supraveghea folosirea';
 
   @override
-  String get minorAccountReviewParentConsentPrivacy => 'How to send it';
+  String get minorAccountReviewParentConsentPrivacy => 'Cum îl trimiți';
 
   @override
   String get minorAccountReviewParentConsentNeverPost =>
-      'Attach the video when you email Divine support';
+      'Atașează videoclipul când scrii asistenței Divine';
 
   @override
   String get minorAccountReviewParentConsentDoNotSave =>
-      'Keep the video private and do not post it in the app';
+      'Păstrează videoclipul privat și nu îl posta în aplicație';
 
   @override
   String get minorAccountReviewParentConsentOneMove =>
-      'Our team will review it and reply with next steps';
+      'Echipa noastră îl va analiza și va răspunde cu pașii următori';
 
   @override
-  String get minorAccountReviewParentConsentEmailCta => 'Email Divine support';
+  String get minorAccountReviewParentConsentEmailCta =>
+      'Scrie asistenței Divine';
 
   @override
   String get minorAccountReviewParentConsentEmailSubject =>
-      'Divine Greenlight review help (ages 13-15)';
+      'Ajutor pentru verificarea Divine Greenlight (13-15 ani)';
 
   @override
   String get minorAccountReviewParentConsentEmailBody =>
-      'Hi Divine support,\n\nI am contacting Divine about Divine Greenlight for a teen who is 13-15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.';
+      'Bună ziua, echipă de asistență Divine,\n\nvă scriu despre Divine Greenlight pentru un adolescent între 13 și 15 ani.\n\nAm atașat un scurt videoclip privat care arată:\n- adolescentul\n- un părinte sau tutore vorbind în fața camerei\n- că adolescentul are permisiunea de a folosi Divine\n- că părintele sau tutorele știe de cont și îi va supraveghea folosirea\n\nȚara/țările de reședință:\n\nContext util:\n\nMulțumesc.';
 
   @override
   String get minorAccountReviewParentSupportInstructions =>
-      'Parent Support Instructions';
+      'Instrucțiuni de asistență pentru părinți';
 
   @override
-  String get minorAccountReviewContinue => 'Continue';
+  String get minorAccountReviewContinue => 'Continuă';
 
   @override
   String get minorAccountReviewErrorTitle =>
-      'We could not load your account review status.';
+      'Nu am putut încărca starea verificării contului tău.';
 
   @override
-  String get minorAccountReviewErrorBody => 'Please try again in a moment.';
+  String get minorAccountReviewErrorBody => 'Încearcă din nou în scurt timp.';
 
   @override
-  String get minorAccountReviewTryAgain => 'Try Again';
+  String get minorAccountReviewTryAgain => 'Încearcă din nou';
 
   @override
-  String get minorAccountReviewParentContactTitle => 'Parent Contact';
+  String get minorAccountReviewParentContactTitle => 'Contact părinte';
 
   @override
   String get minorAccountReviewParentContactHeading =>
-      'Add a parent or guardian email';
+      'Adaugă e-mailul unui părinte sau tutore';
 
   @override
   String minorAccountReviewParentContactBody(String caseId) {
-    return 'We will use this address for the parental consent review on case $caseId.';
+    return 'Vom folosi această adresă pentru verificarea acordului părintesc în cazul $caseId.';
   }
 
   @override
   String get minorAccountReviewParentContactFieldLabel =>
-      'Parent or guardian email';
+      'E-mailul părintelui sau tutorelui';
 
   @override
-  String get minorAccountReviewSubmitting => 'Submitting...';
+  String get minorAccountReviewSubmitting => 'Se trimite...';
 
   @override
-  String get minorAccountReviewSubmitEmail => 'Submit Email';
+  String get minorAccountReviewSubmitEmail => 'Trimite e-mailul';
 
   @override
-  String get minorAccountReviewBackToReview => 'Back to Account Review';
+  String get minorAccountReviewBackToReview => 'Înapoi la verificarea contului';
 
   @override
-  String get minorAccountReviewSubmissionReceivedTitle => 'Email submitted';
+  String get minorAccountReviewSubmissionReceivedTitle => 'E-mail trimis';
 
   @override
   String minorAccountReviewSubmissionReceivedBody(String email) {
-    return 'We submitted $email for review. We\'ll email this address to confirm. Once your parent or guardian responds, your case will move forward. Use Check Again from the account review screen for updates.';
+    return 'Am trimis $email spre verificare. Vom scrie la această adresă pentru confirmare. După ce părintele sau tutorele răspunde, cazul tău merge mai departe. Folosește „Verifică din nou” din ecranul de verificare a contului pentru noutăți.';
   }
 
   @override
   String get minorAccountReviewSubmissionReceivedLocalBody =>
-      'We received the parent or guardian contact for this account. Our team will review it before restoring access.';
+      'Am primit datele de contact ale părintelui sau tutorelui pentru acest cont. Echipa noastră le va verifica înainte de a reda accesul.';
 
   @override
   String get minorAccountReviewMissingCase =>
-      'We could not find an active review case for this account.';
+      'Nu am găsit un caz de verificare activ pentru acest cont.';
 
   @override
   String get minorAccountReviewParentContactError =>
-      'Could not submit the parent email. Please try again.';
+      'Nu am putut trimite e-mailul părintelui. Încearcă din nou.';
 
   @override
-  String get minorAccountReviewUnder13SupportTitle => 'Parent Support';
+  String get minorAccountReviewUnder13SupportTitle =>
+      'Asistență pentru părinți';
 
   @override
   String get minorAccountReviewUnder13Heading =>
-      'A parent or guardian must contact Divine';
+      'Un părinte sau tutore trebuie să contacteze Divine';
 
   @override
   String get minorAccountReviewUnder13SupportBody =>
-      'For likely under-13 accounts, the next step is parent or guardian contact by email.';
+      'Pentru conturile care par să aparțină unor persoane sub 13 ani, pasul următor e contactul prin e-mail al părintelui sau tutorelui.';
 
   @override
-  String get minorAccountReviewSupportEmailLabel => 'Support email';
+  String get minorAccountReviewSupportEmailLabel => 'E-mail asistență';
 
   @override
-  String get minorAccountReviewCopySupportEmail => 'Copy support email';
+  String get minorAccountReviewCopySupportEmail =>
+      'Copiază e-mailul de asistență';
 
   @override
-  String get minorAccountReviewSupportEmailCopied => 'Support email copied';
+  String get minorAccountReviewSupportEmailCopied =>
+      'E-mailul de asistență a fost copiat';
 
   @override
-  String get minorAccountReviewCopyCaseId => 'Copy case ID';
+  String get minorAccountReviewCopyCaseId => 'Copiază ID-ul cazului';
 
   @override
-  String get minorAccountReviewCaseIdCopied => 'Case ID copied';
+  String get minorAccountReviewCaseIdCopied => 'ID-ul cazului a fost copiat';
 
   @override
-  String get minorAccountReviewUnavailable => 'Unavailable';
+  String get minorAccountReviewUnavailable => 'Indisponibil';
 
   @override
   String get minorAccountReviewUnder13Instructions =>
-      'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.';
+      'Roagă părintele sau tutorele să includă ID-ul cazului și să explice că ia legătura cu Divine în legătură cu această verificare a contului.';
 
   @override
   String minorAccountReviewUnder13EmailSubject(String caseId) {
-    return 'Under-13 account review for case $caseId';
+    return 'Verificare cont sub 13 ani pentru cazul $caseId';
   }
 
   @override
   String minorAccountReviewUnder13EmailBody(String caseId) {
-    return 'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review case $caseId.\n\nThanks.';
+    return 'Bună ziua, echipă de asistență Divine,\n\nsunt părintele sau tutorele unui copil sub 13 ani și vă scriu despre cazul de verificare a contului $caseId.\n\nMulțumesc.';
   }
 
   @override
   String get devOptionsMinorReviewSimulationTitle =>
-      'Minor Account Review Simulation';
+      'Simulare verificare cont de minor';
 
   @override
-  String get devOptionsMinorReviewCurrentStateLabel => 'Current state';
+  String get devOptionsMinorReviewCurrentStateLabel => 'Starea curentă';
 
   @override
   String devOptionsMinorReviewStateRestricted(String state) {
-    return 'Restricted ($state)';
+    return 'Restricționat ($state)';
   }
 
   @override
-  String get devOptionsMinorReviewStateActive => 'Active';
+  String get devOptionsMinorReviewStateActive => 'Activ';
 
   @override
-  String get devOptionsMinorReviewStateLoading => 'Loading...';
+  String get devOptionsMinorReviewStateLoading => 'Se încarcă...';
 
   @override
-  String get devOptionsMinorReviewStateError => 'Error loading state';
+  String get devOptionsMinorReviewStateError => 'Eroare la încărcarea stării';
 
   @override
-  String get devOptionsMinorReviewClearTitle => 'Clear simulation override';
+  String get devOptionsMinorReviewClearTitle =>
+      'Șterge suprascrierea simulării';
 
   @override
   String get devOptionsMinorReviewClearSubtitle =>
-      'Use backend or default active state again';
+      'Folosește din nou backendul sau starea activă implicită';
 
   @override
-  String get devOptionsMinorReviewTeenTitle => 'Simulate 13-15 review case';
+  String get devOptionsMinorReviewTeenTitle =>
+      'Simulează cazul de verificare 13-15';
 
   @override
   String get devOptionsMinorReviewTeenSubtitle =>
-      'Restricted account with parent contact path';
+      'Cont restricționat cu traseu de contact al părintelui';
 
   @override
   String get devOptionsMinorReviewUnder13Title =>
-      'Simulate under-13 support case';
+      'Simulează cazul de asistență sub 13 ani';
 
   @override
   String get devOptionsMinorReviewUnder13Subtitle =>
-      'Restricted account with parent-email-only instructions';
+      'Cont restricționat cu instrucțiuni doar prin e-mailul părintelui';
 
   @override
   String get devOptionsMinorReviewClearedToast =>
-      'Minor account review simulation cleared';
+      'Simularea verificării contului de minor a fost ștearsă';
 
   @override
   String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulated 13-15 review case enabled';
+      'Cazul simulat de verificare 13-15 a fost activat';
 
   @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
-      'Simulated under-13 support case enabled';
+      'Cazul simulat de asistență sub 13 ani a fost activat';
 
   @override
   String get devOptionsProtectedMinorSimulationTitle =>
-      'Protected Minor Simulation';
+      'Simulare minor protejat';
 
   @override
-  String get devOptionsProtectedMinorCurrentStateLabel => 'Current state';
+  String get devOptionsProtectedMinorCurrentStateLabel => 'Starea curentă';
 
   @override
-  String get devOptionsProtectedMinorStateProtected =>
-      'Protected minor (13-15)';
+  String get devOptionsProtectedMinorStateProtected => 'Minor protejat (13-15)';
 
   @override
-  String get devOptionsProtectedMinorStateNotProtected => 'Not protected';
+  String get devOptionsProtectedMinorStateNotProtected => 'Neprotejat';
 
   @override
-  String get devOptionsProtectedMinorStateLoading => 'Loading…';
+  String get devOptionsProtectedMinorStateLoading => 'Se încarcă…';
 
   @override
-  String get devOptionsProtectedMinorStateError => 'Error reading state';
+  String get devOptionsProtectedMinorStateError => 'Eroare la citirea stării';
 
   @override
   String get devOptionsProtectedMinorOverrideNone =>
-      'No override (real account state)';
+      'Fără suprascriere (starea reală a contului)';
 
   @override
   String get devOptionsProtectedMinorOverrideProtected =>
-      'Override: forced protected';
+      'Suprascriere: protejat forțat';
 
   @override
   String get devOptionsProtectedMinorOverrideNotProtected =>
-      'Override: forced not protected';
+      'Suprascriere: neprotejat forțat';
 
   @override
   String get devOptionsProtectedMinorSimulateTitle =>
-      'Simulate protected minor (13-15)';
+      'Simulează minor protejat (13-15)';
 
   @override
   String get devOptionsProtectedMinorSimulateSubtitle =>
-      'Force the protected-minor state to QA the #175/#176 protections';
+      'Forțează starea de minor protejat ca să testezi protecțiile #175/#176';
 
   @override
   String get devOptionsProtectedMinorSimulateNonMinorTitle =>
-      'Simulate non-minor';
+      'Simulează persoană majoră';
 
   @override
   String get devOptionsProtectedMinorSimulateNonMinorSubtitle =>
-      'Force not-protected (explicit negative, distinct from no override)';
+      'Forțează neprotejat (un „nu” explicit, diferit de lipsa suprascrierii)';
 
   @override
-  String get devOptionsProtectedMinorClearTitle => 'Clear override';
+  String get devOptionsProtectedMinorClearTitle => 'Șterge suprascrierea';
 
   @override
   String get devOptionsProtectedMinorClearSubtitle =>
-      'Return to the real Keycast-driven account state';
+      'Revino la starea reală a contului dată de Keycast';
 
   @override
   String get devOptionsProtectedMinorEnabledToast =>
-      'Protected-minor state forced on';
+      'Starea de minor protejat a fost forțată';
 
   @override
   String get devOptionsProtectedMinorNonMinorToast =>
-      'Protected-minor state forced off';
+      'Starea de minor protejat a fost dezactivată';
 
   @override
   String get devOptionsProtectedMinorClearedToast =>
-      'Protected-minor override cleared';
+      'Suprascrierea de minor protejat a fost ștearsă';
 
   @override
-  String get devOptionsInviteAvailabilityTitle => 'Signup invites';
+  String get devOptionsInviteAvailabilityTitle => 'Invitații de înregistrare';
 
   @override
-  String get devOptionsInviteAvailabilityCurrentLabel => 'Current state';
+  String get devOptionsInviteAvailabilityCurrentLabel => 'Starea curentă';
 
   @override
   String get devOptionsInviteAvailabilityServerLoading =>
-      'Server value: loading';
+      'Valoare server: se încarcă';
 
   @override
   String get devOptionsInviteAvailabilityServerEnabled =>
-      'Server value: enabled';
+      'Valoare server: activat';
 
   @override
   String get devOptionsInviteAvailabilityServerDisabled =>
-      'Server value: disabled';
+      'Valoare server: dezactivat';
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Server value: unknown (defaults enabled)';
+      'Valoare server: necunoscută (implicit activat)';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
-      'Override: use server value';
+      'Suprascriere: folosește valoarea serverului';
 
   @override
   String get devOptionsInviteAvailabilityOverrideEnabled =>
-      'Override: force enabled';
+      'Suprascriere: forțează activarea';
 
   @override
   String get devOptionsInviteAvailabilityOverrideDisabled =>
-      'Override: force disabled';
+      'Suprascriere: forțează dezactivarea';
 
   @override
-  String get devOptionsInviteAvailabilityUseServer => 'Use server value';
+  String get devOptionsInviteAvailabilityUseServer =>
+      'Folosește valoarea serverului';
 
   @override
   String get devOptionsInviteAvailabilityUseServerSubtitle =>
-      'Follow the invite service onboardingMode';
+      'Urmează onboardingMode al serviciului de invitații';
 
   @override
-  String get devOptionsInviteAvailabilityForceEnabled => 'Force enabled';
+  String get devOptionsInviteAvailabilityForceEnabled => 'Forțează activarea';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledSubtitle =>
-      'Show signup invite gates and management locally';
+      'Afișează local porțile de invitații și administrarea lor';
 
   @override
-  String get devOptionsInviteAvailabilityForceDisabled => 'Force disabled';
+  String get devOptionsInviteAvailabilityForceDisabled =>
+      'Forțează dezactivarea';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledSubtitle =>
-      'Hide signup invite UI locally without changing the server';
+      'Ascunde local interfața invitațiilor fără a modifica serverul';
 
   @override
   String get devOptionsInviteAvailabilityUseServerToast =>
-      'Signup invites now follow the server';
+      'Invitațiile de înregistrare urmează acum serverul';
 
   @override
   String get devOptionsInviteAvailabilityForceEnabledToast =>
-      'Signup invites forced on';
+      'Invitațiile de înregistrare au fost forțate activate';
 
   @override
   String get devOptionsInviteAvailabilityForceDisabledToast =>
-      'Signup invites forced off';
+      'Invitațiile de înregistrare au fost forțate dezactivate';
 
   @override
   String get commentsRecordVideoButtonLabel => 'Înregistrează comentariu video';
@@ -11123,11 +11144,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Visit website: $url';
+    return 'Vizitează site-ul: $url';
   }
 
   @override
-  String get profileCouldNotOpenWebsite => 'Could not open website';
+  String get profileCouldNotOpenWebsite => 'Nu am putut deschide site-ul';
 
   @override
   String get videoMetadataEditCoverTitle => 'Editează coperta';
@@ -11169,7 +11190,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authUnder16ChoicesCta => 'Iată opțiunile tale.';
 
   @override
-  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+  String get minorAccountReviewUnder13WhyTitle => 'Iată de ce';
 
   @override
   String get generalSettingsHoldToRecord => 'Ține apăsat pentru a înregistra';
@@ -11194,7 +11215,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get dmMessageSendLabel => 'Send message';
+  String get dmMessageSendLabel => 'Trimite mesajul';
 
   @override
   String get emojiPickerSearchHint => 'Căutare';
@@ -11335,124 +11356,145 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backgroundUploadNotificationTitle => 'Se încarcă videoclipul';
 
   @override
-  String get monetizationSettingsTitle => 'Creator Support';
+  String get monetizationSettingsTitle => 'Sprijin pentru creatori';
 
   @override
-  String get monetizationSettingsSubtitle => 'Add tip and subscription links';
+  String get monetizationSettingsSubtitle =>
+      'Adaugă linkuri pentru bacșiș și abonament';
 
   @override
-  String get monetizationSettingsIntroTitle => 'Outbound links only';
+  String get monetizationSettingsIntroTitle => 'Doar linkuri externe';
 
   @override
   String get monetizationSettingsIntroBody =>
-      'Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.';
+      'Adaugă destinații pe care le controlezi tu. Divine nu gestionează niciodată plata și nu deblochează conținut în aplicație prin aceste linkuri.';
 
   @override
   String monetizationSettingsConfiguredCount(int count) {
-    return '$count active link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de linkuri active în profilul tău',
+      few: '$count linkuri active în profilul tău',
+      one: '1 link activ în profilul tău',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get monetizationSettingsTipSection => 'Send a tip';
+  String get monetizationSettingsTipSection => 'Trimite un bacșiș';
 
   @override
-  String get monetizationSettingsSubscriptionSection => 'Subscribe / support';
+  String get monetizationSettingsSubscriptionSection => 'Abonează-te / susține';
 
   @override
-  String get monetizationSettingsSave => 'Save support links';
+  String get monetizationSettingsSave => 'Salvează linkurile de sprijin';
 
   @override
-  String get monetizationSettingsSaving => 'Saving...';
+  String get monetizationSettingsSaving => 'Se salvează...';
 
   @override
-  String get monetizationSettingsSaved => 'Support links updated';
+  String get monetizationSettingsSaved =>
+      'Linkurile de sprijin au fost actualizate';
 
   @override
   String get monetizationSettingsSaveFailed =>
-      'Could not save support links. Check your connection and try again.';
+      'Nu am putut salva linkurile de sprijin. Verifică conexiunea și încearcă din nou.';
 
   @override
-  String get monetizationSettingsErrorEmpty => 'Add a handle or URL.';
+  String get monetizationSettingsErrorEmpty =>
+      'Adaugă un identificator sau un URL.';
 
   @override
   String get monetizationSettingsErrorInvalid =>
-      'That link does not look right.';
+      'Linkul acesta nu pare corect.';
 
   @override
   String get monetizationSettingsErrorWrongProvider =>
-      'Use a link for this provider.';
+      'Folosește un link pentru acest furnizor.';
 
   @override
-  String get monetizationSettingsHintCashApp => '\$cashtag or cash.app link';
+  String get monetizationSettingsHintCashApp => '\$cashtag sau link cash.app';
 
   @override
-  String get monetizationSettingsHintPayPal => 'PayPal.me handle or link';
+  String get monetizationSettingsHintPayPal =>
+      'Identificator sau link PayPal.me';
 
   @override
-  String get monetizationSettingsHintVenmo => 'Venmo handle or link';
+  String get monetizationSettingsHintVenmo => 'Identificator sau link Venmo';
 
   @override
-  String get monetizationSettingsHintPatreon => 'Patreon handle or link';
+  String get monetizationSettingsHintPatreon =>
+      'Identificator sau link Patreon';
 
   @override
-  String get monetizationSettingsHintSubstack => 'Substack domain or link';
+  String get monetizationSettingsHintSubstack => 'Domeniu sau link Substack';
 
   @override
-  String get monetizationSettingsHintMedium => 'Medium handle or link';
+  String get monetizationSettingsHintMedium => 'Identificator sau link Medium';
 
   @override
   String get monetizationSettingsHintOpenCollective =>
-      'Open Collective slug or link';
+      'Identificator sau link Open Collective';
 
   @override
-  String get profileSupportSheetTitle => 'Support this creator';
+  String get profileSupportSheetTitle => 'Susține acest creator';
 
   @override
   String get profileSupportSheetBody =>
-      'These links open outside Divine. Nothing here unlocks content in the app.';
+      'Aceste linkuri se deschid în afara Divine. Nimic de aici nu deblochează conținut în aplicație.';
 
   @override
-  String get profileSupportTipSection => 'Send a tip';
+  String get profileSupportTipSection => 'Trimite un bacșiș';
 
   @override
-  String get profileSupportSubscriptionSection => 'Subscribe / support';
+  String get profileSupportSubscriptionSection => 'Abonează-te / susține';
 
   @override
-  String get profileSupportButtonLabel => 'Support';
+  String get profileSupportButtonLabel => 'Susține';
 
   @override
-  String get monetizationTipsSettingsTitle => 'Tips';
+  String get monetizationTipsSettingsTitle => 'Bacșișuri';
 
   @override
-  String get monetizationTipsSettingsSubtitle => 'Add optional tip links';
+  String get monetizationTipsSettingsSubtitle =>
+      'Adaugă linkuri opționale pentru bacșiș';
 
   @override
-  String get monetizationTipsSettingsIntroTitle => 'Optional tips only';
+  String get monetizationTipsSettingsIntroTitle => 'Doar bacșișuri opționale';
 
   @override
   String get monetizationTipsSettingsIntroBody =>
-      'Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.';
+      'Bacșișurile sunt cadouri opționale între utilizatori. Ele nu deblochează conținut, abonamente, funcții, clasare, vizibilitate sau acces în Divine.';
 
   @override
   String monetizationTipsSettingsConfiguredCount(int count) {
-    return '$count active tip link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de linkuri active pentru bacșiș în profilul tău',
+      few: '$count linkuri active pentru bacșiș în profilul tău',
+      one: '1 link activ pentru bacșiș în profilul tău',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get monetizationTipsSettingsSave => 'Save tip links';
+  String get monetizationTipsSettingsSave => 'Salvează linkurile pentru bacșiș';
 
   @override
-  String get monetizationTipsSettingsSaved => 'Tip links updated';
+  String get monetizationTipsSettingsSaved =>
+      'Linkurile pentru bacșiș au fost actualizate';
 
   @override
-  String get profileTipButtonLabel => 'Tip';
+  String get profileTipButtonLabel => 'Bacșiș';
 
   @override
-  String get profileTipSheetTitle => 'Tip this creator';
+  String get profileTipSheetTitle => 'Dă bacșiș acestui creator';
 
   @override
   String get profileTipSheetBody =>
-      'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
+      'Linkurile pentru bacșiș se deschid în afara Divine. Sunt opționale și nu deblochează conținut, abonamente, funcții sau acces în Divine.';
 
   @override
   String get settingsStorageTitle => 'Stocare';
@@ -11756,78 +11798,79 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileNotifyUpdateFailed => 'Nu s-a salvat. Reîncerci?';
 
   @override
-  String get savedSoundYourLabel => 'Your label';
+  String get savedSoundYourLabel => 'Eticheta ta';
 
   @override
-  String get savedSoundAddHashtags => 'Add hashtags';
+  String get savedSoundAddHashtags => 'Adaugă hashtaguri';
 
   @override
-  String get savedSoundDeviceOnly => 'Saved on this device';
+  String get savedSoundDeviceOnly => 'Salvat pe acest dispozitiv';
 
   @override
   String get savedSoundDetailsRetry =>
-      'Couldn’t save those details. Tap to retry.';
+      'Nu am putut salva aceste detalii. Atinge pentru a reîncerca.';
 
   @override
-  String get savedSoundFallbackTitle => 'Saved sound';
+  String get savedSoundFallbackTitle => 'Sunet salvat';
 
   @override
-  String get savedSoundPreviewAction => 'Preview sound';
+  String get savedSoundPreviewAction => 'Ascultă sunetul';
 
   @override
-  String get savedSoundEditAction => 'Edit sound details';
+  String get savedSoundEditAction => 'Editează detaliile sunetului';
 
   @override
-  String get savedSoundRemoveAction => 'Remove saved sound';
+  String get savedSoundRemoveAction => 'Elimină sunetul salvat';
 
   @override
-  String get savedSoundClearHashtagFilter => 'Clear hashtag filter';
+  String get savedSoundClearHashtagFilter => 'Șterge filtrul de hashtaguri';
 
   @override
-  String get soundAllowRemix => 'Allow others to remix this sound';
+  String get soundAllowRemix => 'Permite altora să remixeze acest sunet';
 
   @override
-  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+  String get soundReuseUnavailable => 'Acest sunet nu poate fi remixat acum.';
 
   @override
-  String get soundPublicCredit => 'Public sound credit';
+  String get soundPublicCredit => 'Credit public pentru sunet';
 
   @override
-  String get soundCreditRequired => 'Add public sound credit before posting.';
+  String get soundCreditRequired =>
+      'Adaugă credit public pentru sunet înainte de a posta.';
 
   @override
-  String get soundSharedAs => 'Shared as';
+  String get soundSharedAs => 'Partajat ca';
 
   @override
-  String get soundOwnWork => 'I made this sound';
+  String get soundOwnWork => 'Eu am creat acest sunet';
 
   @override
   String soundCreatorBy(String creator) {
-    return 'By $creator';
+    return 'De $creator';
   }
 
   @override
   String soundSharedBy(String publisher) {
-    return 'Shared by $publisher';
+    return 'Partajat de $publisher';
   }
 
   @override
-  String get soundRemixingAllowed => 'Remixing allowed';
+  String get soundRemixingAllowed => 'Remixarea e permisă';
 
   @override
-  String get soundCreditOnly => 'Credit only';
+  String get soundCreditOnly => 'Doar credit';
 
   @override
-  String get soundCreditTitleLabel => 'Sound title';
+  String get soundCreditTitleLabel => 'Titlul sunetului';
 
   @override
   String get soundCreditCreatorLabel => 'Creator';
 
   @override
-  String get soundCreditSourceUrlLabel => 'Source URL';
+  String get soundCreditSourceUrlLabel => 'URL sursă';
 
   @override
-  String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+  String get soundCreditPublicHashtagsLabel => 'Hashtaguri publice';
 
   @override
   String get videoMetadataTagsPickerCancelSemanticLabel =>
