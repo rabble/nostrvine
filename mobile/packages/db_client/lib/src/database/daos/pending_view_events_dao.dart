@@ -7,11 +7,7 @@ import 'package:meta/meta.dart';
 
 part 'pending_view_events_dao.g.dart';
 
-enum PendingViewEventStatus {
-  pending,
-  publishing,
-  failed,
-}
+enum PendingViewEventStatus { pending, publishing, failed }
 
 class UnknownPendingViewEventStatusException implements Exception {
   const UnknownPendingViewEventStatusException(this.rawValue);
@@ -161,10 +157,9 @@ class PendingViewEventsDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<void> enqueue(PendingViewEvent event) async {
-    await into(pendingViewEvents).insert(
-      _modelToCompanion(event),
-      mode: InsertMode.insertOrIgnore,
-    );
+    await into(
+      pendingViewEvents,
+    ).insert(_modelToCompanion(event), mode: InsertMode.insertOrIgnore);
   }
 
   Future<bool> markPublishing(String id) async {
@@ -226,7 +221,7 @@ class PendingViewEventsDao extends DatabaseAccessor<AppDatabase>
 
   Future<List<PendingViewEvent>> getRetryableForUser({
     required String userPubkey,
-    required int maxRetries,
+    int? limit,
   }) async {
     final query = select(pendingViewEvents)
       ..where(
@@ -236,6 +231,9 @@ class PendingViewEventsDao extends DatabaseAccessor<AppDatabase>
                 t.status.equals(PendingViewEventStatus.failed.name)),
       )
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
+    if (limit != null) {
+      query.limit(limit);
+    }
     final rows = await query.get();
     return rows.map(_rowToModel).toList();
   }

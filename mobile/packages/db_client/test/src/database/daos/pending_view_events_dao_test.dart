@@ -159,58 +159,68 @@ void main() {
     });
 
     group('getRetryableForUser', () {
-      test(
-        'returns retryable pending, failed, and exhausted rows oldest first',
-        () async {
-          await dao.enqueue(
-            makeEvent(
-              id: 'publishing',
-              status: PendingViewEventStatus.publishing,
-              createdAt: DateTime.utc(2026, 5),
-            ),
-          );
-          await dao.enqueue(
-            makeEvent(
-              id: 'failed-old',
-              status: PendingViewEventStatus.failed,
-              retryCount: 2,
-              createdAt: DateTime.utc(2026, 5, 2),
-            ),
-          );
-          await dao.enqueue(
-            makeEvent(
-              id: 'pending-new',
-              createdAt: DateTime.utc(2026, 5, 3),
-            ),
-          );
-          await dao.enqueue(
-            makeEvent(
-              id: 'exhausted',
-              status: PendingViewEventStatus.failed,
-              retryCount: 5,
-              createdAt: DateTime.utc(2026, 5, 4),
-            ),
-          );
-          await dao.enqueue(
-            makeEvent(
-              id: 'other-user',
-              userPubkey: userB,
-              createdAt: DateTime.utc(2026, 5, 5),
-            ),
-          );
+      test('returns retryable pending and failed rows oldest first', () async {
+        await dao.enqueue(
+          makeEvent(
+            id: 'publishing',
+            status: PendingViewEventStatus.publishing,
+            createdAt: DateTime.utc(2026, 5),
+          ),
+        );
+        await dao.enqueue(
+          makeEvent(
+            id: 'failed-old',
+            status: PendingViewEventStatus.failed,
+            retryCount: 2,
+            createdAt: DateTime.utc(2026, 5, 2),
+          ),
+        );
+        await dao.enqueue(
+          makeEvent(id: 'pending-new', createdAt: DateTime.utc(2026, 5, 3)),
+        );
+        await dao.enqueue(
+          makeEvent(
+            id: 'exhausted',
+            status: PendingViewEventStatus.failed,
+            retryCount: 5,
+            createdAt: DateTime.utc(2026, 5, 4),
+          ),
+        );
+        await dao.enqueue(
+          makeEvent(
+            id: 'other-user',
+            userPubkey: userB,
+            createdAt: DateTime.utc(2026, 5, 5),
+          ),
+        );
 
-          final retryable = await dao.getRetryableForUser(
-            userPubkey: userA,
-            maxRetries: 5,
-          );
+        final retryable = await dao.getRetryableForUser(userPubkey: userA);
 
-          expect(retryable.map((event) => event.id), [
-            'failed-old',
-            'pending-new',
-            'exhausted',
-          ]);
-        },
-      );
+        expect(retryable.map((event) => event.id), [
+          'failed-old',
+          'pending-new',
+          'exhausted',
+        ]);
+      });
+
+      test('limits the oldest retryable rows when requested', () async {
+        await dao.enqueue(
+          makeEvent(id: 'oldest', createdAt: DateTime.utc(2026, 5)),
+        );
+        await dao.enqueue(
+          makeEvent(id: 'middle', createdAt: DateTime.utc(2026, 5, 2)),
+        );
+        await dao.enqueue(
+          makeEvent(id: 'newest', createdAt: DateTime.utc(2026, 5, 3)),
+        );
+
+        final retryable = await dao.getRetryableForUser(
+          userPubkey: userA,
+          limit: 2,
+        );
+
+        expect(retryable.map((event) => event.id), ['oldest', 'middle']);
+      });
     });
 
     group('resetPublishingToPending', () {

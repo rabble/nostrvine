@@ -164,9 +164,7 @@ void main() {
       );
 
       final captured =
-          verify(
-                () => queue.enqueue(captureAny()),
-              ).captured.single
+          verify(() => queue.enqueue(captureAny())).captured.single
               as ProductAnalyticsEvent;
       expect(captured.eventId, '018ff7d7-2ef5-7000-8000-000000000003');
       expect(captured.eventName, 'screen_time');
@@ -228,7 +226,6 @@ void main() {
       final retryable = await database!.pendingViewEventsDao.getRetryableForUser(
         userPubkey:
             '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-        maxRetries: 5,
       );
       expect(retryable, hasLength(1));
       expect(retryable.single.videoId, video.id);
@@ -280,7 +277,6 @@ void main() {
       final retryable = await database!.pendingViewEventsDao.getRetryableForUser(
         userPubkey:
             '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-        maxRetries: 5,
       );
       expect(retryable, isEmpty);
       expect(flushCount, 0);
@@ -365,10 +361,7 @@ void main() {
       );
 
       final retryable = await database!.pendingViewEventsDao
-          .getRetryableForUser(
-            userPubkey: userPubkey,
-            maxRetries: 5,
-          );
+          .getRetryableForUser(userPubkey: userPubkey);
       expect(retryable, hasLength(1));
       verifyNever(
         () => publisher.publishViewEvent(

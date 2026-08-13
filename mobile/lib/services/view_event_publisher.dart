@@ -16,7 +16,11 @@ const int viewEventKind = 22236;
 /// Wired in the app layer to Crashlytics for structural drops. Injected
 /// rather than reached for statically so tests can assert on drops.
 typedef ViewEventDropReporter =
-    void Function(ViewEventDropReason reason, {required String videoId});
+    void Function(
+      ViewEventDropReason reason, {
+      required String videoId,
+      required String method,
+    });
 
 /// Service for publishing video view events to Nostr relays.
 ///
@@ -43,13 +47,13 @@ class ViewEventPublisher {
   ///
   /// Every early return in this class routes through here, so a new skip
   /// path cannot be added without declaring whether it is a defect.
-  bool _drop(ViewEventDropReason reason, String videoId) {
+  bool _drop(ViewEventDropReason reason, String videoId, String method) {
     Log.debug(
       'View event dropped (${reason.name}) for video $videoId',
       name: 'ViewEventPublisher',
       category: LogCategory.video,
     );
-    _onDrop?.call(reason, videoId: videoId);
+    _onDrop?.call(reason, videoId: videoId, method: method);
     return false;
   }
 
@@ -69,19 +73,24 @@ class ViewEventPublisher {
     String? sourceDetail,
     int? loopCount,
   }) async {
+    const method = 'publishViewEvent';
     if (endSeconds - startSeconds < 1) {
-      return _drop(ViewEventDropReason.belowMinimumWatchTime, video.id);
+      return _drop(ViewEventDropReason.belowMinimumWatchTime, video.id, method);
     }
 
     if (!_authService.isAuthenticated) {
-      return _drop(ViewEventDropReason.notAuthenticated, video.id);
+      return _drop(ViewEventDropReason.notAuthenticated, video.id, method);
     }
 
     try {
       // View events require an addressable video reference.
       final aTag = video.addressableId;
       if (aTag == null) {
-        return _drop(ViewEventDropReason.missingAddressableDTag, video.id);
+        return _drop(
+          ViewEventDropReason.missingAddressableDTag,
+          video.id,
+          method,
+        );
       }
 
       // Get relay hint
@@ -126,7 +135,7 @@ class ViewEventPublisher {
       );
 
       if (event == null) {
-        return _drop(ViewEventDropReason.signingFailed, video.id);
+        return _drop(ViewEventDropReason.signingFailed, video.id, method);
       }
 
       // Publish to relays (fire-and-forget for ephemeral events)
@@ -140,7 +149,7 @@ class ViewEventPublisher {
         );
         return true;
       } else {
-        return _drop(ViewEventDropReason.relayRejected, video.id);
+        return _drop(ViewEventDropReason.relayRejected, video.id, method);
       }
     } catch (e) {
       Log.error(
@@ -148,7 +157,7 @@ class ViewEventPublisher {
         name: 'ViewEventPublisher',
         category: LogCategory.video,
       );
-      return _drop(ViewEventDropReason.relayRejected, video.id);
+      return _drop(ViewEventDropReason.unexpectedError, video.id, method);
     }
   }
 
@@ -162,23 +171,28 @@ class ViewEventPublisher {
     ViewTrafficSource source = ViewTrafficSource.unknown,
     String? sourceDetail,
   }) async {
+    const method = 'publishViewEventWithSegments';
     // Filter out invalid segments
     final validSegments = segments
         .where((s) => s.$2 > s.$1 && s.$2 - s.$1 >= 1)
         .toList();
 
     if (validSegments.isEmpty) {
-      return _drop(ViewEventDropReason.belowMinimumWatchTime, video.id);
+      return _drop(ViewEventDropReason.belowMinimumWatchTime, video.id, method);
     }
 
     if (!_authService.isAuthenticated) {
-      return _drop(ViewEventDropReason.notAuthenticated, video.id);
+      return _drop(ViewEventDropReason.notAuthenticated, video.id, method);
     }
 
     try {
       final aTag = video.addressableId;
       if (aTag == null) {
-        return _drop(ViewEventDropReason.missingAddressableDTag, video.id);
+        return _drop(
+          ViewEventDropReason.missingAddressableDTag,
+          video.id,
+          method,
+        );
       }
 
       String relayHint = _defaultRelayHint;
@@ -206,7 +220,7 @@ class ViewEventPublisher {
       );
 
       if (event == null) {
-        return _drop(ViewEventDropReason.signingFailed, video.id);
+        return _drop(ViewEventDropReason.signingFailed, video.id, method);
       }
 
       final sentEvent = await _nostrService.publishEvent(event);
@@ -223,14 +237,14 @@ class ViewEventPublisher {
         );
         return true;
       }
-      return _drop(ViewEventDropReason.relayRejected, video.id);
+      return _drop(ViewEventDropReason.relayRejected, video.id, method);
     } catch (e) {
       Log.error(
         'Error publishing multi-segment view event: $e',
         name: 'ViewEventPublisher',
         category: LogCategory.video,
       );
-      return _drop(ViewEventDropReason.relayRejected, video.id);
+      return _drop(ViewEventDropReason.unexpectedError, video.id, method);
     }
   }
 }

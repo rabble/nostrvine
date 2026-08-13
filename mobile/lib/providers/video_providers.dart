@@ -307,15 +307,15 @@ ViewEventPublisher viewEventPublisher(Ref ref) {
   return ViewEventPublisher(
     nostrService: nostrService,
     authService: authService,
-    onDrop: (reason, {required String videoId}) {
+    onDrop: (reason, {required String videoId, required String method}) {
       if (!reason.isStructural) return;
       CrashReportingService.instance.recordError(
         Reportable(
           ViewEventInvariantException(reason),
-          context: 'ViewEventPublisher.publishViewEvent',
+          context: 'ViewEventPublisher.$method',
         ),
         StackTrace.current,
-        reason: 'ViewEventPublisher.${reason.name}',
+        reason: 'ViewEventPublisher.$method.${reason.name}.videoId=$videoId',
       );
     },
   );

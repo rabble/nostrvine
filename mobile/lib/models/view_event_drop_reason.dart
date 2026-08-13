@@ -20,6 +20,9 @@ enum ViewEventDropReason {
   /// Signing returned no event.
   signingFailed,
 
+  /// An unexpected exception interrupted event construction or publishing.
+  unexpectedError,
+
   /// The event was built and signed but the relay publish did not succeed.
   relayRejected;
 
@@ -39,6 +42,7 @@ enum ViewEventDropReason {
     ViewEventDropReason.notAuthenticated => false,
     ViewEventDropReason.missingAddressableDTag => true,
     ViewEventDropReason.signingFailed => true,
+    ViewEventDropReason.unexpectedError => true,
     ViewEventDropReason.relayRejected => false,
   };
 }

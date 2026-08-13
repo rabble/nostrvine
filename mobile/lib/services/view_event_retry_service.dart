@@ -12,13 +12,13 @@ import 'package:openvine/services/view_event_publisher.dart';
 /// Backoff configuration for [ViewEventRetryService].
 class ViewEventRetryConfig {
   const ViewEventRetryConfig({
-    this.maxRetries = 5,
+    this.maxEventsPerSweep = 25,
     this.initialDelay = const Duration(seconds: 2),
     this.maxDelay = const Duration(minutes: 5),
     this.backoffMultiplier = 2.0,
   });
 
-  final int maxRetries;
+  final int maxEventsPerSweep;
   final Duration initialDelay;
   final Duration maxDelay;
   final double backoffMultiplier;
@@ -91,7 +91,7 @@ class ViewEventRetryService {
     try {
       final retryable = await _dao.getRetryableForUser(
         userPubkey: _userPubkey,
-        maxRetries: _retryConfig.maxRetries,
+        limit: _retryConfig.maxEventsPerSweep,
       );
 
       for (final row in retryable) {
@@ -133,6 +133,13 @@ class ViewEventRetryService {
   }
 
   VideoEvent _toVideoEvent(PendingViewEvent row) {
+    final addressableDTag =
+        row.videoVineId != null &&
+            row.videoVineId!.isNotEmpty &&
+            row.videoVineId != row.videoId
+        ? row.videoVineId
+        : null;
+
     return VideoEvent(
       id: row.videoId,
       pubkey: row.videoPubkey,
@@ -140,10 +147,9 @@ class ViewEventRetryService {
       content: '',
       timestamp: row.createdAt,
       vineId: row.videoVineId,
-      // The queue stores the video's `d` tag in videoVineId. Without this the
-      // rebuilt event has no addressable coordinate and every swept row is
-      // dropped before it reaches a relay (#6722).
-      addressableDTag: row.videoVineId,
+      // Older queued rows only have videoVineId. Trust it as a d tag when it
+      // differs from videoId; equality is the known event-id fallback shape.
+      addressableDTag: addressableDTag,
     );
   }
 }

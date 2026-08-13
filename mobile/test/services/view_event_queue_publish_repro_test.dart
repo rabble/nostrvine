@@ -80,7 +80,8 @@ void main() {
       publisher = ViewEventPublisher(
         nostrService: mockNostr,
         authService: mockAuth,
-        onDrop: (reason, {required String videoId}) => drops.add(reason),
+        onDrop: (reason, {required String videoId, required String method}) =>
+            drops.add(reason),
       );
 
       await dao.enqueue(
@@ -152,5 +153,41 @@ void main() {
       final aTag = event.tags.firstWhere((tag) => tag.first == 'a');
       expect(aTag[1], endsWith(':vine-id-from-queue-row'));
     });
+
+    test(
+      'drops a queued event-id fallback instead of fabricating an a tag',
+      () async {
+        await dao.deleteById('queued-view');
+        await dao.enqueue(
+          PendingViewEvent(
+            id: 'queued-view-without-d',
+            videoId: 'b' * 64,
+            videoPubkey: videoPubkey,
+            videoVineId: 'b' * 64,
+            userPubkey: userPubkey,
+            watchDurationMs: 6000,
+            totalDurationMs: 6000,
+            loopCount: 1,
+            trafficSource: 'home',
+            status: PendingViewEventStatus.pending,
+            createdAt: DateTime.utc(2026, 8, 12),
+          ),
+        );
+        final service = ViewEventRetryService(
+          viewEventPublisher: publisher,
+          pendingViewEventsDao: dao,
+          userPubkey: userPubkey,
+          appForegroundStream: const Stream<bool>.empty(),
+        );
+
+        await service.sweep();
+
+        verifyNever(() => mockNostr.publishEvent(any()));
+        expect(drops, [ViewEventDropReason.missingAddressableDTag]);
+        final row = await dao.getById('queued-view-without-d');
+        expect(row, isNotNull);
+        expect(row!.status, PendingViewEventStatus.failed);
+      },
+    );
   });
 }

@@ -15,6 +15,7 @@ void main() {
     test('failures to build a publishable event are structural', () {
       expect(ViewEventDropReason.missingAddressableDTag.isStructural, isTrue);
       expect(ViewEventDropReason.signingFailed.isStructural, isTrue);
+      expect(ViewEventDropReason.unexpectedError.isStructural, isTrue);
     });
 
     test('every reason states its reportability', () {
