@@ -9488,8 +9488,8 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return '動画を下書きに保存します。レンダリング中のため、$destinationにはコピーされません。';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return '動画を下書きに保存します。レンダリング済みの動画がまだないため、$destinationにはコピーされません。';
   }
 
   @override

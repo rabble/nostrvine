@@ -9960,8 +9960,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Video opslaan in concepten. Nog bezig met renderen, dus geen kopie in $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Video opslaan in concepten. Nog geen gerenderde video, dus geen kopie in $destination.';
   }
 
   @override

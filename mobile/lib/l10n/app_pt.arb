@@ -3306,8 +3306,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "Salvar vídeo nos rascunhos. Ainda renderizando, então nenhuma cópia é adicionada a {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Salvar vídeo nos rascunhos. Ainda não há vídeo renderizado, então nenhuma cópia é adicionada a {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

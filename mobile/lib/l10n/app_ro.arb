@@ -3306,8 +3306,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "Salvează videoclipul în schițe. Randarea este în curs, deci nicio copie în {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Salvează videoclipul în schițe. Încă nu există un videoclip randat, deci nicio copie în {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

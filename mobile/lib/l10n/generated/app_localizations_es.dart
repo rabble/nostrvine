@@ -10012,8 +10012,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Guardar video en borradores. Aún se está procesando, así que no se añade copia a $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Guardar video en borradores. Aún no hay video procesado, así que no se añade copia a $destination.';
   }
 
   @override

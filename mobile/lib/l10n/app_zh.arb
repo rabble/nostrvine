@@ -5919,8 +5919,8 @@
       }
     }
   },
-  "videoMetadataSaveToDraftsRenderingHint": "把视频保存到草稿。仍在渲染，因此不会保存到{destination}。",
-  "@videoMetadataSaveToDraftsRenderingHint": {
+  "videoMetadataSaveToDraftsWithoutGalleryHint": "把视频保存到草稿。还没有渲染好的视频，因此不会保存到{destination}。",
+  "@videoMetadataSaveToDraftsWithoutGalleryHint": {
     "placeholders": {
       "destination": {
         "type": "String"

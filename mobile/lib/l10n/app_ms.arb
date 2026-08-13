@@ -5919,8 +5919,8 @@
       }
     }
   },
-  "videoMetadataSaveToDraftsRenderingHint": "Simpan video ke draf. Masih dirender, jadi tiada salinan dalam {destination}.",
-  "@videoMetadataSaveToDraftsRenderingHint": {
+  "videoMetadataSaveToDraftsWithoutGalleryHint": "Simpan video ke draf. Belum ada video yang dirender, jadi tiada salinan dalam {destination}.",
+  "@videoMetadataSaveToDraftsWithoutGalleryHint": {
     "placeholders": {
       "destination": {
         "type": "String"

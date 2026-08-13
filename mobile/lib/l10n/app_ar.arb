@@ -3214,8 +3214,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "حفظ الفيديو في المسودات. لا يزال قيد المعالجة، لذا لن تُضاف نسخة إلى {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "حفظ الفيديو في المسودات. لا يوجد فيديو مُعالَج بعد، لذا لن تُضاف نسخة إلى {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

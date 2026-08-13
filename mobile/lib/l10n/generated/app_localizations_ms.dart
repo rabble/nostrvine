@@ -9970,8 +9970,8 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Simpan video ke draf. Masih dirender, jadi tiada salinan dalam $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Simpan video ke draf. Belum ada video yang dirender, jadi tiada salinan dalam $destination.';
   }
 
   @override

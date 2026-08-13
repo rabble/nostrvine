@@ -10016,8 +10016,8 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Salva il video nelle bozze. Il rendering è ancora in corso, quindi nessuna copia in $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Salva il video nelle bozze. Nessun video renderizzato per ora, quindi nessuna copia in $destination.';
   }
 
   @override

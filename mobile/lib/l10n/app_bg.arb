@@ -3576,8 +3576,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "Запази видеото в чернови. Още се обработва, затова няма копие в {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Запази видеото в чернови. Още няма обработено видео, затова няма копие в {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

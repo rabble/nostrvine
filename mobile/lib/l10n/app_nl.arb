@@ -3306,8 +3306,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "Video opslaan in concepten. Nog bezig met renderen, dus geen kopie in {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Video opslaan in concepten. Nog geen gerenderde video, dus geen kopie in {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

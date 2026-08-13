@@ -9412,8 +9412,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return '把视频保存到草稿。仍在渲染，因此不会保存到$destination。';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return '把视频保存到草稿。还没有渲染好的视频，因此不会保存到$destination。';
   }
 
   @override

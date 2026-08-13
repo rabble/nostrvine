@@ -9891,8 +9891,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Save video to drafts. Still rendering, so no copy is added to $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Save video to drafts. No rendered video yet, so no copy is added to $destination.';
   }
 
   @override

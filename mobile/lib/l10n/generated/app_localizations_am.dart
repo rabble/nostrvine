@@ -9694,8 +9694,8 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'ቪዲዮውን ወደ ረቂቆች አስቀምጥ። አሁንም እየተዘጋጀ ስለሆነ ወደ $destination ቅጂ አይታከልም።';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'ቪዲዮውን ወደ ረቂቆች አስቀምጥ። ገና የተዘጋጀ ቪዲዮ ስለሌለ ወደ $destination ቅጂ አይታከልም።';
   }
 
   @override

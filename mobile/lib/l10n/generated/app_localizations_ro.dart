@@ -10118,8 +10118,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Salvează videoclipul în schițe. Randarea este în curs, deci nicio copie în $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Salvează videoclipul în schițe. Încă nu există un videoclip randat, deci nicio copie în $destination.';
   }
 
   @override

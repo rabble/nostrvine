@@ -10029,8 +10029,8 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'I-save ang video sa mga draft. Nagre-render pa, kaya walang kopyang idadagdag sa $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'I-save ang video sa mga draft. Wala pang na-render na video, kaya walang kopyang idadagdag sa $destination.';
   }
 
   @override

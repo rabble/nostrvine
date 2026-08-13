@@ -9847,8 +9847,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'حفظ الفيديو في المسودات. لا يزال قيد المعالجة، لذا لن تُضاف نسخة إلى $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'حفظ الفيديو في المسودات. لا يوجد فيديو مُعالَج بعد، لذا لن تُضاف نسخة إلى $destination.';
   }
 
   @override

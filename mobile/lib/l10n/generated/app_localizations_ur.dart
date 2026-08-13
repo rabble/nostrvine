@@ -9915,8 +9915,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'ویڈیو کو مسودوں میں محفوظ کریں۔ ابھی رینڈر ہو رہی ہے، اس لیے $destination میں کاپی شامل نہیں ہوگی۔';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'ویڈیو کو مسودوں میں محفوظ کریں۔ ابھی کوئی رینڈر شدہ ویڈیو نہیں ہے، اس لیے $destination میں کاپی شامل نہیں ہوگی۔';
   }
 
   @override

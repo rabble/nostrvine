@@ -9915,8 +9915,8 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Spara videon som utkast. Renderingen pågår, så ingen kopia läggs till i $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Spara videon som utkast. Ingen renderad video ännu, så ingen kopia läggs till i $destination.';
   }
 
   @override

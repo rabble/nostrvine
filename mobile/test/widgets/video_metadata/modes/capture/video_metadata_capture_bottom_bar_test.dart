@@ -369,6 +369,86 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
+    testWidgets('Save draft hint tracks the rendered file, not isProcessing', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final renderedClip = DivineVideoClip(
+        id: 'test-clip',
+        video: EditorVideo.file('test.mp4'),
+        duration: const Duration(seconds: 10),
+        recordedAt: DateTime.now(),
+        targetAspectRatio: models.AspectRatio.square,
+        originalAspectRatio: 9 / 16,
+      );
+
+      Future<String?> hintFor(VideoEditorProviderState state) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            // A fresh key per case: reusing the element would keep the
+            // container — and the notifier — from the previous pump.
+            key: UniqueKey(),
+            overrides: [
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(state),
+              ),
+              gallerySaveServiceProvider.overrideWith(
+                (ref) => mockGallerySaveService,
+              ),
+            ],
+            child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+          ),
+        );
+        return tester
+            .getSemantics(
+              find.bySemanticsLabel(
+                l10n.videoMetadataSaveForLaterSemanticLabel,
+              ),
+            )
+            .getSemanticsData()
+            .hint;
+      }
+
+      // Mid-render there is no file to copy, so the hint must not promise one.
+      expect(
+        await hintFor(
+          VideoEditorProviderState(title: 'Test', isProcessing: true),
+        ),
+        l10n.videoMetadataSaveToDraftsWithoutGalleryHint(
+          GallerySaveService.destinationName,
+        ),
+      );
+
+      // A C2PA re-sign (retryC2paSigning) raises isProcessing over an
+      // already-rendered clip. The gallery copy does happen there, so keying
+      // the hint on isProcessing would announce the opposite of what follows.
+      expect(
+        await hintFor(
+          VideoEditorProviderState(
+            title: 'Test',
+            isProcessing: true,
+            finalRenderedClip: renderedClip,
+          ),
+        ),
+        l10n.videoMetadataSaveToDraftsHint(
+          GallerySaveService.destinationName,
+        ),
+      );
+
+      // A failed render also leaves no file — isProcessing is back to false.
+      expect(
+        await hintFor(
+          VideoEditorProviderState(title: 'Test', renderFailed: true),
+        ),
+        l10n.videoMetadataSaveToDraftsWithoutGalleryHint(
+          GallerySaveService.destinationName,
+        ),
+      );
+
+      handle.dispose();
+    });
+
     testWidgets('save for later shows permission sheet on gallery denial', (
       tester,
     ) async {

@@ -3306,8 +3306,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "Video als Entwurf speichern. Wird noch gerendert, daher keine Kopie in {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Video als Entwurf speichern. Noch kein gerendertes Video, daher keine Kopie in {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

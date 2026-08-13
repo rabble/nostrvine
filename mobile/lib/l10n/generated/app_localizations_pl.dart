@@ -10104,8 +10104,8 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Zapisz film w wersjach roboczych. Trwa renderowanie, więc kopia nie trafi do $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Zapisz film w wersjach roboczych. Nie ma jeszcze wyrenderowanego filmu, więc kopia nie trafi do $destination.';
   }
 
   @override

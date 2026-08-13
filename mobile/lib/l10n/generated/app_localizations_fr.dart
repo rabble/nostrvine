@@ -10053,8 +10053,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Enregistrer la vidéo dans les brouillons. Rendu en cours, donc aucune copie n\'est ajoutée à $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Enregistrer la vidéo dans les brouillons. Pas encore de vidéo rendue, donc aucune copie n\'est ajoutée à $destination.';
   }
 
   @override

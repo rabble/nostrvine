@@ -141,16 +141,18 @@ class _SaveForLaterButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (s) => (isSavingDraft: s.isSavingDraft, isProcessing: s.isProcessing),
-      ),
-    );
-    final isSaving = state.isSavingDraft;
     // Deliberately not gated on isProcessing: saving a draft needs no rendered
     // file, and the render can take minutes when its C2PA signing step has no
     // network to reach. Only a save already in flight disables the button.
-    final isRendering = state.isProcessing;
+    final state = ref.watch(
+      videoEditorProvider.select(
+        (s) => (
+          isSavingDraft: s.isSavingDraft,
+          hasRenderedClip: s.finalRenderedClip != null,
+        ),
+      ),
+    );
+    final isSaving = state.isSavingDraft;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
@@ -160,10 +162,13 @@ class _SaveForLaterButton extends ConsumerWidget {
         label: context.l10n.videoMetadataSaveForLaterSemanticLabel,
         hint: isSaving
             ? context.l10n.videoMetadataSavingVideoHint
-            : isRendering
-            // The gallery copy is made from the rendered file, which does not
-            // exist yet — promising it here would be a lie.
-            ? context.l10n.videoMetadataSaveToDraftsRenderingHint(
+            : !state.hasRenderedClip
+            // The gallery copy is made from the rendered file, so it is skipped
+            // exactly when that file is missing — mid-render, and after a
+            // render that failed. isProcessing is the wrong signal for it: a
+            // C2PA re-sign sets it over an already-rendered clip, and there the
+            // copy does happen.
+            ? context.l10n.videoMetadataSaveToDraftsWithoutGalleryHint(
                 GallerySaveService.destinationName,
               )
             : context.l10n.videoMetadataSaveToDraftsHint(

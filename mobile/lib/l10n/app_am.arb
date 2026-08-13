@@ -3982,8 +3982,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "ቪዲዮውን ወደ ረቂቆች አስቀምጥ። አሁንም እየተዘጋጀ ስለሆነ ወደ {destination} ቅጂ አይታከልም።",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "ቪዲዮውን ወደ ረቂቆች አስቀምጥ። ገና የተዘጋጀ ቪዲዮ ስለሌለ ወደ {destination} ቅጂ አይታከልም።",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

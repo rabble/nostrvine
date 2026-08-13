@@ -3306,8 +3306,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "Spara videon som utkast. Renderingen pågår, så ingen kopia läggs till i {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Spara videon som utkast. Ingen renderad video ännu, så ingen kopia läggs till i {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

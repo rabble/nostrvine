@@ -9916,8 +9916,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Lưu video vào bản nháp. Vẫn đang kết xuất nên không có bản sao trong $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Lưu video vào bản nháp. Chưa có video đã kết xuất nên không có bản sao trong $destination.';
   }
 
   @override

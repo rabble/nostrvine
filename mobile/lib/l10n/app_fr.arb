@@ -3306,8 +3306,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "Enregistrer la vidéo dans les brouillons. Rendu en cours, donc aucune copie n'est ajoutée à {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Enregistrer la vidéo dans les brouillons. Pas encore de vidéo rendue, donc aucune copie n'est ajoutée à {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

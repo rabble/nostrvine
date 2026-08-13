@@ -10011,8 +10011,8 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Запази видеото в чернови. Още се обработва, затова няма копие в $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Запази видеото в чернови. Още няма обработено видео, затова няма копие в $destination.';
   }
 
   @override

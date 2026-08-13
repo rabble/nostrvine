@@ -3314,8 +3314,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "Guardar video en borradores. Aún se está procesando, así que no se añade copia a {destination}.",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Guardar video en borradores. Aún no hay video procesado, así que no se añade copia a {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

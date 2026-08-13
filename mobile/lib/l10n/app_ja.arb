@@ -3214,8 +3214,8 @@
             }
         }
     },
-    "videoMetadataSaveToDraftsRenderingHint": "動画を下書きに保存します。レンダリング中のため、{destination}にはコピーされません。",
-    "@videoMetadataSaveToDraftsRenderingHint": {
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "動画を下書きに保存します。レンダリング済みの動画がまだないため、{destination}にはコピーされません。",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

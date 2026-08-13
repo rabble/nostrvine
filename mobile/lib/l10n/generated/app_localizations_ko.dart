@@ -9515,8 +9515,8 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return '동영상을 임시보관함에 저장합니다. 아직 렌더링 중이라 $destination에는 복사되지 않습니다.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return '동영상을 임시보관함에 저장합니다. 아직 렌더링된 동영상이 없어 $destination에는 복사되지 않습니다.';
   }
 
   @override

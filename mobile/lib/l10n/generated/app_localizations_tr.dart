@@ -9868,8 +9868,8 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Videoyu taslaklara kaydet. Hâlâ işleniyor, bu yüzden $destination içine kopya eklenmez.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Videoyu taslaklara kaydet. Henüz işlenmiş video yok, bu yüzden $destination içine kopya eklenmez.';
   }
 
   @override

@@ -10030,8 +10030,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String videoMetadataSaveToDraftsRenderingHint(String destination) {
-    return 'Video als Entwurf speichern. Wird noch gerendert, daher keine Kopie in $destination.';
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Video als Entwurf speichern. Noch kein gerendertes Video, daher keine Kopie in $destination.';
   }
 
   @override

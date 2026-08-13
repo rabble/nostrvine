@@ -5919,8 +5919,8 @@
       }
     }
   },
-  "videoMetadataSaveToDraftsRenderingHint": "ویڈیو کو مسودوں میں محفوظ کریں۔ ابھی رینڈر ہو رہی ہے، اس لیے {destination} میں کاپی شامل نہیں ہوگی۔",
-  "@videoMetadataSaveToDraftsRenderingHint": {
+  "videoMetadataSaveToDraftsWithoutGalleryHint": "ویڈیو کو مسودوں میں محفوظ کریں۔ ابھی کوئی رینڈر شدہ ویڈیو نہیں ہے، اس لیے {destination} میں کاپی شامل نہیں ہوگی۔",
+  "@videoMetadataSaveToDraftsWithoutGalleryHint": {
     "placeholders": {
       "destination": {
         "type": "String"

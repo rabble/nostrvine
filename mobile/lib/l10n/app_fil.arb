@@ -2168,7 +2168,7 @@
     "videoMetadataSaveForLaterSemanticLabel": "Save for later button",
     "videoMetadataSavingVideoHint": "Sine-save ang video...",
     "videoMetadataSaveToDraftsHint": "I-save ang video sa drafts at {destination}",
-    "videoMetadataSaveToDraftsRenderingHint": "I-save ang video sa mga draft. Nagre-render pa, kaya walang kopyang idadagdag sa {destination}.",
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "I-save ang video sa mga draft. Wala pang na-render na video, kaya walang kopyang idadagdag sa {destination}.",
     "videoMetadataSaveForLaterButton": "I-save Para Mamaya",
     "videoMetadataPostSemanticLabel": "Post button",
     "videoMetadataPublishVideoHint": "I-publish ang video sa feed",
