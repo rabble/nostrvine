@@ -77,7 +77,7 @@ class SelectListDialog extends StatelessWidget {
                     ),
                     subtitle: Text(
                       '${l10n.listVideoCount(list.videoEventIds.length)} • '
-                      '${list.isPublic ? l10n.listVisibilityPublic : l10n.listVisibilityPrivateDevice}',
+                      '${list.isPublic ? l10n.listVisibilityPublic : l10n.listVisibilityPrivate}',
                       style: TextStyle(color: context.vineColors.secondaryText),
                     ),
                     onTap: () => _toggleVideoInList(
@@ -298,9 +298,8 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
         return;
       }
 
-      // The create path cannot dismiss early the way the edit path does:
-      // createList rolls the new list back out of local storage when the relay
-      // rejects it, and its generated ID is only known once it returns.
+      // The generated ID is only known once createList returns, so the create
+      // path cannot dismiss early the way the edit path does.
       final newList = await listService?.createList(
         name: name,
         description: _descriptionController.text.trim().isEmpty
@@ -311,7 +310,7 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
 
       if (!mounted) return;
 
-      // createList catches its own exceptions and returns null — without
+      // createList catches its own exceptions and returns null; without
       // feedback here the dialog used to sit open doing nothing.
       if (newList == null) {
         _showSaveFailed();

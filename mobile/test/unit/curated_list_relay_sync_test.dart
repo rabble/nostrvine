@@ -13,6 +13,8 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/curated_list_publish_stubs.dart';
+
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -30,6 +32,10 @@ void main() {
 
     setUp(() async {
       mockNostrService = _MockNostrClient();
+      stubListSigner(
+        mockNostrService,
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      );
       mockAuthService = _MockAuthService();
 
       // Set up SharedPreferences with empty state for each test
@@ -322,6 +328,12 @@ void main() {
         when(() => freshMockAuthService.isAuthenticated).thenReturn(true);
         when(() => freshMockAuthService.currentPublicKeyHex).thenReturn(
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        );
+        stubListPublishing(
+          client: freshMockNostrService,
+          auth: freshMockAuthService,
+          pubkey:
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
         );
 
         // Create local list without initializing (to avoid initial relay sync)

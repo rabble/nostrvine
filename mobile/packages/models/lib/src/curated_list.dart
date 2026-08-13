@@ -62,9 +62,9 @@ extension PlayOrderExtension on PlayOrder {
 /// - **Addressable coordinates**: `kind:pubkey:d-tag` format
 ///   (NIP-71 kinds 34235 and 34236)
 ///
-/// WARNING: Lists with [isPublic] set to `false` are stored locally only
-/// (SharedPreferences). They are ephemeral and will be lost if the user
-/// clears app data, uninstalls, or switches devices.
+/// [isPublic] decides which half of the event carries the references: a
+/// public list puts them in `e`/`a` tags, a private one seals them into the
+/// event content with NIP-44. Both are published, so both survive a device.
 class CuratedList extends Equatable {
   /// Creates a curated list.
   const CuratedList({
@@ -78,6 +78,7 @@ class CuratedList extends Equatable {
     this.imageUrl,
     this.isPublic = true,
     this.nostrEventId,
+    this.pendingRepublish = false,
     this.tags = const [],
     this.isCollaborative = false,
     this.allowedCollaborators = const [],
@@ -98,6 +99,7 @@ class CuratedList extends Equatable {
     updatedAt: DateTime.parse(json['updatedAt'] as String),
     isPublic: json['isPublic'] as bool? ?? true,
     nostrEventId: json['nostrEventId'] as String?,
+    pendingRepublish: json['pendingRepublish'] as bool? ?? false,
     tags: List<String>.from(json['tags'] as List? ?? []),
     isCollaborative: json['isCollaborative'] as bool? ?? false,
     allowedCollaborators: List<String>.from(
@@ -135,14 +137,19 @@ class CuratedList extends Equatable {
   /// When the list was last updated.
   final DateTime updatedAt;
 
-  /// Whether to publish this list to Nostr relays.
+  /// Whether this list's video references are readable by anyone.
   ///
-  /// WARNING: `isPublic = false` means local-only storage. Private lists
-  /// have no backup and are lost on app uninstall or device change.
+  /// `false` publishes them NIP-44 encrypted to the owner instead of as plain
+  /// tags. The event envelope and list metadata stay public either way. A
+  /// relay that retained or rejected replacement of an earlier public event
+  /// may also continue serving that event's plaintext item tags.
   final bool isPublic;
 
   /// The Nostr event ID when published to relays.
   final String? nostrEventId;
+
+  /// Whether a local edit failed to publish and should be retried.
+  final bool pendingRepublish;
 
   /// Tags for categorization and discovery.
   final List<String> tags;
@@ -182,6 +189,7 @@ class CuratedList extends Equatable {
     bool? isPublic,
     String? nostrEventId,
     bool clearNostrEventId = false,
+    bool? pendingRepublish,
     List<String>? tags,
     bool? isCollaborative,
     List<String>? allowedCollaborators,
@@ -199,6 +207,7 @@ class CuratedList extends Equatable {
     updatedAt: updatedAt ?? this.updatedAt,
     isPublic: isPublic ?? this.isPublic,
     nostrEventId: clearNostrEventId ? null : nostrEventId ?? this.nostrEventId,
+    pendingRepublish: pendingRepublish ?? this.pendingRepublish,
     tags: tags ?? this.tags,
     isCollaborative: isCollaborative ?? this.isCollaborative,
     allowedCollaborators: allowedCollaborators ?? this.allowedCollaborators,
@@ -219,6 +228,7 @@ class CuratedList extends Equatable {
     'updatedAt': updatedAt.toIso8601String(),
     'isPublic': isPublic,
     'nostrEventId': nostrEventId,
+    'pendingRepublish': pendingRepublish,
     'tags': tags,
     'isCollaborative': isCollaborative,
     'allowedCollaborators': allowedCollaborators,
@@ -239,6 +249,7 @@ class CuratedList extends Equatable {
     updatedAt,
     isPublic,
     nostrEventId,
+    pendingRepublish,
     tags,
     isCollaborative,
     allowedCollaborators,

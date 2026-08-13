@@ -5169,13 +5169,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Privata listor stannar på den här enheten och säkerhetskopieras inte';
+      'Videorna förblir privata. Namn, beskrivning, taggar och omslag förblir synliga.';
 
   @override
   String get listVisibilityPublic => 'Offentlig';
 
   @override
-  String get listVisibilityPrivateDevice => 'Privat · På den här enheten';
+  String get listVisibilityPrivate => 'Privat';
 
   @override
   String get profileListsEmpty =>
@@ -5207,7 +5207,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Vi ber reläerna att ta bort den publika kopian, men redan delade kopior kan finnas kvar online. Listan finns bara på den här enheten och säkerhetskopieras inte.';
+      'Videorna krypteras så att bara du kan se dem. Namn, beskrivning, taggar och omslag förblir synliga, och redan delade kopior kan finnas kvar.';
 
   @override
   String get listMakePublicTitle => 'Göra listan offentlig?';

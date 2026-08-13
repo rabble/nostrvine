@@ -4923,13 +4923,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get listPublicListSubtitle => 'みんながフォロー・閲覧できるよ';
 
   @override
-  String get listPrivateListSubtitle => '非公開リストはこの端末にだけ残って、バックアップされないよ';
+  String get listPrivateListSubtitle => '動画は非公開のまま。名前、説明、タグ、カバーは表示されたままです。';
 
   @override
   String get listVisibilityPublic => '公開';
 
   @override
-  String get listVisibilityPrivateDevice => '非公開 · この端末のみ';
+  String get listVisibilityPrivate => '非公開';
 
   @override
   String get profileListsEmpty => 'まだリストがないよ。まとめておきたいループでひとつ作ってみて。';
@@ -4960,7 +4960,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      '公開コピーの削除をリレーにお願いするけど、すでに共有されたコピーは残ることがあるよ。このリストはこの端末にだけ残って、バックアップされないよ。';
+      '動画は暗号化されて、見られるのはあなただけになるよ。名前、説明、タグ、カバーは見えたままで、すでに共有したコピーは残ることがあるよ。';
 
   @override
   String get listMakePublicTitle => 'このリストを公開する？';

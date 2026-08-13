@@ -261,7 +261,7 @@ class _ListVisibilityBadge extends StatelessWidget {
         Text(
           isPublic
               ? context.l10n.listVisibilityPublic
-              : context.l10n.listVisibilityPrivateDevice,
+              : context.l10n.listVisibilityPrivate,
           style: VineTheme.labelSmallFont(
             color: context.vineColors.secondaryText,
           ),

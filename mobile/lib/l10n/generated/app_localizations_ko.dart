@@ -4942,13 +4942,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get listPublicListSubtitle => '다른 사람들이 이 목록을 팔로우하고 볼 수 있어요';
 
   @override
-  String get listPrivateListSubtitle => '비공개 목록은 이 기기에만 남고 백업되지 않아요';
+  String get listPrivateListSubtitle =>
+      '동영상은 비공개로 유지돼요. 이름, 설명, 태그, 커버는 계속 보여요.';
 
   @override
   String get listVisibilityPublic => '공개';
 
   @override
-  String get listVisibilityPrivateDevice => '비공개 · 이 기기에만';
+  String get listVisibilityPrivate => '비공개';
 
   @override
   String get profileListsEmpty => '아직 목록이 없어요. 함께 모아 두고 싶은 루프로 하나 만들어 보세요.';
@@ -4979,7 +4980,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      '릴레이에 공개 사본 삭제를 요청하지만, 이미 공유된 사본은 남아 있을 수 있어요. 이 목록은 이 기기에만 남고 백업되지 않아요.';
+      '동영상이 암호화돼서 나만 볼 수 있어요. 이름, 설명, 태그, 커버는 계속 보이고, 이미 공유한 사본은 남아 있을 수 있어요.';
 
   @override
   String get listMakePublicTitle => '이 목록을 공개로 바꿀까요?';

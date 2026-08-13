@@ -371,7 +371,9 @@ void main() {
       expect(find.text('Edit list'), findsOneWidget);
       expect(find.text('Puppets'), findsOneWidget);
       expect(
-        find.text("Private lists stay on this device and aren't backed up"),
+        find.text(
+          'Videos stay private. Name, description, tags, and cover stay visible.',
+        ),
         findsOneWidget,
       );
       expect(

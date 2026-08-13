@@ -21,6 +21,7 @@ void main() {
       DateTime? updatedAt,
       bool isPublic = true,
       String? nostrEventId,
+      bool pendingRepublish = false,
       List<String> tags = const ['test'],
       bool isCollaborative = false,
       List<String> allowedCollaborators = const [],
@@ -38,6 +39,7 @@ void main() {
         updatedAt: updatedAt ?? now,
         isPublic: isPublic,
         nostrEventId: nostrEventId,
+        pendingRepublish: pendingRepublish,
         tags: tags,
         isCollaborative: isCollaborative,
         allowedCollaborators: allowedCollaborators,
@@ -58,6 +60,7 @@ void main() {
       expect(list.name, equals('name'));
       expect(list.videoEventIds, isEmpty);
       expect(list.isPublic, isTrue);
+      expect(list.pendingRepublish, isFalse);
       expect(list.playOrder, equals(PlayOrder.chronological));
       expect(list.isCollaborative, isFalse);
       expect(list.tags, isEmpty);
@@ -131,12 +134,20 @@ void main() {
         expect(copied.nostrEventId, isNull);
         expect(copied.name, equals(list.name));
       });
+
+      test('replaces pendingRepublish', () {
+        final list = createSubject();
+        final copied = list.copyWith(pendingRepublish: true);
+        expect(copied.pendingRepublish, isTrue);
+        expect(copied.name, equals(list.name));
+      });
     });
 
     group('toJson', () {
       test('serializes all fields', () {
         final list = createSubject(
           nostrEventId: 'event-123',
+          pendingRepublish: true,
           imageUrl: 'https://example.com/image.jpg',
           thumbnailEventId: 'thumb-456',
           isCollaborative: true,
@@ -153,6 +164,7 @@ void main() {
         expect(json['videoEventIds'], hasLength(2));
         expect(json['isPublic'], isTrue);
         expect(json['nostrEventId'], equals('event-123'));
+        expect(json['pendingRepublish'], isTrue);
         expect(json['tags'], equals(['test']));
         expect(json['isCollaborative'], isTrue);
         expect(json['allowedCollaborators'], equals(['collab-pubkey']));
@@ -194,6 +206,7 @@ void main() {
         expect(list.id, equals('minimal'));
         expect(list.videoEventIds, isEmpty);
         expect(list.isPublic, isTrue);
+        expect(list.pendingRepublish, isFalse);
         expect(list.isCollaborative, isFalse);
         expect(list.tags, isEmpty);
         expect(list.allowedCollaborators, isEmpty);
@@ -252,10 +265,7 @@ void main() {
 
     test('roundtrips through value/fromString', () {
       for (final order in PlayOrder.values) {
-        expect(
-          PlayOrderExtension.fromString(order.value),
-          equals(order),
-        );
+        expect(PlayOrderExtension.fromString(order.value), equals(order));
       }
     });
   });

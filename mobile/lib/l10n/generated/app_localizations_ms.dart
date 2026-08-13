@@ -5213,13 +5213,13 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Senarai peribadi kekal pada peranti ini dan tidak disandarkan';
+      'Video kekal peribadi. Nama, keterangan, tag dan kulit kekal kelihatan.';
 
   @override
   String get listVisibilityPublic => 'Awam';
 
   @override
-  String get listVisibilityPrivateDevice => 'Peribadi · Pada peranti ini';
+  String get listVisibilityPrivate => 'Peribadi';
 
   @override
   String get profileListsEmpty =>
@@ -5252,7 +5252,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Kami akan meminta relay membuang salinan awamnya, tetapi salinan yang sudah dikongsi mungkin masih kekal dalam talian. Senarai ini akan berada pada peranti ini sahaja dan tidak disandarkan.';
+      'Video akan disulitkan supaya hanya anda yang boleh melihatnya. Nama, keterangan, tag dan kulit kekal kelihatan, dan salinan yang sudah dikongsi mungkin masih ada.';
 
   @override
   String get listMakePublicTitle => 'Jadikan senarai ini awam?';

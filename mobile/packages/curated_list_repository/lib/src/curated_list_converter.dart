@@ -3,7 +3,7 @@
 // ABOUTME: a-tags for addressable video references (NIP-71).
 
 import 'package:models/models.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show Event;
+import 'package:nostr_sdk/nostr_sdk.dart' show Event, NIP04, NIP44V2;
 
 /// NIP-71 addressable video kind numbers accepted in `a` tags.
 const Set<int> _nip71AddressableVideoKinds = {
@@ -22,7 +22,18 @@ abstract final class CuratedListConverter {
   /// Parses a Nostr [Event] into a [CuratedList].
   ///
   /// Returns `null` if the event cannot be parsed (e.g. missing d-tag).
-  static CuratedList? fromEvent(Event event) {
+  ///
+  /// [privateTags] carries the item tags a caller decrypted out of
+  /// [Event.content] for a NIP-51 private list. Passing them appends their
+  /// references to [CuratedList.videoEventIds]. When [isPrivateEvent] is not
+  /// supplied, a list is treated as private whenever it either has decrypted
+  /// private tags or has the NIP-51 sealed-item shape: item tags omitted from
+  /// public tags and non-empty content.
+  static CuratedList? fromEvent(
+    Event event, {
+    List<List<String>>? privateTags,
+    bool? isPrivateEvent,
+  }) {
     try {
       final dTag = extractDTag(event);
       if (dTag == null) return null;
@@ -37,8 +48,16 @@ abstract final class CuratedListConverter {
       var isCollaborative = false;
       final allowedCollaborators = <String>[];
 
-      for (final dynamic rawTag in event.tags) {
-        final tag = (rawTag as List<dynamic>).cast<String>();
+      final eventTags = event.tags
+          .map((dynamic tag) => (tag as List<dynamic>).cast<String>())
+          .toList(growable: false);
+      final isPrivate =
+          isPrivateEvent ??
+          (privateTags != null ||
+              _hasSealedItemShape(eventTags, event.content));
+      final rawTags = [...eventTags, ...?privateTags];
+
+      for (final tag in rawTags) {
         if (tag.isEmpty) continue;
 
         switch (tag[0]) {
@@ -69,8 +88,9 @@ abstract final class CuratedListConverter {
         }
       }
 
-      // Use title, fall back to first line of content, then default.
-      final contentFirstLine = event.content.split('\n').first;
+      // Use title, fall back to first line of content, then default. A
+      // private list's content is ciphertext, so it is never borrowed.
+      final contentFirstLine = isPrivate ? '' : event.content.split('\n').first;
       final name =
           title ??
           (contentFirstLine.isNotEmpty ? contentFirstLine : 'Untitled List');
@@ -84,7 +104,8 @@ abstract final class CuratedListConverter {
         id: dTag,
         name: name,
         pubkey: event.pubkey,
-        description: description ?? event.content,
+        description: description ?? (isPrivate ? null : event.content),
+        isPublic: !isPrivate,
         imageUrl: imageUrl,
         videoEventIds: videoEventIds,
         createdAt: timestamp,
@@ -103,11 +124,64 @@ abstract final class CuratedListConverter {
     }
   }
 
+  static bool _hasSealedItemShape(List<List<String>> tags, String content) {
+    if (!isEncryptedItemPayload(content)) return false;
+    return !tags.any(
+      (tag) => tag.isNotEmpty && (tag.first == 'e' || tag.first == 'a'),
+    );
+  }
+
+  /// Whether [content] has the exact binary envelope shape of NIP-44 v2.
+  ///
+  /// This does not decrypt or authenticate the payload. It only distinguishes
+  /// encrypted list items from ordinary descriptions without broad base64
+  /// heuristics leaking into production behavior.
+  static bool isNip44Payload(String content) {
+    try {
+      NIP44V2.decodePayload(content);
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
+  /// Whether [content] is either the current NIP-44 envelope or the legacy
+  /// NIP-04 `ciphertext?iv=...` form allowed by NIP-51 readers.
+  static bool isEncryptedItemPayload(String content) {
+    return isNip44Payload(content) || NIP04.isEncrypted(content);
+  }
+
   /// Converts a [CuratedList] to Nostr event tags for publishing.
   ///
   /// Returns a list of tag arrays suitable for creating a kind 30005
-  /// event.
-  static List<List<String>> toEventTags(CuratedList list) {
+  /// event, with every video reference in the public tags. A private list
+  /// publishes [toPublicMetadataTags] instead and carries [toItemTags]
+  /// encrypted in the event content.
+  static List<List<String>> toEventTags(CuratedList list) => [
+    ...toPublicMetadataTags(list),
+    ...toItemTags(list),
+  ];
+
+  /// The tags describing [list] itself, without any video reference.
+  ///
+  /// These stay readable on a relay even for a private list: NIP-51 hides a
+  /// list's items, not the fact that the list exists or what it is called.
+  static List<List<String>> toPublicMetadataTags(CuratedList list) {
+    return _toMetadataTags(list, includeThumbnail: true);
+  }
+
+  /// Public metadata for a private list, excluding item-derived fields.
+  ///
+  /// A thumbnail is itself a video reference, so publishing it beside an
+  /// encrypted item set would reveal one member of the private list.
+  static List<List<String>> toPrivateMetadataTags(CuratedList list) {
+    return _toMetadataTags(list, includeThumbnail: false);
+  }
+
+  static List<List<String>> _toMetadataTags(
+    CuratedList list, {
+    required bool includeThumbnail,
+  }) {
     final tags = <List<String>>[
       ['d', list.id],
       ['title', list.name],
@@ -132,22 +206,26 @@ abstract final class CuratedListConverter {
       }
     }
 
-    if (list.thumbnailEventId != null) {
+    if (includeThumbnail && list.thumbnailEventId != null) {
       tags.add(['thumbnail', list.thumbnailEventId!]);
     }
 
     tags.add(['playorder', list.playOrder.value]);
 
-    for (final videoReference in list.videoEventIds) {
-      if (_isAddressableVideoReference(videoReference)) {
-        tags.add(['a', videoReference]);
-      } else {
-        tags.add(['e', videoReference]);
-      }
-    }
-
     return tags;
   }
+
+  /// The video-reference tags for [list].
+  ///
+  /// For a private list these are JSON-encoded and NIP-44 encrypted into the
+  /// event content instead of being published as tags.
+  static List<List<String>> toItemTags(CuratedList list) => [
+    for (final videoReference in list.videoEventIds)
+      if (_isAddressableVideoReference(videoReference))
+        ['a', videoReference]
+      else
+        ['e', videoReference],
+  ];
 
   /// Extracts the `d` tag value from an [event].
   ///

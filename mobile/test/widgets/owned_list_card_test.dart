@@ -99,7 +99,7 @@ void main() {
     ) async {
       await tester.pumpWidget(buildSubject(isPublic: false));
 
-      expect(find.text(l10n.listVisibilityPrivateDevice), findsOneWidget);
+      expect(find.text(l10n.listVisibilityPrivate), findsOneWidget);
     });
 
     testWidgets('does not credit the owner as the list author', (tester) async {

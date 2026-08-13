@@ -14,6 +14,8 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/curated_list_publish_stubs.dart';
+
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -43,6 +45,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       mockNostr = _MockNostrClient();
+      stubListSigner(mockNostr, 'test_pubkey_123456789abcdef');
       mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
 
@@ -160,7 +163,7 @@ void main() {
         );
 
         final list = await service.createList(name: 'To Delete');
-        await service.deleteList(list!.id);
+        await service.deleteOwnedList(list!.id);
 
         final savedData = prefs.getString(CuratedListService.listsStorageKey);
         expect(savedData, isNot(contains('To Delete')));

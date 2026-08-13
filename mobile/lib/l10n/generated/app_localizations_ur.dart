@@ -5176,13 +5176,13 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'نجی فہرستیں اسی ڈیوائس پر رہتی ہیں اور ان کا بیک اپ نہیں بنتا';
+      'ویڈیوز نجی رہتی ہیں۔ نام، تفصیل، ٹیگز اور کور نظر آتے رہتے ہیں۔';
 
   @override
   String get listVisibilityPublic => 'عوامی';
 
   @override
-  String get listVisibilityPrivateDevice => 'نجی · اسی ڈیوائس پر';
+  String get listVisibilityPrivate => 'نجی';
 
   @override
   String get profileListsEmpty =>
@@ -5215,7 +5215,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'ہم ریلے سے عوامی کاپی ہٹانے کی درخواست کریں گے، لیکن پہلے سے شیئر کی گئی کاپیاں آن لائن باقی رہ سکتی ہیں۔ یہ فہرست صرف اسی ڈیوائس پر رہے گی اور اس کا بیک اپ نہیں بنے گا۔';
+      'ویڈیوز خفیہ کر دی جائیں گی تاکہ انہیں صرف آپ دیکھ سکیں۔ نام، تفصیل، ٹیگز اور کور نظر آتے رہیں گے، اور پہلے شیئر کی گئی کاپیاں باقی رہ سکتی ہیں۔';
 
   @override
   String get listMakePublicTitle => 'اس فہرست کو عوامی بنائیں؟';

@@ -5137,13 +5137,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Daftar privat tetap di perangkat ini dan tidak dicadangkan';
+      'Videonya tetap privat. Nama, deskripsi, tag, dan sampul tetap terlihat.';
 
   @override
   String get listVisibilityPublic => 'Publik';
 
   @override
-  String get listVisibilityPrivateDevice => 'Privat · Di perangkat ini';
+  String get listVisibilityPrivate => 'Privat';
 
   @override
   String get profileListsEmpty =>
@@ -5175,7 +5175,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Kami akan meminta relay menghapus salinan publiknya, tapi salinan yang sudah tersebar bisa tetap ada. Daftar ini cuma akan ada di perangkat ini dan tidak dicadangkan.';
+      'Videonya dienkripsi jadi cuma kamu yang bisa lihat. Nama, deskripsi, tag, dan sampul tetap terlihat, dan salinan yang sudah dibagikan bisa tetap ada.';
 
   @override
   String get listMakePublicTitle => 'Jadikan daftar ini publik?';

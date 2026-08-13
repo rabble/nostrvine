@@ -5242,13 +5242,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Les listes privées restent sur cet appareil et ne sont pas sauvegardées';
+      'Les vidéos restent privées. Le nom, la description, les tags et la couverture restent visibles.';
 
   @override
   String get listVisibilityPublic => 'Publique';
 
   @override
-  String get listVisibilityPrivateDevice => 'Privée · Sur cet appareil';
+  String get listVisibilityPrivate => 'Privée';
 
   @override
   String get profileListsEmpty =>
@@ -5281,7 +5281,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Nous demanderons aux relais de supprimer la copie publique, mais les copies déjà partagées peuvent rester en ligne. Cette liste restera uniquement sur cet appareil et ne sera pas sauvegardée.';
+      'Les vidéos sont chiffrées, donc vous seul pouvez les voir. Le nom, la description, les tags et la couverture restent visibles, et les copies déjà partagées peuvent subsister.';
 
   @override
   String get listMakePublicTitle => 'Rendre cette liste publique ?';

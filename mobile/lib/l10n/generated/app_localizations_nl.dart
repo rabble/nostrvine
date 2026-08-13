@@ -5193,13 +5193,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Privélijsten blijven op dit apparaat en er wordt geen back-up van gemaakt';
+      'Video\'s blijven privé. Naam, beschrijving, tags en omslag blijven zichtbaar.';
 
   @override
   String get listVisibilityPublic => 'Openbaar';
 
   @override
-  String get listVisibilityPrivateDevice => 'Privé · Op dit apparaat';
+  String get listVisibilityPrivate => 'Privé';
 
   @override
   String get profileListsEmpty =>
@@ -5233,7 +5233,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'We vragen de relays om de openbare kopie te verwijderen, maar al gedeelde kopieën kunnen online blijven. Deze lijst staat alleen nog op dit apparaat en er wordt geen back-up van gemaakt.';
+      'De video\'s worden versleuteld, zodat alleen jij ze kunt zien. Naam, beschrijving, tags en omslag blijven zichtbaar, en al gedeelde kopieën kunnen blijven bestaan.';
 
   @override
   String get listMakePublicTitle => 'Deze lijst openbaar maken?';

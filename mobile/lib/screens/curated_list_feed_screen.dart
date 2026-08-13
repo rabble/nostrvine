@@ -348,7 +348,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         ? null
         : localList.isPublic
         ? context.l10n.listVisibilityPublic
-        : context.l10n.listVisibilityPrivateDevice;
+        : context.l10n.listVisibilityPrivate;
     return Text(
       visibility == null ? videoText : '$videoText • $visibility',
       style: TextStyle(

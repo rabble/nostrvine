@@ -51,7 +51,7 @@ void main() {
     testWidgets('labels a private list as device-only', (tester) async {
       await tester.pumpWidget(buildSubject(isPublic: false));
 
-      expect(find.text(l10n.listVisibilityPrivateDevice), findsOneWidget);
+      expect(find.text(l10n.listVisibilityPrivate), findsOneWidget);
     });
 
     testWidgets('shows the list author when available', (tester) async {

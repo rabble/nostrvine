@@ -5062,13 +5062,13 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'የግል ዝርዝሮች በዚህ መሣሪያ ላይ ብቻ ይቆያሉ፤ ምትኬም አይያዝላቸውም';
+      'ቪዲዮዎቹ የግል ሆነው ይቆያሉ። ስም፣ መግለጫ፣ መለያዎች እና ሽፋን ይታያሉ።';
 
   @override
   String get listVisibilityPublic => 'ይፋዊ';
 
   @override
-  String get listVisibilityPrivateDevice => 'የግል · በዚህ መሣሪያ ላይ';
+  String get listVisibilityPrivate => 'የግል';
 
   @override
   String get profileListsEmpty =>
@@ -5100,7 +5100,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'የይፋዊውን ቅጂ እንዲያስወግዱ ሪሌዎችን እንጠይቃለን፣ ነገር ግን አስቀድመው የተጋሩ ቅጂዎች በመስመር ላይ ሊቀሩ ይችላሉ። ይህ ዝርዝር በዚህ መሣሪያ ላይ ብቻ ይቆያል፤ ምትኬም አይያዝለትም።';
+      'ቪዲዮዎቹ ይመሰጠራሉ፤ ስለዚህ እርስዎ ብቻ ማየት ይችላሉ። ስም፣ መግለጫ፣ መለያዎች እና ሽፋን ይታያሉ፣ እስካሁን የተጋሩ ቅጂዎችም ሊቀሩ ይችላሉ።';
 
   @override
   String get listMakePublicTitle => 'ይህ ዝርዝር ይፋዊ ይሁን?';

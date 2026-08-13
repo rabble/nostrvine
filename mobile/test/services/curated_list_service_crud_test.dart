@@ -14,13 +14,22 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
+import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/curated_list_publish_stubs.dart';
+
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockNostrSigner extends Mock implements NostrSigner {}
+
+String _seal(String plaintext) => sealForTest(plaintext);
+
+String? _unseal(String ciphertext) => unsealForTest(ciphertext);
 
 const _ownerPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -43,11 +52,19 @@ PublishOutcome _rejected(Event event) => PublishOutcome(
   noResponseFrom: const [],
 );
 
+PublishOutcome _partiallyAccepted(Event event) => PublishOutcome(
+  eventId: event.id,
+  acceptedBy: const ['wss://accepted.test'],
+  rejectedBy: const {'wss://rejected.test': 'blocked'},
+  noResponseFrom: const [],
+);
+
 void main() {
   group('CuratedListService - CRUD Operations', () {
     late CuratedListService service;
     late _MockNostrClient mockNostr;
     late _MockAuthService mockAuth;
+    late _MockNostrSigner mockSigner;
     late SharedPreferences prefs;
 
     setUpAll(() {
@@ -65,12 +82,21 @@ void main() {
     setUp(() async {
       mockNostr = _MockNostrClient();
       mockAuth = _MockAuthService();
+      mockSigner = _MockNostrSigner();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
 
       // Setup common mocks
       when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownerPubkey);
+      when(() => mockNostr.signer).thenReturn(mockSigner);
+      when(mockSigner.getPublicKey).thenAnswer((_) async => _ownerPubkey);
+      when(
+        () => mockSigner.nip44Encrypt(any(), any()),
+      ).thenAnswer((i) async => _seal(i.positionalArguments[1] as String));
+      when(
+        () => mockSigner.nip44Decrypt(any(), any()),
+      ).thenAnswer((i) async => _unseal(i.positionalArguments[1] as String));
 
       // Mock successful event publishing. Both paths are stubbed: the service
       // confirms relay acceptance where a failure rolls local state back, and
@@ -277,6 +303,30 @@ void main() {
         expect(service.lists.length, 1);
       });
 
+      test('does not recreate default list after explicit deletion', () async {
+        await service.initialize();
+        final defaultList = service.getDefaultList();
+        expect(defaultList, isNotNull);
+        clearInteractions(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        final deleted = await service.deleteOwnedList(defaultList!.id);
+        expect(deleted, isTrue);
+        expect(service.hasDefaultList(), isFalse);
+
+        service = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: prefs,
+        );
+        await service.initialize();
+
+        expect(service.hasDefaultList(), isFalse);
+      });
+
       test('does not create duplicate default list', () async {
         // Initialize once
         await service.initialize();
@@ -366,6 +416,628 @@ void main() {
         expect(relayList!.pubkey, _ownerPubkey);
         expect(service.myLists.map((list) => list.id), contains(relayList.id));
       });
+
+      test('backs up a list that never reached a relay', () async {
+        // What an install upgrading into this change looks like: lists in
+        // SharedPreferences, no event id, nothing on any relay.
+        SharedPreferences.setMockInitialValues({
+          CuratedListService.listsStorageKey: jsonEncode([
+            CuratedList(
+              id: 'stranded-private',
+              name: 'Stranded',
+              videoEventIds: const ['stranded_video'],
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              isPublic: false,
+              pubkey: _ownerPubkey,
+            ).toJson(),
+          ]),
+        });
+        final upgraded = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: await SharedPreferences.getInstance(),
+        );
+
+        await upgraded.fetchUserListsFromRelays();
+
+        final published =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(published.tags, contains(equals(['d', 'stranded-private'])));
+        expect(jsonDecode(_unseal(published.content)!), [
+          ['e', 'stranded_video'],
+        ]);
+        expect(
+          upgraded.getListById('stranded-private')!.nostrEventId,
+          isNotNull,
+        );
+      });
+
+      test('does not backfill after a relay sync timeout', () async {
+        SharedPreferences.setMockInitialValues({
+          CuratedListService.listsStorageKey: jsonEncode([
+            CuratedList(
+              id: 'timeout-private',
+              name: 'Timeout Private',
+              videoEventIds: const ['local_video'],
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              isPublic: false,
+              pubkey: _ownerPubkey,
+            ).toJson(),
+          ]),
+        });
+        final neverCompletes = StreamController<Event>();
+        var subscriptionCount = 0;
+        when(() => mockNostr.subscribe(any())).thenAnswer((_) {
+          subscriptionCount++;
+          return subscriptionCount == 1
+              ? neverCompletes.stream
+              : const Stream<Event>.empty();
+        });
+        final upgraded = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: await SharedPreferences.getInstance(),
+          relaySyncTimeout: const Duration(milliseconds: 10),
+        );
+
+        await upgraded.fetchUserListsFromRelays();
+
+        verifyNever(() => mockNostr.publishEventAwaitOk(any()));
+        expect(upgraded.getListById('timeout-private')!.nostrEventId, isNull);
+
+        await upgraded.fetchUserListsFromRelays();
+        verify(() => mockNostr.publishEventAwaitOk(any())).called(1);
+        expect(
+          upgraded.getListById('timeout-private')!.nostrEventId,
+          isNotNull,
+        );
+        await neverCompletes.close();
+      });
+
+      test('merges divergent unpublished and relay item sets', () async {
+        SharedPreferences.setMockInitialValues({
+          CuratedListService.listsStorageKey: jsonEncode([
+            CuratedList(
+              id: CuratedListService.defaultListId,
+              name: 'My List',
+              videoEventIds: const ['local_video'],
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              isPublic: false,
+              pubkey: _ownerPubkey,
+            ).toJson(),
+          ]),
+        });
+        when(() => mockNostr.subscribe(any())).thenAnswer(
+          (_) => Stream.value(
+            Event.fromJson({
+              'id': 'other_device_event',
+              'pubkey': _ownerPubkey,
+              'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              'kind': 30005,
+              'tags': [
+                ['d', CuratedListService.defaultListId],
+                ['title', 'My List'],
+              ],
+              'content': _seal(
+                jsonEncode([
+                  ['e', 'relay_video'],
+                ]),
+              ),
+              'sig': 'test_signature',
+            }),
+          ),
+        );
+        final upgraded = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: await SharedPreferences.getInstance(),
+        );
+
+        await upgraded.fetchUserListsFromRelays();
+
+        final merged = upgraded.getDefaultList()!;
+        expect(
+          merged.videoEventIds,
+          containsAll(['local_video', 'relay_video']),
+        );
+        expect(merged.isPublic, isFalse);
+        expect(merged.nostrEventId, isNotNull);
+        final republished =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(
+          jsonDecode(_unseal(republished.content)!),
+          containsAll([
+            ['e', 'local_video'],
+            ['e', 'relay_video'],
+          ]),
+        );
+      });
+
+      test(
+        'does not restore deleted default list from a stale relay event',
+        () async {
+          await service.initialize();
+          final defaultList = service.getDefaultList();
+          expect(defaultList, isNotNull);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _accepted(invocation.positionalArguments[0] as Event),
+          );
+
+          final deleted = await service.deleteOwnedList(defaultList!.id);
+          expect(deleted, isTrue);
+          clearInteractions(mockNostr);
+
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(
+              Event.fromJson({
+                'id': 'stale_default_event',
+                'pubkey': _ownerPubkey,
+                'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                'kind': 30005,
+                'tags': [
+                  ['d', CuratedListService.defaultListId],
+                  ['title', 'My List'],
+                  ['e', 'stale_default_video'],
+                ],
+                'content': 'My favorite vines and videos',
+                'sig': 'test_signature',
+              }),
+            ),
+          );
+
+          await service.fetchUserListsFromRelays(force: true);
+
+          expect(service.hasDefaultList(), isFalse);
+        },
+      );
+
+      test(
+        'does not union a failed local deletion with stale relay items',
+        () async {
+          final list = await service.createList(name: 'Failed Delete');
+          await service.addVideoToList(list!.id, 'kept_video');
+          await service.addVideoToList(list.id, 'removed_video');
+          final beforeDelete = service.getListById(list.id)!;
+          final originalEventId = beforeDelete.nostrEventId;
+          expect(originalEventId, isNotNull);
+          clearInteractions(mockNostr);
+          when(
+            () => mockNostr.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
+
+          final removed = await service.removeVideoFromList(
+            list.id,
+            'removed_video',
+          );
+
+          expect(removed, isFalse);
+          var stored = service.getListById(list.id)!;
+          expect(stored.videoEventIds, ['kept_video']);
+          expect(stored.nostrEventId, originalEventId);
+          expect(stored.pendingRepublish, isTrue);
+
+          when(() => mockNostr.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(
+              Event.fromJson({
+                'id': 'stale_relay_event',
+                'pubkey': _ownerPubkey,
+                'created_at':
+                    beforeDelete.updatedAt.millisecondsSinceEpoch ~/ 1000,
+                'kind': 30005,
+                'tags': [
+                  ['d', list.id],
+                  ['title', 'Failed Delete'],
+                  ['e', 'kept_video'],
+                  ['e', 'removed_video'],
+                ],
+                'content': 'Failed Delete',
+                'sig': 'test_signature',
+              }),
+            ),
+          );
+
+          await service.fetchUserListsFromRelays(force: true);
+
+          stored = service.getListById(list.id)!;
+          expect(stored.videoEventIds, ['kept_video']);
+          expect(stored.pendingRepublish, isFalse);
+          final republished =
+              verify(
+                    () => mockNostr.publishEventAwaitOk(captureAny()),
+                  ).captured.last
+                  as Event;
+          expect(
+            republished.tags,
+            isNot(contains(equals(['e', 'removed_video']))),
+          );
+        },
+      );
+
+      test('merge keeps collaborative lists public', () async {
+        SharedPreferences.setMockInitialValues({
+          CuratedListService.listsStorageKey: jsonEncode([
+            CuratedList(
+              id: 'collaborative-local',
+              name: 'Collaborative Local',
+              videoEventIds: const ['local_video'],
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              isPublic: false,
+              isCollaborative: true,
+              allowedCollaborators: const ['collaborator_pubkey'],
+              pubkey: _ownerPubkey,
+            ).toJson(),
+          ]),
+        });
+        when(() => mockNostr.subscribe(any())).thenAnswer(
+          (_) => Stream.value(
+            Event.fromJson({
+              'id': 'relay_collaborative_event',
+              'pubkey': _ownerPubkey,
+              'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              'kind': 30005,
+              'tags': [
+                ['d', 'collaborative-local'],
+                ['title', 'Collaborative Local'],
+                ['e', 'relay_video'],
+              ],
+              'content': 'Collaborative Local',
+              'sig': 'test_signature',
+            }),
+          ),
+        );
+        final upgraded = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: await SharedPreferences.getInstance(),
+        );
+
+        await upgraded.fetchUserListsFromRelays();
+
+        final merged = upgraded.getListById('collaborative-local')!;
+        expect(merged.isCollaborative, isTrue);
+        expect(merged.isPublic, isTrue);
+      });
+
+      test(
+        'backs up null-pubkey local lists as the authenticated owner',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            CuratedListService.listsStorageKey: jsonEncode([
+              CuratedList(
+                id: 'null-pubkey-local',
+                name: 'Null Pubkey Local',
+                videoEventIds: const ['local_video'],
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+              ).toJson(),
+            ]),
+          });
+          final upgraded = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: await SharedPreferences.getInstance(),
+          );
+
+          await upgraded.fetchUserListsFromRelays();
+
+          final stored = upgraded.getListById('null-pubkey-local')!;
+          expect(stored.pubkey, _ownerPubkey);
+          expect(stored.nostrEventId, isNotNull);
+          final published =
+              verify(
+                    () => mockNostr.publishEventAwaitOk(captureAny()),
+                  ).captured.single
+                  as Event;
+          expect(published.pubkey, _ownerPubkey);
+        },
+      );
+
+      test('does not double-publish a list resolved during backfill', () async {
+        SharedPreferences.setMockInitialValues({
+          CuratedListService.listsStorageKey: jsonEncode([
+            CuratedList(
+              id: 'first-stranded',
+              name: 'First Stranded',
+              videoEventIds: const ['first_video'],
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              pubkey: _ownerPubkey,
+            ).toJson(),
+            CuratedList(
+              id: 'second-stranded',
+              name: 'Second Stranded',
+              videoEventIds: const ['second_video'],
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              pubkey: _ownerPubkey,
+            ).toJson(),
+          ]),
+        });
+        var publishCount = 0;
+        late CuratedListService upgraded;
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          publishCount++;
+          if (publishCount == 1) {
+            await upgraded.addVideoToList('second-stranded', 'third_video');
+          }
+          return _accepted(invocation.positionalArguments[0] as Event);
+        });
+        upgraded = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: await SharedPreferences.getInstance(),
+        );
+
+        await upgraded.fetchUserListsFromRelays();
+
+        verify(() => mockNostr.publishEventAwaitOk(any())).called(1);
+      });
+
+      test(
+        'does not backfill a subscribed list owned by someone else',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            CuratedListService.listsStorageKey: jsonEncode([
+              CuratedList(
+                id: 'foreign-stranded',
+                name: 'Foreign Stranded',
+                videoEventIds: const ['foreign_video'],
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                pubkey: _otherPubkey,
+              ).toJson(),
+            ]),
+          });
+          final upgraded = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: await SharedPreferences.getInstance(),
+          );
+
+          await upgraded.fetchUserListsFromRelays();
+
+          verifyNever(() => mockNostr.publishEventAwaitOk(any()));
+          expect(
+            upgraded.getListById('foreign-stranded')!.nostrEventId,
+            isNull,
+          );
+        },
+      );
+
+      test('does not republish a list the relay already has', () async {
+        final list = await service.createList(name: 'Already Published');
+        expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
+        clearInteractions(mockNostr);
+
+        await service.fetchUserListsFromRelays(force: true);
+
+        verifyNever(() => mockNostr.publishEventAwaitOk(any()));
+      });
+
+      test('reconstructs a private list from its sealed content', () async {
+        when(() => mockNostr.subscribe(any())).thenAnswer(
+          (_) => Stream.value(
+            Event.fromJson({
+              'id': 'relay_private_event',
+              'pubkey': _ownerPubkey,
+              'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              'kind': 30005,
+              'tags': [
+                ['d', 'relay_private_1'],
+                ['title', 'Sealed List'],
+              ],
+              'content': _seal(
+                jsonEncode([
+                  ['e', 'sealed_video_id'],
+                  ['a', '34236:$_ownerPubkey:sealed-clip'],
+                ]),
+              ),
+              'sig': 'test_signature',
+            }),
+          ),
+        );
+
+        await service.fetchUserListsFromRelays();
+
+        final list = service.getListById('relay_private_1');
+        expect(list, isNotNull);
+        expect(list!.isPublic, isFalse);
+        expect(list.name, 'Sealed List');
+        expect(list.videoEventIds, [
+          'sealed_video_id',
+          '34236:$_ownerPubkey:sealed-clip',
+        ]);
+      });
+
+      test('reconstructs legacy NIP-04 private list content', () async {
+        const legacyCiphertext =
+            'Y2lwaGVydGV4dA==?iv=aW5pdGlhbGl6YXRpb252ZWN0b3I=';
+        when(
+          () => mockSigner.decrypt(_ownerPubkey, legacyCiphertext),
+        ).thenAnswer(
+          (_) async => jsonEncode([
+            ['e', 'legacy_private_video_id'],
+          ]),
+        );
+        when(() => mockNostr.subscribe(any())).thenAnswer(
+          (_) => Stream.value(
+            Event.fromJson({
+              'id': 'relay_nip04_private_event',
+              'pubkey': _ownerPubkey,
+              'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              'kind': 30005,
+              'tags': [
+                ['d', 'relay_nip04_private_1'],
+                ['title', 'Legacy Private'],
+              ],
+              'content': legacyCiphertext,
+              'sig': 'test_signature',
+            }),
+          ),
+        );
+
+        await service.fetchUserListsFromRelays();
+
+        final list = service.getListById('relay_nip04_private_1');
+        expect(list, isNotNull);
+        expect(list!.isPublic, isFalse);
+        expect(list.videoEventIds, ['legacy_private_video_id']);
+      });
+
+      test('skips a sealed list signed by another user', () async {
+        when(() => mockNostr.subscribe(any())).thenAnswer(
+          (_) => Stream.value(
+            Event.fromJson({
+              'id': 'relay_foreign_event',
+              'pubkey': _otherPubkey,
+              'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              'kind': 30005,
+              'tags': [
+                ['d', 'relay_foreign_1'],
+                ['title', 'Someone Else'],
+              ],
+              'content': _seal(
+                jsonEncode([
+                  ['e', 'their_private_video_id'],
+                ]),
+              ),
+              'sig': 'test_signature',
+            }),
+          ),
+        );
+
+        await service.fetchUserListsFromRelays();
+
+        // A sealed event must never fall through as a public empty list when
+        // its author cannot be authenticated as the current owner.
+        verifyNever(() => mockSigner.nip44Decrypt(any(), any()));
+        expect(service.getListById('relay_foreign_1'), isNull);
+      });
+
+      test('skips a sealed event if the user signs out during sync', () async {
+        final events = StreamController<Event>();
+        when(() => mockNostr.subscribe(any())).thenAnswer((_) => events.stream);
+
+        final sync = service.fetchUserListsFromRelays();
+        when(() => mockAuth.isAuthenticated).thenReturn(false);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
+        events.add(
+          Event.fromJson({
+            'id': 'relay_signed_out_event',
+            'pubkey': _ownerPubkey,
+            'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            'kind': 30005,
+            'tags': [
+              ['d', 'relay_signed_out_1'],
+              ['title', 'Signed Out Mid-Sync'],
+            ],
+            'content': _seal(
+              jsonEncode([
+                ['e', 'private_video_id'],
+              ]),
+            ),
+            'sig': 'test_signature',
+          }),
+        );
+        await events.close();
+        await sync;
+
+        verifyNever(() => mockSigner.nip44Decrypt(any(), any()));
+        expect(service.getListById('relay_signed_out_1'), isNull);
+      });
+
+      test('keeps a list whose content will not unseal', () async {
+        when(
+          () => mockSigner.nip44Decrypt(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(() => mockNostr.subscribe(any())).thenAnswer(
+          (_) => Stream.value(
+            Event.fromJson({
+              'id': 'relay_legacy_event',
+              'pubkey': _ownerPubkey,
+              'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              'kind': 30005,
+              'tags': [
+                ['d', 'relay_legacy_1'],
+                ['title', 'Legacy List'],
+                ['e', 'legacy_video_id'],
+              ],
+              'content': 'Curated video list: Legacy List',
+              'sig': 'test_signature',
+            }),
+          ),
+        );
+
+        await service.fetchUserListsFromRelays();
+
+        // Every list published before this change has a plain description in
+        // content. Failing to unseal it means it is one of those, not that
+        // the list should be dropped.
+        final list = service.getListById('relay_legacy_1');
+        expect(list, isNotNull);
+        expect(list!.isPublic, isTrue);
+        expect(list.videoEventIds, ['legacy_video_id']);
+      });
+
+      test(
+        'keeps local private list when sealed relay copy will not unseal',
+        () async {
+          final list = await service.createList(
+            name: 'Local Private',
+            isPublic: false,
+          );
+          await service.addVideoToList(list!.id, 'local_private_video_id');
+          final localUpdatedAt = service.getListById(list.id)!.updatedAt;
+          when(
+            () => mockSigner.nip44Decrypt(any(), any()),
+          ).thenAnswer((_) async => null);
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(
+              Event.fromJson({
+                'id': 'relay_private_unreadable_event',
+                'pubkey': _ownerPubkey,
+                'created_at':
+                    localUpdatedAt
+                        .add(const Duration(seconds: 10))
+                        .millisecondsSinceEpoch ~/
+                    1000,
+                'kind': 30005,
+                'tags': [
+                  ['d', list.id],
+                  ['title', 'Local Private'],
+                ],
+                'content': _seal('but signer not ready'),
+                'sig': 'test_signature',
+              }),
+            ),
+          );
+
+          await service.fetchUserListsFromRelays(force: true);
+
+          final retained = service.getListById(list.id);
+          expect(retained, isNotNull);
+          expect(retained!.isPublic, isFalse);
+          expect(retained.videoEventIds, ['local_private_video_id']);
+        },
+      );
     });
 
     group('createList()', () {
@@ -386,7 +1058,6 @@ void main() {
           name: 'Test List',
           description: 'A test list',
           imageUrl: 'https://example.com/image.jpg',
-          isPublic: false,
           tags: ['test', 'demo'],
           isCollaborative: true,
           allowedCollaborators: ['collaborator_pubkey'],
@@ -398,12 +1069,30 @@ void main() {
         expect(list!.name, 'Test List');
         expect(list.description, 'A test list');
         expect(list.imageUrl, 'https://example.com/image.jpg');
-        expect(list.isPublic, isFalse);
+        expect(list.isPublic, isTrue);
         expect(list.tags, ['test', 'demo']);
         expect(list.isCollaborative, isTrue);
         expect(list.allowedCollaborators, ['collaborator_pubkey']);
         expect(list.thumbnailEventId, 'thumbnail_event_id');
         expect(list.playOrder, PlayOrder.shuffle);
+      });
+
+      test('rejects a private collaborative list', () async {
+        final list = await service.createList(
+          name: 'Private Collaboration',
+          isPublic: false,
+          isCollaborative: true,
+        );
+
+        expect(list, isNull);
+        expect(service.lists, isEmpty);
+        verifyNever(
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
       });
 
       test(
@@ -450,6 +1139,40 @@ void main() {
         expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
       });
 
+      test(
+        'does not double-publish a list created during a relay sync',
+        () async {
+          // A create's confirmed publish and a background sync's backfill both
+          // target the new list. They must run on the same operation lane so the
+          // backfill cannot publish a second event for the coordinate while the
+          // create is still in flight.
+          final release = Completer<void>();
+          final publishedDTags = <String>[];
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+            invocation,
+          ) async {
+            final event = invocation.positionalArguments[0] as Event;
+            publishedDTags.add(
+              event.tags.firstWhere((tag) => tag.first == 'd').last,
+            );
+            await release.future;
+            return _accepted(event);
+          });
+
+          final createFuture = service.createList(name: 'Race List');
+          await pumpEventQueue();
+
+          final syncFuture = service.fetchUserListsFromRelays();
+          await pumpEventQueue();
+
+          release.complete();
+          final created = await createFuture;
+          await syncFuture;
+
+          expect(publishedDTags.where((dTag) => dTag == created!.id).length, 1);
+        },
+      );
+
       test('publishes again when a video is added', () async {
         final list = await service.createList(name: 'Public List');
         reset(mockNostr);
@@ -463,7 +1186,7 @@ void main() {
         verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
-      test('does not claim a failed publication is a public list', () async {
+      test('keeps a local list when confirmed publication fails', () async {
         when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
           (invocation) => Future<PublishOutcome>.value(
             _rejected(invocation.positionalArguments[0] as Event),
@@ -472,11 +1195,12 @@ void main() {
 
         final list = await service.createList(name: 'Unlucky List');
 
-        expect(list, isNull);
-        expect(service.lists, isEmpty);
+        expect(list, isNotNull);
+        expect(list!.nostrEventId, isNull);
+        expect(service.getListById(list.id), isNotNull);
       });
 
-      test('does not keep a public list when event signing fails', () async {
+      test('keeps a local list when event signing fails', () async {
         when(
           () => mockAuth.createAndSignEvent(
             kind: any(named: 'kind'),
@@ -487,15 +1211,100 @@ void main() {
 
         final list = await service.createList(name: 'Unsigned List');
 
-        expect(list, isNull);
-        expect(service.lists, isEmpty);
+        expect(list, isNotNull);
+        expect(list!.nostrEventId, isNull);
+        expect(service.getListById(list.id), isNotNull);
         verifyNever(() => mockNostr.publishEvent(any()));
       });
 
-      test('does not publish private list to Nostr', () async {
+      test('publishes a private list with its items encrypted', () async {
+        final list = await service.createList(
+          name: 'Private List',
+          isPublic: false,
+        );
+
+        expect(list, isNotNull);
+        final published =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(published.kind, 30005);
+
+        // The list exists and is named on the relay; what is in it is not.
+        expect(published.tags, contains(equals(['d', list!.id])));
+        expect(published.tags, contains(equals(['title', 'Private List'])));
+        expect(
+          published.tags.any(
+            (dynamic tag) =>
+                (tag as List<dynamic>).isNotEmpty &&
+                (tag.first == 'e' || tag.first == 'a'),
+          ),
+          isFalse,
+          reason: 'a private list must not publish its items as tags',
+        );
+        expect(_unseal(published.content), isNotNull);
+      });
+
+      test('does not expose a private list thumbnail as metadata', () async {
+        await service.createList(
+          name: 'Private Thumbnail',
+          isPublic: false,
+          thumbnailEventId: 'private_video_thumbnail',
+        );
+
+        final published =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(
+          published.tags.any(
+            (tag) => tag.isNotEmpty && tag.first == 'thumbnail',
+          ),
+          isFalse,
+        );
+      });
+
+      test('seals the item tags into the encrypted content', () async {
+        final list = await service.createList(
+          name: 'Private List',
+          isPublic: false,
+        );
+        await service.addVideoToList(list!.id, 'video_event_id');
+
+        // The republish after an item change is fire-and-forget, so it takes
+        // the unconfirmed path.
+        final published =
+            verify(() => mockNostr.publishEvent(captureAny())).captured.last
+                as Event;
+        expect(jsonDecode(_unseal(published.content)!), [
+          ['e', 'video_event_id'],
+        ]);
+      });
+
+      test('encrypts to the list owner, not to a third party', () async {
         await service.createList(name: 'Private List', isPublic: false);
 
-        // Should not create or broadcast event
+        final recipient =
+            verify(
+                  () => mockSigner.nip44Encrypt(captureAny(), any()),
+                ).captured.single
+                as String;
+        expect(recipient, _ownerPubkey);
+      });
+
+      test('does not encrypt with a signer for another account', () async {
+        when(mockSigner.getPublicKey).thenAnswer((_) async => _otherPubkey);
+
+        final list = await service.createList(
+          name: 'Wrong Signer',
+          isPublic: false,
+        );
+
+        expect(list, isNotNull);
+        expect(list!.nostrEventId, isNull);
+        verifyNever(() => mockSigner.nip44Encrypt(any(), any()));
         verifyNever(
           () => mockAuth.createAndSignEvent(
             kind: any(named: 'kind'),
@@ -503,7 +1312,50 @@ void main() {
             tags: any(named: 'tags'),
           ),
         );
-        verifyNever(() => mockNostr.publishEvent(any()));
+      });
+
+      test('keeps a local private list it could not encrypt', () async {
+        when(
+          () => mockSigner.nip44Encrypt(any(), any()),
+        ).thenAnswer((_) async => null);
+
+        final list = await service.createList(
+          name: 'Private List',
+          isPublic: false,
+        );
+
+        // It remains usable offline, with a null event id so a later complete
+        // sync can retry the encrypted backup.
+        expect(list, isNotNull);
+        expect(list!.nostrEventId, isNull);
+        expect(service.getListById(list.id), isNotNull);
+        verifyNever(() => mockNostr.publishEventAwaitOk(any()));
+      });
+
+      test('rejects an item mutation beyond the NIP-44 limit', () async {
+        final list = await service.createList(
+          name: 'Bounded Private List',
+          isPublic: false,
+        );
+        clearInteractions(mockSigner);
+        clearInteractions(mockAuth);
+        clearInteractions(mockNostr);
+
+        final result = await service.addVideoToList(
+          list!.id,
+          List<String>.filled(70000, 'v').join(),
+        );
+
+        expect(result, isFalse);
+        expect(service.getListById(list.id)!.videoEventIds, isEmpty);
+        verifyNever(() => mockSigner.nip44Encrypt(any(), any()));
+        verifyNever(
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
       });
 
       test('does not publish when user not authenticated', () async {
@@ -617,17 +1469,106 @@ void main() {
         verify(() => mockNostr.publishEventAwaitOk(any())).called(1);
       });
 
-      test('does not publish update for private list', () async {
+      test('republishes a private list when it is renamed', () async {
         final list = await service.createList(
           name: 'Test List',
           isPublic: false,
         );
         reset(mockNostr); // Clear previous invocations
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
 
         await service.updateList(listId: list!.id, name: 'Updated Name');
 
-        verifyNever(() => mockNostr.publishEvent(any()));
+        // The title is public metadata even on a private list, so the relay
+        // copy goes stale unless the rename is republished.
+        final published =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(published.tags, contains(equals(['title', 'Updated Name'])));
       });
+
+      test('flags a failed rename for backfill retry', () async {
+        final list = await service.createList(name: 'Original Name');
+        final originalEventId = list!.nostrEventId;
+        expect(originalEventId, isNotNull);
+
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _rejected(invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.updateList(
+          listId: list.id,
+          name: 'Updated Name',
+        );
+
+        expect(result, isFalse);
+        final stored = service.getListById(list.id);
+        // The rename is kept locally and flagged for backfill. The previous
+        // event id must stay as the marker that relays may still hold this
+        // coordinate, so later redaction/deletion can retire it.
+        expect(stored!.name, 'Updated Name');
+        expect(stored.nostrEventId, originalEventId);
+        expect(stored.pendingRepublish, isTrue);
+      });
+
+      test(
+        'redacts the plaintext event after a failed rename then privacy flip',
+        () async {
+          final list = await service.createList(name: 'Public List');
+          final plaintextEventId = service.getListById(list!.id)!.nostrEventId;
+          expect(plaintextEventId, isNotNull);
+
+          reset(mockNostr);
+          when(() => mockNostr.signer).thenReturn(mockSigner);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _rejected(invocation.positionalArguments[0] as Event),
+          );
+
+          final renamed = await service.updateList(
+            listId: list.id,
+            name: 'Renamed Locally',
+          );
+
+          expect(renamed, isFalse);
+          final pending = service.getListById(list.id)!;
+          expect(pending.nostrEventId, plaintextEventId);
+          expect(pending.pendingRepublish, isTrue);
+
+          clearInteractions(mockNostr);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _accepted(invocation.positionalArguments[0] as Event),
+          );
+          when(() => mockNostr.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+
+          final flipped = await service.updateList(
+            listId: list.id,
+            isPublic: false,
+          );
+
+          expect(flipped, isTrue);
+          final redaction =
+              verify(() => mockNostr.publishEvent(captureAny())).captured.single
+                  as Event;
+          expect(redaction.kind, EventKind.eventDeletion);
+          expect(redaction.tags, contains(equals(['e', plaintextEventId])));
+          expect(redaction.tags, contains(equals(['k', '30005'])));
+        },
+      );
 
       test('returns false for non-existent list', () async {
         final result = await service.updateList(
@@ -663,12 +1604,98 @@ void main() {
         expect(updatedList.tags, ['original', 'tags']);
       });
 
-      test('publishes deletion before making a public list private', () async {
+      test('replaces the public event when a list becomes private', () async {
         final list = await service.createList(name: 'Public List');
+        await service.addVideoToList(list!.id, 'video_event_id');
         reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
         when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
           (invocation) async =>
               _accepted(invocation.positionalArguments[0] as Event),
+        );
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.updateList(
+          listId: list.id,
+          isPublic: false,
+        );
+
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.isPublic, isFalse);
+
+        // Kind 30005 is addressable: republishing under the same d-tag
+        // replaces the public copy, with the items moved out of plain tags
+        // into sealed content.
+        final published =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(published.kind, 30005);
+        expect(published.tags, contains(equals(['d', list.id])));
+        expect(
+          published.tags.any(
+            (dynamic tag) =>
+                (tag as List<dynamic>).isNotEmpty && tag.first == 'e',
+          ),
+          isFalse,
+        );
+        expect(jsonDecode(_unseal(published.content)!), [
+          ['e', 'video_event_id'],
+        ]);
+      });
+
+      test('redacts the plaintext event when a list becomes private', () async {
+        final list = await service.createList(name: 'Public List');
+        final plaintextEventId = service.getListById(list!.id)!.nostrEventId;
+        expect(plaintextEventId, isNotNull);
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+
+        await service.updateList(listId: list.id, isPublic: false);
+
+        // The replacement only reaches relays that accepted it, so the ones
+        // that did not are asked to drop the plaintext event instead. It has
+        // to be an `e` tag on the old event id: NIP-09 honours an `a` tag on
+        // the coordinate for every version up to the request, which would
+        // take the sealed replacement down with the original.
+        final redaction =
+            verify(() => mockNostr.publishEvent(captureAny())).captured.single
+                as Event;
+        expect(redaction.kind, EventKind.eventDeletion);
+        expect(redaction.tags, contains(equals(['e', plaintextEventId])));
+        expect(redaction.tags, contains(equals(['k', '30005'])));
+        expect(
+          redaction.tags.any(
+            (dynamic tag) =>
+                (tag as List<dynamic>).isNotEmpty && tag.first == 'a',
+          ),
+          isFalse,
+        );
+      });
+
+      test('commits privacy when only some relays accept it', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _partiallyAccepted(invocation.positionalArguments[0] as Event),
+        );
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
         );
 
         final result = await service.updateList(
@@ -676,18 +1703,35 @@ void main() {
           isPublic: false,
         );
 
+        // One relay already holds the sealed copy. Reading public locally
+        // would let the next edit publish plain item tags over it, so the
+        // flip commits and the relays that rejected it get the redaction.
         expect(result, isTrue);
         expect(service.getListById(list.id)!.isPublic, isFalse);
-        final deletion =
-            verify(
-                  () => mockNostr.publishEventAwaitOk(captureAny()),
-                ).captured.single
-                as Event;
-        expect(deletion.kind, EventKind.eventDeletion);
-        expect(
-          deletion.tags,
-          contains(equals(['a', '30005:$_ownerPubkey:${list.id}'])),
+        verify(() => mockNostr.publishEvent(any())).called(1);
+      });
+
+      test('keeps a list private when its redaction fails', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
         );
+        when(
+          () => mockNostr.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishNoRelays());
+
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: false,
+        );
+
+        // NIP-09 is a request relays may ignore anyway, so the flip cannot
+        // depend on it — the sealed replacement is already accepted.
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.isPublic, isFalse);
       });
 
       test('unsets the description when the edit clears it', () async {
@@ -718,10 +1762,11 @@ void main() {
         expect(service.getListById(list.id)!.description, equals('Original'));
       });
 
-      test('clears the Nostr event id when a list becomes private', () async {
+      test('keeps the Nostr event id when a list becomes private', () async {
         final list = await service.createList(name: 'Public List');
         expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
         reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
         when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
           (invocation) async =>
               _accepted(invocation.positionalArguments[0] as Event),
@@ -729,18 +1774,42 @@ void main() {
 
         await service.updateList(listId: list.id, isPublic: false);
 
-        expect(service.getListById(list.id)!.nostrEventId, isNull);
+        // A private list is still published, just with its items sealed, so
+        // the event id identifies a real event rather than a deleted one.
+        expect(service.getListById(list.id)!.nostrEventId, isNotNull);
         expect(service.myLists.map((l) => l.id), contains(list.id));
       });
 
-      test('keeps a list public when deletion publication fails', () async {
-        final list = await service.createList(name: 'Public List');
-        reset(mockNostr);
-        when(
-          () => mockNostr.publishEventAwaitOk(any()),
-        ).thenAnswer(
-          (invocation) async =>
-              _rejected(invocation.positionalArguments[0] as Event),
+      test(
+        'keeps a list public when the private republish is rejected',
+        () async {
+          final list = await service.createList(name: 'Public List');
+          reset(mockNostr);
+          when(() => mockNostr.signer).thenReturn(mockSigner);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _rejected(invocation.positionalArguments[0] as Event),
+          );
+
+          final result = await service.updateList(
+            listId: list!.id,
+            isPublic: false,
+          );
+
+          // Relays still hold the public copy with its items in plain tags, so
+          // showing the list as private would understate what is exposed. No
+          // relay took the sealed replacement either, so there is nothing the
+          // redaction could usefully retire.
+          expect(result, isFalse);
+          expect(service.getListById(list.id)!.isPublic, isTrue);
+          verifyNever(() => mockNostr.publishEvent(any()));
+        },
+      );
+
+      test('does not make a collaborative list private', () async {
+        final list = await service.createList(
+          name: 'Collaborative',
+          isCollaborative: true,
         );
 
         final result = await service.updateList(
@@ -749,7 +1818,25 @@ void main() {
         );
 
         expect(result, isFalse);
-        expect(service.getListById(list.id)!.isPublic, isTrue);
+        final stored = service.getListById(list.id)!;
+        expect(stored.isPublic, isTrue);
+        expect(stored.isCollaborative, isTrue);
+      });
+
+      test('rejects a visibility change atomically while signed out', () async {
+        final list = await service.createList(name: 'Public List');
+        when(() => mockAuth.isAuthenticated).thenReturn(false);
+
+        final result = await service.updateList(
+          listId: list!.id,
+          name: 'Should Not Stick',
+          isPublic: false,
+        );
+
+        expect(result, isFalse);
+        final stored = service.getListById(list.id)!;
+        expect(stored.name, 'Public List');
+        expect(stored.isPublic, isTrue);
       });
 
       test('publishes a private list before marking it public', () async {
@@ -765,12 +1852,15 @@ void main() {
 
         expect(result, isTrue);
         expect(service.getListById(list.id)!.isPublic, isTrue);
+        // Creating the private list published it too, so the transition is
+        // the second event, and it unseals the items back into plain tags.
         final publication =
             verify(
                   () => mockNostr.publishEventAwaitOk(captureAny()),
-                ).captured.single
+                ).captured.last
                 as Event;
         expect(publication.kind, 30005);
+        expect(_unseal(publication.content), isNull);
       });
 
       test('keeps a list private when publication is rejected', () async {
@@ -779,9 +1869,7 @@ void main() {
           description: 'Original',
           isPublic: false,
         );
-        when(
-          () => mockNostr.publishEventAwaitOk(any()),
-        ).thenAnswer(
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
           (invocation) async =>
               _rejected(invocation.positionalArguments[0] as Event),
         );
@@ -805,9 +1893,7 @@ void main() {
         'keeps a rename when the relay rejects a public list update',
         () async {
           final list = await service.createList(name: 'Public List');
-          when(
-            () => mockNostr.publishEventAwaitOk(any()),
-          ).thenAnswer(
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
             (invocation) async =>
                 _rejected(invocation.positionalArguments[0] as Event),
           );
@@ -878,76 +1964,67 @@ void main() {
           listId: list!.id,
           name: 'Renamed',
         );
-        await service.addVideoToList(list.id, 'video_added_mid_publish');
+        final pendingAdd = service.addVideoToList(
+          list.id,
+          'video_added_mid_publish',
+        );
+        await pumpEventQueue();
         publishGate.complete();
 
         expect(await pendingUpdate, isTrue);
+        expect(await pendingAdd, isTrue);
         final stored = service.getListById(list.id)!;
         expect(stored.name, equals('Renamed'));
         expect(stored.videoEventIds, contains('video_added_mid_publish'));
       });
-    });
 
-    group('deleteList()', () {
-      test('deletes list successfully', () async {
-        final list = await service.createList(name: 'Test List');
+      test('serializes an add behind a private transition', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
 
-        final result = await service.deleteList(list!.id);
-
-        expect(result, isTrue);
-        expect(service.getListById(list.id), isNull);
-        expect(service.lists, isEmpty);
-      });
-
-      test('removes multiple lists independently', () async {
-        final list1 = await service.createList(name: 'List 1');
-        await Future.delayed(const Duration(milliseconds: 5));
-        final list2 = await service.createList(name: 'List 2');
-        await Future.delayed(const Duration(milliseconds: 5));
-        final list3 = await service.createList(name: 'List 3');
-
-        await service.deleteList(list2!.id);
-
-        expect(service.lists.length, 2);
-        expect(service.getListById(list1!.id), isNotNull);
-        expect(service.getListById(list2.id), isNull);
-        expect(service.getListById(list3!.id), isNotNull);
-      });
-
-      test('prevents deleting default list', () async {
-        await service.initialize();
-
-        final result = await service.deleteList(
-          CuratedListService.defaultListId,
+        final privacyGate = Completer<void>();
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          await privacyGate.future;
+          return _accepted(invocation.positionalArguments[0] as Event);
+        });
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
         );
 
-        expect(result, isFalse);
-        expect(service.hasDefaultList(), isTrue);
-      });
+        final pendingPrivacy = service.updateList(
+          listId: list!.id,
+          isPublic: false,
+        );
+        await pumpEventQueue();
+        final pendingAdd = service.addVideoToList(
+          list.id,
+          'added_during_privacy_change',
+        );
+        await pumpEventQueue();
+        verifyNever(() => mockNostr.publishEvent(any()));
 
-      test('returns false for non-existent list', () async {
-        final result = await service.deleteList('non_existent_list');
+        privacyGate.complete();
+        expect(await pendingPrivacy, isTrue);
+        expect(await pendingAdd, isTrue);
 
-        expect(result, isFalse);
-      });
-
-      test('saves updated lists after deletion', () async {
-        final list = await service.createList(name: 'Test List');
-        await service.deleteList(list!.id);
-
-        final savedLists = prefs.getString(CuratedListService.listsStorageKey);
-        expect(savedLists, isNotNull);
-        expect(savedLists, isNot(contains('Test List')));
-      });
-
-      test('handles deleting last non-default list', () async {
-        await service.initialize(); // Creates default list
-        final list = await service.createList(name: 'Extra List');
-
-        await service.deleteList(list!.id);
-
-        expect(service.lists.length, 1);
-        expect(service.hasDefaultList(), isTrue);
+        // The flip also fires a kind 5 redaction of the plaintext event
+        // through the same unconfirmed path, so pick the list event out.
+        final addEvent = verify(
+          () => mockNostr.publishEvent(captureAny()),
+        ).captured.cast<Event>().singleWhere((event) => event.kind == 30005);
+        expect(
+          addEvent.tags.any(
+            (tag) => tag.isNotEmpty && (tag.first == 'e' || tag.first == 'a'),
+          ),
+          isFalse,
+        );
+        expect(jsonDecode(_unseal(addEvent.content)!), [
+          ['e', 'added_during_privacy_change'],
+        ]);
       });
     });
 
@@ -996,21 +2073,36 @@ void main() {
         expect(service.getListById(list.id), isNotNull);
       });
 
-      test(
-        'removes owned private list without publishing deletion event',
-        () async {
-          final list = await service.createList(
-            name: 'Owned Private List',
-            isPublic: false,
-          );
+      test('publishes a deletion for an owned private list', () async {
+        final list = await service.createList(
+          name: 'Owned Private List',
+          isPublic: false,
+        );
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
 
-          final result = await service.deleteOwnedList(list!.id);
+        final result = await service.deleteOwnedList(list!.id);
 
-          expect(result, isTrue);
-          expect(service.getListById(list.id), isNull);
-          verifyNever(() => mockNostr.publishEvent(any()));
-        },
-      );
+        expect(result, isTrue);
+        expect(service.getListById(list.id), isNull);
+
+        // A private list lives on relays too now, so dropping it locally
+        // without asking them to drop it would leave it behind.
+        final published =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(published.kind, EventKind.eventDeletion);
+        expect(
+          published.tags,
+          contains(equals(['a', '30005:$_ownerPubkey:${list.id}'])),
+        );
+      });
 
       test(
         'deletes the requested list when an earlier one goes first',
@@ -1036,22 +2128,102 @@ void main() {
             return _accepted(invocation.positionalArguments[0] as Event);
           });
 
+          // Both deletes publish a NIP-09 request now that private lists live
+          // on relays too, so the second cannot be awaited before the gate
+          // opens — starting it here still lands it inside the first publish.
           final pendingDelete = service.deleteOwnedList(target!.id);
-          await service.deleteOwnedList(earlier!.id);
+          final pendingEarlierDelete = service.deleteOwnedList(earlier!.id);
           deletionGate.complete();
 
+          expect(await pendingEarlierDelete, isTrue);
           expect(await pendingDelete, isTrue);
           expect(service.getListById(target.id), isNull);
           expect(service.getListById(later!.id), isNotNull);
         },
       );
 
-      test('returns false for default, missing, and unowned list', () async {
+      test('publishes a deletion for the default list', () async {
+        await service.initialize();
+        final defaultList = service.getDefaultList();
+        expect(defaultList, isNotNull);
+        clearInteractions(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.deleteOwnedList(defaultList!.id);
+
+        expect(result, isTrue);
+        expect(service.hasDefaultList(), isFalse);
+        expect(
+          prefs.getBool(CuratedListService.defaultListDeletedStorageKey),
+          isTrue,
+        );
+        final published =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(published.kind, EventKind.eventDeletion);
+        expect(
+          published.tags,
+          contains(
+            equals([
+              'a',
+              '30005:$_ownerPubkey:${CuratedListService.defaultListId}',
+            ]),
+          ),
+        );
+      });
+
+      test('deletes the relay coordinate after a failed rename', () async {
+        final list = await service.createList(name: 'Public List');
+        final originalEventId = service.getListById(list!.id)!.nostrEventId;
+        expect(originalEventId, isNotNull);
+
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _rejected(invocation.positionalArguments[0] as Event),
+        );
+
+        final renamed = await service.updateList(
+          listId: list.id,
+          name: 'Renamed Locally',
+        );
+
+        expect(renamed, isFalse);
+        final pending = service.getListById(list.id)!;
+        expect(pending.nostrEventId, originalEventId);
+        expect(pending.pendingRepublish, isTrue);
+
+        clearInteractions(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        final deleted = await service.deleteOwnedList(list.id);
+
+        expect(deleted, isTrue);
+        expect(service.getListById(list.id), isNull);
+        final deletion =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(deletion.kind, EventKind.eventDeletion);
+        expect(
+          deletion.tags,
+          contains(equals(['a', '30005:$_ownerPubkey:${list.id}'])),
+        );
+      });
+
+      test('returns false for missing and unowned list', () async {
         await service.initialize();
         final missingResult = await service.deleteOwnedList('missing-list');
-        final defaultResult = await service.deleteOwnedList(
-          CuratedListService.defaultListId,
-        );
         final now = DateTime(2026);
         final unownedList = CuratedList(
           id: 'unowned-list',
@@ -1066,7 +2238,6 @@ void main() {
         final unownedResult = await service.deleteOwnedList(unownedList.id);
 
         expect(missingResult, isFalse);
-        expect(defaultResult, isFalse);
         expect(unownedResult, isFalse);
         expect(service.hasDefaultList(), isTrue);
         expect(service.getListById(unownedList.id), isNotNull);
