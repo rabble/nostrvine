@@ -2031,14 +2031,23 @@ void main() {
         );
       });
 
-      Map<String, dynamic> wrapFor(String recipient) => Event(
-        localPubkey,
-        EventKind.giftWrap,
-        [
-          ['p', recipient],
-        ],
-        'ciphertext-$recipient',
-      ).toJson();
+      Map<String, dynamic> wrapFor(
+        String recipient, {
+        int kind = EventKind.giftWrap,
+        bool sign = true,
+      }) {
+        final privateKey = generatePrivateKey();
+        final event = Event(
+          getPublicKey(privateKey),
+          kind,
+          [
+            ['p', recipient],
+          ],
+          'ciphertext-$recipient',
+        );
+        if (sign) event.sign(privateKey);
+        return event.toJson();
+      }
 
       test(
         'one batch call replaces both per-wrap signing round trips',
@@ -2249,6 +2258,101 @@ void main() {
           rumorEvent: service.buildRumor(
             recipientPubkey: _recipientPubkey,
             content: 'unusable slot',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test('falls back when a server wrap is unsigned', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[0], sign: false)),
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'unsigned server wrap',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test('falls back when a server wrap is not kind 1059', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(
+              wrapFor(recipients[0], kind: EventKind.textNote),
+            ),
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'wrong server wrap kind',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test('falls back when server slots are swapped', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+            GiftWrapSlot.success(wrapFor(recipients[0])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'swapped server wraps',
           ),
           recipientPubkey: _recipientPubkey,
         );

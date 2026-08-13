@@ -39,13 +39,12 @@
 /// wraps in one isolate hop and spend no round trips at all — these bounds sit
 /// far above that path and never bind it.
 ///
-/// **Re-derived against the batch chain, and deliberately not reduced.** The
-/// four-trip shape is still reachable — Amber, NIP-46, a keycast without the
-/// verb, a kind-7/5 rumor the verb refuses, or a per-recipient slot failure all
-/// take it — so it, not the batch, sizes every bound here. Tightening these to
-/// the batch chain would fail exactly the sends that most need the headroom.
-/// What the batch changes is where a Keycast send actually lands inside the
-/// bound, not what the bound has to be.
+/// **Re-derived against the batch chain.** The four-trip shape is still
+/// reachable — Amber, NIP-46, a keycast without the verb, a kind-7/5 rumor the
+/// verb refuses, or a per-recipient slot failure all take it — so it remains
+/// part of the bound. The batch attempt is serial with that fallback, though:
+/// if `nip17_wrap_batch` stalls to its transport timeout and then the old
+/// per-wrap path runs, both have to fit inside [recipientWrapBuild].
 abstract final class DmSendBudget {
   /// The two seal round trips a wrap build spends, at the transport's own
   /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 30s).
@@ -55,6 +54,13 @@ abstract final class DmSendBudget {
   /// stale fails CI rather than silently under-sizing the bound — which is the
   /// #6586 failure mode itself.
   static const int _twoTransportBoundsSeconds = 60;
+
+  /// One server-side wrap-batch transport bound
+  /// (`KeycastRpc.defaultBatchRequestTimeout`, 30s).
+  ///
+  /// Restated here for the same reason as [_twoTransportBoundsSeconds]. The
+  /// app-layer guard test asserts this against the real Keycast constant.
+  static const int _serverWrapBatchBoundSeconds = 30;
 
   /// Margin inside a wrap-build bound for the local work that runs alongside
   /// the two remote round trips: seal construction, the ephemeral keypair,
@@ -71,7 +77,9 @@ abstract final class DmSendBudget {
   /// Seconds allowed for building the recipient gift wrap. See
   /// [recipientWrapBuild].
   static const int _recipientWrapBuildSeconds =
-      _twoTransportBoundsSeconds + _wrapBuildLocalCryptoSeconds;
+      _serverWrapBatchBoundSeconds +
+      _twoTransportBoundsSeconds +
+      _wrapBuildLocalCryptoSeconds;
 
   /// Seconds allowed for the recipient OK confirmation. See
   /// [recipientOkConfirm].
@@ -91,19 +99,24 @@ abstract final class DmSendBudget {
   /// with the publish. The backstop must sit strictly above the capped worst
   /// case or it fires mid-send and misclassifies it — the #6586 defect.
   ///
-  /// Trimmed by [_wrapBuildLocalCryptoSeconds] when that margin was moved into
-  /// [_recipientWrapBuildSeconds], so [messagePublishTimeout] holds at 120s and
-  /// `OutgoingDmRetryService.interruptedMinAge` does not have to move with it.
+  /// Kept as explicit slack, so `OutgoingDmRetryService.interruptedMinAge`
+  /// follows this derived timeout instead of restating its own number.
   static const int _headroomSeconds = 15;
 
   /// Hard bound on building the recipient gift wrap.
   ///
-  /// Sized as two Keycast single-op round trips at the transport's own 30s
-  /// bound (`KeycastRpc.defaultRequestTimeout`) **plus**
+  /// Sized as one Keycast server-side wrap-batch attempt at the transport's own
+  /// 30s bound (`KeycastRpc.defaultBatchRequestTimeout`) **plus** the fallback
+  /// build: two Keycast single-op round trips at the transport's own 30s bound
+  /// (`KeycastRpc.defaultRequestTimeout`) **plus**
   /// [_wrapBuildLocalCryptoSeconds] for the local crypto that runs between and
-  /// after them, so two ops that each returned inside the transport's limit
-  /// cannot together trip this bound. Sizing it at exactly `2 × 30s` would
-  /// leave nothing for that work and fail such a build.
+  /// after them.
+  ///
+  /// The batch fast path does not consume all of this when it succeeds. The
+  /// additive case is when it times out or throws transiently, then the caller
+  /// falls through to the per-wrap path inside the same [recipientWrapBuild]
+  /// timeout. Sizing only either alternative would let a slow-but-recoverable
+  /// send be misclassified as timed out before any publish.
   ///
   /// Tightening it below two transport bounds is the specific mistake #6046
   /// made and #6075 reverted. That was sized against Keycast running 20-30s per

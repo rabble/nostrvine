@@ -309,18 +309,16 @@ class NIP17MessageService {
         recipientPubkey,
         _senderPublicKey,
       ]);
-    } on Object catch (e, stackTrace) {
+    } on Object catch (e) {
       // Transient: a 5xx, an expired token, a timeout, or the verified_minor
       // policy refusal. Fall back for THIS send without latching — the
       // fallback's own nip44Encrypt re-hits a policy refusal and sendRumor
       // terminalizes it as `blocked`, and a blip must not cost the rest of the
       // session its fast path.
-      Log.error(
+      Log.warning(
         'Server gift-wrap batch failed for rumor ${rumorEvent.id}: $e; '
         'falling back to the per-wrap signing path',
         category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
       );
       return null;
     }
@@ -357,16 +355,55 @@ class NIP17MessageService {
       );
     }
 
-    try {
-      return (
-        Event.fromJson(recipientSlot.giftWrap!),
-        selfSlot.isSuccess ? Event.fromJson(selfSlot.giftWrap!) : null,
+    final recipientWrap = _serverWrapFromSlot(
+      slot: recipientSlot,
+      expectedRecipientPubkey: recipientPubkey,
+      slotName: 'recipient',
+    );
+    if (recipientWrap == null) return null;
+
+    final Event? selfWrap;
+    if (selfSlot.isSuccess) {
+      selfWrap = _serverWrapFromSlot(
+        slot: selfSlot,
+        expectedRecipientPubkey: _senderPublicKey,
+        slotName: 'self',
       );
+    } else {
+      selfWrap = null;
+    }
+    return (recipientWrap, selfWrap);
+  }
+
+  Event? _serverWrapFromSlot({
+    required GiftWrapSlot slot,
+    required String expectedRecipientPubkey,
+    required String slotName,
+  }) {
+    try {
+      final event = Event.fromJson(slot.giftWrap!);
+      final addressedToExpectedRecipient = event.tags.any(
+        (tag) =>
+            tag.length >= 2 &&
+            tag[0] == 'p' &&
+            tag[1] == expectedRecipientPubkey,
+      );
+      if (event.kind == EventKind.giftWrap &&
+          addressedToExpectedRecipient &&
+          verifyGiftWrapPart(event)) {
+        return event;
+      }
+      Log.warning(
+        'Server gift-wrap batch returned an invalid $slotName wrap; '
+        'falling back to the per-wrap signing path',
+        category: LogCategory.system,
+      );
+      return null;
     } on Object catch (e) {
       // A slot that parsed as JSON but is not a usable event. Never publish a
       // half-understood wrap; take the path that builds one we control.
       Log.warning(
-        'Server gift-wrap batch returned an unusable event: $e; '
+        'Server gift-wrap batch returned an unusable $slotName event: $e; '
         'falling back to the per-wrap signing path',
         category: LogCategory.system,
       );

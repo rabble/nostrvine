@@ -2064,16 +2064,18 @@ void main() {
       );
     });
 
-    test('the recipient wrap build also covers one server-side wrap '
-        'batch', () {
+    test('the recipient wrap build covers batch timeout plus fallback', () {
       // #7090: a Keycast send now builds both wraps in one `nip17_wrap_batch`
-      // round trip, bounded by the batch transport bound rather than two
-      // single-op ones. That path must fit the same build budget — with room
-      // to spare, since the batch answer still has to be parsed and both
-      // events reconstructed after it lands.
+      // round trip, but a transient batch timeout falls back to the old
+      // per-wrap path inside the same recipient-build bound. Both have to fit,
+      // otherwise a slow-but-recoverable pre-publish send is misclassified as a
+      // timeout and retried.
       expect(
         DmSendBudget.recipientWrapBuild,
-        greaterThan(KeycastRpc.defaultBatchRequestTimeout),
+        greaterThan(
+          KeycastRpc.defaultBatchRequestTimeout +
+              KeycastRpc.defaultRequestTimeout * 2,
+        ),
       );
     });
 
