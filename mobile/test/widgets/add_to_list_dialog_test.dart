@@ -370,7 +370,10 @@ void main() {
 
       expect(find.text('Edit list'), findsOneWidget);
       expect(find.text('Puppets'), findsOneWidget);
-      expect(find.text("Only you can see what's in this list"), findsOneWidget);
+      expect(
+        find.text('Videos stay private. The list name stays visible.'),
+        findsOneWidget,
+      );
       expect(
         tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
         isFalse,

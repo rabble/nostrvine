@@ -303,6 +303,30 @@ void main() {
         expect(service.lists.length, 1);
       });
 
+      test('does not recreate default list after explicit deletion', () async {
+        await service.initialize();
+        final defaultList = service.getDefaultList();
+        expect(defaultList, isNotNull);
+        clearInteractions(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        final deleted = await service.deleteOwnedList(defaultList!.id);
+        expect(deleted, isTrue);
+        expect(service.hasDefaultList(), isFalse);
+
+        service = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: prefs,
+        );
+        await service.initialize();
+
+        expect(service.hasDefaultList(), isFalse);
+      });
+
       test('does not create duplicate default list', () async {
         // Initialize once
         await service.initialize();
@@ -537,6 +561,45 @@ void main() {
           ]),
         );
       });
+
+      test(
+        'does not restore deleted default list from a stale relay event',
+        () async {
+          await service.initialize();
+          final defaultList = service.getDefaultList();
+          expect(defaultList, isNotNull);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _accepted(invocation.positionalArguments[0] as Event),
+          );
+
+          final deleted = await service.deleteOwnedList(defaultList!.id);
+          expect(deleted, isTrue);
+          clearInteractions(mockNostr);
+
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(
+              Event.fromJson({
+                'id': 'stale_default_event',
+                'pubkey': _ownerPubkey,
+                'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                'kind': 30005,
+                'tags': [
+                  ['d', CuratedListService.defaultListId],
+                  ['title', 'My List'],
+                  ['e', 'stale_default_video'],
+                ],
+                'content': 'My favorite vines and videos',
+                'sig': 'test_signature',
+              }),
+            ),
+          );
+
+          await service.fetchUserListsFromRelays(force: true);
+
+          expect(service.hasDefaultList(), isFalse);
+        },
+      );
 
       test(
         'does not union a failed local deletion with stale relay items',
@@ -1104,10 +1167,7 @@ void main() {
           final created = await createFuture;
           await syncFuture;
 
-          expect(
-            publishedDTags.where((dTag) => dTag == created!.id).length,
-            1,
-          );
+          expect(publishedDTags.where((dTag) => dTag == created!.id).length, 1);
         },
       );
 
@@ -1559,9 +1619,7 @@ void main() {
         // the coordinate for every version up to the request, which would
         // take the sealed replacement down with the original.
         final redaction =
-            verify(
-                  () => mockNostr.publishEvent(captureAny()),
-                ).captured.single
+            verify(() => mockNostr.publishEvent(captureAny())).captured.single
                 as Event;
         expect(redaction.kind, EventKind.eventDeletion);
         expect(redaction.tags, contains(equals(['e', plaintextEventId])));
@@ -2032,12 +2090,44 @@ void main() {
         },
       );
 
-      test('returns false for default, missing, and unowned list', () async {
+      test('publishes a deletion for the default list', () async {
+        await service.initialize();
+        final defaultList = service.getDefaultList();
+        expect(defaultList, isNotNull);
+        clearInteractions(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.deleteOwnedList(defaultList!.id);
+
+        expect(result, isTrue);
+        expect(service.hasDefaultList(), isFalse);
+        expect(
+          prefs.getBool(CuratedListService.defaultListDeletedStorageKey),
+          isTrue,
+        );
+        final published =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(published.kind, EventKind.eventDeletion);
+        expect(
+          published.tags,
+          contains(
+            equals([
+              'a',
+              '30005:$_ownerPubkey:${CuratedListService.defaultListId}',
+            ]),
+          ),
+        );
+      });
+
+      test('returns false for missing and unowned list', () async {
         await service.initialize();
         final missingResult = await service.deleteOwnedList('missing-list');
-        final defaultResult = await service.deleteOwnedList(
-          CuratedListService.defaultListId,
-        );
         final now = DateTime(2026);
         final unownedList = CuratedList(
           id: 'unowned-list',
@@ -2052,7 +2142,6 @@ void main() {
         final unownedResult = await service.deleteOwnedList(unownedList.id);
 
         expect(missingResult, isFalse);
-        expect(defaultResult, isFalse);
         expect(unownedResult, isFalse);
         expect(service.hasDefaultList(), isTrue);
         expect(service.getListById(unownedList.id), isNotNull);

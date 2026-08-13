@@ -2050,7 +2050,7 @@
     "listDescriptionLabel": "Beschrijving (optioneel)",
     "listPublicList": "Openbare lijst",
     "listPublicListSubtitle": "Anderen kunnen deze lijst volgen en zien",
-    "listPrivateListSubtitle": "Alleen jij kunt zien wat er in deze lijst staat",
+    "listPrivateListSubtitle": "Video's blijven privé. De lijstnaam blijft zichtbaar.",
     "listVisibilityPublic": "Openbaar",
     "listVisibilityPrivate": "Privé",
     "profileListsEmpty": "Nog geen lijsten. Maak er een voor de loops die je bij elkaar wilt houden.",

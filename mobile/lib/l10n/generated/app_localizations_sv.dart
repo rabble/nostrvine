@@ -5158,7 +5158,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Bara du kan se vad som finns i den här listan';
+      'Videorna förblir privata. Listnamnet förblir synligt.';
 
   @override
   String get listVisibilityPublic => 'Offentlig';

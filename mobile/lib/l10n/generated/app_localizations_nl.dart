@@ -5182,7 +5182,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Alleen jij kunt zien wat er in deze lijst staat';
+      'Video\'s blijven privé. De lijstnaam blijft zichtbaar.';
 
   @override
   String get listVisibilityPublic => 'Openbaar';

@@ -4931,7 +4931,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get listPublicListSubtitle => '다른 사람들이 이 목록을 팔로우하고 볼 수 있어요';
 
   @override
-  String get listPrivateListSubtitle => '이 목록 안의 내용은 나만 볼 수 있어요';
+  String get listPrivateListSubtitle => '동영상은 비공개로 유지돼요. 목록 이름은 계속 보여요.';
 
   @override
   String get listVisibilityPublic => '공개';

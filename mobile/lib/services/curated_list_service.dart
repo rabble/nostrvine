@@ -82,6 +82,8 @@ class CuratedListService extends ChangeNotifier {
 
   static const String listsStorageKey = 'curated_lists';
   static const String subscribedListsStorageKey = 'subscribed_list_ids';
+  static const String defaultListDeletedStorageKey =
+      'curated_lists_default_deleted';
   static const String defaultListId = 'my_vine_list';
   static const String _createListOperationId = '__create_curated_list__';
 
@@ -163,8 +165,9 @@ class CuratedListService extends ChangeNotifier {
         return;
       }
 
-      // Create default list if it doesn't exist
-      if (!hasDefaultList()) {
+      // Create default list if it doesn't exist and the user has not explicitly
+      // withdrawn its relay coordinate.
+      if (!hasDefaultList() && !_wasDefaultListDeleted()) {
         await _createDefaultList();
       }
 
@@ -211,6 +214,10 @@ class CuratedListService extends ChangeNotifier {
 
   /// Check if default list exists
   bool hasDefaultList() => _lists.any((list) => list.id == defaultListId);
+
+  bool _wasDefaultListDeleted() {
+    return _prefs.getBool(defaultListDeletedStorageKey) ?? false;
+  }
 
   /// Get the default "My List" for quick adding
   CuratedList? getDefaultList() {
@@ -675,15 +682,6 @@ class CuratedListService extends ChangeNotifier {
 
   Future<bool> _deleteOwnedList(String listId) async {
     try {
-      if (listId == defaultListId) {
-        Log.warning(
-          'Cannot delete default list',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
       final listIndex = _lists.indexWhere((list) => list.id == listId);
       if (listIndex == -1) {
         return false;
@@ -709,6 +707,9 @@ class CuratedListService extends ChangeNotifier {
       }
 
       await _removeListAndSubscription(listId);
+      if (listId == defaultListId) {
+        await _prefs.setBool(defaultListDeletedStorageKey, true);
+      }
 
       Log.info(
         'Deleted owned curated list: ${list.name} ($listId)',
@@ -1624,6 +1625,14 @@ class CuratedListService extends ChangeNotifier {
         return;
       }
       final dTag = curatedList.id;
+      if (dTag == defaultListId && _wasDefaultListDeleted()) {
+        Log.debug(
+          'Skipping deleted default list event from relay: ${event.id}',
+          name: 'CuratedListService',
+          category: LogCategory.system,
+        );
+        return;
+      }
 
       // Check if we already have this list locally
       final existingListIndex = _lists.indexWhere((list) => list.id == dTag);

@@ -2847,7 +2847,7 @@
   "listDescriptionLabel": "描述（可选）",
   "listPublicList": "公开列表",
   "listPublicListSubtitle": "其他人可以关注并查看此列表",
-  "listPrivateListSubtitle": "只有你能看到这个列表里的内容",
+  "listPrivateListSubtitle": "视频保持私密。列表名称仍会显示。",
   "listVisibilityPublic": "公开",
   "listVisibilityPrivate": "私密",
   "profileListsEmpty": "还没有列表。为想放在一起的循环建一个吧。",

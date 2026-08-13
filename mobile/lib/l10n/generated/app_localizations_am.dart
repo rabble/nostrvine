@@ -5050,8 +5050,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get listPublicListSubtitle => 'ሌሎች ሊከተሉት እና ይህንን ዝርዝር ማየት ይችላሉ።';
 
   @override
-  String get listPrivateListSubtitle =>
-      'በዚህ ዝርዝር ውስጥ ያለውን ማየት የምትችለው አንተ ብቻ ነህ';
+  String get listPrivateListSubtitle => 'ቪዲዮዎቹ የግል ሆነው ይቆያሉ። የዝርዝሩ ስም ይታያል';
 
   @override
   String get listVisibilityPublic => 'ይፋዊ';

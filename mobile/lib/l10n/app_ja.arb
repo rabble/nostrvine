@@ -2042,7 +2042,7 @@
     "listDescriptionLabel": "説明 (任意)",
     "listPublicList": "公開リスト",
     "listPublicListSubtitle": "みんながフォロー・閲覧できるよ",
-    "listPrivateListSubtitle": "このリストの中身を見られるのはあなただけ",
+    "listPrivateListSubtitle": "動画は非公開のまま。リスト名は表示されたままです。",
     "listVisibilityPublic": "公開",
     "listVisibilityPrivate": "非公開",
     "profileListsEmpty": "まだリストがないよ。まとめておきたいループでひとつ作ってみて。",

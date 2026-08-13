@@ -5213,7 +5213,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Само ти можеш да виждаш какво има в този списък';
+      'Видеата остават частни. Името на списъка остава видимо';
 
   @override
   String get listVisibilityPublic => 'Публичен';

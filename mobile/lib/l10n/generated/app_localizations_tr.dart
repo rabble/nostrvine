@@ -5133,7 +5133,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Bu listede ne olduğunu yalnızca sen görebilirsin';
+      'Videolar gizli kalır. Liste adı görünür kalır.';
 
   @override
   String get listVisibilityPublic => 'Herkese açık';

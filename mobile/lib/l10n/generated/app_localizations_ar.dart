@@ -5121,7 +5121,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'يمكن للآخرين متابعة هذه القائمة ورؤيتها';
 
   @override
-  String get listPrivateListSubtitle => 'أنت فقط تستطيع رؤية ما في هذه القائمة';
+  String get listPrivateListSubtitle =>
+      'تبقى مقاطع الفيديو خاصة. يبقى اسم القائمة ظاهرًا';
 
   @override
   String get listVisibilityPublic => 'عامة';

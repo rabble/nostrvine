@@ -2042,7 +2042,7 @@
     "listDescriptionLabel": "الوصف (اختياري)",
     "listPublicList": "قائمة عامة",
     "listPublicListSubtitle": "يمكن للآخرين متابعة هذه القائمة ورؤيتها",
-    "listPrivateListSubtitle": "أنت فقط تستطيع رؤية ما في هذه القائمة",
+    "listPrivateListSubtitle": "تبقى مقاطع الفيديو خاصة. يبقى اسم القائمة ظاهرًا",
     "listVisibilityPublic": "عامة",
     "listVisibilityPrivate": "خاصة",
     "profileListsEmpty": "لا توجد قوائم بعد. أنشئ واحدة للمقاطع التي تريد جمعها معًا.",

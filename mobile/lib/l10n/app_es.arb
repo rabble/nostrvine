@@ -2054,7 +2054,7 @@
     "listDescriptionLabel": "Descripción (opcional)",
     "listPublicList": "Lista pública",
     "listPublicListSubtitle": "Otros pueden seguir y ver esta lista",
-    "listPrivateListSubtitle": "Solo tú puedes ver lo que hay en esta lista",
+    "listPrivateListSubtitle": "Los videos quedan privados. El nombre de la lista sigue visible.",
     "listVisibilityPublic": "Pública",
     "listVisibilityPrivate": "Privada",
     "profileListsEmpty": "Todavía no tenés listas. Armá una con los loops que querés tener juntos.",

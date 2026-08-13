@@ -8981,7 +8981,7 @@ abstract class AppLocalizations {
   /// No description provided for @listPrivateListSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Only you can see what\'s in this list'**
+  /// **'Videos stay private. The list name stays visible.'**
   String get listPrivateListSubtitle;
 
   /// No description provided for @listVisibilityPublic.

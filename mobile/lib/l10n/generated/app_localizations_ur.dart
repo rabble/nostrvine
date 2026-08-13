@@ -5165,7 +5165,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'اس فہرست میں کیا ہے یہ صرف آپ دیکھ سکتے ہیں';
+      'ویڈیوز نجی رہتی ہیں۔ فہرست کا نام نظر آتا رہتا ہے۔';
 
   @override
   String get listVisibilityPublic => 'عوامی';

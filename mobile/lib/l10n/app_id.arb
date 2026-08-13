@@ -2049,7 +2049,7 @@
     "listDescriptionLabel": "Deskripsi (opsional)",
     "listPublicList": "Daftar Publik",
     "listPublicListSubtitle": "Orang lain bisa mengikuti dan melihat daftar ini",
-    "listPrivateListSubtitle": "Hanya kamu yang bisa melihat isi daftar ini",
+    "listPrivateListSubtitle": "Videonya tetap privat. Nama daftarnya tetap terlihat.",
     "listVisibilityPublic": "Publik",
     "listVisibilityPrivate": "Privat",
     "profileListsEmpty": "Belum ada daftar. Bikin satu untuk loop yang mau kamu simpan bareng.",

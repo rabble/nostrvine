@@ -5159,7 +5159,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listPublicListSubtitle => 'Others can follow and see this list';
 
   @override
-  String get listPrivateListSubtitle => 'Only you can see what\'s in this list';
+  String get listPrivateListSubtitle =>
+      'Videos stay private. The list name stays visible.';
 
   @override
   String get listVisibilityPublic => 'Public';

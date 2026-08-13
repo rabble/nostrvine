@@ -5229,7 +5229,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Ikaw lang ang makakakita ng laman ng listahang ito';
+      'Mananatiling pribado ang mga video. Nakikita pa rin ang pangalan ng listahan.';
 
   @override
   String get listVisibilityPublic => 'Public';

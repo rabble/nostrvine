@@ -2049,7 +2049,7 @@
     "listDescriptionLabel": "Açıklama (opsiyonel)",
     "listPublicList": "Herkese Açık Liste",
     "listPublicListSubtitle": "Diğerleri bu listeyi takip edebilir ve görebilir",
-    "listPrivateListSubtitle": "Bu listede ne olduğunu yalnızca sen görebilirsin",
+    "listPrivateListSubtitle": "Videolar gizli kalır. Liste adı görünür kalır.",
     "listVisibilityPublic": "Herkese açık",
     "listVisibilityPrivate": "Özel",
     "profileListsEmpty": "Henüz liste yok. Bir arada tutmak istediğin döngüler için bir tane oluştur.",

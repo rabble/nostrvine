@@ -1335,7 +1335,7 @@
     "listDescriptionLabel": "Description (opsyonal)",
     "listPublicList": "Public na Listahan",
     "listPublicListSubtitle": "Puwedeng i-follow at makita ng iba ang listahang ito",
-    "listPrivateListSubtitle": "Ikaw lang ang makakakita ng laman ng listahang ito",
+    "listPrivateListSubtitle": "Mananatiling pribado ang mga video. Nakikita pa rin ang pangalan ng listahan.",
     "listVisibilityPublic": "Public",
     "listVisibilityPrivate": "Pribado",
     "profileListsEmpty": "Wala pang list. Gumawa ng isa para sa mga loop na gusto mong pagsama-samahin.",
