@@ -2501,6 +2501,46 @@ void main() {
         },
       );
 
+      testWidgets('"Maybe later" closes the sheet and persists the dismissal', (
+        tester,
+      ) async {
+        // The ordinary, still-mounted path. Nothing asserted the outcome of
+        // this tap before #7297 reworked the callback.
+        final testProfile = createTestProfile(displayName: 'Test User');
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            hasExpiredSession: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final openSheets = tester
+            .widgetList(find.byType(VineBottomSheetPrompt))
+            .length;
+        expect(openSheets, greaterThan(0));
+
+        await tester.tap(find.text(l10n.profileMaybeLaterLabel).last);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(
+          prefs.getInt('$_dismissedDivineLoginBannerPrefix$testUserHex'),
+          isNotNull,
+        );
+        expect(
+          find.byType(VineBottomSheetPrompt),
+          findsNWidgets(openSheets - 1),
+        );
+      });
+
       testWidgets('dismisses via "Maybe later" after the header unmounts', (
         tester,
       ) async {

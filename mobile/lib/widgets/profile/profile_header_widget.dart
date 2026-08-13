@@ -515,8 +515,14 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       },
       secondaryButtonText: l10n.profileMaybeLaterLabel,
       onSecondaryPressed: () async {
-        await dismissDivineLoginBanner(prefs, userIdHex);
+        // Close first, persist after: the sheet stays tappable for as long as
+        // the write is in flight, and this is a sheet users are known to tap
+        // repeatedly (#7297), so a second tap would pop the screen underneath.
+        // Awaiting first buys nothing — `setInt` updates the in-memory
+        // SharedPreferences cache synchronously, so the dismissal is already
+        // visible to `isDivineLoginBannerDismissed` before the pop.
         navigator.pop();
+        await dismissDivineLoginBanner(prefs, userIdHex);
       },
     );
   }
