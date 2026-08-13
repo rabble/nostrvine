@@ -643,8 +643,8 @@ void main() {
     );
 
     testWidgets(
-      'closes the sheet without navigating when the host feed item is disposed '
-      'before Open Content Filters',
+      'records the current outcome: Open Content Filters does nothing once '
+      'the host feed item is disposed',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         final playbackStatusCubit = VideoPlaybackStatusCubit();
@@ -683,13 +683,19 @@ void main() {
         await tester.tap(find.text(_adultContentHiddenAction));
         await tester.pumpAndSettle();
 
-        // The sheet still closes; the follow-up push is skipped because the
-        // caller's context is gone, and neither step may throw.
+        // This records what the app does today; it is not a claim that the
+        // no-op is the right product behaviour. The CTA pops the sheet, then
+        // the follow-up push is skipped because the caller's context is
+        // defunct by then, so the viewer taps and nothing visible happens.
+        // Making the CTA survive host disposal is a separate change; whoever
+        // does it should flip the marker expectation below and treat that as
+        // expected, not as a regression.
         expect(tester.takeException(), isNull);
         expect(find.text(_adultContentHiddenTitle), findsNothing);
         expect(find.text(_contentFiltersRouteMarker), findsNothing);
-        // Both flags have to be back down: the sheet closed, and the skipped
-        // push must not have latched the page flag on its way out (#6239).
+        // Regardless of that, both flags have to be back down: the sheet
+        // closed, and the skipped push must not have latched the page flag
+        // on its way out (#6239).
         expect(
           container.read(overlayVisibilityProvider).hasVisibleOverlay,
           isFalse,
