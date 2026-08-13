@@ -278,17 +278,34 @@ void main() {
           find.bySemanticsLabel(en.libraryMoreActionsSemanticLabel),
           findsOneWidget,
         );
+        // The primary action is not one of them.
+        expect(find.text(en.librarySelect), findsOneWidget);
       });
 
-      testWidgets('keeps a readable title beside the overflow button', (
+      testWidgets('keeps a readable title while the row has room', (
         tester,
       ) async {
-        await tester.pumpWidget(buildWidget(width: narrowWidth));
+        await tester.pumpWidget(buildWidget(width: 420));
 
         final titleWidth = tester
             .getSize(find.text(en.profileMyLibraryLabel))
             .width;
         expect(titleWidth, greaterThanOrEqualTo(72));
+      });
+
+      testWidgets('lets the title yield once the row runs out of room', (
+        tester,
+      ) async {
+        // The collapse buys the title its room back, but the primary action
+        // outranks it: past that point the title is what shrinks.
+        await tester.pumpWidget(buildWidget(width: narrowWidth));
+
+        expect(find.text(en.librarySelect), findsOneWidget);
+        expect(find.text(en.profileMyLibraryLabel), findsOneWidget);
+        expect(
+          tester.getSize(find.text(en.profileMyLibraryLabel)).width,
+          greaterThan(0),
+        );
       });
 
       testWidgets('keeps the primary action when only part of the row fits', (
@@ -319,9 +336,11 @@ void main() {
         expect(find.text(en.librarySelectClipsSemanticLabel), findsNothing);
       });
 
-      testWidgets('collapses the Empty trash chip rather than overflow it', (
+      testWidgets('shrinks the lone Empty trash chip instead of hiding it', (
         tester,
       ) async {
+        // Nothing can collapse when the bin is the only mode on offer, so the
+        // chip narrows until it fits and ellipsizes its label.
         await tester.pumpWidget(
           buildWidget(
             width: narrowWidth,
@@ -331,8 +350,12 @@ void main() {
           ),
         );
 
-        expect(find.text(en.libraryTrashEmptyAllLabel), findsNothing);
-        expect(iconButton(DivineIconName.dotsThree), findsOneWidget);
+        expect(find.text(en.libraryTrashEmptyAllLabel), findsOneWidget);
+        expect(iconButton(DivineIconName.dotsThree), findsNothing);
+        expect(
+          tester.getSize(find.byType(DivineButton)).width,
+          lessThanOrEqualTo(narrowWidth),
+        );
       });
 
       testWidgets('does not overflow at any phone width', (tester) async {
@@ -357,6 +380,33 @@ void main() {
               tester.takeException(),
               isNull,
               reason: 'toolbar overflowed at ${width}dp',
+            );
+          }
+        }
+      });
+
+      testWidgets('keeps the primary action in the row at any width', (
+        tester,
+      ) async {
+        // Select is how a user reaches every per-clip action, so it never
+        // moves behind the overflow button — however narrow the row gets.
+        for (var width = 280.0; width <= 520.0; width += 5) {
+          for (final scaler in [
+            TextScaler.noScaling,
+            const TextScaler.linear(2),
+          ]) {
+            await tester.pumpWidget(
+              buildWidget(
+                width: width,
+                textScaler: scaler,
+                onManageActiveCategory: () {},
+              ),
+            );
+
+            expect(
+              find.text(en.librarySelect),
+              findsOneWidget,
+              reason: 'Select left the row at ${width}dp, scale $scaler',
             );
           }
         }
@@ -394,12 +444,13 @@ void main() {
         await tester.tap(iconButton(DivineIconName.dotsThree));
         await tester.pumpAndSettle();
 
-        expect(find.text(en.librarySelectClipsSemanticLabel), findsOneWidget);
         expect(find.text(en.libraryDisplayOptionsLabel), findsOneWidget);
         expect(
           find.text(en.libraryCategoryManageSemanticLabel),
           findsOneWidget,
         );
+        // Select stayed in the row, so it is not repeated here.
+        expect(find.text(en.librarySelectClipsSemanticLabel), findsNothing);
       });
 
       testWidgets('manage row triggers onManageActiveCategory', (tester) async {
@@ -435,53 +486,52 @@ void main() {
         expect(pressed, isTrue);
       });
 
-      testWidgets('Select row triggers onEnterSelectionMode', (tester) async {
+      testWidgets('move row triggers onMoveSelectedClips', (tester) async {
         var pressed = false;
         await tester.pumpWidget(
           buildWidget(
             width: narrowWidth,
-            onEnterSelectionMode: () => pressed = true,
+            textScaler: const TextScaler.linear(2),
+            isLibrarySelectionMode: true,
+            onMoveSelectedClips: () => pressed = true,
+            onDeleteSelectedClips: () {},
           ),
         );
 
         await tester.tap(iconButton(DivineIconName.dotsThree));
         await tester.pumpAndSettle();
-        await tester.tap(find.text(en.librarySelectClipsSemanticLabel));
+        await tester.tap(find.text(en.libraryMoveSelectedClipsTooltip));
         await tester.pumpAndSettle();
 
         expect(pressed, isTrue);
       });
 
-      testWidgets('move and delete rows trigger their callbacks', (
+      testWidgets('never collapses the destructive primary action', (
         tester,
       ) async {
-        var moved = false;
-        var deleted = false;
-        Widget build() => buildWidget(
-          width: narrowWidth,
-          textScaler: const TextScaler.linear(2),
-          isLibrarySelectionMode: true,
-          onMoveSelectedClips: () => moved = true,
-          onDeleteSelectedClips: () => deleted = true,
+        // Delete is the primary action while selecting, so it stays on the
+        // row and out of the menu even at the narrowest width.
+        await tester.pumpWidget(
+          buildWidget(
+            width: narrowWidth,
+            textScaler: const TextScaler.linear(2),
+            isLibrarySelectionMode: true,
+            onMoveSelectedClips: () {},
+            onDeleteSelectedClips: () {},
+          ),
         );
 
-        await tester.pumpWidget(build());
+        expect(iconButton(DivineIconName.trash), findsOneWidget);
+
         await tester.tap(iconButton(DivineIconName.dotsThree));
         await tester.pumpAndSettle();
-        await tester.tap(find.text(en.libraryMoveSelectedClipsTooltip));
-        await tester.pumpAndSettle();
 
-        await tester.pumpWidget(build());
-        await tester.tap(iconButton(DivineIconName.dotsThree));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(en.libraryDeleteSelectedClipsTooltip));
-        await tester.pumpAndSettle();
-
-        expect(moved, isTrue);
-        expect(deleted, isTrue);
+        expect(find.text(en.libraryDeleteSelectedClipsTooltip), findsNothing);
       });
 
-      testWidgets('Empty trash row triggers onEmptyTrash', (tester) async {
+      testWidgets('a shrunken Empty trash chip still triggers onEmptyTrash', (
+        tester,
+      ) async {
         var pressed = false;
         await tester.pumpWidget(
           buildWidget(
@@ -492,11 +542,7 @@ void main() {
           ),
         );
 
-        await tester.tap(iconButton(DivineIconName.dotsThree));
-        await tester.pumpAndSettle();
         await tester.tap(find.text(en.libraryTrashEmptyAllLabel));
-        await tester.pumpAndSettle();
-
         expect(pressed, isTrue);
       });
     });

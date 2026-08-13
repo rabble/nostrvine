@@ -206,6 +206,8 @@ class LibraryToolbar extends StatelessWidget {
 
   /// How many actions, counted from the front, do not fit and move into the
   /// overflow menu.
+  ///
+  /// Never all of them: the primary action stays in the row at every width.
   int _overflowCount(
     BuildContext context,
     List<_ClipAction> actions,
@@ -236,8 +238,38 @@ class LibraryToolbar extends StatelessWidget {
       if (width + _spacing * (children - 1) <= maxWidth) return overflow;
     }
 
-    // Everything collapsed: leading, title and the overflow button always fit.
-    return actions.length;
+    // Nothing fits: keep the primary action anyway. It is capped instead —
+    // see [_primaryMaxWidth].
+    return actions.length - 1;
+  }
+
+  /// Width left for the primary action once every other row child has taken
+  /// its own.
+  ///
+  /// The primary action never moves into the menu, so in the tightest rows it
+  /// is the one child that has to give. Capping it lets its label ellipsize
+  /// rather than push the row past the screen. The title is not reserved for
+  /// here on purpose: at that width the title yields first.
+  double _primaryMaxWidth(
+    BuildContext context,
+    List<_ClipAction> visible, {
+    required bool hasOverflow,
+    required double maxWidth,
+  }) {
+    if (visible.isEmpty) return 0;
+
+    // Leading button, title, and the primary action itself.
+    var width = _iconButtonExtent(context);
+    var children = 3;
+    if (hasOverflow) {
+      width += _iconButtonExtent(context);
+      children++;
+    }
+    for (final action in visible.take(visible.length - 1)) {
+      width += _actionExtent(context, action);
+      children++;
+    }
+    return math.max(0, maxWidth - width - _spacing * (children - 1));
   }
 
   Future<void> _openOverflowMenu(
@@ -274,6 +306,13 @@ class LibraryToolbar extends StatelessWidget {
             context,
             actions,
             constraints.maxWidth,
+          );
+          final visible = actions.sublist(overflowCount);
+          final primaryMaxWidth = _primaryMaxWidth(
+            context,
+            visible,
+            hasOverflow: overflowCount > 0,
+            maxWidth: constraints.maxWidth,
           );
           return Row(
             spacing: _spacing,
@@ -313,8 +352,14 @@ class LibraryToolbar extends StatelessWidget {
                     actions.sublist(0, overflowCount),
                   ),
                 ),
-              for (final action in actions.sublist(overflowCount))
-                _ClipActionButton(action: action),
+              for (final (index, action) in visible.indexed)
+                if (index == visible.length - 1)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: primaryMaxWidth),
+                    child: _ClipActionButton(action: action),
+                  )
+                else
+                  _ClipActionButton(action: action),
             ],
           );
         },
