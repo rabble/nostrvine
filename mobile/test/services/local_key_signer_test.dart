@@ -38,13 +38,10 @@ void main() {
         verify(() => mockKeyContainer.publicKeyHex).called(1);
       });
 
-      test('returns empty string when container is null', () async {
-        final signer = LocalKeySigner(null);
-
-        final publicKey = await signer.getPublicKey();
-
-        expect(publicKey, isEmpty);
-      });
+      // The keyless case is no longer representable here — the container is
+      // non-nullable. `UnauthenticatedSigner` owns that state now, and its
+      // empty-pubkey contract is pinned in
+      // packages/nostr_sdk/test/signer/unauthenticated_signer_test.dart.
     });
 
     group('signEvent', () {
