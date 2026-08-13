@@ -3971,10 +3971,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteVideo => 'حذف الفيديو';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      'أزل هذا الفيديو من Divine. قد يظل يظهر في عملاء Nostr آخرين.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'الفيديو في هذه القوائم:';
 
   @override

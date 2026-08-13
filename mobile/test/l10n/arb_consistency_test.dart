@@ -51,7 +51,6 @@ void main() {
       const keys = [
         'shareMenuDeleteConfirmation',
         'videoGridDeleteVideoSubtitle',
-        'shareMenuDeleteVideoSubtitle',
       ];
 
       for (final file in arbFiles) {

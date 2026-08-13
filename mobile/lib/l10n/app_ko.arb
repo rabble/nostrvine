@@ -962,7 +962,6 @@
     "shareMenuEditVideo": "영상 편집",
     "shareMenuEditVideoSubtitle": "제목, 설명, 해시태그 수정",
     "shareMenuDeleteVideo": "영상 삭제",
-    "shareMenuDeleteVideoSubtitle": "이 영상을 Divine에서 삭제해요. 다른 Nostr 클라이언트에는 계속 표시될 수 있어요.",
     "shareMenuVideoInTheseLists": "영상이 다음 리스트에 있어요:",
     "shareMenuVideoCount": "영상 {count}개",
     "shareMenuClose": "닫기",

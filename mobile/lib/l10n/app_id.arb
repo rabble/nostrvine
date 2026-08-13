@@ -1568,7 +1568,6 @@
     "shareMenuEditVideo": "Ubah Video",
     "shareMenuEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "shareMenuDeleteVideo": "Hapus Video",
-    "shareMenuDeleteVideoSubtitle": "Hapus video ini dari Divine. Video ini mungkin masih muncul di klien Nostr lain.",
     "shareMenuVideoInTheseLists": "Video ada di daftar ini:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {

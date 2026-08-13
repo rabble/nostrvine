@@ -1561,7 +1561,6 @@
     "shareMenuEditVideo": "تعديل الفيديو",
     "shareMenuEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "shareMenuDeleteVideo": "حذف الفيديو",
-    "shareMenuDeleteVideoSubtitle": "أزل هذا الفيديو من Divine. قد يظل يظهر في عملاء Nostr آخرين.",
     "shareMenuVideoInTheseLists": "الفيديو في هذه القوائم:",
     "shareMenuVideoCount": "{count} فيديو",
     "@shareMenuVideoCount": {

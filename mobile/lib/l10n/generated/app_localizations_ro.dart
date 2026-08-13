@@ -4118,10 +4118,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Șterge videoclipul';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      'Elimină acest videoclip din Divine. Poate apărea în continuare în alți clienți Nostr.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Videoclipul e în aceste liste:';
 
   @override

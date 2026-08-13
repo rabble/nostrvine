@@ -2397,7 +2397,6 @@
   "shareMenuEditVideo": "Edit Video",
   "shareMenuEditVideoSubtitle": "Update title, description, and hashtags",
   "shareMenuDeleteVideo": "Delete Video",
-  "shareMenuDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
   "shareMenuVideoInTheseLists": "Video is in these lists:",
   "shareMenuVideoCount": "{count} videos",
   "@shareMenuVideoCount": {

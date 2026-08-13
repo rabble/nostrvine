@@ -1568,7 +1568,6 @@
     "shareMenuEditVideo": "Videoyu Düzenle",
     "shareMenuEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "shareMenuDeleteVideo": "Videoyu Sil",
-    "shareMenuDeleteVideoSubtitle": "Bu videoyu Divine'dan kaldır. Diğer Nostr istemcilerinde hâlâ görünebilir.",
     "shareMenuVideoInTheseLists": "Video şu listelerde:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {

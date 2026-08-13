@@ -6959,12 +6959,6 @@ abstract class AppLocalizations {
   /// **'Delete Video'**
   String get shareMenuDeleteVideo;
 
-  /// No description provided for @shareMenuDeleteVideoSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
-  String get shareMenuDeleteVideoSubtitle;
-
   /// No description provided for @shareMenuVideoInTheseLists.
   ///
   /// In en, this message translates to:

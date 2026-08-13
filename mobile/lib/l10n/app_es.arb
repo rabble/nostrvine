@@ -1575,7 +1575,6 @@
     "shareMenuEditVideo": "Editar video",
     "shareMenuEditVideoSubtitle": "Actualizá título, descripción y hashtags",
     "shareMenuDeleteVideo": "Eliminar video",
-    "shareMenuDeleteVideoSubtitle": "Sacá este video de Divine. Es posible que siga apareciendo en otros clientes Nostr.",
     "shareMenuVideoInTheseLists": "El video está en estas listas:",
     "shareMenuVideoCount": "{count} videos",
     "@shareMenuVideoCount": {

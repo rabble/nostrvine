@@ -3969,10 +3969,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Hapus Video';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      'Hapus video ini dari Divine. Video ini mungkin masih muncul di klien Nostr lain.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video ada di daftar ini:';
 
   @override

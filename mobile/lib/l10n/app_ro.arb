@@ -1571,7 +1571,6 @@
     "shareMenuEditVideo": "Editează videoclipul",
     "shareMenuEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "shareMenuDeleteVideo": "Șterge videoclipul",
-    "shareMenuDeleteVideoSubtitle": "Elimină acest videoclip din Divine. Poate apărea în continuare în alți clienți Nostr.",
     "shareMenuVideoInTheseLists": "Videoclipul e în aceste liste:",
     "shareMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
     "@shareMenuVideoCount": {

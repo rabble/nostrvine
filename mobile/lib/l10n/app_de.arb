@@ -1571,7 +1571,6 @@
     "shareMenuEditVideo": "Video bearbeiten",
     "shareMenuEditVideoSubtitle": "Titel, Beschreibung und Hashtags aktualisieren",
     "shareMenuDeleteVideo": "Video löschen",
-    "shareMenuDeleteVideoSubtitle": "Dieses Video aus Divine entfernen. Es kann weiterhin in anderen Nostr-Clients erscheinen.",
     "shareMenuVideoInTheseLists": "Video ist in diesen Listen:",
     "shareMenuVideoCount": "{count} Videos",
     "@shareMenuVideoCount": {

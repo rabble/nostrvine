@@ -1932,7 +1932,6 @@
     "shareMenuEditVideo": "ቪዲዮ አርትዕ",
     "shareMenuEditVideoSubtitle": "ርዕስ፣ መግለጫ እና ሃሽታጎችን ያዘምኑ",
     "shareMenuDeleteVideo": "ቪዲዮ ሰርዝ",
-    "shareMenuDeleteVideoSubtitle": "ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።",
     "shareMenuVideoInTheseLists": "ቪዲዮው በእነዚህ ዝርዝሮች ውስጥ ነው፡-",
     "shareMenuVideoCount": "{count} ቪዲዮዎች",
     "@shareMenuVideoCount": {

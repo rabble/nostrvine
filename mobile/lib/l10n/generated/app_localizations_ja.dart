@@ -3792,10 +3792,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteVideo => '動画を削除';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      'この動画をDivineから削除します。他のNostrクライアントには、まだ表示される場合があります。';
-
-  @override
   String get shareMenuVideoInTheseLists => 'この動画が入ってるリスト:';
 
   @override

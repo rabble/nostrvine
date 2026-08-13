@@ -1037,7 +1037,6 @@
     "shareMenuEditVideo": "I-edit ang Video",
     "shareMenuEditVideoSubtitle": "I-update ang title, description, at hashtags",
     "shareMenuDeleteVideo": "Burahin ang Video",
-    "shareMenuDeleteVideoSubtitle": "Alisin ang video na ito sa Divine. Maaari pa rin itong lumitaw sa ibang Nostr clients.",
     "shareMenuVideoInTheseLists": "Nasa mga listahang ito ang video:",
     "shareMenuVideoCount": "{count} mga video",
     "shareMenuClose": "Isara",

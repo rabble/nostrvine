@@ -1571,7 +1571,6 @@
     "shareMenuEditVideo": "Redigera video",
     "shareMenuEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "shareMenuDeleteVideo": "Ta bort video",
-    "shareMenuDeleteVideoSubtitle": "Ta bort den här videon från Divine. Den kan fortfarande visas i andra Nostr-klienter.",
     "shareMenuVideoInTheseLists": "Videon finns i de här listorna:",
     "shareMenuVideoCount": "{count} videor",
     "@shareMenuVideoCount": {

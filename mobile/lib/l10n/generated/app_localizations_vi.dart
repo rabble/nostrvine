@@ -4009,10 +4009,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Xóa video';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      'Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video nằm trong các danh sách này:';
 
   @override

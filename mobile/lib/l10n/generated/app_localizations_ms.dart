@@ -4038,10 +4038,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Padam Video';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      'Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video berada dalam senarai ini:';
 
   @override
