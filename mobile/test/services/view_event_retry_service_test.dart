@@ -143,7 +143,7 @@ void main() {
       expect(captured[2], 2);
       expect(captured[3], ViewTrafficSource.home);
       expect(captured[4], 'following');
-      expect(captured[5], 1);
+      expect(captured[5], closeTo(0.416, 0.01));
     });
 
     test(
@@ -372,7 +372,7 @@ void main() {
         expect(captured[2], 2);
         expect(captured[3], ViewTrafficSource.home);
         expect(captured[4], 'following');
-        expect(captured[5], 1);
+        expect(captured[5], closeTo(0.416, 0.01));
       },
     );
 

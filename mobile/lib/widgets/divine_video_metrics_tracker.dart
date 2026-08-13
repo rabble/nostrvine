@@ -218,11 +218,11 @@ class _DivineVideoMetricsTrackerState
 
     if (!_hasSentEndEvent &&
         _hasTrackedView &&
-        activeDuration > Duration.zero) {
-      // View = playback start per spec: every session that started tracking
-      // emits one view. N=0 loops (scroll-past, still-buffering, quick
-      // swipe) is a valid view — never gate on watch duration, but zero
-      // activeDuration (instant mount/unmount) still emits nothing.
+        _totalWatchDuration > Duration.zero) {
+      // View = playback start: every session needs real playback
+      // (not just mount time). Gating on _totalWatchDuration drops the
+      // never-played case (isPlaying never true) while still counting
+      // sub-second flings (400ms of real playback is a view).
       try {
         _analyticsService.trackDetailedVideoViewWithUser(
           video,

@@ -351,7 +351,7 @@ void main() {
       await controller.close();
     });
 
-    testWidgets('active video that never plays still records seen', (
+    testWidgets('active video that never plays records seen only (no view)', (
       tester,
     ) async {
       final isActive = ValueNotifier(true);
@@ -374,7 +374,7 @@ void main() {
       isActive.value = false;
       await tester.pump();
 
-      expect(_viewEndEvents(analyticsService), hasLength(1));
+      expect(_viewEndEvents(analyticsService), isEmpty);
       expect(seenVideosService.records, hasLength(1));
       expect(seenVideosService.records.single.videoId, equals('video_id'));
       expect(seenVideosService.records.single.watchDuration, Duration.zero);

@@ -113,13 +113,23 @@ class ViewEventRetryService {
         if (!marked) continue;
 
         try {
+          // Derive fractional loops from watch/total already on the row
+          // instead of the rounded IntColumn, so 0.75 does not become 1.0
+          // and the queue vs direct paths agree.
+          double? fractionalLoops;
+          if (row.totalDurationMs != null && row.totalDurationMs! > 0) {
+            fractionalLoops =
+                row.watchDurationMs / row.totalDurationMs!.toDouble();
+          } else {
+            fractionalLoops = row.loopCount?.toDouble();
+          }
           final success = await _viewEventPublisher.publishViewEvent(
             video: _toVideoEvent(row, addressableDTag: addressableDTag),
             startSeconds: 0,
             endSeconds: row.watchDurationMs ~/ 1000,
             source: viewTrafficSourceFromTag(row.trafficSource),
             sourceDetail: row.sourceDetail,
-            loopCount: row.loopCount?.toDouble(),
+            loopCount: fractionalLoops,
           );
           if (success) {
             await _dao.deleteById(row.id);
