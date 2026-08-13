@@ -242,7 +242,7 @@ where size matters. Loops gains most in *relative* terms, because it is the
 metric that has been missing 42% of its audience entirely — but it starts from
 ~0.65x views and does not overtake it.
 
-### The display floor is set far too high
+### The display floor, and why most cards show a date
 
 `publicLoopCountFloor` is 1000. Measured against the catalogue:
 
@@ -252,22 +252,29 @@ metric that has been missing 42% of its audience entirely — but it starts from
 | 333 (floor reached at ×3) | 2,441 | 0.11% |
 | 100 (floor reached at ×10) | 12,571 | 0.57% |
 
-So the public count is effectively **never** shown — 9,996 videos in 10,000
-render a date instead. And correcting the metrics does not fix that: an
-order-of-magnitude improvement moves it from 0.04% to 0.57%, a 13× increase in
-how many cards show a number and still under one percent of the catalogue.
+So the public count is effectively never shown — 9,996 videos in 10,000 render
+a date instead. Correcting the metrics does not change that: an
+order-of-magnitude improvement moves it from 0.04% to 0.57%.
 
-An earlier draft of this document claimed the correction would move "a large
-share of the catalogue" above the floor. That is false, and the real conclusion
-is the opposite: **1000 is mis-set by roughly two orders of magnitude** for
-Divine's actual volumes, and no plausible metrics correction reaches it.
+**This is intended, and it is not a defect.** Two reasons it holds:
 
-This matters because of what the floor was for. The video-card spec suppressed
-small counts to stop them discouraging viewers, citing that crossing ~100 views
-roughly doubles new-creator retention. At a floor of 1000, essentially no
-creator ever sees the encouraging version. Re-tuning the constant is a
-one-line change and is likely worth more than any measurement work in this
-document.
+- **Creator retention does not run through the public count.** The video-card
+  spec's `isOwnVideo` case shows a creator their own number *always, however
+  small*. The retention effect it cites — crossing ~100 views roughly doubling
+  the chance a new creator keeps posting — operates on the creator's own view,
+  which has no floor. The public floor never gated it.
+- **A date is the better default for this catalogue.** With ~2.2M archived
+  vines from 2013–16, "Apr 22, 2014" reframes a clip as an artifact in a way a
+  view count does not. Suppression is not a fallback here; it is often the
+  stronger presentation.
+
+Two earlier drafts of this document got this wrong in opposite directions:
+first claiming the correction would lift "a large share of the catalogue" above
+the floor, then claiming the floor was mis-set by two orders of magnitude and
+was starving creators of encouragement. Neither holds. The floor governs public
+display only, the constant is deliberately one line, and re-tuning it is a
+product call to make on its own evidence rather than a consequence of this
+work.
 
 ## Testing
 
