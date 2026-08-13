@@ -11,8 +11,11 @@
 # Only linked worktrees are cleaned. The main checkout keeps its build cache
 # because it is the one you return to most; worktrees are what pile up.
 #
-# Referenced from .claude/settings.local.json (personal). Move the hook entry
-# to .claude/settings.json to make it team-wide.
+# Registered in .claude/settings.json (team-wide), not settings.local.json.
+# That file is gitignored, so it exists only in the main checkout — and this
+# hook deliberately skips the main checkout. Registering it personally means
+# it is present only where it refuses to run, and absent from every linked
+# worktree, which is the only place it does anything.
 set -euo pipefail
 
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
