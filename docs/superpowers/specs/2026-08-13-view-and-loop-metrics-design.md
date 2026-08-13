@@ -244,10 +244,17 @@ Stacked against today's reported numbers:
 
 | Change | Effect on views | Effect on loops |
 |---|---|---|
-| #7210 view-event fix (merged) | ×1.7 recovery on the signed-in share | ×1.7 recovery |
+| #7210 view-event fix (merged) | ×2.6 ceiling, actual unmeasured | same ceiling |
 | View = playback start | ×2–3 on the signed-in share | — |
 | Anonymous counted | already counted (42% of views) | **new — CDN deliveries begin contributing** |
 | Loops as signature metric | — | stays ~0.65x views; not a multiplier |
+
+The #7210 ceiling is the full reporter population coming back: daily mobile
+view reporters fell 676 → 263 over the window, so restoring all of them is
+×2.6. The realised figure is lower and not yet measured, because that fix only
+restores queued rows carrying a real `d` tag — rows where `videoVineId ==
+videoId` still drop as `missingAddressableDTag`. Treat ×2.6 as a bound, not a
+forecast, and read the actual number off the post-rollout baseline.
 
 Views grow mostly from the redefinition, since anonymous views already flow into
 `total_views`. Loops grow mostly from anonymous, since loops are currently
