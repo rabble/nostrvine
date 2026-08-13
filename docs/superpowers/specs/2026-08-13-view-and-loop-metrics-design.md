@@ -228,7 +228,7 @@ Two limits, stated so nobody later mistakes them for defects:
 - **Anonymous loop depth is assumed, not measured.** One delivery serves many
   playthroughs, so an anonymous viewer who loops a video twenty times reports
   one loop. Anonymous engagement depth is therefore systematically conservative
-  against signed-in depth. This understates the hero metric rather than
+  against signed-in depth. This understates the loop count rather than
   inflating it, which is the safe direction to be wrong in.
 - **CDN counts are noisy.** Observed daily totals swing between 21k and 110k,
   driven by cache behaviour and range requests rather than by audience. Ranking
