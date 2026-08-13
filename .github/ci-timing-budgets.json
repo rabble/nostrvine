@@ -23,6 +23,7 @@
   ],
   "jobs": {
     "Detect App CI Scope": { "warn": 40, "fail": 90 },
+    "Codemagic Variable Groups": { "warn": 30, "fail": 90 },
     "Tests": { "warn": 600, "fail": 780 },
     "Generated Files": { "warn": 260, "fail": 420 },
     "Analyze": { "warn": 150, "fail": 300 },
