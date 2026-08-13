@@ -132,6 +132,7 @@ import 'package:openvine/startup/database_bootstrap_failure_app.dart';
 import 'package:openvine/startup/database_corruption_gate.dart';
 import 'package:openvine/startup/startup_splash_release_controller.dart';
 import 'package:openvine/utils/app_uptime.dart';
+import 'package:openvine/utils/expected_network_error.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/platform_support.dart';
@@ -1650,22 +1651,46 @@ Future<void> _initializeZendeskSupport() async {
   );
 }
 
+/// Sink [handleUncaughtZoneError] files a report to.
+typedef ZoneErrorRecorder =
+    Future<void> Function(Object error, StackTrace stack, {String? reason});
+
+/// Files a report for an error that escaped every `try`/`catch` in the app
+/// zone.
+///
+/// Expected network/IO failures are dropped instead of reported, for the
+/// reason spelled out on [isExpectedNetworkFailure]: a relay handshake that
+/// fails because the device has no DNS is a state, not a defect, and the
+/// relay's own reconnect path already handles it. Left ungated it dominated
+/// the iOS non-fatal dashboard (#7290).
+///
+/// [recordError] defaults to the app-wide crash reporter; it is injectable so
+/// tests can observe what does and does not get filed.
+@visibleForTesting
+Future<void> handleUncaughtZoneError(
+  Object error,
+  StackTrace stack, {
+  ZoneErrorRecorder? recordError,
+}) async {
+  if (isExpectedNetworkFailure(error)) {
+    Log.warning(
+      'Expected network failure (not reported): $error',
+      name: 'Main',
+    );
+    return;
+  }
+
+  // CrashReportingService.recordError self-guards (no-ops if uninitialized)
+  // and logs its own failure internally, so no outer catch is needed here.
+  final record = recordError ?? CrashReportingService.instance.recordError;
+  await record(error, stack, reason: 'runZonedGuarded');
+}
+
 void main() {
   // Capture any uncaught Dart errors (foreground or background zones)
-  runZonedGuarded(
-    () async {
-      await _startOpenVineApp();
-    },
-    (error, stack) async {
-      // CrashReportingService.recordError self-guards (no-ops if uninitialized)
-      // and logs its own failure internally, so no outer catch is needed here.
-      await CrashReportingService.instance.recordError(
-        error,
-        stack,
-        reason: 'runZonedGuarded',
-      );
-    },
-  );
+  runZonedGuarded(() async {
+    await _startOpenVineApp();
+  }, handleUncaughtZoneError);
 }
 
 class DivineApp extends ConsumerStatefulWidget {
