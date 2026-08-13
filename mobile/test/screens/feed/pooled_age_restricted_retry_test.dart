@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -586,6 +587,100 @@ void main() {
     );
 
     testWidgets(
+      'dismisses the blocked-by-preference sheet after the host feed item is '
+      'disposed',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        final hostVisible = ValueNotifier(true);
+        addTearDown(playbackStatusCubit.close);
+        addTearDown(hostVisible.dispose);
+
+        when(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            ageVerificationService: _ageService(verified: true),
+            hostVisible: hostVisible,
+            retryPlayback: (_) => _retryRecovered,
+          ),
+        );
+
+        await tester.tap(find.text('Verify'));
+        await tester.pumpAndSettle();
+        expect(find.text(_adultContentHiddenTitle), findsOneWidget);
+
+        // The feed item that opened the sheet scrolls out of the pool and is
+        // disposed while the sheet is still up (#7291).
+        hostVisible.value = false;
+        await tester.pump();
+
+        await tester.tap(find.text(_notNowText));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text(_adultContentHiddenTitle), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'closes the sheet without navigating when the host feed item is disposed '
+      'before Open Content Filters',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        final hostVisible = ValueNotifier(true);
+        addTearDown(playbackStatusCubit.close);
+        addTearDown(hostVisible.dispose);
+
+        when(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            ageVerificationService: _ageService(verified: true),
+            hostVisible: hostVisible,
+            retryPlayback: (_) => _retryRecovered,
+          ),
+        );
+
+        await tester.tap(find.text('Verify'));
+        await tester.pumpAndSettle();
+
+        hostVisible.value = false;
+        await tester.pump();
+
+        await tester.tap(find.text(_adultContentHiddenAction));
+        await tester.pumpAndSettle();
+
+        // The sheet still closes; the follow-up push is skipped because the
+        // caller's context is gone, and neither step may throw.
+        expect(tester.takeException(), isNull);
+        expect(find.text(_adultContentHiddenTitle), findsNothing);
+        expect(find.text(_contentFiltersRouteMarker), findsNothing);
+      },
+    );
+
+    testWidgets(
       'surfaces the connectivity message when the remote signer is unreachable',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
@@ -799,6 +894,7 @@ class _RetryHarness extends StatefulWidget {
     this.video,
     this.ageVerificationService,
     this.onContainerReady,
+    this.hostVisible,
   });
 
   final MediaAuthInterceptor mediaAuthInterceptor;
@@ -807,6 +903,10 @@ class _RetryHarness extends StatefulWidget {
   final VideoEvent? video;
   final AgeVerificationService? ageVerificationService;
   final ValueChanged<ProviderContainer>? onContainerReady;
+
+  /// Drives whether the widget that calls the retry is in the tree, so a test
+  /// can dispose the caller's context the way the pooled feed does.
+  final ValueListenable<bool>? hostVisible;
 
   @override
   State<_RetryHarness> createState() => _RetryHarnessState();
@@ -820,18 +920,24 @@ class _RetryHarnessState extends State<_RetryHarness> {
       GoRoute(
         path: '/',
         builder: (_, _) => Scaffold(
-          body: Consumer(
-            builder: (context, ref, _) {
-              return TextButton(
-                onPressed: () => retryAgeRestrictedPooledVideo(
-                  context: context,
-                  ref: ref,
-                  video: widget.video ?? _video,
-                  index: 0,
-                  resolveSha256: _resolveSha256,
-                  retryPlayback: widget.retryPlayback,
-                ),
-                child: const Text('Verify'),
+          body: ValueListenableBuilder<bool>(
+            valueListenable: widget.hostVisible ?? _hostAlwaysVisible,
+            builder: (_, hostVisible, _) {
+              if (!hostVisible) return const SizedBox.shrink();
+              return Consumer(
+                builder: (context, ref, _) {
+                  return TextButton(
+                    onPressed: () => retryAgeRestrictedPooledVideo(
+                      context: context,
+                      ref: ref,
+                      video: widget.video ?? _video,
+                      index: 0,
+                      resolveSha256: _resolveSha256,
+                      retryPlayback: widget.retryPlayback,
+                    ),
+                    child: const Text('Verify'),
+                  );
+                },
               );
             },
           ),
@@ -926,6 +1032,9 @@ class _AutoRetryHarness extends StatelessWidget {
     );
   }
 }
+
+/// Default for harnesses that never remove the retry caller from the tree.
+final ValueNotifier<bool> _hostAlwaysVisible = ValueNotifier(true);
 
 final _video = VideoEvent(
   id: _videoId,

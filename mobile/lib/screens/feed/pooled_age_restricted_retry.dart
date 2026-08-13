@@ -235,16 +235,21 @@ Future<void> _promptAdultContentHidden(BuildContext context) async {
   final openFilters = await context.showVideoPausingVineBottomSheet<bool>(
     scrollable: false,
     showHeaderDivider: false,
-    body: VineBottomSheetPrompt(
-      sticker: DivineStickerName.trafficCone,
-      title: context.l10n.videoErrorAdultContentHiddenTitle,
-      subtitle: context.l10n.videoErrorAdultContentHiddenBody,
-      primaryButtonText: context.l10n.videoErrorAdultContentHiddenAction,
-      onPrimaryPressed: () =>
-          Navigator.of(context, rootNavigator: true).pop(true),
-      secondaryButtonText: context.l10n.commonNotNow,
-      onSecondaryPressed: () =>
-          Navigator.of(context, rootNavigator: true).pop(false),
+    // The sheet outlives the feed item that opened it — the pooled feed
+    // disposes items that scroll out of the pool — so resolving anything
+    // through the caller's context on tap crashed on a defunct element
+    // (#7291). Everything inside the sheet reads from the sheet's own
+    // subtree, which stays mounted for as long as the sheet is up.
+    body: Builder(
+      builder: (sheetContext) => VineBottomSheetPrompt(
+        sticker: DivineStickerName.trafficCone,
+        title: sheetContext.l10n.videoErrorAdultContentHiddenTitle,
+        subtitle: sheetContext.l10n.videoErrorAdultContentHiddenBody,
+        primaryButtonText: sheetContext.l10n.videoErrorAdultContentHiddenAction,
+        onPrimaryPressed: () => Navigator.of(sheetContext).pop(true),
+        secondaryButtonText: sheetContext.l10n.commonNotNow,
+        onSecondaryPressed: () => Navigator.of(sheetContext).pop(false),
+      ),
     ),
   );
   if (openFilters != true || !context.mounted) return;
