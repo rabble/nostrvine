@@ -51,7 +51,7 @@ void main() {
       await db.close();
     });
 
-    test('migrates v2 profile statistic follower timestamps to v3', () async {
+    test('migrates v2 profile statistic follower timestamps', () async {
       final schema = await verifier.schemaAt(2);
       final cachedAt =
           DateTime.now()
@@ -134,36 +134,37 @@ void main() {
         createNew: v4.DatabaseAtV4.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) {
-          batch.insert(
-            oldDb.pendingViewEvents,
-            v3.PendingViewEventsCompanion.insert(
-              id: 'queued-with-d-tag',
-              videoId: 'b' * 64,
-              videoPubkey: 'c' * 64,
-              videoVineId: const Value('the-d-tag'),
-              userPubkey: 'd' * 64,
-              watchDurationMs: 4200,
-              trafficSource: 'feed',
-              status: 'pending',
-              createdAt:
-                  DateTime.utc(2026, 8, 12).millisecondsSinceEpoch ~/ 1000,
-            ),
-          );
-          batch.insert(
-            oldDb.pendingViewEvents,
-            v3.PendingViewEventsCompanion.insert(
-              id: 'queued-event-id-fallback',
-              videoId: 'e' * 64,
-              videoPubkey: 'c' * 64,
-              videoVineId: Value('e' * 64),
-              userPubkey: 'd' * 64,
-              watchDurationMs: 2500,
-              trafficSource: 'feed',
-              status: 'pending',
-              createdAt:
-                  DateTime.utc(2026, 8, 12).millisecondsSinceEpoch ~/ 1000,
-            ),
-          );
+          batch
+            ..insert(
+              oldDb.pendingViewEvents,
+              v3.PendingViewEventsCompanion.insert(
+                id: 'queued-with-d-tag',
+                videoId: 'b' * 64,
+                videoPubkey: 'c' * 64,
+                videoVineId: const Value('the-d-tag'),
+                userPubkey: 'd' * 64,
+                watchDurationMs: 4200,
+                trafficSource: 'feed',
+                status: 'pending',
+                createdAt:
+                    DateTime.utc(2026, 8, 12).millisecondsSinceEpoch ~/ 1000,
+              ),
+            )
+            ..insert(
+              oldDb.pendingViewEvents,
+              v3.PendingViewEventsCompanion.insert(
+                id: 'queued-event-id-fallback',
+                videoId: 'e' * 64,
+                videoPubkey: 'c' * 64,
+                videoVineId: Value('e' * 64),
+                userPubkey: 'd' * 64,
+                watchDurationMs: 2500,
+                trafficSource: 'feed',
+                status: 'pending',
+                createdAt:
+                    DateTime.utc(2026, 8, 12).millisecondsSinceEpoch ~/ 1000,
+              ),
+            );
         },
         validateItems: (newDb) async {
           final rows = await newDb.select(newDb.pendingViewEvents).get();
@@ -174,5 +175,44 @@ void main() {
         },
       );
     });
+
+    test(
+      'v4 restores the follower column on an original-v3 database',
+      () async {
+        final schema = await verifier.schemaAt(3);
+        // #6911 redefined v3 in place, so a database cut at the original v3
+        // reports user_version 3 without the follower column — and hadUpgrade
+        // suppresses the beforeOpen repair during the 3 -> 4 open.
+        schema.rawDatabase.execute(
+          'ALTER TABLE profile_statistics '
+          'DROP COLUMN follower_counts_updated_at',
+        );
+        final cachedAt =
+            DateTime.now()
+                .subtract(const Duration(hours: 10))
+                .millisecondsSinceEpoch ~/
+            1000;
+        schema.rawDatabase.execute(
+          'INSERT INTO profile_statistics '
+          '(pubkey, video_count, follower_count, following_count, total_views, '
+          'total_likes, cached_at) '
+          'VALUES (?, NULL, ?, ?, NULL, NULL, ?)',
+          ['healme', 12, 7, cachedAt],
+        );
+
+        final db = AppDatabase(schema.newConnection());
+        await verifier.migrateAndValidate(db, 4);
+
+        final row = await db
+            .customSelect(
+              'SELECT follower_counts_updated_at FROM profile_statistics '
+              'WHERE pubkey = ?',
+              variables: [Variable.withString('healme')],
+            )
+            .getSingle();
+        expect(row.read<int?>('follower_counts_updated_at'), cachedAt);
+        await db.close();
+      },
+    );
   });
 }

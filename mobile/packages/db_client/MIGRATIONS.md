@@ -4,7 +4,7 @@ This document describes how to manage database migrations for the `db_client` pa
 
 ## Current Schema Version
 
-**Version: 3** (see `app_database.dart`).
+**Version: 4** (see `app_database.dart`).
 
 Version 2 is the legacy-normalization baseline. Earlier releases kept Drift's
 user-version at 1 while startup repair SQL added tables, columns, indexes, and
@@ -16,7 +16,15 @@ Version 3 adds `identity_events.source_created_at` and
 event can be recognised as newer than the one a later relay read returns. The
 v2 -> v3 step rebuilds the table from its current definition, which lands on
 the same shape whether v1 normalization created the legacy three-column table
-or the current one.
+or the current one. `profile_statistics.follower_counts_updated_at` (#6911)
+was later folded into v3 while it was still unreleased, so a database cut at
+the original v3 gains that column from the idempotent v3 repair instead.
+
+Version 4 adds `pending_view_events.video_addressable_d_tag` (#7169), so a
+queued view event keeps the `d` tag it needs to address its subject. The
+v3 -> v4 step also copies a pre-existing `video_vine_id` into the new column
+when it is not the event-id fallback, recovering the stuck backlog, and
+re-runs the v3 repair so original-v3 databases converge in the same upgrade.
 
 Going forward, schema changes must be versioned Drift migrations. Do not add new
 tables, columns, indexes, or schema backfills to `beforeOpen`; that hook is only
@@ -35,7 +43,8 @@ db_client/
 │   └── app_database/
 │       ├── drift_schema_v1.json
 │       ├── drift_schema_v2.json
-│       └── drift_schema_v3.json
+│       ├── drift_schema_v3.json
+│       └── drift_schema_v4.json
 ├── test/drift/
 │   └── app_database/
 │       ├── migration_test.dart
@@ -43,7 +52,8 @@ db_client/
 │           ├── schema.dart
 │           ├── schema_v1.dart
 │           ├── schema_v2.dart
-│           └── schema_v3.dart
+│           ├── schema_v3.dart
+│           └── schema_v4.dart
 └── build.yaml                  # Drift build configuration
 ```
 

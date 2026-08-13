@@ -164,29 +164,12 @@ class AppDatabase extends _$AppDatabase {
         await _migrateToV4ClipCategories(m);
       }
       if (from < 5) {
-        // Must be idempotent. A legacy v1 database has already run
-        // _normalizeLegacyV1Schema above, and that path CREATEs
-        // pending_view_events from the current definition — so the column can
-        // already exist by the time this step runs.
-        if (!(await _columnNames(
-          'pending_view_events',
-        )).contains('video_addressable_d_tag')) {
-          await m.addColumn(
-            pendingViewEvents,
-            pendingViewEvents.videoAddressableDTag,
-          );
-        }
-        // Parsed `d` tags were stored only as video_vine_id. Copy that when it
-        // is not VideoEvent's event-id fallback. Leave true nulls alone so a
-        // later vine_id-only enqueue still cannot mint an `a` tag.
-        await customStatement('''
-          UPDATE pending_view_events
-          SET video_addressable_d_tag = video_vine_id
-          WHERE video_addressable_d_tag IS NULL
-            AND video_vine_id IS NOT NULL
-            AND video_vine_id != ''
-            AND video_vine_id != video_id
-        ''');
+        // from == 3 includes databases cut at the original v3, before #6911
+        // folded the follower columns into it — and hadUpgrade suppresses the
+        // beforeOpen repair on this open. Re-running the idempotent v3 repair
+        // here converges every pre-v5 database on the same shape.
+        await _repairSchemaV3();
+        await _repairSchemaV5();
       }
     },
     beforeOpen: (details) async {
@@ -197,6 +180,7 @@ class AppDatabase extends _$AppDatabase {
           await _needsSchemaRepair()) {
         await _normalizeLegacyV1Schema();
         await _repairSchemaV3();
+        await _repairSchemaV5();
       }
 
       // Run cleanup of expired data on every app startup
@@ -211,6 +195,28 @@ class AppDatabase extends _$AppDatabase {
       'INTEGER NULL',
     );
     await _backfillFollowerCountTimestamps();
+  }
+
+  /// Adds the queued view-event `d` tag column and recovers stuck rows.
+  ///
+  /// Pre-v4 rows stored a parsed `d` tag only as `video_vine_id`. Copying it
+  /// when it is not the event-id fallback lets the stuck backlog publish
+  /// (#7169); true nulls stay null so a vine_id-only row cannot mint an
+  /// `a` tag.
+  Future<void> _repairSchemaV5() async {
+    await _addColumnIfMissing(
+      'pending_view_events',
+      'video_addressable_d_tag',
+      'TEXT NULL',
+    );
+    await customStatement('''
+      UPDATE pending_view_events
+      SET video_addressable_d_tag = video_vine_id
+      WHERE video_addressable_d_tag IS NULL
+        AND video_vine_id IS NOT NULL
+        AND video_vine_id != ''
+        AND video_vine_id != video_id
+    ''');
   }
 
   /// Anchors pre-v3 follower counts to the time they were written.
@@ -1163,6 +1169,7 @@ class AppDatabase extends _$AppDatabase {
       'personal_reactions': ['addressable_id'],
       'profile_statistics': ['follower_counts_updated_at'],
       'identity_events': ['source_created_at', 'source_event_id'],
+      'pending_view_events': ['video_addressable_d_tag'],
     };
 
     for (final entry in requiredColumns.entries) {
