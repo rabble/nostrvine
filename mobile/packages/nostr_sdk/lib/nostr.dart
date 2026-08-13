@@ -14,7 +14,6 @@ import 'relay/relay_type.dart';
 import 'relay/signature_verification_policy.dart';
 import 'relay/web_socket_connection_manager.dart';
 import 'signer/nostr_signer.dart';
-import 'signer/pubkey_only_nostr_signer.dart';
 import 'utils/string_util.dart';
 
 class Nostr {
@@ -503,10 +502,6 @@ class Nostr {
 
   bool writable() {
     return _pool.writable();
-  }
-
-  bool isReadOnly() {
-    return nostrSigner is PubkeyOnlyNostrSigner;
   }
 
   /// Configure a relay to always require authentication

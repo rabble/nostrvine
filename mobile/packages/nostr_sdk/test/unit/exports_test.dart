@@ -17,7 +17,7 @@ void main() {
     test('Signing implementations are exported', () {
       expect(NostrSigner, isA<Type>());
       expect(LocalNostrSigner, isA<Type>());
-      expect(PubkeyOnlyNostrSigner, isA<Type>());
+      expect(UnauthenticatedSigner, isA<Type>());
     });
 
     test('Relay classes are exported', () {
