@@ -1,7 +1,8 @@
 # Nostr Video Events Schema
 
 Status: Current
-Validated against: current mobile and Funnelcake implementations on 2026-08-13.
+Validated against: current mobile implementation on 2026-08-14; Funnelcake-specific
+Kind 22236 behavior is identified separately below.
 
 This document describes the Nostr event schemas for video-related events as implemented in Divine.
 
@@ -318,6 +319,11 @@ All tags are stored in `VideoEvent.rawTags` as a `Map<String, String>` for:
 
 Kind 22236 is an **ephemeral event** for tracking video views for analytics purposes.
 
+The schema below is the contract emitted by current Divine mobile. Funnelcake
+support for fractional `loops` and one-view-per-session counting is proposed in
+[divine-funnelcake#921](https://github.com/divinevideo/divine-funnelcake/pull/921)
+and remains pending until that pull request lands.
+
 ### Purpose
 
 These events are published when a user views a video and are consumed by analytics services. As ephemeral events (20000-29999 range per NIP-01), relays keep them in memory only and do not persist them to disk.
@@ -338,7 +344,7 @@ The `.content` field is optional and could contain a free-form note.
 | `a` | `["a", "<kind>:<pubkey>:<d-tag>", "<relay-url>"]` | Addressable reference to kind 34235 or 34236 video event | **Required** |
 | `e` | `["e", "<event-id>", "<relay-url>"]` | Event ID reference (specific version viewed) | **Required** |
 | `viewed` | `["viewed", "<start>", "<end>"]` | Start/end timestamps in seconds (can repeat) | **Required** |
-| `loops` | `["loops", "<playthrough-fraction>"]` | Exact finite, non-negative playthrough count, including partial loops | Optional |
+| `loops` | `["loops", "<playthrough-fraction>"]` | Exact finite, non-negative playthrough count emitted by mobile, including partial loops; Funnelcake support is pending #921 | Optional |
 | `source` | `["source", "<source-type>"]` | Traffic source: `home`, `discovery`, `profile`, `share`, `search` | Optional |
 | `client` | `["client", "<name>", "31990:<app-pubkey>:<d-identifier>", "<relay-url>"]` | NIP-89 client attribution for Divine | Optional |
 
@@ -380,5 +386,6 @@ The `.content` field is optional and could contain a free-form note.
 - The `viewed` tag timestamps represent seconds within the video (e.g., `["viewed", "0", "6"]` = watched first 6 seconds)
 - Analytics services should consume these events in real-time before relays discard them
 - Every session with positive playback time counts, including sub-second views
-- One event represents one continuous viewing session; returning after
-  inactivity starts a new session
+- Mobile emits one event per continuous viewing session; returning after
+  inactivity starts a new session. Matching Funnelcake counting is pending
+  #921.
