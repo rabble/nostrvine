@@ -1169,19 +1169,21 @@ Future<void> _startOpenVineApp() async {
       return;
     }
 
-    final recoverableReason = classifyRecoverableFlutterError(details);
-    if (recoverableReason != null) {
+    final recoverable = classifyRecoverableFlutterError(details);
+    if (recoverable != null) {
       Log.warning(
-        '$recoverableReason (non-fatal): ${details.exception}',
+        '${recoverable.reason} (non-fatal): ${details.exception}',
         name: 'Main',
       );
-      unawaited(
-        CrashReportingService.instance.recordError(
-          details.exception,
-          details.stack,
-          reason: recoverableReason,
-        ),
-      );
+      if (recoverable.report) {
+        unawaited(
+          CrashReportingService.instance.recordError(
+            details.exception,
+            details.stack,
+            reason: recoverable.reason,
+          ),
+        );
+      }
       FlutterError.presentError(details);
       return;
     }

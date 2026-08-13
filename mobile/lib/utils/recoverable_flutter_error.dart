@@ -11,8 +11,22 @@ const _recoverableMediaHosts = <String>{
   'cdn.vine.co',
 };
 
-/// Returns a non-fatal reporting reason when a Flutter error is one the app
-/// recovers from on its own, or `null` when it must stay fatal.
+/// How the app should treat a Flutter error it recovers from on its own.
+typedef RecoverableFlutterError = ({
+  /// The Crashlytics reason describing the recovery.
+  String reason,
+
+  /// Whether the error is still worth a non-fatal Crashlytics report.
+  ///
+  /// `false` for expected IO conditions: per the decision matrix in
+  /// `.claude/rules/error_handling.md`, network and IO failures are not
+  /// reportable, so recording them only drowns real bugs in the dashboard.
+  /// The error is still logged and still presented.
+  bool report,
+});
+
+/// Returns how to handle a Flutter error the app recovers from on its own, or
+/// `null` when it must stay fatal.
 ///
 /// The signature checks below match against Flutter/Dart SDK internals:
 /// library paths, context descriptions (for example `_network_image_io` and
@@ -23,7 +37,9 @@ const _recoverableMediaHosts = <String>{
 /// `StackTrace.toString()`: building with `--obfuscate` *or*
 /// `--split-debug-info` (which implies `--dwarf-stack-traces`) strips them and
 /// silently sends those errors back to the fatal path.
-String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
+RecoverableFlutterError? classifyRecoverableFlutterError(
+  FlutterErrorDetails details,
+) {
   final error = details.exception.toString();
   final library = details.library ?? '';
   final context = details.context?.toDescription() ?? '';
@@ -64,16 +80,22 @@ String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
   // the widget falls back to a placeholder. It is host-agnostic because dead
   // Vine avatars are commonly proxied through web.archive.org, which is not a
   // recoverable-media host.
-  final isMediaCacheLoadFailure =
-      details.exception is MediaCacheImageLoadException;
+  //
+  // Reported as a plain IO failure and therefore never sent to Crashlytics
+  // (#7298): the exception carries no information beyond "this URL is dead",
+  // which the avatar/thumbnail negative caches already act on. It accounted
+  // for 13 events across 10 users in a week with nothing actionable in any
+  // of them.
+  if (details.exception is MediaCacheImageLoadException) {
+    return (reason: _recoverableMediaLoadReason, report: false);
+  }
 
   if (isImageHttpFailure ||
       isMediaHostLookup ||
       isInterruptedMediaDownload ||
       isMissingHttpHost ||
-      isInvalidImageData ||
-      isMediaCacheLoadFailure) {
-    return _recoverableMediaLoadReason;
+      isInvalidImageData) {
+    return (reason: _recoverableMediaLoadReason, report: true);
   }
 
   // A hero flight measures its destination hero in a post-frame callback, and
@@ -88,7 +110,7 @@ String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
       (details.stack?.toString().contains('HeroController') ?? false);
 
   if (isHeroFlightLayoutFailure) {
-    return _recoverableHeroFlightReason;
+    return (reason: _recoverableHeroFlightReason, report: true);
   }
 
   return null;
