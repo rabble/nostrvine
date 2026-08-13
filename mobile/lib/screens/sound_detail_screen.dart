@@ -52,8 +52,10 @@ const _snackBarDuration = Duration(seconds: 2);
 /// [CustomScrollView]. [PinnedHeaderSliver] measures the child instead, so
 /// there is nothing to keep in sync.
 ///
-/// Opaque so the sound header scrolls away *behind* the label rather than
-/// through it.
+/// Paints the scroll view's own background so the grid scrolls *behind* the
+/// label rather than through it — a pinned sliver keeps painting where the
+/// slivers after it are still scrolling, and a transparent one shows their
+/// thumbnails straight through the text.
 class _VideosSectionHeader extends StatelessWidget {
   const _VideosSectionHeader({required this.title});
 
@@ -61,15 +63,18 @@ class _VideosSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Text(
-        title,
-        style: VineTheme.titleSmallFont(
-          color: context.vineColors.primaryText,
+    return ColoredBox(
+      color: context.vineColors.background,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          title,
+          style: VineTheme.titleSmallFont(
+            color: context.vineColors.primaryText,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
       ),
     );
   }

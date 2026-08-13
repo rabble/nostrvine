@@ -1442,6 +1442,51 @@ void main() {
         expect(headerAfter, greaterThanOrEqualTo(0));
       });
 
+      testWidgets('pinned section header paints over the grid scrolling '
+          'beneath it', (tester) async {
+        final testSound = createTestAudioEvent(id: 'sound1');
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pump();
+
+        // A pinned sliver keeps painting over the slivers after it while they
+        // scroll, so the label needs its own opaque ground or grid thumbnails
+        // read straight through the text.
+        final label = find.text('Videos using this sound');
+        final backgroundFinder = find
+            .ancestor(of: label, matching: find.byType(ColoredBox))
+            .first;
+        final background = tester.widget<ColoredBox>(backgroundFinder);
+        expect(background.color.a, equals(1.0));
+        expect(
+          background.color,
+          equals(tester.element(label).vineColors.background),
+        );
+        // And it has to cover the label, not sit behind part of it.
+        expect(
+          tester.getRect(backgroundFinder),
+          equals(
+            tester.getRect(
+              find.ancestor(of: label, matching: find.byType(Padding)).first,
+            ),
+          ),
+        );
+      });
+
       testWidgets('reused original sound queries usage/grid by recovered id', (
         tester,
       ) async {
