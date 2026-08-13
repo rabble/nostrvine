@@ -19,6 +19,7 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:nostr_sdk/signer/signer_failure.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -40,6 +41,22 @@ class _RpcExceptionDouble implements Exception {
 
   @override
   String toString() => 'RpcException: $message';
+}
+
+/// Reproduces `keycast_flutter`'s `RpcTimeoutException`: the exception raised
+/// when Keycast answers a signing RPC with HTTP 504 because it hit its own
+/// handler bound. What matters to `NIP17MessageService` is the
+/// [TransientSignerFailure] marker, not the type or the wording — the marker
+/// is the cross-package contract, and unlike the 403 double below it survives
+/// any rewording of Keycast's error body.
+class _TransientRpcExceptionDouble
+    implements Exception, TransientSignerFailure {
+  _TransientRpcExceptionDouble(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'RpcTimeoutException: $message';
 }
 
 /// Encrypts normally but returns `null` from [signEvent], reproducing what
@@ -316,8 +333,81 @@ void main() {
 
           expect(result.success, isFalse);
           expect(result.blocked, isFalse);
+          // Hard, not retryable-pending. Pins that #7092's transient
+          // classification stayed narrow: only Keycast's 504 says "I ran out
+          // of time and did nothing", and a 503 does not promise that.
+          expect(result.retryablePending, isFalse);
         },
       );
+    });
+
+    group('Keycast 504 classification (#7092)', () {
+      test(
+        'a signer that times out itself stays retryable-pending, not red',
+        () async {
+          // Keycast bounds its own /api/nostr handler at 8s and answers 504
+          // (keycast#351). That arrives as an error, not as a Dart
+          // TimeoutException, so before #7092 it fell through to the generic
+          // hard-failure branch and the user got a red bubble — while the
+          // *same* slow signer, if the client's own bound had fired first,
+          // produced a dim retryable one. The outcome turned on a race
+          // between two bounds. Both are the same event now.
+          final timingOut = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, _) async =>
+                throw _TransientRpcExceptionDouble(
+                  'HTTP 504: {"error":"RPC request timed out after 8s"}',
+                ),
+          );
+          final rumor = timingOut.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'signer gave up before signing',
+          );
+
+          final result = await timingOut.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.blocked, isFalse);
+          expect(result.retryablePending, isTrue);
+          // The claim that makes retryable safe: the failure happens while
+          // building the wrap, so nothing ever reached a relay and a re-drive
+          // cannot double-deliver.
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+        },
+      );
+
+      test('a policy refusal still wins over the transient marker', () async {
+        // Ordering guard. A Keycast response could in principle be both a
+        // 5xx-shaped transient and carry the verified_minor denial marker;
+        // terminalizing must win, because a blocked send re-driven until
+        // maxRetries deterministically re-fails (#6028).
+        final blocked = NIP17MessageService(
+          signer: LocalNostrSigner(_testPrivateKey),
+          senderPublicKey: _testPublicKey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, _) async =>
+              throw _TransientRpcExceptionDouble(
+                'HTTP 504: {"error":"Operation denied by policy"}',
+              ),
+        );
+        final rumor = blocked.buildRumor(
+          recipientPubkey: _recipientPubkey,
+          content: 'denial beats transience',
+        );
+
+        final result = await blocked.sendRumor(
+          rumorEvent: rumor,
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.blocked, isTrue);
+        expect(result.retryablePending, isFalse);
+      });
     });
 
     group('sendRumor relay targeting', () {

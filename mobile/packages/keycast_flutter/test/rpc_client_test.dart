@@ -270,6 +270,62 @@ void main() {
 
         expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
       });
+
+      test('a 504 throws RpcTimeoutException, marked transient', () async {
+        // Keycast bounds its own /api/nostr handler at 8s and its tower layer
+        // at 10s; both answer 504 (keycast#351). That is Keycast reporting a
+        // timeout, so it has to reach callers classified as one — a plain
+        // non-200 gets terminalized, which is strictly worse than the client
+        // timeout it replaced. The marker is what dm_repository branches on;
+        // it cannot import this package to check the concrete type (#7092).
+        mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({'error': 'RPC request timed out after 8s'}),
+            504,
+          );
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(
+            isA<RpcTimeoutException>().having(
+              (e) => e,
+              'transient marker',
+              isA<TransientSignerFailure>(),
+            ),
+          ),
+        );
+      });
+
+      test('other 5xx stay plain RpcException, not transient', () async {
+        // The classification is deliberately narrow. 504 is the only status
+        // on this route that means "I ran out of time and produced nothing";
+        // 503 is a degraded dependency and 500 an unhandled error, neither of
+        // which promises the operation did not happen.
+        for (final status in [500, 502, 503]) {
+          mockClient = MockClient((request) async {
+            return http.Response('Server error', status);
+          });
+
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClient: mockClient,
+          );
+
+          await expectLater(
+            rpc.getPublicKey(),
+            throwsA(isNot(isA<TransientSignerFailure>())),
+            reason: 'HTTP $status must not be classified as transient',
+          );
+        }
+      });
     });
 
     group('token refresh on 401', () {

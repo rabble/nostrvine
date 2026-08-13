@@ -48,6 +48,9 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     );
   }
 
+  /// HTTP 504. Keycast's answer when it ran out of time on `/api/nostr`.
+  static const int _gatewayTimeoutStatus = 504;
+
   /// Default timeout applied to a single signing/encryption RPC
   /// (`sign_event`, `nip44_encrypt`, `nip44_decrypt`, `nip04_*`,
   /// `get_public_key`, `sign_canonical`).
@@ -126,10 +129,12 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
           category: LogCategory.auth,
         );
       }
-      throw RpcException(
-        'HTTP ${response.statusCode}: ${response.body}',
-        method: method,
-      );
+      final message = 'HTTP ${response.statusCode}: ${response.body}';
+      // 504 is Keycast reporting *its own* timeout, so it classifies like one
+      // rather than like a refusal. See [RpcTimeoutException].
+      throw response.statusCode == _gatewayTimeoutStatus
+          ? RpcTimeoutException(message, method: method)
+          : RpcException(message, method: method);
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
