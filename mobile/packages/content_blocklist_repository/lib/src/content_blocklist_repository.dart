@@ -726,6 +726,15 @@ class ContentBlocklistRepository {
     return _MuteListPublishShape(tags: tags, content: source?.content ?? '');
   }
 
+  /// Whether [pubkey] is still the session identity.
+  ///
+  /// The startup migration and retirement run fire-and-forget across several
+  /// awaits while mutating instance state and publishing through `_signer`.
+  /// An account switch mid-sequence would otherwise splice one account's
+  /// blocks into the next account's mute list, or erase the incoming
+  /// account's legacy list before it has been migrated.
+  bool _isStillActiveAccount(String pubkey) => _ourPubkey == pubkey;
+
   /// Read the pubkeys on our own legacy kind 30000 (d=block) list.
   ///
   /// Returns `null` when no such list was seen at all, which is not the same
@@ -771,11 +780,20 @@ class ContentBlocklistRepository {
   /// The empty replacement is published rather than an NIP-09 deletion:
   /// tombstoning a replaceable event by id resurrects the version before it.
   ///
-  /// Nothing is erased before it reaches the mute list — the legacy entries
-  /// are re-read immediately before the replacement and folded into the mute
-  /// list first if the one-time migration has not already carried them over.
-  /// The per-account flag is set only after a relay accepts the empty
-  /// replacement, so any failure retries on the next launch.
+  /// Nothing is erased before it reaches the mute list. The gate is the
+  /// migration's own per-account flag, which is set only once a relay
+  /// accepted the merged mute list — in-memory membership is not evidence
+  /// the entries ever left the device, and treating it as such would erase
+  /// blocks whose migrate publish had failed.
+  ///
+  /// A legacy pubkey missing from the runtime blocklist is likewise *not*
+  /// treated as a straggler to carry back over. After a confirmed migration
+  /// it means the user deliberately unblocked them, and re-publishing it
+  /// would resurrect a lifted block — the exact failure #7027 describes.
+  ///
+  /// The retired flag is set once a relay accepts the empty replacement, or
+  /// immediately when the legacy list is already empty and there is nothing
+  /// to replace. Any failure retries on the next launch.
   Future<void> _retireLegacyBlockList(
     NostrClient nostrClient,
     BlockListSigner signer,
@@ -788,12 +806,15 @@ class ContentBlocklistRepository {
     if (!signer.isAuthenticated) return;
 
     await _migrateLegacyBlockListToMuteList(nostrClient, signer, ourPubkey);
+    if (!_isStillActiveAccount(ourPubkey)) return;
 
     try {
       final legacyBlocks = await _readOwnLegacyBlockPubkeys(
         nostrClient,
         ourPubkey,
       );
+      if (!_isStillActiveAccount(ourPubkey)) return;
+
       // No legacy list was seen. Either this account never had one or the
       // relays did not answer; both mean there is nothing to replace, and
       // publishing an empty list anyway would author the very kind this
@@ -804,26 +825,17 @@ class ContentBlocklistRepository {
         return;
       }
 
-      final unmigrated = legacyBlocks.difference(_runtimeBlocklist);
-
-      if (unmigrated.isNotEmpty) {
-        // The migration was skipped or raced this read. Carry the stragglers
-        // over before the legacy copy stops existing.
-        _runtimeBlocklist.addAll(unmigrated);
-        await _saveBlockedUsers();
-        if (!await _publishMuteListToNostr()) {
-          Log.warning(
-            'Legacy block-list retirement deferred: could not carry '
-            '${unmigrated.length} block(s) onto the mute list',
-            name: 'ContentBlocklistRepository',
-            category: LogCategory.system,
-          );
-          return;
-        }
-        for (final pubkey in unmigrated) {
-          _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
-        }
-        _notifyChanged();
+      // The list still carries entries, so erasing it is only safe once the
+      // migration has been confirmed accepted by a relay.
+      if (!(prefs.getBool('$_blockListMigratedPrefsKeyBase.$ourPubkey') ??
+          false)) {
+        Log.warning(
+          'Legacy block-list retirement deferred: migration onto the mute '
+          'list is not yet confirmed',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+        return;
       }
 
       final event = await signer.createAndSignEvent(
@@ -834,6 +846,7 @@ class ContentBlocklistRepository {
         ],
       );
       if (event == null) return;
+      if (!_isStillActiveAccount(ourPubkey)) return;
 
       final sentEvent = await nostrClient.publishEvent(event);
       if (sentEvent is! PublishSuccess) {
@@ -1312,6 +1325,8 @@ class ContentBlocklistRepository {
         return;
       }
 
+      if (!_isStillActiveAccount(ourPubkey)) return;
+
       // 2. Read the existing kind 10000 mute list (newest replaceable wins)
       //    so the merge never drops mutes authored on other clients.
       final muteEvents = await nostrClient.queryEvents([
@@ -1326,6 +1341,8 @@ class ContentBlocklistRepository {
         }
       }
 
+      if (!_isStillActiveAccount(ourPubkey)) return;
+
       // 3. Fold both lists into our in-memory state without removing
       //    anything. Legacy entries are our blocks; the rest of the relay's
       //    mute list is preserved as mutes (our own blocks are kept out of
@@ -1339,6 +1356,7 @@ class ContentBlocklistRepository {
       final newlyMuted = _mutedPubkeys.difference(mutedBeforeMerge);
       await _saveBlockedUsers();
       await _saveMutedUsers();
+      if (!_isStillActiveAccount(ourPubkey)) return;
 
       // 4. Republish the unified kind 10000 mute list. Only record the
       //    migration as done once the relay accepts it, so a failure retries.

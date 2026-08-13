@@ -3064,59 +3064,12 @@ void main() {
     );
 
     test(
-      'carries an unmigrated legacy block over before emptying the list',
+      'does not empty the legacy list when the migration publish failed',
       () async {
-        SharedPreferences.setMockInitialValues(<String, Object>{
-          flagKey: true,
-        });
-        prefs = await SharedPreferences.getInstance();
-
-        when(() => mockClient.queryEvents(any())).thenAnswer((
-          invocation,
-        ) async {
-          final filters = invocation.positionalArguments[0] as List<Filter>;
-          final kinds = filters.first.kinds ?? const <int>[];
-          if (kinds.contains(30000)) {
-            return [
-              ownBlockEvent([blockA]),
-            ];
-          }
-          return <Event>[];
-        });
-
-        final service = ContentBlocklistRepository(prefs: prefs);
-        await service.syncBlockListsInBackground(
-          mockClient,
-          mockSigner,
-          ourPubkey,
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        final muteTags =
-            verify(
-                  () => mockSigner.createAndSignEvent(
-                    kind: 10000,
-                    content: any(named: 'content'),
-                    tags: captureAny(named: 'tags'),
-                  ),
-                ).captured.last
-                as List<List<String>>;
-        expect(muteTags, contains(equals(['p', blockA])));
-        expect(service.isBlocked(blockA), isTrue);
-        expect(prefs.getBool(retiredKey), isTrue);
-
-        service.dispose();
-      },
-    );
-
-    test(
-      'does not empty the legacy list when the carry-over publish fails',
-      () async {
-        SharedPreferences.setMockInitialValues(<String, Object>{
-          flagKey: true,
-        });
-        prefs = await SharedPreferences.getInstance();
-
+        // The migration adds the legacy blocks to the in-memory set before
+        // its publish guard and never rolls back, so runtime membership is
+        // not evidence they reached a relay. Erasing on that signal would
+        // leave the blocks on neither list.
         when(() => mockClient.queryEvents(any())).thenAnswer((
           invocation,
         ) async {
@@ -3148,11 +3101,156 @@ void main() {
             tags: any(named: 'tags'),
           ),
         );
+        expect(prefs.getBool(flagKey), isNull);
         expect(prefs.getBool(retiredKey), isNull);
 
         service.dispose();
       },
     );
+
+    test(
+      'leaves the retired flag unset when the empty replacement is rejected',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          flagKey: true,
+          'blocklist_active_pubkey': ourPubkey,
+          'blocked_users_list.$ourPubkey': jsonEncode([blockA]),
+        });
+        prefs = await SharedPreferences.getInstance();
+
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockA]),
+            ];
+          }
+          return <Event>[];
+        });
+        when(
+          () => mockClient.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(
+          () => mockSigner.createAndSignEvent(
+            kind: 30000,
+            content: '',
+            tags: any(named: 'tags'),
+          ),
+        ).called(1);
+        expect(prefs.getBool(retiredKey), isNull);
+
+        service.dispose();
+      },
+    );
+
+    test(
+      'does not re-block a legacy entry the user unblocked after migrating',
+      () async {
+        // Migration confirmed on an earlier launch, its empty-30000 publish
+        // did not land, and the user has since unblocked blockA. The legacy
+        // list still names A; treating that as a straggler would resurrect
+        // a deliberately lifted block (#7027).
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          flagKey: true,
+          'blocklist_active_pubkey': ourPubkey,
+          'blocked_users_list.$ourPubkey': jsonEncode([blockB]),
+        });
+        prefs = await SharedPreferences.getInstance();
+
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockA, blockB]),
+            ];
+          }
+          return <Event>[];
+        });
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(service.isBlocked(blockA), isFalse);
+        expect(service.isBlocked(blockB), isTrue);
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: 10000,
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+        expect(prefs.getBool(retiredKey), isTrue);
+
+        service.dispose();
+      },
+    );
+
+    test('abandons retirement when the account switches mid-flight', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        flagKey: true,
+        'blocklist_active_pubkey': ourPubkey,
+        'blocked_users_list.$ourPubkey': jsonEncode([blockA]),
+      });
+      prefs = await SharedPreferences.getInstance();
+
+      const otherPubkey =
+          '0000000000000000000000000000000000000000000000000000000000000009';
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      when(() => mockClient.queryEvents(any())).thenAnswer((
+        invocation,
+      ) async {
+        final filters = invocation.positionalArguments[0] as List<Filter>;
+        final kinds = filters.first.kinds ?? const <int>[];
+        if (kinds.contains(30000)) {
+          // The switch lands while the legacy read is in flight.
+          await service.syncMuteListsInBackground(mockClient, otherPubkey);
+          return [
+            ownBlockEvent([blockA]),
+          ];
+        }
+        return <Event>[];
+      });
+
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Nothing is published on the incoming account's behalf.
+      verifyNever(
+        () => mockSigner.createAndSignEvent(
+          kind: 30000,
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
+      expect(prefs.getBool(retiredKey), isNull);
+
+      service.dispose();
+    });
 
     test('keeps the flag unset when the republish is rejected', () async {
       when(() => mockClient.queryEvents(any())).thenAnswer((invocation) async {
