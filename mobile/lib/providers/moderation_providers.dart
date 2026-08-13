@@ -303,6 +303,82 @@ void blocklistSyncBridge(Ref ref) {
   });
 }
 
+/// Republishes the contact list when a block contradicts the published
+/// follow list.
+///
+/// [FollowRepository] drops blocked accounts from the kind 3 it publishes,
+/// but blocking never runs through follow/unfollow and nothing republishes
+/// kind 3 on a schedule — so without a trigger the contradiction would sit
+/// on relays until the user's next unrelated follow, possibly never (#6903).
+/// Two triggers cover it:
+///
+/// - a fresh block, via [ContentBlocklistRepository.changes];
+/// - the follow list arriving, via `followingStream`. This is the one that
+///   heals a block made before the list finished loading — a fresh install,
+///   a new sign-in, a cleared cache — and settles contradictions that
+///   predate this code.
+///
+/// Watch this at app shell level.
+@Riverpod(keepAlive: true)
+void blockedFollowReconciler(Ref ref) {
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+  final followRepository = ref.watch(followRepositoryProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  // At most one republish per blocked pubkey per session. divine-web keeps
+  // whichever kind 3 carries more entries (divinevideo/divine-web#551), so
+  // it can resurrect an entry we just dropped; unbounded, the two clients
+  // would trade publishes for as long as both sessions are open.
+  final settled = <String>{};
+
+  Future<void> reconcile() async {
+    final blocked = blocklistRepository.blockedPubkeysForAccount(
+      nostrClient.publicKey,
+    );
+    if (blocked.isEmpty) return;
+
+    final contradicting = followRepository.followingPubkeys
+        .where(blocked.contains)
+        .where((pubkey) => !settled.contains(pubkey))
+        .toList();
+    if (contradicting.isEmpty) return;
+
+    settled.addAll(contradicting);
+    try {
+      await followRepository.republishContactList();
+      Log.info(
+        'Republished contact list without ${contradicting.length} '
+        'blocked account(s)',
+        name: 'BlockedFollowReconciler',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      // Let the next block or follow-list emission try again.
+      settled.removeAll(contradicting);
+      Log.warning(
+        'Failed to republish contact list after a block: $e',
+        name: 'BlockedFollowReconciler',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  final subscriptions = <StreamSubscription<void>>[
+    blocklistRepository.changes
+        .where((change) => change.op == BlocklistOp.blocked)
+        .listen((_) => unawaited(reconcile())),
+    // Replays its latest value, so an already-loaded list reconciles here
+    // rather than needing a separate priming call.
+    followRepository.followingStream.listen((_) => unawaited(reconcile())),
+  ];
+
+  ref.onDispose(() {
+    for (final subscription in subscriptions) {
+      unawaited(subscription.cancel());
+    }
+  });
+}
+
 /// Builds the blocked-author video filter backed by the content-policy
 /// engine.
 BlockedVideoFilter createBlockedAuthorFilter(Ref ref) {

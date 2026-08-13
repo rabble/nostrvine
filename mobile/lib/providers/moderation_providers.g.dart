@@ -627,3 +627,95 @@ final class BlocklistSyncBridgeProvider
 
 String _$blocklistSyncBridgeHash() =>
     r'0ffe1bb65877c094a330ec773089bb738247fe98';
+
+/// Republishes the contact list when a block contradicts the published
+/// follow list.
+///
+/// [FollowRepository] drops blocked accounts from the kind 3 it publishes,
+/// but blocking never runs through follow/unfollow and nothing republishes
+/// kind 3 on a schedule — so without a trigger the contradiction would sit
+/// on relays until the user's next unrelated follow, possibly never (#6903).
+/// Two triggers cover it:
+///
+/// - a fresh block, via [ContentBlocklistRepository.changes];
+/// - the follow list arriving, via `followingStream`. This is the one that
+///   heals a block made before the list finished loading — a fresh install,
+///   a new sign-in, a cleared cache — and settles contradictions that
+///   predate this code.
+///
+/// Watch this at app shell level.
+
+@ProviderFor(blockedFollowReconciler)
+final blockedFollowReconcilerProvider = BlockedFollowReconcilerProvider._();
+
+/// Republishes the contact list when a block contradicts the published
+/// follow list.
+///
+/// [FollowRepository] drops blocked accounts from the kind 3 it publishes,
+/// but blocking never runs through follow/unfollow and nothing republishes
+/// kind 3 on a schedule — so without a trigger the contradiction would sit
+/// on relays until the user's next unrelated follow, possibly never (#6903).
+/// Two triggers cover it:
+///
+/// - a fresh block, via [ContentBlocklistRepository.changes];
+/// - the follow list arriving, via `followingStream`. This is the one that
+///   heals a block made before the list finished loading — a fresh install,
+///   a new sign-in, a cleared cache — and settles contradictions that
+///   predate this code.
+///
+/// Watch this at app shell level.
+
+final class BlockedFollowReconcilerProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Republishes the contact list when a block contradicts the published
+  /// follow list.
+  ///
+  /// [FollowRepository] drops blocked accounts from the kind 3 it publishes,
+  /// but blocking never runs through follow/unfollow and nothing republishes
+  /// kind 3 on a schedule — so without a trigger the contradiction would sit
+  /// on relays until the user's next unrelated follow, possibly never (#6903).
+  /// Two triggers cover it:
+  ///
+  /// - a fresh block, via [ContentBlocklistRepository.changes];
+  /// - the follow list arriving, via `followingStream`. This is the one that
+  ///   heals a block made before the list finished loading — a fresh install,
+  ///   a new sign-in, a cleared cache — and settles contradictions that
+  ///   predate this code.
+  ///
+  /// Watch this at app shell level.
+  BlockedFollowReconcilerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'blockedFollowReconcilerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$blockedFollowReconcilerHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return blockedFollowReconciler(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$blockedFollowReconcilerHash() =>
+    r'fc1984cf42eeea2e379e1b427e39cf1df545a839';
