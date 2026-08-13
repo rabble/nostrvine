@@ -157,6 +157,59 @@ void main() {
       });
     });
 
+    group('visibleSelectedClipIds', () {
+      final archivedClip = DivineVideoClip(
+        id: 'archived',
+        video: EditorVideo.file('/path/to/archived.mp4'),
+        duration: const Duration(seconds: 4),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        archivedAt: DateTime(2026, 3, 6),
+      );
+      final filedClip = DivineVideoClip(
+        id: 'filed',
+        video: EditorVideo.file('/path/to/filed.mp4'),
+        duration: const Duration(seconds: 4),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        categoryId: 'cat-travel',
+      );
+
+      test('drops the ids the active filter hides', () {
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, filedClip, archivedClip],
+          selectedClipIds: const {'clip1', 'filed', 'archived'},
+          filter: const ClipLibraryCategoryFilter('cat-travel'),
+        );
+
+        expect(state.visibleSelectedClipIds, {'filed'});
+      });
+
+      test('keeps every unarchived selection under All', () {
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, filedClip, archivedClip],
+          selectedClipIds: const {'clip1', 'filed', 'archived'},
+        );
+
+        expect(state.visibleSelectedClipIds, {'clip1', 'filed'});
+      });
+
+      test('is empty in the trash, where the grid shows no active clip', () {
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1],
+          selectedClipIds: const {'clip1'},
+          filter: const ClipLibraryTrashFilter(),
+        );
+
+        expect(state.visibleSelectedClipIds, isEmpty);
+      });
+    });
+
     group('selectedIsStopMotion', () {
       final smClip = DivineVideoClip(
         id: 'sm1',

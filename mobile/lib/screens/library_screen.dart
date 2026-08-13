@@ -631,9 +631,12 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
           final selectionEnabled = _isSelectionEnabled(clipsState);
 
           final sortedClips = clipsState.sortedClips;
-          final hasVisibleSelection = sortedClips.any(
-            (clip) => clipsState.selectedClipIds.contains(clip.id),
-          );
+          // Bulk move and delete run on this rather than the whole selection,
+          // which can reach across filters into clips the grid is not showing.
+          // Building a video is the exception — spanning categories is the
+          // point of a selection that survives a filter switch.
+          final visibleSelectedClipIds = clipsState.visibleSelectedClipIds;
+          final hasVisibleSelection = visibleSelectedClipIds.isNotEmpty;
           final targetAspectRatio = libraryTargetAspectRatioForSelection(
             selectionMode: widget.selectionMode,
             editorClips: editorClips,
@@ -696,7 +699,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                                 ? () => ClipCategoryActions.runMoveFlow(
                                     context: context,
                                     bloc: clipsBloc,
-                                    clipIds: clipsState.selectedClipIds,
+                                    clipIds: visibleSelectedClipIds,
                                   )
                                 : null,
                             onDeleteSelectedClips: hasVisibleSelection
