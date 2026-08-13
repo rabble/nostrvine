@@ -18,7 +18,11 @@ void main() {
       expect(isExpectedNetworkFailure(error), isTrue);
     });
 
-    test('treats a dropped socket as expected', () {
+    test('treats even a self-inflicted socket error as expected', () {
+      // The classification is by type with no message allowlist, so an EBADF
+      // — reading a descriptor the app already closed, which is a lifecycle
+      // bug rather than a flaky network — is dropped alongside the offline
+      // cases. Pinned deliberately: it is the known cost of the type check.
       const error = SocketException(
         'Bad file descriptor (OS Error: Bad file descriptor, errno = 9)',
       );
