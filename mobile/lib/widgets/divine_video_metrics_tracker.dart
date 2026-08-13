@@ -42,13 +42,11 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
 
 class _DivineVideoMetricsTrackerState
     extends ConsumerState<DivineVideoMetricsTracker> {
-  static const _minimumViewEndWatchDuration = Duration(seconds: 1);
-
   DateTime? _viewStartTime;
   DateTime? _lastPlayStartTime;
   Duration _totalWatchDuration = Duration.zero;
   Duration? _lastPosition;
-  int _loopCount = 0;
+  double _loopCount = 0;
   bool _hasTrackedView = false;
   bool _hasSentEndEvent = false;
   bool _hasRecordedImpression = false;
@@ -150,12 +148,16 @@ class _DivineVideoMetricsTrackerState
 
     final position = state.position;
     final duration = state.duration;
+    // Count completed loops via position wrap-around. Also track fractional
+    // loops — a 4.5s watch of a 6s video is 0.75 loops, which the old int
+    // counter would record as 0. The view event sends this as a fraction
+    // per the fractional-loops decision.
     if (_lastPosition != null &&
         position < _lastPosition! &&
         position < const Duration(seconds: 1) &&
         duration > Duration.zero &&
         _lastPosition!.inMilliseconds > duration.inMilliseconds - 1000) {
-      _loopCount++;
+      _loopCount += 1;
     }
     _lastPosition = position;
   }
@@ -199,8 +201,28 @@ class _DivineVideoMetricsTrackerState
       totalDuration = null;
     }
 
+    // Compute fractional loops for this session. Integer wrap-arounds are
+    // already in _loopCount; add the fractional remainder for views that
+    // never completed a full pass. This ensures a 4.5s watch of a 6s video
+    // reports 0.75 rather than 0 — the median case that flooring would zero.
+    var fractionalLoops = _loopCount;
+    if (totalDuration != null &&
+        totalDuration > Duration.zero &&
+        _totalWatchDuration > Duration.zero) {
+      final fractional =
+          _totalWatchDuration.inMilliseconds / totalDuration.inMilliseconds;
+      // Take the larger of counted wrap-arounds vs time ratio to handle
+      // cases where wrap detection missed a transition.
+      if (fractional > fractionalLoops) fractionalLoops = fractional;
+    }
+
     if (!_hasSentEndEvent &&
-        _totalWatchDuration >= _minimumViewEndWatchDuration) {
+        _hasTrackedView &&
+        _totalWatchDuration > Duration.zero) {
+      // View = playback start: every session needs real playback
+      // (not just mount time). Gating on _totalWatchDuration drops the
+      // never-played case (isPlaying never true) while still counting
+      // sub-second flings (400ms of real playback is a view).
       try {
         _analyticsService.trackDetailedVideoViewWithUser(
           video,
@@ -209,9 +231,9 @@ class _DivineVideoMetricsTrackerState
           eventType: 'view_end',
           watchDuration: _totalWatchDuration,
           totalDuration: totalDuration,
-          loopCount: _loopCount,
+          loopCount: fractionalLoops,
           completedVideo:
-              _loopCount > 0 ||
+              fractionalLoops >= 1 ||
               (totalDuration != null &&
                   totalDuration > Duration.zero &&
                   _totalWatchDuration.inMilliseconds >=
@@ -235,7 +257,7 @@ class _DivineVideoMetricsTrackerState
       unawaited(
         _seenVideosService.recordVideoView(
           video.id,
-          loopCount: _loopCount,
+          loopCount: fractionalLoops.round(),
           watchDuration: _totalWatchDuration,
         ),
       );
@@ -247,7 +269,7 @@ class _DivineVideoMetricsTrackerState
     _lastPlayStartTime = null;
     _totalWatchDuration = Duration.zero;
     _lastPosition = null;
-    _loopCount = 0;
+    _loopCount = 0.0;
     _hasTrackedView = false;
     _hasSentEndEvent = false;
     _hasRecordedImpression = false;

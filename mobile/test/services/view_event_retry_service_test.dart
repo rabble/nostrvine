@@ -143,7 +143,7 @@ void main() {
       expect(captured[2], 2);
       expect(captured[3], ViewTrafficSource.home);
       expect(captured[4], 'following');
-      expect(captured[5], 1);
+      expect(captured[5], closeTo(0.416, 0.01));
     });
 
     test(
@@ -340,7 +340,7 @@ void main() {
     );
 
     test(
-      'publishes self-views but deletes sub-second rows without publishing',
+      'publishes self-views and sub-second views (N=0 loops) per playback-start spec',
       () async {
         await dao.enqueue(
           makeEvent(id: 'self-view', eventVideoPubkey: userPubkey),
@@ -362,6 +362,8 @@ void main() {
             loopCount: captureAny(named: 'loopCount'),
           ),
         ).captured;
+        // Two publishes: self-view + short-view (N=0 loops is valid)
+        expect(captured.length, equals(12));
         final video = captured[0] as VideoEvent;
         expect(video.id, 'video-self-view');
         expect(video.pubkey, userPubkey);
@@ -370,7 +372,7 @@ void main() {
         expect(captured[2], 2);
         expect(captured[3], ViewTrafficSource.home);
         expect(captured[4], 'following');
-        expect(captured[5], 1);
+        expect(captured[5], closeTo(0.416, 0.01));
       },
     );
 

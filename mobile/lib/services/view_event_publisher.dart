@@ -71,11 +71,14 @@ class ViewEventPublisher {
     required int endSeconds,
     ViewTrafficSource source = ViewTrafficSource.unknown,
     String? sourceDetail,
-    int? loopCount,
+    double? loopCount,
   }) async {
     const method = 'publishViewEvent';
-    if (endSeconds - startSeconds < 1) {
-      return _drop(ViewEventDropReason.belowMinimumWatchTime, video.id, method);
+    // View = playback start per 2026-08-13 view/loop spec: any playback
+    // start counts, even if the session ends before completing a loop
+    // (N=0 loops is valid). Only reject inverted ranges.
+    if (endSeconds < startSeconds) {
+      return _drop(ViewEventDropReason.invalidWatchRange, video.id, method);
     }
 
     if (!_authService.isAuthenticated) {
@@ -112,7 +115,8 @@ class ViewEventPublisher {
           ['source', source.tagValue, sourceDetail]
         else
           ['source', source.tagValue],
-        // Loop count (optional, omitted if 0 or null)
+        // Loop count as playthrough fraction (optional, omitted if null or <= 0).
+        // Fractional to preserve partial passes (median 0.75) per spec.
         if (loopCount != null && loopCount > 0) ['loops', loopCount.toString()],
       ];
 
@@ -172,13 +176,12 @@ class ViewEventPublisher {
     String? sourceDetail,
   }) async {
     const method = 'publishViewEventWithSegments';
-    // Filter out invalid segments
-    final validSegments = segments
-        .where((s) => s.$2 > s.$1 && s.$2 - s.$1 >= 1)
-        .toList();
+    // Filter out invalid segments. Per view=playback-start spec, any
+    // non-inverted segment counts (even <1s / N=0 loops is a valid view).
+    final validSegments = segments.where((s) => s.$2 >= s.$1).toList();
 
     if (validSegments.isEmpty) {
-      return _drop(ViewEventDropReason.belowMinimumWatchTime, video.id, method);
+      return _drop(ViewEventDropReason.invalidWatchRange, video.id, method);
     }
 
     if (!_authService.isAuthenticated) {

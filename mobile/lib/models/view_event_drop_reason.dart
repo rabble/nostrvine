@@ -8,8 +8,9 @@
 /// silent, but only the second is a bug — so the two must be told apart at
 /// the point of the drop rather than inferred from log volume later.
 enum ViewEventDropReason {
-  /// The watched segment was shorter than the minimum for a view.
-  belowMinimumWatchTime,
+  /// No usable watched range: it ended before it started, or no usable
+  /// segment was supplied.
+  invalidWatchRange,
 
   /// No signed-in identity, so nothing could sign the event.
   notAuthenticated,
@@ -37,8 +38,13 @@ enum ViewEventDropReason {
   /// [relayRejected] is deliberately not structural: the event was well
   /// formed and the failure is a network or relay condition, which the
   /// durable queue already retries.
+  ///
+  /// [invalidWatchRange] is structural. Since view = playback start there is
+  /// no minimum watch time left to fall below, so reaching it means the
+  /// caller supplied a range that ends before it starts, or no segment it
+  /// could use at all.
   bool get isStructural => switch (this) {
-    ViewEventDropReason.belowMinimumWatchTime => false,
+    ViewEventDropReason.invalidWatchRange => true,
     ViewEventDropReason.notAuthenticated => false,
     ViewEventDropReason.missingAddressableDTag => true,
     ViewEventDropReason.signingFailed => true,
