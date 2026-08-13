@@ -416,7 +416,6 @@ definitions:
         curl -Ls "https://get.maestro.mobile.dev" | bash
         export PATH="$PATH:$HOME/.maestro/bin"
         maestro --version
-        xcodebuild -version
     - &run_maestro_smoke_tests
       name: Run Maestro Smoke Tests
       script: |
@@ -439,6 +438,7 @@ definitions:
       name: Boot iOS Simulator
       script: |
         set -e
+        xcodebuild -version
         # Pick the first device from an explicit preference list rather than
         # pinning one model. A hardcoded 'iPhone 16 Pro' silently produced an
         # empty UDID on any image whose Xcode ships a different device set,
@@ -776,7 +776,9 @@ workflows:
       # sides: 2.1.0 cannot drive Xcode 26.x, and `latest` floating means a
       # Codemagic image bump can break the suite with no commit on our side —
       # the exact failure the Maestro pin exists to prevent. 26.4 is the image
-      # the 2.8.0 pairing was verified green on.
+      # the 2.8.0 pairing was verified green on. Release build workflows still
+      # use `xcode: latest`; this gate freezes the Maestro-driver contract, not
+      # the shipping toolchain.
       xcode: 26.4
       cocoapods: default
       groups:
@@ -806,6 +808,10 @@ workflows:
           include: true
           source: false
       cancel_previous_builds: true
+    when:
+      changeset:
+        includes:
+          - mobile/
     scripts:
       - *check_signing_endpoint
       - *check_supporters_config

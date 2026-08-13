@@ -1,6 +1,7 @@
 appId: co.openvine.app
-# Credentials are NOT committed. Supply them at run time; CI reads them from
-# the `maestro_e2e_credentials` Codemagic group:
+# Credentials are NOT committed. Supply them at run time. If full-suite CI is
+# restored, it should read them from the `maestro_e2e_credentials` Codemagic
+# group:
 #
 #   maestro test -e USER_EMAIL=... -e USER_PWD=... e2e/maestro/flows/loginEmailPwd.yaml
 ---

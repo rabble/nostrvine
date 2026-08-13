@@ -13,7 +13,11 @@ its `removeKeys` cleanup, and `loginEmailPwd` — plus all three social flows:
 `likeFlow`, `commentFlow` (post a comment, delete it) and `searchUserFlow`
 (find an account, open its profile, come back).
 
-Nothing is held back any more. The last two were restored by
+The full smoke suite is the manual target. The PR gate in Codemagic deliberately
+runs only `tests/loginFreshInstall.yaml` and `tests/removeKeys.yaml`, passed as
+individual flow files so the JUnit report keeps per-flow names and timings.
+
+Nothing is held back from `smoke.yaml`. The last two were restored by
 [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) —
 `commentFlow` had an `env`-vs-`output` bug and a disabled cleanup step, and
 `searchUserFlow` needed a rewrite for the current search layout. Their
@@ -37,9 +41,9 @@ The lesson generalises: **before filing a Maestro failure as flaky data,
 check whether the screen is stuck in a state the app has no exit from.**
 A permanent loading placeholder looks exactly like slow live content.
 
-The `e2e-smoke-ios` and `e2e-smoke-android` Codemagic workflows are
-`triggering: events: []`, so nothing runs them automatically. They are manual
-dispatches, and GitHub CI does not cover this lane at all.
+The `e2e-smoke-ios` Codemagic workflow runs on pull requests that touch
+`mobile/`. It is non-blocking until a flake baseline exists. The
+`e2e-smoke-android` workflow remains a manual dispatch.
 
 ## The recorder flows
 
@@ -440,8 +444,8 @@ for its original PR-preview use; it is not GitHub-Actions specific.
 
 ### 2. Supply credentials
 
-Nothing is committed. CI reads these from the `maestro_e2e_credentials`
-Codemagic group.
+Nothing is committed. The current PR gate does not use credentials. Full local
+suite runs and any future full-suite CI restore must supply these at run time:
 
 | Variable | Used by |
 |---|---|
@@ -453,15 +457,28 @@ Every entry point guards its own variables with `assertTrue`. A missing `-e`
 resolves to the JavaScript value `undefined` rather than erroring, so without
 that guard the suite would run against garbage and fail somewhere unrelated.
 
+If CI is restored to run `suites/smoke.yaml`, recreate the
+`maestro_e2e_credentials` Codemagic group, pass the variables with `-e`, and
+restore a runner-level preflight that fails fast when any required variable is
+missing. The per-flow `assertTrue` guards catch direct entry-point runs, but the
+runner guard keeps CI failures from looking like unrelated selector breakage.
+
 ### 3. Run
 
 ```bash
-# The smoke suite, as CI runs it
+# The credential-free PR gate, as CI runs it
+maestro test \
+  --format junit \
+  --output report.xml \
+  e2e/maestro/tests/loginFreshInstall.yaml \
+  e2e/maestro/tests/removeKeys.yaml
+
+# The full smoke suite
 maestro test \
   -e USER_EMAIL=... -e USER_PWD=... -e SEARCH_USER=... \
   e2e/maestro/suites/smoke.yaml
 
-# Or via the iOS helper, which boots a simulator and installs for you
+# Or run the full suite via the iOS helper, which boots a simulator and installs for you
 MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
   bash e2e/maestro/scripts/ui_smoke_ios.sh
 ```

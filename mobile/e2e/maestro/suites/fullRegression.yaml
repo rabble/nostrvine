@@ -1,7 +1,8 @@
 appId: co.openvine.app
 name: Divine regression test
 # Account credentials and content fixtures are NOT committed. Supply them at
-# run time; CI reads them from the `maestro_e2e_credentials` Codemagic group:
+# run time. If full-regression CI is restored, it should read them from the
+# `maestro_e2e_credentials` Codemagic group:
 #
 #   maestro test \
 #     -e USER_KEYS=nsec1... \
