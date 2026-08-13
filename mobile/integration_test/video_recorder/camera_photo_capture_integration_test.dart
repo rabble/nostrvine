@@ -11,6 +11,8 @@ import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+import '../helpers/patrol_semantics.dart';
+
 /// Grant camera and microphone permissions via Patrol native automation.
 Future<void> _grantPermissions(PatrolIntegrationTester $) async {
   const service = PermissionHandlerPermissionsService();
@@ -29,6 +31,8 @@ Future<void> _grantPermissions(PatrolIntegrationTester $) async {
 }
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Camera Photo Capture Integration Tests', () {
     late CameraService cameraService;
 

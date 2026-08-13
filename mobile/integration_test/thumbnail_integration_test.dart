@@ -16,9 +16,12 @@ import 'package:patrol/patrol.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+import 'helpers/patrol_semantics.dart';
 import 'helpers/test_setup.dart';
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Thumbnail Integration Tests', () {
     patrolTest(
       'Record video and generate thumbnail end-to-end',

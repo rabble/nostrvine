@@ -10,10 +10,13 @@ import 'package:patrol/patrol.dart';
 
 import '../helpers/db_helpers.dart';
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/relay_helpers.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Follow persistence after reopen', () {
     patrolTest(
       'authenticated following survives app reopen and repository reload',

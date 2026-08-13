@@ -11,6 +11,8 @@ import 'package:openvine/services/video_editor/video_editor_render_service.dart'
 import 'package:patrol/patrol.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
+import '../helpers/patrol_semantics.dart';
+
 /// A minimal 320x240 1-second H.264 MP4 (isom brand) with GPS metadata
 /// stored in BOTH `loci` (3GPP, for Android MediaMetadataRetriever) and
 /// `©xyz` (QuickTime, for AVFoundation on iOS/macOS) atoms.
@@ -56,6 +58,8 @@ const _gpsVideoBase64 =
     'AAAAAAAACIqsAC9gfAAAAABlYXJ0aAAAAAAAHql4eXoAEgAAKzQ3LjM3NjkrMDA4LjU0MTcv';
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('VideoMetadataStripper Integration Tests', () {
     late Directory tempDir;
 

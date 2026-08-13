@@ -7,9 +7,12 @@ import 'package:openvine/main.dart' as app;
 import 'package:patrol/patrol.dart';
 
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Signup validation', () {
     patrolTest(
       'invalid email and password mismatch stay on create account',

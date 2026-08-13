@@ -25,11 +25,14 @@ import 'package:patrol/patrol.dart';
 
 import '../helpers/invite_helpers.dart';
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 AppLocalizations get _en => lookupAppLocalizations(const Locale('en'));
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Bug 2233 Repro Log 1 pubkey-nsec mismatch', () {
     patrolTest(
       'auto A → import nsec B → switch back to A → signing fails',

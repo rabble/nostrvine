@@ -8,9 +8,12 @@ import 'package:patrol/patrol.dart';
 import '../helpers/db_helpers.dart';
 import '../helpers/http_helpers.dart';
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   patrolTest('feed TTFF under throttled network', ($) async {
     final tester = $.tester;
     final originalOnError = suppressSetStateErrors();

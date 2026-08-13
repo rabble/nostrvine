@@ -22,6 +22,7 @@ import '../helpers/constants.dart';
 import '../helpers/db_helpers.dart';
 import '../helpers/http_helpers.dart';
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 /// Pre-register and verify a keycast account via HTTP API.
@@ -81,6 +82,8 @@ Future<String> _registerAndVerifyViaApi(String email, String password) async {
 }
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Bug #2233 -- Delete Account Flow (User Log 2)', () {
     final ts = DateTime.now().millisecondsSinceEpoch;
     final emailA = 'log2-a-$ts@test.divine.video';
