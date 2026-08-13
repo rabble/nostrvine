@@ -1488,20 +1488,41 @@ class ProfileRepository implements ProfileReader {
 
     final normalizedUsername = (validation as DivineUsernameValid).normalized;
     final payload = jsonEncode({'name': normalizedUsername});
-    final authHeader = await _nostrClient.createNip98AuthHeader(
-      url: _usernameClaimUrl,
-      method: 'POST',
-      payload: payload,
-    );
 
-    if (authHeader == null) {
+    final String authHeader;
+    try {
+      final header = await _nostrClient.createNip98AuthHeader(
+        url: _usernameClaimUrl,
+        method: 'POST',
+        payload: payload,
+      );
+
+      if (header == null) {
+        Log.error(
+          'NIP-98 auth header generation returned null '
+          '(username: $normalizedUsername)',
+          name: 'ProfileRepository.claimUsername',
+          category: LogCategory.auth,
+        );
+        return const UsernameClaimError('Nip98 authorization failed');
+      }
+      authHeader = header;
+    } on Object catch (e, st) {
+      // Signer threw (e.g. a Keycast RPC error or timeout). Neither
+      // createNip98AuthHeader nor Nostr.signEvent catches, and the method's
+      // own handler below is `on Exception`, so without this the throw left
+      // claimUsername entirely — including for a fully keyed account. The
+      // request never reached the server, so no name was claimed.
+      // Mirrors releaseUsername, which already contains the same throw.
       Log.error(
-        'NIP-98 auth header generation returned null '
-        '(username: $normalizedUsername)',
+        'NIP-98 auth header generation threw '
+        '(username: $normalizedUsername): $e',
         name: 'ProfileRepository.claimUsername',
         category: LogCategory.auth,
+        error: e,
+        stackTrace: st,
       );
-      return const UsernameClaimError('Nip98 authorization failed');
+      return const UsernameClaimError('Signing failed');
     }
 
     final Response response;
