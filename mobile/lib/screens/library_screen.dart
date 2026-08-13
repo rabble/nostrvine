@@ -751,9 +751,10 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                     ),
                   ),
                 ),
-                if (clipsState.isDeleting ||
-                    clipsState.isSavingToGallery ||
-                    isPreparing)
+                // Deleting is deliberately absent: a soft delete finishes in a
+                // few frames, so the scrim only read as the screen flashing
+                // black. Its feedback is the clips leaving the grid plus Undo.
+                if (clipsState.isSavingToGallery || isPreparing)
                   Material(
                     color: VineTheme.scrim65,
                     child: Center(

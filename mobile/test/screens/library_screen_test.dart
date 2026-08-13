@@ -1,6 +1,8 @@
 // ABOUTME: Tests for LibraryScreen - browsing and managing saved clips/drafts
 // ABOUTME: Covers tabs, navigation, empty states, and clip selection flows
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -963,6 +965,62 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(en.libraryClipsDeletedUndoLabel), findsOneWidget);
+      });
+
+      testWidgets('does not scrim the screen while the delete is in flight', (
+        tester,
+      ) async {
+        // Regression guard: the blocking progress scrim used to cover the
+        // whole screen for the handful of frames a soft delete takes, which
+        // read as the library flashing black on every trashed clip.
+        final clip = DivineVideoClip(
+          id: 'scrim-clip-1',
+          video: EditorVideo.file('/test/scrim.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          thumbnailPath: '/test/scrim.jpg',
+          ghostFramePath: '/test/scrim_ghost.jpg',
+        );
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockClipLibraryService.recoverMissingAssets(any()),
+        ).thenAnswer((_) async => [clip]);
+        // Held open so the assertions run while the bloc is still deleting.
+        final softDelete = Completer<bool>();
+        when(
+          () => mockClipLibraryService.softDelete(any()),
+        ).thenAnswer((_) => softDelete.future);
+
+        await tester.pumpWidget(
+          buildWidget(
+            initialTabIndex: 1,
+            tabsMode: LibraryTabsMode.withoutSounds,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final bloc = BlocProvider.of<ClipsLibraryBloc>(
+          tester.element(find.byType(ClipsTab)),
+        )..add(ClipsLibraryDeleteClip(clip));
+        // One pump lets the bloc emit `deleting`, the second paints it.
+        await tester.pump();
+        await tester.pump();
+
+        expect(bloc.state.isDeleting, isTrue);
+        expect(
+          find.byWidgetPredicate(
+            (widget) => widget is Material && widget.color == VineTheme.scrim65,
+          ),
+          findsNothing,
+        );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+
+        softDelete.complete(true);
+        await tester.pumpAndSettle();
       });
     });
 

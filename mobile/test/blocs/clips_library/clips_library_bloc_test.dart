@@ -1057,6 +1057,29 @@ void main() {
           ),
         ],
       );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'ignores a multi-delete while a single-clip delete is in flight',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.softDelete(any()),
+          ).thenAnswer((_) async => true);
+        },
+        // The two delete events use separate `droppable()` buckets, so only
+        // the explicit in-flight check keeps them from overlapping.
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.deleting,
+          clips: [clip1, clip2],
+          selectedClipIds: const {'clip1'},
+          selectedDuration: const Duration(seconds: 5),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibraryDeleteSelected()),
+        expect: () => <ClipsLibraryState>[],
+        verify: (_) {
+          verifyNever(() => mockClipLibraryService.softDelete(any()));
+        },
+      );
     });
 
     group('ClipsLibraryDeleteClip', () {
@@ -1162,6 +1185,27 @@ void main() {
                 Duration.zero,
               ),
         ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'ignores a single-clip delete while a multi-delete is in flight',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.softDelete(any()),
+          ).thenAnswer((_) async => true);
+        },
+        // Mirror of the multi-delete guard: the `droppable()` transformer only
+        // excludes repeats of the same event type.
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.deleting,
+          clips: [clip1],
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(ClipsLibraryDeleteClip(clip1)),
+        expect: () => <ClipsLibraryState>[],
+        verify: (_) {
+          verifyNever(() => mockClipLibraryService.softDelete(any()));
+        },
       );
     });
 
