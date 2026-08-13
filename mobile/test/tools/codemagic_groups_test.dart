@@ -137,6 +137,23 @@ $refs
       expect(r.exitCode, 0, reason: '${r.stdout}${r.stderr}');
     });
 
+    test('trailing comment on a group line does not hide that group', () {
+      // `- name  # note` must still count. Treating the line as a terminator
+      // lets an undocumented new group pass if someone annotates it.
+      final base = yaml(
+        documented: ['zendesk_credentials'],
+        referenced: ['zendesk_credentials', 'supporters_credentials'],
+      );
+      final r = run(
+        base.replaceFirst(
+          '        - supporters_credentials',
+          '        - supporters_credentials  # not set up yet',
+        ),
+      );
+      expect(r.exitCode, isNot(0));
+      expect(r.stderr, contains('supporters_credentials'));
+    });
+
     test('comments inside a groups block do not drop later entries', () {
       // Treating a comment as the end of `groups:` silently drops every name
       // after it — the false negative this guard exists to prevent.

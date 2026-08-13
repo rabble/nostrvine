@@ -68,11 +68,15 @@ documented="$(printf '%s\n' "$header" \
 # false negative this guard exists to prevent.
 referenced="$(awk '
   /^[[:space:]]*groups:[[:space:]]*$/ { in_groups = 1; next }
-  in_groups && /^[[:space:]]*(#|$)/ { next }
-  in_groups && /^[[:space:]]*-[[:space:]]+[a-z0-9_]+[[:space:]]*$/ {
-    gsub(/^[[:space:]]*-[[:space:]]+|[[:space:]]*$/, ""); print; next
+  in_groups {
+    line = $0
+    sub(/#.*$/, "", line)
+    if (line ~ /^[[:space:]]*$/) next
+    if (line ~ /^[[:space:]]*-[[:space:]]+[a-z0-9_]+[[:space:]]*$/) {
+      gsub(/^[[:space:]]*-[[:space:]]+|[[:space:]]*$/, "", line); print line; next
+    }
+    in_groups = 0
   }
-  { in_groups = 0 }
 ' "$YAML" | sort -u)"
 
 fail=0
