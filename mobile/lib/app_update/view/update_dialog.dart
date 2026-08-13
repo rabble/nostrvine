@@ -26,6 +26,20 @@ class UpdateDialogListener extends StatefulWidget {
 }
 
 class _UpdateDialogListenerState extends State<UpdateDialogListener> {
+  /// How long a prompt waits for the root [Navigator] before it is dropped.
+  ///
+  /// The wait exists because `GeoBlockingGate` renders a spinner *in place of*
+  /// `MaterialApp` while its check is in flight, and `GeoBlockingService` caps
+  /// that check at 10s. Past this budget the gate has resolved without
+  /// producing an app — a geo-blocked user has no navigator to present into
+  /// and never will get one — so waiting further can only re-arm itself for
+  /// the rest of the session.
+  static const _navigatorWaitBudget = Duration(seconds: 30);
+
+  ({AppUpdateBloc bloc, AppUpdateState state})? _pending;
+  Duration? _waitingSince;
+  bool _retryArmed = false;
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AppUpdateBloc, AppUpdateState>(
@@ -45,16 +59,12 @@ class _UpdateDialogListenerState extends State<UpdateDialogListener> {
 
     final navigatorContext = NavigatorKeys.root.currentContext;
     if (navigatorContext == null || !navigatorContext.mounted) {
-      // The update check can resolve before the router's Navigator is in the
-      // tree: GeoBlockingGate renders a spinner in place of MaterialApp while
-      // its own check is in flight. Retry on the next frame so the prompt is
-      // deferred rather than dropped. This does not request a frame of its
-      // own, so the chain stops on its own if the app stops rendering.
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _present(bloc, state),
-      );
+      _deferUntilNavigator(bloc, state);
       return;
     }
+
+    _pending = null;
+    _waitingSince = null;
 
     showDialog<void>(
       context: navigatorContext,
@@ -68,6 +78,42 @@ class _UpdateDialogListenerState extends State<UpdateDialogListener> {
         ),
       ),
     );
+  }
+
+  /// Re-attempts the prompt on later frames until a [Navigator] exists or
+  /// [_navigatorWaitBudget] elapses.
+  ///
+  /// The update check can resolve before the router's Navigator is in the
+  /// tree: `GeoBlockingGate` renders a spinner in place of `MaterialApp` while
+  /// its own check is in flight. `listenWhen` gates on a single urgency
+  /// transition, so a prompt dropped there is dropped for the whole session —
+  /// hence deferring rather than skipping.
+  ///
+  /// Only one retry is ever in flight, and a second transition arriving
+  /// mid-wait supersedes the pending one rather than stacking a second dialog
+  /// on top of the first.
+  void _deferUntilNavigator(AppUpdateBloc bloc, AppUpdateState state) {
+    _pending = (bloc: bloc, state: state);
+    if (_retryArmed) return;
+    _retryArmed = true;
+    WidgetsBinding.instance.addPostFrameCallback(_retryPending);
+  }
+
+  void _retryPending(Duration timeStamp) {
+    _retryArmed = false;
+    final pending = _pending;
+    if (pending == null) return;
+
+    // addPostFrameCallback never requests a frame of its own, so the budget is
+    // measured against the frames the app actually produced.
+    _waitingSince ??= timeStamp;
+    if (timeStamp - _waitingSince! > _navigatorWaitBudget) {
+      _pending = null;
+      _waitingSince = null;
+      return;
+    }
+
+    _present(pending.bloc, pending.state);
   }
 }
 

@@ -28,7 +28,10 @@ void main() {
     ///
     /// When [withApp] is false the listener has no [MaterialApp] below it at
     /// all — the shape GeoBlockingGate produces while its check is in flight,
-    /// where no [Navigator] exists yet.
+    /// where no [Navigator] exists yet. That stand-in is a spinner rather than
+    /// an inert box on purpose: the gate's own spinner animates, so the app
+    /// keeps producing frames throughout the wait, which is what drives the
+    /// listener's deferred retry.
     Widget buildSubject({bool withApp = true}) {
       return BlocProvider<AppUpdateBloc>.value(
         value: bloc,
@@ -41,7 +44,10 @@ void main() {
                   supportedLocales: AppLocalizations.supportedLocales,
                   home: const Scaffold(body: Text('Home')),
                 )
-              : const SizedBox.shrink(),
+              : const Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
         ),
       );
     }
@@ -143,6 +149,38 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(UpdateCopy.moderateTitle), findsOneWidget);
+    });
+
+    testWidgets('stops waiting when no Navigator ever arrives', (tester) async {
+      final states = StreamController<AppUpdateState>();
+      addTearDown(states.close);
+      whenListen(
+        bloc,
+        states.stream,
+        initialState: const AppUpdateState(status: AppUpdateStatus.resolved),
+      );
+
+      await tester.pumpWidget(buildSubject(withApp: false));
+
+      states.add(
+        const AppUpdateState(
+          status: AppUpdateStatus.resolved,
+          urgency: UpdateUrgency.moderate,
+          latestVersion: '1.0.8',
+          downloadUrl: DownloadUrls.github,
+        ),
+      );
+      await tester.pump();
+
+      // A geo-blocked user is served GeoBlockedScreen and never gets a
+      // MaterialApp, so the retry has to give up rather than re-arm itself on
+      // every frame for the rest of the session.
+      await tester.pump(const Duration(seconds: 31));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text(UpdateCopy.moderateTitle), findsNothing);
     });
   });
 }
