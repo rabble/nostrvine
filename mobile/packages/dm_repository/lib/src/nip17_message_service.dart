@@ -14,6 +14,7 @@ import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/nip59/gift_wrap_batch_wrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/relay.dart';
@@ -169,12 +170,30 @@ class NIP17MessageService {
     return _giftWrapBuilder(nostr, rumorEvent, receiverPublicKey);
   }
 
+  /// Rumor kinds keycast's `nip17_wrap_batch` accepts. NIP-17 also blesses
+  /// kind-7 reactions and wrapped kind-5 deletes, and this service sends both,
+  /// but the server rejects them at request level ("Rumor kind must be 14 or
+  /// 15"). Probing anyway would burn a round trip per reaction to learn the
+  /// same answer every time.
+  static const Set<int> _serverWrapBatchKinds = {
+    EventKind.privateDirectMessage,
+    EventKind.fileMessage,
+  };
+
+  /// Latched when the signer's backend turns out not to expose
+  /// `nip17_wrap_batch`, so later sends in this session stop probing an absent
+  /// verb. Set ONLY on an explicit "unsupported" answer — a transient error
+  /// leaves it clear, because one blip is not evidence the verb is gone.
+  bool _serverWrapBatchUnsupported = false;
+
   /// Builds the recipient and self-addressed gift wraps in a single isolate
   /// hop for local-key signers (one [compute] spawn covers both receivers,
-  /// halving the spawn cost vs two separate [_buildWrap] calls).
+  /// halving the spawn cost vs two separate [_buildWrap] calls), or — for a
+  /// remote signer whose backend supports it — in a single `nip17_wrap_batch`
+  /// round trip.
   ///
-  /// Returns `(recipientWrap, selfWrap?)`. For remote signers — or if the
-  /// batch isolate call fails — only the recipient wrap is built here and
+  /// Returns `(recipientWrap, selfWrap?)`. When neither batch path applies —
+  /// or either one fails — only the recipient wrap is built here and
   /// `selfWrap` is `null`; [_publishSelfWrap] then builds the self-wrap
   /// lazily after the recipient publish confirms delivery (avoids an extra
   /// signing round-trip on publish failure).
@@ -238,11 +257,28 @@ class NIP17MessageService {
           stackTrace: stackTrace,
         );
       }
+    } else if (signer case final GiftWrapBatchWrapper wrapper
+        when !_serverWrapBatchUnsupported &&
+            _serverWrapBatchKinds.contains(rumorEvent.kind)) {
+      // Remote signer whose backend builds NIP-59 wraps server-side: one round
+      // trip returns both wraps, replacing the four (`nip44Encrypt` +
+      // `signEvent`, per wrap) this path otherwise spends. See #7090.
+      //
+      // Deliberately in the `else` arm, never before the isolate check: a
+      // local-key signer whose isolate hop fails still falls through to
+      // [_buildWrap], which signs in-process at zero round trips — reaching
+      // for the network there would be a regression, not a speed-up.
+      final wraps = await _buildBothWrapsOnServer(
+        wrapper: wrapper,
+        rumorEvent: rumorEvent,
+        recipientPubkey: recipientPubkey,
+      );
+      if (wraps != null) return wraps;
     }
-    // Remote signer or batch failed: build only the recipient wrap. The
-    // self-wrap is built lazily by _publishSelfWrap after the recipient
-    // publish confirms delivery — avoids an extra signing round-trip for
-    // remote signers when the recipient publish fails.
+    // No batch path applied, or it did not produce a recipient wrap: build
+    // only the recipient wrap. The self-wrap is built lazily by
+    // _publishSelfWrap after the recipient publish confirms delivery — avoids
+    // an extra signing round-trip for remote signers when the publish fails.
     return (
       await _buildWrap(
         nostr: nostr,
@@ -251,6 +287,91 @@ class NIP17MessageService {
       ),
       null,
     );
+  }
+
+  /// One `nip17_wrap_batch` round trip building the recipient wrap and the
+  /// NIP-17 self copy from the same rumor.
+  ///
+  /// Returns `null` when the caller must fall back to the per-wrap path:
+  /// the backend does not expose the verb (latched so later sends skip the
+  /// probe), the call failed transiently, the response was misshapen, or the
+  /// recipient's own slot failed. A self-slot failure is NOT a fallback — the
+  /// recipient wrap is still good, and `_publishSelfWrap` rebuilds the self
+  /// copy exactly as it does for a signer with no batch support at all.
+  Future<(Event?, Event?)?> _buildBothWrapsOnServer({
+    required GiftWrapBatchWrapper wrapper,
+    required Event rumorEvent,
+    required String recipientPubkey,
+  }) async {
+    final List<GiftWrapSlot>? slots;
+    try {
+      slots = await wrapper.nip17WrapBatch(rumorEvent.toJson(), [
+        recipientPubkey,
+        _senderPublicKey,
+      ]);
+    } on Object catch (e, stackTrace) {
+      // Transient: a 5xx, an expired token, a timeout, or the verified_minor
+      // policy refusal. Fall back for THIS send without latching — the
+      // fallback's own nip44Encrypt re-hits a policy refusal and sendRumor
+      // terminalizes it as `blocked`, and a blip must not cost the rest of the
+      // session its fast path.
+      Log.error(
+        'Server gift-wrap batch failed for rumor ${rumorEvent.id}: $e; '
+        'falling back to the per-wrap signing path',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
+    if (slots == null) {
+      // Older backend without the verb: stop probing it this session.
+      _serverWrapBatchUnsupported = true;
+      return null;
+    }
+    if (slots.length != 2) {
+      Log.warning(
+        'Server gift-wrap batch returned ${slots.length} slots for 2 '
+        'recipients; falling back to the per-wrap signing path',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+
+    final recipientSlot = slots[0];
+    final selfSlot = slots[1];
+    if (!recipientSlot.isSuccess) {
+      Log.warning(
+        'Server gift-wrap batch: recipient slot failed '
+        '(${recipientSlot.error}); falling back to the per-wrap signing path',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+    if (!selfSlot.isSuccess) {
+      Log.debug(
+        'Server gift-wrap batch: self-wrap slot failed (${selfSlot.error}); '
+        '_publishSelfWrap will rebuild it',
+        category: LogCategory.system,
+      );
+    }
+
+    try {
+      return (
+        Event.fromJson(recipientSlot.giftWrap!),
+        selfSlot.isSuccess ? Event.fromJson(selfSlot.giftWrap!) : null,
+      );
+    } on Object catch (e) {
+      // A slot that parsed as JSON but is not a usable event. Never publish a
+      // half-understood wrap; take the path that builds one we control.
+      Log.warning(
+        'Server gift-wrap batch returned an unusable event: $e; '
+        'falling back to the per-wrap signing path',
+        category: LogCategory.system,
+      );
+      return null;
+    }
   }
 
   /// Build the unsigned NIP-17 rumor event for a 1:1 send.
