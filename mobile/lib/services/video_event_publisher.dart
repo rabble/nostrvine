@@ -19,7 +19,6 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/exceptions/video_exceptions.dart';
@@ -116,31 +115,6 @@ Duration outerPublishTimeoutFor(int relayCount) {
   if (derived < _outerPublishTimeoutFloor) return _outerPublishTimeoutFloor;
   if (derived > _outerPublishTimeoutCeiling) return _outerPublishTimeoutCeiling;
   return derived;
-}
-
-List<List<String>> _buildMentionPTags(
-  Iterable<String> pubkeys, {
-  Iterable<String> excludedPubkeys = const [],
-}) {
-  final excluded = excludedPubkeys
-      .map((pubkey) => pubkey.trim().toLowerCase())
-      .where(NostrHexUtils.isValidPubkey)
-      .toSet();
-  final seen = <String>{};
-  final tags = <List<String>>[];
-
-  for (final pubkey in pubkeys) {
-    final normalizedPubkey = pubkey.trim().toLowerCase();
-    if (!NostrHexUtils.isValidPubkey(normalizedPubkey) ||
-        excluded.contains(normalizedPubkey) ||
-        !seen.add(normalizedPubkey)) {
-      continue;
-    }
-
-    tags.add(['p', normalizedPubkey, collaboratorInviteRelayHint, 'mention']);
-  }
-
-  return tags;
 }
 
 /// Result of a single REST-then-WebSocket publish attempt.
@@ -1431,7 +1405,7 @@ class VideoEventPublisher {
 
       tags.addAll(buildCollaboratorPTags(collaboratorPubkeys));
       tags.addAll(
-        _buildMentionPTags(
+        buildMentionPTags(
           mentionedPubkeys,
           excludedPubkeys: collaboratorPubkeys,
         ),
@@ -1456,31 +1430,17 @@ class VideoEventPublisher {
         tags.add([
           'a',
           inspiredByAddressableId,
-          inspiredByRelayUrl ?? AppConstants.defaultRelayUrl,
+          inspiredByRelayUrl ?? inspiredByPTagRelayHint,
           'mention',
         ]);
       }
 
-      final emittedAddressableCredits = <String>{};
-      for (final credit in clipSourceCredits) {
-        final addressableId = credit.addressableId;
-        if (addressableId == null || addressableId.isEmpty) continue;
-
-        final creatorPubkey = credit.authorPubkey.trim().toLowerCase();
-        if (creatorPubkey.isNotEmpty && creatorPubkey == selfPubkey) {
-          continue;
-        }
-        if (!emittedAddressableCredits.add(addressableId.toLowerCase())) {
-          continue;
-        }
-
-        tags.add([
-          'a',
-          addressableId,
-          credit.relayUrl ?? AppConstants.defaultRelayUrl,
-          clipSourceCreditTagMarker,
-        ]);
-      }
+      tags.addAll(
+        buildClipSourceCreditATags(
+          clipSourceCredits: clipSourceCredits,
+          selfPubkey: selfPubkey,
+        ),
+      );
 
       // p-tag the inspired-by creator(s) so they are notifiable. Added after
       // the collaborator/mention p-tags so those win dedup and caption

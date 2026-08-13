@@ -34,6 +34,29 @@ List<String> buildClipSourceCreditPTag(String pubkeyHex, {String? relayHint}) {
   return ['p', pubkeyHex, relay, clipSourceCreditTagMarker];
 }
 
+/// Builds factual reused-clip credit `a` tags.
+List<List<String>> buildClipSourceCreditATags({
+  required Iterable<ClipSourceCredit> clipSourceCredits,
+  String? selfPubkey,
+}) {
+  final self = selfPubkey?.trim().toLowerCase();
+  final seen = <String>{};
+
+  return [
+    for (final credit in clipSourceCredits)
+      if (credit.addressableId case final addressableId?)
+        if (addressableId.isNotEmpty &&
+            credit.authorPubkey.trim().toLowerCase() != self &&
+            seen.add(addressableId.toLowerCase()))
+          [
+            'a',
+            addressableId,
+            credit.relayUrl ?? AppConstants.defaultRelayUrl,
+            clipSourceCreditTagMarker,
+          ],
+  ];
+}
+
 /// Resolves the inspired-by creator hex pubkeys carried by a publish.
 ///
 /// [addressableId] is the `34236:<pubkey>:<dTag>` coordinate of the
