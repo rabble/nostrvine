@@ -67,10 +67,10 @@ fi
 
 # --- Ensure the patrol CLI matches the patrol package ---
 # patrol_cli enforces the pairing itself and aborts the run on a mismatch
-# (patrol_cli 4.5.0+ pairs with patrol 4.7.0+). Activating the pinned CLI before
+# (patrol_cli 4.7.0+ pairs with patrol 4.9.0+). Activating the pinned CLI before
 # log capture starts keeps install/compile time out of the profiler timeline.
 # Keep in sync with the patrol constraint in mobile/pubspec.yaml.
-PATROL_CLI_VERSION=4.6.1
+PATROL_CLI_VERSION=4.7.0
 PATROL_BIN=""
 if [ -x "$PUB_CACHE_BIN/patrol" ]; then
     PATROL_BIN="$PUB_CACHE_BIN/patrol"

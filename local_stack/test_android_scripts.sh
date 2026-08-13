@@ -264,11 +264,11 @@ assert_contains 'local_stack_has_running_container "$COMPOSE_FILE"' "${SCRIPT_DI
   "profile runner should reuse the shared local stack status check"
 assert_contains 'android_emulator_invite_server_url' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should reuse the shared Android emulator invite-server URL"
-assert_contains 'PATROL_CLI_VERSION=4.6.1' "${SCRIPT_DIR}/profile.sh" \
+assert_contains 'PATROL_CLI_VERSION=4.7.0' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should pin patrol_cli to the version paired with the patrol package"
 assert_contains ')" || true' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should tolerate offline patrol --version update-check failures"
-assert_line_before 'PATROL_CLI_VERSION=4.6.1' 'Starting docker log capture' "${SCRIPT_DIR}/profile.sh" \
+assert_line_before 'PATROL_CLI_VERSION=4.7.0' 'Starting docker log capture' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should activate patrol_cli before profiler log capture starts"
 assert_contains "if grep -rq 'patrolTest' \"\$TEST_PATH\"; then" "${SCRIPT_DIR}/profile.sh" \
   "profile runner should recurse so directory targets dispatch correctly"
