@@ -2265,7 +2265,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'በሚያትሟቸው ክስተቶች ላይ የDivine ደንበኛ መለያ ያክሉ፣ ሌሎች የNostr መተግበሪያዎች በትክክል እንዲጠቅሷቸው።';
+      'በሚያትሟቸው ክስተቶች ላይ የDivine ደንበኛ መለያ ያክሉ፣ ሌሎች የNostr መተግበሪያዎች በትክክል እንዲጠቅሷቸው። ያለሱ፣ የሚልኳቸው ሪፖርቶች አወያዮቻችን ሲገመግሟቸው ያነሰ ክብደት ይኖራቸዋል።';
 
   @override
   String get nostrSettingsRemoveKeys => 'ቁልፎችን ከመሣሪያው አስወግድ';

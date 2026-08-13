@@ -3642,7 +3642,7 @@
     "nostrSettingsKeyManagement": "鍵の管理",
     "nostrSettingsKeyManagementSubtitle": "Nostr 鍵をエクスポート、バックアップ、復元",
     "nostrSettingsClientAttribution": "クライアント表記",
-    "nostrSettingsClientAttributionSubtitle": "公開するイベントに Divine のクライアントタグを含めて、他の Nostr アプリが正しく出典を示せるようにするよ。",
+    "nostrSettingsClientAttributionSubtitle": "公開するイベントに Divine のクライアントタグを含めて、他の Nostr アプリが正しく出典を示せるようにするよ。これがないと、送った報告はモデレーターが確認するときの重みが小さくなるよ。",
     "nostrSettingsRemoveKeys": "このデバイスから鍵を削除",
     "nostrSettingsRemoveKeysSubtitle": "このデバイスから秘密鍵だけを消すよ。コンテンツはリレーに残るけど、もう一回アカウントを使うには nsec のバックアップが必要になるよ。",
     "nostrSettingsCouldNotRemoveKeys": "このデバイスから鍵を削除できなかった。もう一回試してみて。",

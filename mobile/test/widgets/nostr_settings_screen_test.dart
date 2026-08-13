@@ -117,6 +117,23 @@ void main() {
       expect(find.text(l10n.nostrSettingsNip05AddressSubtitle), findsOneWidget);
     });
 
+    // #6592: the toggle used to describe only the upside. Turning attribution
+    // off changes how a report is weighted, so the subtitle has to say so.
+    testWidgets('client attribution subtitle states the report consequence', (
+      tester,
+    ) async {
+      await pumpSubject(tester);
+
+      expect(
+        find.text(l10n.nostrSettingsClientAttributionSubtitle),
+        findsOneWidget,
+      );
+      expect(
+        l10n.nostrSettingsClientAttributionSubtitle,
+        contains('reports you send carry less weight'),
+      );
+    });
+
     // Deletion is the one irreversible row on this screen, so it has to read
     // as destructive rather than as another settings entry.
     testWidgets('renders the delete entry as destructive', (tester) async {
@@ -142,9 +159,7 @@ void main() {
       // string: the same key in another locale must not be on screen.
       expect(
         find.text(
-          lookupAppLocalizations(
-            const Locale('de'),
-          ).nostrSettingsDeleteAccount,
+          lookupAppLocalizations(const Locale('de')).nostrSettingsDeleteAccount,
         ),
         findsNothing,
       );
@@ -217,45 +232,42 @@ void main() {
     // gesture cannot take it away while a destructive sign-out is still in
     // flight — that would leave the user on an idle-looking screen with keys
     // being deleted underneath them.
-    testWidgets(
-      'keeps the progress overlay through a back gesture',
-      (
-        tester,
-      ) async {
-        final signOut = Completer<void>();
-        when(
-          () => mockAuthService.signOut(
-            deleteKeys: true,
-            abortOnKeyDeletionFailure: true,
-          ),
-        ).thenAnswer((_) => signOut.future);
+    testWidgets('keeps the progress overlay through a back gesture', (
+      tester,
+    ) async {
+      final signOut = Completer<void>();
+      when(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        ),
+      ).thenAnswer((_) => signOut.future);
 
-        await pumpSubject(tester);
+      await pumpSubject(tester);
 
-        await tester.tap(find.text(l10n.nostrSettingsRemoveKeys));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
-        await tester.pump();
+      await tester.tap(find.text(l10n.nostrSettingsRemoveKeys));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
+      await tester.pump();
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        await tester.binding.handlePopRoute();
-        await tester.pump();
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        signOut.complete();
-        await tester.pumpAndSettle();
+      signOut.complete();
+      await tester.pumpAndSettle();
 
-        expect(find.byType(CircularProgressIndicator), findsNothing);
-        expect(tester.takeException(), isNull);
-        verify(
-          () => mockAuthService.signOut(
-            deleteKeys: true,
-            abortOnKeyDeletionFailure: true,
-          ),
-        ).called(1);
-      },
-    );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+      verify(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        ),
+      ).called(1);
+    });
 
     // The previous shape of this guard popped the spinner's route; the entry
     // can now outlive the screen instead, so the case worth pinning is a
@@ -375,9 +387,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(
-        find.text(l10n.nostrSettingsDeleteAccount),
-      );
+      await tester.ensureVisible(find.text(l10n.nostrSettingsDeleteAccount));
       await tester.tap(find.text(l10n.nostrSettingsDeleteAccount));
       await tester.pumpAndSettle();
 

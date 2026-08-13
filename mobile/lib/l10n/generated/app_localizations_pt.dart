@@ -2329,7 +2329,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Inclua uma tag de cliente Divine nos eventos que você publica para que outros apps Nostr possam atribuí-los corretamente.';
+      'Inclua uma tag de cliente Divine nos eventos que você publica para que outros apps Nostr possam atribuí-los corretamente. Sem ela, as denúncias que você envia têm menos peso quando nossos moderadores as analisam.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Remover chaves do dispositivo';

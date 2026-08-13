@@ -1290,7 +1290,7 @@
   "nostrSettingsKeyManagement": "Quản lý khóa",
   "nostrSettingsKeyManagementSubtitle": "Xuất, sao lưu và khôi phục khóa Nostr của bạn",
   "nostrSettingsClientAttribution": "Ghi nhận ứng dụng",
-  "nostrSettingsClientAttributionSubtitle": "Gắn thẻ ứng dụng Divine lên các sự kiện bạn xuất bản để các ứng dụng Nostr khác ghi nhận đúng nguồn.",
+  "nostrSettingsClientAttributionSubtitle": "Gắn thẻ ứng dụng Divine lên các sự kiện bạn xuất bản để các ứng dụng Nostr khác ghi nhận đúng nguồn. Không có nó, các báo cáo bạn gửi sẽ có ít trọng lượng hơn khi người kiểm duyệt của chúng tôi xem xét.",
   "nostrSettingsRemoveKeys": "Xóa tài khoản này khỏi thiết bị này",
   "nostrSettingsRemoveKeysSubtitle": "Xóa đăng nhập cục bộ của tài khoản này khỏi thiết bị. Các bản nháp và clip cục bộ của tài khoản này vẫn được giữ.",
   "nostrSettingsCouldNotRemoveKeys": "Không xóa được tài khoản này khỏi thiết bị. Vui lòng thử lại.",

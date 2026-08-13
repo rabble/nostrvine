@@ -2276,7 +2276,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Yayınladığın etkinliklere Divine istemci etiketini ekle, böylece diğer Nostr uygulamaları bunları doğru şekilde atfedebilir.';
+      'Yayınladığın etkinliklere Divine istemci etiketini ekle, böylece diğer Nostr uygulamaları bunları doğru şekilde atfedebilir. O olmadan gönderdiğin bildirimler, moderatörlerimiz incelerken daha az ağırlık taşır.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Anahtarları Cihazdan Kaldır';

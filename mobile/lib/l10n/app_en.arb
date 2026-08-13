@@ -1473,7 +1473,10 @@
   "nostrSettingsKeyManagement": "Key Management",
   "nostrSettingsKeyManagementSubtitle": "Export, backup, and restore your Nostr keys",
   "nostrSettingsClientAttribution": "Client Attribution",
-  "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
+  "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly. Without it, reports you send carry less weight when our moderators review them.",
+  "@nostrSettingsClientAttributionSubtitle": {
+    "description": "Subtitle for the Nostr settings client-attribution switch. The second sentence states the consequence of turning it off: a report with no client tag is still reviewed, but cannot count toward automatic moderation action."
+  },
   "nostrSettingsRemoveKeys": "Remove this account from this device",
   "nostrSettingsRemoveKeysSubtitle": "Remove this account's local login from this device. Your local drafts and clips stay saved for this account.",
   "nostrSettingsCouldNotRemoveKeys": "Could not remove this account from this device. Please try again.",

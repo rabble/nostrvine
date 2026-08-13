@@ -2269,7 +2269,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Tambahkan tag klien Divine ke event yang kamu publikasikan agar aplikasi Nostr lain bisa mengatribusikannya dengan benar.';
+      'Tambahkan tag klien Divine ke event yang kamu publikasikan agar aplikasi Nostr lain bisa mengatribusikannya dengan benar. Tanpa itu, laporan yang kamu kirim punya bobot lebih kecil saat ditinjau moderator kami.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Hapus Kunci dari Perangkat';

@@ -2186,7 +2186,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      '게시하는 이벤트에 Divine 클라이언트 태그를 포함해 다른 Nostr 앱이 올바르게 표시할 수 있게 해요.';
+      '게시하는 이벤트에 Divine 클라이언트 태그를 포함해 다른 Nostr 앱이 올바르게 표시할 수 있게 해요. 이게 없으면 보낸 신고는 모더레이터가 검토할 때 비중이 낮아져요.';
 
   @override
   String get nostrSettingsRemoveKeys => '기기에서 키 제거';

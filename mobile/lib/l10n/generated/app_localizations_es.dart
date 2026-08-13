@@ -2334,7 +2334,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Incluí una etiqueta de cliente Divine en los eventos que publicás para que otras apps de Nostr puedan atribuirlos correctamente.';
+      'Incluí una etiqueta de cliente Divine en los eventos que publicás para que otras apps de Nostr puedan atribuirlos correctamente. Sin eso, los reportes que enviás pesan menos cuando nuestros moderadores los revisan.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Quitar claves del dispositivo';
