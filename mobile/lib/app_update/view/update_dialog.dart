@@ -3,18 +3,29 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/app_update/app_update.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Shows a dialog when the update urgency is moderate or urgent.
 ///
 /// Place this as a [BlocListener] in the widget tree.
-class UpdateDialogListener extends StatelessWidget {
+///
+/// This listener is mounted above [MaterialApp], so its own [BuildContext] has
+/// no [Navigator] ancestor and cannot present a dialog. The dialog is resolved
+/// through [NavigatorKeys.root] instead, the same way `main.dart` resolves the
+/// publish snackbar.
+class UpdateDialogListener extends StatefulWidget {
   /// Creates an [UpdateDialogListener].
   const UpdateDialogListener({required this.child, super.key});
 
   /// The child widget.
   final Widget child;
 
+  @override
+  State<UpdateDialogListener> createState() => _UpdateDialogListenerState();
+}
+
+class _UpdateDialogListenerState extends State<UpdateDialogListener> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AppUpdateBloc, AppUpdateState>(
@@ -23,21 +34,39 @@ class UpdateDialogListener extends StatelessWidget {
           (curr.urgency == UpdateUrgency.moderate ||
               curr.urgency == UpdateUrgency.urgent) &&
           prev.urgency != curr.urgency,
-      listener: (context, state) {
-        showDialog<void>(
-          context: context,
-          builder: (_) => BlocProvider.value(
-            value: context.read<AppUpdateBloc>(),
-            child: _UpdateDialog(
-              urgency: state.urgency,
-              latestVersion: state.latestVersion ?? '',
-              downloadUrl: state.downloadUrl ?? '',
-              highlights: state.releaseHighlights,
-            ),
-          ),
-        );
-      },
-      child: child,
+      listener: (context, state) =>
+          _present(context.read<AppUpdateBloc>(), state),
+      child: widget.child,
+    );
+  }
+
+  void _present(AppUpdateBloc bloc, AppUpdateState state) {
+    if (!mounted) return;
+
+    final navigatorContext = NavigatorKeys.root.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) {
+      // The update check can resolve before the router's Navigator is in the
+      // tree: GeoBlockingGate renders a spinner in place of MaterialApp while
+      // its own check is in flight. Retry on the next frame so the prompt is
+      // deferred rather than dropped. This does not request a frame of its
+      // own, so the chain stops on its own if the app stops rendering.
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _present(bloc, state),
+      );
+      return;
+    }
+
+    showDialog<void>(
+      context: navigatorContext,
+      builder: (_) => BlocProvider.value(
+        value: bloc,
+        child: _UpdateDialog(
+          urgency: state.urgency,
+          latestVersion: state.latestVersion ?? '',
+          downloadUrl: state.downloadUrl ?? '',
+          highlights: state.releaseHighlights,
+        ),
+      ),
     );
   }
 }
