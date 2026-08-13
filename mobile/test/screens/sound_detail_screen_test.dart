@@ -25,6 +25,7 @@ import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound_service/sound_service.dart';
 
@@ -132,6 +133,7 @@ Widget createTestWidget({
   required Widget child,
   List<dynamic>? overrides,
   String? viewerPubkey,
+  TextScaler textScaler = TextScaler.noScaling,
 }) {
   final mockAuth = createMockAuthService();
   when(() => mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
@@ -141,6 +143,10 @@ Widget createTestWidget({
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: VineTheme.theme,
+      builder: (context, navigator) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+        child: navigator!,
+      ),
       home: child,
     ),
   );
@@ -435,7 +441,7 @@ void main() {
         expect(find.textContaining('2:05'), findsOneWidget);
       });
 
-      testWidgets('has music note icon', (tester) async {
+      testWidgets('uses the credited creator avatar as cover', (tester) async {
         final testSound = createTestAudioEvent(id: 'sound1');
 
         await tester.pumpWidget(
@@ -455,7 +461,47 @@ void main() {
 
         await tester.pump();
 
-        expect(_divineIcon(DivineIconName.musicNote), findsOneWidget);
+        // A sound has no artwork of its own, so the account it credits is
+        // what the cover identifies — same pubkey the "By …" line names.
+        final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+        expect(avatar.placeholderSeed, equals(testSound.pubkey));
+        expect(_divineIcon(DivineIconName.musicNote), findsNothing);
+      });
+
+      testWidgets('falls back to the note glyph when no account backs the '
+          'sound', (tester) async {
+        final testSound = AudioEvent.fromLocalImport(
+          id: '${AudioEvent.localImportMarker}_sound1',
+          filePath: '/tmp/sound.m4a',
+          createdAt: 1700000000,
+          title: 'Imported loop',
+          mimeType: 'audio/mp4',
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pump();
+
+        final note = _divineIcon(DivineIconName.musicNote);
+        expect(note, findsOneWidget);
+        expect(find.byType(UserAvatar), findsNothing);
+        expect(
+          tester.widget<DivineIcon>(note).color,
+          equals(VineTheme.vineGreen),
+        );
       });
 
       testWidgets('keeps bundled sound artist and license attribution', (
@@ -1270,7 +1316,130 @@ void main() {
         await tester.pump();
 
         expect(find.text('Videos using this sound'), findsOneWidget);
-        expect(_divineIcon(DivineIconName.videoCamera), findsOneWidget);
+      });
+
+      // The header is a PinnedHeaderSliver, which derives its geometry from
+      // the child it measures. A SliverPersistentHeaderDelegate instead has
+      // to declare an extent up front, and one that disagrees with what the
+      // child renders either clips the label (too small) or makes
+      // layoutExtent exceed paintExtent (too large) — the sliver then fails
+      // layout, leaves its geometry null, and paint surfaces it as a null
+      // check against the CustomScrollView. So assert both halves: the box
+      // is exactly as tall as its content asks for, at two text scales.
+      Future<({double laidOut, double needed})> pumpSectionHeader(
+        WidgetTester tester, {
+        required TextScaler textScaler,
+      }) async {
+        final testSound = createTestAudioEvent(id: 'sound1');
+
+        await tester.pumpWidget(
+          createTestWidget(
+            textScaler: textScaler,
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pump();
+
+        // Innermost Padding above the title is the header's own padding.
+        final box = tester.renderObject<RenderBox>(
+          find
+              .ancestor(
+                of: find.text('Videos using this sound'),
+                matching: find.byType(Padding),
+              )
+              .first,
+        );
+        return (
+          laidOut: box.size.height,
+          needed: box.getMaxIntrinsicHeight(box.size.width),
+        );
+      }
+
+      testWidgets('pinned section header is exactly as tall as its label', (
+        tester,
+      ) async {
+        final size = await pumpSectionHeader(
+          tester,
+          textScaler: TextScaler.noScaling,
+        );
+
+        // 52 = 16px padding either side of a 20px line box (titleSmallFont
+        // is 14/20). Asserting the concrete number is the half that can fail
+        // if the divine_ui type token moves.
+        expect(size.needed, equals(52));
+        expect(size.laidOut, equals(52));
+      });
+
+      testWidgets('pinned section header grows with the text scale rather '
+          'than clipping its label', (tester) async {
+        final size = await pumpSectionHeader(
+          tester,
+          textScaler: const TextScaler.linear(2),
+        );
+
+        // Only the line box scales; the two paddings do not. 32 + 40.
+        expect(size.needed, equals(72));
+        expect(size.laidOut, equals(72));
+      });
+
+      testWidgets('section header stays pinned while the sound header scrolls '
+          'away', (tester) async {
+        await tester.binding.setSurfaceSize(const Size(360, 480));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          title: 'Awesome Beat',
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(testSound.id).overrideWith(
+                (ref) => Future<List<String>>.error(Exception('offline')),
+              ),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final titleBefore = tester.getTopLeft(find.text('Awesome Beat')).dy;
+        final headerBefore = tester
+            .getTopLeft(find.text('Videos using this sound'))
+            .dy;
+
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+        await tester.pump();
+
+        // The sound header is chrome now, not a fixed pane above the grid: it
+        // leaves the viewport entirely and hands its height back.
+        expect(
+          tester.getTopLeft(find.text('Awesome Beat')).dy,
+          lessThan(titleBefore),
+        );
+        // The section header rides up with it but stops at the top instead of
+        // scrolling past — the grid would otherwise lose its label.
+        final headerAfter = tester
+            .getTopLeft(find.text('Videos using this sound'))
+            .dy;
+        expect(headerAfter, lessThan(headerBefore));
+        expect(headerAfter, greaterThanOrEqualTo(0));
       });
 
       testWidgets('reused original sound queries usage/grid by recovered id', (
@@ -1448,34 +1617,8 @@ void main() {
     });
 
     group('Theme Compliance', () {
-      testWidgets('uses VineTheme green for accents', (tester) async {
-        final testSound = createTestAudioEvent(id: 'sound1');
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: SoundDetailScreen(sound: testSound),
-            overrides: [
-              soundUsageCountProvider(
-                testSound.id,
-              ).overrideWith((ref) => Future.value(0)),
-              videosUsingSoundProvider(
-                testSound.id,
-              ).overrideWith((ref) => Future.value(<String>[])),
-              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
-            ],
-          ),
-        );
-
-        await tester.pump();
-
-        // Find music note icon and verify color
-        final musicIcon = _divineIcon(DivineIconName.musicNote);
-        expect(musicIcon, findsOneWidget);
-
-        final iconWidget = tester.widget<DivineIcon>(musicIcon);
-        expect(iconWidget.color, equals(VineTheme.vineGreen));
-      });
-
+      // The screen's own green accent is asserted where it still lives — on
+      // the cover fallback glyph, see "falls back to the note glyph …".
       testWidgets('Use Sound button has green background', (tester) async {
         final testSound = createTestAudioEvent(id: 'sound1');
 
