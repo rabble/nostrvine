@@ -2514,7 +2514,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{今日自動削除} =1{明日自動削除} other{{daysLeft}日後に自動削除}}",
     "libraryCouldNotLoadClips": "クリップを読み込めませんでした",
     "libraryCouldNotLoadDrafts": "下書きを読み込めませんでした",
-    "libraryCreateVideo": "動画を作成",
+    "libraryCreateVideo": "動画を作成 ({count})",
     "libraryDeleteClipMessage": "このクリップを削除しますか？",
     "libraryDeleteClipTitle": "クリップを削除",
     "libraryDeleteClipsMessage": "選択した{count}件のクリップを削除しますか？",

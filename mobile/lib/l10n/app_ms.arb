@@ -3757,7 +3757,7 @@
   },
   "libraryDeleteClipsWarning": "Tindakan ini tidak boleh dibuat asal. Fail video akan dialih keluar secara kekal daripada peranti anda.",
   "libraryPreparingVideo": "Menyediakan video...",
-  "libraryCreateVideo": "Cipta Video",
+  "libraryCreateVideo": "Cipta Video ({count})",
   "libraryClipsSavedToDestination": "{count, plural, =1{1 klip} other{{count} klip}} disimpan ke {destination}",
   "@libraryClipsSavedToDestination": {
     "placeholders": {

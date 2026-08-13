@@ -6402,7 +6402,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryPreparingVideo => 'ቪዲዮ በማዘጋጀት ላይ...';
 
   @override
-  String get libraryCreateVideo => 'ቪዲዮ ፍጠር';
+  String libraryCreateVideo(int count) {
+    return 'ቪዲዮ ፍጠር ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

@@ -2522,7 +2522,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{Zostanie automatycznie usunięty dzisiaj} =1{Zostanie automatycznie usunięty jutro} other{Zostanie automatycznie usunięty za {daysLeft} dni}}",
     "libraryCouldNotLoadClips": "Nie udało się wczytać klipów",
     "libraryCouldNotLoadDrafts": "Nie udało się wczytać wersji roboczych",
-    "libraryCreateVideo": "Utwórz wideo",
+    "libraryCreateVideo": "Utwórz wideo ({count})",
     "libraryDeleteClipMessage": "Na pewno usunąć ten klip?",
     "libraryDeleteClipTitle": "Usuń klip",
     "libraryDeleteClipsMessage": "Na pewno usunąć {count, plural, one{# wybrany klip} few{# wybrane klipy} many{# wybranych klipów} other{# wybranych klipów}}?",

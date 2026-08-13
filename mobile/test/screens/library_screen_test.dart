@@ -13,6 +13,7 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
+import 'package:openvine/models/clip_category.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
@@ -494,6 +495,144 @@ void main() {
           );
         },
       );
+    });
+
+    // A selection deliberately survives a filter switch so a video can span
+    // categories. The bulk toolbar actions must not inherit that reach —
+    // moving or trashing clips the grid is not showing is not something the
+    // user can see coming.
+    group('bulk actions across filters', () {
+      final travel = ClipCategory(
+        id: 'cat-travel',
+        name: 'Travel',
+        createdAt: DateTime(2026),
+      );
+
+      DivineVideoClip organizedClip(String id, {String? categoryId}) =>
+          DivineVideoClip(
+            id: id,
+            video: EditorVideo.file('/test/$id.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime(2026),
+            targetAspectRatio: models.AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
+            thumbnailPath: '/test/$id.jpg',
+            ghostFramePath: '/test/${id}_ghost.jpg',
+            categoryId: categoryId,
+          );
+
+      final unfiled = organizedClip('unfiled');
+      final filed = organizedClip('filed', categoryId: travel.id);
+
+      /// Opens the library with `unfiled` selected under All and `filed`
+      /// selected under Travel, then leaves Travel active — so half the
+      /// selection is off screen.
+      Future<ClipsLibraryBloc> selectAcrossFilters(WidgetTester tester) async {
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [unfiled, filed]);
+        when(
+          () => mockClipLibraryService.getCategories(),
+        ).thenAnswer((_) async => [travel]);
+
+        await tester.pumpWidget(
+          buildWidget(
+            initialTabIndex: 1,
+            tabsMode: LibraryTabsMode.withoutSounds,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final clipsBloc =
+            BlocProvider.of<ClipsLibraryBloc>(
+                tester.element(find.byType(ClipsTab)),
+              )
+              ..add(const ClipsLibraryEnterSelectionMode())
+              ..add(ClipsLibraryToggleSelection(unfiled))
+              ..add(ClipsLibraryToggleSelection(filed))
+              ..add(
+                ClipsLibraryFilterChanged(ClipLibraryCategoryFilter(travel.id)),
+              );
+        await tester.pumpAndSettle();
+
+        expect(clipsBloc.state.selectedClipIds, {'unfiled', 'filed'});
+        expect(clipsBloc.state.sortedClips.map((c) => c.id), ['filed']);
+        return clipsBloc;
+      }
+
+      testWidgets('delete trashes only the visible half of the selection', (
+        tester,
+      ) async {
+        when(
+          () => mockClipLibraryService.softDelete(any()),
+        ).thenAnswer((_) async => true);
+
+        final clipsBloc = await selectAcrossFilters(tester);
+
+        await tester.tap(
+          find.bySemanticsLabel(en.libraryDeleteSelectedClipsTooltip),
+        );
+        await tester.pumpAndSettle();
+
+        verify(() => mockClipLibraryService.softDelete('filed')).called(1);
+        verifyNever(() => mockClipLibraryService.softDelete('unfiled'));
+        expect(clipsBloc.state.selectedClipIds, {'unfiled'});
+      });
+
+      testWidgets('move files only the visible half of the selection', (
+        tester,
+      ) async {
+        when(
+          () => mockClipLibraryService.setClipCategory(
+            clipId: any(named: 'clipId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final clipsBloc = await selectAcrossFilters(tester);
+
+        await tester.tap(
+          find.bySemanticsLabel(en.libraryMoveSelectedClipsTooltip),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryCategoryMoveNone));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockClipLibraryService.setClipCategory(
+            clipId: 'filed',
+            categoryId: null,
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockClipLibraryService.setClipCategory(
+            clipId: 'unfiled',
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+        expect(clipsBloc.state.selectedClipIds, {'unfiled'});
+      });
+
+      // What survives an action is off screen by definition, so the grid
+      // shows no marked clip. Without the create-video bar accounting for
+      // it, that is indistinguishable from having selected nothing.
+      testWidgets('the surviving selection stays visible on the create bar', (
+        tester,
+      ) async {
+        when(
+          () => mockClipLibraryService.softDelete(any()),
+        ).thenAnswer((_) async => true);
+
+        await selectAcrossFilters(tester);
+        expect(find.text(en.libraryCreateVideo(2)), findsOneWidget);
+
+        await tester.tap(
+          find.bySemanticsLabel(en.libraryDeleteSelectedClipsTooltip),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryCreateVideo(1)), findsOneWidget);
+      });
     });
 
     group('empty state', () {

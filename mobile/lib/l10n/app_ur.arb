@@ -3757,7 +3757,7 @@
   },
   "libraryDeleteClipsWarning": "یہ کارروائی واپس نہیں ہو سکتی۔ ویڈیو فائلیں آپ کی ڈیوائس سے مستقل طور پر ہٹا دی جائیں گی۔",
   "libraryPreparingVideo": "ویڈیو تیار ہو رہی ہے...",
-  "libraryCreateVideo": "ویڈیو بنائیں",
+  "libraryCreateVideo": "ویڈیو بنائیں ({count})",
   "libraryClipsSavedToDestination": "{count, plural, =1{1 کلپ} other{{count} کلپس}} {destination} میں محفوظ ہو گئیں",
   "@libraryClipsSavedToDestination": {
     "placeholders": {

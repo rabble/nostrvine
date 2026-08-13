@@ -6226,7 +6226,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryPreparingVideo => '正在准备视频...';
 
   @override
-  String get libraryCreateVideo => '创作视频';
+  String libraryCreateVideo(int count) {
+    return '创作视频 ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

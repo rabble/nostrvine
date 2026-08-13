@@ -6490,7 +6490,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryPreparingVideo => 'جاري تجهيز الفيديو...';
 
   @override
-  String get libraryCreateVideo => 'إنشاء فيديو';
+  String libraryCreateVideo(int count) {
+    return 'إنشاء فيديو ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

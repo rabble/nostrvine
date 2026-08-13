@@ -2521,7 +2521,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{Bugün otomatik olarak silinir} =1{Yarın otomatik olarak silinir} other{{daysLeft} gün içinde otomatik olarak silinir}}",
     "libraryCouldNotLoadClips": "Klipler yüklenemedi",
     "libraryCouldNotLoadDrafts": "Taslaklar yüklenemedi",
-    "libraryCreateVideo": "Video oluştur",
+    "libraryCreateVideo": "Video oluştur ({count})",
     "libraryDeleteClipMessage": "Bu klibi silmek istiyor musun?",
     "libraryDeleteClipTitle": "Klibi sil",
     "libraryDeleteClipsMessage": "{count, plural, one{# seçili klibi} other{# seçili klibi}} silmek istiyor musun?",

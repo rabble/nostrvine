@@ -3757,7 +3757,7 @@
   },
   "libraryDeleteClipsWarning": "Không thể hoàn tác thao tác này. Các tệp video sẽ bị xóa vĩnh viễn khỏi thiết bị của bạn.",
   "libraryPreparingVideo": "Đang chuẩn bị video...",
-  "libraryCreateVideo": "Tạo video",
+  "libraryCreateVideo": "Tạo video ({count})",
   "libraryClipsSavedToDestination": "Đã lưu {count, plural, =1{1 clip} other{{count} clip}} vào {destination}",
   "@libraryClipsSavedToDestination": {
     "placeholders": {

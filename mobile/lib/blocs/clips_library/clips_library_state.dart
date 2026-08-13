@@ -105,6 +105,9 @@ enum LibraryClipTypeFilter {
 sealed class ClipLibraryFilter extends Equatable {
   const ClipLibraryFilter();
 
+  /// Whether the grid shows [clip] while this filter is active.
+  bool admits(DivineVideoClip clip);
+
   @override
   List<Object?> get props => [];
 }
@@ -112,16 +115,28 @@ sealed class ClipLibraryFilter extends Equatable {
 /// Every clip that is neither archived nor trashed. The library's default.
 final class ClipLibraryAllFilter extends ClipLibraryFilter {
   const ClipLibraryAllFilter();
+
+  @override
+  bool admits(DivineVideoClip clip) => clip.archivedAt == null;
 }
 
 /// Clips the user archived out of the default view.
 final class ClipLibraryArchiveFilter extends ClipLibraryFilter {
   const ClipLibraryArchiveFilter();
+
+  @override
+  bool admits(DivineVideoClip clip) => clip.archivedAt != null;
 }
 
 /// Soft-deleted clips awaiting the 30-day purge.
 final class ClipLibraryTrashFilter extends ClipLibraryFilter {
   const ClipLibraryTrashFilter();
+
+  /// Always false: trashed clips are not part of [ClipsLibraryState.clips] at
+  /// all, they live in [ClipsLibraryState.trashedClips] and the UI renders
+  /// them from there.
+  @override
+  bool admits(DivineVideoClip clip) => false;
 }
 
 /// Clips filed under one of the user's own categories.
@@ -130,6 +145,10 @@ final class ClipLibraryCategoryFilter extends ClipLibraryFilter {
 
   /// The [ClipCategory.id] this filter shows.
   final String categoryId;
+
+  @override
+  bool admits(DivineVideoClip clip) =>
+      clip.archivedAt == null && clip.categoryId == categoryId;
 
   @override
   List<Object?> get props => [categoryId];
@@ -346,6 +365,19 @@ final class ClipsLibraryState extends Equatable {
 
   /// Whether a gallery save is in progress.
   bool get isSavingToGallery => status == ClipsLibraryStatus.savingToGallery;
+
+  /// The selected clips the active [filter] actually shows.
+  ///
+  /// A selection survives switching between the active filters so a timeline
+  /// can span categories, which leaves part of it off screen. The bulk
+  /// toolbar actions run on this set instead of [selectedClipIds]: moving or
+  /// deleting clips the user cannot see is not something one tap should do.
+  /// Bulk-organizing across categories still works from
+  /// [ClipLibraryAllFilter], which shows them all at once.
+  Set<String> get visibleSelectedClipIds => {
+    for (final clip in clips)
+      if (selectedClipIds.contains(clip.id) && filter.admits(clip)) clip.id,
+  };
 
   /// Returns the currently selected clips in selection order.
   List<DivineVideoClip> get selectedClips {

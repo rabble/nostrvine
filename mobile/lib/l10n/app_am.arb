@@ -2964,7 +2964,7 @@
     },
     "libraryDeleteClipsWarning": "ይህ እርምጃ ሊቀለበስ አይችልም። የቪዲዮ ፋይሎቹ እስከመጨረሻው ከመሣሪያዎ ይወገዳሉ።",
     "libraryPreparingVideo": "ቪዲዮ በማዘጋጀት ላይ...",
-    "libraryCreateVideo": "ቪዲዮ ፍጠር",
+    "libraryCreateVideo": "ቪዲዮ ፍጠር ({count})",
     "libraryClipsSavedToDestination": "{count, plural, =1{{count} ክሊፕ} other{{count} ክሊፖች}} ወደ {destination} ተቀምጠዋል",
     "@libraryClipsSavedToDestination": {
         "placeholders": {

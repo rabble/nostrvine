@@ -2514,7 +2514,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{سيُحذف تلقائيًا اليوم} =1{سيُحذف تلقائيًا غدًا} other{سيُحذف تلقائيًا خلال {daysLeft} أيام}}",
     "libraryCouldNotLoadClips": "تعذّر تحميل المقاطع",
     "libraryCouldNotLoadDrafts": "تعذّر تحميل المسودات",
-    "libraryCreateVideo": "إنشاء فيديو",
+    "libraryCreateVideo": "إنشاء فيديو ({count})",
     "libraryDeleteClipMessage": "هل تريد حذف هذا المقطع؟",
     "libraryDeleteClipTitle": "حذف المقطع",
     "libraryDeleteClipsMessage": "هل تريد حذف {count, plural, one{مقطع واحد محدد} other{# مقاطع محددة}}؟",

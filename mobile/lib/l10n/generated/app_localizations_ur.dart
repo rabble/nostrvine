@@ -6538,7 +6538,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get libraryPreparingVideo => 'ویڈیو تیار ہو رہی ہے...';
 
   @override
-  String get libraryCreateVideo => 'ویڈیو بنائیں';
+  String libraryCreateVideo(int count) {
+    return 'ویڈیو بنائیں ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

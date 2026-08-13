@@ -4097,7 +4097,14 @@
   },
   "libraryDeleteClipsWarning": "This action cannot be undone. The video files will be permanently removed from your device.",
   "libraryPreparingVideo": "Preparing video...",
-  "libraryCreateVideo": "Create Video",
+  "libraryCreateVideo": "Create Video ({count})",
+  "@libraryCreateVideo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "libraryClipsSavedToDestination": "{count, plural, =1{1 clip} other{{count} clips}} saved to {destination}",
   "@libraryClipsSavedToDestination": {
     "placeholders": {

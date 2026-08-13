@@ -592,6 +592,23 @@ void main() {
         originalAspectRatio: 9 / 16,
       );
 
+      final travel = ClipCategory(
+        id: 'cat-travel',
+        name: 'Travel',
+        createdAt: DateTime(2026),
+      );
+
+      final filedClip = DivineVideoClip(
+        id: 'filed',
+        video: EditorVideo.file('/path/to/filed.mp4'),
+        thumbnailPath: '/path/to/filed.jpg',
+        duration: const Duration(seconds: 3),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        categoryId: travel.id,
+      );
+
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'does nothing when no clips selected',
         seed: () => ClipsLibraryState(
@@ -635,6 +652,61 @@ void main() {
         ],
         verify: (_) {
           verify(() => mockClipLibraryService.softDelete('clip1')).called(1);
+        },
+      );
+
+      // A selection survives switching between active filters, so part of it
+      // can be off screen when Delete is tapped. Only what the grid shows may
+      // go to the trash.
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'deletes only the selected clips the active filter shows',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.softDelete(any()),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [clip1]);
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, filedClip],
+          sortedClips: [filedClip],
+          selectedClipIds: const {'clip1', 'filed'},
+          selectedDuration: const Duration(seconds: 8),
+          categories: [travel],
+          filter: ClipLibraryCategoryFilter(travel.id),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibraryDeleteSelected()),
+        verify: (bloc) {
+          verify(() => mockClipLibraryService.softDelete('filed')).called(1);
+          verifyNever(() => mockClipLibraryService.softDelete('clip1'));
+          expect(bloc.state.lastDeletedCount, 1);
+          expect(bloc.state.lastDeletedClipIds, {'filed'});
+          // The clip picked under the other filter was never in reach, so it
+          // stays selected — and still counts towards the duration.
+          expect(bloc.state.selectedClipIds, {'clip1'});
+          expect(bloc.state.selectedDuration, clip1.duration);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'does nothing when the whole selection is hidden by the filter',
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, filedClip],
+          sortedClips: [filedClip],
+          selectedClipIds: const {'clip1'},
+          selectedDuration: const Duration(seconds: 5),
+          categories: [travel],
+          filter: ClipLibraryCategoryFilter(travel.id),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibraryDeleteSelected()),
+        expect: () => [],
+        verify: (_) {
+          verifyNever(() => mockClipLibraryService.softDelete(any()));
         },
       );
 
@@ -1475,6 +1547,18 @@ void main() {
         createdAt: DateTime(2026, 3, 5),
       );
 
+      DivineVideoClip clipNamed(String id) => DivineVideoClip(
+        id: id,
+        video: EditorVideo.file('/path/$id.mp4'),
+        duration: const Duration(seconds: 2),
+        recordedAt: DateTime(2026, 3, 5),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      final onScreen = clipNamed('on-screen');
+      final offScreen = clipNamed('off-screen');
+
       setUp(() {
         when(
           () => mockClipLibraryService.getAllClips(),
@@ -1552,6 +1636,90 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.filter, const ClipLibraryAllFilter());
           expect(bloc.state.categories, isEmpty);
+        },
+      );
+
+      // Deleting a category unfiles its clips rather than removing them, so
+      // nothing the user picked has left the library and the selection has
+      // no reason to reset.
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'deleting a category keeps the clips selected',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.deleteCategory(travel.id),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [onScreen, offScreen]);
+        },
+        build: createBloc,
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [onScreen, offScreen],
+          sortedClips: [onScreen, offScreen],
+          selectedClipIds: const {'on-screen', 'off-screen'},
+          selectedDuration: const Duration(seconds: 4),
+          categories: [travel],
+        ),
+        act: (bloc) => bloc.add(ClipsLibraryCategoryDeleted(travel.id)),
+        verify: (bloc) {
+          expect(bloc.state.selectedClipIds, {'on-screen', 'off-screen'});
+          expect(bloc.state.selectedDuration, const Duration(seconds: 4));
+        },
+      );
+
+      // The toolbar hands over only the clips the grid is showing, so the
+      // rest of a cross-filter selection has to come out the other side of
+      // the reload intact.
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'moving clips keeps a selection made under another filter',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: any(named: 'clipId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => [travel]);
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [onScreen, offScreen]);
+        },
+        build: createBloc,
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [onScreen, offScreen],
+          sortedClips: [onScreen],
+          selectedClipIds: const {'on-screen', 'off-screen'},
+          selectedDuration: const Duration(seconds: 4),
+          categories: [travel],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipsLibraryClipsMovedToCategory(
+            clipIds: {'on-screen'},
+            categoryId: 'cat-travel',
+          ),
+        ),
+        verify: (bloc) {
+          verify(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: 'on-screen',
+              categoryId: travel.id,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: 'off-screen',
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
+          expect(bloc.state.selectedClipIds, {'off-screen'});
+          expect(bloc.state.selectedDuration, offScreen.duration);
         },
       );
 

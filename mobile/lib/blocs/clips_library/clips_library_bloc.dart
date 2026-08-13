@@ -151,24 +151,20 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   }
 
   /// Returns the clips [filter] admits, sorted by [sort].
-  ///
-  /// The trash filter yields an empty list on purpose: trashed clips are not
-  /// part of [ClipsLibraryState.clips] at all, they live in
-  /// [ClipsLibraryState.trashedClips] and the UI renders them from there.
   static List<DivineVideoClip> _visibleClips(
     List<DivineVideoClip> clips,
     ClipLibraryFilter filter,
     ClipSort sort,
-  ) {
-    final matching = switch (filter) {
-      ClipLibraryAllFilter() => clips.where((c) => c.archivedAt == null),
-      ClipLibraryArchiveFilter() => clips.where((c) => c.archivedAt != null),
-      ClipLibraryCategoryFilter(:final categoryId) => clips.where(
-        (c) => c.archivedAt == null && c.categoryId == categoryId,
-      ),
-      ClipLibraryTrashFilter() => const <DivineVideoClip>[],
-    };
-    return _applySort(matching.toList(), sort);
+  ) => _applySort(clips.where(filter.admits).toList(), sort);
+
+  /// Total duration of the clips in [ids], ignoring ids [clips] has no clip
+  /// for.
+  static Duration _totalDuration(List<DivineVideoClip> clips, Set<String> ids) {
+    var total = Duration.zero;
+    for (final clip in clips) {
+      if (ids.contains(clip.id)) total += clip.duration;
+    }
+    return total;
   }
 
   Future<void> _onLoadRequested(
@@ -287,7 +283,11 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     ClipsLibraryDeleteSelected event,
     Emitter<ClipsLibraryState> emit,
   ) async {
-    if (state.selectedClipIds.isEmpty) return;
+    // Only what the active filter shows: the rest of the selection was made
+    // under another filter and is off screen, so a single tap here must not
+    // reach it. See [ClipsLibraryState.visibleSelectedClipIds].
+    final deletedIds = state.visibleSelectedClipIds;
+    if (deletedIds.isEmpty) return;
 
     emit(
       state.copyWith(
@@ -296,8 +296,8 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       ),
     );
 
-    final deletedIds = Set<String>.from(state.selectedClipIds);
     final deletedCount = deletedIds.length;
+    final remainingIds = state.selectedClipIds.difference(deletedIds);
 
     try {
       Log.info(
@@ -310,7 +310,8 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         await _clipLibraryService.softDelete(clipId);
       }
 
-      // Reload clips and clear selection
+      // Reload clips; the deleted ones drop out of the selection, anything
+      // selected under another filter stays in it.
       final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
 
       emit(
@@ -318,8 +319,8 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           status: ClipsLibraryStatus.loaded,
           clips: clips,
           sortedClips: _visibleClips(clips, state.filter, state.clipSort),
-          selectedClipIds: const {},
-          selectedDuration: Duration.zero,
+          selectedClipIds: remainingIds,
+          selectedDuration: _totalDuration(clips, remainingIds),
           lastDeletedCount: deletedCount,
           lastDeletedClipIds: deletedIds,
         ),
@@ -762,6 +763,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
 
       await _reloadAfterOrganize(
         emit,
+        organizedIds: event.clipIds,
         result: event.clipIds.isEmpty
             ? null
             : ClipsLibraryOrganizeResult(
@@ -802,7 +804,9 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         event.categoryId,
       );
       if (!deleted) return;
-      await _reloadAfterOrganize(emit);
+      // Deleting a category leaves its clips alone — they only lose their
+      // filing — so nothing drops out of the selection here.
+      await _reloadAfterOrganize(emit, organizedIds: const {});
     } catch (e, stackTrace) {
       _handleOrganizeFailure('delete category', e, stackTrace, emit);
     }
@@ -829,6 +833,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
 
       await _reloadAfterOrganize(
         emit,
+        organizedIds: event.clipIds,
         result: ClipsLibraryOrganizeResult(
           action: targetId == null
               ? ClipsLibraryOrganizeAction.removedFromCategory
@@ -858,6 +863,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
 
       await _reloadAfterOrganize(
         emit,
+        organizedIds: event.clipIds,
         result: ClipsLibraryOrganizeResult(
           action: event.archived
               ? ClipsLibraryOrganizeAction.archived
@@ -870,15 +876,22 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     }
   }
 
-  /// Reloads clips and categories after an organization change and clears the
-  /// selection, since the affected clips have usually just left the view.
+  /// Reloads clips and categories after an organization change.
+  ///
+  /// [organizedIds] leave the selection, since those clips have usually just
+  /// left the view. Clips selected under another filter stay selected, the
+  /// same way switching filters keeps them. Required rather than defaulted:
+  /// an empty set keeps the whole selection, which is a decision each caller
+  /// should have to state rather than inherit.
   Future<void> _reloadAfterOrganize(
     Emitter<ClipsLibraryState> emit, {
+    required Set<String> organizedIds,
     ClipsLibraryOrganizeResult? result,
   }) async {
     final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
     final categories = await _clipLibraryService.getCategories();
     final filter = _resolveFilter(state.filter, categories);
+    final selectedIds = state.selectedClipIds.difference(organizedIds);
 
     emit(
       state.copyWith(
@@ -887,8 +900,8 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         categories: categories,
         filter: filter,
         sortedClips: _visibleClips(clips, filter, state.clipSort),
-        selectedClipIds: const {},
-        selectedDuration: Duration.zero,
+        selectedClipIds: selectedIds,
+        selectedDuration: _totalDuration(clips, selectedIds),
         lastOrganizeResult: result,
         clearOrganizeResult: result == null,
       ),

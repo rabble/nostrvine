@@ -1670,7 +1670,7 @@
     "libraryDeleteClipsMessage": "Sigurado ka bang gusto mong burahin ang {count, plural, one{# napiling clip} other{# napiling clip}}?",
     "libraryDeleteClipsWarning": "Hindi na ito mababawi. Permanenteng maaalis sa device mo ang mga video file.",
     "libraryPreparingVideo": "Hinahanda ang video...",
-    "libraryCreateVideo": "Gumawa ng Video",
+    "libraryCreateVideo": "Gumawa ng Video ({count})",
     "libraryClipsSavedToDestination": "{count, plural, =1{{count} clip} other{{count} clip}} na-save sa {destination}",
     "libraryClipsSavePartialResult": "{successCount} na-save, {failureCount} ang nabigo",
     "libraryGalleryPermissionDenied": "Tinanggihan ang permission para sa {destination}",

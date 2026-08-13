@@ -2522,7 +2522,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{Wordt vandaag automatisch verwijderd} =1{Wordt morgen automatisch verwijderd} other{Wordt over {daysLeft} dagen automatisch verwijderd}}",
     "libraryCouldNotLoadClips": "Clips konden niet worden geladen",
     "libraryCouldNotLoadDrafts": "Concepten konden niet worden geladen",
-    "libraryCreateVideo": "Video maken",
+    "libraryCreateVideo": "Video maken ({count})",
     "libraryDeleteClipMessage": "Weet je zeker dat je deze clip wilt verwijderen?",
     "libraryDeleteClipTitle": "Clip verwijderen",
     "libraryDeleteClipsMessage": "Weet je zeker dat je {count, plural, one{# geselecteerde clip} other{# geselecteerde clips}} wilt verwijderen?",
