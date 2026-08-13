@@ -627,8 +627,12 @@ class BookmarkService {
         return true;
       }
 
-      final candidate = [..._globalBookmarks];
-      if (!candidate.remove(item)) {
+      // `removeWhere` for the same reason the private path uses it: another
+      // client is free to write the same tag twice, and `List.remove` would
+      // drop one copy and republish the other while reporting "Removed".
+      final candidate = [..._globalBookmarks]
+        ..removeWhere((existing) => existing == item);
+      if (candidate.length == _globalBookmarks.length) {
         Log.warning(
           'Item not found in global bookmarks: ${item.id}',
           name: 'BookmarkService',

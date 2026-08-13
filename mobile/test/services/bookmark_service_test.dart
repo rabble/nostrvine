@@ -836,6 +836,31 @@ void main() {
         expect(signedEventIds(), equals(['keep-a', 'keep-b']));
       });
 
+      test('drops every public copy of a duplicated tag', () async {
+        // Nothing stops another client from writing the same `e` tag twice.
+        // `List.remove` drops only the first, so the republished list would
+        // still carry the video while the sheet reports "Removed" — the same
+        // lie the private path already uses `removeWhere` to avoid.
+        stubRelay(
+          events: [
+            bookmarkListEvent(['keep', 'drop', 'drop']),
+          ],
+        );
+        final service = createService();
+
+        final removed = await service.removeFromGlobalBookmarks(
+          const BookmarkItem(type: 'e', id: 'drop'),
+        );
+
+        expect(removed, isTrue);
+        expect(signedEventIds(), equals(['keep']));
+        expect(
+          service.isVideoBookmarkedGlobally('drop'),
+          isFalse,
+          reason: 'a surviving duplicate makes the reported removal a lie',
+        );
+      });
+
       test('does not publish when the relay could not be reached', () async {
         stubRelay(events: [], timedOut: true);
         final service = createService();
