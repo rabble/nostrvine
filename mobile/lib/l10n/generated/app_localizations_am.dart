@@ -6241,10 +6241,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Couldn\'t update the cover. Try again.';
+      'ሽፋኑን ማዘመን አልተቻለም። እንደገና ሞክር።';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'ሽፋን ተዘምኗል';
 
   @override
   String get videoMetadataC2paMissingTitle => 'ያለ የእውነተኛነት ማረጋገጫ ይለጠፍ?';
@@ -9333,7 +9333,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => 'ለቪዲዮዎ የድምጽ ክፍሉን ይምረጡ';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'ማህበረሰብ';
@@ -10078,7 +10078,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'ወደዚህ ገጽ ገብተህ ማንበብን መረጥክ እንጂ በቀላሉ የሚያስገባህን መልስ አልመረጥክም፤ ይህ ትርጉም አለው። ታማኝነትን፣ ጥንካሬንና በዙሪያህ ላሉ ሰዎች እውነተኛ አሳቢነትን ያሳያል።\n\nከ16 ዓመት በታች ላሉ ሰዎች ያሉት ደንቦች በምትኖርበት ቦታ ይለያያሉ። በDivine ቤተሰቦች አብረው እንዲወያዩና ጤናማ የማኅበራዊ ሚዲያ አጠቃቀም ምን እንደሚመስል አብረው እንዲወስኑ እንፈልጋለን።';
 
   @override
   String get minorAccountReviewModerationTitle => 'አንድ ተጨማሪ ደረጃ ያስፈልገናል';
@@ -10256,11 +10256,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'ወላጅ ወይም ሞግዚት ለDivine ድጋፍ አጭር የግል ቪዲዮ በኢሜይል መላክ አለበት። ቡድናችን ይገመግመዋል፣ በቀጣይ ደረጃዎችም ይረዳሃል።\n\nወላጅ ወይም ሞግዚትን ማግኘት የማይቻል ከሆነ ወይም ማንንም አደጋ ላይ የሚጥል ከሆነ፣ ለDivine ድጋፍ ኢሜይል ልከህ አሳውቀን።';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'ይህ የDivine ድጋፍ ቡድን ቪዲዮውን እስኪገመግም ድረስ ያለ ማቆሚያ ነው። ከጸደቀ፣ አዲሱን መለያ በማዘጋጀት ሂደት ውስጥ ይመሩሃል።';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>
@@ -10642,7 +10642,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'ድረ-ገጹን መክፈት አልተቻለም';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'ሽፋን አርትዕ';
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel => 'የሽፋን ለውጦችን አስወግድ';
@@ -10653,7 +10653,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'የሽፋን ፍሬም ለመምረጥ በቪዲዮው ውስጥ ፈልግ';
 
   @override
   String get videoMetadataTagsPickerSearchHint => 'መለያዎችን ይፈልጉ ወይም ያክሉ';

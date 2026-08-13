@@ -1865,11 +1865,11 @@
     "userSearchPrompt": "البحث عن مستخدمين",
     "userSearchNoResults": "لم يُعثر على مستخدمين",
     "userSearchFailed": "فشل البحث",
-    "userPickerSearchByName": "İsme göre ara",
-    "userPickerFilterByNameHint": "İsme göre filtrele...",
-    "userPickerSearchByNameHint": "İsme göre ara...",
+    "userPickerSearchByName": "البحث بالاسم",
+    "userPickerFilterByNameHint": "التصفية بالاسم...",
+    "userPickerSearchByNameHint": "البحث بالاسم...",
     "userPickerClearSearchSemantics": "مسح البحث",
-    "userPickerAlreadyAddedSemantics": "{name} zaten eklendi",
+    "userPickerAlreadyAddedSemantics": "تمت إضافة {name} بالفعل",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
             "name": {
@@ -1877,7 +1877,7 @@
             }
         }
     },
-    "userPickerSelectSemantics": "{name} seç",
+    "userPickerSelectSemantics": "اختيار {name}",
     "@userPickerSelectSemantics": {
         "placeholders": {
             "name": {
@@ -1885,12 +1885,12 @@
             }
         }
     },
-    "userPickerEmptyFollowListTitle": "Ekibin orada",
-    "userPickerEmptyFollowListBody": "Uyum sağladığın kişileri takip et. Onlar da seni takip ettiğinde birlikte içerik üretebilirsin.",
-    "userPickerGoBack": "Geri dön",
-    "userPickerTypeNameToSearch": "Aramak için bir ad yaz",
-    "userPickerUnavailable": "Kullanıcı araması şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.",
-    "userPickerSearchFailedTryAgain": "Arama başarısız oldu. Lütfen tekrar dene.",
+    "userPickerEmptyFollowListTitle": "فريقك موجود في مكان ما",
+    "userPickerEmptyFollowListBody": "تابع الأشخاص الذين تنسجم معهم. وعندما يتابعونك بدورهم، يمكنكم التعاون معًا.",
+    "userPickerGoBack": "العودة",
+    "userPickerTypeNameToSearch": "اكتب اسمًا للبحث",
+    "userPickerUnavailable": "البحث عن المستخدمين غير متاح حاليًا. حاول مرة أخرى لاحقًا.",
+    "userPickerSearchFailedTryAgain": "فشل البحث. حاول مرة أخرى.",
     "forgotPasswordTitle": "إعادة تعيين كلمة المرور",
     "forgotPasswordDescription": "أدخل بريدك الإلكتروني وسنُرسل إليك رابطًا لإعادة تعيين كلمة المرور.",
     "forgotPasswordEmailLabel": "البريد الإلكتروني",
@@ -1955,7 +1955,7 @@
     "supportSaveLogsSubtitle": "تصدير السجلات إلى ملف للإرسال يدويًا",
     "supportFaq": "الأسئلة الشائعة",
     "supportFaqSubtitle": "الأسئلة والأجوبة الشائعة",
-    "supportProofMode": "Proofmode",
+    "supportProofMode": "ProofMode",
     "supportProofModeSubtitle": "تعرَّف على التحقق والأصالة",
     "supportLoginRequired": "سجِّل الدخول للتواصل مع الدعم",
     "supportExportingLogs": "جارٍ تصدير السجلات...",
@@ -2868,7 +2868,7 @@
     "videoEditorAdjustVolumeTitle": "ضبط الصوت",
     "videoEditorAudioAddAudio": "إضافة صوت",
     "videoEditorAudioFailedToLoadTitle": "فشل تحميل الأصوات",
-    "videoEditorAudioCategoryDivine": "OG Sounds",
+    "videoEditorAudioCategoryDivine": "Divine",
     "videoEditorAudioCategoryCommunity": "المجتمع",
     "videoEditorAudioLabel": "الصوت",
     "videoEditorMarkerLabel": "علامة",
@@ -4275,7 +4275,7 @@
     "minorAccountReviewWelcomePageTitle": "دليل العائلة",
     "minorAccountReviewWelcomeCta": "لم تبلغ 16 بعد؟ لا بأس. إليك ما يمكنك فعله.",
     "minorAccountReviewWelcomeTitle": "لم تبلغ 16 بعد؟ لا بأس.",
-    "minorAccountReviewWelcomeBody": "Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.",
+    "minorAccountReviewWelcomeBody": "دخولك إلى هذه الصفحة بدل أن تختار ببساطة الإجابة التي تُدخلك أمر مهم. إنه يدل على الصدق والشجاعة والاهتمام الحقيقي بمن حولك.\n\nالقواعد الخاصة بمن هم دون 16 تختلف حسب مكان إقامتك. في Divine نريد للعائلات أن تتحدث في الأمر معًا وتقرر كيف يبدو الاستخدام الصحي لوسائل التواصل الاجتماعي.",
     "minorAccountReviewModerationTitle": "نحتاج خطوة أخرى",
     "minorAccountReviewModerationBody": "طُلب منا إلقاء نظرة أدق على هذا الحساب لأنه قد يعود لشخص دون 16 عامًا. هذا المسار يبقي الخطوات التالية خاصة ويوجّهك إلى الطريق المناسب لعمرك.",
     "minorAccountReviewRulesTitle": "القواعد ليست واحدة في كل مكان",
@@ -4332,7 +4332,7 @@
     "minorAccountReviewUnder13PublicBody": "Divine ليس مصممًا للأطفال دون 13 عامًا، وقواعد وسائل التواصل حول العالم تقيّد أيدينا.\n\nأشياء كثيرة على الإنترنت تدفعك للكذب كي تحصل على ما تريد، ونحن نكره ذلك. إنه الدرس الخاطئ في الحياة، ولن نعلّمك إياه هنا.",
     "minorAccountReviewTeenBody": "إذا كان هذا الحساب يعود لشخص بين 13 و15 عامًا، استخدم رسالة الإشراف أو مسار الدعم لاتباع تعليمات موافقة الوالدين.",
     "minorAccountReviewParentConsentTitle": "إذا كان الحساب سيعود لشخص بين 13 و15",
-    "minorAccountReviewParentConsentBody": "If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.",
+    "minorAccountReviewParentConsentBody": "يجب أن يرسل أحد الوالدين أو ولي الأمر بريدًا إلكترونيًا إلى دعم Divine مع فيديو خاص قصير. سيراجعه فريقنا ويساعدك في الخطوات التالية.\n\nإذا كان التواصل مع أحد الوالدين أو ولي الأمر غير ممكن أو قد يعرّض أحدًا للخطر، راسل دعم Divine وأخبرنا.",
     "minorAccountReviewParentConsentChecklist": "ما ينبغي أن يظهره الفيديو",
     "minorAccountReviewParentConsentChecklistKid": "المراهق في الفيديو",
     "minorAccountReviewParentConsentChecklistPermission": "أحد الوالدين أو الوصي يتحدث أمام الكاميرا",
@@ -4464,7 +4464,7 @@
     "minorAccountReviewUnder13FamilyBody": "يمكن لأحد الوالدين أو الوصي أن يملك الحساب ويتولى النشر، ويمكنك بالتأكيد أن تظهر في الفيديوهات معهم. نريد للعائلات أن تستمتع بـ Divine بالطريقة التي تناسبها.",
     "minorAccountReviewUnder13ComeBackTitle": "عندما تبلغ 13",
     "minorAccountReviewUnder13ComeBackBody": "حسب القواعد في المكان الذي تعيش فيه، قد تتمكن من العودة وطلب حساب خاص بك. وفي تلك الحالة، إذا كان عمرك بين 13 و15، ستحتاج موافقة أحد الوالدين أو الوصي.",
-    "minorAccountReviewParentConsentPauseNote": "This is a pause, not a dead end. The account is not active until Divine support reviews the video.",
+    "minorAccountReviewParentConsentPauseNote": "هذه وقفة مؤقتة ريثما يراجع فريق دعم Divine الفيديو. إذا تمت الموافقة عليه، سيرشدك الفريق خلال إعداد الحساب الجديد.",
     "minorAccountReviewUnder13WhyTitle": "وإليك السبب",
     "@profileSetupUploadFailedGeneric": {
         "placeholders": {

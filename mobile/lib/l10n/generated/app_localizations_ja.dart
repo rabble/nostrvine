@@ -9121,7 +9121,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => '動画に使うオーディオ範囲を選択';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'コミュニティ';
@@ -9855,7 +9855,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      '入れる答えを選ぶんじゃなくて、このページまで来てくれたこと。それって大事なことだよ。誠実さと芯の強さ、そして周りの人への本当の思いやりが表れてる。\n\n16歳未満の人に関するルールは、住んでいる場所によって違うんだ。Divine では、家族で一緒に話し合って、健全なソーシャルメディアの使い方って何かを決めてほしいと思ってるよ。';
 
   @override
   String get minorAccountReviewModerationTitle => 'もう一歩だけ必要です';
@@ -10030,11 +10030,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      '保護者の方から Divine サポートに、短いプライベート動画を添えてメールしてください。チームが確認し、次のステップをお手伝いします。\n\n保護者に連絡できない場合や、連絡することで誰かが危険にさらされる場合は、Divine サポートにメールで知らせてください。';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'これは Divine サポートチームが動画を確認するあいだの一時停止です。承認されたら、新しいアカウントの設定を案内します。';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

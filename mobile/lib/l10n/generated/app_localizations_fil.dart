@@ -10446,7 +10446,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Ang pag-click mo papunta sa page na ito imbes na piliin na lang ang sagot na magpapapasok sa iyo ay may halaga. Ipinapakita nitong tapat ka, may tapang, at totoong may malasakit sa mga tao sa paligid mo.\n\nMagkakaiba ang mga panuntunan para sa mga wala pang 16 depende sa kung saan ka nakatira. Sa Divine, gusto naming pag-usapan ito nang sama-sama ng pamilya at magpasya kung ano ang malusog na paggamit ng social media.';
 
   @override
   String get minorAccountReviewModerationTitle =>
@@ -10639,11 +10639,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Dapat mag-email ang magulang o tagapag-alaga sa Divine support kasama ang maikling pribadong video. Susuriin ito ng team namin at tutulong sa mga susunod na hakbang.\n\nKung hindi posibleng makontak ang magulang o tagapag-alaga o kung maglalagay ito sa panganib ng kahit sino, mag-email sa Divine support at sabihin sa amin.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'Pansamantalang paghinto lang ito habang sinusuri ng Divine support team ang video. Kapag naaprubahan, gagabayan ka nila sa pag-set up ng bagong account.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

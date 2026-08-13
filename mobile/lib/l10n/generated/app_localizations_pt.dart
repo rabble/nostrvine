@@ -9618,7 +9618,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Selecione o trecho de áudio para seu vídeo';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Comunidade';
@@ -10398,7 +10398,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Você ter entrado nesta página em vez de simplesmente escolher a resposta que te deixava passar diz muito. Mostra honestidade, caráter e cuidado de verdade com as pessoas ao seu redor.\n\nAs regras para quem tem menos de 16 anos variam dependendo de onde você mora. Na Divine, queremos que as famílias conversem sobre isso juntas e decidam como é um uso saudável das redes sociais.';
 
   @override
   String get minorAccountReviewModerationTitle => 'Falta mais um passo';
@@ -10587,11 +10587,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Um pai, mãe ou responsável deve escrever para o suporte da Divine com um vídeo privado curto. Nossa equipe vai analisar e ajudar com os próximos passos.\n\nSe não for possível contatar um pai, mãe ou responsável, ou se isso colocar alguém em risco, escreva para o suporte da Divine e nos conte.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'É uma pausa enquanto a equipe de suporte da Divine analisa o vídeo. Se for aprovado, eles vão te orientar na configuração da nova conta.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

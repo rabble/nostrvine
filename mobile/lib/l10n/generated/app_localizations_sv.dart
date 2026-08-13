@@ -9548,7 +9548,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj ljudsegmentet för din video';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Gemenskap';
@@ -10326,7 +10326,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Att du klickade dig vidare till den här sidan i stället för att bara välja svaret som släppte in dig – det betyder något. Det visar ärlighet, ryggrad och en genuin omtanke om människorna runt dig.\n\nReglerna för den som är under 16 skiljer sig åt beroende på var du bor. På Divine vill vi att familjer pratar igenom det tillsammans och bestämmer hur ett sunt användande av sociala medier ser ut.';
 
   @override
   String get minorAccountReviewModerationTitle => 'Vi behöver ett steg till';
@@ -10511,11 +10511,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'En förälder eller vårdnadshavare ska mejla Divines support med en kort privat video. Vårt team granskar den och hjälper till med nästa steg.\n\nOm det inte går att kontakta en förälder eller vårdnadshavare, eller om det skulle utsätta någon för risk, mejla Divines support och berätta det för oss.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'Det här är en paus medan Divines supportteam granskar videon. Om den godkänns guidar de dig genom att sätta upp det nya kontot.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

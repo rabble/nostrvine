@@ -4692,7 +4692,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportFaqSubtitle => '일반적인 질문과 답변';
 
   @override
-  String get supportProofMode => 'Proofmode';
+  String get supportProofMode => 'ProofMode';
 
   @override
   String get supportProofModeSubtitle => '검증과 진위 확인에 대해 알아보세요';
@@ -9147,7 +9147,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => '동영상에 사용할 오디오 구간을 선택하세요';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => '커뮤니티';
@@ -9883,7 +9883,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      '그냥 통과되는 답을 고르는 대신 이 페이지까지 눌러서 들어온 건 의미가 있어요. 정직함과 소신, 그리고 주변 사람들을 진짜로 생각하는 마음을 보여주니까요.\n\n16세 미만에 적용되는 규칙은 사는 곳에 따라 달라요. Divine은 가족이 함께 이야기 나누고, 건강한 소셜 미디어 사용이 어떤 모습인지 같이 정하길 바라요.';
 
   @override
   String get minorAccountReviewModerationTitle => '한 단계가 더 필요해요';
@@ -10057,11 +10057,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      '부모님이나 보호자가 짧은 비공개 영상을 첨부해 Divine 지원팀에 이메일을 보내주세요. 팀이 검토한 뒤 다음 단계를 도와드릴게요.\n\n부모님이나 보호자에게 연락하기 어렵거나, 연락이 누군가를 위험에 빠뜨릴 수 있다면 Divine 지원팀에 이메일로 알려주세요.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'Divine 지원팀이 영상을 검토하는 동안 잠시 멈추는 거예요. 승인되면 새 계정을 설정하는 과정을 안내해 드릴게요.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

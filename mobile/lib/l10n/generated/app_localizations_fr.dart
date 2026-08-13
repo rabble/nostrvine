@@ -9691,7 +9691,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Sélectionne le segment audio de ta vidéo';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Communauté';
@@ -10479,7 +10479,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Le fait que tu sois venu jusqu\'à cette page au lieu de simplement cocher la réponse qui te faisait entrer, ça compte. Ça montre de l\'honnêteté, du caractère et une vraie attention aux gens autour de toi.\n\nLes règles pour les moins de 16 ans varient selon l\'endroit où tu vis. Chez Divine, on veut que les familles en discutent ensemble et décident à quoi ressemble un usage sain des réseaux sociaux.';
 
   @override
   String get minorAccountReviewModerationTitle => 'Il nous manque une étape';
@@ -10670,11 +10670,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Un parent ou tuteur doit écrire au support Divine avec une courte vidéo privée. Notre équipe l\'examinera et t\'aidera pour les étapes suivantes.\n\nSi contacter un parent ou tuteur n\'est pas possible ou mettrait quelqu\'un en danger, écris au support Divine et dis-le-nous.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'C\'est une pause le temps que l\'équipe du support Divine examine la vidéo. Si elle est approuvée, elle te guidera pour créer le nouveau compte.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

@@ -4632,25 +4632,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get userSearchFailed => 'فشل البحث';
 
   @override
-  String get userPickerSearchByName => 'İsme göre ara';
+  String get userPickerSearchByName => 'البحث بالاسم';
 
   @override
-  String get userPickerFilterByNameHint => 'İsme göre filtrele...';
+  String get userPickerFilterByNameHint => 'التصفية بالاسم...';
 
   @override
-  String get userPickerSearchByNameHint => 'İsme göre ara...';
+  String get userPickerSearchByNameHint => 'البحث بالاسم...';
 
   @override
   String get userPickerClearSearchSemantics => 'مسح البحث';
 
   @override
   String userPickerAlreadyAddedSemantics(String name) {
-    return '$name zaten eklendi';
+    return 'تمت إضافة $name بالفعل';
   }
 
   @override
   String userPickerSelectSemantics(String name) {
-    return '$name seç';
+    return 'اختيار $name';
   }
 
   @override
@@ -4659,25 +4659,24 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get userPickerEmptyFollowListTitle => 'Ekibin orada';
+  String get userPickerEmptyFollowListTitle => 'فريقك موجود في مكان ما';
 
   @override
   String get userPickerEmptyFollowListBody =>
-      'Uyum sağladığın kişileri takip et. Onlar da seni takip ettiğinde birlikte içerik üretebilirsin.';
+      'تابع الأشخاص الذين تنسجم معهم. وعندما يتابعونك بدورهم، يمكنكم التعاون معًا.';
 
   @override
-  String get userPickerGoBack => 'Geri dön';
+  String get userPickerGoBack => 'العودة';
 
   @override
-  String get userPickerTypeNameToSearch => 'Aramak için bir ad yaz';
+  String get userPickerTypeNameToSearch => 'اكتب اسمًا للبحث';
 
   @override
   String get userPickerUnavailable =>
-      'Kullanıcı araması şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.';
+      'البحث عن المستخدمين غير متاح حاليًا. حاول مرة أخرى لاحقًا.';
 
   @override
-  String get userPickerSearchFailedTryAgain =>
-      'Arama başarısız oldu. Lütfen tekrar dene.';
+  String get userPickerSearchFailedTryAgain => 'فشل البحث. حاول مرة أخرى.';
 
   @override
   String get forgotPasswordTitle => 'إعادة تعيين كلمة المرور';
@@ -4876,7 +4875,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get supportFaqSubtitle => 'الأسئلة والأجوبة الشائعة';
 
   @override
-  String get supportProofMode => 'Proofmode';
+  String get supportProofMode => 'ProofMode';
 
   @override
   String get supportProofModeSubtitle => 'تعرَّف على التحقق والأصالة';
@@ -9492,7 +9491,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => 'حدّد مقطع الصوت لفيديوك';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'المجتمع';
@@ -10251,7 +10250,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'دخولك إلى هذه الصفحة بدل أن تختار ببساطة الإجابة التي تُدخلك أمر مهم. إنه يدل على الصدق والشجاعة والاهتمام الحقيقي بمن حولك.\n\nالقواعد الخاصة بمن هم دون 16 تختلف حسب مكان إقامتك. في Divine نريد للعائلات أن تتحدث في الأمر معًا وتقرر كيف يبدو الاستخدام الصحي لوسائل التواصل الاجتماعي.';
 
   @override
   String get minorAccountReviewModerationTitle => 'نحتاج خطوة أخرى';
@@ -10434,11 +10433,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'يجب أن يرسل أحد الوالدين أو ولي الأمر بريدًا إلكترونيًا إلى دعم Divine مع فيديو خاص قصير. سيراجعه فريقنا ويساعدك في الخطوات التالية.\n\nإذا كان التواصل مع أحد الوالدين أو ولي الأمر غير ممكن أو قد يعرّض أحدًا للخطر، راسل دعم Divine وأخبرنا.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'هذه وقفة مؤقتة ريثما يراجع فريق دعم Divine الفيديو. إذا تمت الموافقة عليه، سيرشدك الفريق خلال إعداد الحساب الجديد.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

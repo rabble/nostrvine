@@ -9497,7 +9497,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Videon için ses bölümünü seç';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Topluluk';
@@ -10276,7 +10276,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Seni içeri alacak cevabı seçmek yerine bu sayfaya kadar gelmiş olman önemli. Dürüstlüğü, karakteri ve çevrendeki insanlara gerçek bir özeni gösteriyor.\n\n16 yaşın altındakiler için kurallar yaşadığın yere göre değişiyor. Divine olarak ailelerin bunu birlikte konuşmasını ve sağlıklı sosyal medya kullanımının nasıl olduğuna birlikte karar vermesini istiyoruz.';
 
   @override
   String get minorAccountReviewModerationTitle => 'Bir adım daha gerekiyor';
@@ -10461,11 +10461,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Bir ebeveyn ya da vasi, kısa ve özel bir videoyla Divine desteğine e-posta göndermeli. Ekibimiz inceleyip sonraki adımlarda yardımcı olacak.\n\nEbeveyn ya da vasiyle iletişim kurmak mümkün değilse veya bu birini riske atacaksa, Divine desteğine e-posta gönder ve bize bildir.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'Bu, Divine destek ekibi videoyu incelerken verilen bir mola. Onaylanırsa, yeni hesabı kurma sürecinde sana yol gösterecekler.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

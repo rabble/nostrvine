@@ -9592,7 +9592,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Selecteer het audiofragment voor je video';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Gemeenschap';
@@ -10375,7 +10375,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Dat je naar deze pagina bent doorgeklikt in plaats van gewoon het antwoord te kiezen waarmee je binnenkwam, dat telt. Het laat eerlijkheid, ruggengraat en echte zorg voor de mensen om je heen zien.\n\nDe regels voor mensen onder de 16 verschillen afhankelijk van waar je woont. Bij Divine willen we dat gezinnen er samen over praten en bepalen hoe gezond socialmediagebruik eruitziet.';
 
   @override
   String get minorAccountReviewModerationTitle =>
@@ -10563,11 +10563,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Een ouder of voogd moet Divine-support mailen met een korte privévideo. Ons team bekijkt hem en helpt met de volgende stappen.\n\nAls contact met een ouder of voogd niet mogelijk is of iemand in gevaar zou brengen, mail Divine-support en laat het ons weten.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'Dit is een pauze terwijl het Divine-supportteam de video bekijkt. Als hij wordt goedgekeurd, helpen ze je met het opzetten van het nieuwe account.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

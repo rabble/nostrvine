@@ -9754,7 +9754,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alege segmentul audio pentru videoclipul tău';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Comunitate';
@@ -10544,7 +10544,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Faptul că ai intrat pe această pagină în loc să alegi pur și simplu răspunsul care te lăsa să intri contează. Arată onestitate, caracter și grijă adevărată față de oamenii din jurul tău.\n\nRegulile pentru persoanele sub 16 ani diferă în funcție de locul unde trăiești. La Divine vrem ca familiile să discute împreună și să decidă cum arată o folosire sănătoasă a rețelelor sociale.';
 
   @override
   String get minorAccountReviewModerationTitle => 'Mai avem nevoie de un pas';
@@ -10733,11 +10733,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Un părinte sau tutore ar trebui să scrie asistenței Divine și să atașeze un scurt videoclip privat. Echipa noastră îl va analiza și te va ajuta cu pașii următori.\n\nDacă nu poți contacta un părinte sau tutore ori dacă asta ar pune pe cineva în pericol, scrie asistenței Divine și spune-ne.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'Este o pauză cât timp echipa de asistență Divine analizează videoclipul. Dacă este aprobat, te vor ghida în configurarea noului cont.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

@@ -9742,7 +9742,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wybierz fragment audio dla swojego filmu';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Społeczność';
@@ -10529,7 +10529,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'To, że kliknąłeś na tę stronę, zamiast po prostu wybrać odpowiedź, która by cię wpuściła, ma znaczenie. Pokazuje uczciwość, charakter i prawdziwą troskę o ludzi wokół ciebie.\n\nZasady dla osób poniżej 16 lat różnią się w zależności od miejsca zamieszkania. W Divine chcemy, żeby rodziny porozmawiały o tym razem i wspólnie zdecydowały, jak wygląda zdrowe korzystanie z mediów społecznościowych.';
 
   @override
   String get minorAccountReviewModerationTitle =>
@@ -10717,11 +10717,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Rodzic lub opiekun powinien napisać do wsparcia Divine i dołączyć krótki prywatny film. Nasz zespół sprawdzi go i pomoże z kolejnymi krokami.\n\nJeśli kontakt z rodzicem lub opiekunem nie jest możliwy albo naraziłby kogoś na niebezpieczeństwo, napisz do wsparcia Divine i daj nam znać.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'To przerwa na czas, gdy zespół wsparcia Divine sprawdza film. Jeśli zostanie zatwierdzony, przeprowadzą cię przez zakładanie nowego konta.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

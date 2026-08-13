@@ -1126,14 +1126,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get nostrInfoLingo => 'Nostr речник:';
 
   @override
-  String get nostrInfoNpubLabel => 'Npub:';
+  String get nostrInfoNpubLabel => 'npub:';
 
   @override
   String get nostrInfoNpubDescription =>
       ' Твоят публичен Nostr адрес. Безопасно е да го споделяш и помага на други да те намират, следват или да ти пишат в Nostr приложения.';
 
   @override
-  String get nostrInfoNsecLabel => 'Nsec:';
+  String get nostrInfoNsecLabel => 'nsec:';
 
   @override
   String get nostrInfoNsecDescription =>
@@ -3343,7 +3343,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authPasteBunkerUrl => 'Постави bunker:// URL';
 
   @override
-  String get authBunkerUrlHint => 'Bunker:// URL';
+  String get authBunkerUrlHint => 'bunker:// URL';
 
   @override
   String get authInvalidBunkerUrl =>
@@ -4317,7 +4317,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get webAuthConnectRemoteSigner => 'Свържи отдалечен подписващ';
 
   @override
-  String get webAuthBunkerHint => 'Бункер://pubkey?relay=wss://...';
+  String get webAuthBunkerHint => 'bunker://pubkey?relay=wss://...';
 
   @override
   String get webAuthPasteFromClipboard => 'Поставяне от клипборда';
@@ -9631,7 +9631,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Избери аудио сегмента за видеото си';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Общност';
@@ -10419,7 +10419,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewWelcomeBody =>
-      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+      'Това, че влезе в тази страница, вместо просто да избереш отговора, който щеше да те пусне вътре, има значение. Показва честност, характер и истинска грижа за хората около теб.\n\nПравилата за хората под 16 години са различни в зависимост от това къде живееш. В Divine искаме семействата да го обсъдят заедно и да решат как изглежда здравословната употреба на социални мрежи.';
 
   @override
   String get minorAccountReviewModerationTitle => 'Нужна е още една стъпка';
@@ -10607,11 +10607,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'Родител или настойник трябва да пише на поддръжката на Divine и да прикачи кратко лично видео. Екипът ни ще го прегледа и ще помогне със следващите стъпки.\n\nАко връзка с родител или настойник не е възможна или би изложила някого на риск, пиши на поддръжката на Divine и ни кажи.';
 
   @override
   String get minorAccountReviewParentConsentPauseNote =>
-      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+      'Това е пауза, докато екипът на поддръжката на Divine прегледа видеото. Ако бъде одобрено, ще те насочат как да настроиш новия профил.';
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>

@@ -3837,7 +3837,7 @@
     "videoEditorAudioNoSoundsAvailableSubtitle": "ፈጣሪዎች ኦዲዮን ሲያጋሩ ድምጾች እዚህ ይታያሉ",
     "videoEditorAudioFailedToLoadTitle": "ድምጾችን መጫን አልተሳካም።",
     "videoEditorAudioSegmentInstruction": "ለቪዲዮዎ የድምጽ ክፍሉን ይምረጡ",
-    "videoEditorAudioCategoryDivine": "OG Sounds",
+    "videoEditorAudioCategoryDivine": "Divine",
     "videoEditorAudioCategoryCommunity": "ማህበረሰብ",
     "videoEditorDrawToolArrowSemanticLabel": "የቀስት መሣሪያ",
     "videoEditorDrawToolEraserSemanticLabel": "መጥረጊያ መሳሪያ",
@@ -4275,11 +4275,11 @@
             }
         }
     },
-    "videoMetadataEditCoverFailedSnackbar": "Couldn't update the cover. Try again.",
+    "videoMetadataEditCoverFailedSnackbar": "ሽፋኑን ማዘመን አልተቻለም። እንደገና ሞክር።",
     "@videoMetadataEditCoverFailedSnackbar": {
         "description": "Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again."
     },
-    "videoMetadataEditCoverSuccessAnnouncement": "Cover updated",
+    "videoMetadataEditCoverSuccessAnnouncement": "ሽፋን ተዘምኗል",
     "videoMetadataC2paMissingTitle": "ያለ የእውነተኛነት ማረጋገጫ ይለጠፍ?",
     "videoMetadataC2paMissingBody": "የይዘት መታወቂያዎችን መጨመር አልቻልንም፣ ስለዚህ ይህ ቪዲዮ በሰው እንደተሰራ አይረጋገጥም። እንደገና ለመሞከር እንደገና ይፍጠሩ ወይም እንዳለ ይለጥፉ።",
     "videoMetadataC2paMissingNote": "የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል።",
@@ -4290,10 +4290,10 @@
     "@videoMetadataEditCoverSuccessAnnouncement": {
         "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."
     },
-    "videoMetadataEditCoverTitle": "Edit cover",
+    "videoMetadataEditCoverTitle": "ሽፋን አርትዕ",
     "videoMetadataEditCoverCloseSemanticLabel": "የሽፋን ለውጦችን አስወግድ",
     "videoMetadataEditCoverConfirmSemanticLabel": "የተመረጠውን ፍሬም እንደ ቪዲዮ ሽፋን ተጠቀም",
-    "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
+    "videoMetadataEditCoverStripSemanticLabel": "የሽፋን ፍሬም ለመምረጥ በቪዲዮው ውስጥ ፈልግ",
     "videoMetadataTagsPickerSearchHint": "መለያዎችን ይፈልጉ ወይም ያክሉ",
     "videoMetadataTagsPickerEmptyHint": "ሰዎች ቪዲዮዎን እንዲያገኙ መለያዎችን ያክሉ",
     "videoMetadataTagsPickerNoResults": "ተዛማጅ መለያዎች የሉም",
@@ -4407,7 +4407,7 @@
     "minorAccountReviewWelcomePageTitle": "የቤተሰብ መመሪያ",
     "minorAccountReviewWelcomeCta": "እስካሁን 16 አልሞላህም? ችግር የለም። ማድረግ የምትችለው ይኸው።",
     "minorAccountReviewWelcomeTitle": "እስካሁን 16 አልሞላህም? ችግር የለም።",
-    "minorAccountReviewWelcomeBody": "Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.",
+    "minorAccountReviewWelcomeBody": "ወደዚህ ገጽ ገብተህ ማንበብን መረጥክ እንጂ በቀላሉ የሚያስገባህን መልስ አልመረጥክም፤ ይህ ትርጉም አለው። ታማኝነትን፣ ጥንካሬንና በዙሪያህ ላሉ ሰዎች እውነተኛ አሳቢነትን ያሳያል።\n\nከ16 ዓመት በታች ላሉ ሰዎች ያሉት ደንቦች በምትኖርበት ቦታ ይለያያሉ። በDivine ቤተሰቦች አብረው እንዲወያዩና ጤናማ የማኅበራዊ ሚዲያ አጠቃቀም ምን እንደሚመስል አብረው እንዲወስኑ እንፈልጋለን።",
     "minorAccountReviewModerationTitle": "አንድ ተጨማሪ ደረጃ ያስፈልገናል",
     "minorAccountReviewModerationBody": "ይህ መለያ ከ16 ዓመት በታች የሆነ ሰው ሊሆን ስለሚችል በጥልቀት እንድንመለከተው ተጠይቀናል። ይህ ሂደት ቀጣይ ደረጃዎችን በግል ይይዛል፣ ለዕድሜህ ወደሚስማማው መንገድም ይመራሃል።",
     "minorAccountReviewRulesTitle": "ደንቦቹ በሁሉም ቦታ አንድ አይደሉም",
@@ -4464,7 +4464,7 @@
     "minorAccountReviewUnder13PublicBody": "Divine ከ13 ዓመት በታች ላሉ ልጆች የተሠራ አይደለም፣ በዓለም ዙሪያ ያሉ የማኅበራዊ ሚዲያ ደንቦችም እጃችንን ያስራሉ።\n\nበኢንተርኔት ላይ ብዙ ነገሮች የፈለግከውን ለማግኘት እንድትዋሽ ይገፋፉሃል፣ እኛ ደግሞ ይህን እንጠላለን። ለሕይወት የተሳሳተ ትምህርት ነው፣ እዚህም አናስተምርህም።",
     "minorAccountReviewTeenBody": "ይህ መለያ ከ13 እስከ 15 ዓመት የሆነ ሰው ከሆነ፣ የወላጅ ፈቃድ መመሪያዎችን ለመከተል የቁጥጥር መልእክቱን ወይም የድጋፍ መንገዱን ተጠቀም።",
     "minorAccountReviewParentConsentTitle": "መለያው ከ13 እስከ 15 ዓመት ለሆነ ሰው የሚሆን ከሆነ",
-    "minorAccountReviewParentConsentBody": "If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.",
+    "minorAccountReviewParentConsentBody": "ወላጅ ወይም ሞግዚት ለDivine ድጋፍ አጭር የግል ቪዲዮ በኢሜይል መላክ አለበት። ቡድናችን ይገመግመዋል፣ በቀጣይ ደረጃዎችም ይረዳሃል።\n\nወላጅ ወይም ሞግዚትን ማግኘት የማይቻል ከሆነ ወይም ማንንም አደጋ ላይ የሚጥል ከሆነ፣ ለDivine ድጋፍ ኢሜይል ልከህ አሳውቀን።",
     "minorAccountReviewParentConsentChecklist": "ቪዲዮው ምን ማሳየት አለበት",
     "minorAccountReviewParentConsentChecklistKid": "ታዳጊውን በቪዲዮው ውስጥ",
     "minorAccountReviewParentConsentChecklistPermission": "በካሜራ ፊት የሚናገር ወላጅ ወይም አሳዳጊ",
@@ -4596,7 +4596,7 @@
     "minorAccountReviewUnder13FamilyBody": "ወላጅ ወይም አሳዳጊ መለያውን ይዞ መለጠፍ ይችላል፣ አንተም ከእነሱ ጋር በቪዲዮዎቹ ውስጥ በእርግጠኝነት መሆን ትችላለህ። ቤተሰቦች Divineን ለእነሱ በሚስማማ መንገድ እንዲደሰቱበት እንፈልጋለን።",
     "minorAccountReviewUnder13ComeBackTitle": "13 ዓመት ስትሞላህ",
     "minorAccountReviewUnder13ComeBackBody": "በምትኖርበት ቦታ ባሉ ደንቦች መሠረት፣ ተመልሰህ የራስህን መለያ ማመልከት ትችል ይሆናል። በዚያን ጊዜ ከ13 እስከ 15 ከሆንክ የወላጅ ወይም የአሳዳጊ ፈቃድ ያስፈልግሃል።",
-    "minorAccountReviewParentConsentPauseNote": "This is a pause, not a dead end. The account is not active until Divine support reviews the video.",
+    "minorAccountReviewParentConsentPauseNote": "ይህ የDivine ድጋፍ ቡድን ቪዲዮውን እስኪገመግም ድረስ ያለ ማቆሚያ ነው። ከጸደቀ፣ አዲሱን መለያ በማዘጋጀት ሂደት ውስጥ ይመሩሃል።",
     "minorAccountReviewUnder13WhyTitle": "ምክንያቱ ይኸው",
     "notificationSettingsSystem": "ሲስተም",
     "notificationSettingsSystemSubtitle": "የመተግበሪያ ዝማኔዎችና የሲስተም መልእክቶች",
