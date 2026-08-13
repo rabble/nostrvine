@@ -23,7 +23,7 @@ class _ClipAction {
     this.isDestructive = false,
   });
 
-  /// Icon shown in the row and in the overflow menu.
+  /// Icon shown in the overflow menu, and in the row when [chipLabel] is null.
   final DivineIconName icon;
 
   /// Visible label in the row. Null renders an icon-only button.
@@ -104,13 +104,14 @@ class LibraryToolbar extends StatelessWidget {
   /// phone wide enough to show it.
   static const _minTitleWidth = 72.0;
 
-  /// Outer width of a `small` [DivineIconButton] — its 40px chip inside a
-  /// 48px tap target. Scales with the text scaler, on [DivineIcon]'s capped
-  /// curve, exactly as the button itself does.
+  /// Outer width of a `small` [DivineIconButton] — its pill centred in a 48px
+  /// tap target. Scales with the text scaler, on [DivineIcon]'s capped curve,
+  /// exactly as the button itself does.
   ///
-  /// Type-independent: a destructive button pads by the border width that a
-  /// bordered one paints instead, so both land on the same outer bounds.
-  /// `library_toolbar_test` pins that, like [_chipChrome].
+  /// Type-independent: at `small` that tap-target box is what fixes the outer
+  /// bounds, so a bordered button and a destructive one occupy the same 48px
+  /// whatever their pills measure. `library_toolbar_test` pins that, like
+  /// [_chipChrome].
   static const _iconButtonWidth = 48.0;
 
   /// Width a `small` [DivineButton] adds around its label: 4px outer padding,
@@ -195,8 +196,10 @@ class LibraryToolbar extends StatelessWidget {
     final chipLabel = action.chipLabel;
     if (chipLabel == null) return _iconButtonExtent(context);
 
-    // Measured, never painted — the color is here because the style helper
-    // requires one, and it picks the chip's own so metrics stay honest.
+    // Measured, never painted — it carries a color at all because
+    // `check_implicit_font_color_ceiling` freezes color-less
+    // `VineTheme.*Font(` calls at zero (#6404), and the chip's own is the
+    // honest one to name.
     final painter = TextPainter(
       text: TextSpan(
         text: chipLabel,
