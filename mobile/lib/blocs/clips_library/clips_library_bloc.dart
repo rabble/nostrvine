@@ -288,6 +288,9 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     // reach it. See [ClipsLibraryState.visibleSelectedClipIds].
     final deletedIds = state.visibleSelectedClipIds;
     if (deletedIds.isEmpty) return;
+    // The two delete events sit in separate `droppable()` buckets, so the
+    // transformer alone does not stop one delete overlapping the other.
+    if (state.isDeleting) return;
 
     emit(
       state.copyWith(
@@ -341,6 +344,10 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     ClipsLibraryDeleteClip event,
     Emitter<ClipsLibraryState> emit,
   ) async {
+    // See _onDeleteSelected: separate `droppable()` buckets do not exclude
+    // each other, so the in-flight delete has to be checked explicitly.
+    if (state.isDeleting) return;
+
     emit(
       state.copyWith(
         status: ClipsLibraryStatus.deleting,
