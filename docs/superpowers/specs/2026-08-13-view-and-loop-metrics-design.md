@@ -90,11 +90,27 @@ So:
 - **Views is the headline** where size and comparability matter — it is the
   bigger number and the one other platforms report.
 - **Loops is the signature** — Vine-native, unique to Divine, and the only
-  metric no competitor can quote. It is what the video card already renders
-  and it should stay there.
+  metric no competitor can quote. The video card is the right home for it and
+  it should stay there.
 
 Publishing loops as "the big number" would understate Divine by roughly a
 third against its own view count.
+
+**The card does not render this metric today, despite the label.**
+`VideoEvent.totalLoops`
+(`mobile/packages/models/lib/src/video_event.dart:1149`) is:
+
+```dart
+int get totalLoops =>
+    (originalLoops ?? 0) + (int.tryParse(rawTags['views'] ?? '') ?? 0);
+```
+
+Archival Vine loops plus the Divine **`views`** tag. For a Divine-native video
+the number under the label "loops" is the *view* count. Pointing the card at
+the real loop metric therefore cuts every Divine-native card by roughly a
+third — which decision 5 forbids. Reconciling the label with the metric is a
+prerequisite for this work, not a follow-up, and it is tracked as an open risk
+below.
 
 **5. A displayed number is never reduced — but it may be withheld.** These are
 different acts and only one of them is a lie.
@@ -315,9 +331,17 @@ recovery land close together, so a jump will be hard to attribute. Ship the
 detector and record a pre-change baseline first, or the effect of each becomes
 unrecoverable.
 
+**The card's "loops" label does not name the loop metric.** `totalLoops` sums
+archival Vine loops with the Divine `views` tag, so a Divine-native card shows
+a view count under a loop label. Because loops run at ~0.65x views, correcting
+the card reduces a displayed number, which decision 5 forbids. The two rules
+cannot both be satisfied by pointing the existing card at the new metric;
+which one gives — the label, the floor, or a one-time restatement — is
+unresolved and blocks the client half of this work.
+
 **Anonymous loop depth is assumed rather than measured.** One CDN delivery
 counts as one loop, so anonymous viewers who rewatch report a single loop. The
-hero metric is therefore conservative for 42% of the audience. That is the safe
+loop count is therefore conservative for 42% of the audience. That is the safe
 direction to be wrong in, but it should be stated wherever the number is
 published rather than discovered later by someone reconciling it.
 
