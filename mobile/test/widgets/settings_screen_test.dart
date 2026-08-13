@@ -39,6 +39,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/go_router.dart';
 import '../helpers/invite_availability_harness.dart';
+import '../helpers/scroll.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -468,12 +469,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final scrollable = find.byType(Scrollable);
-      await tester.scrollUntilVisible(
+      await scrollUntilTappable(
+        tester,
         find.text('Integration Permissions'),
         300,
         scrollable: scrollable,
       );
-      await tester.pumpAndSettle();
       await tester.tap(find.text('Integration Permissions'));
       await tester.pumpAndSettle();
 
@@ -530,12 +531,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final scrollable = find.byType(Scrollable);
-      await tester.scrollUntilVisible(
+      await scrollUntilTappable(
+        tester,
         find.text(l10n.settingsIntegratedApps),
         200,
         scrollable: scrollable,
       );
-      await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.settingsIntegratedApps));
       await tester.pumpAndSettle();
 
@@ -553,12 +554,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final scrollable = find.byType(Scrollable);
-      await tester.scrollUntilVisible(
+      await scrollUntilTappable(
+        tester,
         find.text(l10n.settingsBadgesTitle),
         200,
         scrollable: scrollable,
       );
-      await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.settingsBadgesTitle));
       await tester.pumpAndSettle();
 
@@ -919,12 +920,12 @@ void main() {
         await tester.pumpAndSettle();
 
         final scrollable = find.byType(Scrollable);
-        await tester.scrollUntilVisible(
+        await scrollUntilTappable(
+          tester,
           find.text(l10n.settingsDeveloperOptions),
           200,
           scrollable: scrollable,
         );
-        await tester.pumpAndSettle();
 
         expect(find.text(l10n.settingsDeveloperOptions), findsOneWidget);
 

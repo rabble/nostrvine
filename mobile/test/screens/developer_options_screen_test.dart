@@ -17,6 +17,7 @@ import 'package:openvine/services/environment_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/invite_availability_harness.dart';
+import '../helpers/scroll.dart';
 
 Future<SharedPreferences> mockPrefs() async {
   SharedPreferences.setMockInitialValues({});
@@ -52,17 +53,12 @@ Future<InviteAvailabilityCubit> pumpScreen(
 }
 
 Future<void> tapTile(WidgetTester tester, String title) async {
-  // Tap the whole ListTile (not just the text) and ensure it is fully in view
-  // first: scrollUntilVisible can leave the row clipped at a viewport edge, so
-  // a tap on the text's centre lands off-target on some layouts (this is what
-  // failed on Linux CI but passed on macOS). hitTestWarningShouldBeFatal
-  // (set in main) turns any such miss into a hard failure so it can't pass
-  // locally again.
+  // Tap the whole ListTile rather than just its text: a tap on the text's
+  // centre lands off-target on some layouts (this is what failed on Linux CI
+  // but passed on macOS). hitTestWarningShouldBeFatal (set in main) turns any
+  // such miss into a hard failure so it can't pass locally again.
   final tile = find.widgetWithText(ListTile, title);
-  await tester.scrollUntilVisible(tile, 300);
-  await tester.pumpAndSettle();
-  await tester.ensureVisible(tile);
-  await tester.pumpAndSettle();
+  await scrollUntilTappable(tester, tile, 300);
   await tester.tap(tile);
   await tester.pumpAndSettle();
 }

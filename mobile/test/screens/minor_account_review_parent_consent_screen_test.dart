@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 
+import '../helpers/scroll.dart';
+
 void main() {
   group('MinorAccountReviewParentConsentScreen', () {
     testWidgets('opens support email with prepared subject and body', (
@@ -33,12 +35,12 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
+      await scrollUntilTappable(
+        tester,
         find.text(l10n.minorAccountReviewParentConsentEmailCta),
         200,
         scrollable: find.byType(Scrollable),
       );
-      await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.minorAccountReviewParentConsentEmailCta));
       await tester.pumpAndSettle();
 

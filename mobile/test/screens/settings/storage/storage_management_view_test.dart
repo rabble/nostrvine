@@ -14,6 +14,8 @@ import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
 
+import '../../../helpers/scroll.dart';
+
 class _MockService extends Mock implements StorageManagementService {}
 
 DivineVideoClip _clip(String id) => DivineVideoClip(
@@ -149,9 +151,7 @@ void main() {
   /// Scrolls the repair button into view and opens its confirmation sheet.
   Future<void> openRepairSheet(WidgetTester tester) async {
     final repair = find.text(l10n.settingsStorageRepairButton);
-    await tester.scrollUntilVisible(repair, 200);
-    await tester.ensureVisible(repair);
-    await tester.pumpAndSettle();
+    await scrollUntilTappable(tester, repair, 200);
     await tester.tap(repair);
     await tester.pumpAndSettle();
   }

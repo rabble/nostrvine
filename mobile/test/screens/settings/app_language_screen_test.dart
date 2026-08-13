@@ -11,6 +11,8 @@ import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
 
+import '../../helpers/scroll.dart';
+
 class _MockLocaleCubit extends MockCubit<LocaleState> implements LocaleCubit {}
 
 void main() {
@@ -39,12 +41,12 @@ void main() {
       String nativeName,
     ) async {
       final tileFinder = find.widgetWithText(ListTile, nativeName);
-      await tester.scrollUntilVisible(
+      await scrollUntilTappable(
+        tester,
         tileFinder,
         160,
         scrollable: find.byType(Scrollable),
       );
-      await tester.pumpAndSettle();
       return tester.widget<ListTile>(tileFinder);
     }
 
