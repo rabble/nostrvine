@@ -593,6 +593,7 @@ void main() {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         final playbackStatusCubit = VideoPlaybackStatusCubit();
         final hostVisible = ValueNotifier(true);
+        late ProviderContainer container;
         addTearDown(playbackStatusCubit.close);
         addTearDown(hostVisible.dispose);
 
@@ -611,6 +612,7 @@ void main() {
             mediaAuthInterceptor: mediaAuthInterceptor,
             playbackStatusCubit: playbackStatusCubit,
             ageVerificationService: _ageService(verified: true),
+            onContainerReady: (value) => container = value,
             hostVisible: hostVisible,
             retryPlayback: (_) => _retryRecovered,
           ),
@@ -630,6 +632,13 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.text(_adultContentHiddenTitle), findsNothing);
+        // A pop that runs while the host is gone still has to release the
+        // overlay flag, or the feed stays paused for the rest of the session
+        // (#6239).
+        expect(
+          container.read(overlayVisibilityProvider).hasVisibleOverlay,
+          isFalse,
+        );
       },
     );
 
@@ -640,6 +649,7 @@ void main() {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         final playbackStatusCubit = VideoPlaybackStatusCubit();
         final hostVisible = ValueNotifier(true);
+        late ProviderContainer container;
         addTearDown(playbackStatusCubit.close);
         addTearDown(hostVisible.dispose);
 
@@ -658,6 +668,7 @@ void main() {
             mediaAuthInterceptor: mediaAuthInterceptor,
             playbackStatusCubit: playbackStatusCubit,
             ageVerificationService: _ageService(verified: true),
+            onContainerReady: (value) => container = value,
             hostVisible: hostVisible,
             retryPlayback: (_) => _retryRecovered,
           ),
@@ -677,6 +688,12 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text(_adultContentHiddenTitle), findsNothing);
         expect(find.text(_contentFiltersRouteMarker), findsNothing);
+        // Both flags have to be back down: the sheet closed, and the skipped
+        // push must not have latched the page flag on its way out (#6239).
+        expect(
+          container.read(overlayVisibilityProvider).hasVisibleOverlay,
+          isFalse,
+        );
       },
     );
 
