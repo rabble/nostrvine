@@ -35,6 +35,8 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../helpers/scroll.dart';
+
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockLocaleCubit extends MockCubit<LocaleState> implements LocaleCubit {}
@@ -320,6 +322,14 @@ void main() {
       isTrue,
     );
 
+    // The scroll above targeted a different row, so bring the toggle itself
+    // back into view — and pump — before reading its centre.
+    await scrollUntilTappable(
+      tester,
+      captionsToggle,
+      120,
+      scrollable: find.byType(Scrollable),
+    );
     await tester.tap(captionsToggle);
     await tester.pumpAndSettle();
 

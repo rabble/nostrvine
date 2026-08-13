@@ -1,3 +1,6 @@
+// ABOUTME: Scroll helper that settles the frame before a tap reads coordinates.
+// ABOUTME: Guards the #7179 class where a tap uses the pre-scroll layout and misses.
+
 import 'package:flutter_test/flutter_test.dart';
 
 /// Scrolls [target] into view and settles the frame before returning.
@@ -20,13 +23,25 @@ import 'package:flutter_test/flutter_test.dart';
 /// fallback test font and every later one with real Inter metrics. Randomized
 /// ordering decides which test pays that cost.
 ///
-/// [delta] and [scrollable] pass straight through to `scrollUntilVisible`.
+/// Every parameter besides [tester] passes straight through to
+/// `scrollUntilVisible` with its own defaults, so this is a drop-in
+/// replacement.
 Future<void> scrollUntilTappable(
   WidgetTester tester,
   Finder target,
   double delta, {
   Finder? scrollable,
+  int maxScrolls = 50,
+  Duration duration = const Duration(milliseconds: 50),
+  bool continuous = false,
 }) async {
-  await tester.scrollUntilVisible(target, delta, scrollable: scrollable);
+  await tester.scrollUntilVisible(
+    target,
+    delta,
+    scrollable: scrollable,
+    maxScrolls: maxScrolls,
+    duration: duration,
+    continuous: continuous,
+  );
   await tester.pumpAndSettle();
 }
