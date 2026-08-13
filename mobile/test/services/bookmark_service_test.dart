@@ -1092,6 +1092,31 @@ void main() {
         },
       );
 
+      test('counts an item held in both halves once', () async {
+        const inBoth = 'in-both';
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              [inBoth],
+              content: await encryptToSelf([
+                ['e', inBoth],
+              ]),
+            ),
+          ],
+        );
+        final service = createService();
+
+        await service.syncGlobalBookmarks();
+
+        expect(
+          service.globalBookmarks,
+          hasLength(1),
+          reason:
+              'one bookmarked video, so summing the two halves would report '
+              'two - the count the sync log reads from',
+        );
+      });
+
       test('removing an item held in both halves drops both copies', () async {
         const inBoth = 'in-both';
         stubRelay(

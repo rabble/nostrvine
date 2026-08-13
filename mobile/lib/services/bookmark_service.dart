@@ -339,8 +339,7 @@ class BookmarkService {
         if (events == null) {
           Log.warning(
             'Empty bookmark answer not confirmed by every relay - keeping '
-            'the ${_globalBookmarks.length + _privateBookmarks.length} '
-            'bookmarks this device has',
+            'the ${globalBookmarks.length} bookmarks this device has',
             name: 'BookmarkService',
             category: LogCategory.system,
           );
@@ -378,8 +377,8 @@ class BookmarkService {
       await _saveBookmarksToSharedPreferences();
 
       Log.info(
-        'Synced ${_globalBookmarks.length + _privateBookmarks.length} global '
-        'bookmarks from relay (${_privateBookmarks.length} private)',
+        'Synced ${globalBookmarks.length} global bookmarks from relay '
+        '(${_privateBookmarks.length} private)',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
