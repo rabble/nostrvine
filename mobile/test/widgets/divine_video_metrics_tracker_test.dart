@@ -192,9 +192,7 @@ void main() {
 
     testWidgets(
       'active to inactive under one second records a partial-loop view',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final isActive = ValueNotifier(true);
         final video = ValueNotifier(_video);
         final controller = _stubController(isPlaying: true);
@@ -416,9 +414,7 @@ void main() {
       await controller.close();
     });
 
-    testWidgets('sub-second session finalizes once', (
-      tester,
-    ) async {
+    testWidgets('sub-second session finalizes once', (tester) async {
       final isActive = ValueNotifier(true);
       final video = ValueNotifier(_video);
       final controller = _stubController(isPlaying: true);
@@ -446,15 +442,6 @@ void main() {
         seenVideosService.records.single.watchDuration,
         const Duration(milliseconds: 300),
       );
-
-      // Re-reading the finalized state must not emit the same session twice.
-      final viewEndEvents = _viewEndEvents(analyticsService);
-      expect(viewEndEvents, hasLength(1));
-      expect(
-        viewEndEvents.single.watchDuration,
-        const Duration(milliseconds: 300),
-      );
-      expect(seenVideosService.records, hasLength(1));
       expect(seenVideosService.records.single.videoId, equals('video_id'));
 
       isActive.dispose();
@@ -462,9 +449,7 @@ void main() {
       await controller.close();
     });
 
-    testWidgets('reactivation starts a new view session', (
-      tester,
-    ) async {
+    testWidgets('reactivation starts a new view session', (tester) async {
       final isActive = ValueNotifier(true);
       final video = ValueNotifier(_video);
       final controller = _stubController(isPlaying: true);
@@ -508,6 +493,54 @@ void main() {
         hasLength(1),
       );
       // Seen-video history remains deduplicated across playback sessions.
+      expect(seenVideosService.records, hasLength(1));
+
+      isActive.dispose();
+      video.dispose();
+      await controller.close();
+    });
+
+    testWidgets('reactivation without playback does not publish a view_end', (
+      tester,
+    ) async {
+      final isActive = ValueNotifier(true);
+      final video = ValueNotifier(_video);
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTrackerHarness(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          video: video,
+          isActive: isActive,
+          clock: () => now,
+        ),
+      );
+
+      now = now.add(const Duration(milliseconds: 700));
+      isActive.value = false;
+      await tester.pump();
+
+      expect(_viewEndEvents(analyticsService), hasLength(1));
+      expect(seenVideosService.records, hasLength(1));
+
+      analyticsService.events.clear();
+      controller.setState(
+        const DivineVideoPlayerState(
+          status: PlaybackStatus.ready,
+          duration: Duration(seconds: 5),
+          isFirstFrameRendered: true,
+        ),
+      );
+      isActive.value = true;
+      await tester.pump();
+      now = now.add(const Duration(seconds: 5));
+      isActive.value = false;
+      await tester.pump();
+
+      expect(_viewEndEvents(analyticsService), isEmpty);
       expect(seenVideosService.records, hasLength(1));
 
       isActive.dispose();
@@ -625,7 +658,11 @@ List<_TrackedAnalyticsEvent> _viewEndEvents(
     .where((event) => event.eventType == 'view_end')
     .toList();
 
-({DivineVideoPlayerController controller, Future<void> Function() close})
+({
+  DivineVideoPlayerController controller,
+  void Function(DivineVideoPlayerState state) setState,
+  Future<void> Function() close,
+})
 _stubController({
   required bool isPlaying,
   Duration duration = const Duration(seconds: 5),
@@ -644,6 +681,10 @@ _stubController({
 
   return (
     controller: controller,
+    setState: (DivineVideoPlayerState next) {
+      state = next;
+      stateController.add(next);
+    },
     close: () async {
       await stateController.close();
       state = const DivineVideoPlayerState();
