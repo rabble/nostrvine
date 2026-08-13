@@ -314,6 +314,7 @@ void main() {
       testWidgets(
         'tapping create account skips the invite gate when invites are disabled',
         (tester) async {
+          await useTallSurface(tester);
           final availabilityCubit = seededInviteAvailabilityCubit(
             serverMode: OnboardingMode.open,
           );
