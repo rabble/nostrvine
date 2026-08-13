@@ -294,6 +294,104 @@ void main() {
       },
     );
 
+    test('view_start enqueues a start-phase row with zero watch', () async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'analytics_pending_start_test_',
+      );
+      tempDbPath = '${tempDir.path}/test.db';
+      database = AppDatabase.test(NativeDatabase(File(tempDbPath!)));
+      analyticsService.dispose();
+      analyticsService = AnalyticsService(
+        pendingViewEventsDao: database!.pendingViewEventsDao,
+        flushPendingViewEvents: () async {},
+      );
+      await analyticsService.initialize();
+
+      final video = VideoEvent(
+        id: '22e73ca1faedb07dd3e24c1dca52d849aa75c6e4090eb60c532820b782c93da3',
+        pubkey:
+            'ae73ca1faedb07dd3e24c1dca52d849aa75c6e4090eb60c532820b782c93da3',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        content: 'Test video',
+        timestamp: DateTime.now(),
+        vineId: 'vine-id',
+        addressableDTag: 'the-d-tag',
+      );
+      const user =
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+      await analyticsService.trackDetailedVideoViewWithUser(
+        video,
+        userId: user,
+        source: 'mobile',
+        eventType: 'view_start',
+        sessionToken: 'mount-1',
+        trafficSource: ViewTrafficSource.home,
+      );
+
+      final rows = await database!.pendingViewEventsDao.getRetryableForUser(
+        userPubkey: user,
+      );
+      expect(rows, hasLength(1));
+      expect(rows.single.phase, 'start');
+      // A start knows nothing about watch time yet — the row must not mint
+      // engagement the viewer never gave.
+      expect(rows.single.watchDurationMs, 0);
+      expect(rows.single.loopCount, isNull);
+      expect(rows.single.videoAddressableDTag, 'the-d-tag');
+    });
+
+    test(
+      'view_start dedupes within a session token but a new token re-publishes',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'analytics_pending_start_dedupe_test_',
+        );
+        tempDbPath = '${tempDir.path}/test.db';
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath!)));
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          pendingViewEventsDao: database!.pendingViewEventsDao,
+          flushPendingViewEvents: () async {},
+        );
+        await analyticsService.initialize();
+
+        final video = VideoEvent(
+          id: '22e73ca1faedb07dd3e24c1dca52d849aa75c6e4090eb60c532820b782c93da3',
+          pubkey:
+              'ae73ca1faedb07dd3e24c1dca52d849aa75c6e4090eb60c532820b782c93da3',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          content: 'Test video',
+          timestamp: DateTime.now(),
+          vineId: 'vine-id',
+          addressableDTag: 'the-d-tag',
+        );
+        const user =
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+        Future<void> start(String token) =>
+            analyticsService.trackDetailedVideoViewWithUser(
+              video,
+              userId: user,
+              source: 'mobile',
+              eventType: 'view_start',
+              sessionToken: token,
+            );
+
+        // A double-fire inside one mount collapses; a remount (re-watch) is
+        // a new session and must report its own start.
+        await start('mount-1');
+        await start('mount-1');
+        await start('mount-2');
+
+        final rows = await database!.pendingViewEventsDao.getRetryableForUser(
+          userPubkey: user,
+        );
+        expect(rows, hasLength(2));
+        expect(rows.every((row) => row.phase == 'start'), isTrue);
+      },
+    );
+
     test('does not enqueue when analytics is disabled', () async {
       final tempDir = Directory.systemTemp.createTempSync(
         'analytics_disabled_pending_view_test_',

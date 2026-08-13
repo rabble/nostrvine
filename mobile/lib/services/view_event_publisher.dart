@@ -11,6 +11,21 @@ import 'package:unified_logger/unified_logger.dart';
 /// Kind 22236 - Ephemeral video view event (NIP-71 extension)
 const int viewEventKind = 22236;
 
+/// Reporting phase of a kind 22236 view event (two-phase view reporting).
+///
+/// One viewing session publishes one [start] event at playback start — which
+/// is what counts the view, so an app kill mid-session cannot erase it — and
+/// one or more [end] events carrying watched-time and loop deltas. A null
+/// phase is a legacy single-shot event and keeps the pre-phase shape.
+enum ViewEventPhase {
+  /// Playback start: counts the view. Carries no `viewed` or `loops` tags.
+  start,
+
+  /// Session segment end: carries the segment's watch time and fractional
+  /// loops. The relay counts this toward loops, not views.
+  end,
+}
+
 /// Notified every time a view event is dropped instead of published.
 ///
 /// Wired in the app layer to Crashlytics for structural drops. Injected
@@ -83,12 +98,15 @@ class ViewEventPublisher {
     ViewTrafficSource source = ViewTrafficSource.unknown,
     String? sourceDetail,
     double? loopCount,
+    ViewEventPhase? phase,
   }) async {
     const method = 'publishViewEvent';
     // View = playback start per 2026-08-13 view/loop spec: any playback
     // start counts, even if the session ends before completing a loop
-    // (a fractional loop is valid). Only reject inverted ranges.
-    if (endSeconds < startSeconds) {
+    // (a fractional loop is valid). Only reject inverted ranges. A
+    // start-phase event carries no watch range at all, so the range check
+    // only applies when viewed segments are actually emitted.
+    if (phase != ViewEventPhase.start && endSeconds < startSeconds) {
       return _drop(ViewEventDropReason.invalidWatchRange, video.id, method);
     }
 
@@ -115,8 +133,13 @@ class ViewEventPublisher {
         ['a', aTag, relayHint],
         // Event ID reference (required)
         ['e', video.id, relayHint],
-        // Watched segment (required)
-        ['viewed', startSeconds.toString(), endSeconds.toString()],
+        // Reporting phase (two-phase sessions only; omitted on legacy replay)
+        if (phase != null) ['phase', phase.name],
+        // Watched segment. Start events know nothing about watch time yet
+        // and omit it — a fabricated range would mint engagement the viewer
+        // never gave.
+        if (phase != ViewEventPhase.start)
+          ['viewed', startSeconds.toString(), endSeconds.toString()],
         // Traffic source (optional but recommended)
         if (sourceDetail != null && sourceDetail.isNotEmpty)
           ['source', source.tagValue, sourceDetail]
@@ -124,7 +147,8 @@ class ViewEventPublisher {
           ['source', source.tagValue],
         // Loop count as playthrough fraction (optional, omitted if null or <= 0).
         // Fractional to preserve partial passes (median 0.75) per spec.
-        if (loopCount != null && loopCount > 0) ['loops', loopCount.toString()],
+        if (phase != ViewEventPhase.start && loopCount != null && loopCount > 0)
+          ['loops', loopCount.toString()],
       ];
 
       Log.debug(

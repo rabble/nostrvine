@@ -262,14 +262,19 @@ class AnalyticsService implements BackgroundAwareService {
 
   /// Track detailed video interaction events with user identification.
   ///
-  /// For `view_end` events, publishes a Kind 22236 ephemeral Nostr event via
-  /// [ViewEventPublisher]. View = playback start per spec — any start counts
-  /// even if playback stops before completing a full loop (no ≥1s gate).
+  /// For both phases of a viewing session, publishes a Kind 22236 ephemeral
+  /// Nostr event via [ViewEventPublisher]: a `view_start` (phase `start`,
+  /// what counts the view) and each `view_end` segment (phase `end`, what
+  /// carries watch time and fractional loops).
+  ///
+  /// [sessionToken] scopes the view_start dedupe to one tracker mount, so a
+  /// remount re-watch reports its own start instead of being suppressed.
   Future<void> trackDetailedVideoViewWithUser(
     VideoEvent video, {
     required String? userId,
     required String source,
     required String eventType,
+    String? sessionToken,
     Duration? watchDuration,
     Duration? totalDuration,
     double? loopCount,
@@ -285,7 +290,7 @@ class AnalyticsService implements BackgroundAwareService {
     }
 
     // Deduplicate rapid-fire tracking of the same video
-    final dedupeKey = '${video.id}_$eventType';
+    final dedupeKey = '${video.id}_${eventType}_${sessionToken ?? ''}';
     if (eventType == 'view_start' &&
         _recentlyTrackedViews.contains(dedupeKey)) {
       return;
@@ -300,6 +305,30 @@ class AnalyticsService implements BackgroundAwareService {
       category: LogCategory.video,
     );
 
+    if (eventType == 'view_start' && !_disableNostrPublishing) {
+      // The view is counted at playback start, so an app kill mid-session
+      // cannot erase it. A start event carries no watch time or loops.
+      final enqueued = await _enqueuePendingViewEvent(
+        video: video,
+        userPubkey: userId,
+        watchDuration: Duration.zero,
+        totalDuration: null,
+        trafficSource: trafficSource,
+        sourceDetail: sourceDetail,
+        phase: ViewEventPhase.start,
+      );
+      if (!enqueued) {
+        _publishNostrViewEvent(
+          video: video,
+          watchDuration: Duration.zero,
+          trafficSource: trafficSource,
+          sourceDetail: sourceDetail,
+          phase: ViewEventPhase.start,
+        );
+      }
+      return;
+    }
+
     if (eventType == 'view_end' &&
         watchDuration != null &&
         !_disableNostrPublishing) {
@@ -311,6 +340,7 @@ class AnalyticsService implements BackgroundAwareService {
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
         loopCount: loopCount,
+        phase: ViewEventPhase.end,
       );
       if (!enqueued) {
         _publishNostrViewEvent(
@@ -319,6 +349,7 @@ class AnalyticsService implements BackgroundAwareService {
           trafficSource: trafficSource,
           sourceDetail: sourceDetail,
           loopCount: loopCount,
+          phase: ViewEventPhase.end,
         );
       }
     }
@@ -330,6 +361,7 @@ class AnalyticsService implements BackgroundAwareService {
     required Duration watchDuration,
     required Duration? totalDuration,
     required ViewTrafficSource trafficSource,
+    required ViewEventPhase phase,
     String? sourceDetail,
     double? loopCount,
   }) async {
@@ -365,6 +397,7 @@ class AnalyticsService implements BackgroundAwareService {
           sourceDetail: sourceDetail,
           status: PendingViewEventStatus.pending,
           createdAt: createdAt,
+          phase: phase.name,
         ),
       );
     } catch (e) {
@@ -393,6 +426,7 @@ class AnalyticsService implements BackgroundAwareService {
     required VideoEvent video,
     required Duration watchDuration,
     required ViewTrafficSource trafficSource,
+    required ViewEventPhase phase,
     String? sourceDetail,
     double? loopCount,
   }) {
@@ -415,6 +449,7 @@ class AnalyticsService implements BackgroundAwareService {
           source: trafficSource,
           sourceDetail: sourceDetail,
           loopCount: loopCount,
+          phase: phase,
         )
         .then((success) {
           if (success) {
