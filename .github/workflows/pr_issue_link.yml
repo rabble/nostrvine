@@ -38,15 +38,7 @@ jobs:
             // ═══════════════════════════════════════════════
 
             async function run() {
-              // Step 1: "Closes #none" or "Relates to #none" — dev dismissed suggestions
-              const nonePattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|relates?\s+to|part\s+of|refs?)\s+#none/i;
-              if (nonePattern.test(body)) {
-                console.log(`PR #${pr.number} has "Closes #none" — ensuring tracking issue.`);
-                await ensureTrackingIssue(body.replace(nonePattern, '').trim());
-                return;
-              }
-
-              // Step 2: Already linked via closing or relation keywords in body?
+              // Step 1: Already linked via closing or relation keywords in body?
               const closingPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
               const relationPattern = /(?:relates?\s+to|part\s+of|refs?)\s+#(\d+)/gi;
               const closingMatches = [...body.matchAll(closingPattern)];
@@ -55,6 +47,19 @@ jobs:
               if (allMatches.length > 0) {
                 console.log(`PR #${pr.number} linked to: ${allMatches.map(m => '#' + m[1]).join(', ')}`);
                 await cleanup();
+                return;
+              }
+
+              // Step 2: "Closes #none" or "Relates to #none" — dev dismissed
+              // suggestions. Checked after real links so that a stray mention in
+              // an already-linked description doesn't rewrite the body. Strips
+              // every occurrence, not just the first, so the template line can't
+              // survive behind an earlier mention in the prose.
+              const nonePattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|relates?\s+to|part\s+of|refs?)\s+#none/gi;
+              const withoutNone = body.replace(nonePattern, '').trim();
+              if (withoutNone !== body.trim()) {
+                console.log(`PR #${pr.number} has "Closes #none" — ensuring tracking issue.`);
+                await ensureTrackingIssue(withoutNone);
                 return;
               }
 
