@@ -125,8 +125,9 @@ class UploadInitializationHelper {
   static Future<Box<PendingUpload>> _initializeWithRetries() async {
     // Not `Exception?`: hive_ce throws `HiveError`, which extends `Error`, so
     // narrowing here turned every Hive failure into an opaque cast TypeError
-    // instead of a retry.
-    Object? lastError;
+    // instead of a retry. The stack travels with it so the final rethrow points
+    // at the original failure rather than this loop.
+    (Object, StackTrace)? lastFailure;
 
     for (int attempt = 0; attempt <= _maxRetries; attempt++) {
       try {
@@ -194,7 +195,7 @@ class UploadInitializationHelper {
         await _verifyBoxFunctionality(box);
 
         return box;
-      } catch (e) {
+      } catch (e, stackTrace) {
         // Check for permanent errors - don't retry these
         if (_isPermanentPermissionError(e)) {
           Log.error(
@@ -205,7 +206,7 @@ class UploadInitializationHelper {
           throw Exception('Permanent permission error: $e');
         }
 
-        lastError = e;
+        lastFailure = (e, stackTrace);
 
         if (attempt < _maxRetries) {
           final delay = _calculateBackoffDelay(attempt);
@@ -219,8 +220,10 @@ class UploadInitializationHelper {
       }
     }
 
-    throw lastError ??
-        Exception('Failed to initialize after ${_maxRetries + 1} attempts');
+    if (lastFailure case (final error, final stackTrace)) {
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+    throw Exception('Failed to initialize after ${_maxRetries + 1} attempts');
   }
 
   /// Calculate exponential backoff delay
