@@ -4,7 +4,7 @@
 
 - Most implementation work is in `mobile/`. The main Flutter entry points are `mobile/lib/main.dart` and `mobile/lib/router/app_router.dart`.
 - Shared reusable logic belongs in the owning package under `mobile/packages/`, not as app-layer duplication.
-- Start with current code and focused docs, especially `CONTRIBUTING.md`, `docs/STATE_MANAGEMENT.md`, `docs/BLOC_UI_MIGRATION_PRD.md`, `docs/NOSTR_EVENT_TYPES.md`, `mobile/docs/NOSTR_VIDEO_EVENTS.md`, `mobile/docs/DESIGN_SYSTEM_COMPONENTS.md`, and `mobile/docs/GOLDEN_TESTING_GUIDE.md`.
+- Start with current code and focused docs, especially `CONTRIBUTING.md`, `docs/STATE_MANAGEMENT.md`, `docs/BLOC_UI_MIGRATION_PRD.md`, `docs/NOSTR_EVENT_TYPES.md`, `mobile/docs/NOSTR_VIDEO_EVENTS.md`, `mobile/docs/DESIGN_SYSTEM_COMPONENTS.md`, `mobile/docs/GOLDEN_TESTING_GUIDE.md`, and `mobile/docs/SHOREBIRD_CODE_PUSH.md`.
 - Older docs can drift. If documentation conflicts, trust the current implementation, targeted tests, and the newest focused doc over historical notes.
 
 ## Divine Context And Brain
@@ -157,6 +157,21 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 - Web resolves local endpoints to `localhost`, but nothing wires a LOCAL web run: `AppEnvironment.local` is absent from the environment picker in `mobile/lib/screens/developer_options_screen.dart`, and neither web build selects it — `mobile_web_production_deploy.yml` pins `DEFAULT_ENV=PRODUCTION`, and the PR-preview build pins no `DEFAULT_ENV` at all, so it inherits the compiled `PRODUCTION` default. CORS is not the obstacle — funnelcake, the relay, and Blossom all send `Access-Control-Allow-Origin: *`, Keycast allows any `http://localhost:<port>` origin before consulting `ALLOWED_ORIGINS`, and a WebSocket handshake is not subject to CORS at all.
 - User-installed CAs are not trusted in any build. If you need to proxy-debug with Charles or mitmproxy, add a single `<certificates src="user" />` line to `<trust-anchors>` in `mobile/android/app/src/main/res/xml/network_security_config.xml` in your working copy and don't commit it; CI's transport-security guard will block any commit that re-enables user-CA trust. (For iOS and macOS, plist-edit `NSAppTransportSecurity` similarly and revert before commit.)
 - If you add a new exception to any native config, update `mobile/scripts/check_native_transport_security.sh` so the guard recognises the allowance. It covers four files: the Android XML plus the `Runner` plists for iOS and macOS and the iOS notification-service extension.
+
+## Shorebird Code Push
+
+- The Play AAB and App Store IPA are built by `shorebird release`, not
+  `flutter build`. That command links the Shorebird updater into the engine —
+  a store artifact built with plain `flutter build` is **permanently
+  unpatchable**. Never swap those steps back in `codemagic.yaml`.
+- Never add `--allow-native-diffs` or `--allow-asset-diffs`. Shorebird's
+  refusal to patch across native or asset changes is a correctness guard; a fix
+  needing native changes needs a store release.
+- Patches are manual-only and gated behind `CONFIRM_PATCH`. A patch reaches
+  production users within about one app launch, with no store review and no
+  rollback. Treat it as a production deploy.
+- Full detail, including the patch runbook and known gotchas:
+  `mobile/docs/SHOREBIRD_CODE_PUSH.md`.
 
 ## Zapstore Publishing Notes
 
