@@ -1473,7 +1473,7 @@ void main() {
     });
 
     test(
-      'syncBlockListsInBackground subscribes with two filters',
+      'syncBlockListsInBackground subscribes only to others block lists',
       () async {
         const ourPubkey = 'test_our_pubkey_hex';
         service = ContentBlocklistRepository();
@@ -1501,18 +1501,14 @@ void main() {
         ).called(1);
 
         expect(capturedFilters, isNotNull);
-        expect(capturedFilters!.length, equals(2));
+        // Only others' block lists containing our pubkey. Our own legacy
+        // list stopped being a source of truth for our blocks (#5462).
+        expect(capturedFilters!.length, equals(1));
 
-        // Filter 1: others' block lists containing our pubkey
         final othersFilter = capturedFilters![0] as Filter;
         expect(othersFilter.kinds, contains(30000));
         expect(othersFilter.p, contains(ourPubkey));
-
-        // Filter 2: our own block list for relay restoration
-        // No #d constraint — handler checks d=block, avoids relay compat issues
-        final ownFilter = capturedFilters![1] as Filter;
-        expect(ownFilter.kinds, contains(30000));
-        expect(ownFilter.authors, contains(ourPubkey));
+        expect(othersFilter.authors, isNull);
       },
     );
 
@@ -1694,7 +1690,7 @@ void main() {
     );
   });
 
-  group('ContentBlocklistRepository - Relay Block List Restoration', () {
+  group('ContentBlocklistRepository - legacy own block list is inert', () {
     late ContentBlocklistRepository service;
     late _MockNostrClient mockNostrService;
     late _MockBlockListSigner mockSigner;
@@ -1728,6 +1724,7 @@ void main() {
       mockSigner = _MockBlockListSigner();
       controller = StreamController<Event>();
 
+      when(() => mockSigner.isAuthenticated).thenReturn(false);
       when(
         () => mockNostrService.subscribe(
           any(),
@@ -1740,7 +1737,7 @@ void main() {
     });
 
     test(
-      'restores blocks from own relay event when local blocklist is empty',
+      'own relay event does not restore blocks',
       () async {
         var changeCount = 0;
         service = ContentBlocklistRepository(onChanged: () => changeCount++);
@@ -1754,91 +1751,39 @@ void main() {
         controller.add(makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]));
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(service.isBlocked(blockedPubkey1), isTrue);
-        expect(service.isBlocked(blockedPubkey2), isTrue);
-        expect(service.totalBlockedCount, equals(2));
-        expect(changeCount, equals(1));
-      },
-    );
-
-    test(
-      'merges relay blocks with existing local blocks without duplicates',
-      () async {
-        var changeCount = 0;
-        service = ContentBlocklistRepository(onChanged: () => changeCount++);
-
-        // Pre-block one user locally
-        await service.blockUser(blockedPubkey1, ourPubkey: ourPubkey);
-        expect(service.totalBlockedCount, equals(1));
-        changeCount = 0;
-
-        await service.syncBlockListsInBackground(
-          mockNostrService,
-          mockSigner,
-          ourPubkey,
-        );
-
-        // Relay has both the already-local one and a new one
-        controller.add(
-          makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        expect(service.isBlocked(blockedPubkey1), isTrue);
-        expect(service.isBlocked(blockedPubkey2), isTrue);
-        expect(service.totalBlockedCount, equals(2));
-        expect(changeCount, equals(1));
-      },
-    );
-
-    test(
-      'does not notify when relay blocks already present locally',
-      () async {
-        var changeCount = 0;
-        service = ContentBlocklistRepository(onChanged: () => changeCount++);
-
-        await service.blockUser(blockedPubkey1, ourPubkey: ourPubkey);
-        await service.blockUser(blockedPubkey2, ourPubkey: ourPubkey);
-        changeCount = 0;
-
-        await service.syncBlockListsInBackground(
-          mockNostrService,
-          mockSigner,
-          ourPubkey,
-        );
-
-        controller.add(
-          makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
+        expect(service.isBlocked(blockedPubkey1), isFalse);
+        expect(service.isBlocked(blockedPubkey2), isFalse);
+        expect(service.totalBlockedCount, equals(0));
         expect(changeCount, equals(0));
-        expect(service.totalBlockedCount, equals(2));
       },
     );
 
     test(
-      'skips own pubkey in relay event p-tags',
+      'a superseded own list cannot resurrect a lifted block (#7027)',
       () async {
         service = ContentBlocklistRepository();
 
+        await service.blockUser(blockedPubkey1, ourPubkey: ourPubkey);
         await service.syncBlockListsInBackground(
           mockNostrService,
           mockSigner,
           ourPubkey,
         );
+        await service.unblockUser(blockedPubkey1);
+        expect(service.isBlocked(blockedPubkey1), isFalse);
 
-        controller.add(makeOwnBlockListEvent([ourPubkey, blockedPubkey1]));
+        // The relay re-serves the superseded copy that still carries the
+        // block. Merging it back in is what made unblock fail to stick.
+        controller.add(makeOwnBlockListEvent([blockedPubkey1]));
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(service.isBlocked(blockedPubkey1), isTrue);
-        expect(service.isBlocked(ourPubkey), isFalse);
-        expect(service.totalBlockedCount, equals(1));
+        expect(service.isBlocked(blockedPubkey1), isFalse);
+        expect(service.totalBlockedCount, equals(0));
       },
     );
 
     test(
-      'still detects others blocking us alongside own event restoration',
+      'still detects others blocking us',
       () async {
         var changeCount = 0;
         service = ContentBlocklistRepository(onChanged: () => changeCount++);
@@ -1848,13 +1793,6 @@ void main() {
           mockSigner,
           ourPubkey,
         );
-
-        // Our own block list arrives (restoration)
-        controller.add(makeOwnBlockListEvent([blockedPubkey1]));
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        expect(service.isBlocked(blockedPubkey1), isTrue);
-        expect(changeCount, equals(1));
 
         // Another user blocks us
         final othersEvent =
@@ -1875,7 +1813,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(service.hasBlockedUs(blockedPubkey2), isTrue);
-        expect(changeCount, equals(2));
+        expect(changeCount, equals(1));
       },
     );
   });
@@ -2451,21 +2389,16 @@ void main() {
       expect(muteTags, contains(equals(['p', 'pubkey1'])));
       expect(muteTags, isNot(contains(equals(['d', 'block']))));
 
-      // The legacy kind 30000 block list is still kept in sync for older
-      // Divine clients.
-      final blockTags =
-          verify(
-                () => mockSigner.createAndSignEvent(
-                  kind: 30000,
-                  content: 'Block list',
-                  tags: captureAny(named: 'tags'),
-                ),
-              ).captured.last
-              as List<List<String>>;
-      expect(blockTags, contains(equals(['d', 'block'])));
-      expect(blockTags, contains(equals(['p', 'pubkey1'])));
+      // The legacy kind 30000 block list is no longer authored (#5462).
+      verifyNever(
+        () => mockSigner.createAndSignEvent(
+          kind: 30000,
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
 
-      verify(() => mockClient.publishEvent(any())).called(2);
+      verify(() => mockClient.publishEvent(any())).called(1);
     });
 
     test('blockUsers publishes each Nostr list once for a batch', () async {
@@ -2525,19 +2458,15 @@ void main() {
       );
       expect(muteTags, isNot(contains(equals(['p', ourPubkey]))));
 
-      final blockTags =
-          verify(
-                () => mockSigner.createAndSignEvent(
-                  kind: 30000,
-                  content: 'Block list',
-                  tags: captureAny(named: 'tags'),
-                ),
-              ).captured.single
-              as List<List<String>>;
-      expect(blockTags, contains(equals(['d', 'block'])));
-      expect(blockTags, isNot(contains(equals(['p', ourPubkey]))));
+      verifyNever(
+        () => mockSigner.createAndSignEvent(
+          kind: 30000,
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
 
-      verify(() => mockClient.publishEvent(any())).called(2);
+      verify(() => mockClient.publishEvent(any())).called(1);
     });
 
     test('unblocking republishes the kind 10000 mute list without the '
@@ -2827,6 +2756,7 @@ void main() {
     const muteC =
         '00000000000000000000000000000000000000000000000000000000000000cc';
     const flagKey = 'block_list_migrated_to_mute_list.$ourPubkey';
+    const retiredKey = 'block_list_retired.$ourPubkey';
 
     late _MockNostrClient mockClient;
     late _MockBlockListSigner mockSigner;
@@ -2888,6 +2818,29 @@ void main() {
         () => mockClient.subscribe(any()),
       ).thenAnswer((_) => const Stream.empty());
       when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (invocation) async =>
+            Event(
+                ourPubkey,
+                invocation.namedArguments[#kind] as int,
+                invocation.namedArguments[#tags] as List<List<String>>,
+                invocation.namedArguments[#content] as String,
+                createdAt: 3000,
+              )
+              ..id = 'signed-event'
+              ..sig = 'signature',
+      );
+      when(() => mockClient.publishEvent(any())).thenAnswer(
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.first as Event,
+        ),
+      );
     });
 
     test(
@@ -2990,8 +2943,11 @@ void main() {
       },
     );
 
-    test('does not run again once the migration flag is set', () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{flagKey: true});
+    test('does not run again once both flags are set', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        flagKey: true,
+        retiredKey: true,
+      });
       prefs = await SharedPreferences.getInstance();
 
       final service = ContentBlocklistRepository(prefs: prefs);
@@ -3006,6 +2962,197 @@ void main() {
 
       service.dispose();
     });
+
+    test(
+      'retires the legacy list for an account that already migrated',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          flagKey: true,
+          'blocklist_active_pubkey': ourPubkey,
+          'blocked_users_list.$ourPubkey': jsonEncode([blockA]),
+        });
+        prefs = await SharedPreferences.getInstance();
+
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockA]),
+            ];
+          }
+          return <Event>[];
+        });
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // The already-carried-over entry needs no republish of the mute list.
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: 10000,
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+
+        final retirementTags =
+            verify(
+                  () => mockSigner.createAndSignEvent(
+                    kind: 30000,
+                    content: '',
+                    tags: captureAny(named: 'tags'),
+                  ),
+                ).captured.single
+                as List<List<String>>;
+        expect(
+          retirementTags,
+          equals([
+            ['d', 'block'],
+          ]),
+        );
+        expect(prefs.getBool(retiredKey), isTrue);
+
+        service.dispose();
+      },
+    );
+
+    test(
+      'records retirement without republishing an already-empty legacy list',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{flagKey: true});
+        prefs = await SharedPreferences.getInstance();
+
+        // Another device already emptied it; the replacement still exists.
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [ownBlockEvent(const [])];
+          }
+          return <Event>[];
+        });
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+        expect(prefs.getBool(retiredKey), isTrue);
+
+        service.dispose();
+      },
+    );
+
+    test(
+      'carries an unmigrated legacy block over before emptying the list',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          flagKey: true,
+        });
+        prefs = await SharedPreferences.getInstance();
+
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockA]),
+            ];
+          }
+          return <Event>[];
+        });
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final muteTags =
+            verify(
+                  () => mockSigner.createAndSignEvent(
+                    kind: 10000,
+                    content: any(named: 'content'),
+                    tags: captureAny(named: 'tags'),
+                  ),
+                ).captured.last
+                as List<List<String>>;
+        expect(muteTags, contains(equals(['p', blockA])));
+        expect(service.isBlocked(blockA), isTrue);
+        expect(prefs.getBool(retiredKey), isTrue);
+
+        service.dispose();
+      },
+    );
+
+    test(
+      'does not empty the legacy list when the carry-over publish fails',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          flagKey: true,
+        });
+        prefs = await SharedPreferences.getInstance();
+
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockA]),
+            ];
+          }
+          return <Event>[];
+        });
+        when(
+          () => mockClient.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: 30000,
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+        expect(prefs.getBool(retiredKey), isNull);
+
+        service.dispose();
+      },
+    );
 
     test('keeps the flag unset when the republish is rejected', () async {
       when(() => mockClient.queryEvents(any())).thenAnswer((invocation) async {
@@ -3853,8 +4000,8 @@ void main() {
       expect(service.hasBlockedUs(blockerPubkey), isTrue);
       expect(service.hasBlockedUs(otherBlockerPubkey), isTrue);
 
-      // The discovery subscription passes two filters; the by-author watch
-      // is the single-filter one.
+      // The discovery subscription filters on #p; the by-author watch is the
+      // one that filters on authors.
       final watchRequests =
           verify(
                 () => mockNostrService.subscribe(
@@ -3863,7 +4010,9 @@ void main() {
                 ),
               ).captured
               .cast<List<Filter>>()
-              .where((filters) => filters.length == 1)
+              .where(
+                (filters) => filters.every((filter) => filter.authors != null),
+              )
               .toList();
 
       expect(
