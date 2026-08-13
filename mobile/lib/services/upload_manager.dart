@@ -515,13 +515,14 @@ class UploadManager implements BackgroundAwareService {
 
     // Prefer the persisted final render when available. It preserves editor
     // overlays and gives retries/background uploads a stable file path.
+    var resolvedDuration = videoDuration;
     String videoFilePath;
     final renderedClip = draft.finalRenderedClip;
     if (renderedClip != null) {
       final renderedPath = await renderedClip.requireVideo.safeFilePath();
       if (File(renderedPath).existsSync()) {
         videoFilePath = renderedPath;
-        videoDuration ??= renderedClip.duration;
+        resolvedDuration ??= renderedClip.duration;
         Log.info(
           '🎬 Using final rendered clip for upload: $videoFilePath',
           name: 'UploadManager',
@@ -546,10 +547,9 @@ class UploadManager implements BackgroundAwareService {
       final meta = await ProVideoEditor.instance.getMetadata(
         EditorVideo.file(videoFilePath),
       );
-      videoDuration ??= meta.duration;
-      final resolution = meta.resolution;
-      videoWidth = resolution.width.round();
-      videoHeight = resolution.height.round();
+      resolvedDuration ??= meta.duration;
+      videoWidth = meta.resolution.width.round();
+      videoHeight = meta.resolution.height.round();
     } catch (e) {
       Log.warning(
         '⚠️ Could not extract video metadata: $e',
@@ -566,7 +566,7 @@ class UploadManager implements BackgroundAwareService {
       hashtags: draft.hashtags.toList(),
       videoWidth: videoWidth,
       videoHeight: videoHeight,
-      videoDuration: videoDuration,
+      videoDuration: resolvedDuration,
       proofManifestJson: draft.proofManifestJson,
       onProgress: onProgress,
       thumbnailTimestamp: draft.thumbnailTimestamp,

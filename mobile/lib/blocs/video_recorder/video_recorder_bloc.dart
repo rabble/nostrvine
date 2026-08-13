@@ -1483,7 +1483,7 @@ class VideoRecorderBloc
   /// the dispose (if any) happens after — so it never races the native start.
   /// The lock is cleared on the next [VideoRecorderInitializeRequested].
   void _lockRecordingForNavigation(Emitter<VideoRecorderBlocState> emit) {
-    _cameraService.onRemoteRecordTrigger = null;
+    _cameraService.setOnRemoteRecordTrigger(null);
     if (state.isRecording || state.isStartingRecording) {
       _readClipManager()
         ..stopRecording()
@@ -2032,10 +2032,10 @@ class VideoRecorderBloc
   // === Private helpers ===
 
   Future<void> _setupRemoteRecordControl() async {
-    _cameraService.onRemoteRecordTrigger = () {
+    _cameraService.setOnRemoteRecordTrigger(() {
       if (isClosed) return;
       add(const _VideoRecorderRemoteRecordTriggered());
-    };
+    });
 
     final success = await _cameraService.setRemoteRecordControlEnabled(
       enabled: true,
@@ -2069,7 +2069,7 @@ class VideoRecorderBloc
   Future<void> _disableRemoteRecordControl() async {
     if (_remoteRecordControlEnabled) {
       await _cameraService.setRemoteRecordControlEnabled(enabled: false);
-      _cameraService.onRemoteRecordTrigger = null;
+      _cameraService.setOnRemoteRecordTrigger(null);
       _remoteRecordControlEnabled = false;
       Log.debug(
         '🎮 Remote record control disabled',

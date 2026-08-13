@@ -1,3 +1,6 @@
+// Permanent: swaps PathProviderPlatform.instance and ProVideoEditor.instance;
+// keep isolated until VideoEditorReverseService accepts injected dependencies.
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -69,9 +72,6 @@ class _FakeProVideoEditor extends ProVideoEditor {
   }
 }
 
-// Permanent: swaps PathProviderPlatform.instance and ProVideoEditor.instance;
-// keep isolated until VideoEditorReverseService accepts injected dependencies.
-@Tags(['skip_very_good_optimization'])
 void main() {
   late Directory tempDir;
   late String documentsPath;

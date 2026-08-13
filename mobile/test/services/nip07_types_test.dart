@@ -39,7 +39,7 @@ void main() {
 
       expect(event.id, equals('abc123'));
       expect(event.pubkey, equals('deadbeef'));
-      expect(event.created_at, equals(1_700_000_000));
+      expect(event.createdAt, equals(1_700_000_000));
       expect(event.kind, equals(1));
       expect(
         event.tags,
@@ -57,9 +57,9 @@ void main() {
       final event = dartEventToJs({'pubkey': 'pk', 'kind': 1, 'content': ''});
       final after = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-      expect(event.created_at, isA<int>());
-      expect(event.created_at, greaterThanOrEqualTo(before));
-      expect(event.created_at, lessThanOrEqualTo(after));
+      expect(event.createdAt, isA<int>());
+      expect(event.createdAt, greaterThanOrEqualTo(before));
+      expect(event.createdAt, lessThanOrEqualTo(after));
     });
 
     test('handles empty tags list', () {
@@ -80,7 +80,7 @@ void main() {
       final event = NostrEvent(
         id: 'id1',
         pubkey: 'pk1',
-        created_at: 1_700_000_000,
+        createdAt: 1_700_000_000,
         kind: 1,
         tags: [
           ['e', 'note1abc'],

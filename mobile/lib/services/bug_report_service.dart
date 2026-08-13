@@ -3,7 +3,9 @@
 
 import 'dart:convert';
 // TODO: migrate to `package:web` and `dart:js_interop`.
-// ignore: deprecated_member_use
+// The conditional import keeps `dart:html` off every non-web build, which is
+// what the lint guards against.
+// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html'
     if (dart.library.io) 'package:openvine/services/bug_report_service_stub.dart'
     as html;

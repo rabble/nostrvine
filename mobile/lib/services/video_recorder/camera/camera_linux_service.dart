@@ -143,7 +143,7 @@ class CameraLinuxService extends CameraService {
   }
 
   @override
-  set onRemoteRecordTrigger(void Function()? callback) {
+  void setOnRemoteRecordTrigger(void Function()? callback) {
     // Remote record control is not supported on Linux.
   }
 

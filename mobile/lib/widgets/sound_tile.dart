@@ -15,7 +15,7 @@ import 'package:openvine/l10n/l10n.dart';
 /// - Sound detail page "videos using this sound"
 ///
 /// Normal mode displays:
-/// ```
+/// ```text
 /// ┌─────────────────────────────────────────┐
 /// │  ▶️ Original sound - @user1           > │
 /// │    6s · 142 videos                      │
@@ -26,7 +26,7 @@ import 'package:openvine/l10n/l10n.dart';
 /// - Tap chevron (right) = navigate to sound detail
 ///
 /// Compact mode (for horizontal scroll):
-/// ```
+/// ```text
 /// ┌─────┐
 /// │thumb│
 /// │ ♪6s │

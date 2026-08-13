@@ -101,7 +101,7 @@ final RegExp _fileExtension = RegExp(r'^[A-Za-z0-9]{1,5}$');
 /// fragment; and replaces identifier path segments with placeholders so every
 /// call to one endpoint lands on one pattern:
 ///
-/// ```
+/// ```text
 /// https://api.divine.video/api/users/<64-hex>/videos?limit=20
 ///   -> https://api.divine.video/api/users/:id/videos
 /// https://media.divine.video/<sha256>.mp4

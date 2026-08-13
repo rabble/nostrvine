@@ -16,7 +16,7 @@ import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 
 /// Displays hashtag search results from HashtagSearchBloc.
 ///
-/// Must be used within a BlocProvider<HashtagSearchBloc>.
+/// Must be used within a `BlocProvider<HashtagSearchBloc>`.
 class HashtagSearchView extends StatelessWidget {
   const HashtagSearchView({super.key});
 

@@ -276,6 +276,9 @@ class ClipThumbnailManager {
     // the stream errors and closes with only a partial set delivered.
     var truncated = false;
 
+    // Owned by _subscriptions and cancelled in sync (on replace and on clip
+    // removal) and in dispose.
+    // ignore: cancel_subscriptions
     final subscription =
         _generateStripThumbnails(
           videoPath: videoPath,

@@ -1,3 +1,8 @@
+// Permanent: swaps the global ProVideoEditor.instance and
+// PathProviderPlatform.instance platform singletons, which the VGV optimizer's
+// shared-process bundling cannot isolate. Same pattern as the reverse/split
+// service tests.
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -67,11 +72,6 @@ class _FakeProVideoEditor extends ProVideoEditor {
   }
 }
 
-// Permanent: swaps the global ProVideoEditor.instance and
-// PathProviderPlatform.instance platform singletons, which the VGV optimizer's
-// shared-process bundling cannot isolate. Same pattern as the reverse/split
-// service tests.
-@Tags(['skip_very_good_optimization'])
 void main() {
   late Directory tempDir;
   late String documentsPath;

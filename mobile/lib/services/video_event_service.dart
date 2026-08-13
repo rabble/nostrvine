@@ -2519,6 +2519,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           subscriptionType: subscriptionType,
         );
 
+        // Owned by _subscriptions[subscriptionId] and cancelled in
+        // _cancelExistingSubscriptions.
+        // ignore: cancel_subscriptions
         final streamSubscription = eventStream.listen(
           (event) {
             eventCount++;
@@ -6067,6 +6070,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       );
 
       // Subscribe to search results
+      // Owned by _subscriptions['search'] and cancelled in clearSearchResults
+      // and _cancelExistingSubscriptions.
+      // ignore: cancel_subscriptions
       final subscription = searchStream.listen(
         _handleSearchResult,
         onError: (error) {

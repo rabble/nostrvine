@@ -190,7 +190,7 @@ class MockCameraService extends CameraService {
   }
 
   @override
-  set onRemoteRecordTrigger(void Function()? callback) {
+  void setOnRemoteRecordTrigger(void Function()? callback) {
     // Mock implementation - do nothing
   }
 }

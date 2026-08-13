@@ -320,7 +320,7 @@ final class _VideoRecorderCameraStateChanged extends VideoRecorderEvent {
 
 /// Internal event: a remote-record trigger fired (volume button /
 /// Bluetooth media key). Dispatched from the
-/// `CameraService.onRemoteRecordTrigger` callback.
+/// `CameraService.setOnRemoteRecordTrigger` callback.
 final class _VideoRecorderRemoteRecordTriggered extends VideoRecorderEvent {
   const _VideoRecorderRemoteRecordTriggered();
 }

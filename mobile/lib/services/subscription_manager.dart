@@ -90,6 +90,8 @@ class SubscriptionManager {
     final eventStream = _nostrService.subscribe(filteredFilters);
 
     // Set up subscription
+    // Owned by _activeSubscriptions and cancelled in cancelSubscription.
+    // ignore: cancel_subscriptions
     final subscription = eventStream.listen(
       onEvent,
       onError: onError,

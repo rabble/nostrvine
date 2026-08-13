@@ -518,18 +518,17 @@ class VideoEditorRenderService {
         }
       }
       await progressTracker.markAssemblyComplete();
-      clips = renderClips;
 
       Log.debug(
-        '🎬 renderVideoToClip: clips=${clips.length}, '
+        '🎬 renderVideoToClip: clips=${renderClips.length}, '
         'parameters=${parameters?.toLogString()}',
         name: _logName,
         category: LogCategory.video,
       );
 
       final outputPath = await _renderVideoOrThrow(
-        clips: clips,
-        aspectRatio: clips.first.targetAspectRatio,
+        clips: renderClips,
+        aspectRatio: renderClips.first.targetAspectRatio,
         usePersistentStorage: true,
         parameters: parameters,
         taskId: effectiveTaskId,
@@ -554,7 +553,7 @@ class VideoEditorRenderService {
       // or where proof generation failed will be attested now.
       var completedProofSteps = 0;
       final attestedClips = await _ensureClipProofs(
-        clips,
+        renderClips,
         onClipProcessed: () {
           completedProofSteps++;
           progressTracker.markProofStepComplete(completedProofSteps);
@@ -601,9 +600,9 @@ class VideoEditorRenderService {
         video: EditorVideo.file(outputPath),
         duration: metaData.duration,
         recordedAt: DateTime.now(),
-        originalAspectRatio: clips.first.originalAspectRatio,
-        targetAspectRatio: clips.first.targetAspectRatio,
-        thumbnailPath: cover?.path ?? clips.first.thumbnailPath,
+        originalAspectRatio: renderClips.first.originalAspectRatio,
+        targetAspectRatio: renderClips.first.targetAspectRatio,
+        thumbnailPath: cover?.path ?? renderClips.first.thumbnailPath,
         thumbnailTimestamp: cover?.timestamp,
       );
 

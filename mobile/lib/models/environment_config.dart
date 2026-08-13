@@ -25,7 +25,7 @@ const loopbackHost = 'localhost';
 ///   - mobile/android/app/src/main/res/xml/network_security_config.xml
 ///   - mobile/ios/Runner/Info.plist (NSAllowsLocalNetworking)
 ///   - mobile/macos/Runner/Info.plist (NSAllowsLocalNetworking)
-/// Keep both constants in sync with the Android <domain-config> list.
+/// Keep both constants in sync with the Android `<domain-config>` list.
 String get localHost =>
     !kIsWeb && defaultTargetPlatform == TargetPlatform.android
     ? androidEmulatorHost

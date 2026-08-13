@@ -22,7 +22,7 @@ class _NoProbe implements SavedSoundMediaProbe {
 }
 
 class _FailingService extends SavedSoundsService {
-  _FailingService(super.preferences);
+  _FailingService(super._preferences);
 
   @override
   Future<void> replaceSavedSound(SavedSound sound) async {
