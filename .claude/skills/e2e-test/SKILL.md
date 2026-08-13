@@ -51,7 +51,7 @@ run before any test executes.
 
 | Half | Version | Declared in |
 |---|---|---|
-| `patrol` package | 4.9.0 | `mobile/pubspec.yaml` (`patrol: ^4.9.0`) |
+| `patrol` package | 4.9.0 | `mobile/pubspec.yaml` (`patrol: ">=4.9.0 <4.10.0"`) |
 | `patrol_cli` binary | 4.7.0 | `local_stack/profile.sh` (`PATROL_CLI_VERSION`) |
 
 `profile.sh` checks the installed CLI and runs
@@ -61,6 +61,12 @@ it switches the CLI for every checkout, including worktrees still on an
 older `patrol`, which will then fail the same compatibility check until
 they rebase. Change the two versions together — the compatibility table
 is at https://patrol.leancode.co/documentation/compatibility-table.
+
+The package constraint pins a single minor rather than using a caret,
+because that table closes open-ended bands retroactively. A caret range
+lets `flutter pub upgrade` walk into a `patrol` the pinned CLI rejects,
+and the abort then surfaces at `patrol test` time, unrelated to whatever
+the upgrade was actually for.
 
 ## Stack
 

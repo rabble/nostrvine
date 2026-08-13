@@ -371,11 +371,14 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   # Paired with patrol_cli 4.7.0, which patrol_cli itself enforces at run
-  # time. Keep this floor at 4.9.0 so pub cannot resolve below it, into the
-  # band that the installed CLI rejects. 4.9.0 also carries the fix for
-  # macOS builds failing with "module 'PatrolImpl' not found" under Swift
-  # Package Manager.
-  patrol: ^4.9.0
+  # time. Both bounds are load-bearing. The floor keeps pub out of the older
+  # band the installed CLI rejects, and carries the fix for macOS builds
+  # failing with "module 'PatrolImpl' not found" under Swift Package Manager.
+  # The ceiling stops `pub upgrade` crossing into a band patrol's table
+  # closes retroactively: CLI 4.6.1 shipped an open-ended 4.7.0+ entry that
+  # CLI 4.7.0 narrowed to 4.7.0-4.8.0, which is what broke `^4.8.0`. Raise
+  # both halves together — see PATROL_CLI_VERSION in local_stack/profile.sh.
+  patrol: ">=4.9.0 <4.10.0"
   flutter_launcher_icons: ^0.14.4
 
   very_good_analysis: ^10.2.0
