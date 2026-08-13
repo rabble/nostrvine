@@ -112,6 +112,21 @@ esac
           );
         });
 
+        test('skips app CI for a codemagic.yaml-only change', () {
+          // Intentionally out of app-scope so a config-only edit does not
+          // drag the full matrix. The Codemagic group guard must therefore
+          // be required through the Mobile CI aggregator, not this detector.
+          expectScope(
+            runDetector(
+              event: event,
+              changedFiles: ['codemagic.yaml'],
+              changedTotal: 1,
+            ),
+            app: false,
+            native: false,
+          );
+        });
+
         test('skips app CI for docs-only changes', () {
           expectScope(
             runDetector(
