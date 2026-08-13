@@ -7,8 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class PageLoadObserver extends NavigatorObserver {
-  PageLoadObserver({ScreenAnalyticsService? analytics})
-    : _analytics = analytics ?? ScreenAnalyticsService();
+  /// Construct the observer over the app's shared [ScreenAnalyticsService].
+  ///
+  /// [analytics] is required because the sessions this observer starts are
+  /// completed by screens reading the same instance — a private default would
+  /// silently strand every `markDataLoaded` call on a different service.
+  PageLoadObserver({required ScreenAnalyticsService analytics})
+    : _analytics = analytics;
 
   final ScreenAnalyticsService _analytics;
 

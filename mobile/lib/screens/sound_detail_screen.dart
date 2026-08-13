@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +12,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
@@ -1122,10 +1122,12 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
         _videoEvents = events;
         _isLoading = false;
       });
-      ScreenAnalyticsService().markDataLoaded(
-        'sound_detail',
-        dataMetrics: {'video_count': events.length},
-      );
+      ref
+          .read(screenAnalyticsServiceProvider)
+          .markDataLoaded(
+            'sound_detail',
+            dataMetrics: {'video_count': events.length},
+          );
     }
   }
 

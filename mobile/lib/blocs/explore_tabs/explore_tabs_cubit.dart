@@ -21,14 +21,16 @@ part 'explore_tabs_state.dart';
 /// analytics and top-hashtag loading) so the presentation layer reaches them
 /// through the cubit rather than importing services directly.
 class ExploreTabsCubit extends Cubit<ExploreTabsState> {
-  /// Creates the cubit. [screenAnalytics] and [topHashtags] default to
-  /// standalone instances; production injects the shared
-  /// `topHashtagsServiceProvider` instance (so the warmed cache is shared),
-  /// and tests inject fakes.
+  /// Creates the cubit. Production injects the shared
+  /// `screenAnalyticsServiceProvider` and `topHashtagsServiceProvider`
+  /// instances (so screen-load sessions and the warmed hashtag cache are
+  /// shared), and tests inject fakes. [topHashtags] defaults to a standalone
+  /// instance; [screenAnalytics] is required because a private instance would
+  /// never see the session the navigator observer started.
   ExploreTabsCubit({
-    ScreenAnalyticsService? screenAnalytics,
+    required ScreenAnalyticsService screenAnalytics,
     TopHashtagsLoader? topHashtags,
-  }) : _screenAnalytics = screenAnalytics ?? ScreenAnalyticsService(),
+  }) : _screenAnalytics = screenAnalytics,
        _topHashtags = topHashtags ?? TopHashtagsService(),
        super(const ExploreTabsState());
 

@@ -35,7 +35,7 @@ class NewVideosTab extends ConsumerStatefulWidget {
     this.errorTracker,
   });
 
-  /// Optional analytics services (for testing, defaults to singletons)
+  /// Optional analytics overrides; each defaults to the app's shared instance.
   final ScreenAnalyticsService? screenAnalytics;
   final FeedPerformanceTracker? feedTracker;
   final ErrorAnalyticsTracker? errorTracker;
@@ -53,7 +53,8 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
   @override
   void initState() {
     super.initState();
-    _screenAnalytics = widget.screenAnalytics ?? ScreenAnalyticsService();
+    _screenAnalytics =
+        widget.screenAnalytics ?? ref.read(screenAnalyticsServiceProvider);
     _feedTracker = widget.feedTracker ?? FeedPerformanceTracker();
     _errorTracker =
         widget.errorTracker ?? ref.read(errorAnalyticsTrackerProvider);

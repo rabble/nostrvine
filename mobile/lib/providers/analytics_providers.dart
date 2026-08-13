@@ -125,6 +125,16 @@ final surfacePerformanceTrackerProvider = Provider<SurfacePerformanceTracker>(
   (ref) => SurfacePerformanceTracker(),
 );
 
+/// Provides the app's shared [ScreenAnalyticsService].
+///
+/// Replaces the former `ScreenAnalyticsService()` factory singleton. A single
+/// shared instance is kept alive because a screen-load session is started by
+/// the navigator observer and completed later by the screen itself; a
+/// per-consumer instance would drop every session in between.
+final screenAnalyticsServiceProvider = Provider<ScreenAnalyticsService>(
+  (ref) => ScreenAnalyticsService(),
+);
+
 /// Provides the app's shared [ErrorAnalyticsTracker].
 ///
 /// Replaces the former `ErrorAnalyticsTracker()` factory singleton. A single

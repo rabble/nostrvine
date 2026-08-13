@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/blocs/featured_tabs/featured_tabs_cubit.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/screens/explore/explore_view.dart';
@@ -80,10 +81,10 @@ class ExploreScreen extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          // topHashtagsServiceProvider is a stable keepAlive Provider that is
-          // never invalidated, so ref.read is safe here (state_management.md
-          // §1).
+          // Both providers are stable keepAlive Providers that are never
+          // invalidated, so ref.read is safe here (state_management.md §1).
           create: (_) => ExploreTabsCubit(
+            screenAnalytics: ref.read(screenAnalyticsServiceProvider),
             topHashtags: ref.read(topHashtagsServiceProvider),
           ),
         ),

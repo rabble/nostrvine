@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +14,7 @@ import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
@@ -95,7 +95,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     if (widget.initialVideo != null) {
       _video = widget.initialVideo;
       _isLoading = false;
-      ScreenAnalyticsService().markDataLoaded('video_detail');
+      ref.read(screenAnalyticsServiceProvider).markDataLoaded('video_detail');
       return;
     }
     _loadVideo();
@@ -124,7 +124,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     });
 
     if (widget.initialVideo != null) {
-      ScreenAnalyticsService().markDataLoaded('video_detail');
+      ref.read(screenAnalyticsServiceProvider).markDataLoaded('video_detail');
       return;
     }
 
@@ -171,7 +171,9 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
             _isLoading = false;
             _error = null;
           });
-          ScreenAnalyticsService().markDataLoaded('video_detail');
+          ref
+              .read(screenAnalyticsServiceProvider)
+              .markDataLoaded('video_detail');
         }
       } else {
         if (allowRelayReadyRetry &&

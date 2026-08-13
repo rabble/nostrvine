@@ -17,6 +17,7 @@ import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
@@ -427,10 +428,12 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           final feedState = context.watch<ProfileFeedCubit>().state;
           // Track analytics when data is loaded
           if (feedState.status == ProfileFeedStatus.ready) {
-            ScreenAnalyticsService().markDataLoaded(
-              'other_profile',
-              dataMetrics: {'video_count': feedState.videos.length},
-            );
+            ref
+                .read(screenAnalyticsServiceProvider)
+                .markDataLoaded(
+                  'other_profile',
+                  dataMetrics: {'video_count': feedState.videos.length},
+                );
 
             if (!_hasTrackedFeedLoad) {
               _hasTrackedFeedLoad = true;

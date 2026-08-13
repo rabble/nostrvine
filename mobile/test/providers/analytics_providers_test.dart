@@ -1,6 +1,7 @@
 // ABOUTME: Tests authenticated identity fan-out to Analytics and Crashlytics.
 
 import 'package:analytics/analytics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 
@@ -138,5 +139,38 @@ void main() {
 
     expect(sink.userIds, isEmpty);
     expect(crashIds, isEmpty);
+  });
+
+  group('screenAnalyticsServiceProvider', () {
+    test('hands every reader the same session-tracking instance', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // The navigator observer starts a load that a screen completes later, so
+      // a second read must see the first read's in-flight session.
+      container.read(screenAnalyticsServiceProvider).startScreenLoad('explore');
+
+      expect(
+        container.read(screenAnalyticsServiceProvider).activeSessionCount,
+        1,
+      );
+    });
+
+    test('is replaceable by an override without touching static state', () {
+      final replacement = ScreenAnalyticsService(
+        sink: const NoOpAnalyticsEventSink(),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          screenAnalyticsServiceProvider.overrideWithValue(replacement),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(screenAnalyticsServiceProvider),
+        same(replacement),
+      );
+    });
   });
 }

@@ -1,7 +1,6 @@
 // ABOUTME: Router-aware liked videos screen that shows grid or feed based on URL
 // ABOUTME: Reads route context to determine grid mode vs feed mode
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -216,10 +216,12 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
           );
         }
 
-        ScreenAnalyticsService().markDataLoaded(
-          'liked_videos',
-          dataMetrics: {'video_count': videos.length},
-        );
+        ref
+            .read(screenAnalyticsServiceProvider)
+            .markDataLoaded(
+              'liked_videos',
+              dataMetrics: {'video_count': videos.length},
+            );
 
         final safeIndex = widget.videoIndex.clamp(0, videos.length - 1);
 

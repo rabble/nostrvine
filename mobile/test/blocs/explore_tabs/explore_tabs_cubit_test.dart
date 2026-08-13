@@ -37,10 +37,15 @@ class _RecordingAnalyticsSink implements AnalyticsEventSink {
   }) async {}
 }
 
+/// A cubit whose analytics writes go nowhere, for the tab-ordering tests.
+ExploreTabsCubit _buildCubit() => ExploreTabsCubit(
+  screenAnalytics: ScreenAnalyticsService(sink: const NoOpAnalyticsEventSink()),
+);
+
 void main() {
   group(ExploreTabsCubit, () {
     test('initial state has only the base tabs', () {
-      final cubit = ExploreTabsCubit();
+      final cubit = _buildCubit();
       addTearDown(cubit.close);
 
       expect(cubit.state.classicsAvailable, isFalse);
@@ -57,7 +62,7 @@ void main() {
 
     blocTest<ExploreTabsCubit, ExploreTabsState>(
       'emits new tab order when availability changes',
-      build: ExploreTabsCubit.new,
+      build: _buildCubit,
       act: (cubit) => cubit.updateAvailability(
         classicsAvailable: true,
         forYouAvailable: true,
@@ -82,7 +87,7 @@ void main() {
 
     blocTest<ExploreTabsCubit, ExploreTabsState>(
       'does not emit when availability is unchanged',
-      build: ExploreTabsCubit.new,
+      build: _buildCubit,
       act: (cubit) => cubit.updateAvailability(
         classicsAvailable: false,
         forYouAvailable: false,
@@ -139,7 +144,7 @@ void main() {
 
       setUp(() {
         analyticsSink = _RecordingAnalyticsSink();
-        analytics = ScreenAnalyticsService.testInstance(sink: analyticsSink);
+        analytics = ScreenAnalyticsService(sink: analyticsSink);
         topHashtags = _MockTopHashtagsLoader();
         cubit = ExploreTabsCubit(
           screenAnalytics: analytics,

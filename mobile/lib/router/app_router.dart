@@ -13,6 +13,7 @@ import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/navigator_keys.dart';
@@ -128,7 +129,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     // Start at /welcome - redirect logic will navigate to appropriate route.
     initialLocation:
         ref.read(routerInitialLocationProvider) ?? WelcomeScreen.path,
-    observers: _buildRouterObservers(),
+    observers: _buildRouterObservers(ref),
     // Refresh router when auth or account-review state changes
     refreshListenable: refreshListenable,
     errorBuilder: (context, state) =>
@@ -165,8 +166,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return router;
 });
 
-List<NavigatorObserver> _buildRouterObservers() {
-  final observers = <NavigatorObserver>[routeObserver, PageLoadObserver()];
+List<NavigatorObserver> _buildRouterObservers(Ref ref) {
+  final observers = <NavigatorObserver>[
+    routeObserver,
+    PageLoadObserver(analytics: ref.read(screenAnalyticsServiceProvider)),
+  ];
 
   return observers;
 }

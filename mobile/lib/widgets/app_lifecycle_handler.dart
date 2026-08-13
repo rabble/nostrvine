@@ -118,7 +118,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         // times from producing absurd load-time measurements (e.g.
         // 27+ hours) when providers re-fire on resume.
         FeedPerformanceTracker().resetAllSessions();
-        ScreenAnalyticsService().resetAllSessions();
+        ref.read(screenAnalyticsServiceProvider).resetAllSessions();
         ref.read(surfacePerformanceTrackerProvider).resetAllSessions();
 
         // Notify foreground state provider - enables visibility detection

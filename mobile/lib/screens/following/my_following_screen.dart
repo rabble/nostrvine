@@ -1,7 +1,6 @@
 // ABOUTME: Screen displaying current user's following list
 // ABOUTME: Uses MyFollowingBloc for reactive updates via repository
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +10,7 @@ import 'package:openvine/blocs/follow_list_search/follow_list_search_bloc.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -117,10 +117,14 @@ class _MyFollowingView extends ConsumerWidget {
                 previous.status != MyFollowingStatus.toggleFailure),
         listener: (context, state) {
           if (state.status == MyFollowingStatus.success) {
-            ScreenAnalyticsService().markDataLoaded(
-              'following',
-              dataMetrics: {'following_count': state.followingPubkeys.length},
-            );
+            ref
+                .read(screenAnalyticsServiceProvider)
+                .markDataLoaded(
+                  'following',
+                  dataMetrics: {
+                    'following_count': state.followingPubkeys.length,
+                  },
+                );
           }
           if (state.status == MyFollowingStatus.toggleFailure) {
             ScaffoldMessenger.of(context).showSnackBar(

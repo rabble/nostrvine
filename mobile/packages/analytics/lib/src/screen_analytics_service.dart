@@ -6,8 +6,6 @@ import 'dart:async';
 import 'package:analytics/src/analytics_event_sink.dart';
 import 'package:analytics/src/firebase_analytics_event_sink.dart';
 import 'package:analytics/src/page_load_history.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:unified_logger/unified_logger.dart';
 
 /// Maximum age for a session before it is considered stale and discarded.
@@ -18,34 +16,16 @@ import 'package:unified_logger/unified_logger.dart';
 const _maxScreenSessionAge = Duration(seconds: 60);
 
 /// Service for tracking screen navigation, performance, and user engagement
+///
+/// Sessions are keyed by screen name and shared across consumers — the
+/// navigator observer starts a load that a screen later completes — so the app
+/// resolves one instance through `screenAnalyticsServiceProvider` rather than
+/// constructing this per widget.
 class ScreenAnalyticsService {
-  factory ScreenAnalyticsService() => _instance ??= ScreenAnalyticsService._();
-  ScreenAnalyticsService._({AnalyticsEventSink? sink})
+  /// Creates a service. Defaults to the Firebase analytics sink in production;
+  /// pass a [sink] (e.g. [NoOpAnalyticsEventSink]) in tests.
+  ScreenAnalyticsService({AnalyticsEventSink? sink})
     : _sink = sink ?? FirebaseAnalyticsEventSink();
-
-  static ScreenAnalyticsService? _instance;
-
-  /// Resets the singleton so the next [ScreenAnalyticsService()] call returns a
-  /// fresh instance. Call in test `tearDown` to prevent state leaking between
-  /// test files when tests run in a shared isolate (e.g. VGV optimized runner).
-  @visibleForTesting
-  static void resetInstance() {
-    _instance?._activeSessions.clear();
-    _instance?._currentScreen = null;
-    _instance?._currentScreenStartTime = null;
-    _instance = null;
-  }
-
-  /// Creates a testable instance that does not touch [FirebaseAnalytics].
-  @visibleForTesting
-  ScreenAnalyticsService.testInstance({
-    AnalyticsEventSink? sink,
-    FirebaseAnalytics? analytics,
-  }) : _sink =
-           sink ??
-           (analytics != null
-               ? FirebaseAnalyticsEventSink(analytics: analytics)
-               : const NoOpAnalyticsEventSink());
 
   final AnalyticsEventSink _sink;
 
