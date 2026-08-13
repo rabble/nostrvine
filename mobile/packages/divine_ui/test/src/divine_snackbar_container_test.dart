@@ -693,7 +693,7 @@ void main() {
       );
 
       final box = tester.widget<DecoratedBox>(
-        find.byType(DecoratedBox).first,
+        find.byType(DecoratedBox),
       );
       expect(
         (box.decoration as BoxDecoration).color,
@@ -716,7 +716,7 @@ void main() {
       );
 
       final box = tester.widget<DecoratedBox>(
-        find.byType(DecoratedBox).first,
+        find.byType(DecoratedBox),
       );
       expect(
         (box.decoration as BoxDecoration).color,
