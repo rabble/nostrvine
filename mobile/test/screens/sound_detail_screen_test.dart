@@ -1168,8 +1168,12 @@ void main() {
         await tester.tap(find.text('Preview'));
         await tester.pumpAndSettle();
 
-        // Should show error snackbar
-        expect(find.textContaining('Failed to play preview'), findsOneWidget);
+        // Should show a localized error without leaking exception details.
+        expect(
+          find.text('Failed to play preview: Please try again'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Playback failed'), findsNothing);
       });
     });
 
@@ -1932,6 +1936,8 @@ void main() {
 
           // The error body must actually be on screen (no fallback path).
           expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text('Failed to load videos'), findsOneWidget);
+          expect(find.textContaining('forced error'), findsNothing);
           // No layout exception should have been thrown while building.
           expect(tester.takeException(), isNull);
         },

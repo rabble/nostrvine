@@ -32,7 +32,7 @@ lib/screens/library_screen.dart	857
 lib/screens/relay_diagnostic_screen.dart	1104
 lib/screens/relay_settings_screen.dart	1006
 lib/screens/settings/settings_screen.dart	896
-lib/screens/sound_detail_screen.dart	1386
+lib/screens/sound_detail_screen.dart	1387
 lib/screens/user_list_people_screen.dart	813
 lib/screens/video_editor/video_editor_screen.dart	1044
 lib/screens/video_metadata/video_metadata_cover_screen.dart	1052

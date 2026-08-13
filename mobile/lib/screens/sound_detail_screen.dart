@@ -218,7 +218,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.soundPreviewFailed(e),
+            context.l10n.soundPreviewFailed(context.l10n.profilePleaseTryAgain),
             error: true,
             duration: _snackBarDuration,
           ),
@@ -576,11 +576,14 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
           Row(
             spacing: 12,
             children: [
-              _SoundCover(
-                pubkey: profileCreditPubkey,
-                name: profileCreditName,
-                pictureUrl: profileCreditProfile?.picture,
-              ),
+              if (profileCreditPubkey == null)
+                const _SoundCoverFallback()
+              else
+                _SoundCover(
+                  pubkey: profileCreditPubkey,
+                  name: profileCreditName!,
+                  pictureUrl: profileCreditProfile?.picture,
+                ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -721,32 +724,28 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
 /// them ([_SoundHeaderState._profileCreditPubkey] returns null there) and
 /// keep the note glyph.
 class _SoundCover extends StatelessWidget {
-  const _SoundCover({required this.pubkey, this.name, this.pictureUrl});
+  const _SoundCover({
+    required this.pubkey,
+    required this.name,
+    this.pictureUrl,
+  });
 
   static const double _size = 48;
 
-  /// Pubkey of the credited creator, or null when no account backs the sound.
-  final String? pubkey;
-  final String? name;
+  /// Pubkey of the credited creator.
+  final String pubkey;
+  final String name;
   final String? pictureUrl;
 
   @override
   Widget build(BuildContext context) {
-    final creditPubkey = pubkey;
-    if (creditPubkey == null) {
-      return const _SoundCoverFallback();
-    }
-
-    final creditName = name;
     return UserAvatar(
       size: _size,
       imageUrl: pictureUrl,
-      name: creditName,
-      placeholderSeed: creditPubkey,
-      onTap: () => context.pushOtherProfile(creditPubkey),
-      semanticLabel: creditName == null
-          ? null
-          : context.l10n.profileChipTapHint(creditName),
+      name: name,
+      placeholderSeed: pubkey,
+      onTap: () => context.pushOtherProfile(pubkey),
+      semanticLabel: context.l10n.profileChipTapHint(name),
     );
   }
 }
@@ -906,7 +905,6 @@ class _SourceLink extends StatelessWidget {
     final label = context.l10n.soundViewSource;
     return Semantics(
       button: true,
-      label: label,
       child: DivineTextLink(
         text: label,
         style: VineTheme.bodySmallFont(color: VineTheme.vineGreen).copyWith(
@@ -981,7 +979,6 @@ class _VideosGrid extends ConsumerWidget {
         children: [BrandedLoadingIndicator(size: 60)],
       ),
       error: (error, stack) => _VideosErrorState(
-        error: error,
         onRetry: () => ref.invalidate(videosUsingSoundProvider(audioEventId)),
       ),
     );
@@ -1048,9 +1045,8 @@ class _VideosEmptyState extends StatelessWidget {
 
 /// Placeholder shown when the videos for a sound failed to load.
 class _VideosErrorState extends StatelessWidget {
-  const _VideosErrorState({required this.error, required this.onRetry});
+  const _VideosErrorState({required this.onRetry});
 
-  final Object error;
   final VoidCallback onRetry;
 
   @override
@@ -1070,16 +1066,6 @@ class _VideosErrorState extends StatelessWidget {
             color: context.vineColors.primaryText,
           ),
           textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          error.toString(),
-          style: VineTheme.bodySmallFont(
-            color: context.vineColors.onSurfaceMuted,
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 24),
         DivineButton(
