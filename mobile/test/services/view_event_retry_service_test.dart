@@ -42,6 +42,7 @@ void main() {
       int retryCount = 0,
       DateTime? lastAttemptAt,
       String eventVideoPubkey = videoPubkey,
+      DateTime? createdAt,
     }) {
       return PendingViewEvent(
         id: id,
@@ -57,16 +58,20 @@ void main() {
         status: status,
         retryCount: retryCount,
         lastAttemptAt: lastAttemptAt,
-        createdAt: DateTime.utc(2026, 5),
+        createdAt: createdAt ?? DateTime.utc(2026, 5),
       );
     }
 
-    ViewEventRetryService makeService({Stream<bool>? foregroundStream}) {
+    ViewEventRetryService makeService({
+      Stream<bool>? foregroundStream,
+      ViewEventRetryConfig retryConfig = const ViewEventRetryConfig(),
+    }) {
       return ViewEventRetryService(
         viewEventPublisher: publisher,
         pendingViewEventsDao: dao,
         userPubkey: userPubkey,
         appForegroundStream: foregroundStream ?? const Stream<bool>.empty(),
+        retryConfig: retryConfig,
         now: () => now,
       );
     }
@@ -126,6 +131,7 @@ void main() {
       expect(video.id, 'video-view-a');
       expect(video.pubkey, videoPubkey);
       expect(video.vineId, 'vine-view-a');
+      expect(video.addressableDTag, 'vine-view-a');
       expect(captured[1], 0);
       expect(captured[2], 2);
       expect(captured[3], ViewTrafficSource.home);
@@ -216,6 +222,37 @@ void main() {
         ).called(1);
       },
     );
+
+    test('limits each sweep to the configured batch size', () async {
+      await dao.enqueue(
+        makeEvent(id: 'oldest', createdAt: DateTime.utc(2026, 5)),
+      );
+      await dao.enqueue(
+        makeEvent(id: 'middle', createdAt: DateTime.utc(2026, 5, 2)),
+      );
+      await dao.enqueue(
+        makeEvent(id: 'newest', createdAt: DateTime.utc(2026, 5, 3)),
+      );
+      final service = makeService(
+        retryConfig: const ViewEventRetryConfig(maxEventsPerSweep: 2),
+      );
+
+      await service.sweep();
+
+      expect(await dao.getById('oldest'), isNull);
+      expect(await dao.getById('middle'), isNull);
+      expect(await dao.getById('newest'), isNotNull);
+      verify(
+        () => publisher.publishViewEvent(
+          video: any(named: 'video'),
+          startSeconds: any(named: 'startSeconds'),
+          endSeconds: any(named: 'endSeconds'),
+          source: any(named: 'source'),
+          sourceDetail: any(named: 'sourceDetail'),
+          loopCount: any(named: 'loopCount'),
+        ),
+      ).called(2);
+    });
 
     test(
       'skips high-retry failed rows before capped backoff elapses',

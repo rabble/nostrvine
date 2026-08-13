@@ -396,7 +396,7 @@ final class ViewEventPublisherProvider
 }
 
 String _$viewEventPublisherHash() =>
-    r'33477998370aad03ce25bb4beff38a28da291d64';
+    r'506c5f1f86589ad3aa99e9f3673c31952e31f3c3';
 
 /// Subscribed list video cache for merging subscribed list videos into home feed
 /// Depends on CuratedListService which is async, so watch the state provider

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/models/view_event_drop_reason.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -225,31 +226,31 @@ void main() {
         expect(tags.where((t) => t[0] == 'client'), isEmpty);
       });
 
-      test('falls back to event ID when vineId is null', () async {
-        final video = createTestVideoEvent(
-          id: 'event_id_fallback',
-          pubkey: creatorPubkey,
-        );
+      test(
+        'does not fall back to event ID when the real d tag is absent',
+        () async {
+          final video = createTestVideoEvent(
+            id: 'event_id_fallback',
+            pubkey: creatorPubkey,
+            clearAddressableDTag: true,
+          );
 
-        await publisher.publishViewEvent(
-          video: video,
-          startSeconds: 0,
-          endSeconds: 5,
-        );
+          final result = await publisher.publishViewEvent(
+            video: video,
+            startSeconds: 0,
+            endSeconds: 5,
+          );
 
-        final captured = verify(
-          () => mockAuth.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: captureAny(named: 'tags'),
-          ),
-        ).captured;
-
-        final tags = captured[0] as List<List<String>>;
-        final aTag = tags.firstWhere((t) => t[0] == 'a');
-        // When vineId is null, should fall back to event ID
-        expect(aTag[1], equals('34236:$creatorPubkey:event_id_fallback'));
-      });
+          expect(result, isFalse);
+          verifyNever(
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
 
       test('returns false when createAndSignEvent returns null', () async {
         when(
@@ -269,6 +270,49 @@ void main() {
         expect(result, isFalse);
         verifyNever(() => mockNostr.publishEvent(any()));
       });
+
+      test(
+        'reports thrown signing errors as unexpected structural drops',
+        () async {
+          final drops =
+              <({ViewEventDropReason reason, String videoId, String method})>[];
+          publisher = ViewEventPublisher(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            onDrop:
+                (reason, {required String videoId, required String method}) {
+                  drops.add((reason: reason, videoId: videoId, method: method));
+                },
+          );
+          when(
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenThrow(StateError('signer unavailable'));
+
+          final result = await publisher.publishViewEvent(
+            video: createTestVideoEvent(
+              id: 'throwing_sign_video',
+              pubkey: creatorPubkey,
+              vineId: 'throwing_sign_d_tag',
+            ),
+            startSeconds: 0,
+            endSeconds: 5,
+          );
+
+          expect(result, isFalse);
+          expect(drops, [
+            (
+              reason: ViewEventDropReason.unexpectedError,
+              videoId: 'throwing_sign_video',
+              method: 'publishViewEvent',
+            ),
+          ]);
+          verifyNever(() => mockNostr.publishEvent(any()));
+        },
+      );
 
       test(
         'returns false when publishEvent does not return PublishSuccess',
