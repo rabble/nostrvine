@@ -135,8 +135,16 @@ class PubkeyOnlyNostrIdentity extends NostrIdentity {
   Future<String?> getPublicKey() async => pubkey;
 
   @override
-  Future<Event?> signEvent(Event event) async => null;
+  Future<Event?> signEvent(Event event) async => _noSigner('sign an event');
 
+  /// Stays `null` rather than throwing, unlike the methods above.
+  ///
+  /// A `null` here means "this identity cannot produce a canonical
+  /// signature", which is also what `BunkerNostrIdentity`,
+  /// `AmberNostrIdentity` and `Nip07NostrIdentity` return because their
+  /// protocols have no such verb. `NostrCreatorBindingService` reads that
+  /// as "skip the creator binding" and carries on — and it calls this with
+  /// no `try`/`catch`, so a throw would escape to its callers.
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) async => null;
 
@@ -146,23 +154,45 @@ class PubkeyOnlyNostrIdentity extends NostrIdentity {
   @override
   bool get signsWithLocalKey => false;
 
+  /// Stays `null`: every signer returns `null` here. It means "no NIP-65
+  /// list from this signer", not a failure.
   @override
   Future<Map?> getRelays() async => null;
 
   @override
-  Future<String?> encrypt(String pubkey, String plaintext) async => null;
+  Future<String?> encrypt(String pubkey, String plaintext) async =>
+      _noSigner('NIP-04 encrypt');
 
   @override
-  Future<String?> decrypt(String pubkey, String ciphertext) async => null;
+  Future<String?> decrypt(String pubkey, String ciphertext) async =>
+      _noSigner('NIP-04 decrypt');
 
   @override
-  Future<String?> nip44Encrypt(String pubkey, String plaintext) async => null;
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) async =>
+      _noSigner('NIP-44 encrypt');
 
   @override
-  Future<String?> nip44Decrypt(String pubkey, String ciphertext) async => null;
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) async =>
+      _noSigner('NIP-44 decrypt');
 
   @override
   void close() {}
+
+  /// Signals that this identity knows who the user is but holds no signer.
+  ///
+  /// [StateError] rather than a null return, so the reason reaches the log
+  /// instead of vanishing. Every caller of these methods already wraps them
+  /// in a bare `catch`, which catches `Error`, so they still degrade to the
+  /// same null/failed result they did before — they just say why now.
+  /// `AuthService.canPublishNostrWritesNow` returns false for this identity,
+  /// so reaching one of these is a caller that skipped its gate.
+  Never _noSigner(String operation) {
+    throw StateError(
+      'No signer: cannot $operation for pubkey $pubkey. This identity has a '
+      'public key but no signing capability — gate on '
+      'AuthService.canPublishNostrWritesNow.',
+    );
+  }
 }
 
 /// Identity backed by a Keycast OAuth session.

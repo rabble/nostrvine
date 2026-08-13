@@ -766,4 +766,78 @@ void main() {
       expect(identity.signsWithLocalKey, isFalse);
     });
   });
+
+  group(PubkeyOnlyNostrIdentity, () {
+    late PubkeyOnlyNostrIdentity identity;
+
+    setUp(() {
+      identity = PubkeyOnlyNostrIdentity(pubkey: testPublicKey);
+    });
+
+    test('still reports the known public key', () async {
+      expect(await identity.getPublicKey(), equals(testPublicKey));
+    });
+
+    test('signEvent throws StateError naming the missing signer', () async {
+      final event = Event(testPublicKey, 1, const <List<String>>[], 'hi');
+
+      await expectLater(
+        identity.signEvent(event),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('No signer'), contains('sign an event')),
+          ),
+        ),
+      );
+    });
+
+    test('encrypt throws instead of returning null', () async {
+      await expectLater(
+        identity.encrypt(testPublicKey, 'plaintext'),
+        throwsStateError,
+      );
+    });
+
+    test('decrypt throws instead of returning null', () async {
+      await expectLater(
+        identity.decrypt(testPublicKey, 'ciphertext'),
+        throwsStateError,
+      );
+    });
+
+    test('nip44Encrypt throws instead of returning null', () async {
+      await expectLater(
+        identity.nip44Encrypt(testPublicKey, 'plaintext'),
+        throwsStateError,
+      );
+    });
+
+    test('nip44Decrypt throws instead of returning null', () async {
+      await expectLater(
+        identity.nip44Decrypt(testPublicKey, 'ciphertext'),
+        throwsStateError,
+      );
+    });
+
+    // Regression guard. signCanonicalPayload must NOT join the throwing
+    // group: its null means "capability unsupported" (same as Bunker/Amber/
+    // NIP-07), and NostrCreatorBindingService calls it with no try/catch, so
+    // a throw would escape to that service's callers rather than being read
+    // as "skip the creator binding".
+    test(
+      'signCanonicalPayload still returns null, and does not throw',
+      () async {
+        expect(
+          await identity.signCanonicalPayload(Uint8List.fromList([1, 2, 3])),
+          isNull,
+        );
+      },
+    );
+
+    test('getRelays still returns null, and does not throw', () async {
+      expect(await identity.getRelays(), isNull);
+    });
+  });
 }
