@@ -11,6 +11,8 @@ import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_screen.dart';
 
+import '../helpers/scroll.dart';
+
 void main() {
   group('MinorAccountReviewScreen', () {
     testWidgets('shows the welcome-entry family guidance copy', (
@@ -374,7 +376,8 @@ void main() {
         await tester.pumpAndSettle();
         expect(protectedFetches, 1);
 
-        await tester.scrollUntilVisible(
+        await scrollUntilTappable(
+          tester,
           find.text('Check Again'),
           200,
           scrollable: find.byType(Scrollable),

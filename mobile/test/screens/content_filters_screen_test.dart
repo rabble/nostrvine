@@ -12,6 +12,7 @@ import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 
+import '../helpers/scroll.dart';
 import '../helpers/test_provider_overrides.dart';
 
 class _MockContentFilterService extends Mock implements ContentFilterService {}
@@ -137,14 +138,12 @@ void main() {
 
         Future<void> tapShowFor(ContentLabel label) async {
           final row = find.byKey(ValueKey('content-filter-${label.value}'));
-          await tester.scrollUntilVisible(row, 80);
-          await tester.pumpAndSettle();
-          await tester.tap(
-            find.descendant(
-              of: row,
-              matching: find.text(l10nOf(tester).contentFiltersShow),
-            ),
+          final showButton = find.descendant(
+            of: row,
+            matching: find.text(l10nOf(tester).contentFiltersShow),
           );
+          await scrollUntilTappable(tester, row, 80);
+          await tester.tap(showButton);
           await tester.pump();
         }
 

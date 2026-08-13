@@ -17,6 +17,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/services/notification_preferences_service.dart';
 
+import '../helpers/scroll.dart';
 import '../helpers/test_provider_overrides.dart';
 
 class _MockNotificationRepository extends Mock
@@ -76,15 +77,12 @@ void main() {
           tester.element(find.byType(NotificationSettingsScreen)),
         );
 
-        await tester.scrollUntilVisible(
+        await scrollUntilTappable(
+          tester,
           find.text(l10n.notificationSettingsMarkAllAsRead),
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.ensureVisible(
-          find.text(l10n.notificationSettingsMarkAllAsRead),
-        );
-        await tester.pumpAndSettle();
 
         await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
         await tester.pump();
@@ -114,15 +112,12 @@ void main() {
           tester.element(find.byType(NotificationSettingsScreen)),
         );
 
-        await tester.scrollUntilVisible(
+        await scrollUntilTappable(
+          tester,
           find.text(l10n.notificationSettingsMarkAllAsRead),
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.ensureVisible(
-          find.text(l10n.notificationSettingsMarkAllAsRead),
-        );
-        await tester.pumpAndSettle();
 
         await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
         await tester.pump();
@@ -214,7 +209,7 @@ void main() {
         ),
         matching: find.byType(Switch),
       );
-      await tester.scrollUntilVisible(newPostsSwitch, 100);
+      await scrollUntilTappable(tester, newPostsSwitch, 100);
 
       await tester.tap(newPostsSwitch);
       await tester.pump();

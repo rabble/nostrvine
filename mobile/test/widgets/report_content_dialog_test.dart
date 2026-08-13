@@ -23,6 +23,7 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 
+import '../helpers/scroll.dart';
 import '../helpers/test_provider_overrides.dart';
 import '../helpers/test_pubkeys.dart';
 
@@ -786,6 +787,18 @@ void main() {
       );
     }
 
+    /// Scrolls the reason list to [reasonLabel] and selects it.
+    Future<void> selectReason(WidgetTester tester, String reasonLabel) async {
+      await scrollUntilTappable(
+        tester,
+        find.text(reasonLabel),
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text(reasonLabel));
+      await tester.pumpAndSettle();
+    }
+
     Future<void> openAndSubmitReport(
       WidgetTester tester, {
       String? reasonLabel,
@@ -795,14 +808,7 @@ void main() {
       await tester.tap(find.text('Open Report'));
       await tester.pumpAndSettle();
 
-      final reason = reasonLabel ?? l10n.reportReasonSpam;
-      await tester.scrollUntilVisible(
-        find.text(reason),
-        100,
-        scrollable: find.byType(Scrollable).last,
-      );
-      await tester.tap(find.text(reason));
-      await tester.pumpAndSettle();
+      await selectReason(tester, reasonLabel ?? l10n.reportReasonSpam);
 
       await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
@@ -1555,14 +1561,10 @@ void main() {
       await openAndSubmitReport(tester);
       expect(find.text(l10n.reportNotSent), findsOneWidget);
 
-      final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
-      await tester.scrollUntilVisible(
-        find.text(csam),
-        100,
-        scrollable: find.byType(Scrollable).last,
+      await selectReason(
+        tester,
+        l10n.reportReasonTitle(ContentFilterReason.csam),
       );
-      await tester.tap(find.text(csam));
-      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
@@ -1616,14 +1618,10 @@ void main() {
 
       // Change of mind: spam -> csam. NIP-56 collapses csam to 'illegal'
       // while spam stays 'spam', so a stale re-drive is visible in both tags.
-      final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
-      await tester.scrollUntilVisible(
-        find.text(csam),
-        100,
-        scrollable: find.byType(Scrollable).last,
+      await selectReason(
+        tester,
+        l10n.reportReasonTitle(ContentFilterReason.csam),
       );
-      await tester.tap(find.text(csam));
-      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
@@ -1687,14 +1685,10 @@ void main() {
         await setLargeSurface(tester);
         await openAndSubmitReport(tester);
 
-        final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
-        await tester.scrollUntilVisible(
-          find.text(csam),
-          100,
-          scrollable: find.byType(Scrollable).last,
+        await selectReason(
+          tester,
+          l10n.reportReasonTitle(ContentFilterReason.csam),
         );
-        await tester.tap(find.text(csam));
-        await tester.pumpAndSettle();
 
         await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
         await tester.pumpAndSettle();
@@ -1762,14 +1756,10 @@ void main() {
       await openAndSubmitReport(tester);
 
       // The send is still pending here — change the reason before it parks.
-      final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
-      await tester.scrollUntilVisible(
-        find.text(csam),
-        100,
-        scrollable: find.byType(Scrollable).last,
+      await selectReason(
+        tester,
+        l10n.reportReasonTitle(ContentFilterReason.csam),
       );
-      await tester.tap(find.text(csam));
-      await tester.pumpAndSettle();
 
       firstSend.complete(
         const NIP17SendResult.failure(
@@ -1853,14 +1843,10 @@ void main() {
       await setLargeSurface(tester);
       await openAndSubmitReport(tester);
 
-      final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
-      await tester.scrollUntilVisible(
-        find.text(csam),
-        100,
-        scrollable: find.byType(Scrollable).last,
+      await selectReason(
+        tester,
+        l10n.reportReasonTitle(ContentFilterReason.csam),
       );
-      await tester.tap(find.text(csam));
-      await tester.pumpAndSettle();
 
       // Resubmit BEFORE the first send settles.
       await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
