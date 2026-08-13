@@ -1,6 +1,9 @@
 // ABOUTME: Tests for UploadManager initialization helper
 // ABOUTME: Verifies app container path usage, permanent error detection, and fail-fast behavior
 
+// Permanent: mutates PathProviderPlatform.instance and Hive's process-wide box
+// registry while validating upload initialization failure paths.
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -18,9 +21,6 @@ class MockPathProviderPlatform extends Fake
   }
 }
 
-// Permanent: mutates PathProviderPlatform.instance and Hive's process-wide box
-// registry while validating upload initialization failure paths.
-@Tags(['skip_very_good_optimization'])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

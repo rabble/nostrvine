@@ -62,6 +62,9 @@ class _VideoMetadataCoverScreenState
   // dispose can clean them up even if a later batch superseded the list
   // currently held in [_stripThumbnails].
   final Set<String> _allStripThumbnailPaths = <String>{};
+  // Cancelled in _disposeStripResources through a local alias, so the field is
+  // nulled before the await.
+  // ignore: cancel_subscriptions
   StreamSubscription<List<StripThumbnail>>? _stripSubscription;
 
   Duration _selectedPosition = Duration.zero;

@@ -59,7 +59,7 @@ final exploreTabNameProvider = StateProvider<String>(
 final activeBranchIndexProvider = StateProvider<int>((ref) => 0);
 
 /// Explore feed state (discovery/all videos)
-/// Returns AsyncValue<VideoFeedState> for route-aware explore screen
+/// Returns `AsyncValue<VideoFeedState>` for route-aware explore screen
 /// Uses tab-specific list when in feed mode, otherwise sorted by loop count
 /// Filters out broken videos to match grid UI behavior
 final videosForExploreRouteProvider = Provider<AsyncValue<VideoFeedState>>((

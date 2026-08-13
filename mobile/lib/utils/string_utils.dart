@@ -20,16 +20,10 @@ class StringUtils {
   static String safeSubstring(String str, int start, [int? end]) {
     if (str.isEmpty) return '';
 
-    // Clamp start to valid range
-    start = start.clamp(0, str.length);
+    final clampedStart = start.clamp(0, str.length);
+    final clampedEnd = (end ?? str.length).clamp(clampedStart, str.length);
 
-    // If no end specified, use string length
-    end ??= str.length;
-
-    // Clamp end to valid range
-    end = end.clamp(start, str.length);
-
-    return str.substring(start, end);
+    return str.substring(clampedStart, clampedEnd);
   }
 
   /// Format an ID for logging - safely truncates to 8 characters

@@ -8,7 +8,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
 class MockSubscriptionManager extends SubscriptionManager {
-  MockSubscriptionManager(super.nostrService);
+  MockSubscriptionManager(super._nostrService);
   final Map<String, StreamController<Event>> _subscriptions = {};
   final Map<String, Filter> _filters = {};
   int _subscriptionCounter = 0;

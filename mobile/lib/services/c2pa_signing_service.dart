@@ -101,7 +101,7 @@ class C2paSigningService {
 
   /// Whether the remote signing pipeline is configured for this build.
   ///
-  /// Signing is a network call to [SIGNING_SERVER_ENDPOINT]. The endpoint always
+  /// Signing is a network call to [signingServerEndpoint]. The endpoint always
   /// resolves to a usable URL — an override that is absent falls back to
   /// [defaultSigningServerEndpoint] — so signing is configured unless a build
   /// explicitly disables it with `PROOFMODE_SIGNING_SERVER_ENDPOINT=disabled`.
@@ -500,8 +500,8 @@ class C2paSigningService {
     }
 
     return RemoteSigner(
-      configurationUrl: SIGNING_SERVER_ENDPOINT + args,
-      bearerToken: SIGNING_SERVER_TOKEN,
+      configurationUrl: signingServerEndpoint + args,
+      bearerToken: signingServerToken,
     );
   }
 
@@ -521,15 +521,15 @@ class C2paSigningService {
   static const String signingDisabledSentinel = 'disabled';
 
   // add ?platform=android or ios
-  static const String SIGNING_SERVER_ENDPOINT = String.fromEnvironment(
+  static const String signingServerEndpoint = String.fromEnvironment(
     'PROOFMODE_SIGNING_SERVER_ENDPOINT',
     defaultValue: defaultSigningServerEndpoint,
   );
 
   static bool get _signingDisabled =>
-      SIGNING_SERVER_ENDPOINT.trim().toLowerCase() == signingDisabledSentinel;
+      signingServerEndpoint.trim().toLowerCase() == signingDisabledSentinel;
 
-  /// Validates [SIGNING_SERVER_ENDPOINT], returning null when it is usable and
+  /// Validates [signingServerEndpoint], returning null when it is usable and
   /// a human-readable reason when it is not.
   ///
   /// Exposed separately from [assertSigningEndpointValid] so tests can check
@@ -575,13 +575,13 @@ class C2paSigningService {
   /// later as an opaque signing error during capture, which reads as an outage
   /// rather than a build problem. Called from app startup.
   static void assertSigningEndpointValid() {
-    final problem = describeSigningEndpointProblem(SIGNING_SERVER_ENDPOINT);
+    final problem = describeSigningEndpointProblem(signingServerEndpoint);
     if (problem != null) {
       throw StateError('C2PA signing misconfigured: $problem');
     }
   }
 
-  static const String SIGNING_SERVER_TOKEN = String.fromEnvironment(
+  static const String signingServerToken = String.fromEnvironment(
     'PROOFMODE_SIGNING_SERVER_TOKEN',
   );
 }

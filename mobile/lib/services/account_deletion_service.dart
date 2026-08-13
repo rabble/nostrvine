@@ -103,7 +103,7 @@ class _VanishPublishConfig {
     required this.maxAttempts,
     required this.timeout,
     required this.retryDelays,
-  }) : assert(maxAttempts > 0);
+  }) : assert(maxAttempts > 0, 'maxAttempts must be at least 1');
 
   final int maxAttempts;
   final Duration timeout;

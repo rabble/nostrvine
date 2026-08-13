@@ -34,6 +34,9 @@ class VideoCommentPlayer extends StatefulWidget {
 class _VideoCommentPlayerState extends State<VideoCommentPlayer>
     with WidgetsBindingObserver {
   DivineVideoPlayerController? _controller;
+  // Cancelled in dispose through a local alias, so the field is nulled before
+  // the async teardown.
+  // ignore: cancel_subscriptions
   StreamSubscription<DivineVideoPlayerState>? _stateSubscription;
   bool _isInitializing = false;
   bool _isPlaying = false;

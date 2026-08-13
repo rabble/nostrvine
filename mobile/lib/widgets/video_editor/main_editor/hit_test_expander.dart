@@ -61,6 +61,7 @@ class _RenderHitTestExpander extends RenderProxyBox {
   static const double _hitTestEpsilon = 1.0;
 
   Size _visibleSize;
+  Size get visibleSize => _visibleSize;
   set visibleSize(Size value) {
     if (value == _visibleSize) return;
     _visibleSize = value;

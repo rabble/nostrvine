@@ -504,7 +504,7 @@ void main() {
 /// Persists normally but fails every delete, standing in for a
 /// `SharedPreferences` write that returns false.
 class _FailingRemoveService extends SavedSoundsService {
-  _FailingRemoveService(super.preferences);
+  _FailingRemoveService(super._preferences);
 
   @override
   Future<void> removeSound(String soundId) async {

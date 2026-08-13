@@ -56,7 +56,7 @@ class NIP44 {
 class NostrEvent {
   NostrEvent({
     required this.pubkey,
-    required this.created_at,
+    required this.createdAt,
     required this.kind,
     required this.tags,
     required this.content,
@@ -66,7 +66,7 @@ class NostrEvent {
 
   factory NostrEvent.create({
     required String pubkey,
-    required int created_at,
+    required int createdAt,
     required int kind,
     required List<List<String>> tags,
     required String content,
@@ -76,7 +76,7 @@ class NostrEvent {
     return NostrEvent(
       id: id,
       pubkey: pubkey,
-      created_at: created_at,
+      createdAt: createdAt,
       kind: kind,
       tags: tags,
       content: content,
@@ -86,7 +86,7 @@ class NostrEvent {
 
   String? id;
   String pubkey;
-  int created_at; // ignore: non_constant_identifier_names
+  int createdAt;
   int kind;
   List<List<String>> tags;
   String content;
@@ -96,7 +96,7 @@ class NostrEvent {
     return {
       if (id != null) 'id': id,
       'pubkey': pubkey,
-      'created_at': created_at,
+      'created_at': createdAt,
       'kind': kind,
       'tags': tags,
       'content': content,
@@ -119,7 +119,7 @@ NostrEvent dartEventToJs(Map<String, dynamic> dartEvent) {
   return NostrEvent.create(
     id: dartEvent['id'] as String?,
     pubkey: (dartEvent['pubkey'] ?? '').toString(),
-    created_at:
+    createdAt:
         dartEvent['created_at'] as int? ??
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
     kind: dartEvent['kind'] as int? ?? 1,
@@ -134,7 +134,7 @@ Map<String, dynamic> jsEventToDart(NostrEvent event) {
   return {
     'id': event.id,
     'pubkey': event.pubkey,
-    'created_at': event.created_at,
+    'created_at': event.createdAt,
     'kind': event.kind,
     'tags': event.tags,
     'content': event.content,

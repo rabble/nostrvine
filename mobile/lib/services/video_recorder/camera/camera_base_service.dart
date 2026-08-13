@@ -162,7 +162,7 @@ abstract class CameraService {
   /// Enables or disables remote record control via volume buttons.
   ///
   /// When enabled, volume button presses will trigger the
-  /// [onRemoteRecordTrigger] callback instead of changing the system volume.
+  /// [setOnRemoteRecordTrigger] callback instead of changing the system volume.
   /// This allows users to start/stop recording using physical volume buttons
   /// or Bluetooth accessories like clickers or earbuds.
   ///
@@ -182,5 +182,5 @@ abstract class CameraService {
   ///
   /// This is called when the user presses a volume button or Bluetooth
   /// remote while remote record control is enabled.
-  set onRemoteRecordTrigger(void Function()? callback);
+  void setOnRemoteRecordTrigger(void Function()? callback);
 }

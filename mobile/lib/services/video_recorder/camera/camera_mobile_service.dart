@@ -458,7 +458,7 @@ class CameraMobileService extends CameraService {
   void Function()? _remoteRecordTriggerCallback;
 
   @override
-  set onRemoteRecordTrigger(void Function()? callback) {
+  void setOnRemoteRecordTrigger(void Function()? callback) {
     _remoteRecordTriggerCallback = callback;
     // Connect to native callback with logging
     _camera.onRemoteRecordTrigger = callback != null

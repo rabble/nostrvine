@@ -36,16 +36,8 @@ class MinimalMockNostrService implements NostrClient {
   @override
   Map<String, RelayConnectionStatus> get relayStatuses => {};
 
-  void addListener(listener) {}
-
-  void removeListener(listener) {}
-
   @override
   Future<void> dispose() async {}
-
-  bool get hasListeners => false;
-
-  void notifyListeners() {}
 
   // Implement required methods as no-ops for testing
   @override

@@ -1,3 +1,6 @@
+// Permanent: swaps PathProviderPlatform.instance and ProVideoEditor.instance;
+// keep isolated until VideoEditorSplitService accepts injected dependencies.
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -66,9 +69,6 @@ DivineVideoClip _clip({
   );
 }
 
-// Permanent: swaps PathProviderPlatform.instance and ProVideoEditor.instance;
-// keep isolated until VideoEditorSplitService accepts injected dependencies.
-@Tags(['skip_very_good_optimization'])
 void main() {
   late MockProVideoEditor mockProVideoEditor;
   late PathProviderPlatform originalPathProviderInstance;

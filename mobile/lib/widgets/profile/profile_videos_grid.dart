@@ -273,7 +273,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     assert(() {
       debugProfileVideosGridBuildCount++;
       return true;
-    }());
+    }(), 'debug build counter must not throw');
     final authService = ref.read(authServiceProvider);
     final currentUserPubkey = authService.currentPublicKeyHex;
     final isOwnProfile =
