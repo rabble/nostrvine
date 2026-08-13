@@ -76,21 +76,43 @@ Publishing behaviour is unchanged: iOS stops at TestFlight
 (`submit_to_app_store: false`, internal groups), Android uploads to Play as a
 draft. Promotion to production stays manual in both stores.
 
+Release commands pass `--public-key-path`, so every new store binary only
+accepts signed Shorebird patches. A release built without the public key cannot
+be retrofitted later; cut a new store release instead.
+
 **Record the version and build number of every release you promote** — e.g.
-`1.0.9+247`. That exact string is what a future patch targets.
+`1.0.9+247` — and the git commit that produced it. A future patch needs both.
 
 ## Shipping a patch
 
 1. Land the Dart fix on `main` through the normal PR process. A patch is built
    from the current checkout, so the fix must be merged first.
-2. Identify the target release: `shorebird patch` needs the version of the
+1. Identify the target release: `shorebird patch` needs the version of the
    build that is actually live. `shorebird releases list`, or the Shorebird
    console, shows what exists.
-3. Run `ios-patch` or `android-patch` in Codemagic with:
+1. Identify the `RELEASE_COMMIT` that produced that store release. The patch
+   workflow refuses a release commit that is not an ancestor of the current
+   checkout, then prints every commit and Dart file included after that commit.
+   Read that list before treating the patch as safe: pure Dart merged since the
+   release is exactly what Shorebird can ship.
+1. Run `ios-patch` or `android-patch` in Codemagic with:
    - `CONFIRM_PATCH` = `YES` (defaults to `NO`; the build aborts otherwise)
    - `RELEASE_VERSION` = the exact release string, e.g. `1.0.9+247`
+   - `RELEASE_COMMIT` = the git commit that produced the target release
    - `DEFAULT_ENV` = **the same value the release was built with**
-4. Both platforms need their own patch run. There is no combined workflow.
+1. The workflow publishes to Shorebird's `staging` track, not directly to
+   `stable`.
+1. Validate the staged patch with `shorebird preview --track staging
+   --release-version <version>` or the Shorebird console.
+1. Promote the exact patch after validation:
+
+   ```
+   shorebird patches promote --release-version <version> --patch-number <n>
+   ```
+
+   `shorebird patches set-track --release <version> --patch <n> --track stable`
+   is equivalent when you need the lower-level command form.
+1. Both platforms need their own patch run. There is no combined workflow.
 
 `DEFAULT_ENV` is the easiest thing to get wrong. A mismatch does not fail the
 build — it silently repoints patched installs at a different environment.
@@ -100,9 +122,17 @@ build — it silently repoints patched installs at a different environment.
 TestFlight build `1.0.9+247` and App Store build `1.0.9+247` are the same
 Shorebird release. There is no way to patch "just the TestFlight build". If
 that version was promoted to the App Store, patching it reaches production
-users too, within about one app launch, with no store review and no rollback.
+users too once the patch is promoted to `stable`, within about one app launch,
+with no store review.
 
 Treat every patch as a production deploy.
+
+### Rollback is recovery, not validation
+
+Shorebird supports patch rollback and on-device rollback from failed patches.
+That reduces the worst-case blast radius, but it does not make patching casual:
+users can still receive the bad patch before rollback, and rollback does not
+replace review, staging validation, signing, or source-diff checks.
 
 ## Credentials
 
@@ -110,6 +140,11 @@ CI authenticates with `SHOREBIRD_TOKEN`, held in the `shorebird_credentials`
 environment variable group in Codemagic and marked Secret. It is an API key
 from the Shorebird console (**Account → API Keys**); `shorebird login:ci` no
 longer exists.
+
+The same group holds patch-signing key material:
+
+- `SHOREBIRD_PATCH_PUBLIC_KEY` — public PEM passed to `shorebird release`
+- `SHOREBIRD_PATCH_PRIVATE_KEY` — secure private PEM passed to `shorebird patch`
 
 The token is currently generated from an individual's account. Moving it to a
 Divine service identity is tracked in #7200.

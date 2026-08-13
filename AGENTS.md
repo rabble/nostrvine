@@ -167,9 +167,10 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 - Never add `--allow-native-diffs` or `--allow-asset-diffs`. Shorebird's
   refusal to patch across native or asset changes is a correctness guard; a fix
   needing native changes needs a store release.
-- Patches are manual-only and gated behind `CONFIRM_PATCH`. A patch reaches
-  production users within about one app launch, with no store review and no
-  rollback. Treat it as a production deploy.
+- Patches are manual-only, gated behind `CONFIRM_PATCH`, and published to the
+  Shorebird `staging` track first. Validate the staged patch, then promote it
+  to `stable`. Rollback exists, but it is emergency recovery rather than a
+  substitute for staging and review.
 - Full detail, including the patch runbook and known gotchas:
   `mobile/docs/SHOREBIRD_CODE_PUSH.md`.
 
