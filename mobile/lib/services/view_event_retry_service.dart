@@ -140,6 +140,10 @@ class ViewEventRetryService {
       content: '',
       timestamp: row.createdAt,
       vineId: row.videoVineId,
+      // The queue stores the video's `d` tag in videoVineId. Without this the
+      // rebuilt event has no addressable coordinate and every swept row is
+      // dropped before it reaches a relay (#6722).
+      addressableDTag: row.videoVineId,
     );
   }
 }

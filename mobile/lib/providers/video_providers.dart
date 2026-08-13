@@ -10,6 +10,8 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
+import 'package:openvine/models/view_event_drop_reason.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -305,6 +307,17 @@ ViewEventPublisher viewEventPublisher(Ref ref) {
   return ViewEventPublisher(
     nostrService: nostrService,
     authService: authService,
+    onDrop: (reason, {required String videoId}) {
+      if (!reason.isStructural) return;
+      CrashReportingService.instance.recordError(
+        Reportable(
+          ViewEventInvariantException(reason),
+          context: 'ViewEventPublisher.publishViewEvent',
+        ),
+        StackTrace.current,
+        reason: 'ViewEventPublisher.${reason.name}',
+      );
+    },
   );
 }
 
