@@ -262,6 +262,7 @@ class _FilterContent extends StatelessWidget {
       return _FilterEmptyState(
         filter: state.filter,
         showRecordButton: showRecordButton,
+        scrollController: scrollController,
       );
     }
 
@@ -339,10 +340,14 @@ class _FilterEmptyState extends StatelessWidget {
   const _FilterEmptyState({
     required this.filter,
     required this.showRecordButton,
+    required this.scrollController,
   });
 
   final ClipLibraryFilter filter;
   final bool showRecordButton;
+
+  /// Handed to the empty state so it drives the sheet the grid would have.
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -352,12 +357,14 @@ class _FilterEmptyState extends StatelessWidget {
         title: context.l10n.libraryArchiveEmptyTitle,
         subtitle: context.l10n.libraryArchiveEmptySubtitle,
         showRecordButton: false,
+        scrollController: scrollController,
       ),
       ClipLibraryCategoryFilter() => EmptyLibraryState(
         icon: DivineIconName.folderOpen,
         title: context.l10n.libraryCategoryEmptyTitle,
         subtitle: context.l10n.libraryCategoryEmptySubtitle,
         showRecordButton: false,
+        scrollController: scrollController,
       ),
       // The trash filter never reaches here: it renders TrashedClipsList,
       // which brings its own empty state.
@@ -366,6 +373,7 @@ class _FilterEmptyState extends StatelessWidget {
         title: context.l10n.libraryNoClipsYetTitle,
         subtitle: context.l10n.libraryNoClipsYetSubtitle,
         showRecordButton: showRecordButton,
+        scrollController: scrollController,
       ),
     };
   }

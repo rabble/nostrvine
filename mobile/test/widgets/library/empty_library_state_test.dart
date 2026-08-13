@@ -167,6 +167,44 @@ void main() {
         expect(position.maxScrollExtent, equals(0));
       });
 
+      testWidgets('drives the sheet controller it is handed', (tester) async {
+        // In selection mode the library is a DraggableScrollableSheet body,
+        // and the empty state stands in for the grid that would otherwise own
+        // the sheet's controller. Without it the sheet cannot be dragged from
+        // the one screen state that has nothing else to grab.
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: DraggableScrollableSheet(
+                initialChildSize: 0.9,
+                builder: (context, sheetController) => ColoredBox(
+                  color: VineTheme.theme.colorScheme.surface,
+                  child: EmptyLibraryState(
+                    scrollController: sheetController,
+                    icon: DivineIconName.filmSlate,
+                    title: 'No Clips Yet',
+                    subtitle: en.libraryNoClipsYetSubtitle,
+                    showRecordButton: false,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final before = tester.getTopLeft(find.byType(EmptyLibraryState)).dy;
+        await tester.drag(find.text('No Clips Yet'), const Offset(0, 200));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.getTopLeft(find.byType(EmptyLibraryState)).dy,
+          greaterThan(before),
+        );
+      });
+
       testWidgets('record button has videocam icon', (tester) async {
         await tester.pumpWidget(buildWidget());
 

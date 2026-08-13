@@ -39,6 +39,7 @@ class TrashedClipsList extends StatelessWidget {
             title: context.l10n.libraryTrashEmptyTitle,
             subtitle: context.l10n.libraryTrashEmptySubtitle,
             showRecordButton: false,
+            scrollController: scrollController,
           );
         }
         return ListView.separated(

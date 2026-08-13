@@ -15,6 +15,7 @@ class EmptyLibraryState extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.showRecordButton = true,
+    this.scrollController,
     super.key,
   });
 
@@ -30,21 +31,22 @@ class EmptyLibraryState extends StatelessWidget {
   /// Whether to show the "Record a Video" button.
   final bool showRecordButton;
 
+  /// Scroll controller for the slot this empty state fills, e.g. the one a
+  /// [DraggableScrollableSheet] hands its body so drags resize the sheet.
+  final ScrollController? scrollController;
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
+        controller: scrollController,
         // The column mixes a fixed icon circle with text that grows on the
         // raw text scaler, and the toolbar and chip row above it grow at the
         // same time — so past the accessibility sizes it is taller than the
         // slot it gets. Scrolling keeps it centred while it fits and reaches
         // the rest once it does not, rather than clipping the subtitle (#7242).
         child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: constraints.maxHeight.isFinite
-                ? constraints.maxHeight
-                : 0.0,
-          ),
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(
