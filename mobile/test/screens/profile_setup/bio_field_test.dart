@@ -93,7 +93,9 @@ void main() {
       // The counter is painted over the field's top-right corner. Left
       // hit-testable it wins that rectangle, and the tap escapes to the
       // screen's dismiss-the-keyboard gesture instead of reaching the input.
-      await tester.tap(find.text('0/1000'));
+      // Missing the counter is the point — it sits behind an IgnorePointer,
+      // so the tap is meant to fall through to the field underneath.
+      await tester.tap(find.text('0/1000'), warnIfMissed: false);
       await tester.pump();
 
       expect(focusNode.hasFocus, isTrue);
