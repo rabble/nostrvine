@@ -1,7 +1,7 @@
 // ABOUTME: Closes the Patrol/flutter_test race that fails the first test of a
 // ABOUTME: bundle when the platform enables semantics mid-test.
 
-import 'package:flutter/widgets.dart';
+import 'dart:ui';
 
 /// Pre-empts Flutter's platform semantics handler before `flutter_test`
 /// snapshots the outstanding-`SemanticsHandle` count.
@@ -28,8 +28,13 @@ import 'package:flutter/widgets.dart';
 /// Semantics stay available inside tests: `patrolTest` defaults to
 /// `semanticsEnabled: true`, so `testWidgets` still holds its own handle for
 /// the duration of every test.
-// TODO(#7260): Remove once Patrol installs its no-op handler during
-// PatrolBinding initialization instead of in the test body.
+///
+/// Addressed straight to `PlatformDispatcher` rather than through
+/// `WidgetsBinding.instance` — they resolve to the same object, but the binding
+/// getter throws when no binding exists yet, which is the case under Patrol's
+/// build-time discovery mode and under a direct `flutter test` run.
+// TODO(leancodepl/patrol#1474): Remove once Patrol installs its no-op handler
+// during PatrolBinding initialization instead of in the test body.
 void ignorePlatformSemanticsHandle() {
-  WidgetsBinding.instance.platformDispatcher.onSemanticsEnabledChanged = () {};
+  PlatformDispatcher.instance.onSemanticsEnabledChanged = () {};
 }
