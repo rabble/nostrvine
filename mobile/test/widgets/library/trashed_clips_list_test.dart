@@ -71,7 +71,7 @@ void main() {
 
       expect(find.text(en.libraryTrashAutoDeletes(2)), findsOneWidget);
 
-      await tester.tap(find.text(en.libraryTrashRestoreLabel));
+      await tester.tap(find.bySemanticsLabel(en.libraryTrashRestoreLabel));
       await tester.pump();
 
       verify(
@@ -91,7 +91,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text(en.libraryTrashDeleteNowLabel));
+      await tester.tap(find.bySemanticsLabel(en.libraryTrashDeleteNowLabel));
       await tester.pumpAndSettle();
 
       expect(find.text(en.libraryTrashDeleteConfirmTitle), findsOneWidget);

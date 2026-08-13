@@ -43,11 +43,11 @@ class TrashedClipsList extends StatelessWidget {
         }
         return ListView.separated(
           controller: scrollController,
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 8,
-            bottom: MediaQuery.viewPaddingOf(context).bottom + 8,
+          padding: .fromLTRB(
+            8,
+            8,
+            8,
+            MediaQuery.viewPaddingOf(context).bottom + 8,
           ),
           itemCount: state.trashedClips.length,
           separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -71,62 +71,54 @@ class _TrashedClipTile extends StatelessWidget {
         color: context.vineColors.surfaceContainerHigh,
         borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          spacing: 12,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        horizontalTitleGap: 12,
+        minLeadingWidth: 56,
+        leading: SizedBox(
+          width: 56,
+          height: 56,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            child: VideoClipThumbnailCard(
+              clip: clip,
+              showSelectionIndicator: false,
+            ),
+          ),
+        ),
+        title: Text(
+          '${clip.duration.inSeconds}s',
+          style: VineTheme.titleSmallFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
+        subtitle: Text(
+          context.l10n.libraryTrashAutoDeletes(_daysUntilPurge(clip)),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 4,
           children: [
-            SizedBox(
-              width: 72,
-              height: 72,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(8)),
-                child: VideoClipThumbnailCard(
-                  clip: clip,
-                  showSelectionIndicator: false,
-                ),
+            DivineIconButton(
+              icon: .arrowCounterClockwise,
+              size: DivineIconButtonSize.small,
+              type: DivineIconButtonType.secondary,
+              tooltip: context.l10n.libraryTrashRestoreLabel,
+              semanticLabel: context.l10n.libraryTrashRestoreLabel,
+              onPressed: () => context.read<ClipsLibraryBloc>().add(
+                ClipsLibraryRestoreClips({clip.id}),
               ),
             ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: 4,
-                children: [
-                  Text(
-                    '${clip.duration.inSeconds}s',
-                    style: VineTheme.titleSmallFont(
-                      color: context.vineColors.primaryText,
-                    ),
-                  ),
-                  Text(
-                    context.l10n.libraryTrashAutoDeletes(_daysUntilPurge(clip)),
-                    style: VineTheme.bodyMediumFont(
-                      color: context.vineColors.secondaryText,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 8,
-              children: [
-                DivineButton(
-                  size: DivineButtonSize.small,
-                  type: DivineButtonType.secondary,
-                  label: context.l10n.libraryTrashRestoreLabel,
-                  onPressed: () => context.read<ClipsLibraryBloc>().add(
-                    ClipsLibraryRestoreClips({clip.id}),
-                  ),
-                ),
-                DivineButton(
-                  size: DivineButtonSize.small,
-                  type: DivineButtonType.error,
-                  label: context.l10n.libraryTrashDeleteNowLabel,
-                  onPressed: () => _confirmHardDelete(context),
-                ),
-              ],
+            DivineIconButton(
+              icon: .trash,
+              size: DivineIconButtonSize.small,
+              type: DivineIconButtonType.error,
+              tooltip: context.l10n.libraryTrashDeleteNowLabel,
+              semanticLabel: context.l10n.libraryTrashDeleteNowLabel,
+              onPressed: () => _confirmHardDelete(context),
             ),
           ],
         ),
