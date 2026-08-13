@@ -2,13 +2,6 @@
 // ABOUTME: Gathers device info, logs, errors and sanitizes sensitive data before transmission
 
 import 'dart:convert';
-// TODO: migrate to `package:web` and `dart:js_interop`.
-// The conditional import keeps `dart:html` off every non-web build, which is
-// what the lint guards against.
-// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
-import 'dart:html'
-    if (dart.library.io) 'package:openvine/services/bug_report_service_stub.dart'
-    as html;
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -22,6 +15,7 @@ import 'package:models/models.dart'
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
+import 'package:openvine/utils/browser_file_download.dart';
 import 'package:openvine/utils/device_memory_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -336,14 +330,11 @@ class BugReportService {
   ) {
     try {
       final bytes = utf8.encode(content);
-      final blob = html.Blob([bytes], 'text/plain');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-
-      html.AnchorElement(href: url)
-        ..setAttribute('download', fileName)
-        ..click();
-
-      html.Url.revokeObjectUrl(url);
+      downloadBytesAsFile(
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: 'text/plain',
+      );
 
       final sizeMB = (bytes.length / (1024 * 1024)).toStringAsFixed(2);
       Log.info(
@@ -772,14 +763,11 @@ class BugReportService {
   ) {
     try {
       final bytes = utf8.encode(content);
-      final blob = html.Blob([bytes], 'text/plain');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-
-      html.AnchorElement(href: url)
-        ..setAttribute('download', fileName)
-        ..click();
-
-      html.Url.revokeObjectUrl(url);
+      downloadBytesAsFile(
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: 'text/plain',
+      );
 
       final sizeMB = (bytes.length / (1024 * 1024)).toStringAsFixed(2);
       Log.info(
