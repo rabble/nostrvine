@@ -303,10 +303,10 @@ void main() {
       );
     });
 
-    // Regression test for classic Vines being unplayable on iOS. The
-    // extensionless raw blob (`/{hash}`) cannot be parsed by AVURLAsset,
-    // which selects its container parser from the URL path extension and
-    // ignores the Content-Type header.
+    // Regression test for classic Vines being unplayable on iOS. Every Range
+    // request to the bare blob (`/{hash}`) returns a cached `NoSuchKey` XML
+    // body as a 206, and AVFoundation always range-requests, so it never gets
+    // video back (divine-blossom#198).
     test('uses MP4 720p for classic Vine originals', () {
       final video = _createVideoWithUrl(
         'https://media.divine.video/$hash',
