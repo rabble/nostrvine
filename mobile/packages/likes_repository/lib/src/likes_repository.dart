@@ -1912,8 +1912,12 @@ class LikesRepository {
         addressableId: addressableId,
       );
       final blockFilter = _blockFilter;
-      if (blockFilter == null) return page.pubkeys;
-      return page.pubkeys.where((pubkey) => !blockFilter(pubkey)).toList();
+      final filtered = blockFilter == null
+          ? page.pubkeys
+          : page.pubkeys.where((pubkey) => !blockFilter(pubkey));
+      // Dedupe defensively so the documented per-liker guarantee holds even
+      // if the endpoint ever repeats a pubkey; mirrors the relay path.
+      return {...filtered}.toList();
     } on FunnelcakeException catch (e) {
       Log.warning(
         'Funnelcake likers lookup failed for $eventId, '

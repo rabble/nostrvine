@@ -3831,6 +3831,17 @@ void main() {
           );
         });
 
+        test('serves each API liker once, most recent first', () async {
+          stubLikers([likerC, likerA, likerC]);
+
+          repository = createRepository(funnelcakeApiClient: mockFunnelcake);
+
+          expect(
+            await repository.fetchEventLikers(eventId: targetEventId),
+            equals([likerC, likerA]),
+          );
+        });
+
         test('falls back to relays when the API fails', () async {
           when(
             () => mockFunnelcake.getVideoLikers(
