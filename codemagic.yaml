@@ -796,7 +796,7 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       xcode: latest
       cocoapods: default
       groups:
@@ -808,7 +808,7 @@ workflows:
         # Must match `flutter:` above. Shorebird ships its own Flutter, so the
         # release is only reproducible if we pin it to the same version
         # Codemagic provisioned.
-        FLUTTER_VERSION: 3.44.0
+        FLUTTER_VERSION: 3.44.9
         BUNDLE_ID: co.openvine.app
         IOS_EXTENSION_BUNDLE_IDS: >-
           co.openvine.app.NotificationServiceExtension
@@ -871,7 +871,7 @@ workflows:
           - TEST
           - POC
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       xcode: latest
       cocoapods: default
       groups:
@@ -920,7 +920,7 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       java: 17
       groups:
         - zendesk_credentials
@@ -930,7 +930,7 @@ workflows:
         - shorebird_credentials
       vars:
         # Must match `flutter:` above — see the iOS workflow for why.
-        FLUTTER_VERSION: 3.44.0
+        FLUTTER_VERSION: 3.44.9
       android_signing:
         - divine_keystore
     cache:
@@ -1019,7 +1019,7 @@ workflows:
           - TEST
           - POC
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       xcode: latest
       cocoapods: default
       groups:
@@ -1097,7 +1097,7 @@ workflows:
           - TEST
           - POC
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       java: 17
       groups:
         - zendesk_credentials
@@ -1147,7 +1147,7 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       xcode: latest
       cocoapods: default
       groups:
@@ -1185,7 +1185,7 @@ workflows:
     max_build_duration: 25
     instance_type: mac_mini_m2
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       # Pinned alongside MAESTRO_VERSION. The compatibility contract has two
       # sides: 2.1.0 cannot drive Xcode 26.x, and `latest` floating means a
       # Codemagic image bump can break the suite with no commit on our side —
@@ -1257,7 +1257,7 @@ workflows:
     max_build_duration: 60
     instance_type: linux_x2
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       java: 17
       groups:
         - zendesk_credentials

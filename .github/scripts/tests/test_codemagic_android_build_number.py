@@ -39,6 +39,11 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", self.contents)
         self.assertIn("already exists and is active", self.contents)
 
+    def test_shorebird_flutter_version_uses_current_supported_engine(self) -> None:
+        self.assertIn("flutter: 3.44.9", self.contents)
+        self.assertIn("FLUTTER_VERSION: 3.44.9", self.contents)
+        self.assertNotIn("3.44.0", self.contents)
+
     def test_shorebird_patch_commands_publish_to_staging_and_are_signed(self) -> None:
         self.assertIn(
             "shorebird patch android --release-version=${{ inputs.RELEASE_VERSION }} --track=staging",
