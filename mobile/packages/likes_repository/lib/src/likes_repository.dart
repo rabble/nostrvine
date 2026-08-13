@@ -7,6 +7,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:likes_repository/src/blocked_liker_filter.dart';
 import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
@@ -111,6 +112,8 @@ class LikesRepository {
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
   /// - [blockFilter]: Optional callback to hide blocked/muted users from
   ///   engagement lists ([fetchEventLikers])
+  /// - [funnelcakeApiClient]: Optional REST client preferred by
+  ///   [fetchEventLikers], which falls back to relay queries without it
   /// - [errorReporter]: Optional reporter invoked from the best-effort
   ///   local-storage swallow sites when the swallowed failure is a
   ///   programming-invariant violation (see [LikesRepositoryErrorReporter]).
@@ -122,16 +125,21 @@ class LikesRepository {
     IsOnlineCallback? isOnline,
     QueueOfflineActionCallback? queueOfflineAction,
     BlockedLikerFilter? blockFilter,
+    FunnelcakeApiClient? funnelcakeApiClient,
     LikesRepositoryErrorReporter? errorReporter,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
        _blockFilter = blockFilter,
+       _funnelcakeApiClient = funnelcakeApiClient,
        _errorReporter = errorReporter;
 
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
+
+  /// REST client preferred by [fetchEventLikers] over the relay resolver.
+  final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// Reporter for invariant violations swallowed by the storage paths.
   final LikesRepositoryErrorReporter? _errorReporter;
@@ -1049,11 +1057,13 @@ class LikesRepository {
   /// Returns a cached count when available to avoid redundant relay queries
   /// (e.g. when scrolling back to a previously viewed video). Otherwise
   /// queries relays for the count of Kind 7 reactions on the event.
-  /// When [addressableId] is provided, resolves the same active distinct liker
-  /// set used by [fetchEventLikers], so the visible count and "Liked by" list
-  /// cannot diverge at fetch time for addressable videos. (A cached count is
-  /// served as-is and is not re-resolved, so likes from others arriving after
-  /// the first fetch show up in the live list but not in a cache-served count.)
+  /// When [addressableId] is provided, resolves the active distinct liker set
+  /// from relays.
+  ///
+  /// This is **not** the same set [fetchEventLikers] returns: that now prefers
+  /// Funnelcake, which resolves the whole coordinate and applies server-side
+  /// moderation, so it can legitimately be wider or narrower than this count
+  /// (#6021). The two denominators are reconciled in divine-funnelcake#626.
   ///
   /// Note: This counts all likes, not just the current user's.
   Future<int> getLikeCount(String eventId, {String? addressableId}) async {
@@ -1063,11 +1073,10 @@ class LikesRepository {
     int count;
 
     if (addressableId != null && addressableId.isNotEmpty) {
-      // Resolve the count from the same filtered event fetch as the "Liked by"
-      // list (not NIP-45 COUNT) so the two can't diverge. Trade-off: it shares
-      // the list's relay cap and query timeout, so a video with more reactions
-      // than the relay returns shows count == list, both capped below the true
-      // total. Keep it a fetch (not COUNT) to preserve that equality.
+      // Resolve the count from a filtered event fetch rather than NIP-45
+      // COUNT, so downvotes and retracted reactions are excluded. Trade-off:
+      // it shares the relay cap and query timeout, so a video with more
+      // reactions than the relay returns is capped below the true total.
       final likersByEvent = await _fetchResolvedLikersByEvent(
         [eventId],
         addressableIds: {eventId: addressableId},
@@ -1093,8 +1102,9 @@ class LikesRepository {
   /// Parameters:
   /// - [eventIds]: List of event IDs to get counts for
   /// - [addressableIds]: Optional map of event ID to addressable ID for
-  ///   Kind 30000+ events. When provided, also queries by 'a' tag and
-  ///   counts the active distinct liker set used by [fetchEventLikers].
+  ///   Kind 30000+ events. When provided, also queries by 'a' tag and counts
+  ///   the relay-resolved active distinct liker set — not the possibly wider
+  ///   set [fetchEventLikers] serves from Funnelcake (see [getLikeCount]).
   ///
   /// Note: when any uncached id in the batch has an addressable id, *all*
   /// uncached ids in that batch are counted via the resolved distinct-liker
@@ -1829,30 +1839,46 @@ class LikesRepository {
 
   /// Fetch the list of pubkeys that liked the given video event.
   ///
-  /// Queries Nostr relays for kind 7 (NIP-25) reaction events that reference
-  /// the target event via the `e` tag and (when [addressableId] is provided)
-  /// the `a` tag. Both filters are queried because clients may reference
-  /// addressable Kind 30000+ events using either form, and querying only one
-  /// would miss likers tagged with the other.
+  /// Prefers Funnelcake's `/api/videos/{id}/likers`, falling back to relay
+  /// queries when no client is wired, the API is unreachable, or it answers
+  /// with nobody. The API resolves the target's whole NIP-33 coordinate,
+  /// including superseded revision ids, so it recovers reactions that carry
+  /// no `a` tag and reference only a pre-edit event id — those match neither
+  /// relay filter below (#6021). It also drops accounts the server has
+  /// moderated, which the relay path cannot know about.
   ///
-  /// Filters out:
+  /// The relay fallback queries kind 7 (NIP-25) reactions referencing the
+  /// target via the `e` tag and (when [addressableId] is provided) the `a`
+  /// tag. Both filters are queried because clients may reference addressable
+  /// Kind 30000+ events using either form, and querying only one would miss
+  /// likers tagged with the other.
+  ///
+  /// Either way, the result excludes:
   /// - Reactions with content `'-'` (downvotes)
   /// - Reactions deleted via Kind 5 deletion events from their author
   /// - Likers hidden by the injected block filter (blocked/muted users)
   ///
   /// Pubkeys are deduplicated (a user who liked via both `e` and `a` tags
   /// only appears once) and ordered by reaction recency, most recent first.
+  /// The list is per-liker, so it is legitimately shorter than a reaction
+  /// count — never assert the two are equal.
   ///
   /// Parameters:
   /// - [eventId]: Hex event ID of the target event (required).
   /// - [addressableId]: Optional `kind:pubkey:d-tag` for Kind 30000+ events.
   ///
-  /// Throws [FetchLikersFailedException] if relay queries fail.
+  /// Throws [FetchLikersFailedException] if the relay fallback fails.
   Future<List<String>> fetchEventLikers({
     required String eventId,
     String? addressableId,
   }) async {
     try {
+      final fromApi = await _fetchLikersFromApi(
+        eventId: eventId,
+        addressableId: addressableId,
+      );
+      if (fromApi != null && fromApi.isNotEmpty) return fromApi;
+
       final likersByEvent = await _fetchResolvedLikersByEvent(
         [eventId],
         addressableIds: addressableId == null || addressableId.isEmpty
@@ -1864,6 +1890,38 @@ class LikesRepository {
       throw FetchLikersFailedException(
         'Failed to fetch likers for event $eventId: $e',
       );
+    }
+  }
+
+  /// Likers from Funnelcake, or `null` when the API could not answer.
+  ///
+  /// Every failure degrades to `null` so the relay path still runs — an
+  /// unreachable API must not turn a working screen into an error state.
+  /// Capped at [FunnelcakeApiClient.maxVideoLikersLimit], so a video with
+  /// more likers than that is truncated.
+  Future<List<String>?> _fetchLikersFromApi({
+    required String eventId,
+    String? addressableId,
+  }) async {
+    final client = _funnelcakeApiClient;
+    if (client == null || !client.isAvailable || eventId.isEmpty) return null;
+
+    try {
+      final page = await client.getVideoLikers(
+        eventId,
+        addressableId: addressableId,
+      );
+      final blockFilter = _blockFilter;
+      if (blockFilter == null) return page.pubkeys;
+      return page.pubkeys.where((pubkey) => !blockFilter(pubkey)).toList();
+    } on FunnelcakeException catch (e) {
+      Log.warning(
+        'Funnelcake likers lookup failed for $eventId, '
+        'falling back to relays: $e',
+        name: 'LikesRepository',
+        category: LogCategory.api,
+      );
+      return null;
     }
   }
 
