@@ -13,8 +13,8 @@ name: Divine Smoke regression test
 #                   layout
 #
 # `loginEmailPwd` and `searchUserFlow` need credentials present on the runners.
-# `likeFlow` and `commentFlow` are credential-free, but remain off the PR gate
-# until #7204 fixes the hierarchy snapshot stall they hit repeatedly.
+# `likeFlow` and `commentFlow` are credential-free and are what the PR gate
+# runs, after #7204 stopped the Explore snapshot stall.
 
 # Account management tests
 - runFlow: ../tests/loginFreshInstall.yaml

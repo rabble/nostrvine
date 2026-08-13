@@ -13,9 +13,12 @@ its `removeKeys` cleanup, and `loginEmailPwd` — plus all three social flows:
 `likeFlow`, `commentFlow` (post a comment, delete it) and `searchUserFlow`
 (find an account, open its profile, come back).
 
-The full smoke suite is the manual target. The PR gate in Codemagic deliberately
-runs only `tests/loginFreshInstall.yaml` and `tests/removeKeys.yaml`, passed as
-individual flow files so the JUnit report keeps per-flow names and timings.
+The full smoke suite is the manual target. The PR gate in Codemagic runs
+`flows/likeFlow.yaml` and `flows/commentFlow.yaml` as individual files so the
+JUnit report keeps per-flow names and timings. Each of those wraps
+`loginFreshInstall` and `removeKeys`, so account creation and teardown stay
+covered. The iOS simulator is set to reduced motion so XCUITest can reach
+quiescence (#7204).
 
 Nothing is held back from `smoke.yaml`. The last two were restored by
 [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) —
@@ -470,8 +473,8 @@ runner guard keeps CI failures from looking like unrelated selector breakage.
 maestro test \
   --format junit \
   --output report.xml \
-  e2e/maestro/tests/loginFreshInstall.yaml \
-  e2e/maestro/tests/removeKeys.yaml
+  e2e/maestro/flows/likeFlow.yaml \
+  e2e/maestro/flows/commentFlow.yaml
 
 # The full smoke suite
 maestro test \
