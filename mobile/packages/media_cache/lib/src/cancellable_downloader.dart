@@ -238,7 +238,9 @@ class _HttpDownload implements CancellableDownload {
           try {
             _sink?.add(chunk);
           } on Object catch (_) {
-            // Sink errors surface in onError.
+            // Only guards the StateError from adding to a sink a
+            // concurrent cancel already closed. A failed write surfaces
+            // on the sink's `done` future instead.
           }
         },
         onError: (Object error) async {
