@@ -39,7 +39,11 @@ class FakeRelay {
   final List<WebSocket> _sockets = [];
 
   /// The event served in response to any `REQ`, or null for `EOSE` only.
-  final Map<String, dynamic>? reply;
+  ///
+  /// Mutable so a test can stage what a later session reads back — this relay
+  /// records what it is handed but does not serve it, so "publish, then open a
+  /// cold session that loads it" has to be staged explicitly.
+  Map<String, dynamic>? reply;
 
   /// Whether an inbound `EVENT` is answered with `OK … true`.
   final bool okConfirms;
@@ -82,6 +86,20 @@ class FakeRelay {
 
     final socket = await WebSocketTransformer.upgrade(req);
     _sockets.add(socket);
+
+    // A client can close mid-exchange, and `readyState` still reads as open
+    // for a moment after the sink is gone. An unguarded write then throws
+    // asynchronously and is attributed to whichever test is running next.
+    void send(List<dynamic> message) {
+      try {
+        socket.add(jsonEncode(message));
+        // Only an Error distinguishes "the client hung up" here.
+        // ignore: avoid_catching_errors
+      } on StateError {
+        // Client went away; nothing to answer.
+      }
+    }
+
     socket.listen(
       (raw) {
         final List<dynamic> frame;
@@ -96,12 +114,12 @@ class FakeRelay {
         if (frame[0] == 'REQ' && frame.length >= 2) {
           final subId = frame[1] as String;
           if (reply != null) {
-            socket.add(jsonEncode(<dynamic>['EVENT', subId, reply]));
+            send(<dynamic>['EVENT', subId, reply]);
           }
-          socket.add(jsonEncode(<dynamic>['EOSE', subId]));
+          send(<dynamic>['EOSE', subId]);
         } else if (frame[0] == 'EVENT' && frame.length >= 2 && okConfirms) {
           final event = frame[1] as Map<String, dynamic>;
-          socket.add(jsonEncode(<dynamic>['OK', event['id'], true, '']));
+          send(<dynamic>['OK', event['id'], true, '']);
         }
       },
       onError: (_) {},
