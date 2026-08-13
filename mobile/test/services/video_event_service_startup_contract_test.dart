@@ -10,8 +10,10 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_filter_builder.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -23,6 +25,9 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 class _MockAppDatabase extends Mock implements AppDatabase {}
 
 class _MockNostrEventsDao extends Mock implements NostrEventsDao {}
+
+class _MockRelayCapabilityService extends Mock
+    implements RelayCapabilityService {}
 
 class _FakeFilter extends Fake implements Filter {}
 
@@ -100,6 +105,7 @@ void main() {
     late _MockProfileRepository mockProfileRepository;
     late _MockAppDatabase mockDatabase;
     late _MockNostrEventsDao mockNostrEventsDao;
+    late _MockRelayCapabilityService mockRelayCapabilityService;
     late StreamController<Event> relayController;
     late VideoEventService videoEventService;
     late Completer<Map<String, UserProfile>> batchFetchCompleter;
@@ -112,6 +118,7 @@ void main() {
       mockProfileRepository = _MockProfileRepository();
       mockDatabase = _MockAppDatabase();
       mockNostrEventsDao = _MockNostrEventsDao();
+      mockRelayCapabilityService = _MockRelayCapabilityService();
       relayController = StreamController<Event>.broadcast();
       batchFetchCompleter = Completer<Map<String, UserProfile>>();
       performanceMonitor = _RecordingPerformanceMonitor();
@@ -119,6 +126,7 @@ void main() {
 
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+      when(() => mockNostrService.connectedRelays).thenReturn(const <String>[]);
       when(
         () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
@@ -145,6 +153,14 @@ void main() {
           pubkeys: any(named: 'pubkeys'),
         ),
       ).thenAnswer((_) => batchFetchCompleter.future);
+      when(
+        () => mockRelayCapabilityService.getRelayCapabilities(any()),
+      ).thenAnswer(
+        (invocation) async => RelayCapabilities(
+          relayUrl: invocation.positionalArguments.single as String,
+          rawData: const {},
+        ),
+      );
 
       videoEventService = VideoEventService(
         mockNostrService,
@@ -152,6 +168,7 @@ void main() {
         profileRepository: mockProfileRepository,
         eventRouter: EventRouter(mockDatabase),
         performanceMonitor: performanceMonitor,
+        videoFilterBuilder: VideoFilterBuilder(mockRelayCapabilityService),
       );
     });
 
@@ -530,6 +547,41 @@ void main() {
           _expectSingleCompletion(
             performanceMonitor,
             traceName: 'feed_load_profile',
+            completion: 'disposed',
+            eventCount: 0,
+          );
+        },
+      );
+
+      test(
+        'disposed: sorted load starts trace after dispose drain already ran',
+        () async {
+          final capabilitiesRead = Completer<RelayCapabilities>();
+          when(
+            () => mockRelayCapabilityService.getRelayCapabilities(any()),
+          ).thenAnswer((_) => capabilitiesRead.future);
+          withEmptyCache();
+
+          final subscribe = videoEventService.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.discovery,
+            sortBy: VideoSortField.loopCount,
+          );
+          await pumpEventQueue();
+
+          // The sorted filter is still awaiting NIP-11 capabilities, so the
+          // trace has not been registered and dispose drains an empty map.
+          videoEventService.dispose();
+          capabilitiesRead.complete(
+            RelayCapabilities(
+              relayUrl: 'wss://relay.divine.video',
+              rawData: const {},
+            ),
+          );
+          await subscribe.timeout(const Duration(milliseconds: 100));
+
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_discovery',
             completion: 'disposed',
             eventCount: 0,
           );

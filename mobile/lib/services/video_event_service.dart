@@ -2383,6 +2383,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         // ChangeNotifier and wire a relay subscription the teardown sweep has
         // already passed, leaving nothing to cancel it.
         if (_isDisposed) {
+          _completeAbandonedFeedLoadTrace(subscriptionId, 'disposed');
           _pendingSubscriptionIds.remove(subscriptionId);
           return;
         }
