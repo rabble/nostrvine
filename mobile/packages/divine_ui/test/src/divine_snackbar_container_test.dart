@@ -1,6 +1,35 @@
+import 'dart:math' as math;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// Size [text] takes on one unconstrained line, in the style it actually
+/// rendered with.
+///
+/// The placement tests size their viewport from this rather than hardcoding
+/// pixel widths. This suite runs in two font contexts: from the package it
+/// falls back to a test font, and from `mobile/` — which is how the pre-push
+/// hook runs it — it gets the bundled Inter. The same string measures about
+/// twice as wide in one as the other, so any fixed viewport puts the two on
+/// opposite sides of the wrap threshold.
+Size _renderedTextSize(WidgetTester tester, String text) {
+  final painter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: tester.widget<Text>(find.text(text)).style,
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  final size = painter.size;
+  painter.dispose();
+  return size;
+}
+
+/// Viewport width that leaves the message exactly [labelWidth] to wrap in,
+/// once the action column and the two 16px edge insets are accounted for.
+double _viewportFor(double labelWidth, double actionWidth) =>
+    labelWidth + math.max(72, actionWidth) + 4 + 16 + 16;
 
 void main() {
   group('DivineSnackbarContainer', () {
@@ -538,24 +567,35 @@ void main() {
       testWidgets('drops a long action onto its own right-aligned row', (
         tester,
       ) async {
-        tester.view.physicalSize = const Size(360, 800);
+        const message = 'We could not reach the relay just now';
+        const action = 'Try that again';
+        final widget = buildTestWidget(
+          label: message,
+          actionLabel: action,
+          onActionPressed: () {},
+        );
+
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(widget);
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: 'We could not reach the relay just now',
-            actionLabel: 'Try that again',
-            onActionPressed: () {},
+        // A third of the message's own width leaves it needing four lines,
+        // which is past the two it may take while sharing the row.
+        final message1Line = _renderedTextSize(tester, message);
+        tester.view.physicalSize = Size(
+          _viewportFor(
+            message1Line.width / 3,
+            _renderedTextSize(tester, action).width,
           ),
+          800,
         );
+        await tester.pumpWidget(widget);
 
-        final label = tester.getRect(
-          find.text('We could not reach the relay just now'),
+        expect(
+          tester.getRect(find.text(action)).top,
+          greaterThanOrEqualTo(tester.getRect(find.text(message)).bottom),
         );
-        final action = tester.getRect(find.text('Try that again'));
-        expect(action.top, greaterThanOrEqualTo(label.bottom));
 
         final banner = tester.getRect(find.byType(DecoratedBox));
         final button = tester.getRect(find.byType(TextButton));
@@ -567,27 +607,37 @@ void main() {
       // it rather than spending a third row on an "Undo".
       testWidgets('keeps a short action beside a message that wraps to two '
           'lines', (tester) async {
-        tester.view.physicalSize = const Size(360, 800);
+        const message = 'We could not reach the relay just now';
+        const action = 'Undo';
+        final widget = buildTestWidget(
+          label: message,
+          actionLabel: action,
+          onActionPressed: () {},
+        );
+
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(widget);
 
-        // Wide enough to need a second line beside the action, not a third:
-        // the old one-line measurement stacked this, the two-line rule keeps
-        // it inline.
-        const message = 'We could not reach the relay';
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: message,
-            actionLabel: 'Undo',
-            onActionPressed: () {},
+        // Three quarters of the message's own width: too narrow for one line,
+        // wide enough for two. The old one-line measurement stacked this.
+        final message1Line = _renderedTextSize(tester, message);
+        tester.view.physicalSize = Size(
+          _viewportFor(
+            message1Line.width * 0.75,
+            _renderedTextSize(tester, action).width,
           ),
+          800,
         );
+        await tester.pumpWidget(widget);
 
         final label = tester.getRect(find.text(message));
-        final action = tester.getRect(find.text('Undo'));
-        expect(label.height, greaterThan(24));
-        expect(action.left, greaterThan(label.right));
+        expect(label.height, greaterThan(message1Line.height));
+        expect(
+          tester.getRect(find.text(action)).left,
+          greaterThan(label.right),
+        );
       });
 
       // On its own row the actions are Flexible, so one too wide even for the
@@ -595,18 +645,25 @@ void main() {
       testWidgets('wraps an over-wide action inside the banner', (
         tester,
       ) async {
-        tester.view.physicalSize = const Size(360, 800);
+        const action = 'Try reconnecting to the relay one more time now';
+        final widget = buildTestWidget(
+          label: 'We could not reach the relay just now',
+          actionLabel: action,
+          onActionPressed: () {},
+        );
+
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(widget);
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: 'We could not reach the relay just now',
-            actionLabel: 'Try reconnecting to the relay one more time now',
-            onActionPressed: () {},
-          ),
+        // Narrower than the action label alone, so it cannot fit on one line
+        // even with the whole banner to itself.
+        tester.view.physicalSize = Size(
+          _renderedTextSize(tester, action).width * 0.7,
+          800,
         );
+        await tester.pumpWidget(widget);
 
         expect(tester.takeException(), isNull);
         final banner = tester.getRect(find.byType(DecoratedBox));
