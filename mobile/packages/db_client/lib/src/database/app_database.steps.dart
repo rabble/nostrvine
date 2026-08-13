@@ -3307,7 +3307,7 @@ final class Schema4 extends i0.VersionedSchema {
     ),
     alias: null,
   );
-  late final Shape3 profileStatistics = Shape3(
+  late final Shape26 profileStatistics = Shape26(
     source: i0.VersionedTable(
       entityName: 'profile_statistics',
       withoutRowId: false,
@@ -3321,6 +3321,7 @@ final class Schema4 extends i0.VersionedSchema {
         _column_34,
         _column_35,
         _column_36,
+        _column_170,
       ],
       attachedDatabase: database,
     ),
@@ -3479,7 +3480,7 @@ final class Schema4 extends i0.VersionedSchema {
     ),
     alias: null,
   );
-  late final Shape27 clips = Shape27(
+  late final Shape28 clips = Shape28(
     source: i0.VersionedTable(
       entityName: 'clips',
       withoutRowId: false,
@@ -3499,20 +3500,20 @@ final class Schema4 extends i0.VersionedSchema {
         _column_56,
         _column_47,
         _column_100,
-        _column_172,
         _column_173,
+        _column_174,
       ],
       attachedDatabase: database,
     ),
     alias: null,
   );
-  late final Shape28 clipCategories = Shape28(
+  late final Shape29 clipCategories = Shape29(
     source: i0.VersionedTable(
       entityName: 'clip_categories',
       withoutRowId: false,
       isStrict: false,
       tableConstraints: ['PRIMARY KEY(id)'],
-      columns: [_column_0, _column_174, _column_96, _column_2, _column_47],
+      columns: [_column_0, _column_175, _column_96, _column_2, _column_47],
       attachedDatabase: database,
     ),
     alias: null,
@@ -3730,13 +3731,13 @@ final class Schema4 extends i0.VersionedSchema {
     ),
     alias: null,
   );
-  late final Shape26 identityEvents = Shape26(
+  late final Shape27 identityEvents = Shape27(
     source: i0.VersionedTable(
       entityName: 'identity_events',
       withoutRowId: false,
       isStrict: false,
       tableConstraints: ['PRIMARY KEY(pubkey)'],
-      columns: [_column_1, _column_163, _column_164, _column_170, _column_171],
+      columns: [_column_1, _column_163, _column_164, _column_171, _column_172],
       attachedDatabase: database,
     ),
     alias: null,
@@ -3776,8 +3777,8 @@ final class Schema4 extends i0.VersionedSchema {
   );
 }
 
-class Shape27 extends i0.VersionedTable {
-  Shape27({required super.source, required super.alias}) : super.aliased();
+class Shape28 extends i0.VersionedTable {
+  Shape28({required super.source, required super.alias}) : super.aliased();
   i1.GeneratedColumn<String> get id =>
       columnsByName['id']! as i1.GeneratedColumn<String>;
   i1.GeneratedColumn<String> get draftId =>
@@ -3804,7 +3805,7 @@ class Shape27 extends i0.VersionedTable {
       columnsByName['archived_at']! as i1.GeneratedColumn<int>;
 }
 
-i1.GeneratedColumn<String> _column_172(String aliasedName) =>
+i1.GeneratedColumn<String> _column_173(String aliasedName) =>
     i1.GeneratedColumn<String>(
       'category_id',
       aliasedName,
@@ -3812,7 +3813,7 @@ i1.GeneratedColumn<String> _column_172(String aliasedName) =>
       type: i1.DriftSqlType.string,
       $customConstraints: 'NULL',
     );
-i1.GeneratedColumn<int> _column_173(String aliasedName) =>
+i1.GeneratedColumn<int> _column_174(String aliasedName) =>
     i1.GeneratedColumn<int>(
       'archived_at',
       aliasedName,
@@ -3821,8 +3822,8 @@ i1.GeneratedColumn<int> _column_173(String aliasedName) =>
       $customConstraints: 'NULL',
     );
 
-class Shape28 extends i0.VersionedTable {
-  Shape28({required super.source, required super.alias}) : super.aliased();
+class Shape29 extends i0.VersionedTable {
+  Shape29({required super.source, required super.alias}) : super.aliased();
   i1.GeneratedColumn<String> get id =>
       columnsByName['id']! as i1.GeneratedColumn<String>;
   i1.GeneratedColumn<String> get name =>
@@ -3835,7 +3836,7 @@ class Shape28 extends i0.VersionedTable {
       columnsByName['owner_pubkey']! as i1.GeneratedColumn<String>;
 }
 
-i1.GeneratedColumn<String> _column_174(String aliasedName) =>
+i1.GeneratedColumn<String> _column_175(String aliasedName) =>
     i1.GeneratedColumn<String>(
       'name',
       aliasedName,

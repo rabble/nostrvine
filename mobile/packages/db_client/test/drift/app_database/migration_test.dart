@@ -50,7 +50,7 @@ void main() {
       await db.close();
     });
 
-    test('migrates v2 profile statistic follower timestamps to v3', () async {
+    test('migrates v2 profile statistic follower timestamps', () async {
       final schema = await verifier.schemaAt(2);
       final cachedAt =
           DateTime.now()
@@ -74,7 +74,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 3);
+      await verifier.migrateAndValidate(db, 4);
 
       final rows = await db
           .customSelect(
