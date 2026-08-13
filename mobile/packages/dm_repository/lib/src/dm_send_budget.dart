@@ -35,13 +35,14 @@
 /// far above that path and never bind it.
 abstract final class DmSendBudget {
   /// The two seal round trips a wrap build spends, at the transport's own
-  /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 30s).
+  /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 20s).
   ///
   /// Restated here because `dm_repository` cannot import `keycast_flutter`.
-  /// The app-layer guard test asserts the real relationship, so this going
-  /// stale fails CI rather than silently under-sizing the bound — which is the
-  /// #6586 failure mode itself.
-  static const int _twoTransportBoundsSeconds = 60;
+  /// [boundedSignerFloor] exposes the derived floor so the app-layer guard can
+  /// assert the real relationship. That makes this going stale fail CI rather
+  /// than silently under-sizing the bound — which is the #6586 failure mode
+  /// itself.
+  static const int _twoTransportBoundsSeconds = 40;
 
   /// Margin inside a wrap-build bound for the local work that runs alongside
   /// the two remote round trips: seal construction, the ephemeral keypair,
@@ -49,16 +50,49 @@ abstract final class DmSendBudget {
   /// secp256k1 signature (`GiftWrapUtil.getGiftWrapEvent`).
   ///
   /// Without it the bound would sit at *exactly* two transport bounds, so two
-  /// ops that each returned just under 30s would still blow it — failing a
+  /// ops that each returned just under 20s would still blow it — failing a
   /// build the transport itself had completed. That is the same
   /// "sized at the worst case with no margin" shape #6586 was about, one step
   /// earlier in the chain.
   static const int _wrapBuildLocalCryptoSeconds = 5;
 
+  /// What a wrap build costs against a signer that bounds its own operations,
+  /// i.e. Keycast: two transport bounds plus the local crypto between them.
+  ///
+  /// This is the **floor** under [_recipientWrapBuildSeconds], not its value.
+  /// Sizing the build bound below it would fail requests the transport itself
+  /// would have allowed — the #6046 mistake #6075 had to revert — and the
+  /// app-layer guard test pins that it stays a floor.
+  static const int _boundedSignerFloorSeconds =
+      _twoTransportBoundsSeconds + _wrapBuildLocalCryptoSeconds;
+
+  /// Minimum wrap-build budget for signers that bound their own operations.
+  ///
+  /// Exposed only so the app-layer guard can compare this package's restated
+  /// Keycast floor against `KeycastRpc.defaultRequestTimeout`, which
+  /// `dm_repository` cannot import directly.
+  static const Duration boundedSignerFloor = Duration(
+    seconds: _boundedSignerFloorSeconds,
+  );
+
+  /// Room above [_boundedSignerFloorSeconds] for a signer whose per-op wait is
+  /// **not** bounded by a transport at all: Amber's NIP-55 intent path puts a
+  /// human approval prompt in front of each of the two round trips, and a
+  /// bunker can be arbitrarily slow.
+  ///
+  /// Sized to hold [recipientWrapBuild] at the 65s it has shipped at.
+  /// Re-deriving the transport bound in #7092 lowered the floor beneath this
+  /// window; it said nothing about the window itself, and no observation says
+  /// 65s is the wrong amount of time to let a person approve two prompts.
+  /// Following the floor down to 45s would have spent a user-visible Amber
+  /// regression to buy headroom the send path was not short of — the totals
+  /// below already clear [messagePublishTimeout] with room.
+  static const int _unboundedSignerHeadroomSeconds = 20;
+
   /// Seconds allowed for building the recipient gift wrap. See
   /// [recipientWrapBuild].
   static const int _recipientWrapBuildSeconds =
-      _twoTransportBoundsSeconds + _wrapBuildLocalCryptoSeconds;
+      _boundedSignerFloorSeconds + _unboundedSignerHeadroomSeconds;
 
   /// Seconds allowed for the recipient OK confirmation. See
   /// [recipientOkConfirm].
@@ -85,24 +119,27 @@ abstract final class DmSendBudget {
 
   /// Hard bound on building the recipient gift wrap.
   ///
-  /// Sized as two Keycast single-op round trips at the transport's own 30s
-  /// bound (`KeycastRpc.defaultRequestTimeout`) **plus**
-  /// [_wrapBuildLocalCryptoSeconds] for the local crypto that runs between and
-  /// after them, so two ops that each returned inside the transport's limit
-  /// cannot together trip this bound. Sizing it at exactly `2 × 30s` would
-  /// leave nothing for that work and fail such a build.
-  ///
-  /// Tightening it below two transport bounds is the specific mistake #6046
-  /// made and #6075 reverted: production Keycast runs 20-30s per single op
-  /// under DB-pool contention (keycast#291), and a tighter bound turns
-  /// slow-but-succeeding sends into hard failures.
-  ///
-  /// It bounds the *chain*, not the transport, so it also covers signers whose
-  /// own operation can wait much longer than this method should. On the Amber
-  /// NIP-55 intent path, the `nip44Encrypt` and `signEvent` approval waits are
+  /// It bounds the *chain*, not the transport, and the chain's slowest signer
+  /// sets its size. Two constants say so: [_boundedSignerFloorSeconds] is what
+  /// Keycast can cost — two transport bounds plus the local crypto between
+  /// them, so two ops that each returned inside the transport's limit cannot
+  /// together trip this — and [_unboundedSignerHeadroomSeconds] is the room
+  /// above that for signers with no transport bound at all. On the Amber
+  /// NIP-55 intent path the `nip44Encrypt` and `signEvent` approval waits are
   /// human-gated and unbounded; timing out here leaves the recipient publish
   /// unsent, so durable callers classify the row as retryable-pending rather
   /// than red-failed.
+  ///
+  /// Tightening it below the floor is the specific mistake #6046 made and
+  /// #6075 reverted — it fails sends the transport itself would have allowed.
+  /// The app-layer guard test pins the floor because `dm_repository` cannot
+  /// import `keycast_flutter` to check it here.
+  ///
+  /// #7092 re-derived the floor after Keycast's per-op bound dropped to 20s
+  /// (keycast#351 bounds its own handler at 8s, so the ~20-30s single-op
+  /// latency of keycast#291 that #6075 sized against is no longer reachable).
+  /// The floor fell from 65s to 45s; this bound deliberately did not follow it
+  /// down. See [_unboundedSignerHeadroomSeconds].
   static const Duration recipientWrapBuild = Duration(
     seconds: _recipientWrapBuildSeconds,
   );
@@ -144,7 +181,7 @@ abstract final class DmSendBudget {
   /// driven by `DmRepository.recoverSelfWrap`) and
   /// `NIP17MessageService.publishSelfApplicationMarker`. The build is the same
   /// two round trips, so at [selfWrapBuild] it could never finish against a
-  /// signer running near its own 30s-per-op bound.
+  /// signer running near its own 20s-per-op bound.
   ///
   /// It deliberately does **not** cover `sendPrivateMessage`, which builds its
   /// self wrap uncapped. A bound only makes sense where a timed-out build can

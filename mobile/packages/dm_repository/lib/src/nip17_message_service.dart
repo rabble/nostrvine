@@ -19,6 +19,7 @@ import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/relay.dart';
 import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:nostr_sdk/signer/signer_failure.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Builds a NIP-59 gift-wrapped event for [recipientPubkey] from
@@ -443,7 +444,7 @@ class NIP17MessageService {
       // _publishSelfWrap after the recipient publish confirms delivery.
       // Bounded: the wrap build is 2 remote signer round trips, and no signer
       // interface exposes a per-call timeout — the transport's own bound is
-      // whatever that signer chose. Keycast is 30s/op; Amber's NIP-55 intent
+      // whatever that signer chose. Keycast is 20s/op; Amber's NIP-55 intent
       // path for `nip44Encrypt` and `signEvent` is human-gated and unbounded; a
       // bunker can be unbounded too. Without a bound here the chain can outrun
       // the caller's publish backstop, which then fires AFTER the recipient
@@ -653,6 +654,31 @@ class NIP17MessageService {
         // exists (#6028); this routes the server refusal into it.
         return const NIP17SendResult.blocked(
           'blocked: recipient not permitted by send policy',
+        );
+      }
+      if (e is TransientSignerFailure) {
+        // The signer gave up instead of signing — a remote signer that bounds
+        // itself and answers with an error rather than making us wait it out
+        // (Keycast's 504). Classified exactly like the wrap-build
+        // `.timeout(recipientWrapBound)` above, because it is the same event
+        // seen from the other side of the wire: nothing was signed, so nothing
+        // was published, so the durable queue can safely re-drive it.
+        //
+        // Without this the same slow signer produced two opposite outcomes —
+        // a dim retryable chip when the client's patience ran out first, a red
+        // hard failure when the server's did (#7092). Which one the user got
+        // turned on a race between two bounds neither layer documented to the
+        // other.
+        //
+        // Safe to call retryable here because every signer round trip inside
+        // this `try` runs *before* the recipient publish: `refreshPublicKey`
+        // and `_buildBothWraps`. Everything after it — `_publishSelfWrap` —
+        // catches its own errors and reports status by return value, so no
+        // post-delivery failure can reach this handler and re-drive a message
+        // the recipient already has.
+        return NIP17SendResult.failure(
+          'Failed to send message: $e',
+          retryablePending: true,
         );
       }
       return NIP17SendResult.failure('Failed to send message: $e');

@@ -270,6 +270,62 @@ void main() {
 
         expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
       });
+
+      test('a 504 throws RpcTimeoutException, marked transient', () async {
+        // Keycast bounds its own /api/nostr handler at 8s and its tower layer
+        // at 10s; both answer 504 (keycast#351). That is Keycast reporting a
+        // timeout, so it has to reach callers classified as one — a plain
+        // non-200 gets terminalized, which is strictly worse than the client
+        // timeout it replaced. The marker is what dm_repository branches on;
+        // it cannot import this package to check the concrete type (#7092).
+        mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({'error': 'RPC request timed out after 8s'}),
+            504,
+          );
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(
+            isA<RpcTimeoutException>().having(
+              (e) => e,
+              'transient marker',
+              isA<TransientSignerFailure>(),
+            ),
+          ),
+        );
+      });
+
+      test('other 5xx stay plain RpcException, not transient', () async {
+        // The classification is deliberately narrow. 504 is the only status
+        // on this route that means "I ran out of time and produced nothing";
+        // 503 is a degraded dependency and 500 an unhandled error, neither of
+        // which promises the operation did not happen.
+        for (final status in [500, 502, 503]) {
+          mockClient = MockClient((request) async {
+            return http.Response('Server error', status);
+          });
+
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClient: mockClient,
+          );
+
+          await expectLater(
+            rpc.getPublicKey(),
+            throwsA(isNot(isA<TransientSignerFailure>())),
+            reason: 'HTTP $status must not be classified as transient',
+          );
+        }
+      });
     });
 
     group('token refresh on 401', () {
@@ -395,38 +451,58 @@ void main() {
     });
 
     group('request timeout', () {
-      test('single-op and batch default timeouts are both 30s', () {
+      test('the single-op default is 20s and the batch default 30s', () {
         // Pinned because #6046 accidentally regressed the GLOBAL single-op
         // default to 12s while sizing it for the DM pipeline. None of the
         // production construction sites override requestTimeout, so that
-        // bound applied to every RPC caller (video publish signing, likes,
-        // reposts, follows). Production Keycast single-op latency runs
-        // ~20-30s under DB-pool contention, so the default must stay at 30s
-        // or those callers regress from slow-but-succeeding to failing.
-        expect(
-          KeycastRpc.defaultRequestTimeout,
-          const Duration(seconds: 30),
-        );
+        // bound applies to every RPC caller (video publish signing, likes,
+        // reposts, follows) and cannot be re-tuned for one of them.
+        //
+        // 30s → 20s in #7092. The 30s was sized to cover ~20-30s single-op
+        // latency under Keycast DB-pool contention (keycast#291); keycast#351
+        // now bounds that handler at 8s and answers 504, so a live request
+        // cannot spend that long server-side and the bound reverts to what it
+        // is actually for — a dead-socket backstop sized on mobile transport
+        // cost. Do not chase it further down: the value below the server
+        // ceiling is where a live-but-slow request starts losing the server's
+        // own classified answer to an anonymous client timeout.
+        expect(KeycastRpc.defaultRequestTimeout, const Duration(seconds: 20));
         expect(
           KeycastRpc.defaultBatchRequestTimeout,
           const Duration(seconds: 30),
         );
       });
 
-      test('throws TimeoutException when the request hangs', () async {
-        // Simulates a dead socket (e.g. Android Doze killing the
-        // connection) — the request future never completes.
-        mockClient = MockClient((request) => Completer<http.Response>().future);
+      test(
+        'throws RpcTimeoutException when a single-op request hangs',
+        () async {
+          // Simulates a dead socket (e.g. Android Doze killing the
+          // connection) — the request future never completes. Single-op RPCs
+          // carry the same transient marker as Keycast's own 504 so DM sends
+          // classify both give-up paths identically.
+          mockClient = MockClient(
+            (request) => Completer<http.Response>().future,
+          );
 
-        final rpc = KeycastRpc(
-          nostrApi: 'https://login.divine.video/api/nostr',
-          accessToken: 'test_token',
-          httpClient: mockClient,
-          requestTimeout: const Duration(milliseconds: 50),
-        );
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClient: mockClient,
+            requestTimeout: const Duration(milliseconds: 50),
+          );
 
-        await expectLater(rpc.getPublicKey(), throwsA(isA<TimeoutException>()));
-      });
+          await expectLater(
+            rpc.getPublicKey(),
+            throwsA(
+              isA<RpcTimeoutException>().having(
+                (e) => e,
+                'transient marker',
+                isA<TransientSignerFailure>(),
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('signCanonicalPayload', () {

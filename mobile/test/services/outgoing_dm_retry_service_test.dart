@@ -2047,7 +2047,7 @@ void main() {
       );
     });
 
-    test('the recipient wrap build exceeds two Keycast round trips', () {
+    test('the bounded signer floor matches two Keycast round trips', () {
       // A 1:1 send costs four measured signer round trips: nip44Encrypt +
       // signEvent for the seal, per wrap. Sizing the recipient build below
       // two transport bounds would fail requests the transport itself would
@@ -2056,11 +2056,23 @@ void main() {
       // Strictly greater, not >=: the bound also covers the seal
       // construction, ephemeral keypair, NIP-44 encryption and wrap signature
       // that run alongside those round trips. At exactly 2x, two ops each
-      // returning just inside 30s would still trip it, which is the same
-      // no-margin shape #6586 was about.
+      // returning just inside the transport bound would still trip it, which
+      // is the same no-margin shape #6586 was about.
+      //
+      // This is the only place the two packages meet: `dm_repository` restates
+      // the transport bound as a literal because it cannot import
+      // `keycast_flutter`, so re-tuning one side without the other fails here
+      // rather than silently under-sizing the build. #7092 moved the transport
+      // bound 30s → 20s, dropping the floor 65s → 45s while
+      // `recipientWrapBuild` deliberately held at 65s, so its margin over the
+      // floor widened from 0s to 20s.
+      expect(
+        DmSendBudget.boundedSignerFloor,
+        KeycastRpc.defaultRequestTimeout * 2 + const Duration(seconds: 5),
+      );
       expect(
         DmSendBudget.recipientWrapBuild,
-        greaterThan(KeycastRpc.defaultRequestTimeout * 2),
+        greaterThan(DmSendBudget.boundedSignerFloor),
       );
     });
 

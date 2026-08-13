@@ -48,29 +48,61 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     );
   }
 
+  /// HTTP 504. Keycast's answer when it ran out of time on `/api/nostr`.
+  static const int _gatewayTimeoutStatus = 504;
+
   /// Default timeout applied to a single signing/encryption RPC
   /// (`sign_event`, `nip44_encrypt`, `nip44_decrypt`, `nip04_*`,
   /// `get_public_key`, `sign_canonical`).
   ///
-  /// Without a bound, a dead socket (e.g. Android Doze killing the
-  /// connection while backgrounded) hangs the request forever and wedges
-  /// every caller awaiting it.
+  /// ## What this bound is for
   ///
-  /// This default applies to *every* single-op RPC caller — video publish
-  /// signing, likes, reposts, follows — not just the DM path, so the bound
-  /// must cover production Keycast single-op latency under load. Keycast
-  /// DB-pool contention has been observed to push a single op to ~20-30s;
-  /// a tighter bound would turn slow-but-succeeding social actions and
-  /// video publishes into hard failures. The DM send path does not depend
-  /// on a shorter bound for fail-fast or durability: the durable outgoing
-  /// queue re-drives stalled sends and `dm_repository`'s 90s
-  /// `_messagePublishTimeout` is the send-level backstop (#6046).
-  static const Duration defaultRequestTimeout = Duration(seconds: 30);
+  /// It is a **dead-socket backstop**, not a latency budget. Android Doze
+  /// killing a connection while backgrounded leaves a request that never
+  /// completes and never errors; without a bound it wedges every caller
+  /// awaiting it forever. So the number is sized from what a *live* request
+  /// can cost on a bad mobile link — DNS, TCP, TLS, a retransmit or two, and
+  /// the small JSON round trip — not from how slow the server might be. 20s
+  /// is far above that and still recovers a wedged caller in a third less
+  /// time than the previous 30s.
+  ///
+  /// It applies to *every* single-op RPC caller — video publish signing,
+  /// likes, reposts, follows — not just the DM path.
+  ///
+  /// ## Why it is no longer sized against server latency (#7092)
+  ///
+  /// The old derivation held this at 30s to cover "production Keycast
+  /// single-op latency of ~20-30s under DB-pool contention" (keycast#291).
+  /// That is no longer reachable: keycast#351 bounds the `/api/nostr` handler
+  /// at 8s and the tower layer behind it at 10s, both answering 504, so a
+  /// request that is still alive cannot spend more than ~10s server-side.
+  /// Verified live on production 2026-08-13 via the public `/api/metrics`
+  /// histogram that keycast#351 itself added: across two instances and ~10k
+  /// `sign_event` samples every success landed in the `le="1"` bucket, and
+  /// `outcome="timeout"` had not been recorded once.
+  ///
+  /// That evidence is **corroboration, not the guarantee**. This bound does
+  /// not assume the server keeps its ceiling, because it no longer has to:
+  /// [RpcTimeoutException] makes a server 504 and a local request timeout
+  /// classify identically downstream, so which side gives up first stopped
+  /// being load-bearing. Sizing a client cap on an unverified server bound is
+  /// what produced #6586; sizing it on the client's own transport costs, and
+  /// making both give-up paths mean the same thing, is what retires that
+  /// coupling.
+  ///
+  /// Callers that need to outlive a slow signer do not lean on this bound
+  /// either: the durable outgoing queue re-drives stalled sends and
+  /// `DmSendBudget.messagePublishTimeout` is the send-level backstop (#6046).
+  static const Duration defaultRequestTimeout = Duration(seconds: 20);
 
   /// Default timeout for the multi-wrap `nip17_unwrap_batch` verb, which does
   /// materially more server-side work than a single op and legitimately runs
   /// longer. Held at the historical single-op bound so batch decrypt is not
   /// regressed by the tighter [defaultRequestTimeout] above.
+  ///
+  /// Left wider deliberately rather than re-derived alongside it: keycast's
+  /// 8s handler bound covers this verb too, so the extra 10s can only buy
+  /// transport slack, never mask a slow server.
   static const Duration defaultBatchRequestTimeout = Duration(seconds: 30);
 
   final String nostrApi;
@@ -80,7 +112,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   bool _signCanonicalUnsupported = false;
 
   /// Maximum time to wait for a single-op RPC request before failing with a
-  /// [TimeoutException].
+  /// [RpcTimeoutException].
   final Duration requestTimeout;
 
   /// Maximum time to wait for the heavier `nip17_unwrap_batch` RPC.
@@ -92,8 +124,14 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     T Function(dynamic) fromResult, {
     bool logHttpErrors = true,
     Duration? timeout,
+    bool classifyLocalTimeout = true,
   }) async {
-    var response = await _sendRequest(method, params, timeout: timeout);
+    var response = await _sendRequest(
+      method,
+      params,
+      timeout: timeout,
+      classifyLocalTimeout: classifyLocalTimeout,
+    );
 
     if (response.statusCode == 401 && _onTokenRefresh != null) {
       Log.info(
@@ -114,7 +152,12 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       }
       if (newToken != null) {
         _accessToken = newToken;
-        response = await _sendRequest(method, params, timeout: timeout);
+        response = await _sendRequest(
+          method,
+          params,
+          timeout: timeout,
+          classifyLocalTimeout: classifyLocalTimeout,
+        );
       }
     }
 
@@ -126,10 +169,12 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
           category: LogCategory.auth,
         );
       }
-      throw RpcException(
-        'HTTP ${response.statusCode}: ${response.body}',
-        method: method,
-      );
+      final message = 'HTTP ${response.statusCode}: ${response.body}';
+      // 504 is Keycast reporting *its own* timeout, so it classifies like one
+      // rather than like a refusal. See [RpcTimeoutException].
+      throw response.statusCode == _gatewayTimeoutStatus
+          ? RpcTimeoutException(message, method: method)
+          : RpcException(message, method: method);
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -149,6 +194,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     String method,
     List<dynamic> params, {
     Duration? timeout,
+    bool classifyLocalTimeout = true,
   }) async {
     Log.debug(
       '[Keycast RPC] Calling $method...',
@@ -156,16 +202,26 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       category: LogCategory.auth,
     );
     final stopwatch = Stopwatch()..start();
-    final response = await _client
-        .post(
-          Uri.parse(nostrApi),
-          headers: {
-            'Authorization': 'Bearer $_accessToken',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({'method': method, 'params': params}),
-        )
-        .timeout(timeout ?? requestTimeout);
+    final effectiveTimeout = timeout ?? requestTimeout;
+    http.Response response;
+    try {
+      response = await _client
+          .post(
+            Uri.parse(nostrApi),
+            headers: {
+              'Authorization': 'Bearer $_accessToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'method': method, 'params': params}),
+          )
+          .timeout(effectiveTimeout);
+    } on TimeoutException {
+      if (!classifyLocalTimeout) rethrow;
+      throw RpcTimeoutException(
+        'Local $method request timed out after ${effectiveTimeout.inSeconds}s',
+        method: method,
+      );
+    }
     stopwatch.stop();
     Log.debug(
       '[Keycast RPC] $method completed in '
@@ -313,9 +369,9 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   ///
   /// Returns `null` (rather than throwing) when the backend does not expose the
   /// verb yet — method-not-found surfaces as an [RpcException] — so callers fall
-  /// back to the per-wrap decrypt path. A [TimeoutException] is deliberately
-  /// allowed to propagate so a slow page is retried by the caller rather than
-  /// being mistaken for an empty result.
+  /// back to the per-wrap decrypt path. A local [TimeoutException] is
+  /// deliberately allowed to propagate so a slow page is retried by the caller
+  /// rather than being mistaken for an empty result.
   @override
   Future<List<GiftWrapUnwrapSlot>?> nip17UnwrapBatch(
     List<Map<String, dynamic>> giftWraps,
@@ -332,6 +388,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         // longer than a single op, so keep it on the longer bound rather than
         // the tighter single-op [requestTimeout].
         timeout: batchRequestTimeout,
+        classifyLocalTimeout: false,
       );
     } on RpcException {
       // Older keycast without the verb, or a server-level error: degrade so the

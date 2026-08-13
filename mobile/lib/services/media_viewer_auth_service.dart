@@ -20,7 +20,7 @@ class MediaViewerAuthService {
   final Nip98AuthService _nip98AuthService;
 
   /// Caller-side bound on remote viewer-auth signing. Sits well under
-  /// Keycast's 30s RPC ceiling (`keycast_rpc.dart`) yet far above the observed
+  /// Keycast's 20s RPC ceiling (`keycast_rpc.dart`) yet far above the observed
   /// ~200-430ms happy-path round-trip, so a healthy signer is never cut off
   /// while an unreachable one fails fast into the existing retry UI.
   static const Duration _signTimeout = Duration(seconds: 6);
@@ -51,7 +51,7 @@ class MediaViewerAuthService {
   /// bounded by [_signTimeout]; if the signer does not respond in time this
   /// returns [ViewerAuthSignerUnreachable] — distinct from the
   /// [ViewerAuthUnavailable] "no headers" result — rather than hanging on
-  /// Keycast's 30s ceiling. Local and interactive remote signers (bunker /
+  /// Keycast's 20s ceiling. Local and interactive remote signers (bunker /
   /// Amber / NIP-07) are awaited unbounded so a human approval step is never
   /// cut off.
   Future<ViewerAuthResult> createAuthHeaders({
@@ -98,7 +98,7 @@ class MediaViewerAuthService {
   /// Awaits [sign]. When [bound] (the non-interactive remote signer), the call
   /// is capped at [_signTimeout]; the [TimeoutException] propagates to
   /// [createAuthHeaders], which maps it to [ViewerAuthSignerUnreachable]
-  /// instead of hanging on the remote RPC's own 30s ceiling. Unbounded
+  /// instead of hanging on the remote RPC's own 20s ceiling. Unbounded
   /// otherwise, so a local or interactive (human-approved) sign is never cut
   /// off.
   Future<T?> _bound<T>(bool bound, Future<T?> Function() sign) async {
