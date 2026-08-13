@@ -17,7 +17,8 @@ import 'package:unified_logger/unified_logger.dart';
 /// is not possible.
 typedef TokenRefreshCallback = Future<String?> Function();
 
-class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
+class KeycastRpc
+    implements NostrSigner, GiftWrapBatchUnwrapper, GiftWrapBatchWrapper {
   KeycastRpc({
     required this.nostrApi,
     required String accessToken,
@@ -255,7 +256,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         logHttpErrors: false,
       );
     } on RpcException catch (error) {
-      if (_isUnsupportedSignCanonical(error)) {
+      if (_isUnsupportedMethod(error)) {
         _signCanonicalUnsupported = true;
         Log.info(
           '[Keycast RPC] sign_canonical unsupported by backend; '
@@ -284,18 +285,23 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     }
   }
 
-  /// Whether [error] is the backend signalling that `sign_canonical` is not
+  /// Whether [error] is the backend signalling that the called method is not
   /// implemented, as opposed to a transient or auth failure that must stay
   /// retryable.
   ///
   /// Matched against the exact wordings the login backend returns today: the
-  /// HTTP `Unsupported method: sign_canonical` body and the JSON-RPC
-  /// `method_not_found` error field. The match is deliberately narrow — a
-  /// broader signal (e.g. caching on any 4xx) would risk permanently disabling
-  /// a supported capability after a transient blip. If the backend ever rewords
-  /// this, update the substrings here, otherwise canonical binding silently
-  /// re-requests on every publish.
-  bool _isUnsupportedSignCanonical(RpcException error) {
+  /// HTTP `Unsupported method: <verb>` body and the JSON-RPC `method_not_found`
+  /// error field. Matching on the body is mandatory, not stylistic: keycast
+  /// returns HTTP 400 for an unknown method AND for ordinary bad params, so the
+  /// status code alone cannot tell "this server is too old" from "this request
+  /// was wrong". The match is deliberately narrow — a broader signal (e.g.
+  /// caching on any 4xx) would risk permanently disabling a supported
+  /// capability after a transient blip. If the backend ever rewords this,
+  /// update the substrings here, otherwise every caller silently re-probes an
+  /// absent verb forever.
+  ///
+  /// Verb-agnostic and shared by [signCanonicalPayload] and [nip17WrapBatch].
+  bool _isUnsupportedMethod(RpcException error) {
     final lower = error.message.toLowerCase();
     return lower.contains('unsupported method') ||
         lower.contains('method_not_found') ||
@@ -339,6 +345,74 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       // TimeoutException must propagate, not be swallowed into a null result.
       return null;
     }
+  }
+
+  /// Server-side NIP-59 gift-wrap construction for the remote-signer DM send
+  /// path (`nip17_wrap_batch`).
+  ///
+  /// Sends one shared [rumor] plus an ordered [recipientPubkeys] list and gets
+  /// back index-aligned slots — each a signed kind:1059 gift wrap, or a
+  /// per-recipient error code. The server NIP-44-encrypts the rumor and signs
+  /// the kind:13 seal itself, so a 1:1 send (peer + the NIP-17 self copy)
+  /// collapses from four round trips — `nip44Encrypt` + `signEvent` per wrap —
+  /// to one. It also collapses this send's four per-request account-status DB
+  /// queries and four activity-log writes into one of each, which is the part
+  /// that matters under the signer's DB-pool contention.
+  ///
+  /// The server accepts rumor kinds 14 and 15 only; callers must not send
+  /// other kinds (NIP-17 also blesses kind 7 reactions and wrapped kind 5
+  /// deletes, which this verb rejects at request level).
+  ///
+  /// Returns `null` ONLY when the backend does not expose the verb yet, so the
+  /// caller can stop asking for the rest of the session.
+  ///
+  /// Everything else throws — a transient 5xx, an expired token, a rejected
+  /// request, or a [TimeoutException]. This is a deliberate divergence from
+  /// [nip17UnwrapBatch], which collapses every [RpcException] into `null`:
+  /// there, a caller that latches off pays two decrypt RPCs per wrap; here it
+  /// would pay four signing round trips per DM for the rest of the session, and
+  /// a single blip is not evidence the verb is gone.
+  @override
+  Future<List<GiftWrapSlot>?> nip17WrapBatch(
+    Map<String, dynamic> rumor,
+    List<String> recipientPubkeys,
+  ) async {
+    try {
+      return await _call(
+        'nip17_wrap_batch',
+        [rumor, recipientPubkeys],
+        (result) => [
+          for (final slot in result as List)
+            _parseWrapSlot(slot as Map<String, dynamic>),
+        ],
+        // Builds a seal + wrap per recipient server-side, so it legitimately
+        // runs longer than a single op — keep it on the batch bound rather
+        // than the tighter single-op [requestTimeout].
+        timeout: batchRequestTimeout,
+        // The unsupported-method probe is an expected outcome on an older
+        // backend, not an incident; the branch below logs it at info instead.
+        logHttpErrors: false,
+      );
+    } on RpcException catch (error) {
+      if (!_isUnsupportedMethod(error)) rethrow;
+      Log.info(
+        '[Keycast RPC] nip17_wrap_batch unsupported by backend; '
+        'DM sends will use the per-wrap signing path for this session',
+        name: 'KeycastRpc',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+  }
+
+  static GiftWrapSlot _parseWrapSlot(Map<String, dynamic> slot) {
+    final error = slot['error'];
+    if (error != null) return GiftWrapSlot.failure(error.toString());
+    final giftWrap = slot['gift_wrap'];
+    if (giftWrap is Map<String, dynamic>) {
+      return GiftWrapSlot.success(giftWrap);
+    }
+    return const GiftWrapSlot.failure('invalid_slot');
   }
 
   static GiftWrapUnwrapSlot _parseUnwrapSlot(Map<String, dynamic> slot) {

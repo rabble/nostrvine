@@ -724,5 +724,224 @@ void main() {
         expect(slots![0].isSuccess, isTrue);
       });
     });
+
+    group('nip17WrapBatch', () {
+      final rumor = {
+        'id': 'c' * 64,
+        'pubkey': 'd' * 64,
+        'created_at': 1700000001,
+        'kind': 14,
+        'tags': [
+          ['p', 'e' * 64],
+        ],
+        'content': 'hello',
+        'sig': '',
+      };
+      final recipients = ['e' * 64, 'd' * 64];
+
+      Map<String, dynamic> wrap(String id) => {
+        'id': id,
+        'pubkey': 'f' * 64,
+        'created_at': 1700000000,
+        'kind': 1059,
+        'tags': [
+          ['p', 'e' * 64],
+        ],
+        'content': 'ciphertext-$id',
+        'sig': 'b' * 128,
+      };
+
+      KeycastRpc rpcWith(MockClient client, {Duration? batchTimeout}) =>
+          KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClient: client,
+            batchRequestTimeout:
+                batchTimeout ?? KeycastRpc.defaultBatchRequestTimeout,
+          );
+
+      test('posts the rumor and recipient list as two positional params '
+          'and parses ordered slots', () async {
+        mockClient = MockClient((request) async {
+          expect(request.headers['Authorization'], 'Bearer test_token');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['method'], 'nip17_wrap_batch');
+          // The server parses exactly [rumorObject, [recipientHex...]]; a
+          // flattened or reordered params list is a request-level rejection.
+          expect(body['params'], [rumor, recipients]);
+          return http.Response(
+            jsonEncode({
+              'result': [
+                {'gift_wrap': wrap('11')},
+                {'gift_wrap': wrap('22')},
+              ],
+            }),
+            200,
+          );
+        });
+
+        final slots = await rpcWith(mockClient).nip17WrapBatch(
+          rumor,
+          recipients,
+        );
+
+        expect(slots, hasLength(2));
+        expect(slots![0].isSuccess, isTrue);
+        expect(slots[0].giftWrap, wrap('11'));
+        expect(slots[1].giftWrap, wrap('22'));
+      });
+
+      test('keeps a per-recipient error slot isolated from its '
+          'siblings', () async {
+        mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'result': [
+                {'gift_wrap': wrap('11')},
+                {'error': 'invalid_recipient'},
+              ],
+            }),
+            200,
+          );
+        });
+
+        final slots = await rpcWith(mockClient).nip17WrapBatch(
+          rumor,
+          recipients,
+        );
+
+        expect(slots![0].isSuccess, isTrue);
+        expect(slots[1].isSuccess, isFalse);
+        expect(slots[1].error, 'invalid_recipient');
+        expect(slots[1].giftWrap, isNull);
+      });
+
+      test('reports a malformed slot as a failure rather than throwing', () {
+        // A slot that is neither {gift_wrap} nor {error} must not take the
+        // whole send down; the caller treats it like any other failed slot.
+        mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'result': [
+                {'unexpected': true},
+              ],
+            }),
+            200,
+          );
+        });
+
+        return expectLater(
+          rpcWith(mockClient).nip17WrapBatch(rumor, recipients),
+          completion(
+            allOf(
+              hasLength(1),
+              predicate<List<GiftWrapSlot>>(
+                (slots) => slots.single.error == 'invalid_slot',
+                'reports invalid_slot',
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('returns null when the backend lacks the verb', () async {
+        // keycast answers HTTP 400 with this body for an unknown method, so
+        // the body — not the status — is what identifies an older backend.
+        mockClient = MockClient((request) async {
+          return http.Response('Unsupported method: nip17_wrap_batch', 400);
+        });
+
+        expect(
+          await rpcWith(mockClient).nip17WrapBatch(rumor, recipients),
+          isNull,
+        );
+      });
+
+      test('throws rather than returning null on a request-level rejection '
+          'that shares the unsupported-method status code', () async {
+        // Same HTTP 400 as an absent verb, different body. Collapsing this to
+        // null would latch the caller onto the slow path for the whole session
+        // because of one bad request.
+        mockClient = MockClient((request) async {
+          return http.Response('Rumor kind must be 14 or 15', 400);
+        });
+
+        await expectLater(
+          rpcWith(mockClient).nip17WrapBatch(rumor, recipients),
+          throwsA(isA<RpcException>()),
+        );
+      });
+
+      test('throws on a transient server error', () async {
+        // A 503 under pool saturation is not evidence the verb is missing.
+        mockClient = MockClient((request) async {
+          return http.Response('Database temporarily unavailable', 503);
+        });
+
+        await expectLater(
+          rpcWith(mockClient).nip17WrapBatch(rumor, recipients),
+          throwsA(isA<RpcException>()),
+        );
+      });
+
+      test('throws on the policy refusal so the caller can terminalize '
+          'it', () async {
+        // The verified_minor gate answers 403 with this marker; the send path
+        // matches on it to return `blocked` instead of a retryable failure.
+        mockClient = MockClient((request) async {
+          return http.Response('Operation denied by policy', 403);
+        });
+
+        await expectLater(
+          rpcWith(mockClient).nip17WrapBatch(rumor, recipients),
+          throwsA(
+            isA<RpcException>().having(
+              (e) => e.message,
+              'message',
+              contains('Operation denied by policy'),
+            ),
+          ),
+        );
+      });
+
+      test('propagates TimeoutException rather than swallowing it to '
+          'null', () async {
+        mockClient = MockClient((request) => Completer<http.Response>().future);
+
+        await expectLater(
+          rpcWith(
+            mockClient,
+            batchTimeout: const Duration(milliseconds: 50),
+          ).nip17WrapBatch(rumor, recipients),
+          throwsA(isA<TimeoutException>()),
+        );
+      });
+
+      test('is bounded by batchRequestTimeout, not the shorter single-op '
+          'requestTimeout', () async {
+        mockClient = MockClient((request) async {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          return http.Response(
+            jsonEncode({
+              'result': [
+                {'gift_wrap': wrap('11')},
+              ],
+            }),
+            200,
+          );
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+          requestTimeout: const Duration(milliseconds: 50),
+          batchRequestTimeout: const Duration(seconds: 5),
+        );
+
+        final slots = await rpc.nip17WrapBatch(rumor, recipients);
+        expect(slots, hasLength(1));
+        expect(slots![0].isSuccess, isTrue);
+      });
+    });
   });
 }
