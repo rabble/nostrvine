@@ -343,6 +343,24 @@ void main() {
           equals('["REQ","sub1",{}]'),
         );
       });
+
+      test('sendJson reports unencodable payloads without sending', () async {
+        await manager.connect();
+        final errors = <String>[];
+        manager.errorStream.listen(errors.add);
+
+        final result = await manager.sendJson(Object());
+        await Future.delayed(Duration.zero);
+
+        expect(result, isFalse);
+        expect(mockFactory.lastChannel!.sentMessages, isEmpty);
+        expect(errors, hasLength(1));
+        expect(errors.single, startsWith('JSON encode error:'));
+        expect(
+          logMessages.any((m) => m.startsWith('JSON encode error:')),
+          isTrue,
+        );
+      });
     });
 
     group('on-demand reconnection', () {

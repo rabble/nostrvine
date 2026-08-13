@@ -69,13 +69,9 @@ class SafeCacheInfoRepository implements CacheInfoRepository {
     try {
       final result = await _repository.open();
 
-      if (caughtException != null) {
-        await deleteCacheFile();
-        FlutterError.onError = previousHandler;
-        return _repository.open();
+      if (caughtException == null) {
+        return result;
       }
-
-      return result;
     } on FormatException {
       await deleteCacheFile();
       FlutterError.onError = previousHandler;
@@ -91,6 +87,12 @@ class SafeCacheInfoRepository implements CacheInfoRepository {
     } finally {
       FlutterError.onError = previousHandler;
     }
+
+    // Corruption reported through FlutterError rather than thrown. The retry
+    // runs outside the try so a second failure reaches the caller instead of
+    // re-entering the handlers above and deleting-and-reopening again.
+    await deleteCacheFile();
+    return _repository.open();
   }
 
   /// Deletes the cache JSON file.

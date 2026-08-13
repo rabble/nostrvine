@@ -243,6 +243,47 @@ void main() {
         },
       );
 
+      test(
+        'propagates a retry failure instead of deleting and reopening again',
+        () async {
+          var openCallCount = 0;
+          when(() => mockRepository.open()).thenAnswer((_) async {
+            openCallCount++;
+            if (openCallCount == 1) {
+              FlutterError.reportError(
+                FlutterErrorDetails(
+                  exception: const FormatException('Unexpected end of input'),
+                  library: 'flutter cache manager',
+                  context: ErrorDescription('Reading cache info file'),
+                ),
+              );
+              return true;
+            }
+            throw const FormatException('still unreadable');
+          });
+
+          final cacheFile = File('$testSupportPath/test_retry_failure.json');
+          await cacheFile.writeAsString('{"truncated":');
+
+          final previousHandler = FlutterError.onError;
+          FlutterError.onError = (_) {};
+          addTearDown(() => FlutterError.onError = previousHandler);
+
+          final repo = SafeCacheInfoRepository(
+            databaseName: 'test_retry_failure',
+            repository: mockRepository,
+            directoryProvider: () async => testDirectory,
+          );
+
+          await expectLater(repo.open(), throwsA(isA<FormatException>()));
+
+          // The corrupted file is already gone, so the retry is the last
+          // attempt — it must not re-enter the delete-and-retry handlers.
+          expect(openCallCount, equals(2));
+          expect(cacheFile.existsSync(), isFalse);
+        },
+      );
+
       test('rethrows non-recoverable exceptions', () async {
         when(() => mockRepository.open()).thenThrow(
           Exception('Some other error'),
