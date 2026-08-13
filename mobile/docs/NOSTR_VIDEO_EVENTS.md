@@ -1,7 +1,7 @@
 # Nostr Video Events Schema
 
 Status: Current
-Validated against: current mobile protocol docs on 2026-03-29.
+Validated against: current mobile and Funnelcake implementations on 2026-08-13.
 
 This document describes the Nostr event schemas for video-related events as implemented in Divine.
 
@@ -338,6 +338,7 @@ The `.content` field is optional and could contain a free-form note.
 | `a` | `["a", "<kind>:<pubkey>:<d-tag>", "<relay-url>"]` | Addressable reference to kind 34235 or 34236 video event | **Required** |
 | `e` | `["e", "<event-id>", "<relay-url>"]` | Event ID reference (specific version viewed) | **Required** |
 | `viewed` | `["viewed", "<start>", "<end>"]` | Start/end timestamps in seconds (can repeat) | **Required** |
+| `loops` | `["loops", "<playthrough-fraction>"]` | Exact finite, non-negative playthrough count, including partial loops | Optional |
 | `source` | `["source", "<source-type>"]` | Traffic source: `home`, `discovery`, `profile`, `share`, `search` | Optional |
 | `client` | `["client", "<name>", "31990:<app-pubkey>:<d-identifier>", "<relay-url>"]` | NIP-89 client attribution for Divine | Optional |
 
@@ -363,7 +364,8 @@ The `.content` field is optional and could contain a free-form note.
   "tags": [
     ["a", "34236:<video event author pubkey>:<d-identifier of video event>", "<relay url>"],
     ["e", "<event-id>", "<relay-url>"],
-    ["viewed", "0", "6"],
+    ["viewed", "0", "5"],
+    ["loops", "0.75"],
     ["source", "discovery"],
     ["client", "Divine", "31990:d95aa8fc0eff8e488952495b8064991d27fb96ed8652f12cdedc5a4e8b5ae540:divine-mobile", "wss://relay.divine.video"]
   ]
@@ -377,5 +379,6 @@ The `.content` field is optional and could contain a free-form note.
 - Multiple `viewed` tags can track multiple segments watched in a single session
 - The `viewed` tag timestamps represent seconds within the video (e.g., `["viewed", "0", "6"]` = watched first 6 seconds)
 - Analytics services should consume these events in real-time before relays discard them
-- Minimum watch threshold: views under 1 second are discarded
-- Deduplication: same user+video combination is deduplicated within 1 hour
+- Every session with positive playback time counts, including sub-second views
+- One event represents one continuous viewing session; returning after
+  inactivity starts a new session

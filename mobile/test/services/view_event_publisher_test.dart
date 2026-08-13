@@ -98,7 +98,7 @@ void main() {
       });
 
       test(
-        'view = playback start: zero-duration view (N=0 loops) is valid',
+        'view = playback start: zero-duration segment is valid',
         () async {
           final result = await publisher.publishViewEvent(
             video: createTestVideoEvent(pubkey: creatorPubkey),
@@ -632,7 +632,7 @@ void main() {
 
           final tags = captured[0] as List<List<String>>;
           final viewedTags = tags.where((t) => t[0] == 'viewed').toList();
-          // All three are valid views per playback-start spec (N=0 is valid)
+          // All three are valid views per playback-start spec.
           expect(viewedTags, hasLength(3));
         },
       );

@@ -85,6 +85,7 @@ class _DivineVideoMetricsTrackerState
       _resetTracking();
     } else if (becameInactive) {
       _finalizeAndPublish();
+      _resetViewSession();
     }
 
     if (controllerChanged || videoChanged || becameInactive) {
@@ -166,7 +167,6 @@ class _DivineVideoMetricsTrackerState
     _viewStartTime = widget._clock();
     _hasTrackedView = true;
     _hasSentEndEvent = false;
-    _hasRecordedImpression = false;
 
     _analyticsService.trackDetailedVideoViewWithUser(
       widget.video,
@@ -265,6 +265,11 @@ class _DivineVideoMetricsTrackerState
   }
 
   void _resetTracking() {
+    _resetViewSession();
+    _hasRecordedImpression = false;
+  }
+
+  void _resetViewSession() {
     _viewStartTime = null;
     _lastPlayStartTime = null;
     _totalWatchDuration = Duration.zero;
@@ -272,7 +277,6 @@ class _DivineVideoMetricsTrackerState
     _loopCount = 0.0;
     _hasTrackedView = false;
     _hasSentEndEvent = false;
-    _hasRecordedImpression = false;
     _isPlaying = false;
   }
 

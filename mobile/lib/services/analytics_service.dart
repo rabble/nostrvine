@@ -264,7 +264,7 @@ class AnalyticsService implements BackgroundAwareService {
   ///
   /// For `view_end` events, publishes a Kind 22236 ephemeral Nostr event via
   /// [ViewEventPublisher]. View = playback start per spec — any start counts
-  /// even if N=0 loops (no ≥1s gate).
+  /// even if playback stops before completing a full loop (no ≥1s gate).
   Future<void> trackDetailedVideoViewWithUser(
     VideoEvent video, {
     required String? userId,

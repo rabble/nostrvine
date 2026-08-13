@@ -340,7 +340,7 @@ void main() {
     );
 
     test(
-      'publishes self-views and sub-second views (N=0 loops) per playback-start spec',
+      'publishes self-views and sub-second partial-loop views',
       () async {
         await dao.enqueue(
           makeEvent(id: 'self-view', eventVideoPubkey: userPubkey),
@@ -362,7 +362,7 @@ void main() {
             loopCount: captureAny(named: 'loopCount'),
           ),
         ).captured;
-        // Two publishes: self-view + short-view (N=0 loops is valid)
+        // Two publishes: self-view + short partial-loop view.
         expect(captured.length, equals(12));
         final video = captured[0] as VideoEvent;
         expect(video.id, 'video-self-view');

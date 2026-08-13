@@ -76,7 +76,7 @@ class ViewEventPublisher {
     const method = 'publishViewEvent';
     // View = playback start per 2026-08-13 view/loop spec: any playback
     // start counts, even if the session ends before completing a loop
-    // (N=0 loops is valid). Only reject inverted ranges.
+    // (a fractional loop is valid). Only reject inverted ranges.
     if (endSeconds < startSeconds) {
       return _drop(ViewEventDropReason.invalidWatchRange, video.id, method);
     }
@@ -177,7 +177,7 @@ class ViewEventPublisher {
   }) async {
     const method = 'publishViewEventWithSegments';
     // Filter out invalid segments. Per view=playback-start spec, any
-    // non-inverted segment counts (even <1s / N=0 loops is a valid view).
+    // non-inverted segment counts (even <1s without a full loop is valid).
     final validSegments = segments.where((s) => s.$2 >= s.$1).toList();
 
     if (validSegments.isEmpty) {
