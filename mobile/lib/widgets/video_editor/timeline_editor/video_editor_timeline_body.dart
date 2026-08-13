@@ -174,9 +174,10 @@ class VideoEditorTimelineBody extends StatelessWidget {
               Expanded(
                 // The strips are only clipped vertically, so a selected item's
                 // trim handle stays visible past the composition's last pixel.
-                // Every box in this subtree — the scroll viewport included —
-                // is exactly totalWidth wide and would still reject the touch,
-                // handing it to the horizontal scroll view instead.
+                // The strip itself is exactly totalWidth wide, and every box
+                // between here and it hit-tests against its own edge, so the
+                // touch was rejected all the way up and the horizontal scroll
+                // view took it instead.
                 child: HitExpandedBox(
                   expandLeft: overlayTrimExpand,
                   expandRight: overlayTrimExpand,
