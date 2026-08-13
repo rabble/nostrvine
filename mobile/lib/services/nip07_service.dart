@@ -210,10 +210,9 @@ class Nip07Service {
         name: 'Nip07Service',
         category: LogCategory.system,
       );
-      // Not a critical error, continue without relays
-      if (isConnected && _currentPublicKey == connectedPubkey) {
-        _userRelays = null;
-      }
+      // Not a critical error, continue without relays. Deliberately no
+      // cache reset: the cache was null on entry, so the only value this
+      // could erase is a concurrent read's result.
       return null;
     }
   }

@@ -16,6 +16,7 @@ class _FakeExtension extends NostrExtension {
     this.relays,
     this.relaysFail = false,
     this.relaysCompleter,
+    this.relaysQueue,
   });
 
   /// Relay map to return, or null to model an extension without `getRelays`.
@@ -28,6 +29,10 @@ class _FakeExtension extends NostrExtension {
 
   Completer<Map<String, dynamic>>? relaysCompleter;
 
+  /// Hands out one future per `getRelays` call, to model concurrent reads
+  /// that resolve differently.
+  List<Future<Map<String, dynamic>>>? relaysQueue;
+
   @override
   Future<String> getPublicKey() async => publicKey ?? _testPubkey;
 
@@ -36,6 +41,8 @@ class _FakeExtension extends NostrExtension {
     if (relaysFail) {
       return Future.error(const Nip07Exception('boom', code: 'UNKNOWN_ERROR'));
     }
+    final queue = relaysQueue;
+    if (queue != null && queue.isNotEmpty) return queue.removeAt(0);
     final completer = relaysCompleter;
     if (completer != null) return completer.future;
     final value = relays;
@@ -129,6 +136,31 @@ void main() {
           expect(service.userRelays, isNull);
         },
       );
+
+      test('keeps a concurrent read that succeeded when another '
+          'read fails', () async {
+        final failing = Completer<Map<String, dynamic>>();
+        final succeeding = Completer<Map<String, dynamic>>();
+        final service = Nip07Service.withExtension(
+          _FakeExtension(relaysQueue: [failing.future, succeeding.future]),
+        );
+        await service.connect();
+
+        final failed = service.loadUserRelays();
+        final succeeded = service.loadUserRelays();
+
+        succeeding.complete({
+          'wss://relay.example.com': {'read': true, 'write': true},
+        });
+        expect(await succeeded, isNotNull);
+
+        failing.completeError(
+          const Nip07Exception('boom', code: 'UNKNOWN_ERROR'),
+        );
+
+        expect(await failed, isNull);
+        expect(service.userRelays, hasLength(1));
+      });
 
       test('does not repopulate relays after disconnect', () async {
         final extension = _FakeExtension(
