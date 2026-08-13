@@ -70,6 +70,8 @@ void main() {
       await tester.pump();
 
       expect(find.text(en.libraryTrashAutoDeletes(2)), findsOneWidget);
+      expect(find.text('5s'), findsOneWidget);
+      expect(find.text('5.00'), findsNothing);
 
       await tester.tap(find.bySemanticsLabel(en.libraryTrashRestoreLabel));
       await tester.pump();
@@ -104,6 +106,45 @@ void main() {
         () => mockBloc.add(ClipsLibraryHardDeleteClip(trashedClip)),
       ).called(1);
     });
+
+    testWidgets(
+      'does not overflow a 360dp row at default or large text scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        Future<void> pumpAt(double textScale) async {
+          await tester.pumpWidget(
+            MediaQuery(
+              data: MediaQueryData(
+                size: const Size(360, 800),
+                textScaler: TextScaler.linear(textScale),
+              ),
+              child: buildWidget(
+                ClipsLibraryState(
+                  status: ClipsLibraryStatus.trashLoaded,
+                  filter: const ClipLibraryTrashFilter(),
+                  trashedClips: [trashedClip],
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+        }
+
+        await pumpAt(1);
+        expect(tester.takeException(), isNull);
+        expect(find.text(en.libraryTrashAutoDeletes(2)), findsOneWidget);
+
+        await pumpAt(1.5);
+        expect(tester.takeException(), isNull);
+
+        await pumpAt(3);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('shows the empty state when the bin is empty', (tester) async {
       await tester.pumpWidget(

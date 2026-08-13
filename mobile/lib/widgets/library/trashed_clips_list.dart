@@ -83,6 +83,7 @@ class _TrashedClipTile extends StatelessWidget {
             child: VideoClipThumbnailCard(
               clip: clip,
               showSelectionIndicator: false,
+              showDurationBadge: false,
             ),
           ),
         ),
