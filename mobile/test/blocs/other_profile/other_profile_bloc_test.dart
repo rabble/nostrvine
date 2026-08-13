@@ -707,8 +707,13 @@ void main() {
         },
       );
 
+      // #6903 moved severing the follow to the publish boundary:
+      // FollowRepository omits blocked accounts from the kind 3 it
+      // publishes. Unfollowing here as well would drop the follow locally,
+      // so unblocking could not restore it — and only two of the four block
+      // entry points would behave that way.
       blocTest<OtherProfileBloc, OtherProfileState>(
-        'calls toggleFollow when currently following the user',
+        'leaves the local follow state alone when blocking',
         setUp: () {
           when(
             () => mockFollowRepository.isFollowing(testPubkey),
@@ -716,39 +721,10 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
-        verify: (_) {
-          verify(() => mockFollowRepository.toggleFollow(testPubkey)).called(1);
-        },
-      );
-
-      blocTest<OtherProfileBloc, OtherProfileState>(
-        'does not call toggleFollow when not following the user',
-        build: createBloc,
-        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
-        verify: (_) {
+        verify: (bloc) {
           verifyNever(() => mockFollowRepository.toggleFollow(any()));
-        },
-      );
-
-      blocTest<OtherProfileBloc, OtherProfileState>(
-        'still blocks user when toggleFollow throws',
-        setUp: () {
-          when(
-            () => mockFollowRepository.isFollowing(testPubkey),
-          ).thenReturn(true);
-          when(
-            () => mockFollowRepository.toggleFollow(testPubkey),
-          ).thenThrow(Exception('network error'));
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
-        verify: (_) {
-          verify(
-            () => mockBlocklistRepository.blockUser(
-              testPubkey,
-              ourPubkey: testCurrentUserPubkey,
-            ),
-          ).called(1);
+          verifyNever(() => mockFollowRepository.unfollow(any()));
+          expect(bloc.isFollowing, isTrue);
         },
       );
     });
