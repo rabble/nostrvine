@@ -51,8 +51,8 @@ run before any test executes.
 
 | Half | Version | Declared in |
 |---|---|---|
-| `patrol` package | 4.8.0 | `mobile/pubspec.yaml` (`patrol: ^4.8.0`) |
-| `patrol_cli` binary | 4.6.1 | `local_stack/profile.sh` (`PATROL_CLI_VERSION`) |
+| `patrol` package | 4.9.0 | `mobile/pubspec.yaml` (`patrol: ^4.9.0`) |
+| `patrol_cli` binary | 4.7.0 | `local_stack/profile.sh` (`PATROL_CLI_VERSION`) |
 
 `profile.sh` checks the installed CLI and runs
 `dart pub global activate patrol_cli <version>` when it differs, so
