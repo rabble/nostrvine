@@ -19,7 +19,8 @@
 # Detector: a package whose pubspec `dependencies:` block contains a
 # `flutter:` or `flutter_web_plugins:` key whose next line is `sdk: flutter`.
 # `dev_dependencies:` is deliberately NOT scanned — `flutter_test` is fine and
-# does not widen what lib/ may import; eleven packages already ship that shape.
+# does not widen what lib/ may import; 15 of the 37 packages with no runtime
+# Flutter dependency already ship that shape.
 # Being a line-shape proxy it assumes the two-line `flutter:\n    sdk: flutter`
 # form that every pubspec here uses and `dart format`/pub preserve.
 #
