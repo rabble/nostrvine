@@ -131,7 +131,7 @@ class _NoopAnalyticsService extends AnalyticsService {
     required String eventType,
     Duration? watchDuration,
     Duration? totalDuration,
-    int? loopCount,
+    double? loopCount,
     bool? completedVideo,
     ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
     String? sourceDetail,

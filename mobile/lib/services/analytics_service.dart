@@ -241,7 +241,7 @@ class AnalyticsService implements BackgroundAwareService {
     required String eventType,
     Duration? watchDuration,
     Duration? totalDuration,
-    int? loopCount,
+    double? loopCount,
     bool? completedVideo,
     ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
     String? sourceDetail,
@@ -262,8 +262,9 @@ class AnalyticsService implements BackgroundAwareService {
 
   /// Track detailed video interaction events with user identification.
   ///
-  /// For `view_end` events with meaningful watch duration, publishes a
-  /// Kind 22236 ephemeral Nostr event via [ViewEventPublisher].
+  /// For `view_end` events, publishes a Kind 22236 ephemeral Nostr event via
+  /// [ViewEventPublisher]. View = playback start per spec — any start counts
+  /// even if N=0 loops (no ≥1s gate).
   Future<void> trackDetailedVideoViewWithUser(
     VideoEvent video, {
     required String? userId,
@@ -271,7 +272,7 @@ class AnalyticsService implements BackgroundAwareService {
     required String eventType,
     Duration? watchDuration,
     Duration? totalDuration,
-    int? loopCount,
+    double? loopCount,
     bool? completedVideo,
     ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
     String? sourceDetail,
@@ -301,7 +302,6 @@ class AnalyticsService implements BackgroundAwareService {
 
     if (eventType == 'view_end' &&
         watchDuration != null &&
-        watchDuration.inSeconds >= 1 &&
         !_disableNostrPublishing) {
       final enqueued = await _enqueuePendingViewEvent(
         video: video,
@@ -331,7 +331,7 @@ class AnalyticsService implements BackgroundAwareService {
     required Duration? totalDuration,
     required ViewTrafficSource trafficSource,
     String? sourceDetail,
-    int? loopCount,
+    double? loopCount,
   }) async {
     final dao = _pendingViewEventsDao;
     if (dao == null || userPubkey == null) return false;
@@ -348,7 +348,7 @@ class AnalyticsService implements BackgroundAwareService {
           userPubkey: userPubkey,
           watchDurationMs: watchDuration.inMilliseconds,
           totalDurationMs: totalDuration?.inMilliseconds,
-          loopCount: loopCount,
+          loopCount: loopCount?.round(),
           trafficSource: trafficSource.tagValue,
           sourceDetail: sourceDetail,
           status: PendingViewEventStatus.pending,
@@ -382,7 +382,7 @@ class AnalyticsService implements BackgroundAwareService {
     required Duration watchDuration,
     required ViewTrafficSource trafficSource,
     String? sourceDetail,
-    int? loopCount,
+    double? loopCount,
   }) {
     final publisher = _viewEventPublisher;
     if (publisher == null) {

@@ -95,10 +95,8 @@ class ViewEventRetryService {
       );
 
       for (final row in retryable) {
-        if (row.watchDurationMs < 1000) {
-          await _dao.deleteById(row.id);
-          continue;
-        }
+        // View = playback start per spec: any watch is valid, no ≥1s gate.
+        // Only drop if duration is negative or missing d tag.
 
         final addressableDTag = row.videoAddressableDTag;
         if (addressableDTag == null || addressableDTag.isEmpty) {
@@ -122,7 +120,7 @@ class ViewEventRetryService {
             endSeconds: row.watchDurationMs ~/ 1000,
             source: viewTrafficSourceFromTag(row.trafficSource),
             sourceDetail: row.sourceDetail,
-            loopCount: row.loopCount,
+            loopCount: row.loopCount?.toDouble(),
           );
           if (success) {
             await _dao.deleteById(row.id);

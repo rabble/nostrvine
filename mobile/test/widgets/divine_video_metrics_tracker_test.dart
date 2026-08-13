@@ -33,7 +33,7 @@ class _RecordingAnalyticsService extends AnalyticsService {
     required String eventType,
     Duration? watchDuration,
     Duration? totalDuration,
-    int? loopCount,
+    double? loopCount,
     bool? completedVideo,
     ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
     String? sourceDetail,
@@ -94,7 +94,7 @@ class _TrackedAnalyticsEvent {
   final String eventType;
   final Duration? watchDuration;
   final Duration? totalDuration;
-  final int? loopCount;
+  final double? loopCount;
   final bool? completedVideo;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -190,76 +190,82 @@ void main() {
       await controller.close();
     });
 
-    testWidgets('active to inactive under one second records seen only', (
-      tester,
-    ) async {
-      final isActive = ValueNotifier(true);
-      final video = ValueNotifier(_video);
-      final controller = _stubController(isPlaying: true);
+    testWidgets(
+      'active to inactive under one second records view and seen (N=0 valid per spec)',
+      (
+        tester,
+      ) async {
+        final isActive = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(isPlaying: true);
 
-      await tester.pumpWidget(
-        _buildTrackerHarness(
-          authService: authService,
-          analyticsService: analyticsService,
-          seenVideosService: seenVideosService,
-          controller: controller.controller,
-          video: video,
-          isActive: isActive,
-          clock: () => now,
-        ),
-      );
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            clock: () => now,
+          ),
+        );
 
-      now = now.add(const Duration(milliseconds: 900));
-      isActive.value = false;
-      await tester.pump();
+        now = now.add(const Duration(milliseconds: 900));
+        isActive.value = false;
+        await tester.pump();
 
-      expect(_viewEndEvents(analyticsService), isEmpty);
-      expect(seenVideosService.records, hasLength(1));
-      expect(seenVideosService.records.single.videoId, equals('video_id'));
-      expect(
-        seenVideosService.records.single.watchDuration,
-        const Duration(milliseconds: 900),
-      );
+        expect(_viewEndEvents(analyticsService), hasLength(1));
+        expect(seenVideosService.records, hasLength(1));
+        expect(seenVideosService.records.single.videoId, equals('video_id'));
+        expect(
+          seenVideosService.records.single.watchDuration,
+          const Duration(milliseconds: 900),
+        );
 
-      isActive.dispose();
-      video.dispose();
-      await controller.close();
-    });
+        isActive.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
 
-    testWidgets('fling-speed active session records seen only', (tester) async {
-      final isActive = ValueNotifier(true);
-      final video = ValueNotifier(_video);
-      final controller = _stubController(isPlaying: true);
+    testWidgets(
+      'fling-speed active session records view and seen (N=0 valid per spec)',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(isPlaying: true);
 
-      await tester.pumpWidget(
-        _buildTrackerHarness(
-          authService: authService,
-          analyticsService: analyticsService,
-          seenVideosService: seenVideosService,
-          controller: controller.controller,
-          video: video,
-          isActive: isActive,
-          clock: () => now,
-        ),
-      );
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            clock: () => now,
+          ),
+        );
 
-      now = now.add(const Duration(milliseconds: 400));
-      isActive.value = false;
-      await tester.pump();
+        now = now.add(const Duration(milliseconds: 400));
+        isActive.value = false;
+        await tester.pump();
 
-      expect(_viewEndEvents(analyticsService), isEmpty);
-      expect(seenVideosService.records, hasLength(1));
-      expect(seenVideosService.records.single.videoId, equals('video_id'));
-      expect(seenVideosService.records.single.loopCount, equals(0));
-      expect(
-        seenVideosService.records.single.watchDuration,
-        const Duration(milliseconds: 400),
-      );
+        expect(_viewEndEvents(analyticsService), hasLength(1));
+        expect(seenVideosService.records, hasLength(1));
+        expect(seenVideosService.records.single.videoId, equals('video_id'));
+        expect(seenVideosService.records.single.loopCount, equals(0));
+        expect(
+          seenVideosService.records.single.watchDuration,
+          const Duration(milliseconds: 400),
+        );
 
-      isActive.dispose();
-      video.dispose();
-      await controller.close();
-    });
+        isActive.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
 
     testWidgets('zero-duration active session records nothing', (tester) async {
       final isActive = ValueNotifier(true);
@@ -307,7 +313,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(const SizedBox.shrink());
 
-      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(_viewEndEvents(analyticsService), hasLength(1));
       expect(seenVideosService.records, hasLength(1));
       expect(
         seenVideosService.records.single.watchDuration,
@@ -368,7 +374,7 @@ void main() {
       isActive.value = false;
       await tester.pump();
 
-      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(_viewEndEvents(analyticsService), hasLength(1));
       expect(seenVideosService.records, hasLength(1));
       expect(seenVideosService.records.single.videoId, equals('video_id'));
       expect(seenVideosService.records.single.watchDuration, Duration.zero);
@@ -429,31 +435,27 @@ void main() {
         ),
       );
 
-      // Glance too short for view_end, then the feed goes inactive
-      // (app backgrounded, route pushed, or swiped past within the pool).
+      // Glance now counts per playback-start spec (N=0 loops is valid).
       now = now.add(const Duration(milliseconds: 300));
       isActive.value = false;
       await tester.pump();
 
-      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(_viewEndEvents(analyticsService), hasLength(1));
       expect(seenVideosService.records, hasLength(1));
       expect(
         seenVideosService.records.single.watchDuration,
         const Duration(milliseconds: 300),
       );
 
-      // The same tracker becomes active again and is actually watched.
-      isActive.value = true;
-      await tester.pump();
-      now = now.add(const Duration(seconds: 5));
-      isActive.value = false;
-      await tester.pump();
-
+      // Per playback-start spec, first 300ms glance already counted as view
+      // (N=0). Reactivation after a finalized view does not extend that view —
+      // it would be a new session on next publish, but same-video reactivation
+      // keeps the already-sent impression deduplicated.
       final viewEndEvents = _viewEndEvents(analyticsService);
       expect(viewEndEvents, hasLength(1));
       expect(
         viewEndEvents.single.watchDuration,
-        const Duration(milliseconds: 5300),
+        const Duration(milliseconds: 300),
       );
       expect(seenVideosService.records, hasLength(1));
       expect(seenVideosService.records.single.videoId, equals('video_id'));
@@ -482,14 +484,19 @@ void main() {
         ),
       );
 
-      // Long enough to record a seen impression, too short for view_end.
+      // Now counts per playback-start spec (N=0 loops is valid).
       now = now.add(const Duration(milliseconds: 700));
       isActive.value = false;
       await tester.pump();
 
-      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(_viewEndEvents(analyticsService), hasLength(1));
       expect(seenVideosService.records, hasLength(1));
 
+      // First 700ms view already finalized per playback-start spec; same-video
+      // reactivation after a sent view keeps impression deduped and does not
+      // synthesize a second view_end until the session is torn down and
+      // recreated (e.g. video change). Drain to prove no second emission.
+      analyticsService.events.clear();
       isActive.value = true;
       await tester.pump();
       now = now.add(const Duration(seconds: 5));
@@ -497,12 +504,7 @@ void main() {
       await tester.pump();
 
       final viewEndEvents = _viewEndEvents(analyticsService);
-      expect(viewEndEvents, hasLength(1));
-      expect(
-        viewEndEvents.single.watchDuration,
-        const Duration(milliseconds: 5700),
-      );
-      // The impression is not recorded twice for one view session.
+      expect(viewEndEvents, isEmpty);
       expect(seenVideosService.records, hasLength(1));
 
       isActive.dispose();
