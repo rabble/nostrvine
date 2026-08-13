@@ -1,3 +1,4 @@
+import re
 import unittest
 from pathlib import Path
 
@@ -56,6 +57,20 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("git merge-base --is-ancestor", self.contents)
         self.assertIn("git diff --name-only", self.contents)
         self.assertIn("*prepare_patch_source", self.contents)
+
+    def test_shorebird_patch_workflows_block_native_asset_and_dependency_changes(self) -> None:
+        self.assertIn("BLOCKED_PATCH_PATHS=$(git diff --name-only", self.contents)
+        self.assertIn("'android/**'", self.contents)
+        self.assertIn("'ios/**'", self.contents)
+        self.assertIn("'assets/**'", self.contents)
+        self.assertIn("'pubspec.yaml'", self.contents)
+        self.assertIn("'pubspec.lock'", self.contents)
+        self.assertIn("'packages/**/android/**'", self.contents)
+        self.assertIn("'packages/**/darwin/**'", self.contents)
+        self.assertIn("Cut a normal store release instead of a Shorebird patch.", self.contents)
+        self.assertIsNone(
+            re.search(r"shorebird patch .*(--allow-native-diffs|--allow-asset-diffs)", self.contents)
+        )
 
     def test_shorebird_cache_is_enabled_for_release_and_patch_workflows(self) -> None:
         self.assertEqual(self.contents.count("- $HOME/.shorebird"), 4)

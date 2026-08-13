@@ -246,6 +246,28 @@ definitions:
           echo "current head:    $(git rev-parse HEAD)"
           exit 1
         fi
+        BLOCKED_PATCH_PATHS=$(git diff --name-only "${{ inputs.RELEASE_COMMIT }}..HEAD" -- \
+          'android/**' \
+          'ios/**' \
+          'macos/**' \
+          'web/**' \
+          'assets/**' \
+          'pubspec.yaml' \
+          'pubspec.lock' \
+          'shorebird.yaml' \
+          'packages/**/android/**' \
+          'packages/**/darwin/**' \
+          'packages/**/ios/**' \
+          'packages/**/macos/**' \
+          'packages/**/pubspec.yaml')
+        if [ -n "$BLOCKED_PATCH_PATHS" ]; then
+          echo "Refusing to patch: this diff contains native, asset, dependency, or Shorebird config changes."
+          echo
+          echo "$BLOCKED_PATCH_PATHS"
+          echo
+          echo "Cut a normal store release instead of a Shorebird patch."
+          exit 1
+        fi
         echo "Patch source diff from release commit to current HEAD:"
         git log --oneline --no-merges "${{ inputs.RELEASE_COMMIT }}..HEAD"
         if git diff --quiet "${{ inputs.RELEASE_COMMIT }}..HEAD" -- '*.dart'; then

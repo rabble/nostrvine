@@ -95,6 +95,8 @@ be retrofitted later; cut a new store release instead.
    checkout, then prints every commit and Dart file included after that commit.
    Read that list before treating the patch as safe: pure Dart merged since the
    release is exactly what Shorebird can ship.
+   If the diff includes native, asset, dependency, or Shorebird config changes,
+   the workflow refuses to patch and tells you to cut a normal store release.
 1. Run `ios-patch` or `android-patch` in Codemagic with:
    - `CONFIRM_PATCH` = `YES` (defaults to `NO`; the build aborts otherwise)
    - `RELEASE_VERSION` = the exact release string, e.g. `1.0.9+247`
