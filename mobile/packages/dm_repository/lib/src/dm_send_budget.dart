@@ -23,16 +23,29 @@
 ///
 /// ## The shape being bounded
 ///
-/// A 1:1 kind-14 send costs **four** remote-signer round trips, measured
-/// against the real send path (#6586):
+/// A 1:1 send has two remote-signer shapes, and these bounds must cover the
+/// slower one:
 ///
-/// * recipient wrap: `nip44Encrypt` (seal content) + `signEvent` (seal)
-/// * self wrap: the same two, built lazily after the recipient publish confirms
+/// * **Four round trips** — `nip44Encrypt` (seal content) + `signEvent` (seal),
+///   once for the recipient wrap and again for the self wrap, which is built
+///   lazily after the recipient publish confirms. Measured against the real
+///   send path (#6586).
+/// * **One round trip** — keycast's `nip17_wrap_batch` builds both seals and
+///   both wraps server-side from one shared rumor (#7090). The self wrap comes
+///   back with the recipient wrap, so [selfWrapBuild] is not spent at all.
 ///
 /// The kind-1059 gift wrap itself is signed with a freshly generated ephemeral
 /// key (NIP-59), so it never reaches the signer. Local-key signers build both
 /// wraps in one isolate hop and spend no round trips at all — these bounds sit
 /// far above that path and never bind it.
+///
+/// **Re-derived against the batch chain, and deliberately not reduced.** The
+/// four-trip shape is still reachable — Amber, NIP-46, a keycast without the
+/// verb, a kind-7/5 rumor the verb refuses, or a per-recipient slot failure all
+/// take it — so it, not the batch, sizes every bound here. Tightening these to
+/// the batch chain would fail exactly the sends that most need the headroom.
+/// What the batch changes is where a Keycast send actually lands inside the
+/// bound, not what the bound has to be.
 abstract final class DmSendBudget {
   /// The two seal round trips a wrap build spends, at the transport's own
   /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 30s).
@@ -93,9 +106,13 @@ abstract final class DmSendBudget {
   /// leave nothing for that work and fail such a build.
   ///
   /// Tightening it below two transport bounds is the specific mistake #6046
-  /// made and #6075 reverted: production Keycast runs 20-30s per single op
-  /// under DB-pool contention (keycast#291), and a tighter bound turns
-  /// slow-but-succeeding sends into hard failures.
+  /// made and #6075 reverted. That was sized against Keycast running 20-30s per
+  /// single op under DB-pool contention (keycast#291) — a figure that predates
+  /// keycast's own 8s `HTTP_RPC_HANDLER_TIMEOUT`, which now answers 504 rather
+  /// than letting a request run that long. Do not read that as licence to
+  /// shrink this: the server bound is not what this bounds. Amber's NIP-55
+  /// approval is human-gated and a NIP-46 bunker has no bound at all, and both
+  /// take this same path.
   ///
   /// It bounds the *chain*, not the transport, so it also covers signers whose
   /// own operation can wait much longer than this method should. On the Amber

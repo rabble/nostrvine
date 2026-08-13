@@ -2064,6 +2064,19 @@ void main() {
       );
     });
 
+    test('the recipient wrap build also covers one server-side wrap '
+        'batch', () {
+      // #7090: a Keycast send now builds both wraps in one `nip17_wrap_batch`
+      // round trip, bounded by the batch transport bound rather than two
+      // single-op ones. That path must fit the same build budget — with room
+      // to spare, since the batch answer still has to be parsed and both
+      // events reconstructed after it lands.
+      expect(
+        DmSendBudget.recipientWrapBuild,
+        greaterThan(KeycastRpc.defaultBatchRequestTimeout),
+      );
+    });
+
     test('the sweep guard outlives the whole backstop', () {
       // `Future.timeout` does not cancel, so an abandoned send keeps running
       // past the cap. A guard at or below it re-drives a rumor that is still
