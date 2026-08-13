@@ -6461,9 +6461,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Sluta välja klipp';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Sortera klipp';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Välj klipp';
 
   @override

@@ -2548,7 +2548,6 @@
     "libraryDeleteSelectedClipsTooltip": "Ta bort valda klipp",
     "libraryCloseSemanticLabel": "Stäng biblioteket",
     "libraryStopSelectingClipsSemanticLabel": "Sluta välja klipp",
-    "librarySortClipsSemanticLabel": "Sortera klipp",
     "librarySelectClipsSemanticLabel": "Välj klipp",
     "libraryGridSizeLabel": "Rutnätets storlek",
     "libraryDisplayOptionsLabel": "Sortering och rutnätsstorlek",

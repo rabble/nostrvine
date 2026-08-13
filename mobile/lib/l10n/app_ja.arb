@@ -2540,7 +2540,6 @@
     "libraryDeleteSelectedClipsTooltip": "選択したクリップを削除",
     "libraryCloseSemanticLabel": "ライブラリを閉じる",
     "libraryStopSelectingClipsSemanticLabel": "クリップの選択を終了",
-    "librarySortClipsSemanticLabel": "クリップを並べ替える",
     "librarySelectClipsSemanticLabel": "クリップを選択",
     "libraryGridSizeLabel": "グリッドのサイズ",
     "libraryDisplayOptionsLabel": "並び替えとグリッドサイズ",

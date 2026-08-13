@@ -2548,7 +2548,6 @@
     "libraryDeleteSelectedClipsTooltip": "Geselecteerde clips verwijderen",
     "libraryCloseSemanticLabel": "Bibliotheek sluiten",
     "libraryStopSelectingClipsSemanticLabel": "Stoppen met clips selecteren",
-    "librarySortClipsSemanticLabel": "Clips sorteren",
     "librarySelectClipsSemanticLabel": "Clips selecteren",
     "libraryGridSizeLabel": "Rastergrootte",
     "libraryDisplayOptionsLabel": "Sortering en rastergrootte",

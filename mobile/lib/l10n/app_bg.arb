@@ -2702,7 +2702,6 @@
     "libraryDeleteSelectedClipsTooltip": "Изтрийте избраните клипове",
     "libraryCloseSemanticLabel": "Затвори библиотеката",
     "libraryStopSelectingClipsSemanticLabel": "Спри избора на клипове",
-    "librarySortClipsSemanticLabel": "Сортирай клиповете",
     "librarySelectClipsSemanticLabel": "Избери клипове",
     "libraryGridSizeLabel": "Размер на мрежата",
     "libraryDisplayOptionsLabel": "Сортиране и размер на мрежата",

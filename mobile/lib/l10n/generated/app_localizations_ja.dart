@@ -6191,9 +6191,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'クリップの選択を終了';
 
   @override
-  String get librarySortClipsSemanticLabel => 'クリップを並べ替える';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'クリップを選択';
 
   @override

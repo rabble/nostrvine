@@ -6525,9 +6525,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Termina selezione clip';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Ordina clip';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Seleziona clip';
 
   @override

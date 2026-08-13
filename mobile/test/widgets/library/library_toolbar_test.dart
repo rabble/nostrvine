@@ -10,8 +10,6 @@ import 'package:openvine/widgets/library/library_toolbar.dart';
 
 void main() {
   final en = AppLocalizationsEn();
-  final displayOptionsLabel =
-      '${en.librarySortClipsSemanticLabel}. ${en.libraryGridSizeLabel}';
 
   /// Wide enough for every action, narrow enough to stay a phone.
   const wideWidth = 520.0;
@@ -166,7 +164,10 @@ void main() {
 
         expect(find.text(en.librarySelect), findsOneWidget);
         expect(iconButton(DivineIconName.funnelSimple), findsOneWidget);
-        expect(find.bySemanticsLabel(displayOptionsLabel), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(en.libraryDisplayOptionsLabel),
+          findsOneWidget,
+        );
         expect(
           find.bySemanticsLabel(en.librarySelectClipsSemanticLabel),
           findsOneWidget,

@@ -2548,7 +2548,6 @@
     "libraryDeleteSelectedClipsTooltip": "Usuń wybrane klipy",
     "libraryCloseSemanticLabel": "Zamknij bibliotekę",
     "libraryStopSelectingClipsSemanticLabel": "Zakończ wybieranie klipów",
-    "librarySortClipsSemanticLabel": "Sortuj klipy",
     "librarySelectClipsSemanticLabel": "Wybierz klipy",
     "libraryGridSizeLabel": "Rozmiar siatki",
     "libraryDisplayOptionsLabel": "Sortowanie i rozmiar siatki",

@@ -6519,9 +6519,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Dejar de seleccionar clips';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Ordenar clips';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Seleccionar clips';
 
   @override

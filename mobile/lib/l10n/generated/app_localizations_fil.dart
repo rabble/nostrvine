@@ -6544,9 +6544,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ihinto ang pagpili ng mga clip';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Ayusin ang mga clip';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Pumili ng mga clip';
 
   @override

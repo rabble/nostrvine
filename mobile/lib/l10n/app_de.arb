@@ -2555,7 +2555,6 @@
     "libraryDeleteSelectedClipsTooltip": "Ausgewählte Clips löschen",
     "libraryCloseSemanticLabel": "Bibliothek schließen",
     "libraryStopSelectingClipsSemanticLabel": "Clip-Auswahl beenden",
-    "librarySortClipsSemanticLabel": "Clips sortieren",
     "librarySelectClipsSemanticLabel": "Clips auswählen",
     "libraryGridSizeLabel": "Rastergröße",
     "libraryDisplayOptionsLabel": "Sortierung & Rastergröße",

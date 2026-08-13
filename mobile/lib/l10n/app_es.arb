@@ -2556,7 +2556,6 @@
     "libraryDeleteSelectedClipsTooltip": "Eliminar clips seleccionados",
     "libraryCloseSemanticLabel": "Cerrar biblioteca",
     "libraryStopSelectingClipsSemanticLabel": "Dejar de seleccionar clips",
-    "librarySortClipsSemanticLabel": "Ordenar clips",
     "librarySelectClipsSemanticLabel": "Seleccionar clips",
     "libraryGridSizeLabel": "Tamaño de la cuadrícula",
     "libraryDisplayOptionsLabel": "Orden y tamaño de cuadrícula",

@@ -2547,7 +2547,6 @@
     "libraryDeleteSelectedClipsTooltip": "Seçili klipleri sil",
     "libraryCloseSemanticLabel": "Kitaplığı kapat",
     "libraryStopSelectingClipsSemanticLabel": "Klip seçimini bitir",
-    "librarySortClipsSemanticLabel": "Klipleri sırala",
     "librarySelectClipsSemanticLabel": "Klip seç",
     "libraryGridSizeLabel": "Izgara boyutu",
     "libraryDisplayOptionsLabel": "Sıralama ve ızgara boyutu",

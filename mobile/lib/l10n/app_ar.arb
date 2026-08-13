@@ -2540,7 +2540,6 @@
     "libraryDeleteSelectedClipsTooltip": "حذف المقاطع المحددة",
     "libraryCloseSemanticLabel": "إغلاق المكتبة",
     "libraryStopSelectingClipsSemanticLabel": "إيقاف تحديد المقاطع",
-    "librarySortClipsSemanticLabel": "فرز المقاطع",
     "librarySelectClipsSemanticLabel": "تحديد المقاطع",
     "libraryGridSizeLabel": "حجم الشبكة",
     "libraryDisplayOptionsLabel": "الفرز وحجم الشبكة",

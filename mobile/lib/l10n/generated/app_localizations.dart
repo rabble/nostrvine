@@ -11327,12 +11327,6 @@ abstract class AppLocalizations {
   /// **'Stop selecting clips'**
   String get libraryStopSelectingClipsSemanticLabel;
 
-  /// Accessibility label for the library toolbar button that opens clip sorting options.
-  ///
-  /// In en, this message translates to:
-  /// **'Sort clips'**
-  String get librarySortClipsSemanticLabel;
-
   /// Accessibility label for the library toolbar button that enters clip-selection mode.
   ///
   /// In en, this message translates to:

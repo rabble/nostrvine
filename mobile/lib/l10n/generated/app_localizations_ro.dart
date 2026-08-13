@@ -6623,9 +6623,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Oprește selectarea clipurilor';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Sortează clipurile';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Selectează clipuri';
 
   @override

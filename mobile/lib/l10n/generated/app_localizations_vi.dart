@@ -6475,9 +6475,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Dừng chọn clip';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Sắp xếp clip';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Chọn clip';
 
   @override

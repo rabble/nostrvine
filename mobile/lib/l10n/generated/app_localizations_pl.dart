@@ -6619,9 +6619,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zakończ wybieranie klipów';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Sortuj klipy';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Wybierz klipy';
 
   @override

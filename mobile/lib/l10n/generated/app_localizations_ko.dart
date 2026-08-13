@@ -6213,9 +6213,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => '클립 선택 종료';
 
   @override
-  String get librarySortClipsSemanticLabel => '클립 정렬';
-
-  @override
   String get librarySelectClipsSemanticLabel => '클립 선택';
 
   @override

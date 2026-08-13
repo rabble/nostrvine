@@ -2547,7 +2547,6 @@
     "libraryDeleteSelectedClipsTooltip": "Hapus klip terpilih",
     "libraryCloseSemanticLabel": "Tutup pustaka",
     "libraryStopSelectingClipsSemanticLabel": "Berhenti memilih klip",
-    "librarySortClipsSemanticLabel": "Urutkan klip",
     "librarySelectClipsSemanticLabel": "Pilih klip",
     "libraryGridSizeLabel": "Ukuran kisi",
     "libraryDisplayOptionsLabel": "Urutan & ukuran kisi",

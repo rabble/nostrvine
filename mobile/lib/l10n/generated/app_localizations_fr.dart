@@ -6547,9 +6547,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Arrêter de sélectionner des clips';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Trier les clips';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Sélectionner des clips';
 
   @override

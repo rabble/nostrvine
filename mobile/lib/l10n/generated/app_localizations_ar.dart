@@ -6421,9 +6421,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'إيقاف تحديد المقاطع';
 
   @override
-  String get librarySortClipsSemanticLabel => 'فرز المقاطع';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'تحديد المقاطع';
 
   @override

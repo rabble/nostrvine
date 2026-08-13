@@ -6337,9 +6337,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'ቅንጥቦችን መምረጥ አቁም';
 
   @override
-  String get librarySortClipsSemanticLabel => 'ቅንጥቦችን ደርድር';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'ቅንጥቦችን ምረጥ';
 
   @override

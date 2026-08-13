@@ -6523,9 +6523,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Спри избора на клипове';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Сортирай клиповете';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Избери клипове';
 
   @override

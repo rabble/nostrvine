@@ -6432,9 +6432,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Klip seçimini bitir';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Klipleri sırala';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Klip seç';
 
   @override

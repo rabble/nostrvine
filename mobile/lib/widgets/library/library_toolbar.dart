@@ -144,12 +144,11 @@ class LibraryToolbar extends StatelessWidget {
         ),
       _ClipAction(
         icon: .funnelSimple,
-        menuLabel: l10n.libraryDisplayOptionsLabel,
         // #7129 put the grid-size control in this same menu, so the label
-        // names both jobs.
-        semanticLabel:
-            '${l10n.librarySortClipsSemanticLabel}. '
-            '${l10n.libraryGridSizeLabel}',
+        // names both jobs — and names them the same way in the row as in the
+        // menu, rather than assembling a sentence out of two keys.
+        menuLabel: l10n.libraryDisplayOptionsLabel,
+        semanticLabel: l10n.libraryDisplayOptionsLabel,
         onPressed: onOpenSortMenu,
       ),
       if (!isLibrarySelectionMode)

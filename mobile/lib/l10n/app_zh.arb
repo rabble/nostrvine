@@ -3734,7 +3734,6 @@
   "libraryDeleteSelectedClipsTooltip": "删除选中片段",
   "libraryCloseSemanticLabel": "关闭素材库",
   "libraryStopSelectingClipsSemanticLabel": "停止选择片段",
-  "librarySortClipsSemanticLabel": "对片段排序",
   "librarySelectClipsSemanticLabel": "选择片段",
   "libraryGridSizeLabel": "网格大小",
   "libraryDisplayOptionsLabel": "排序和网格大小",

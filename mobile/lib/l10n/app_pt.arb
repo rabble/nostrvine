@@ -2548,7 +2548,6 @@
     "libraryDeleteSelectedClipsTooltip": "Excluir clipes selecionados",
     "libraryCloseSemanticLabel": "Fechar biblioteca",
     "libraryStopSelectingClipsSemanticLabel": "Parar de selecionar clipes",
-    "librarySortClipsSemanticLabel": "Ordenar clipes",
     "librarySelectClipsSemanticLabel": "Selecionar clipes",
     "libraryGridSizeLabel": "Tamanho da grade",
     "libraryDisplayOptionsLabel": "Ordenação e tamanho da grade",

@@ -6473,9 +6473,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'کلپس منتخب کرنا بند کریں';
 
   @override
-  String get librarySortClipsSemanticLabel => 'کلپس ترتیب دیں';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'کلپس منتخب کریں';
 
   @override

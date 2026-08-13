@@ -6496,9 +6496,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Stoppen met clips selecteren';
 
   @override
-  String get librarySortClipsSemanticLabel => 'Clips sorteren';
-
-  @override
   String get librarySelectClipsSemanticLabel => 'Clips selecteren';
 
   @override
