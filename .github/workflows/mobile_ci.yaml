@@ -91,6 +91,12 @@ jobs:
         run: bash scripts/check_ios_shipping_versions.sh
       - name: 🌐 Verify backend-host defaults stay on *.divine.video
         run: bash scripts/check_backend_host_defaults.sh
+      - name: 🔑 Verify every Codemagic variable group is documented
+        # Static check over codemagic.yaml — no simulator, no build, no
+        # credentials — so it runs on fork PRs too. Codemagic validates the
+        # whole config before provisioning, so an undeclared group fails every
+        # workflow in the file and no in-script guard can catch it.
+        run: bash scripts/check_codemagic_groups.sh
       - name: 🪵 Verify no raw logging in production code
         run: bash scripts/check_raw_logging.sh
       - name: 🌐 Verify no untagged test mutates HttpOverrides.global
