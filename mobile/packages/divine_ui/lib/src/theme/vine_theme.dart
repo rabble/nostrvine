@@ -1025,7 +1025,10 @@ class VineTheme {
     disabled: onSurfaceDisabled,
     skeleton: skeletonBase,
     errorContainer: errorContainer,
-    onErrorContainer: likeRed,
+    // Was `likeRed` — a like-button colour the error surfaces had borrowed,
+    // frozen there so the constant-to-token migration stayed pixel-neutral.
+    // Figma's `error/error` lifts the pairing from 4.15:1 to 4.65:1.
+    onErrorContainer: error,
     accentPositive: vineGreen,
     accentWarning: accentOrange,
     inverseSurface: inverseSurface,
@@ -1112,9 +1115,7 @@ class VineTheme {
       primarySwatch: _createMaterialColor(vineGreen),
       primaryColor: vineGreen,
       colorScheme: scheme,
-      progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: scheme.primary,
-      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       scaffoldBackgroundColor: colors.background,
       extensions: <ThemeExtension<dynamic>>[colors],
       appBarTheme: AppBarTheme(
