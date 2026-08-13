@@ -36,7 +36,7 @@ class CrosspostingSettingsScreen extends ConsumerWidget {
         child: Center(
           child: Text(
             context.l10n.crosspostingSignInRequired,
-            style: VineTheme.bodyLargeFont(color: VineTheme.lightText),
+            style: VineTheme.bodyLargeFont(color: context.vineColors.mutedText),
             textAlign: TextAlign.center,
           ),
         ),
@@ -172,13 +172,13 @@ class _LoadedSettingsList extends StatelessWidget {
     ).refreshIndicatorSemanticLabel;
     return RefreshIndicator(
       color: VineTheme.vineGreen,
-      backgroundColor: VineTheme.surfaceContainer,
+      backgroundColor: context.vineColors.surfaceContainer,
       onRefresh: context.read<CrosspostingSettingsCubit>().refresh,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: state.entries.length + 1,
         separatorBuilder: (_, _) =>
-            const Divider(height: 1, color: VineTheme.surfaceBackground),
+            Divider(height: 1, color: context.vineColors.outlineMuted),
         itemBuilder: (context, index) {
           if (index == 0) {
             return Padding(
@@ -220,7 +220,7 @@ class _CrosspostingScaffold extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -246,7 +246,9 @@ class _LoadFailed extends StatelessWidget {
           children: [
             Text(
               context.l10n.crosspostingLoadFailed,
-              style: VineTheme.bodyLargeFont(color: VineTheme.lightText),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.mutedText,
+              ),
               textAlign: TextAlign.center,
             ),
             DivineButton(
@@ -272,7 +274,7 @@ class _NoPlatforms extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Text(
           context.l10n.crosspostingNoPlatforms,
-          style: VineTheme.bodyLargeFont(color: VineTheme.lightText),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.mutedText),
           textAlign: TextAlign.center,
         ),
       ),
@@ -308,7 +310,7 @@ class _PlatformSection extends StatelessWidget {
                     ? VineTheme.vineGreen
                     : entry.needsReauth
                     ? VineTheme.accentOrange
-                    : VineTheme.lightText,
+                    : context.vineColors.mutedText,
               ),
               Expanded(
                 child: Column(
@@ -324,7 +326,7 @@ class _PlatformSection extends StatelessWidget {
                       Text(
                         identity,
                         style: VineTheme.bodyMediumFont(
-                          color: VineTheme.lightText,
+                          color: context.vineColors.secondaryText,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -335,7 +337,7 @@ class _PlatformSection extends StatelessWidget {
                         style: VineTheme.bodyMediumFont(
                           color: entry.needsReauth
                               ? VineTheme.accentOrange
-                              : VineTheme.lightText,
+                              : context.vineColors.mutedText,
                         ),
                       ),
                   ],
@@ -363,12 +365,16 @@ class _PlatformSection extends StatelessWidget {
             if (entry.mode == CrosspostingMode.manual)
               Text(
                 context.l10n.crosspostingModeManualSubtitle,
-                style: VineTheme.bodySmallFont(color: VineTheme.lightText),
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.mutedText,
+                ),
               ),
             if (entry.mode == CrosspostingMode.automatic)
               Text(
                 context.l10n.crosspostingModeAutomaticSubtitle,
-                style: VineTheme.bodySmallFont(color: VineTheme.lightText),
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.mutedText,
+                ),
               ),
           ],
         ],
