@@ -1,7 +1,7 @@
 # View and loop metrics
 
 **Date:** 2026-08-13
-**Status:** Design — one open decision (anonymous signal transport)
+**Status:** Design — decisions settled
 **Target:** No freeze applies; ships on the normal release path
 
 ## Problem
@@ -37,9 +37,15 @@ put recorded views at roughly a third of reality:
 - Recorded views run at ~1.0 per CDN download, for a format where one download
   serves many playthroughs.
 
-Causes are definitional, not defects: a view today requires **≥1s of actual
-playback** by a **signed-in** user. Anonymous viewers — roughly half of daily
-users — emit nothing at all, because view events are Nostr-signed.
+Causes are definitional, not defects. A view today requires **≥1s of actual
+playback**, which excludes the scroll-past and the still-buffering.
+
+Anonymous coverage is split, and the split is the confusing part. Because view
+events are Nostr-signed, anonymous viewers appear in `total_views` via CDN
+delivery — 42% of all views — but are entirely absent from everything derived
+from `view_interactions`: `unique_viewers`, `loops`, and the daily stats that
+feed the leaderboard. So the headline view count sees them and the hero loop
+metric does not.
 
 Numbers are not cosmetic here.
 [The video-card view-count spec](2026-08-08-video-card-view-count-display-design.md)
@@ -151,51 +157,56 @@ Anonymous events carry weaker identity guarantees than signed ones and should
 therefore weigh less in ranking than signed-in events. They still count fully
 for display. The exact weighting is a tuning question, not an architectural one.
 
-### Anonymous signal — the open decision
+### Anonymous signal: CDN-derived, one loop assumed
 
-Counting anonymous viewers requires a client-side signal that does not depend on
-a Nostr key. Two options, with materially different properties:
+**Decision: each CDN delivery without a matching signed view event counts as one
+view and one loop.**
 
-**A. CDN-derived.** Infer views and loops from media delivery logs, which
-already flow to `cdn_view_counts`.
+This is not new machinery — it is already how the platform reports. Every
+`video_total_views_data` row satisfies `total_views = cdn_views + auth_views`
+exactly, with zero exceptions across 2,201,983 videos, and CDN accounts for 42%
+of all views (4.70M of 11.14M). The decision is to make the existing behaviour
+the stated definition rather than an undocumented accident, and to extend the
+same treatment to loops.
 
-- No client work, no new endpoint, no new abuse surface.
-- Cannot see loops: one download serves many playthroughs, so replays are
-  invisible. Undercounts exactly the metric chosen as the hero.
-- Cache hits and range requests distort counts; observed daily totals swing
-  21k–110k, which is not the shape of a trustworthy signal.
+It needs no client work, no new ingest endpoint, no unsigned-write abuse
+surface, and no privacy decision on a device identifier. An unsigned client
+beacon was considered and rejected on that basis: it would measure anonymous
+loop depth accurately, but every one of those costs is real and the accuracy
+gain does not carry them.
 
-**B. Unsigned client beacon.** The client posts view/loop events without a Nostr
-signature, identified by an ephemeral device-scoped id.
+Two limits, stated so nobody later mistakes them for defects:
 
-- Measures the real thing: playback starts and completed loops as the player
-  observed them, identically to the signed path.
-- Requires a new ingest endpoint and rate limiting; an unsigned endpoint is a
-  new abuse surface, which is precisely why decision 6 keeps anti-spam in
-  ranking rather than display.
-- Needs a privacy decision on the ephemeral identifier's lifetime and scope.
+- **Anonymous loop depth is assumed, not measured.** One delivery serves many
+  playthroughs, so an anonymous viewer who loops a video twenty times reports
+  one loop. Anonymous engagement depth is therefore systematically conservative
+  against signed-in depth. This understates the hero metric rather than
+  inflating it, which is the safe direction to be wrong in.
+- **CDN counts are noisy.** Observed daily totals swing between 21k and 110k,
+  driven by cache behaviour and range requests rather than by audience. Ranking
+  should not treat a CDN-derived loop as equivalent in confidence to an observed
+  one.
 
-**Recommendation: B.** Option A structurally cannot count loops, and loops is
-the hero metric. A signal that cannot measure the headline number is not a
-candidate. B should reuse the existing client-side counting logic so signed and
-anonymous paths cannot drift apart in definition.
-
-This decision is deferred, not assumed. Everything else in this design holds
-under either choice.
+If anonymous loop depth later proves worth measuring properly, the beacon
+remains available as an additive change; nothing in this design forecloses it.
 
 ### Expected movement
 
 Stacked against today's reported numbers:
 
-| Change | Effect |
-|---|---|
-| #7210 view-event fix (merged) | ×1.7 recovery of the outage loss |
-| View = playback start | ×2–3 |
-| Count anonymous viewers | ×2 |
-| Loops promoted as headline | Larger again than views |
+| Change | Effect on views | Effect on loops |
+|---|---|---|
+| #7210 view-event fix (merged) | ×1.7 recovery on the signed-in share | ×1.7 recovery |
+| View = playback start | ×2–3 on the signed-in share | — |
+| Anonymous counted | already counted (42% of views) | **new — CDN deliveries begin contributing** |
+| Loops promoted as headline | — | larger again than views |
 
-Roughly an order of magnitude over what is reported today, with every step
-explainable to a partner, a creator, or a journalist.
+Views grow mostly from the redefinition, since anonymous views already flow into
+`total_views`. Loops grow mostly from anonymous, since loops are currently
+signed-in only and CDN deliveries have never contributed one.
+
+The compounding matters more than either figure: loops is the hero number, and
+it is the metric that has been missing 42% of its audience entirely.
 
 The effect compounds with the display floor. `publicLoopCountFloor` is 1000, and
 today most videos fall below it — which is why the video-card spec had to
@@ -246,8 +257,14 @@ recovery land close together, so a jump will be hard to attribute. Ship the
 detector and record a pre-change baseline first, or the effect of each becomes
 unrecoverable.
 
-**An unsigned ingest endpoint is a new abuse surface.** Decision 6 contains the
-blast radius — inflated anonymous traffic cannot move rankings — but it can move
-*displayed* counts, which decision 5 says are never reduced. If displayed
-anonymous counts are successfully inflated, the only remedies are at ingest.
-This tension is real and should be settled before B ships.
+**Anonymous loop depth is assumed rather than measured.** One CDN delivery
+counts as one loop, so anonymous viewers who rewatch report a single loop. The
+hero metric is therefore conservative for 42% of the audience. That is the safe
+direction to be wrong in, but it should be stated wherever the number is
+published rather than discovered later by someone reconciling it.
+
+**CDN delivery is inflatable without an account.** Repeated media requests raise
+displayed counts, and decision 5 says displayed numbers are never reduced, so
+the only remedy is at ingest — deduplication and rate limiting on delivery
+logging. Decision 6 keeps the blast radius out of ranking, but it does not
+protect the public number.
