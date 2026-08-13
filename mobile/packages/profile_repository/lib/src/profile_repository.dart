@@ -1913,7 +1913,7 @@ class ProfileRepository implements ProfileReader {
       final profiles = restResults
           .map((result) => result.toUserProfile())
           .where((p) => !(_blockFilter?.call(p.pubkey) ?? false));
-      return _enrichFromCache(profiles.toList());
+      return await _enrichFromCache(profiles.toList());
     } on Exception catch (e) {
       Log.warning(
         'REST profile search failed: $e',
