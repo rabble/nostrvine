@@ -163,6 +163,43 @@ void main() {
       expect(_boxFile(documentsDir, boxName).existsSync(), isFalse);
     });
 
+    test('rescues a stranded box left only as a compacted copy', () async {
+      const boxName = HiveBoxNames.notifications;
+      _writeCompactedBoxFile(documentsDir, boxName, 'compacted');
+
+      await HiveStorageService.initialize();
+
+      expect(_readBoxFile(Directory(homePath), boxName), 'compacted');
+      expect(_compactedBoxFile(documentsDir, boxName).existsSync(), isFalse);
+    });
+
+    test('leaves no compacted leftover in the legacy home', () async {
+      const boxName = HiveBoxNames.pushNotificationPreferencesDirty;
+      await Directory(homePath).create(recursive: true);
+
+      // A crashed compaction leaves the compacted copy beside the box file
+      // Hive still prefers, on whichever side of the split it happened.
+      _writeBoxFile(
+        documentsDir,
+        boxName,
+        'documents',
+        modified: DateTime(2026, 8, 10),
+      );
+      _writeCompactedBoxFile(documentsDir, boxName, 'documents compacted');
+      _writeBoxFile(
+        Directory(homePath),
+        boxName,
+        'home',
+        modified: DateTime(2026, 8, 12),
+      );
+
+      await HiveStorageService.initialize();
+
+      expect(_readBoxFile(Directory(homePath), boxName), 'home');
+      expect(_boxFile(documentsDir, boxName).existsSync(), isFalse);
+      expect(_compactedBoxFile(documentsDir, boxName).existsSync(), isFalse);
+    });
+
     test('removes stranded lock files', () async {
       final lockFile = File(
         p.join(documentsDir.path, '${HiveBoxNames.personalEvents}.lock'),
@@ -177,6 +214,14 @@ void main() {
 
 File _boxFile(Directory dir, String boxName) =>
     File(p.join(dir.path, '$boxName.hive'));
+
+/// Where compaction writes the compacted box before renaming it over the box
+/// file, and what Hive restores from when the box file is missing.
+File _compactedBoxFile(Directory dir, String boxName) =>
+    File(p.join(dir.path, '$boxName.hivec'));
+
+void _writeCompactedBoxFile(Directory dir, String boxName, String contents) =>
+    _compactedBoxFile(dir, boxName).writeAsStringSync(contents);
 
 void _writeBoxFile(
   Directory dir,

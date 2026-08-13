@@ -72,8 +72,9 @@ abstract final class HiveStorageService {
   /// The legacy home is the documents directory, where `Hive.initFlutter()`
   /// pointed. A split box can hold real writes on both sides, so the more
   /// recently written file wins and the other is deleted — the newest data
-  /// survives and nothing is left behind to be picked up again. Lock files
-  /// carry no data and are recreated on open, so legacy ones are just removed.
+  /// survives and nothing is left behind to be picked up again. Which file
+  /// holds a side's data is [_boxFile]'s call. Lock files carry no data and
+  /// are recreated on open, so legacy ones are just removed.
   ///
   /// A failure here must not block startup: the files stay put and the next
   /// launch tries again.
@@ -86,19 +87,26 @@ abstract final class HiveStorageService {
       for (final boxName in HiveBoxNames.all) {
         await _deleteIfPresent(File(p.join(legacy.path, '$boxName.lock')));
 
-        final legacyFile = File(p.join(legacy.path, '$boxName.hive'));
-        if (!legacyFile.existsSync()) continue;
+        final legacyFile = _boxFile(legacy.path, boxName);
+        if (legacyFile == null) continue;
 
-        final targetFile = File(p.join(home.path, '$boxName.hive'));
-        if (targetFile.existsSync() &&
+        final targetFile = _boxFile(home.path, boxName);
+        if (targetFile != null &&
             !targetFile.lastModifiedSync().isBefore(
               legacyFile.lastModifiedSync(),
             )) {
-          await _deleteIfPresent(legacyFile);
+          await _deleteLegacyRemains(legacy.path, boxName);
           continue;
         }
 
-        if (await _move(legacyFile, targetFile)) migrated++;
+        // Hive resolves `.hive` ahead of `.hivec` and deletes the compacted
+        // copy when both are present, so the one in the home is superseded by
+        // the file about to land on top of it.
+        await _deleteIfPresent(File(p.join(home.path, '$boxName.hivec')));
+        if (await _move(legacyFile, File(p.join(home.path, '$boxName.hive')))) {
+          migrated++;
+          await _deleteLegacyRemains(legacy.path, boxName);
+        }
       }
 
       if (migrated > 0) {
@@ -115,6 +123,34 @@ abstract final class HiveStorageService {
         category: LogCategory.storage,
       );
     }
+  }
+
+  /// The file Hive would open for [boxName] in [directory], or null when the
+  /// box has nothing there.
+  ///
+  /// Resolved the way `findHiveFileAndCleanUp` resolves it: `<box>.hive` when
+  /// it exists, otherwise `<box>.hivec`. The latter is where compaction writes
+  /// the compacted box before renaming it over the box file, and Hive restores
+  /// it on open when the box file is missing — so it is box data, not a
+  /// scratch file, and migrating only `.hive` would strand it.
+  static File? _boxFile(String directory, String boxName) {
+    final hiveFile = File(p.join(directory, '$boxName.hive'));
+    if (hiveFile.existsSync()) return hiveFile;
+    final compactedFile = File(p.join(directory, '$boxName.hivec'));
+    return compactedFile.existsSync() ? compactedFile : null;
+  }
+
+  /// Clears whatever [boxName] still has in the legacy home once its contents
+  /// are settled, so nothing is left for Hive to find there again.
+  ///
+  /// Both extensions, because the copy that lost — or the compacted leftover
+  /// sitting beside the copy that won — is stale either way.
+  static Future<void> _deleteLegacyRemains(
+    String directory,
+    String boxName,
+  ) async {
+    await _deleteIfPresent(File(p.join(directory, '$boxName.hive')));
+    await _deleteIfPresent(File(p.join(directory, '$boxName.hivec')));
   }
 
   /// Renames [source] onto [target], falling back to copy + delete when the
