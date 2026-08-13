@@ -17038,12 +17038,6 @@ abstract class AppLocalizations {
   /// **'Save for later button'**
   String get videoMetadataSaveForLaterSemanticLabel;
 
-  /// No description provided for @videoMetadataRenderingVideoHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Rendering video...'**
-  String get videoMetadataRenderingVideoHint;
-
   /// No description provided for @videoMetadataSavingVideoHint.
   ///
   /// In en, this message translates to:
@@ -17055,6 +17049,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save video to drafts and {destination}'**
   String videoMetadataSaveToDraftsHint(String destination);
+
+  /// Accessibility hint on the Save-for-later button while no rendered video file exists yet — the render is still running, or it failed. The button stays enabled, since a draft needs no rendered file, but the gallery copy is made from that file and is therefore skipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Save video to drafts. No rendered video yet, so no copy is added to {destination}.'**
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination);
 
   /// No description provided for @videoMetadataSaveForLaterButton.
   ///

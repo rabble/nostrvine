@@ -263,6 +263,192 @@ void main() {
       expect(saveAsDraftCalled, isTrue);
     });
 
+    testWidgets('Save draft stays enabled while the render is still running', (
+      tester,
+    ) async {
+      var saveAsDraftCalled = false;
+      var cancelRenderCalled = false;
+      // No finalRenderedClip yet: the render — including its network-bound
+      // C2PA signing step — has not finished. Offline that can take minutes,
+      // and a draft needs none of it.
+      final mockNotifier = _MockVideoEditorNotifier(
+        VideoEditorProviderState(title: 'Test', isProcessing: true),
+        onSaveAsDraft: () => saveAsDraftCalled = true,
+        onCancelRenderVideo: () => cancelRenderCalled = true,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+        ),
+      );
+
+      await tester.tap(find.text('Save for Later'));
+      await tester.pumpAndSettle();
+
+      expect(saveAsDraftCalled, isTrue);
+      // The in-flight render is dropped, so its completion cannot rewrite the
+      // autosave row that saveAsDraft just removed.
+      expect(cancelRenderCalled, isTrue);
+      // Nothing to copy to the gallery without a rendered file.
+      verifyNever(() => mockGallerySaveService.saveVideoToGallery(any()));
+    });
+
+    testWidgets('a failed save leaves the in-flight render running', (
+      tester,
+    ) async {
+      var cancelRenderCalled = false;
+      final mockNotifier = _MockVideoEditorNotifier(
+        VideoEditorProviderState(title: 'Test', isProcessing: true),
+        onCancelRenderVideo: () => cancelRenderCalled = true,
+        saveAsDraftResult: DraftSaveOutcome.failed,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+        ),
+      );
+
+      await tester.tap(find.text('Save for Later'));
+      await tester.pumpAndSettle();
+
+      // The user stays on the screen, so the render has to survive: cancelling
+      // it would leave the preview waiting on a render that no longer runs.
+      expect(cancelRenderCalled, isFalse);
+      expect(find.byType(VideoMetadataCaptureBottomBar), findsOneWidget);
+    });
+
+    testWidgets('Save draft is disabled while a save is already in flight', (
+      tester,
+    ) async {
+      final mockNotifier = _MockVideoEditorNotifier(
+        VideoEditorProviderState(title: 'Test', isSavingDraft: true),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+        ),
+      );
+
+      final animatedOpacity = tester.widget<AnimatedOpacity>(
+        find
+            .ancestor(
+              of: find.text('Save for Later'),
+              matching: find.byType(AnimatedOpacity),
+            )
+            .first,
+      );
+      expect(animatedOpacity.opacity, lessThan(1));
+
+      final button = tester.widget<DivineButton>(
+        find.ancestor(
+          of: find.text('Save for Later'),
+          matching: find.byType(DivineButton),
+        ),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('Save draft hint tracks the rendered file, not isProcessing', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final renderedClip = DivineVideoClip(
+        id: 'test-clip',
+        video: EditorVideo.file('test.mp4'),
+        duration: const Duration(seconds: 10),
+        recordedAt: DateTime.now(),
+        targetAspectRatio: models.AspectRatio.square,
+        originalAspectRatio: 9 / 16,
+      );
+
+      Future<String?> hintFor(VideoEditorProviderState state) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            // A fresh key per case: reusing the element would keep the
+            // container — and the notifier — from the previous pump.
+            key: UniqueKey(),
+            overrides: [
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(state),
+              ),
+              gallerySaveServiceProvider.overrideWith(
+                (ref) => mockGallerySaveService,
+              ),
+            ],
+            child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+          ),
+        );
+        return tester
+            .getSemantics(
+              find.bySemanticsLabel(
+                l10n.videoMetadataSaveForLaterSemanticLabel,
+              ),
+            )
+            .getSemanticsData()
+            .hint;
+      }
+
+      // Mid-render there is no file to copy, so the hint must not promise one.
+      expect(
+        await hintFor(
+          VideoEditorProviderState(title: 'Test', isProcessing: true),
+        ),
+        l10n.videoMetadataSaveToDraftsWithoutGalleryHint(
+          GallerySaveService.destinationName,
+        ),
+      );
+
+      // A C2PA re-sign (retryC2paSigning) raises isProcessing over an
+      // already-rendered clip. The gallery copy does happen there, so keying
+      // the hint on isProcessing would announce the opposite of what follows.
+      expect(
+        await hintFor(
+          VideoEditorProviderState(
+            title: 'Test',
+            isProcessing: true,
+            finalRenderedClip: renderedClip,
+          ),
+        ),
+        l10n.videoMetadataSaveToDraftsHint(
+          GallerySaveService.destinationName,
+        ),
+      );
+
+      // A failed render also leaves no file — isProcessing is back to false.
+      expect(
+        await hintFor(
+          VideoEditorProviderState(title: 'Test', renderFailed: true),
+        ),
+        l10n.videoMetadataSaveToDraftsWithoutGalleryHint(
+          GallerySaveService.destinationName,
+        ),
+      );
+
+      handle.dispose();
+    });
+
     testWidgets('save for later shows permission sheet on gallery denial', (
       tester,
     ) async {
@@ -815,12 +1001,14 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
     this._state, {
     this.onPostVideo,
     this.onSaveAsDraft,
+    this.onCancelRenderVideo,
     this.saveAsDraftResult = DraftSaveOutcome.saved,
   });
 
   final VideoEditorProviderState _state;
   final VoidCallback? onPostVideo;
   final VoidCallback? onSaveAsDraft;
+  final VoidCallback? onCancelRenderVideo;
   final DraftSaveOutcome saveAsDraftResult;
 
   @override
@@ -837,5 +1025,10 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
   }) async {
     onSaveAsDraft?.call();
     return saveAsDraftResult;
+  }
+
+  @override
+  Future<void> cancelRenderVideo() async {
+    onCancelRenderVideo?.call();
   }
 }

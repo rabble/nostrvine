@@ -5910,10 +5910,17 @@
   "videoMetadataFailedToSaveSnackbar": "محفوظ نہیں ہو سکی",
   "videoMetadataGoToLibraryButton": "لائبریری پر جائیں",
   "videoMetadataSaveForLaterSemanticLabel": "بعد کے لیے محفوظ کریں بٹن",
-  "videoMetadataRenderingVideoHint": "ویڈیو رینڈر ہو رہی ہے...",
   "videoMetadataSavingVideoHint": "ویڈیو محفوظ ہو رہی ہے...",
   "videoMetadataSaveToDraftsHint": "ویڈیو مسودوں اور {destination} میں محفوظ کریں",
   "@videoMetadataSaveToDraftsHint": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataSaveToDraftsWithoutGalleryHint": "ویڈیو کو مسودوں میں محفوظ کریں۔ ابھی کوئی رینڈر شدہ ویڈیو نہیں ہے، اس لیے {destination} میں کاپی شامل نہیں ہوگی۔",
+  "@videoMetadataSaveToDraftsWithoutGalleryHint": {
     "placeholders": {
       "destination": {
         "type": "String"

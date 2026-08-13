@@ -9908,14 +9908,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoMetadataSaveForLaterSemanticLabel => 'Nút lưu để làm sau';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Đang kết xuất video...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Đang lưu video...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Lưu video vào bản nháp và $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Lưu video vào bản nháp. Chưa có video đã kết xuất nên không có bản sao trong $destination.';
   }
 
   @override

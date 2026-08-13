@@ -10022,14 +10022,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Button \"Für später speichern\"';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Video wird gerendert...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Video wird gespeichert...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Video als Entwurf speichern und $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Video als Entwurf speichern. Noch kein gerendertes Video, daher keine Kopie in $destination.';
   }
 
   @override

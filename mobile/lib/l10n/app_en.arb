@@ -6129,10 +6129,18 @@
   "videoMetadataFailedToSaveSnackbar": "Failed to save",
   "videoMetadataGoToLibraryButton": "Go to Library",
   "videoMetadataSaveForLaterSemanticLabel": "Save for later button",
-  "videoMetadataRenderingVideoHint": "Rendering video...",
   "videoMetadataSavingVideoHint": "Saving video...",
   "videoMetadataSaveToDraftsHint": "Save video to drafts and {destination}",
   "@videoMetadataSaveToDraftsHint": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataSaveToDraftsWithoutGalleryHint": "Save video to drafts. No rendered video yet, so no copy is added to {destination}.",
+  "@videoMetadataSaveToDraftsWithoutGalleryHint": {
+    "description": "Accessibility hint on the Save-for-later button while no rendered video file exists yet \u2014 the render is still running, or it failed. The button stays enabled, since a draft needs no rendered file, but the gallery copy is made from that file and is therefore skipped.",
     "placeholders": {
       "destination": {
         "type": "String"

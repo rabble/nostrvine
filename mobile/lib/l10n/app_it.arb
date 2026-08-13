@@ -3297,10 +3297,17 @@
     "videoMetadataFailedToSaveSnackbar": "Salvataggio non riuscito",
     "videoMetadataGoToLibraryButton": "Vai alla libreria",
     "videoMetadataSaveForLaterSemanticLabel": "Pulsante salva per dopo",
-    "videoMetadataRenderingVideoHint": "Rendering video...",
     "videoMetadataSavingVideoHint": "Salvataggio video...",
     "videoMetadataSaveToDraftsHint": "Salva video nelle bozze e {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Salva il video nelle bozze. Nessun video renderizzato per ora, quindi nessuna copia in {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

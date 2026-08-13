@@ -9952,14 +9952,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Knop opslaan voor later';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Video renderen...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Video opslaan...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Video opslaan in concepten en $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Video opslaan in concepten. Nog geen gerenderde video, dus geen kopie in $destination.';
   }
 
   @override

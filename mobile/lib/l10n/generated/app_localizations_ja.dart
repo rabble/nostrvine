@@ -9480,14 +9480,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataSaveForLaterSemanticLabel => '後で保存ボタン';
 
   @override
-  String get videoMetadataRenderingVideoHint => '動画をレンダリング中...';
-
-  @override
   String get videoMetadataSavingVideoHint => '動画を保存中...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return '動画を下書きと$destinationに保存';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return '動画を下書きに保存します。レンダリング済みの動画がまだないため、$destinationにはコピーされません。';
   }
 
   @override

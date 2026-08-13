@@ -3973,10 +3973,17 @@
     "videoMetadataFailedToSaveSnackbar": "ማስቀመጥ አልተሳካም።",
     "videoMetadataGoToLibraryButton": "ወደ ቤተ-መጽሐፍት ሂድ",
     "videoMetadataSaveForLaterSemanticLabel": "ለበኋላ አዝራር አስቀምጥ",
-    "videoMetadataRenderingVideoHint": "ቪዲዮ በማቅረብ ላይ...",
     "videoMetadataSavingVideoHint": "ቪዲዮ በማስቀመጥ ላይ...",
     "videoMetadataSaveToDraftsHint": "ቪዲዮን ወደ ረቂቆች እና {destination} አስቀምጥ",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "ቪዲዮውን ወደ ረቂቆች አስቀምጥ። ገና የተዘጋጀ ቪዲዮ ስለሌለ ወደ {destination} ቅጂ አይታከልም።",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

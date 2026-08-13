@@ -10004,14 +10004,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Botón guardar para más tarde';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Renderizando video...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Guardando video...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Guardar video en borradores y $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Guardar video en borradores. Aún no hay video procesado, así que no se añade copia a $destination.';
   }
 
   @override

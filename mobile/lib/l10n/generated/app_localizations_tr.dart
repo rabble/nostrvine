@@ -9860,14 +9860,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataSaveForLaterSemanticLabel => 'Sonra kaydet düğmesi';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Video işleniyor...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Video kaydediliyor...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Videoyu taslağa ve $destination\'a kaydet';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Videoyu taslaklara kaydet. Henüz işlenmiş video yok, bu yüzden $destination içine kopya eklenmez.';
   }
 
   @override

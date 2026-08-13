@@ -9839,14 +9839,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataSaveForLaterSemanticLabel => 'زر الحفظ لاحقًا';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'جاري تصيير الفيديو...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'جاري حفظ الفيديو...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'حفظ الفيديو في المسودات و$destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'حفظ الفيديو في المسودات. لا يوجد فيديو مُعالَج بعد، لذا لن تُضاف نسخة إلى $destination.';
   }
 
   @override

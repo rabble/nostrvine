@@ -3297,10 +3297,17 @@
     "videoMetadataFailedToSaveSnackbar": "Échec de l'enregistrement",
     "videoMetadataGoToLibraryButton": "Aller à la bibliothèque",
     "videoMetadataSaveForLaterSemanticLabel": "Bouton enregistrer pour plus tard",
-    "videoMetadataRenderingVideoHint": "Rendu de la vidéo...",
     "videoMetadataSavingVideoHint": "Enregistrement de la vidéo...",
     "videoMetadataSaveToDraftsHint": "Enregistrer la vidéo dans les brouillons et {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Enregistrer la vidéo dans les brouillons. Pas encore de vidéo rendue, donc aucune copie n'est ajoutée à {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

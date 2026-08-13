@@ -5910,10 +5910,17 @@
   "videoMetadataFailedToSaveSnackbar": "保存失败",
   "videoMetadataGoToLibraryButton": "前往作品库",
   "videoMetadataSaveForLaterSemanticLabel": "稍后发布按钮",
-  "videoMetadataRenderingVideoHint": "正在渲染视频...",
   "videoMetadataSavingVideoHint": "正在保存视频...",
   "videoMetadataSaveToDraftsHint": "把视频保存到草稿和{destination}",
   "@videoMetadataSaveToDraftsHint": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataSaveToDraftsWithoutGalleryHint": "把视频保存到草稿。还没有渲染好的视频，因此不会保存到{destination}。",
+  "@videoMetadataSaveToDraftsWithoutGalleryHint": {
     "placeholders": {
       "destination": {
         "type": "String"

@@ -5910,10 +5910,17 @@
   "videoMetadataFailedToSaveSnackbar": "Gagal menyimpan",
   "videoMetadataGoToLibraryButton": "Pergi ke Pustaka",
   "videoMetadataSaveForLaterSemanticLabel": "Butang simpan untuk kemudian",
-  "videoMetadataRenderingVideoHint": "Merender video...",
   "videoMetadataSavingVideoHint": "Menyimpan video...",
   "videoMetadataSaveToDraftsHint": "Simpan video ke draf dan {destination}",
   "@videoMetadataSaveToDraftsHint": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataSaveToDraftsWithoutGalleryHint": "Simpan video ke draf. Belum ada video yang dirender, jadi tiada salinan dalam {destination}.",
+  "@videoMetadataSaveToDraftsWithoutGalleryHint": {
     "placeholders": {
       "destination": {
         "type": "String"

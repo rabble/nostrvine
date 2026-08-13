@@ -3211,11 +3211,18 @@
     "videoMetadataRemoveCollaboratorSemanticLabel": "Ortak çalışanı kaldır",
     "videoMetadataRemoveInspiredBySemanticLabel": "İlham kaynağını kaldır",
     "videoMetadataRemoveSemanticLabel": "Kaldır",
-    "videoMetadataRenderingVideoHint": "Video işleniyor...",
     "videoMetadataSaveForLaterButton": "Sonra Kaydet",
     "videoMetadataSaveForLaterSemanticLabel": "Sonra kaydet düğmesi",
     "videoMetadataSaveToDraftsHint": "Videoyu taslağa ve {destination}'a kaydet",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Videoyu taslaklara kaydet. Henüz işlenmiş video yok, bu yüzden {destination} içine kopya eklenmez.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

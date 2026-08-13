@@ -3305,10 +3305,17 @@
     "videoMetadataFailedToSaveSnackbar": "No se pudo guardar",
     "videoMetadataGoToLibraryButton": "Ir a la biblioteca",
     "videoMetadataSaveForLaterSemanticLabel": "Botón guardar para más tarde",
-    "videoMetadataRenderingVideoHint": "Renderizando video...",
     "videoMetadataSavingVideoHint": "Guardando video...",
     "videoMetadataSaveToDraftsHint": "Guardar video en borradores y {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Guardar video en borradores. Aún no hay video procesado, así que no se añade copia a {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

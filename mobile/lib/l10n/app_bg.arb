@@ -3567,10 +3567,17 @@
     "videoMetadataFailedToSaveSnackbar": "Не успяхме да запазим",
     "videoMetadataGoToLibraryButton": "Отидете в библиотеката",
     "videoMetadataSaveForLaterSemanticLabel": "Бутон за запазване за по-късно",
-    "videoMetadataRenderingVideoHint": "Изобразява се видео...",
     "videoMetadataSavingVideoHint": "Видеото се запазва...",
     "videoMetadataSaveToDraftsHint": "Запази видеото в чернови и {destination}",
     "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveToDraftsWithoutGalleryHint": "Запази видеото в чернови. Още няма обработено видео, затова няма копие в {destination}.",
+    "@videoMetadataSaveToDraftsWithoutGalleryHint": {
         "placeholders": {
             "destination": {
                 "type": "String"

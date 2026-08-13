@@ -9907,14 +9907,16 @@ class AppLocalizationsSv extends AppLocalizations {
       'Knapp spara till senare';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Renderar video...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Sparar video...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Spara video till utkast och $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Spara videon som utkast. Ingen renderad video ännu, så ingen kopia läggs till i $destination.';
   }
 
   @override

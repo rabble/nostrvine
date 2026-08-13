@@ -10110,14 +10110,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Buton salvează pentru mai târziu';
 
   @override
-  String get videoMetadataRenderingVideoHint => 'Se redă videoclipul...';
-
-  @override
   String get videoMetadataSavingVideoHint => 'Se salvează videoclipul...';
 
   @override
   String videoMetadataSaveToDraftsHint(String destination) {
     return 'Salvează videoclipul în schițe și $destination';
+  }
+
+  @override
+  String videoMetadataSaveToDraftsWithoutGalleryHint(String destination) {
+    return 'Salvează videoclipul în schițe. Încă nu există un videoclip randat, deci nicio copie în $destination.';
   }
 
   @override
