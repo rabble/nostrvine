@@ -627,3 +627,122 @@ final class BlocklistSyncBridgeProvider
 
 String _$blocklistSyncBridgeHash() =>
     r'0ffe1bb65877c094a330ec773089bb738247fe98';
+
+/// Republishes the contact list when a block contradicts the published
+/// follow list.
+///
+/// [FollowRepository] drops blocked accounts from the kind 3 it publishes,
+/// but blocking never runs through follow/unfollow and nothing republishes
+/// kind 3 on a schedule — so without a trigger the contradiction would sit
+/// on relays until the user's next unrelated follow, possibly never (#6903).
+/// Three triggers cover it:
+///
+/// - a fresh block, via [ContentBlocklistRepository.changes];
+/// - the follow list arriving, via `followingStream`. This is the one that
+///   heals a block made before the list finished loading — a fresh install,
+///   a new sign-in, a cleared cache — and settles contradictions that
+///   predate this code.
+/// - [FollowRepository.initialized], for the launch where the relay list
+///   matches LocalStorage: the merge emits nothing then, so the two stream
+///   triggers would both miss a contradiction that was already on disk.
+///
+/// Every trigger is gated on [FollowRepository.isInitialized]. Until the
+/// relay query lands, `followingStream` carries the LocalStorage snapshot,
+/// and republishing from a derived source destroys the follows it is
+/// missing — the #6109 class of loss, on the write side where no merge
+/// guard can catch it.
+///
+/// Watch this at app shell level.
+
+@ProviderFor(blockedFollowReconciler)
+final blockedFollowReconcilerProvider = BlockedFollowReconcilerProvider._();
+
+/// Republishes the contact list when a block contradicts the published
+/// follow list.
+///
+/// [FollowRepository] drops blocked accounts from the kind 3 it publishes,
+/// but blocking never runs through follow/unfollow and nothing republishes
+/// kind 3 on a schedule — so without a trigger the contradiction would sit
+/// on relays until the user's next unrelated follow, possibly never (#6903).
+/// Three triggers cover it:
+///
+/// - a fresh block, via [ContentBlocklistRepository.changes];
+/// - the follow list arriving, via `followingStream`. This is the one that
+///   heals a block made before the list finished loading — a fresh install,
+///   a new sign-in, a cleared cache — and settles contradictions that
+///   predate this code.
+/// - [FollowRepository.initialized], for the launch where the relay list
+///   matches LocalStorage: the merge emits nothing then, so the two stream
+///   triggers would both miss a contradiction that was already on disk.
+///
+/// Every trigger is gated on [FollowRepository.isInitialized]. Until the
+/// relay query lands, `followingStream` carries the LocalStorage snapshot,
+/// and republishing from a derived source destroys the follows it is
+/// missing — the #6109 class of loss, on the write side where no merge
+/// guard can catch it.
+///
+/// Watch this at app shell level.
+
+final class BlockedFollowReconcilerProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Republishes the contact list when a block contradicts the published
+  /// follow list.
+  ///
+  /// [FollowRepository] drops blocked accounts from the kind 3 it publishes,
+  /// but blocking never runs through follow/unfollow and nothing republishes
+  /// kind 3 on a schedule — so without a trigger the contradiction would sit
+  /// on relays until the user's next unrelated follow, possibly never (#6903).
+  /// Three triggers cover it:
+  ///
+  /// - a fresh block, via [ContentBlocklistRepository.changes];
+  /// - the follow list arriving, via `followingStream`. This is the one that
+  ///   heals a block made before the list finished loading — a fresh install,
+  ///   a new sign-in, a cleared cache — and settles contradictions that
+  ///   predate this code.
+  /// - [FollowRepository.initialized], for the launch where the relay list
+  ///   matches LocalStorage: the merge emits nothing then, so the two stream
+  ///   triggers would both miss a contradiction that was already on disk.
+  ///
+  /// Every trigger is gated on [FollowRepository.isInitialized]. Until the
+  /// relay query lands, `followingStream` carries the LocalStorage snapshot,
+  /// and republishing from a derived source destroys the follows it is
+  /// missing — the #6109 class of loss, on the write side where no merge
+  /// guard can catch it.
+  ///
+  /// Watch this at app shell level.
+  BlockedFollowReconcilerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'blockedFollowReconcilerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$blockedFollowReconcilerHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return blockedFollowReconciler(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$blockedFollowReconcilerHash() =>
+    r'bc150b83fa02264803e1c87e5a711f8b0072244e';

@@ -202,9 +202,7 @@ ModerationLabelService moderationLabelService(Ref ref) {
   unawaited(startRelaySync(ref.read(nostrSessionProvider)));
 
   ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
-    unawaited(
-      startRelaySync(next),
-    );
+    unawaited(startRelaySync(next));
   });
 
   ref.onDispose(() {
@@ -300,6 +298,109 @@ void blocklistSyncBridge(Ref ref) {
 
   ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
     unawaited(startSync(next));
+  });
+}
+
+/// Republishes the contact list when a block contradicts the published
+/// follow list.
+///
+/// [FollowRepository] drops blocked accounts from the kind 3 it publishes,
+/// but blocking never runs through follow/unfollow and nothing republishes
+/// kind 3 on a schedule — so without a trigger the contradiction would sit
+/// on relays until the user's next unrelated follow, possibly never (#6903).
+/// Three triggers cover it:
+///
+/// - a fresh block, via [ContentBlocklistRepository.changes];
+/// - the follow list arriving, via `followingStream`. This is the one that
+///   heals a block made before the list finished loading — a fresh install,
+///   a new sign-in, a cleared cache — and settles contradictions that
+///   predate this code.
+/// - [FollowRepository.initialized], for the launch where the relay list
+///   matches LocalStorage: the merge emits nothing then, so the two stream
+///   triggers would both miss a contradiction that was already on disk.
+///
+/// Every trigger is gated on [FollowRepository.isInitialized]. Until the
+/// relay query lands, `followingStream` carries the LocalStorage snapshot,
+/// and republishing from a derived source destroys the follows it is
+/// missing — the #6109 class of loss, on the write side where no merge
+/// guard can catch it.
+///
+/// Watch this at app shell level.
+@Riverpod(keepAlive: true)
+void blockedFollowReconciler(Ref ref) {
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+  final followRepository = ref.watch(followRepositoryProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  // At most one republish per blocked pubkey per *current* block. divine-web
+  // keeps whichever kind 3 carries more entries (divinevideo/divine-web#551),
+  // so it can resurrect an entry we just dropped; unbounded, the two clients
+  // would trade publishes for as long as both sessions are open. Cleared on
+  // unblock so a later same-session re-block can drop the follow again after
+  // an intervening publish re-included it.
+  final settled = <String>{};
+  var disposed = false;
+
+  Future<void> reconcile() async {
+    if (disposed || !followRepository.isInitialized) return;
+
+    final blocked = blocklistRepository.blockedPubkeysForAccount(
+      nostrClient.publicKey,
+    );
+    if (blocked.isEmpty) return;
+
+    final contradicting = followRepository.followingPubkeys
+        .where(blocked.contains)
+        .where((pubkey) => !settled.contains(pubkey))
+        .toList();
+    if (contradicting.isEmpty) return;
+
+    settled.addAll(contradicting);
+    try {
+      await followRepository.republishContactList();
+      Log.info(
+        'Republished contact list without ${contradicting.length} '
+        'blocked account(s)',
+        name: 'BlockedFollowReconciler',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      // Let the next block or follow-list emission try again.
+      settled.removeAll(contradicting);
+      Log.warning(
+        'Failed to republish contact list after a block: $e',
+        name: 'BlockedFollowReconciler',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  final subscriptions = <StreamSubscription<void>>[
+    blocklistRepository.changes.listen((change) {
+      if (change.op == BlocklistOp.unblocked) {
+        settled.remove(change.pubkey);
+        return;
+      }
+      if (change.op == BlocklistOp.blocked) {
+        unawaited(reconcile());
+      }
+    }),
+    // Replays its latest value, so an already-loaded list reconciles here
+    // rather than needing a separate priming call.
+    followRepository.followingStream.listen((_) => unawaited(reconcile())),
+  ];
+
+  if (followRepository.isInitialized) {
+    unawaited(reconcile());
+  } else {
+    unawaited(followRepository.initialized.then((_) => reconcile()));
+  }
+
+  ref.onDispose(() {
+    disposed = true;
+    for (final subscription in subscriptions) {
+      unawaited(subscription.cancel());
+    }
   });
 }
 

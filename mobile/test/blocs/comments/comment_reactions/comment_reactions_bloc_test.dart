@@ -7,7 +7,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
@@ -27,8 +26,6 @@ class _MockContentReportingService extends Mock
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
-class _MockFollowRepository extends Mock implements FollowRepository {}
-
 void main() {
   setUpAll(() {
     registerFallbackValue(ContentFilterReason.spam);
@@ -40,7 +37,6 @@ void main() {
     late _MockLikesRepository mockLikesRepository;
     late _MockContentReportingService mockContentReportingService;
     late _MockContentBlocklistRepository mockContentBlocklistRepository;
-    late _MockFollowRepository mockFollowRepository;
 
     String validId(String suffix) {
       final hexSuffix = suffix.codeUnits
@@ -55,7 +51,6 @@ void main() {
       mockLikesRepository = _MockLikesRepository();
       mockContentReportingService = _MockContentReportingService();
       mockContentBlocklistRepository = _MockContentBlocklistRepository();
-      mockFollowRepository = _MockFollowRepository();
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
@@ -68,7 +63,6 @@ void main() {
       when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
         (_) async => (upvotedIds: <String>{}, downvotedIds: <String>{}),
       );
-      when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
     });
 
     CommentReactionsBloc createBloc({String? rootAddressableId}) =>
@@ -80,7 +74,6 @@ void main() {
             mockContentReportingService,
           ),
           contentBlocklistRepository: mockContentBlocklistRepository,
-          followRepository: mockFollowRepository,
           rootEventId: validId('root'),
           rootAddressableId: rootAddressableId,
         );
@@ -690,26 +683,6 @@ void main() {
             (b.state.outbox! as ReactionsOutboxRemoveByAuthor).authorPubkey,
             validId('blocked'),
           );
-        },
-      );
-
-      blocTest<CommentReactionsBloc, CommentReactionsState>(
-        'unfollows blocked user when currently following',
-        setUp: () {
-          when(
-            () => mockContentBlocklistRepository.blockUser(any()),
-          ).thenAnswer((_) async {});
-          when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
-          when(
-            () => mockFollowRepository.toggleFollow(any()),
-          ).thenAnswer((_) async {});
-        },
-        build: createBloc,
-        act: (b) => b.add(CommentBlockUserRequested(validId('blocked'))),
-        verify: (_) {
-          verify(
-            () => mockFollowRepository.toggleFollow(validId('blocked')),
-          ).called(1);
         },
       );
 

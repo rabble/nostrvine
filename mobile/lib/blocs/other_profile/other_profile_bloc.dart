@@ -8,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:profile_repository/profile_repository.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 part 'other_profile_event.dart';
 part 'other_profile_state.dart';
@@ -77,7 +76,13 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   bool get isBlocked => _blocklistRepository.isBlocked(pubkey);
 
   /// Whether the current user is following the viewed profile.
-  bool get isFollowing => _followRepository.isFollowing(pubkey);
+  ///
+  /// A blocked account reports false. That matches `MyFollowingBloc`, which
+  /// every other follow surface reads and which already filters blocked
+  /// pubkeys, and it matches the kind 3 we publish (#6903). The profile ⋯
+  /// sheet gates its `Unfollow <name>` row on this, so without the check it
+  /// offers to unfollow an account the rest of the app says is not followed.
+  bool get isFollowing => !isBlocked && _followRepository.isFollowing(pubkey);
 
   Future<void> _onLoadRequested(
     OtherProfileLoadRequested event,
@@ -378,21 +383,12 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     OtherProfileBlockRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
+    // Severing the follow is not this bloc's job: FollowRepository drops
+    // blocked accounts from the kind 3 it publishes, and the app-level
+    // reconciler triggers that republish (#6903). Doing it here as well
+    // would drop the follow locally the moment the user blocks, and only
+    // two of the four block entry points would behave that way.
     await _blocklistRepository.blockUser(pubkey, ourPubkey: _currentUserPubkey);
-
-    // Unfollow the user if we're currently following them
-    if (_followRepository.isFollowing(pubkey)) {
-      try {
-        await _followRepository.toggleFollow(pubkey);
-      } catch (e, s) {
-        Log.error(
-          'Failed to unfollow blocked user $pubkey',
-          name: 'OtherProfileBloc',
-          error: e,
-          stackTrace: s,
-        );
-      }
-    }
   }
 
   Future<void> _onUnblockRequested(

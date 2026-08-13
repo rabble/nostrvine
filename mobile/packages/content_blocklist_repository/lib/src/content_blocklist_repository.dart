@@ -968,6 +968,24 @@ class ContentBlocklistRepository {
     ..._runtimeBlocklist,
   };
 
+  /// The accounts [accountPubkey] has explicitly blocked, for callers that
+  /// **write** a Nostr event on that account's behalf.
+  ///
+  /// Returns an empty set unless the persisted sets currently loaded belong
+  /// to [accountPubkey]. A keepAlive repository can still hold account A's
+  /// blocks while a session signs as account B — after a switch, until
+  /// [_adoptIdentity] runs — and filtering B's published data against A's
+  /// blocks would silently rewrite B's follow graph.
+  ///
+  /// Write paths must use this rather than [feedHiddenPubkeys] or
+  /// [shouldFilterFromFeeds]: those unions also carry `_blockedByOthers`, so
+  /// a third party could mutate the current user's published data simply by
+  /// blocking them.
+  Set<String> blockedPubkeysForAccount(String accountPubkey) =>
+      accountPubkey.isNotEmpty && _activeAccountPubkey == accountPubkey
+      ? blockedPubkeys
+      : const <String>{};
+
   /// Get count of blocked accounts
   int get totalBlockedCount =>
       _internalBlocklist.length + _runtimeBlocklist.length;

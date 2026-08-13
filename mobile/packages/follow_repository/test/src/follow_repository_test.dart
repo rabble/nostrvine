@@ -105,6 +105,8 @@ void main() {
         'b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012a1';
     const testTargetPubkey2 =
         'c3d4e5f6789012345678901234567890abcdef1234567890123456789012ab12';
+    const testTargetPubkey3 =
+        'd4e5f6789012345678901234567890abcdef1234567890123456789012ab12c3';
 
     setUpAll(() {
       registerFallbackValue(_MockEvent());
@@ -660,6 +662,288 @@ void main() {
         expect(emittedValues.last, isEmpty);
 
         await subscription.cancel();
+      });
+    });
+
+    // #6903: blocking hid the account in-app but left it in the published
+    // kind 3, so Divine's own public follower APIs kept reporting the follow.
+    // The omission happens at the publish boundary only — the local list is
+    // untouched by the filter, so blocking never costs the follow
+    // synchronously. The round-trip that does drop it is pinned separately
+    // in 'the filtered kind 3 read back replaces the local list' below.
+    group('blocked pubkeys are omitted from the published contact list', () {
+      late List<ContactList> publishedLists;
+      late Set<String> blocked;
+      late List<String> accountsAsked;
+
+      FollowRepository buildRepository({
+        BlockedPubkeysCallback? blockedPubkeys,
+      }) {
+        return FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          indexerRelayUrls: const [],
+          blockedPubkeys: blockedPubkeys,
+        );
+      }
+
+      List<String> publishedPubkeys(ContactList list) =>
+          list.list().map((contact) => contact.publicKey).toList();
+
+      setUp(() {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey':
+              '["$testTargetPubkey", "$testTargetPubkey2"]',
+        });
+
+        blocked = <String>{};
+        accountsAsked = <String>[];
+        publishedLists = <ContactList>[];
+
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
+        when(
+          () => mockNostrClient.sendContactList(
+            captureAny(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          publishedLists.add(invocation.positionalArguments[0] as ContactList);
+          return mockEvent;
+        });
+      });
+
+      test('publishes every follow when no port is injected', () async {
+        repository = buildRepository();
+        await repository.initialize();
+
+        await repository.republishContactList();
+
+        expect(publishedLists, hasLength(1));
+        expect(publishedPubkeys(publishedLists.single), [
+          testTargetPubkey,
+          testTargetPubkey2,
+        ]);
+      });
+
+      test('publishes every follow when nothing is blocked', () async {
+        repository = buildRepository(blockedPubkeys: (_) => blocked);
+        await repository.initialize();
+
+        await repository.republishContactList();
+
+        expect(publishedPubkeys(publishedLists.single), [
+          testTargetPubkey,
+          testTargetPubkey2,
+        ]);
+      });
+
+      test('omits a blocked follow while the local list keeps it', () async {
+        blocked.add(testTargetPubkey);
+        repository = buildRepository(blockedPubkeys: (_) => blocked);
+        await repository.initialize();
+
+        final emitted = <List<String>>[];
+        final subscription = repository.followingStream.listen(emitted.add);
+        // followingStream replays its latest value to late subscribers, so
+        // drain that before counting what the publish itself emits.
+        await Future<void>.delayed(Duration.zero);
+        final emittedBefore = emitted.length;
+
+        await repository.republishContactList();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(publishedPubkeys(publishedLists.single), [testTargetPubkey2]);
+
+        // The local list is the half that must NOT change: mutating it here
+        // would make unblocking cost the follow permanently, and would flip
+        // every in-app follow-list reader at the same time.
+        expect(repository.followingPubkeys, [
+          testTargetPubkey,
+          testTargetPubkey2,
+        ]);
+        expect(repository.isFollowing(testTargetPubkey), isTrue);
+        expect(
+          emitted.length,
+          emittedBefore,
+          reason: 'the publish filter must not emit on followingStream',
+        );
+
+        await subscription.cancel();
+      });
+
+      test('re-includes the follow once the block is lifted', () async {
+        blocked.add(testTargetPubkey);
+        repository = buildRepository(blockedPubkeys: (_) => blocked);
+        await repository.initialize();
+
+        await repository.republishContactList();
+        expect(publishedPubkeys(publishedLists.single), [testTargetPubkey2]);
+
+        blocked.remove(testTargetPubkey);
+        await repository.republishContactList();
+
+        expect(publishedPubkeys(publishedLists.last), [
+          testTargetPubkey,
+          testTargetPubkey2,
+        ]);
+      });
+
+      test('asks the port for the signing account only', () async {
+        repository = buildRepository(
+          blockedPubkeys: (account) {
+            accountsAsked.add(account);
+            return blocked;
+          },
+        );
+        await repository.initialize();
+
+        await repository.republishContactList();
+
+        // The repository hands over the pubkey that will sign the event, so
+        // the app layer can refuse to answer for any other account. Without
+        // it a session signing as B could publish B's kind 3 filtered
+        // against A's blocklist.
+        expect(accountsAsked, [testCurrentUserPubkey]);
+      });
+
+      test('drops the blocked entry on an ordinary follow too', () async {
+        blocked.add(testTargetPubkey);
+        repository = buildRepository(blockedPubkeys: (_) => blocked);
+        await repository.initialize();
+
+        await repository.follow(testTargetPubkey3);
+
+        expect(publishedPubkeys(publishedLists.single), [
+          testTargetPubkey2,
+          testTargetPubkey3,
+        ]);
+      });
+
+      test('republishContactList throws when not authenticated', () async {
+        repository = buildRepository(blockedPubkeys: (_) => blocked);
+        await repository.initialize();
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+
+        await expectLater(
+          repository.republishContactList(),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('not authenticated'),
+            ),
+          ),
+        );
+        expect(publishedLists, isEmpty);
+      });
+
+      // The filter is a publish-boundary property, and this is where it
+      // stops being one. Relays hold the filtered event from the publish
+      // onwards, so the next initialize() reads it back and replaces the
+      // local list with it — the entry is a strict subset, so the
+      // catastrophic-reduction guard correctly declines to merge. Pinned so
+      // that "unblocking restores the follow" is never read as durable: it
+      // holds for the session that blocked, not past the next launch.
+      // Whether it should be restorable at all is open with T&S (#6903).
+      test('the filtered kind 3 read back replaces the local list', () async {
+        blocked.add(testTargetPubkey);
+        var relayContactList = Event(
+          testCurrentUserPubkey,
+          EventKind.contactList,
+          [
+            ['p', testTargetPubkey],
+            ['p', testTargetPubkey2],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        when(
+          () => mockNostrClient.sendContactList(
+            captureAny(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final list = invocation.positionalArguments[0] as ContactList;
+          publishedLists.add(list);
+          // What the relay now serves to everyone, including us.
+          return relayContactList = Event(
+            testCurrentUserPubkey,
+            EventKind.contactList,
+            [
+              for (final contact in list.list()) ['p', contact.publicKey],
+            ],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 1,
+          );
+        });
+
+        FollowRepository session() => FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          indexerRelayUrls: const [],
+          blockedPubkeys: (_) => blocked,
+          queryContactList:
+              ({
+                required eventStream,
+                required pubkey,
+                fallbackTimeoutSeconds = 10,
+              }) async => relayContactList,
+        );
+
+        repository = session();
+        await repository.initialize();
+        await repository.republishContactList();
+        expect(publishedPubkeys(publishedLists.single), [testTargetPubkey2]);
+        expect(
+          repository.followingPubkeys,
+          contains(testTargetPubkey),
+          reason: 'still intact for the rest of this session',
+        );
+        await repository.dispose();
+
+        repository = session();
+        await repository.initialize();
+
+        expect(repository.followingPubkeys, [testTargetPubkey2]);
+        expect(repository.isFollowing(testTargetPubkey), isFalse);
+      });
+    });
+
+    group('initialized', () {
+      test('does not complete while the user has no keys', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        var completed = false;
+        unawaited(repository.initialized.then((_) => completed = true));
+
+        await repository.initialize();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(repository.isInitialized, isFalse);
+        expect(completed, isFalse);
+      });
+
+      test('completes once initialize finishes', () async {
+        await repository.initialize();
+
+        await expectLater(repository.initialized, completes);
+        expect(repository.isInitialized, isTrue);
+      });
+
+      test('stays completed across a repeated initialize', () async {
+        await repository.initialize();
+        await repository.initialize();
+
+        await expectLater(repository.initialized, completes);
       });
     });
 
@@ -2017,6 +2301,71 @@ void main() {
         // then close the controller.
         await repository.dispose();
         await realTimeStreamController.close();
+      });
+
+      // #6903 filters at the publish boundary only. The inbound path must
+      // stay unfiltered: `hasNewPubkeys` is computed from the incoming list,
+      // so dropping blocked entries before the catastrophic-reduction guard
+      // can flip it false, skip the guard, and let a truncated remote list
+      // replace the local one wholesale — the #6109 class of follow loss.
+      test('does not filter an incoming contact list before the merge '
+          'guard', () async {
+        final seededPubkeys = List.generate(
+          12,
+          (i) => i.toRadixString(16).padLeft(64, '0'),
+        );
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey':
+              '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
+        });
+        const blockedNewPubkey =
+            'ff00000000000000000000000000000000000000000000000000000000000002';
+
+        when(() => mockNostrClient.sendContactList(any(), any())).thenAnswer(
+          (_) async => Event(
+            testCurrentUserPubkey,
+            EventKind.contactList,
+            [],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 200,
+          ),
+        );
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          indexerRelayUrls: const [],
+          blockedPubkeys: (_) => const {blockedNewPubkey},
+        );
+        await repository.initialize();
+        expect(repository.followingCount, 12);
+
+        // The sole incoming pubkey is one we blocked. Filtering it on the way
+        // in would leave an empty list, which is a strict subset — the guard
+        // would accept it and 12 follows would be gone.
+        realTimeStreamController.add(
+          Event(
+            testCurrentUserPubkey,
+            EventKind.contactList,
+            [
+              ['p', blockedNewPubkey],
+            ],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(
+          repository.followingCount,
+          13,
+          reason: 'the guard must merge, not replace',
+        );
+        for (final pubkey in seededPubkeys) {
+          expect(repository.followingPubkeys, contains(pubkey));
+        }
       });
 
       test('updates following list when newer Kind 3 event arrives', () async {

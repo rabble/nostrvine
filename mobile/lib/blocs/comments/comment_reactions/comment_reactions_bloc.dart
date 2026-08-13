@@ -6,7 +6,6 @@ import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/blocs/comments/comment_reactions/reportable_sites.dart';
@@ -27,8 +26,7 @@ part 'comment_reactions_state.dart';
 ///   silently to reconcile pre-tap state without surfacing as failures.
 /// - Vote count batch fetch on demand (UI bridges from [CommentsListBloc]).
 /// - Reporting (Kind 1984) via [ContentReportingService].
-/// - Blocking (Kind 10000 mute + optional unfollow) via
-///   [ContentBlocklistRepository] + [FollowRepository]; emits
+/// - Blocking (Kind 10000 mute) via [ContentBlocklistRepository]; emits
 ///   [ReactionsOutboxRemoveByAuthor] for list cleanup.
 /// - Deleting via [CommentsRepository.deleteComment]; emits
 ///   [ReactionsOutboxRemoveComment] for list cleanup.
@@ -42,13 +40,11 @@ class CommentReactionsBloc
     required ContentBlocklistRepository contentBlocklistRepository,
     required String rootEventId,
     String? rootAddressableId,
-    FollowRepository? followRepository,
   }) : _authService = authService,
        _likesRepository = likesRepository,
        _commentsRepository = commentsRepository,
        _contentReportingServiceFuture = contentReportingServiceFuture,
        _contentBlocklistRepository = contentBlocklistRepository,
-       _followRepository = followRepository,
        _rootEventId = rootEventId,
        _rootAddressableId = rootAddressableId,
        super(const CommentReactionsState()) {
@@ -75,7 +71,6 @@ class CommentReactionsBloc
   final CommentsRepository _commentsRepository;
   final Future<ContentReportingService> _contentReportingServiceFuture;
   final ContentBlocklistRepository _contentBlocklistRepository;
-  final FollowRepository? _followRepository;
   final String _rootEventId;
   final String? _rootAddressableId;
 
@@ -409,29 +404,14 @@ class CommentReactionsBloc
     }
 
     // Block is durable at this point; drop the author's comments from the
-    // list IMMEDIATELY so a follow-side failure below doesn't desync the UI
-    // (the user already sees their block confirmed by the list cleanup).
+    // list so the user sees it confirmed.
+    //
+    // Severing the follow is not this bloc's job: FollowRepository drops
+    // blocked accounts from the kind 3 it publishes, and the app-level
+    // reconciler triggers that republish (#6903).
     emit(
       state.copyWith(outbox: ReactionsOutboxRemoveByAuthor(event.authorPubkey)),
     );
-
-    // Best-effort unfollow. A failure here is logged but doesn't roll back
-    // the block — the user blocked the author whether or not the unfollow
-    // succeeded, and the kind-30000 mute list is the source of truth.
-    final followRepo = _followRepository;
-    if (followRepo != null && followRepo.isFollowing(event.authorPubkey)) {
-      try {
-        await followRepo.toggleFollow(event.authorPubkey);
-      } catch (e, stackTrace) {
-        _logFailure(
-          e,
-          stackTrace,
-          CommentReactionsBlocReportableSites.onBlockUserRequested,
-          'Error unfollowing after block',
-          treatExceptionAsDomain: true,
-        );
-      }
-    }
   }
 
   Future<void> _onDeleteRequested(

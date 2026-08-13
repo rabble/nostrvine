@@ -87,6 +87,34 @@ void main() {
           followRepository: mockFollowRepository,
         );
 
+    // Every other follow surface reads MyFollowingBloc, which filters blocked
+    // pubkeys. This getter feeds the profile ⋯ sheet's "Unfollow <name>" row,
+    // so if it disagrees the app offers to unfollow an account it elsewhere
+    // says you do not follow. #6903 stopped severing the follow locally, which
+    // makes that disagreement reachable from every block entry point.
+    test('reports a blocked account as not followed', () {
+      when(() => mockFollowRepository.isFollowing(testPubkey)).thenReturn(true);
+      when(
+        () => mockBlocklistRepository.isBlocked(testPubkey),
+      ).thenReturn(true);
+
+      final bloc = createBloc();
+      expect(bloc.isBlocked, isTrue);
+      expect(bloc.isFollowing, isFalse);
+      bloc.close();
+    });
+
+    test('reports an unblocked account as followed', () {
+      when(() => mockFollowRepository.isFollowing(testPubkey)).thenReturn(true);
+      when(
+        () => mockBlocklistRepository.isBlocked(testPubkey),
+      ).thenReturn(false);
+
+      final bloc = createBloc();
+      expect(bloc.isFollowing, isTrue);
+      bloc.close();
+    });
+
     test('initial state is OtherProfileInitial', () {
       final bloc = createBloc();
       expect(bloc.state, isA<OtherProfileInitial>());
@@ -707,48 +735,29 @@ void main() {
         },
       );
 
+      // #6903 moved severing the follow to the publish boundary:
+      // FollowRepository omits blocked accounts from the kind 3 it
+      // publishes. Unfollowing here as well would drop the follow locally,
+      // so unblocking could not restore it — and only two of the four block
+      // entry points would behave that way.
       blocTest<OtherProfileBloc, OtherProfileState>(
-        'calls toggleFollow when currently following the user',
+        'leaves the local follow state alone when blocking',
         setUp: () {
           when(
             () => mockFollowRepository.isFollowing(testPubkey),
+          ).thenReturn(true);
+          when(
+            () => mockBlocklistRepository.isBlocked(testPubkey),
           ).thenReturn(true);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
         verify: (_) {
-          verify(() => mockFollowRepository.toggleFollow(testPubkey)).called(1);
-        },
-      );
-
-      blocTest<OtherProfileBloc, OtherProfileState>(
-        'does not call toggleFollow when not following the user',
-        build: createBloc,
-        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
-        verify: (_) {
+          // Not mutating the follow list is the whole point: the omission
+          // happens when FollowRepository publishes, so unblocking restores
+          // the follow instead of costing it permanently.
           verifyNever(() => mockFollowRepository.toggleFollow(any()));
-        },
-      );
-
-      blocTest<OtherProfileBloc, OtherProfileState>(
-        'still blocks user when toggleFollow throws',
-        setUp: () {
-          when(
-            () => mockFollowRepository.isFollowing(testPubkey),
-          ).thenReturn(true);
-          when(
-            () => mockFollowRepository.toggleFollow(testPubkey),
-          ).thenThrow(Exception('network error'));
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
-        verify: (_) {
-          verify(
-            () => mockBlocklistRepository.blockUser(
-              testPubkey,
-              ourPubkey: testCurrentUserPubkey,
-            ),
-          ).called(1);
+          verifyNever(() => mockFollowRepository.unfollow(any()));
         },
       );
     });

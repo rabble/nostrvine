@@ -65,6 +65,7 @@ Widget _buildSubject({
         analyticsIdentitySyncProvider.overrideWithValue(null),
         pushNotificationSyncProvider.overrideWithValue(null),
         blocklistSyncBridgeProvider.overrideWithValue(null),
+        blockedFollowReconcilerProvider.overrideWithValue(null),
         authServiceProvider.overrideWithValue(mockAuthService),
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         currentEnvironmentProvider.overrideWithValue(

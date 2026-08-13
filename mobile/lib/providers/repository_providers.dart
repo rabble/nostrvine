@@ -122,8 +122,15 @@ FollowRepository followRepository(Ref ref) {
 
   final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
 
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
+    // Blocked accounts are dropped from the published kind 3 (#6903).
+    // The tear-off takes the signing pubkey and answers for that account
+    // only, so a session cannot publish its follow list filtered against a
+    // previous account's blocklist.
+    blockedPubkeys: blocklistRepository.blockedPubkeysForAccount,
     isCacheInitialized: () => personalEventCache.isInitialized,
     getCachedEventsByKind: personalEventCache.getEventsByKind,
     cacheUserEvent: personalEventCache.cacheUserEvent,

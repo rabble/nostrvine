@@ -51,6 +51,7 @@ List<Override> _overrides({
   analyticsIdentitySyncProvider.overrideWithValue(null),
   pushNotificationSyncProvider.overrideWithValue(null),
   blocklistSyncBridgeProvider.overrideWithValue(null),
+  blockedFollowReconcilerProvider.overrideWithValue(null),
   authServiceProvider.overrideWithValue(mockAuthService),
   sharedPreferencesProvider.overrideWithValue(sharedPreferences),
   currentEnvironmentProvider.overrideWithValue(EnvironmentConfig.production),

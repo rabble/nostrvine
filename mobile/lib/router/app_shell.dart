@@ -335,6 +335,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     // Transitional scaffold: syncs block/mute list after login.
     // TODO(#4338): remove when BlocklistCubit owns post-login sync.
     ref.watch(blocklistSyncBridgeProvider);
+    ref.watch(blockedFollowReconcilerProvider);
 
     // The shell chrome (app bar) mirrors the *active tab's* route. While a
     // full-screen route is pushed above the whole shell (camera, editor,

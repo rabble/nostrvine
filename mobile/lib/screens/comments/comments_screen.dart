@@ -279,7 +279,6 @@ abstract final class CommentsScreen {
                   commentsRepository: commentsRepository,
                   contentReportingServiceFuture: contentReportingServiceFuture,
                   contentBlocklistRepository: contentBlocklistRepository,
-                  followRepository: followRepository,
                   rootEventId: video.id,
                   rootAddressableId: video.addressableId,
                 ),

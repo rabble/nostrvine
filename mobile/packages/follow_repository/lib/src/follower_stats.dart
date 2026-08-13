@@ -34,6 +34,15 @@ typedef CacheUserEventCallback = void Function(Event event);
 /// Defaults to [RelayBase]. Override in tests to inject mock relays.
 typedef RelayFactory = RelayBase Function(String url, RelayStatus status);
 
+/// Callback returning the accounts [accountPubkey] has explicitly blocked.
+///
+/// Called once per contact-list publish with the pubkey that will sign the
+/// event. Implementations must answer for that account only, and must return
+/// the user's *own* blocks — never a union that also carries "who blocked
+/// us", which would let a third party rewrite the current user's published
+/// follow list.
+typedef BlockedPubkeysCallback = Set<String> Function(String accountPubkey);
+
 /// Immutable follower/following counts for a pubkey.
 @immutable
 class FollowerStats {

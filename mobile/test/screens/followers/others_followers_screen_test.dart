@@ -66,6 +66,9 @@ void main() {
       mockNostrClient = _MockNostrClient();
 
       when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
+      when(
+        () => mockBlocklistRepository.isFollowSevered(any()),
+      ).thenReturn(false);
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
       when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
       when(

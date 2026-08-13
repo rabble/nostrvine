@@ -63,8 +63,9 @@ jobs:
       #
       # The list is explicit rather than a glob over integration_test/e2e/,
       # because `service` and "runnable on a Linux CI runner" are different
-      # axes. Every suite in that directory is tagged `service`; these two are
-      # the ones this runner can actually execute. The other four are excluded
+      # axes. Every suite in that directory is tagged `service`; these three
+      # are the ones this runner can actually execute. The other three are
+      # excluded
       # for reasons no workflow change can fix:
       #
       #   c2pa_init                         — c2pa_flutter ships android/ and
@@ -82,7 +83,8 @@ jobs:
         run: |
           for suite in \
             integration_test/e2e/relay_list_admission_test.dart \
-            integration_test/e2e/dm_inbox_relay_admission_test.dart; do
+            integration_test/e2e/dm_inbox_relay_admission_test.dart \
+            integration_test/e2e/block_leaves_kind3_follow_test.dart; do
             echo "── $suite"
             xvfb-run -a flutter test "$suite" --tags service -d linux
           done
