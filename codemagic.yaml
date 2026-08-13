@@ -429,8 +429,8 @@ definitions:
         maestro test \
           --format junit \
           --output report.xml \
-          e2e/maestro/flows/likeFlow.yaml \
-          e2e/maestro/flows/commentFlow.yaml
+          e2e/maestro/tests/loginFreshInstall.yaml \
+          e2e/maestro/tests/removeKeys.yaml
       # Script-level, not workflow-level: Codemagic rejects `test_report` as an
       # unknown workflow field ("extra fields not permitted").
       test_report: report.xml
