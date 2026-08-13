@@ -89,7 +89,7 @@ class _TrashedClipTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          '${clip.duration.inSeconds}s',
+          '${clip.durationInSeconds.toStringAsFixed(2)}s',
           style: VineTheme.titleSmallFont(
             color: context.vineColors.primaryText,
           ),
