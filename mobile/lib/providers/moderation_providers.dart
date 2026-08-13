@@ -332,10 +332,12 @@ void blockedFollowReconciler(Ref ref) {
   final followRepository = ref.watch(followRepositoryProvider);
   final nostrClient = ref.watch(nostrServiceProvider);
 
-  // At most one republish per blocked pubkey per session. divine-web keeps
-  // whichever kind 3 carries more entries (divinevideo/divine-web#551), so
-  // it can resurrect an entry we just dropped; unbounded, the two clients
-  // would trade publishes for as long as both sessions are open.
+  // At most one republish per blocked pubkey per *current* block. divine-web
+  // keeps whichever kind 3 carries more entries (divinevideo/divine-web#551),
+  // so it can resurrect an entry we just dropped; unbounded, the two clients
+  // would trade publishes for as long as both sessions are open. Cleared on
+  // unblock so a later same-session re-block can drop the follow again after
+  // an intervening publish re-included it.
   final settled = <String>{};
   var disposed = false;
 
@@ -374,9 +376,15 @@ void blockedFollowReconciler(Ref ref) {
   }
 
   final subscriptions = <StreamSubscription<void>>[
-    blocklistRepository.changes
-        .where((change) => change.op == BlocklistOp.blocked)
-        .listen((_) => unawaited(reconcile())),
+    blocklistRepository.changes.listen((change) {
+      if (change.op == BlocklistOp.unblocked) {
+        settled.remove(change.pubkey);
+        return;
+      }
+      if (change.op == BlocklistOp.blocked) {
+        unawaited(reconcile());
+      }
+    }),
     // Replays its latest value, so an already-loaded list reconciles here
     // rather than needing a separate priming call.
     followRepository.followingStream.listen((_) => unawaited(reconcile())),

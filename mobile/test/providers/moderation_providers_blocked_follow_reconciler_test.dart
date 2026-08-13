@@ -257,5 +257,23 @@ void main() {
 
       verify(() => followRepository.republishContactList()).called(1);
     });
+
+    // After unblock, the next follow/unfollow re-includes the pubkey in
+    // kind 3. If `settled` still held it, a same-session re-block would
+    // skip the republish and leave the public list intact.
+    test('republishes again when the same account is re-blocked', () async {
+      followingPubkeys = <String>[blockedFollow];
+      final container = await createContainer();
+      container.read(blockedFollowReconcilerProvider);
+
+      await blocklistRepository.blockUser(blockedFollow, ourPubkey: ourPubkey);
+      await Future<void>.delayed(Duration.zero);
+      await blocklistRepository.unblockUser(blockedFollow);
+      await Future<void>.delayed(Duration.zero);
+      await blocklistRepository.blockUser(blockedFollow, ourPubkey: ourPubkey);
+      await Future<void>.delayed(Duration.zero);
+
+      verify(() => followRepository.republishContactList()).called(2);
+    });
   });
 }
