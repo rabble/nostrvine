@@ -96,13 +96,6 @@ class ViewEventRetryService {
 
       for (final row in retryable) {
         // View = playback start per spec: any watch is valid, no ≥1s gate.
-        // A row without a d tag can never build an `a` tag, so it is dropped.
-        final addressableDTag = row.videoAddressableDTag;
-        if (addressableDTag == null || addressableDTag.isEmpty) {
-          await _dao.deleteById(row.id);
-          continue;
-        }
-
         final lastAttempt = row.lastAttemptAt;
         if (lastAttempt != null) {
           final gap = _now().difference(lastAttempt);
@@ -124,7 +117,7 @@ class ViewEventRetryService {
             fractionalLoops = row.loopCount?.toDouble();
           }
           final success = await _viewEventPublisher.publishViewEvent(
-            video: _toVideoEvent(row, addressableDTag: addressableDTag),
+            video: _toVideoEvent(row),
             startSeconds: 0,
             endSeconds: row.watchDurationMs ~/ 1000,
             source: viewTrafficSourceFromTag(row.trafficSource),
@@ -145,10 +138,7 @@ class ViewEventRetryService {
     }
   }
 
-  VideoEvent _toVideoEvent(
-    PendingViewEvent row, {
-    required String addressableDTag,
-  }) {
+  VideoEvent _toVideoEvent(PendingViewEvent row) {
     return VideoEvent(
       id: row.videoId,
       pubkey: row.videoPubkey,
@@ -156,7 +146,7 @@ class ViewEventRetryService {
       content: '',
       timestamp: row.createdAt,
       vineId: row.videoVineId,
-      addressableDTag: addressableDTag,
+      addressableDTag: row.videoAddressableDTag,
     );
   }
 }

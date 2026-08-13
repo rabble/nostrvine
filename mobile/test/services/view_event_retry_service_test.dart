@@ -147,52 +147,35 @@ void main() {
     });
 
     test(
-      'discards a null stored d tag even when vine id is distinct',
+      'passes through a null stored d tag without deriving one from vine id',
       () async {
-        await dao.enqueue(makeEvent(id: 'legacy', addressableDTag: null));
+        await dao.enqueue(
+          makeEvent(
+            id: 'legacy',
+            addressableDTag: null,
+            videoVineId: 'vine-legacy',
+          ),
+        );
         final service = makeService();
 
         await service.sweep();
 
-        expect(await dao.getById('legacy'), isNull);
-        verifyNever(
+        // ViewEventPublisher owns the missing-d-tag drop decision (and its
+        // Crashlytics reporting) — the retry service must not fabricate a
+        // tag from vineId or short-circuit around that check.
+        final captured = verify(
           () => publisher.publishViewEvent(
-            video: any(named: 'video'),
+            video: captureAny(named: 'video'),
             startSeconds: any(named: 'startSeconds'),
             endSeconds: any(named: 'endSeconds'),
             source: any(named: 'source'),
             sourceDetail: any(named: 'sourceDetail'),
             loopCount: any(named: 'loopCount'),
           ),
-        );
+        ).captured;
+        expect((captured.single as VideoEvent).addressableDTag, isNull);
       },
     );
-
-    test('discards a legacy row whose vine id is its event id', () async {
-      await dao.enqueue(
-        makeEvent(
-          id: 'legacy',
-          addressableDTag: null,
-          eventVideoId: 'event-id',
-          videoVineId: 'event-id',
-        ),
-      );
-      final service = makeService();
-
-      await service.sweep();
-
-      expect(await dao.getById('legacy'), isNull);
-      verifyNever(
-        () => publisher.publishViewEvent(
-          video: any(named: 'video'),
-          startSeconds: any(named: 'startSeconds'),
-          endSeconds: any(named: 'endSeconds'),
-          source: any(named: 'source'),
-          sourceDetail: any(named: 'sourceDetail'),
-          loopCount: any(named: 'loopCount'),
-        ),
-      );
-    });
 
     test(
       'marks row failed and increments retry count after publish failure',
