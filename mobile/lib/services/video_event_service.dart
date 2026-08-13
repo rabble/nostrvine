@@ -13,9 +13,8 @@
 /// 7. Sorting - Engagement-based, chronological, special handling
 /// 8. Retry & Recovery - Connection error detection, automatic retry
 /// 9. Search - NIP-50 video search implementation
-///
-/// TODO(#4742): Split this god-file into focused services; it violates the
-/// Single Responsibility Principle.
+// TODO(#4742): Split this god-file into focused services; it violates the
+// Single Responsibility Principle.
 library;
 
 import 'dart:async';
