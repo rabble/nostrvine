@@ -430,8 +430,8 @@ definitions:
         maestro test \
           --format junit \
           --output report.xml \
-          e2e/maestro/flows/likeFlow.yaml \
-          e2e/maestro/flows/commentFlow.yaml
+          e2e/maestro/tests/loginFreshInstall.yaml \
+          e2e/maestro/tests/removeKeys.yaml
       # Script-level, not workflow-level: Codemagic rejects `test_report` as an
       # unknown workflow field ("extra fields not permitted").
       test_report: report.xml
@@ -763,9 +763,10 @@ workflows:
   e2e-smoke-ios:
     name: E2E Smoke Tests (iOS)
     working_directory: mobile
-    # Measured, not guessed: a full green run is ~12 min (build 6a7bb0d4). 60
-    # turned a hung Maestro driver into an hour of billed mac_mini_m2.
-    max_build_duration: 25
+    # Measured: the verified green run is ~12 min end to end (build 6a7bb0d4).
+    # 20 leaves headroom without letting a hung driver bill an hour, which is
+    # what the previous 60 allowed.
+    max_build_duration: 20
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.0
