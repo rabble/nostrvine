@@ -478,17 +478,21 @@ void main() {
         expect(button.left, greaterThan(label.right));
       });
 
-      // The placement measurement reserves a fixed width for this button, so
-      // the two drift apart silently if the button's own geometry changes.
-      // 48px tap target + the 2px transparent padding it carries on each side.
-      testWidgets('renders at the width the placement measurement reserves', (
-        tester,
-      ) async {
+      // The trailing inset drops from 16 to 4 when the dismiss button is
+      // present, because the button carries the rest of the edge itself.
+      //
+      // This pins the inset rather than the button's absolute width: that
+      // width is Flutter-version-dependent (3.44 renders the ghostSecondary
+      // small variant at 52, current stable at 48), so asserting it here
+      // pins the SDK rather than this component's contract.
+      testWidgets('sits 4px inside the trailing edge', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(label: 'Test message', onDismissPressed: () {}),
         );
 
-        expect(tester.getRect(find.byType(DivineIconButton)).width, 52);
+        final banner = tester.getRect(find.byType(DecoratedBox));
+        final button = tester.getRect(find.byType(DivineIconButton));
+        expect(banner.right - button.right, 4);
       });
 
       testWidgets('sits after the action when both are present', (

@@ -436,8 +436,12 @@ class _DismissButton extends StatelessWidget {
   /// has no border, which `ghostSecondary` does not.
   static const double outerPadding = 2;
 
-  /// Total rendered width, scaler included — the tap target scales with text,
-  /// the transparent padding around it does not.
+  /// Width the placement measurement reserves: the tap target, which scales
+  /// with text, plus the transparent padding around it, which does not.
+  ///
+  /// Whether that padding reaches the rendered box has moved between Flutter
+  /// versions, so this deliberately reserves the upper bound — over-reserving
+  /// stacks a borderline banner one notch early, under-reserving overflows it.
   static double widthOf(BuildContext context) =>
       DivineIcon.scaleSize(context, tapTarget) + outerPadding * 2;
 
