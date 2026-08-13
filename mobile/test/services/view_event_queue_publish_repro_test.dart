@@ -156,7 +156,7 @@ void main() {
     });
 
     test(
-      'discards a queued event-id fallback instead of fabricating an a tag',
+      'drops a queued event-id fallback instead of fabricating an a tag',
       () async {
         await dao.deleteById('queued-view');
         await dao.enqueue(
@@ -186,10 +186,7 @@ void main() {
         await service.sweep();
 
         verifyNever(() => mockNostr.publishEvent(any()));
-        // The sweep drops it before the publisher, so no publisher-level
-        // drop is recorded; it can never address a subject, and retrying
-        // it forever would only burn the sweep budget.
-        expect(drops, isEmpty);
+        expect(drops, [ViewEventDropReason.missingAddressableDTag]);
         expect(await dao.getById('queued-view-without-d'), isNull);
       },
     );

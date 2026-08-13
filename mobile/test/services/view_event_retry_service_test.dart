@@ -147,15 +147,9 @@ void main() {
     });
 
     test(
-      'discards a null stored d tag even when vine id is distinct',
+      'passes a missing d tag through the publisher then deletes the row',
       () async {
-        await dao.enqueue(makeEvent(id: 'legacy', addressableDTag: null));
-        final service = makeService();
-
-        await service.sweep();
-
-        expect(await dao.getById('legacy'), isNull);
-        verifyNever(
+        when(
           () => publisher.publishViewEvent(
             video: any(named: 'video'),
             startSeconds: any(named: 'startSeconds'),
@@ -164,35 +158,57 @@ void main() {
             sourceDetail: any(named: 'sourceDetail'),
             loopCount: any(named: 'loopCount'),
           ),
+        ).thenAnswer((_) async => false);
+        await dao.enqueue(
+          makeEvent(
+            id: 'legacy',
+            addressableDTag: null,
+            videoVineId: 'vine-legacy',
+          ),
         );
+        final service = makeService();
+
+        await service.sweep();
+
+        // ViewEventPublisher owns the missing-d-tag drop decision (and its
+        // Crashlytics reporting). The queue snapshot cannot grow a d-tag
+        // later, so retrying would only re-fire the structural report.
+        final captured = verify(
+          () => publisher.publishViewEvent(
+            video: captureAny(named: 'video'),
+            startSeconds: any(named: 'startSeconds'),
+            endSeconds: any(named: 'endSeconds'),
+            source: any(named: 'source'),
+            sourceDetail: any(named: 'sourceDetail'),
+            loopCount: any(named: 'loopCount'),
+          ),
+        ).captured;
+        expect((captured.single as VideoEvent).addressableDTag, isNull);
+        expect(await dao.getById('legacy'), isNull);
       },
     );
 
-    test('discards a legacy row whose vine id is its event id', () async {
-      await dao.enqueue(
-        makeEvent(
-          id: 'legacy',
-          addressableDTag: null,
-          eventVideoId: 'event-id',
-          videoVineId: 'event-id',
-        ),
-      );
-      final service = makeService();
+    test(
+      'deletes an empty stored d tag after the publisher returns false',
+      () async {
+        when(
+          () => publisher.publishViewEvent(
+            video: any(named: 'video'),
+            startSeconds: any(named: 'startSeconds'),
+            endSeconds: any(named: 'endSeconds'),
+            source: any(named: 'source'),
+            sourceDetail: any(named: 'sourceDetail'),
+            loopCount: any(named: 'loopCount'),
+          ),
+        ).thenAnswer((_) async => false);
+        await dao.enqueue(makeEvent(id: 'empty-d', addressableDTag: ''));
+        final service = makeService();
 
-      await service.sweep();
+        await service.sweep();
 
-      expect(await dao.getById('legacy'), isNull);
-      verifyNever(
-        () => publisher.publishViewEvent(
-          video: any(named: 'video'),
-          startSeconds: any(named: 'startSeconds'),
-          endSeconds: any(named: 'endSeconds'),
-          source: any(named: 'source'),
-          sourceDetail: any(named: 'sourceDetail'),
-          loopCount: any(named: 'loopCount'),
-        ),
-      );
-    });
+        expect(await dao.getById('empty-d'), isNull);
+      },
+    );
 
     test(
       'marks row failed and increments retry count after publish failure',

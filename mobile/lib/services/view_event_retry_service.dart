@@ -96,13 +96,6 @@ class ViewEventRetryService {
 
       for (final row in retryable) {
         // View = playback start per spec: any watch is valid, no ≥1s gate.
-        // A row without a d tag can never build an `a` tag, so it is dropped.
-        final addressableDTag = row.videoAddressableDTag;
-        if (addressableDTag == null || addressableDTag.isEmpty) {
-          await _dao.deleteById(row.id);
-          continue;
-        }
-
         final lastAttempt = row.lastAttemptAt;
         if (lastAttempt != null) {
           final gap = _now().difference(lastAttempt);
@@ -113,6 +106,7 @@ class ViewEventRetryService {
         if (!marked) continue;
 
         try {
+          final video = _toVideoEvent(row);
           // Derive fractional loops from watch/total already on the row
           // instead of the rounded IntColumn, so 0.75 does not become 1.0
           // and the queue vs direct paths agree.
@@ -124,7 +118,7 @@ class ViewEventRetryService {
             fractionalLoops = row.loopCount?.toDouble();
           }
           final success = await _viewEventPublisher.publishViewEvent(
-            video: _toVideoEvent(row, addressableDTag: addressableDTag),
+            video: video,
             startSeconds: 0,
             endSeconds: row.watchDurationMs ~/ 1000,
             source: viewTrafficSourceFromTag(row.trafficSource),
@@ -132,6 +126,10 @@ class ViewEventRetryService {
             loopCount: fractionalLoops,
           );
           if (success) {
+            await _dao.deleteById(row.id);
+          } else if (video.addressableId == null) {
+            // The publisher has now reported the missing d tag, and a queued
+            // snapshot can never grow one, so a retry would only re-report.
             await _dao.deleteById(row.id);
           } else {
             await _dao.markFailed(row.id, 'publish returned false');
@@ -145,10 +143,7 @@ class ViewEventRetryService {
     }
   }
 
-  VideoEvent _toVideoEvent(
-    PendingViewEvent row, {
-    required String addressableDTag,
-  }) {
+  VideoEvent _toVideoEvent(PendingViewEvent row) {
     return VideoEvent(
       id: row.videoId,
       pubkey: row.videoPubkey,
@@ -156,7 +151,7 @@ class ViewEventRetryService {
       content: '',
       timestamp: row.createdAt,
       vineId: row.videoVineId,
-      addressableDTag: addressableDTag,
+      addressableDTag: row.videoAddressableDTag,
     );
   }
 }
