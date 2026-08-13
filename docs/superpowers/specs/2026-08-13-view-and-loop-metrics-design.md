@@ -29,24 +29,66 @@ The kind-22236 outage (#7210) exposed this. When mobile view reporting stopped,
 Trending, Popular and the creator Leaderboard while Divine had no way to notice.
 Detection is being added separately (divine-funnelcake#917).
 
-Underneath the outage sits a permanent undercount. Two independent estimates
-put recorded views at roughly a third of reality:
+Underneath the outage sits a permanent undercount, and it is measurable
+directly rather than by inference.
 
-- Recorded views imply an 8–18% per-user interaction rate against a 1–5%
-  short-form industry norm.
-- Recorded views run at ~1.0 per CDN download, for a format where one download
-  serves many playthroughs.
+### Ground truth: anyone who interacts provably watched
 
-Causes are definitional, not defects. A view today requires **≥1s of actual
-playback**, which excludes the scroll-past and the still-buffering.
+A like, comment, or repost is proof of viewing. Comparing the set of people who
+interacted with a video against the set who registered a view gives a floor on
+the loss, per video, with no benchmarks or assumptions.
 
-Anonymous coverage is split, and the split is the confusing part. Because view
-events are Nostr-signed, anonymous viewers appear in `total_views` via CDN
-delivery — 42% of all views — but are entirely absent from everything derived
-from `view_interactions`: `unique_viewers`, `loops`, and the daily stats that
-feed the leaderboard. So the view count sees them and the loop count does not —
-which is why loops, the metric unique to Divine, is the worse-measured of the
-two.
+Worked example — event
+`a3092dfc8d36d15583d0866ae4312fd32b96a8eb59d79a7f23028c1ffc6d5503`, posted
+2026-08-13:
+
+| Measure | Count |
+|---|---|
+| Distinct people who liked / commented / reposted | 37 |
+| Distinct people who registered a view | 26 |
+| **Interactors who registered a view** | **10 of 37** |
+
+**27 of 37 people who provably watched are absent from the view count** — 73%
+missing. The card showed 108; the implied floor is above 400. It is a floor
+twice over: it counts only people who bothered to interact, and silent viewers
+are missing on top of them.
+
+The same method shows engagement tracks looping, as expected for the format.
+Interactors returned 4.5 times each against 1.06 for non-interactors, giving
+~4.8 loops per interactor versus ~1.7. But the largest single interactor
+session recorded **3.3 loops** — nobody writes a comment on a six-second video
+in 3.3 passes, which suggests loop accumulation stops when the comment sheet
+opens while the video keeps playing behind it. Unconfirmed, and worth finding.
+
+Two weaker estimates agree in direction: recorded views imply an 8–18% per-user
+interaction rate against a 1–5% short-form norm, and run at ~1.0 per CDN
+download for a format where one download serves many playthroughs.
+
+### Every known error runs the same way
+
+Every cause identified so far *subtracts*:
+
+- A view requires ≥1s of playback, excluding the scroll-past and the
+  still-buffering.
+- Anonymous viewers contribute no loops at all.
+- Loop accumulation appears to stop during interaction.
+- The queue regression dropped signed-in reporting entirely for six days.
+
+None of them inflate. **So this is not a choice between accurate and
+flattering — it is a choice between wrong-low and less-wrong.** Where a
+definition is a genuine judgment call, this design takes the inclusive reading,
+because every measured error is in one direction and adding caution on top of a
+fourfold undercount compounds it rather than correcting it.
+
+The constraint that remains is honesty, not conservatism: publish nothing that
+could not be explained if audited. That rules out fabrication. It does not rule
+out counting what is actually being watched.
+
+Anonymous coverage is split, which is the confusing part. Because view events
+are Nostr-signed, anonymous viewers reach `total_views` through CDN delivery —
+42% of all views — but are absent from everything derived from
+`view_interactions`: `unique_viewers`, `loops`, and the daily stats feeding the
+leaderboard.
 
 Numbers are not cosmetic here.
 [The video-card view-count spec](2026-08-08-video-card-view-count-display-design.md)
@@ -74,27 +116,25 @@ comparable to nothing).
 viewers are roughly half of daily users and are currently invisible. This is the
 single largest correction available and every other platform already does it.
 
-**4. Loops is the signature number; views is the largest number.** These are
-not the same claim, and conflating them was an error in an earlier draft of
-this document.
+**4. Loops stays the signature metric. Which number is larger is not yet
+known.**
 
-Loops runs at **0.63–0.71 per view** in current data, and 91% of
-`view_counts` rows carry fewer loops than views. That is inherent to the
-definitions rather than a measurement artefact: a view is a playback start, a
-loop is a *completed* playthrough, so every viewer who scrolls away mid-play
-contributes a view and no loop. Rewatching does not close the gap, because
-most sessions never finish one pass.
+Loops currently measures 0.63–0.71 per view, and an earlier draft concluded
+from that that views should be the headline. **That conclusion does not
+survive, because the ratio is measured on a broken pipeline.** Anonymous
+viewers are 42% of all views and contribute *zero* loops; the signed-in half
+was dropping data for six days; and loop accumulation appears to stop during
+interaction. Every one of those depresses loops specifically.
 
-So:
+Loops is the *worse-measured* of the two metrics, not the smaller one. Counting
+anonymous loops alone moves it close to parity, and if real looping runs above
+what today's pipeline captures — which the 3.3-loop ceiling on commenter
+sessions suggests — it passes views.
 
-- **Views is the headline** where size and comparability matter — it is the
-  bigger number and the one other platforms report.
-- **Loops is the signature** — Vine-native, unique to Divine, and the only
-  metric no competitor can quote. The video card is the right home for it and
-  it should stay there.
-
-Publishing loops as "the big number" would understate Divine by roughly a
-third against its own view count.
+So loops keeps its claim on the video card and stays the metric no competitor
+can quote. **Which metric leads is deferred until both are measured properly**,
+rather than settled now on an instrument known to be broken in exactly the
+direction that decides it.
 
 **The card does not render this metric today, despite the label.**
 `VideoEvent.totalLoops`
@@ -247,7 +287,7 @@ Stacked against today's reported numbers:
 | #7210 view-event fix (merged) | ×2.6 ceiling, actual unmeasured | same ceiling |
 | View = playback start | ×2–3 on the signed-in share | — |
 | Anonymous counted | already counted (42% of views) | **new — CDN deliveries begin contributing** |
-| Loops as signature metric | — | stays ~0.65x views; not a multiplier |
+| Loop accumulation during interaction | — | unquantified; suspected undercount |
 
 The #7210 ceiling is the full reporter population coming back: daily mobile
 view reporters fell 676 → 263 over the window, so restoring all of them is
@@ -260,10 +300,10 @@ Views grow mostly from the redefinition, since anonymous views already flow into
 `total_views`. Loops grow mostly from anonymous, since loops are currently
 signed-in only and CDN deliveries have never contributed one.
 
-Views is the larger figure and grows fastest, so it is the number to lead with
-where size matters. Loops gains most in *relative* terms, because it is the
-metric that has been missing 42% of its audience entirely — but it starts from
-~0.65x views and does not overtake it.
+Both remain floors. The interaction-overlap measurement puts real views for a
+sampled video above 400 against a displayed 108, which is a larger correction
+than this table accounts for, and it counts only viewers who interacted.
+Treat every figure here as the least the number should move, not the most.
 
 ### The display floor, and why most cards show a date
 
