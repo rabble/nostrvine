@@ -79,6 +79,15 @@ class _DragSelectRegionState extends State<DragSelectRegion>
   /// offset: negative moves towards the top of the list.
   double _autoScrollVelocity = 0;
 
+  /// Height the edge band was last measured against, so a region that is
+  /// resized mid-drag can be told apart from a finger that moved.
+  double? _bandHeight;
+
+  /// Which edge's band arrived under the finger rather than the other way
+  /// round — `-1` for the top, `1` for the bottom, `0` when auto-scroll is
+  /// free to run. Held until the finger leaves that band.
+  int _disarmedBand = 0;
+
   Duration? _lastTick;
 
   bool get _isDragging => _focusSlot >= 0;
@@ -100,6 +109,8 @@ class _DragSelectRegionState extends State<DragSelectRegion>
     if (slot == null) return;
     _focusSlot = slot;
     _fingerPosition = details.globalPosition;
+    _bandHeight = _renderBox?.size.height;
+    _disarmedBand = 0;
     unawaited(HapticFeedback.selectionClick());
     widget.onStarted(slot);
   }
@@ -122,6 +133,8 @@ class _DragSelectRegionState extends State<DragSelectRegion>
   void _finishDrag() {
     _stopAutoScroll();
     _fingerPosition = null;
+    _bandHeight = null;
+    _disarmedBand = 0;
     if (!_isDragging) return;
     _focusSlot = -1;
     widget.onEnded();
@@ -180,6 +193,24 @@ class _DragSelectRegionState extends State<DragSelectRegion>
       depth = (dy - edge) / edge;
     } else if (dy > height - edge) {
       depth = (dy - (height - edge)) / edge;
+    }
+
+    // The band sits at the region's own edges, so it moves whenever the
+    // region is resized under the gesture — the create-video bar rising on
+    // the very press that opened the selection, above all. Scrolling is the
+    // finger's to ask for, so a band that comes to it is held off until it
+    // leaves again.
+    final band = depth == 0 ? 0 : depth.sign.toInt();
+    if (height != _bandHeight) {
+      _bandHeight = height;
+      if (band != 0) _disarmedBand = band;
+    }
+    if (_disarmedBand != 0) {
+      if (band == _disarmedBand) {
+        _stopAutoScroll();
+        return;
+      }
+      _disarmedBand = 0;
     }
 
     _autoScrollVelocity = depth.clamp(-1.0, 1.0) * _autoScrollMaxVelocity;
