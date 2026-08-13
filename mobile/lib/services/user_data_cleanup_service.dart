@@ -41,6 +41,7 @@ class UserDataCleanupService {
   static const List<String> userSpecificKeys = [
     // List services
     'curated_lists',
+    'curated_lists_default_deleted',
     'subscribed_list_ids',
     'user_lists',
     // Bookmark services

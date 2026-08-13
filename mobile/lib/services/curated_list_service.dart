@@ -372,10 +372,9 @@ class CuratedListService extends ChangeNotifier {
       if (currentIndex != -1) {
         // Unconfirmed publishing queues network failures for reconnect. Keep
         // the local edit so a queued event cannot later disagree with local
-        // state, but clear the event id so a hard local failure (signing,
-        // encryption, payload validation) is also retried by backfill.
+        // state, and mark it for backfill without losing the event id that says
+        // a relay may still hold this coordinate.
         _lists[currentIndex] = _lists[currentIndex].copyWith(
-          clearNostrEventId: true,
           pendingRepublish: true,
         );
         await _saveLists();
@@ -616,18 +615,17 @@ class CuratedListService extends ChangeNotifier {
 
       if (_authService.isAuthenticated &&
           !await _publishListToNostr(updatedList, confirmed: true)) {
-        // A failed metadata edit (rename, description, tags, order) is
-        // retried by backfill like a failed item edit: clear the event id
-        // and flag it, so the local edit is not stranded on this device and
-        // later lost to a newer relay copy. A failed visibility flip is left
-        // alone: no relay accepted the sealed replacement, so the plaintext
-        // copy is still what every relay serves and the list must keep saying
-        // public until the user retries.
+        // A failed metadata edit (rename, description, tags, order) is retried
+        // by backfill like a failed item edit: flag it without clearing the
+        // event id that later privacy redaction and deletion use to know a
+        // relay may still hold this coordinate. A failed visibility flip is
+        // left alone: no relay accepted the sealed replacement, so the
+        // plaintext copy is still what every relay serves and the list must
+        // keep saying public until the user retries.
         if (!visibilityChanged) {
           final currentIndex = _lists.indexWhere((l) => l.id == listId);
           if (currentIndex != -1) {
             _lists[currentIndex] = _lists[currentIndex].copyWith(
-              clearNostrEventId: true,
               pendingRepublish: true,
             );
             await _saveLists();
@@ -674,8 +672,8 @@ class CuratedListService extends ChangeNotifier {
   /// Delete a list owned by the current user.
   ///
   /// Published lists send a NIP-09 deletion event for the kind 30005 coordinate
-  /// before local state is removed. A list that never published has no event to
-  /// delete and can be removed locally.
+  /// before local state is removed. A list that never reached a relay has no
+  /// event to delete and can be removed locally.
   Future<bool> deleteOwnedList(String listId) {
     return _serializeListOperation(listId, () => _deleteOwnedList(listId));
   }
@@ -698,8 +696,9 @@ class CuratedListService extends ChangeNotifier {
       }
 
       // Private lists are on relays too, sealed rather than absent, so both
-      // kinds need the NIP-09 request. A list that never published has no
-      // event to delete — [nostrEventId] is how we know.
+      // kinds need the NIP-09 request. [nostrEventId] means a relay may still
+      // hold this coordinate even when [pendingRepublish] says the latest local
+      // edit has not reached it.
       if (list.nostrEventId != null) {
         if (!await _relayGateway.publishListDeletion(listId)) {
           return false;
@@ -1549,11 +1548,9 @@ class CuratedListService extends ChangeNotifier {
   ///
   /// Before private lists were published, they existed only in
   /// SharedPreferences and died with the device; the same is true of any list
-  /// created while the app could not reach a relay. Failed edits also clear
-  /// [CuratedList.nostrEventId], but keep [CuratedList.pendingRepublish] so
-  /// relay sync does not mistake a deletion for a divergent first sync.
-  /// Failures are left alone — the list keeps its null id and is retried on the
-  /// next sync.
+  /// created while the app could not reach a relay. Failed edits keep
+  /// [CuratedList.nostrEventId] as the marker that a relay may still hold this
+  /// coordinate, and set [CuratedList.pendingRepublish] for the retry.
   Future<void> _backfillUnpublishedLists() async {
     if (!_authService.isAuthenticated) return;
 
@@ -1563,7 +1560,7 @@ class CuratedListService extends ChangeNotifier {
     final stranded = _lists
         .where(
           (list) =>
-              list.nostrEventId == null &&
+              (list.nostrEventId == null || list.pendingRepublish) &&
               (list.pubkey == owner ||
                   (list.pubkey == null &&
                       !_subscribedListIds.contains(list.id))),
@@ -1579,18 +1576,21 @@ class CuratedListService extends ChangeNotifier {
 
     for (final list in stranded) {
       await _serializeListOperation(list.id, () async {
+        final currentOwner = _relayGateway.currentAuthenticatedPubkey();
+        if (currentOwner == null || currentOwner != owner) return;
         var current = getListById(list.id);
-        if (current == null || current.nostrEventId != null) return;
+        if (current == null) return;
+        if (current.nostrEventId != null && !current.pendingRepublish) return;
         if (current.pubkey == null &&
             !_subscribedListIds.contains(current.id)) {
           final currentId = current.id;
           final currentIndex = _lists.indexWhere((l) => l.id == currentId);
           if (currentIndex == -1) return;
-          current = current.copyWith(pubkey: owner);
+          current = current.copyWith(pubkey: currentOwner);
           _lists[currentIndex] = current;
           await _saveLists();
         }
-        if (current.pubkey != owner) return;
+        if (current.pubkey != currentOwner) return;
         await _publishListToNostr(current, confirmed: true);
       });
     }

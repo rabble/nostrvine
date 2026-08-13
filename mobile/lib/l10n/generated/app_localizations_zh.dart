@@ -4897,7 +4897,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listPublicListSubtitle => '其他人可以关注并查看此列表';
 
   @override
-  String get listPrivateListSubtitle => '视频保持私密。列表名称仍会显示。';
+  String get listPrivateListSubtitle => '视频保持私密。名称、描述、标签和封面仍会显示。';
 
   @override
   String get listVisibilityPublic => '公开';
@@ -4934,7 +4934,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      '视频会被加密，只有你能看到。列表名称仍然可见，之前分享出去的副本可能仍会留存。';
+      '视频会被加密，只有你能看到。名称、描述、标签和封面仍然可见，之前分享出去的副本可能仍会留存。';
 
   @override
   String get listMakePublicTitle => '将此列表设为公开？';

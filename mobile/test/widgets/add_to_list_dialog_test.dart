@@ -371,7 +371,9 @@ void main() {
       expect(find.text('Edit list'), findsOneWidget);
       expect(find.text('Puppets'), findsOneWidget);
       expect(
-        find.text('Videos stay private. The list name stays visible.'),
+        find.text(
+          'Videos stay private. Name, description, tags, and cover stay visible.',
+        ),
         findsOneWidget,
       );
       expect(

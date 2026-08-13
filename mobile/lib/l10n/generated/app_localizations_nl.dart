@@ -5182,7 +5182,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Video\'s blijven privé. De lijstnaam blijft zichtbaar.';
+      'Video\'s blijven privé. Naam, beschrijving, tags en omslag blijven zichtbaar.';
 
   @override
   String get listVisibilityPublic => 'Openbaar';
@@ -5222,7 +5222,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'De video\'s worden versleuteld, zodat alleen jij ze kunt zien. De naam van de lijst blijft zichtbaar en al gedeelde kopieën kunnen blijven bestaan.';
+      'De video\'s worden versleuteld, zodat alleen jij ze kunt zien. Naam, beschrijving, tags en omslag blijven zichtbaar, en al gedeelde kopieën kunnen blijven bestaan.';
 
   @override
   String get listMakePublicTitle => 'Deze lijst openbaar maken?';

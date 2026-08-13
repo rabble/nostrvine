@@ -5133,7 +5133,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Videolar gizli kalır. Liste adı görünür kalır.';
+      'Videolar gizli kalır. Ad, açıklama, etiketler ve kapak görünür kalır.';
 
   @override
   String get listVisibilityPublic => 'Herkese açık';
@@ -5171,7 +5171,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Videolar şifrelenir, böylece onları yalnızca sen görürsün. Listenin adı görünür kalır ve daha önce paylaşılan kopyalar kalabilir.';
+      'Videolar şifrelenir, böylece onları yalnızca sen görürsün. Ad, açıklama, etiketler ve kapak görünür kalır; daha önce paylaşılan kopyalar kalabilir.';
 
   @override
   String get listMakePublicTitle => 'Bu liste herkese açık yapılsın mı?';

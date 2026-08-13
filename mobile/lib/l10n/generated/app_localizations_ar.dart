@@ -5122,7 +5122,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'تبقى مقاطع الفيديو خاصة. يبقى اسم القائمة ظاهرًا';
+      'تبقى مقاطع الفيديو خاصة. يبقى الاسم والوصف والوسوم والغلاف ظاهرين.';
 
   @override
   String get listVisibilityPublic => 'عامة';
@@ -5160,7 +5160,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'سيتم تشفير مقاطع الفيديو بحيث لا يراها سواك. اسم القائمة يبقى ظاهرًا، وقد تبقى النسخ التي شاركتها سابقًا.';
+      'سيتم تشفير مقاطع الفيديو بحيث لا يراها سواك. يبقى الاسم والوصف والوسوم والغلاف ظاهرين، وقد تبقى النسخ التي شاركتها سابقًا.';
 
   @override
   String get listMakePublicTitle => 'هل تريد جعل هذه القائمة عامة؟';

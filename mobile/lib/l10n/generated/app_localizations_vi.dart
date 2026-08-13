@@ -5167,7 +5167,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Video vẫn riêng tư. Tên danh sách vẫn hiển thị.';
+      'Video vẫn riêng tư. Tên, mô tả, thẻ và ảnh bìa vẫn hiển thị.';
 
   @override
   String get listVisibilityPublic => 'Công khai';
@@ -5207,7 +5207,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Video sẽ được mã hóa nên chỉ mình bạn xem được. Tên danh sách vẫn hiển thị, và những bản đã chia sẻ trước đó vẫn có thể còn.';
+      'Video sẽ được mã hóa nên chỉ mình bạn xem được. Tên, mô tả, thẻ và ảnh bìa vẫn hiển thị, và những bản đã chia sẻ trước đó vẫn có thể còn.';
 
   @override
   String get listMakePublicTitle => 'Chuyển danh sách này thành công khai?';

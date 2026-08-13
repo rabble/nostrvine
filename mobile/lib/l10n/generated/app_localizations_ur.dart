@@ -5165,7 +5165,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'ویڈیوز نجی رہتی ہیں۔ فہرست کا نام نظر آتا رہتا ہے۔';
+      'ویڈیوز نجی رہتی ہیں۔ نام، تفصیل، ٹیگز اور کور نظر آتے رہتے ہیں۔';
 
   @override
   String get listVisibilityPublic => 'عوامی';
@@ -5204,7 +5204,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'ویڈیوز خفیہ کر دی جائیں گی تاکہ انہیں صرف آپ دیکھ سکیں۔ فہرست کا نام نظر آتا رہے گا، اور پہلے شیئر کی گئی کاپیاں باقی رہ سکتی ہیں۔';
+      'ویڈیوز خفیہ کر دی جائیں گی تاکہ انہیں صرف آپ دیکھ سکیں۔ نام، تفصیل، ٹیگز اور کور نظر آتے رہیں گے، اور پہلے شیئر کی گئی کاپیاں باقی رہ سکتی ہیں۔';
 
   @override
   String get listMakePublicTitle => 'اس فہرست کو عوامی بنائیں؟';

@@ -5050,7 +5050,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get listPublicListSubtitle => 'ሌሎች ሊከተሉት እና ይህንን ዝርዝር ማየት ይችላሉ።';
 
   @override
-  String get listPrivateListSubtitle => 'ቪዲዮዎቹ የግል ሆነው ይቆያሉ። የዝርዝሩ ስም ይታያል';
+  String get listPrivateListSubtitle =>
+      'ቪዲዮዎቹ የግል ሆነው ይቆያሉ። ስም፣ መግለጫ፣ መለያዎች እና ሽፋን ይታያሉ።';
 
   @override
   String get listVisibilityPublic => 'ይፋዊ';
@@ -5088,7 +5089,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'ቪዲዮዎቹ ይመሰጠራሉ፤ ስለዚህ እርስዎ ብቻ ማየት ይችላሉ። የዝርዝሩ ስም ግን ይታያል፣ እስካሁን የተጋሩ ቅጂዎችም ሊቀሩ ይችላሉ።';
+      'ቪዲዮዎቹ ይመሰጠራሉ፤ ስለዚህ እርስዎ ብቻ ማየት ይችላሉ። ስም፣ መግለጫ፣ መለያዎች እና ሽፋን ይታያሉ፣ እስካሁን የተጋሩ ቅጂዎችም ሊቀሩ ይችላሉ።';
 
   @override
   String get listMakePublicTitle => 'ይህ ዝርዝር ይፋዊ ይሁን?';

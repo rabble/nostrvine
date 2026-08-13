@@ -5202,7 +5202,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Video kekal peribadi. Nama senarai kekal kelihatan.';
+      'Video kekal peribadi. Nama, keterangan, tag dan kulit kekal kelihatan.';
 
   @override
   String get listVisibilityPublic => 'Awam';
@@ -5241,7 +5241,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Video akan disulitkan supaya hanya anda yang boleh melihatnya. Nama senarai kekal kelihatan, dan salinan yang sudah dikongsi mungkin masih ada.';
+      'Video akan disulitkan supaya hanya anda yang boleh melihatnya. Nama, keterangan, tag dan kulit kekal kelihatan, dan salinan yang sudah dikongsi mungkin masih ada.';
 
   @override
   String get listMakePublicTitle => 'Jadikan senarai ini awam?';

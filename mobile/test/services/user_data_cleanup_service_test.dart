@@ -549,6 +549,7 @@ void main() {
 
         // List-related
         expect(keys, contains('curated_lists'));
+        expect(keys, contains('curated_lists_default_deleted'));
         expect(keys, contains('subscribed_list_ids'));
         expect(keys, contains('user_lists'));
 

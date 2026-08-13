@@ -4931,7 +4931,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get listPublicListSubtitle => '다른 사람들이 이 목록을 팔로우하고 볼 수 있어요';
 
   @override
-  String get listPrivateListSubtitle => '동영상은 비공개로 유지돼요. 목록 이름은 계속 보여요.';
+  String get listPrivateListSubtitle =>
+      '동영상은 비공개로 유지돼요. 이름, 설명, 태그, 커버는 계속 보여요.';
 
   @override
   String get listVisibilityPublic => '공개';
@@ -4968,7 +4969,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      '동영상이 암호화돼서 나만 볼 수 있어요. 목록 이름은 계속 보이고, 이미 공유한 사본은 남아 있을 수 있어요.';
+      '동영상이 암호화돼서 나만 볼 수 있어요. 이름, 설명, 태그, 커버는 계속 보이고, 이미 공유한 사본은 남아 있을 수 있어요.';
 
   @override
   String get listMakePublicTitle => '이 목록을 공개로 바꿀까요?';

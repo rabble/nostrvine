@@ -608,6 +608,8 @@ void main() {
           await service.addVideoToList(list!.id, 'kept_video');
           await service.addVideoToList(list.id, 'removed_video');
           final beforeDelete = service.getListById(list.id)!;
+          final originalEventId = beforeDelete.nostrEventId;
+          expect(originalEventId, isNotNull);
           clearInteractions(mockNostr);
           when(
             () => mockNostr.publishEvent(any()),
@@ -621,7 +623,7 @@ void main() {
           expect(removed, isFalse);
           var stored = service.getListById(list.id)!;
           expect(stored.videoEventIds, ['kept_video']);
-          expect(stored.nostrEventId, isNull);
+          expect(stored.nostrEventId, originalEventId);
           expect(stored.pendingRepublish, isTrue);
 
           when(() => mockNostr.publishEvent(any())).thenAnswer(
@@ -1493,7 +1495,8 @@ void main() {
 
       test('flags a failed rename for backfill retry', () async {
         final list = await service.createList(name: 'Original Name');
-        expect(list!.nostrEventId, isNotNull);
+        final originalEventId = list!.nostrEventId;
+        expect(originalEventId, isNotNull);
 
         reset(mockNostr);
         when(() => mockNostr.signer).thenReturn(mockSigner);
@@ -1509,14 +1512,63 @@ void main() {
 
         expect(result, isFalse);
         final stored = service.getListById(list.id);
-        // The rename is kept locally, but the failed publish must clear the
-        // event id and flag the list so backfill republishes it — otherwise
-        // the edit is stranded on this device and a newer relay copy can
-        // silently overwrite it.
+        // The rename is kept locally and flagged for backfill. The previous
+        // event id must stay as the marker that relays may still hold this
+        // coordinate, so later redaction/deletion can retire it.
         expect(stored!.name, 'Updated Name');
-        expect(stored.nostrEventId, isNull);
+        expect(stored.nostrEventId, originalEventId);
         expect(stored.pendingRepublish, isTrue);
       });
+
+      test(
+        'redacts the plaintext event after a failed rename then privacy flip',
+        () async {
+          final list = await service.createList(name: 'Public List');
+          final plaintextEventId = service.getListById(list!.id)!.nostrEventId;
+          expect(plaintextEventId, isNotNull);
+
+          reset(mockNostr);
+          when(() => mockNostr.signer).thenReturn(mockSigner);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _rejected(invocation.positionalArguments[0] as Event),
+          );
+
+          final renamed = await service.updateList(
+            listId: list.id,
+            name: 'Renamed Locally',
+          );
+
+          expect(renamed, isFalse);
+          final pending = service.getListById(list.id)!;
+          expect(pending.nostrEventId, plaintextEventId);
+          expect(pending.pendingRepublish, isTrue);
+
+          clearInteractions(mockNostr);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _accepted(invocation.positionalArguments[0] as Event),
+          );
+          when(() => mockNostr.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+
+          final flipped = await service.updateList(
+            listId: list.id,
+            isPublic: false,
+          );
+
+          expect(flipped, isTrue);
+          final redaction =
+              verify(() => mockNostr.publishEvent(captureAny())).captured.single
+                  as Event;
+          expect(redaction.kind, EventKind.eventDeletion);
+          expect(redaction.tags, contains(equals(['e', plaintextEventId])));
+          expect(redaction.tags, contains(equals(['k', '30005'])));
+        },
+      );
 
       test('returns false for non-existent list', () async {
         final result = await service.updateList(
@@ -2122,6 +2174,50 @@ void main() {
               '30005:$_ownerPubkey:${CuratedListService.defaultListId}',
             ]),
           ),
+        );
+      });
+
+      test('deletes the relay coordinate after a failed rename', () async {
+        final list = await service.createList(name: 'Public List');
+        final originalEventId = service.getListById(list!.id)!.nostrEventId;
+        expect(originalEventId, isNotNull);
+
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _rejected(invocation.positionalArguments[0] as Event),
+        );
+
+        final renamed = await service.updateList(
+          listId: list.id,
+          name: 'Renamed Locally',
+        );
+
+        expect(renamed, isFalse);
+        final pending = service.getListById(list.id)!;
+        expect(pending.nostrEventId, originalEventId);
+        expect(pending.pendingRepublish, isTrue);
+
+        clearInteractions(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        final deleted = await service.deleteOwnedList(list.id);
+
+        expect(deleted, isTrue);
+        expect(service.getListById(list.id), isNull);
+        final deletion =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(deletion.kind, EventKind.eventDeletion);
+        expect(
+          deletion.tags,
+          contains(equals(['a', '30005:$_ownerPubkey:${list.id}'])),
         );
       });
 

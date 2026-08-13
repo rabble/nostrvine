@@ -5296,7 +5296,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Filmy zostają prywatne. Nazwa listy pozostaje widoczna.';
+      'Filmy zostają prywatne. Nazwa, opis, tagi i okładka pozostają widoczne.';
 
   @override
   String get listVisibilityPublic => 'Publiczna';
@@ -5336,7 +5336,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Filmy zostaną zaszyfrowane, więc zobaczysz je tylko ty. Nazwa listy pozostaje widoczna, a już udostępnione kopie mogą się zachować.';
+      'Filmy zostaną zaszyfrowane, więc zobaczysz je tylko ty. Nazwa, opis, tagi i okładka pozostają widoczne, a już udostępnione kopie mogą się zachować.';
 
   @override
   String get listMakePublicTitle => 'Ustawić tę listę jako publiczną?';

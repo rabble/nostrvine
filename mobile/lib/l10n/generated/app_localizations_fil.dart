@@ -5229,7 +5229,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Mananatiling pribado ang mga video. Nakikita pa rin ang pangalan ng listahan.';
+      'Mananatiling pribado ang mga video. Nakikita pa rin ang pangalan, description, tags, at cover.';
 
   @override
   String get listVisibilityPublic => 'Public';
@@ -5268,7 +5268,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Ie-encrypt ang mga video kaya ikaw lang ang makakakita. Nananatiling nakikita ang pangalan ng list, at puwedeng manatili ang mga kopyang naipamahagi na.';
+      'Ie-encrypt ang mga video kaya ikaw lang ang makakakita. Nakikita pa rin ang pangalan, description, tags, at cover, at puwedeng manatili ang mga kopyang naipamahagi na.';
 
   @override
   String get listMakePublicTitle => 'Gawing public ang list na ito?';

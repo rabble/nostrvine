@@ -5304,7 +5304,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Videoclipurile rămân private. Numele listei rămâne vizibil.';
+      'Videoclipurile rămân private. Numele, descrierea, etichetele și coperta rămân vizibile.';
 
   @override
   String get listVisibilityPublic => 'Publică';
@@ -5342,7 +5342,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Videoclipurile sunt criptate, așa că doar tu le poți vedea. Numele listei rămâne vizibil, iar copiile deja distribuite pot rămâne.';
+      'Videoclipurile sunt criptate, așa că doar tu le poți vedea. Numele, descrierea, etichetele și coperta rămân vizibile, iar copiile deja distribuite pot rămâne.';
 
   @override
   String get listMakePublicTitle => 'Faci lista publică?';

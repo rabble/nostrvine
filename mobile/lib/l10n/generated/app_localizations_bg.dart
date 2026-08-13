@@ -5213,7 +5213,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Видеата остават частни. Името на списъка остава видимо';
+      'Видеата остават частни. Името, описанието, таговете и корицата остават видими.';
 
   @override
   String get listVisibilityPublic => 'Публичен';
@@ -5253,7 +5253,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Видеата се криптират, така че само ти да ги виждаш. Името на списъка остава видимо, а вече споделени копия може да останат.';
+      'Видеата се криптират, така че само ти да ги виждаш. Името, описанието, таговете и корицата остават видими, а вече споделени копия може да останат.';
 
   @override
   String get listMakePublicTitle => 'Да направим ли този списък публичен?';

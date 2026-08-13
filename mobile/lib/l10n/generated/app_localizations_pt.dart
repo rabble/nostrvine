@@ -5194,7 +5194,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Os vídeos ficam privados. O nome da lista continua visível.';
+      'Os vídeos ficam privados. Nome, descrição, tags e capa continuam visíveis.';
 
   @override
   String get listVisibilityPublic => 'Pública';
@@ -5234,7 +5234,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Os vídeos são criptografados, então só você vai ver. O nome da lista continua visível e cópias já compartilhadas podem persistir.';
+      'Os vídeos são criptografados, então só você vai ver. Nome, descrição, tags e capa continuam visíveis, e cópias já compartilhadas podem persistir.';
 
   @override
   String get listMakePublicTitle => 'Tornar esta lista pública?';

@@ -126,6 +126,27 @@ void main() {
         expect(unsealed.status, UnsealItemTagsStatus.notSealed);
       });
 
+      test(
+        'reports public item tags as not sealed even with sealed content',
+        () async {
+          final sealed = await gateway.sealItemTags(_list());
+
+          final unsealed = await gateway.unsealItemTags(
+            _event(
+              content: sealed!,
+              pubkey: _ownerPubkey,
+              tags: const [
+                ['d', 'list-1'],
+                ['e', _videoEventId],
+              ],
+            ),
+          );
+
+          expect(unsealed.status, UnsealItemTagsStatus.notSealed);
+          verifyNever(() => mockSigner.nip44Decrypt(any(), any()));
+        },
+      );
+
       test('fails rather than exposing another account sealed list', () async {
         final sealed = await gateway.sealItemTags(_list());
 

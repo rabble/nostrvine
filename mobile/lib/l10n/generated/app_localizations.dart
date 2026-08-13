@@ -8981,7 +8981,7 @@ abstract class AppLocalizations {
   /// No description provided for @listPrivateListSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Videos stay private. The list name stays visible.'**
+  /// **'Videos stay private. Name, description, tags, and cover stay visible.'**
   String get listPrivateListSubtitle;
 
   /// No description provided for @listVisibilityPublic.
@@ -9053,7 +9053,7 @@ abstract class AppLocalizations {
   /// No description provided for @listMakePrivateWarning.
   ///
   /// In en, this message translates to:
-  /// **'Its videos get encrypted so only you can see them. The list\'s name stays visible, and copies shared before now may persist.'**
+  /// **'Its videos get encrypted so only you can see them. The name, description, tags, and cover stay visible, and copies shared before now may persist.'**
   String get listMakePrivateWarning;
 
   /// No description provided for @listMakePublicTitle.

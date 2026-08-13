@@ -5126,7 +5126,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Videonya tetap privat. Nama daftarnya tetap terlihat.';
+      'Videonya tetap privat. Nama, deskripsi, tag, dan sampul tetap terlihat.';
 
   @override
   String get listVisibilityPublic => 'Publik';
@@ -5164,7 +5164,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Videonya dienkripsi jadi cuma kamu yang bisa lihat. Nama daftarnya tetap terlihat, dan salinan yang sudah dibagikan bisa tetap ada.';
+      'Videonya dienkripsi jadi cuma kamu yang bisa lihat. Nama, deskripsi, tag, dan sampul tetap terlihat, dan salinan yang sudah dibagikan bisa tetap ada.';
 
   @override
   String get listMakePublicTitle => 'Jadikan daftar ini publik?';
