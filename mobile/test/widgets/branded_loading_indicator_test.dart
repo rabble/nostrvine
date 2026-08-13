@@ -165,6 +165,59 @@ void main() {
     });
   });
 
+  group('reduced motion', () {
+    // The sprite animation runs on AnimationController.repeat(), which never
+    // settles. XCUITest blocks every UI query until the app under test reaches
+    // quiescence, so a perpetual animation makes each query wait out XCUITest's
+    // internal timeout — measured at a fixed 3m31s on the Explore screen, where
+    // this indicator is the `loading:` state (#7204).
+    //
+    // pumpAndSettle fails the same way for the same reason, which makes it a
+    // faithful proxy: if it can settle, the app can go idle.
+    Widget wrap({required bool disableAnimations}) {
+      return MediaQuery(
+        data: MediaQueryData(disableAnimations: disableAnimations),
+        child: MaterialApp(
+          theme: VineTheme.theme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: BrandedLoadingIndicator()),
+        ),
+      );
+    }
+
+    testWidgets('settles when the platform asks for reduced motion', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrap(disableAnimations: true));
+
+      // Throws on timeout if anything is still scheduling frames.
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+    });
+
+    testWidgets('still renders the mark when motion is reduced', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrap(disableAnimations: true));
+      await tester.pumpAndSettle();
+
+      // A static frame, not an empty box: the indicator still has to read as
+      // "something is loading".
+      expect(find.byType(Image), findsWidgets);
+    });
+
+    testWidgets('animates when reduced motion is off', (tester) async {
+      await tester.pumpWidget(wrap(disableAnimations: false));
+      await tester.pump();
+
+      // The control: without the setting the animation must still run, so the
+      // fix cannot be "stop animating always".
+      expect(tester.binding.transientCallbackCount, greaterThan(0));
+    });
+  });
+
   group('sprite sheet asset', () {
     late DecodedImage sheet;
 

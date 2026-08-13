@@ -15,7 +15,7 @@ set -euo pipefail
 # test data to the live relay:
 #   cd mobile && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true
 #
-# Credentials are not committed. Supply them, as CI does:
+# Credentials are not committed. Supply them for the full smoke suite:
 #   MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
 #     bash e2e/maestro/scripts/ui_smoke_ios.sh
 # ------------------------------------------------------------

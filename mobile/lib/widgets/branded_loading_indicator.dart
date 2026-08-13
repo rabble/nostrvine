@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/extensions/media_query_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -59,11 +60,45 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
 
   static const Duration _animationDuration = Duration(milliseconds: 1800);
 
+  /// Frame shown when motion is reduced. 0 is the mark's rest pose — the frame
+  /// `branded_loading_indicator_test.dart` pins the brand silhouette against —
+  /// so the static form is the logo at rest rather than mid-wing-flap.
+  static const int _restFrame = 0;
+
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(duration: _animationDuration, vsync: this)
-      ..repeat();
+    // Deliberately not started here. Whether this animates depends on
+    // MediaQuery, which is not available until didChangeDependencies.
+    _controller = AnimationController(
+      duration: _animationDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncToMotionPreference();
+  }
+
+  /// Starts or stops the loop to match the platform's reduced-motion setting.
+  ///
+  /// Beyond the accessibility rule in `.claude/rules/accessibility.md`, this is
+  /// load-bearing for UI tests. `repeat()` never settles, and XCUITest blocks
+  /// every query until the app under test reaches quiescence — so while this
+  /// indicator is on screen each query waits out XCUITest's internal timeout,
+  /// measured at a fixed 3m31s on Explore, where this widget is the `loading:`
+  /// state (#7204). Honouring reduced motion lets the app go idle, which is
+  /// what the E2E suite needs and what a reduced-motion user should get anyway.
+  void _syncToMotionPreference() {
+    if (context.reduceMotion) {
+      if (_controller.isAnimating) _controller.stop();
+      _controller.value =
+          _restFrame / BrandedLoadingIndicator.frameCount.toDouble();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override

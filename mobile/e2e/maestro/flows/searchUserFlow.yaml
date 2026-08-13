@@ -1,6 +1,7 @@
 appId: co.openvine.app
-# The account searched for is NOT committed. Supply it at run time; CI reads it
-# from the `maestro_e2e_credentials` Codemagic group:
+# The account searched for is NOT committed. Supply it at run time. If
+# full-suite CI is restored, it should read it from the
+# `maestro_e2e_credentials` Codemagic group:
 #
 #   maestro test -e SEARCH_USER=... e2e/maestro/flows/searchUserFlow.yaml
 ---
