@@ -24,6 +24,7 @@ import 'package:openvine/services/saved_sound_context_builder.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/library/saved_sound_details_editor.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_credit.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:provider/provider.dart' as inherited_provider;
@@ -35,6 +36,49 @@ const _soundDetailCreatorAttributionIdentifier =
     'sound_detail_creator_attribution';
 const _soundDetailPublisherAttributionIdentifier =
     'sound_detail_publisher_attribution';
+
+/// How long the screen's confirmation / failure snackbars stay up.
+const _snackBarDuration = Duration(seconds: 2);
+
+/// Pinned label introducing the video grid.
+///
+/// Rendered through [PinnedHeaderSliver] rather than a
+/// [SliverPersistentHeaderDelegate] on purpose: a delegate has to declare its
+/// extent before the child is laid out, so every type or padding change has
+/// to be mirrored in that arithmetic, and a header that ends up shorter than
+/// its declared extent makes `layoutExtent` exceed `paintExtent` — the sliver
+/// then fails layout, leaves its geometry null, and paint reports it as
+/// "Null check operator used on a null value" against the enclosing
+/// [CustomScrollView]. [PinnedHeaderSliver] measures the child instead, so
+/// there is nothing to keep in sync.
+///
+/// Paints the scroll view's own background so the grid scrolls *behind* the
+/// label rather than through it — a pinned sliver keeps painting where the
+/// slivers after it are still scrolling, and a transparent one shows their
+/// thumbnails straight through the text.
+class _VideosSectionHeader extends StatelessWidget {
+  const _VideosSectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: context.vineColors.background,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          title,
+          style: VineTheme.titleSmallFont(
+            color: context.vineColors.primaryText,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+}
 
 /// Screen displaying details of a specific sound and videos using it.
 ///
@@ -125,9 +169,10 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.soundUnableToPreview),
-            duration: const Duration(seconds: 2),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.soundUnableToPreview,
+            error: true,
+            duration: _snackBarDuration,
           ),
         );
       }
@@ -172,9 +217,10 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
           _isLoadingPreview = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.soundPreviewFailed(e)),
-            duration: const Duration(seconds: 2),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.soundPreviewFailed(context.l10n.profilePleaseTryAgain),
+            error: true,
+            duration: _snackBarDuration,
           ),
         );
       }
@@ -217,14 +263,15 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(switch (result) {
+      DivineSnackbarContainer.snackBar(
+        switch (result) {
           SavedSoundSaveResult.saved => context.l10n.soundsSavedToLibrary,
           SavedSoundSaveResult.alreadySaved =>
             context.l10n.soundsAlreadySavedToLibrary,
           null => context.l10n.soundsSaveFailed,
-        }),
-        duration: const Duration(seconds: 2),
+        },
+        error: result == null,
+        duration: _snackBarDuration,
       ),
     );
   }
@@ -323,77 +370,66 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
             ),
       body: Stack(
         children: [
-          // Main content
+          // Main content. One scroll view for the whole screen: the sound
+          // header used to be a fixed-height `Column` child above the grid,
+          // so on a short viewport — or once attribution, tags and the saved
+          // sound editor stack up — the grid was squeezed into a slot barely
+          // one row tall. Only the videos section header stays pinned.
           Semantics(
             identifier: 'sound_detail_screen_${widget.sound.id}',
             container: true,
-            child: Column(
-              children: [
+            child: CustomScrollView(
+              slivers: [
                 // Sound header
-                _SoundHeader(
-                  sound: widget.sound,
-                  usageCount: usageCountAsync.value ?? 0,
-                  isPlaying: _isPlayingPreview,
-                  isLoadingPreview: _isLoadingPreview,
-                  onPreviewTap: _togglePreview,
-                  onUseSoundTap: canReuseSound ? _onUseSound : null,
-                  reuseAllowed: reuseAllowed,
+                SliverToBoxAdapter(
+                  child: _SoundHeader(
+                    sound: widget.sound,
+                    usageCount: usageCountAsync.value ?? 0,
+                    isPlaying: _isPlayingPreview,
+                    isLoadingPreview: _isLoadingPreview,
+                    onPreviewTap: _togglePreview,
+                    onUseSoundTap: canReuseSound ? _onUseSound : null,
+                    reuseAllowed: reuseAllowed,
+                  ),
                 ),
 
                 if (savedSoundsBloc != null)
-                  BlocBuilder<SavedSoundsBloc, SavedSoundsState>(
-                    bloc: savedSoundsBloc,
-                    builder: (context, state) {
-                      final records = state.sounds.where(
-                        (record) => record.id == widget.sound.id,
-                      );
-                      if (records.isEmpty) return const SizedBox.shrink();
-                      return SavedSoundDetailsEditor(sound: records.first);
-                    },
+                  SliverToBoxAdapter(
+                    child: BlocBuilder<SavedSoundsBloc, SavedSoundsState>(
+                      bloc: savedSoundsBloc,
+                      builder: (context, state) {
+                        final records = state.sounds.where(
+                          (record) => record.id == widget.sound.id,
+                        );
+                        if (records.isEmpty) return const SizedBox.shrink();
+                        return SavedSoundDetailsEditor(sound: records.first);
+                      },
+                    ),
                   ),
 
-                // Divider
-                Divider(color: context.vineColors.card, height: 1),
-
-                // Videos section header
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const DivineIcon(
-                        icon: DivineIconName.videoCamera,
-                        color: VineTheme.vineGreen,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        showsSourceVideo
-                            ? context.l10n.soundSourceVideo
-                            : context.l10n.soundVideosUsingThisSound,
-                        style: TextStyle(
-                          color: context.vineColors.primaryText,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                PinnedHeaderSliver(
+                  child: _VideosSectionHeader(
+                    title: showsSourceVideo
+                        ? context.l10n.soundSourceVideo
+                        : context.l10n.soundVideosUsingThisSound,
                   ),
                 ),
 
                 // Videos grid — when a source video is on hand (own original
                 // sound), show it directly; otherwise query by the recovered
                 // audio event id.
-                Expanded(
-                  child: showsSourceVideo
-                      ? _SourceVideoGrid(
-                          video: widget.sourceVideo!,
-                          onVideoTap: _navigateToVideo,
-                        )
-                      : _VideosGrid(
-                          audioEventId: soundEventId,
-                          onVideoTap: _navigateToVideo,
-                        ),
-                ),
+                if (showsSourceVideo)
+                  _SourceVideoGrid(
+                    video: widget.sourceVideo!,
+                    onVideoTap: _navigateToVideo,
+                  )
+                else
+                  _VideosGrid(
+                    audioEventId: soundEventId,
+                    onVideoTap: _navigateToVideo,
+                  ),
+
+                const SliverBottomSafeArea(),
               ],
             ),
           ),
@@ -538,21 +574,16 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
         children: [
           // Sound title and icon
           Row(
+            spacing: 12,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: VineTheme.vineGreen.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+              if (profileCreditPubkey == null)
+                const _SoundCoverFallback()
+              else
+                _SoundCover(
+                  pubkey: profileCreditPubkey,
+                  name: profileCreditName!,
+                  pictureUrl: profileCreditProfile?.picture,
                 ),
-                child: const DivineIcon(
-                  icon: DivineIconName.musicNote,
-                  color: VineTheme.vineGreen,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,15 +591,18 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                   children: [
                     Text(
                       widget.sound.title ?? context.l10n.soundOriginalSound,
-                      style: TextStyle(
+                      style: VineTheme.titleMediumFont(
                         color: context.vineColors.primaryText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    _buildMetadataRow(),
+                    Text(
+                      _metadataText(context.l10n),
+                      style: VineTheme.bodyMediumFont(
+                        color: context.vineColors.secondaryText,
+                      ),
+                    ),
                     if (profileCreditPubkey != null &&
                         profileCreditName != null)
                       _ProfileAttributionInfo(
@@ -627,75 +661,34 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
 
           // Action buttons
           Row(
+            spacing: 12,
             children: [
               // Preview button
               Expanded(
-                child: Semantics(
-                  identifier: 'sound_detail_preview_button',
-                  button: true,
-                  child: OutlinedButton.icon(
-                    onPressed: widget.onPreviewTap,
-                    icon: widget.isLoadingPreview
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              color: VineTheme.vineGreen,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : DivineIcon(
-                            icon: widget.isPlaying
-                                ? DivineIconName.squareFill
-                                : DivineIconName.play,
-                            size: 20,
-                            color: VineTheme.vineGreen,
-                          ),
-                    label: Text(
-                      widget.isPlaying
-                          ? context.l10n.soundStop
-                          : context.l10n.soundPreview,
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: VineTheme.vineGreen,
-                      side: const BorderSide(color: VineTheme.vineGreen),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
+                child: DivineButton(
+                  label: widget.isPlaying
+                      ? context.l10n.soundStop
+                      : context.l10n.soundPreview,
+                  type: DivineButtonType.secondary,
+                  leadingIcon: widget.isPlaying
+                      ? DivineIconName.squareFill
+                      : DivineIconName.play,
+                  isLoading: widget.isLoadingPreview,
+                  semanticIdentifier: 'sound_detail_preview_button',
+                  onPressed: widget.onPreviewTap,
                 ),
               ),
 
-              if (widget.onUseSoundTap != null) ...[
-                const SizedBox(width: 12),
-
-                // Use Sound button
+              // Use Sound button
+              if (widget.onUseSoundTap != null)
                 Expanded(
-                  child: Semantics(
-                    identifier: 'sound_detail_use_button',
-                    button: true,
-                    child: ElevatedButton.icon(
-                      onPressed: widget.onUseSoundTap,
-                      icon: const DivineIcon(
-                        icon: DivineIconName.plus,
-                        size: 20,
-                        color: VineTheme.onPrimary,
-                      ),
-                      label: Text(context.l10n.soundUseSound),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: VineTheme.vineGreen,
-                        foregroundColor: context.vineColors.background,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
+                  child: DivineButton(
+                    label: context.l10n.soundUseSound,
+                    leadingIcon: DivineIconName.plus,
+                    semanticIdentifier: 'sound_detail_use_button',
+                    onPressed: widget.onUseSoundTap,
                   ),
                 ),
-              ],
             ],
           ),
         ],
@@ -703,20 +696,12 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
     );
   }
 
-  Widget _buildMetadataRow() {
-    final items = <String>[];
-
+  String _metadataText(AppLocalizations l10n) {
     final duration = _formattedDuration;
-    if (duration.isNotEmpty) {
-      items.add(duration);
-    }
-
-    items.add(_videoCountText(context.l10n));
-
-    return Text(
-      items.join(' · '),
-      style: TextStyle(color: context.vineColors.secondaryText, fontSize: 14),
-    );
+    return [
+      if (duration.isNotEmpty) duration,
+      _videoCountText(l10n),
+    ].join(' · ');
   }
 
   String? _profileCreditPubkey(AudioEvent sound) {
@@ -727,6 +712,69 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
     }
     if (_artistName == null) return sound.pubkey;
     return null;
+  }
+}
+
+/// Cover art for the sound header.
+///
+/// A sound carries no artwork of its own, so the credited creator's avatar
+/// stands in for it — the same account the "By …" line names, which lets the
+/// header say whose sound this is at a glance and gives a second way into
+/// that profile. Bundled and locally imported sounds have no account behind
+/// them ([_SoundHeaderState._profileCreditPubkey] returns null there) and
+/// keep the note glyph.
+class _SoundCover extends StatelessWidget {
+  const _SoundCover({
+    required this.pubkey,
+    required this.name,
+    this.pictureUrl,
+  });
+
+  static const double _size = 48;
+
+  /// Pubkey of the credited creator.
+  final String pubkey;
+  final String name;
+  final String? pictureUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return UserAvatar(
+      size: _size,
+      imageUrl: pictureUrl,
+      name: name,
+      placeholderSeed: pubkey,
+      onTap: () => context.pushOtherProfile(pubkey),
+      semanticLabel: context.l10n.profileChipTapHint(name),
+    );
+  }
+}
+
+/// Note glyph shown when no account backs the sound.
+///
+/// Shares [UserAvatar]'s corner geometry so the header's leading tile keeps
+/// the same silhouette whether it resolves to an avatar or to this.
+class _SoundCoverFallback extends StatelessWidget {
+  const _SoundCoverFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _SoundCover._size,
+      height: _SoundCover._size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: VineTheme.vineGreen.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(
+          UserAvatar.cornerRadiusForSize(_SoundCover._size),
+        ),
+      ),
+      child: const DivineIcon(
+        icon: DivineIconName.musicNote,
+        color: VineTheme.vineGreen,
+        size: 28,
+      ),
+    );
   }
 }
 
@@ -854,25 +902,27 @@ class _SourceLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        final uri = Uri.parse(sourceUrl);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      },
-      child: Text(
-        context.l10n.soundViewSource,
+    final label = context.l10n.soundViewSource;
+    return Semantics(
+      button: true,
+      child: DivineTextLink(
+        text: label,
         style: VineTheme.bodySmallFont(color: VineTheme.vineGreen).copyWith(
           decoration: TextDecoration.underline,
           decorationColor: VineTheme.vineGreen,
         ),
+        onTap: () async {
+          final uri = Uri.parse(sourceUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        },
       ),
     );
   }
 }
 
-/// Grid showing the single source video for an original sound.
+/// Sliver grid showing the single source video for an original sound.
 class _SourceVideoGrid extends StatelessWidget {
   const _SourceVideoGrid({required this.video, required this.onVideoTap});
 
@@ -883,30 +933,26 @@ class _SourceVideoGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final videosList = [video];
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(2),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 2,
-              mainAxisSpacing: 2,
-            ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              return _VideoGridTile(
-                video: video,
-                onTap: () => onVideoTap(video.id, 0, videosList),
-              );
-            }, childCount: 1),
-          ),
+    return SliverPadding(
+      padding: const EdgeInsets.all(2),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 2,
+          mainAxisSpacing: 2,
         ),
-      ],
+        delegate: SliverChildBuilderDelegate((context, index) {
+          return _VideoGridTile(
+            video: video,
+            onTap: () => onVideoTap(video.id, 0, videosList),
+          );
+        }, childCount: 1),
+      ),
     );
   }
 }
 
-/// Grid of videos using the specified sound.
+/// Sliver grid of videos using the specified sound.
 class _VideosGrid extends ConsumerWidget {
   const _VideosGrid({required this.audioEventId, required this.onVideoTap});
 
@@ -921,132 +967,113 @@ class _VideosGrid extends ConsumerWidget {
     return videosAsync.when(
       data: (videoIds) {
         if (videoIds.isEmpty) {
-          return _buildEmptyState(context);
+          return _VideosEmptyState(
+            title: context.l10n.soundNoVideosYet,
+            message: context.l10n.soundBeFirstToUse,
+          );
         }
 
         return _VideosGridContent(videoIds: videoIds, onVideoTap: onVideoTap);
       },
-      loading: () => const Center(child: BrandedLoadingIndicator(size: 60)),
-      error: (error, stack) => _buildErrorState(context, error, () {
-        ref.invalidate(videosUsingSoundProvider(audioEventId));
-      }),
+      loading: () => const _PlaceholderLayout(
+        children: [BrandedLoadingIndicator(size: 60)],
+      ),
+      error: (error, stack) => _VideosErrorState(
+        onRetry: () => ref.invalidate(videosUsingSoundProvider(audioEventId)),
+      ),
     );
   }
+}
 
-  Widget _buildEmptyState(BuildContext context) {
-    final l10n = context.l10n;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.videocam_off_outlined,
-                      size: 64,
-                      color: context.vineColors.mutedText,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.soundNoVideosYet,
-                      style: TextStyle(
-                        color: context.vineColors.primaryText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.soundBeFirstToUse,
-                      style: TextStyle(
-                        color: context.vineColors.onSurfaceMuted,
-                        fontSize: 14,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+/// Sliver centering placeholder content in whatever viewport is left below
+/// the header, growing past it — and scrolling — when the content is taller.
+class _PlaceholderLayout extends StatelessWidget {
+  const _PlaceholderLayout({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: children),
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildErrorState(
-    BuildContext context,
-    Object error,
-    VoidCallback onRetry,
-  ) {
-    final l10n = context.l10n;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.warningCircle,
-                      size: 64,
-                      color: VineTheme.likeRed,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.soundFailedToLoadVideos,
-                      style: TextStyle(
-                        color: context.vineColors.primaryText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      error.toString(),
-                      style: TextStyle(
-                        color: context.vineColors.onSurfaceMuted,
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: onRetry,
-                      icon: const DivineIcon(
-                        icon: DivineIconName.arrowClockwise,
-                        color: VineTheme.onPrimary,
-                      ),
-                      label: Text(l10n.soundRetry),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: VineTheme.vineGreen,
-                        foregroundColor: context.vineColors.background,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+/// Placeholder shown when no video is available for the sound.
+class _VideosEmptyState extends StatelessWidget {
+  const _VideosEmptyState({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PlaceholderLayout(
+      children: [
+        DivineIcon(
+          icon: DivineIconName.filmSlate,
+          size: 64,
+          color: context.vineColors.mutedText,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
           ),
-        );
-      },
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          message,
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+/// Placeholder shown when the videos for a sound failed to load.
+class _VideosErrorState extends StatelessWidget {
+  const _VideosErrorState({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return _PlaceholderLayout(
+      children: [
+        const DivineIcon(
+          icon: DivineIconName.warningCircle,
+          size: 64,
+          color: VineTheme.likeRed,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.soundFailedToLoadVideos,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        DivineButton(
+          label: l10n.soundRetry,
+          leadingIcon: DivineIconName.arrowClockwise,
+          onPressed: onRetry,
+        ),
+      ],
     );
   }
 }
@@ -1140,7 +1167,9 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
     ref.watch(blocklistVersionProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
     if (_isLoading) {
-      return const Center(child: BrandedLoadingIndicator(size: 60));
+      return const _PlaceholderLayout(
+        children: [BrandedLoadingIndicator(size: 60)],
+      );
     }
 
     final validVideos = widget.videoIds.where((id) {
@@ -1149,61 +1178,31 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
     }).toList();
 
     if (validVideos.isEmpty) {
-      final l10n = context.l10n;
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.videocam_off_outlined,
-              size: 64,
-              color: context.vineColors.mutedText,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.soundVideosUnavailable,
-              style: TextStyle(
-                color: context.vineColors.primaryText,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.soundCouldNotLoadDetails,
-              style: TextStyle(
-                color: context.vineColors.onSurfaceMuted,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+      return _VideosEmptyState(
+        title: context.l10n.soundVideosUnavailable,
+        message: context.l10n.soundCouldNotLoadDetails,
       );
     }
 
     // Build list of valid video events in order
     final videosList = validVideos.map((id) => _videoEvents[id]!).toList();
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(2),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 2,
-              mainAxisSpacing: 2,
-            ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final video = videosList[index];
-              return _VideoGridTile(
-                video: video,
-                onTap: () => widget.onVideoTap(video.id, index, videosList),
-              );
-            }, childCount: videosList.length),
-          ),
+    return SliverPadding(
+      padding: const EdgeInsets.all(2),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 2,
+          mainAxisSpacing: 2,
         ),
-      ],
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final video = videosList[index];
+          return _VideoGridTile(
+            video: video,
+            onTap: () => widget.onVideoTap(video.id, index, videosList),
+          );
+        }, childCount: videosList.length),
+      ),
     );
   }
 }
@@ -1340,33 +1339,33 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
               child: Row(
                 children: [
                   // Close button
-                  IconButton(
-                    icon: const DivineIcon(
-                      icon: DivineIconName.x,
-                      color: VineTheme.primaryText,
-                    ),
-                    onPressed: onClose,
+                  DivineIconButton(
+                    icon: DivineIconName.x,
+                    type: DivineIconButtonType.ghostOverMedia,
+                    size: DivineIconButtonSize.small,
                     tooltip: context.l10n.soundCloseTooltip,
+                    semanticLabel: context.l10n.soundCloseTooltip,
+                    onPressed: onClose,
                   ),
 
                   // Sound title
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: 6,
                       children: [
                         const DivineIcon(
                           icon: DivineIconName.musicNote,
                           color: VineTheme.vineGreen,
                           size: 18,
                         ),
-                        const SizedBox(width: 6),
                         Flexible(
                           child: Text(
                             soundTitle,
-                            style: TextStyle(
-                              color: context.vineColors.primaryText,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                            // Fixed light text: the backdrop here is a video
+                            // frame, not a palette surface.
+                            style: VineTheme.labelLargeFont(
+                              color: VineTheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1376,6 +1375,8 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
                     ),
                   ),
 
+                  // Balances the leading close button so the title stays
+                  // optically centred.
                   const SizedBox(width: 48),
                 ],
               ),
