@@ -571,9 +571,9 @@ class NostrService extends _$NostrService {
     // consumers that just need a display pubkey during the auth-screen
     // lifecycle. Reading from those getters here can report a non-null
     // pubkey during a window where _currentIdentity is still null, which
-    // would install a LocalKeySigner(null) placeholder whose
-    // getPublicKey() returns '' and whose hasKeys is therefore permanently
-    // false — trapping every downstream consumer. PR #2833 established
+    // would install an UnauthenticatedSigner whose getPublicKey() returns ''
+    // and whose hasKeys is therefore permanently false — trapping every
+    // downstream consumer. PR #2833 established
     // NostrIdentity as the atomic pubkey+signer contract; honour it here
     // so the signer and the trigger cannot disagree.
     final newIdentity = authService.currentIdentity;

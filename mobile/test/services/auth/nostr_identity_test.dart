@@ -8,6 +8,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 
@@ -774,6 +775,10 @@ void main() {
       identity = PubkeyOnlyNostrIdentity(pubkey: testPublicKey);
     });
 
+    tearDown(() async {
+      await LogCaptureService().clearAllLogs();
+    });
+
     test('still reports the known public key', () async {
       expect(await identity.getPublicKey(), equals(testPublicKey));
     });
@@ -788,6 +793,27 @@ void main() {
       final event = Event(testPublicKey, 1, const <List<String>>[], 'hi');
 
       expect(await identity.signEvent(event), isNull);
+    });
+
+    test('signEvent logs the skipped signing gate', () async {
+      final event = Event(testPublicKey, 1, const <List<String>>[], 'hi');
+
+      await LogCaptureService().clearAllLogs();
+
+      expect(await identity.signEvent(event), isNull);
+
+      final logs = LogCaptureService().getRecentLogs();
+      expect(
+        logs.any(
+          (entry) =>
+              entry.level == LogLevel.warning &&
+              entry.category == LogCategory.auth &&
+              entry.name == 'PubkeyOnlyNostrIdentity' &&
+              entry.message.contains('No signer: cannot sign an event') &&
+              entry.message.contains(testPublicKey),
+        ),
+        isTrue,
+      );
     });
 
     test('encrypt returns null rather than throwing', () async {

@@ -18,7 +18,7 @@ Notes:
 
 - **Full Nostr Protocol Support** -- complete event-based protocol implementation
 - **22 NIPs Implemented** -- one of the most comprehensive NIP coverage in any Dart SDK
-- **Pluggable Signing** -- local, remote (NIP-46), hardware (NIP-55), and read-only signers
+- **Pluggable Signing** -- local, remote (NIP-46), hardware (NIP-55), and keyless signers
 - **Relay Pooling** -- connection management, subscriptions, load balancing, and NIP-42 auth
 - **Offline-First** -- SQLite-based event caching and local relay support
 - **Cross-Platform** -- Android, iOS, web, and desktop via Flutter
@@ -61,7 +61,7 @@ Notes:
 
 **`Event`** (`lib/event.dart`) -- Represents a Nostr event with automatic ID generation, Schnorr signature support, proof-of-work capabilities, and JSON serialization.
 
-**`NostrSigner`** (`lib/signer/nostr_signer.dart`) -- Abstract signing interface. Implementations include `LocalNostrSigner` (private key), `NostrRemoteSigner` (NIP-46), and `PubkeyOnlyNostrSigner` (read-only).
+**`NostrSigner`** (`lib/signer/nostr_signer.dart`) -- Abstract signing interface. Implementations include `LocalNostrSigner` (private key), `NostrRemoteSigner` (NIP-46), and `UnauthenticatedSigner` (keyless signed-out state).
 
 ### Relay System
 
