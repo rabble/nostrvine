@@ -24,6 +24,7 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/caption_generator"
+      flutter_version: "3.44.0"
 
   # The Dart workflow above never compiles the native Kotlin, so a compile
   # error would pass green until the package is wired into an app build.

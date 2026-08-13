@@ -24,4 +24,5 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/unified_logger"
+      flutter_version: "3.44.0"
       min_coverage: 40
