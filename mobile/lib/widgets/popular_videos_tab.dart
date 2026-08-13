@@ -86,7 +86,8 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     super.initState();
     _screenAnalytics =
         widget.screenAnalytics ?? ref.read(screenAnalyticsServiceProvider);
-    _feedTracker = widget.feedTracker ?? FeedPerformanceTracker();
+    _feedTracker =
+        widget.feedTracker ?? ref.read(feedPerformanceTrackerProvider);
     _errorTracker =
         widget.errorTracker ?? ref.read(errorAnalyticsTrackerProvider);
   }

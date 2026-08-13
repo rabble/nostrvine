@@ -145,6 +145,16 @@ final screenAnalyticsServiceProvider = Provider<ScreenAnalyticsService>(
   (ref) => ScreenAnalyticsService(history: ref.watch(pageLoadHistoryProvider)),
 );
 
+/// Provides the app's shared [FeedPerformanceTracker].
+///
+/// Replaces the former `FeedPerformanceTracker()` factory singleton. A single
+/// shared instance is kept alive because a feed-load session is started by one
+/// consumer and completed by another, and the app lifecycle handler clears
+/// them all on resume.
+final feedPerformanceTrackerProvider = Provider<FeedPerformanceTracker>(
+  (ref) => FeedPerformanceTracker(),
+);
+
 /// Provides the app's shared [ErrorAnalyticsTracker].
 ///
 /// Replaces the former `ErrorAnalyticsTracker()` factory singleton. A single

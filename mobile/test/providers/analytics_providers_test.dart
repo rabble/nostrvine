@@ -168,6 +168,22 @@ void main() {
     });
   });
 
+  group('feedPerformanceTrackerProvider', () {
+    test('hands every reader the same session-tracking instance', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // One consumer starts a feed load that another completes, and the app
+      // lifecycle handler resets them all on resume.
+      container.read(feedPerformanceTrackerProvider).startFeedLoad('popular');
+
+      expect(
+        container.read(feedPerformanceTrackerProvider).activeSessionCount,
+        1,
+      );
+    });
+  });
+
   group('screenAnalyticsServiceProvider', () {
     test('hands every reader the same session-tracking instance', () {
       final container = ProviderContainer();

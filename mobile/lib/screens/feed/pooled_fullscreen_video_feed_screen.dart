@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:feed_tuning_repository/feed_tuning_repository.dart';
@@ -23,6 +22,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/router/app_router.dart';
@@ -940,7 +940,10 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                               )
                                               .markActive();
                                           _resumeAutoAdvanceAfterSwipe();
-                                          FeedPerformanceTracker()
+                                          ref
+                                              .read(
+                                                feedPerformanceTrackerProvider,
+                                              )
                                               .startVideoSwipeTracking(
                                                 video.id,
                                               );
