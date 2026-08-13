@@ -3,7 +3,7 @@
 // ABOUTME: never-throws contract, and a real compute() isolate run.
 
 import 'package:dm_repository/dm_repository.dart';
-import 'package:flutter/foundation.dart' show compute;
+import 'package:dm_repository/src/compute.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 

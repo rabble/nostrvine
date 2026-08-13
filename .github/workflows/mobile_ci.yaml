@@ -154,6 +154,15 @@ jobs:
           # Issues #3574 / #3575: optionless packages silently inherit the
           # app's relaxed analyzer config; workflow-less packages get no CI.
           bash scripts/check_package_ci_floor.sh
+      - name: 🧱 Verify no package re-adds a runtime Flutter dependency (boundary ratchet)
+        run: |
+          # Issue #3338. A package with no `flutter: sdk: flutter` entry has
+          # `depend_on_referenced_packages` rejecting every package:flutter
+          # import in its lib/ and test/, which is what makes the repository
+          # layer boundary enforced rather than conventional. Freezes the set of
+          # packages that still declare one so re-opening a boundary is a
+          # reviewable baseline edit. Fails closed if the base baseline can't load.
+          bash scripts/check_package_flutter_boundary.sh
       - name: 🔗 Verify dependency provenance (git refs + overrides ratchet)
         run: |
           # Issues #3655 / #3363 (AC3): freezes the set of dependencies resolved
