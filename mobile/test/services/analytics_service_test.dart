@@ -447,6 +447,7 @@ void main() {
           source: any(named: 'source'),
           sourceDetail: any(named: 'sourceDetail'),
           loopCount: any(named: 'loopCount'),
+          phase: any(named: 'phase'),
         ),
       ).thenAnswer((_) async => true);
       analyticsService.dispose();
@@ -479,6 +480,9 @@ void main() {
           source: ViewTrafficSource.home,
           sourceDetail: any(named: 'sourceDetail'),
           loopCount: any(named: 'loopCount'),
+          // The direct-publish fallback carries the same phase the queued
+          // row would have, so the relay counts it identically.
+          phase: ViewEventPhase.end,
         ),
       ).called(1);
     });

@@ -499,7 +499,7 @@ void main() {
             source: any(named: 'source'),
             sourceDetail: any(named: 'sourceDetail'),
             loopCount: any(named: 'loopCount'),
-            phase: null,
+            phase: any(named: 'phase', that: isNull),
           ),
         ).called(1);
       },

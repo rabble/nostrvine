@@ -31,6 +31,7 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
 
   final VideoEvent video;
   final DivineVideoPlayerController? controller;
+
   /// Whether this item is the one the feed is showing (scroll position).
   final bool isActive;
 
@@ -141,8 +142,7 @@ class _DivineVideoMetricsTrackerState
       _stateSubscription = null;
     }
 
-    if (_isTracking &&
-        (videoChanged || becameActive || controllerChanged)) {
+    if (_isTracking && (videoChanged || becameActive || controllerChanged)) {
       _startTracking();
     }
   }
