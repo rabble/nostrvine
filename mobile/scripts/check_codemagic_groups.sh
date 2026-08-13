@@ -20,7 +20,8 @@
 # the Codemagic project, but requiring it to be *documented* forces the author
 # to confront the setup step, which is where both omissions happened. When
 # CODEMAGIC_API_TOKEN and CODEMAGIC_APP_ID are present the check goes further
-# and verifies existence against the API.
+# and prints an advisory note — it never fails the build, because the app
+# payload omits team-level shared groups.
 #
 # Two-way invariant, matching check_backend_host_defaults.sh:
 #   1. Referenced but undocumented -> FAIL (catches a new group added without
@@ -46,14 +47,16 @@ fi
 # documentation.
 header="$(sed -n '1,/^definitions:/p' "$YAML")"
 
-# Documented groups: any quoted name in the header. Both phrasings the file
-# already uses are covered —
+# Documented groups: quoted identifiers on header lines that mention "group".
+# Both phrasings the file already uses are covered —
 #   `Create environment variable group "zendesk_credentials" with:`
 #   `Requires GITHUB_TOKEN in "github_credentials" environment variable group`
+# Do not filter on a name suffix. A documented group that is not `*_credentials`
+# must still count, or the checklist is not the contract the error text claims.
 documented="$(printf '%s\n' "$header" \
+  | grep -i 'group' \
   | grep -oE '"[a-z0-9_]+"' \
   | tr -d '"' \
-  | grep -E '_credentials$|^firebase$|^google_play' \
   | sort -u || true)"
 
 # Referenced groups: list items inside a `groups:` block. `groups:` is the only
