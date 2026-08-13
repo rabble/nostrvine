@@ -164,11 +164,13 @@ class AppDatabase extends _$AppDatabase {
         await _migrateToV4ClipCategories(m);
       }
       if (from < 5) {
-        // from == 3 includes databases cut at the original v3, before #6911
-        // folded the follower columns into it — and hadUpgrade suppresses the
-        // beforeOpen repair on this open. Re-running the idempotent v3 repair
-        // here converges every pre-v5 database on the same shape.
+        // hadUpgrade suppresses the beforeOpen repair on this open, so every
+        // earlier idempotent repair has to re-run here or a damaged pre-v5
+        // database silently keeps its damage. from == 3 covers databases cut
+        // at the original v3, before #6911 folded the follower columns into
+        // it; from == 4 covers a clips table mutated out of shape.
         await _repairSchemaV3();
+        await _migrateToV4ClipCategories(m);
         await _repairSchemaV5();
       }
     },
