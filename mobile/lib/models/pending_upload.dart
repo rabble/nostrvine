@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:unified_logger/unified_logger.dart';
 
@@ -41,6 +42,7 @@ enum UploadStatus {
 }
 
 /// Represents a video upload in progress or completed
+@immutable
 @HiveType(typeId: 2)
 class PendingUpload {
   const PendingUpload({

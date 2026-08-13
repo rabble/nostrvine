@@ -96,6 +96,9 @@ class NotificationService {
   static NotificationService? _instance;
 
   /// Singleton instance
+  // A constructor cannot be a getter, and `factory NotificationService()`
+  // would hide both the sharing and the revive-after-dispose below.
+  // ignore: prefer_constructors_over_static_methods
   static NotificationService get instance {
     if (_instance == null || _instance!._disposed) {
       _instance = NotificationService._();

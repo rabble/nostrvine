@@ -31,9 +31,7 @@ class _FakeWebSocketSink implements WebSocketSink {
 
   @override
   Future<void> addStream(Stream<dynamic> stream) async {
-    await for (final data in stream) {
-      add(data);
-    }
+    await stream.forEach(add);
   }
 
   @override

@@ -265,10 +265,9 @@ class VideoPublishService {
     try {
       // Inside `run` so the phases the upload and Nostr legs time for
       // themselves are attributed to this publish's trace.
-      result = await timeline.run<PublishResult>(
+      return result = await timeline.run<PublishResult>(
         () => _publishVideo(draft: draft, timeline: timeline),
       );
-      return result;
     } finally {
       timeline.finish(
         outcome: switch (result) {

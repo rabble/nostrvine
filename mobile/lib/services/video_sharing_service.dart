@@ -103,7 +103,7 @@ class ShareResult {
   /// The DM conversation ID (NIP-17), used for "View Chat" navigation.
   final String? conversationId;
 
-  static ShareResult createSuccess(
+  factory ShareResult.createSuccess(
     String messageEventId, {
     String? conversationId,
   }) => ShareResult(
@@ -112,7 +112,7 @@ class ShareResult {
     conversationId: conversationId,
   );
 
-  static ShareResult failure(String error) =>
+  factory ShareResult.failure(String error) =>
       ShareResult(success: false, error: error);
 }
 

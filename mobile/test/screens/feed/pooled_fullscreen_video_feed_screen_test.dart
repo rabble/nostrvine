@@ -4,6 +4,8 @@
 // Permanent: installs native MethodChannel handlers for the pooled video
 // player; keep isolated until those channel handlers are per-test fixtures.
 @Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';

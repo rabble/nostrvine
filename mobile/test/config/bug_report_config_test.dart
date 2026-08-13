@@ -288,10 +288,10 @@ void main() {
       // 28 segments is chosen so a reintroduced ambiguity fails this in ~17s
       // (measured) rather than hanging the suite, which is what a larger
       // exponent would do. Unambiguous classes run it in ~0ms.
+      final ambiguousKeys = ['token${'_a' * 28}', 'token${'Aa' * 28}'];
+
       final stopwatch = Stopwatch()..start();
-      for (final key in ['token${'_a' * 28}', 'token${'Aa' * 28}']) {
-        sanitizeDiagnosticText(key);
-      }
+      ambiguousKeys.forEach(sanitizeDiagnosticText);
       stopwatch.stop();
 
       expect(stopwatch.elapsedMilliseconds, lessThan(1000));

@@ -3,6 +3,8 @@
 // BackgroundActivityManager singleton state; keep isolated until the manager is
 // injectable/resettable per test.
 @Tags(['skip_very_good_optimization'])
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/background_activity_manager.dart';

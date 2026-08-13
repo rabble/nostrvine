@@ -63,8 +63,7 @@ class MockCameraService extends CameraService {
 
   @override
   Future<double?> setZoomLevel(double value) async {
-    zoomLevel = value.clamp(minZoomLevel, maxZoomLevel);
-    return zoomLevel;
+    return zoomLevel = value.clamp(minZoomLevel, maxZoomLevel);
   }
 
   @override

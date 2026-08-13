@@ -56,7 +56,7 @@ class DeleteAccountResult {
   /// deletion request.
   final bool contentDeletionIncomplete;
 
-  static DeleteAccountResult createSuccess(
+  factory DeleteAccountResult.createSuccess(
     String deleteEventId, {
     int deletedEventsCount = 0,
     bool contentQueryFailed = false,
@@ -69,7 +69,7 @@ class DeleteAccountResult {
     contentDeletionIncomplete: contentDeletionIncomplete,
   );
 
-  static DeleteAccountResult failure(
+  factory DeleteAccountResult.failure(
     DeleteAccountFailureReason reason, {
     String? diagnosticError,
   }) => DeleteAccountResult(

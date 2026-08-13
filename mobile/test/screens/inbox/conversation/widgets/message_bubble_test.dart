@@ -1861,9 +1861,7 @@ void main() {
           void visit(InlineSpan span) {
             if (span is TextSpan) {
               if (predicate(span)) hits.add(span);
-              for (final child in span.children ?? const <InlineSpan>[]) {
-                visit(child);
-              }
+              (span.children ?? const <InlineSpan>[]).forEach(visit);
             }
           }
 

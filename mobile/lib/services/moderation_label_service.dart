@@ -269,9 +269,7 @@ class ModerationLabelService {
 
       final events = await _nostrClient.queryEvents([filter]);
 
-      for (final event in events) {
-        _processLabelEvent(event);
-      }
+      events.forEach(_processLabelEvent);
 
       _loadedLabelers.add(pubkey);
 

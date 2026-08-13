@@ -151,7 +151,7 @@ void main() {
         await _grantPermissions($);
         final tester = $.tester;
         final points = [
-          const Offset(0.0, 0.0), // Top-left
+          Offset.zero, // Top-left
           const Offset(1.0, 0.0), // Top-right
           const Offset(0.0, 1.0), // Bottom-left
           const Offset(1.0, 1.0), // Bottom-right
@@ -176,7 +176,7 @@ void main() {
         await _grantPermissions($);
         final tester = $.tester;
         final points = [
-          const Offset(0.0, 0.0), // Top-left
+          Offset.zero, // Top-left
           const Offset(1.0, 0.0), // Top-right
           const Offset(0.0, 1.0), // Bottom-left
           const Offset(1.0, 1.0), // Bottom-right

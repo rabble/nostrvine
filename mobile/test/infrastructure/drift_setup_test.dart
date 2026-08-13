@@ -4,6 +4,8 @@
 // Permanent: opens file-backed Drift databases through path_provider temp paths;
 // keep isolated until DB and path-provider globals are per-test fixtures.
 @Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';

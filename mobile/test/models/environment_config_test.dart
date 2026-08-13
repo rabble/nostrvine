@@ -81,9 +81,7 @@ void main() {
       });
 
       test('production returns divine.video relay', () {
-        const config = EnvironmentConfig(
-          environment: AppEnvironment.production,
-        );
+        const config = EnvironmentConfig.production;
         expect(config.relayUrl, 'wss://relay.divine.video');
       });
     });
@@ -111,18 +109,14 @@ void main() {
       });
 
       test('production uses api.divine.video for Funnelcake REST', () {
-        const config = EnvironmentConfig(
-          environment: AppEnvironment.production,
-        );
+        const config = EnvironmentConfig.production;
         expect(config.apiBaseUrl, 'https://api.divine.video');
       });
     });
 
     group('eventPublishBaseUrl', () {
       test('production uses relay.divine.video for NIP-98 event publish', () {
-        const config = EnvironmentConfig(
-          environment: AppEnvironment.production,
-        );
+        const config = EnvironmentConfig.production;
         expect(config.eventPublishBaseUrl, 'https://relay.divine.video');
       });
     });
@@ -131,7 +125,7 @@ void main() {
       const poc = EnvironmentConfig(environment: AppEnvironment.poc);
       const staging = EnvironmentConfig(environment: AppEnvironment.staging);
       const testEnv = EnvironmentConfig(environment: AppEnvironment.test);
-      const prod = EnvironmentConfig(environment: AppEnvironment.production);
+      const prod = EnvironmentConfig.production;
 
       expect(poc.blossomUrl, 'https://media.divine.video');
       expect(staging.blossomUrl, 'https://media.divine.video');
@@ -159,9 +153,7 @@ void main() {
         false,
       );
       expect(
-        const EnvironmentConfig(
-          environment: AppEnvironment.production,
-        ).isProduction,
+        EnvironmentConfig.production.isProduction,
         true,
       );
     });
@@ -186,9 +178,7 @@ void main() {
         'Local',
       );
       expect(
-        const EnvironmentConfig(
-          environment: AppEnvironment.production,
-        ).displayName,
+        EnvironmentConfig.production.displayName,
         'Production',
       );
     });
@@ -219,9 +209,7 @@ void main() {
         '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809',
       );
       expect(
-        const EnvironmentConfig(
-          environment: AppEnvironment.production,
-        ).pushServicePubkey,
+        EnvironmentConfig.production.pushServicePubkey,
         '2f871aaa4a519da94aeb5ebffe7587549158855c4460e7a5a1b91d36d2fb5b04',
       );
     });
@@ -252,18 +240,14 @@ void main() {
         0xFFE040FB, // accentPurple
       );
       expect(
-        const EnvironmentConfig(
-          environment: AppEnvironment.production,
-        ).indicatorColorValue,
+        EnvironmentConfig.production.indicatorColorValue,
         0xFF27C58B, // primaryGreen
       );
     });
 
     group('verifierBaseUrl', () {
       test('production returns the verifier host', () {
-        const config = EnvironmentConfig(
-          environment: AppEnvironment.production,
-        );
+        const config = EnvironmentConfig.production;
         expect(config.verifierBaseUrl, equals('https://verifier.divine.video'));
       });
 
@@ -280,9 +264,7 @@ void main() {
 
     group('nameServerBaseUrl', () {
       test('production returns the divine-name-server host', () {
-        const config = EnvironmentConfig(
-          environment: AppEnvironment.production,
-        );
+        const config = EnvironmentConfig.production;
         expect(config.nameServerBaseUrl, equals('https://names.divine.video'));
       });
 
@@ -336,9 +318,7 @@ void main() {
 
       test('different environments are not equal', () {
         const config1 = EnvironmentConfig(environment: AppEnvironment.staging);
-        const config2 = EnvironmentConfig(
-          environment: AppEnvironment.production,
-        );
+        const config2 = EnvironmentConfig.production;
         expect(config1, isNot(equals(config2)));
       });
     });

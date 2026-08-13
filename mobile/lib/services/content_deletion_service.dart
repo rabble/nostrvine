@@ -78,7 +78,7 @@ class DeleteResult {
   /// Set when [success] is true; how broadly the relays took the request.
   final DeleteAcceptance? acceptance;
 
-  static DeleteResult createSuccess(
+  factory DeleteResult.createSuccess(
     String deleteEventId, {
     required DeleteAcceptance acceptance,
   }) => DeleteResult(
@@ -88,7 +88,7 @@ class DeleteResult {
     timestamp: DateTime.now(),
   );
 
-  static DeleteResult failure(String error, DeleteFailureKind kind) =>
+  factory DeleteResult.failure(String error, DeleteFailureKind kind) =>
       DeleteResult(
         success: false,
         error: error,
@@ -124,14 +124,15 @@ class ContentDeletion {
     'additionalContext': additionalContext,
   };
 
-  static ContentDeletion fromJson(Map<String, dynamic> json) => ContentDeletion(
-    deleteEventId: json['deleteEventId'] as String,
-    originalEventId: json['originalEventId'] as String,
-    addressableId: json['addressableId'] as String?,
-    reason: json['reason'] as String,
-    deletedAt: DateTime.parse(json['deletedAt'] as String),
-    additionalContext: json['additionalContext'] as String?,
-  );
+  factory ContentDeletion.fromJson(Map<String, dynamic> json) =>
+      ContentDeletion(
+        deleteEventId: json['deleteEventId'] as String,
+        originalEventId: json['originalEventId'] as String,
+        addressableId: json['addressableId'] as String?,
+        reason: json['reason'] as String,
+        deletedAt: DateTime.parse(json['deletedAt'] as String),
+        additionalContext: json['additionalContext'] as String?,
+      );
 }
 
 /// Service for deleting user's own content via NIP-09

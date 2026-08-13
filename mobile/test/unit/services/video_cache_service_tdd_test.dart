@@ -63,9 +63,7 @@ class VideoCacheService implements IVideoCacheService {
 
   @override
   void addVideos(List<VideoEvent> videos) {
-    for (final video in videos) {
-      addVideo(video);
-    }
+    videos.forEach(addVideo);
   }
 
   @override

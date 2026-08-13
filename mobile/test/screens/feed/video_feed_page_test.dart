@@ -630,13 +630,13 @@ void main() {
         // Keyboard opens: without the latch the strip would spring the inset
         // back to 34 (the overlay slides up); the latch holds it at 0.
         tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-        tester.view.padding = const FakeViewPadding();
+        tester.view.padding = FakeViewPadding.zero;
         await tester.pump();
         expect(feedBottomInset(), 0);
 
         // Keyboard closes: the inset returns to rest, still 0 — no downward
         // slide of the overlay.
-        tester.view.viewInsets = const FakeViewPadding();
+        tester.view.viewInsets = FakeViewPadding.zero;
         tester.view.padding = const FakeViewPadding(bottom: 34);
         await tester.pump();
         expect(feedBottomInset(), 0);

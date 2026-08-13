@@ -42,9 +42,7 @@ void main() {
 
     /// Drives [events] through the deterministic test drain.
     Future<void> flush(List<Event> events) async {
-      for (final event in events) {
-        router.handleEvent(event);
-      }
+      events.forEach(router.handleEvent);
       await router.drainForTesting();
     }
 
@@ -155,9 +153,7 @@ void main() {
         );
 
         final events = List.generate(25, (i) => videoEvent(2000 + i));
-        for (final event in events) {
-          router.handleEvent(event);
-        }
+        events.forEach(router.handleEvent);
 
         await router.drainForTesting();
 

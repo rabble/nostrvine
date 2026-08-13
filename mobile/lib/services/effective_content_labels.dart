@@ -25,9 +25,7 @@ List<String> resolveEffectiveContentLabels(
     labels.add(normalized);
   }
 
-  for (final label in video.contentWarningLabels) {
-    addLabel(label);
-  }
+  video.contentWarningLabels.forEach(addLabel);
 
   if (moderationLabelService != null) {
     final addressableId = video.addressableId;

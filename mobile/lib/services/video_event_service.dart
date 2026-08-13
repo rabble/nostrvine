@@ -433,9 +433,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       category: LogCategory.video,
     );
 
-    for (final id in ids) {
-      _removedVideoIdsController.add(id);
-    }
+    ids.forEach(_removedVideoIdsController.add);
   }
 
   /// Test-only seam: pre-populate the author bucket so [_sweepAuthor]
@@ -1142,9 +1140,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // requested id because a fullscreen route may be holding it in BLoC state.
     if (!_removedVideoIdsController.isClosed) {
       final idsToEmit = {primaryEventId, ...removedVideoIds};
-      for (final id in idsToEmit) {
-        _removedVideoIdsController.add(id);
-      }
+      idsToEmit.forEach(_removedVideoIdsController.add);
     }
 
     Log.info(
@@ -1443,9 +1439,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
 
     if (!_removedVideoIdsController.isClosed) {
-      for (final id in removedVideoIds) {
-        _removedVideoIdsController.add(id);
-      }
+      removedVideoIds.forEach(_removedVideoIdsController.add);
     }
 
     if (purgeStore) {
@@ -4618,9 +4612,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // For now, just return chronologically sorted
     // In a full implementation, would sort by likes, comments, shares, etc.
     final allEvents = <VideoEvent>[];
-    for (final events in _eventLists.values) {
-      allEvents.addAll(events);
-    }
+    _eventLists.values.forEach(allEvents.addAll);
     return List.from(allEvents)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }

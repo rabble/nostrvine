@@ -4,6 +4,8 @@
 // ABOUTME: Requires: NO Docker stack — the relay runs in-process.
 
 @Tags(['service'])
+library;
+
 import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -4,6 +4,8 @@
 // Permanent: initializes Hive's process-wide box registry and the shared test
 // platform-channel environment for UploadManager lookup coverage.
 @Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';

@@ -1,6 +1,7 @@
 // ABOUTME: One captured still in a stop-motion clip (image path + hold time)
 // ABOUTME: Source-of-truth frame for a frames-based DivineVideoClip
 
+import 'package:meta/meta.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 
@@ -12,6 +13,7 @@ import 'package:path/path.dart' as p;
 /// for a frames-based [DivineVideoClip]. Per-frame [duration] can vary; the
 /// global "frames per image" control is a *default* that only rewrites frames
 /// whose hold has not been set individually — see [holdOverridden].
+@immutable
 class StopMotionClipFrame {
   const StopMotionClipFrame({
     required this.path,

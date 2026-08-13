@@ -83,9 +83,7 @@ class VideoCacheService {
 
   /// Add multiple videos to cache
   void addVideos(List<VideoEvent> videos) {
-    for (final video in videos) {
-      addVideo(video);
-    }
+    videos.forEach(addVideo);
   }
 
   /// Get video by ID

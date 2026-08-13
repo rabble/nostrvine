@@ -75,7 +75,7 @@ void main() {
         await tester.pump();
 
         final slide = tester.widget<AnimatedSlide>(find.byType(AnimatedSlide));
-        expect(slide.offset, const Offset(0, 0));
+        expect(slide.offset, Offset.zero);
       });
 
       testWidgets('offset is 1 when marker is selected', (tester) async {
@@ -127,7 +127,7 @@ void main() {
 
         // Initial state - pencil selected
         var slide = tester.widget<AnimatedSlide>(find.byType(AnimatedSlide));
-        expect(slide.offset, const Offset(0, 0));
+        expect(slide.offset, Offset.zero);
 
         // Update state to eraser
         when(() => mockBloc.state).thenReturn(

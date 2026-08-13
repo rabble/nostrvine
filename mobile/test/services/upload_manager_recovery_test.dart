@@ -1,6 +1,8 @@
 // Permanent: mutates MethodChannel handlers, SharedPreferences, PathProvider,
 // and Hive's process-wide box registry for the upload recovery sweep.
 @Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:async';
 import 'dart:io';
 

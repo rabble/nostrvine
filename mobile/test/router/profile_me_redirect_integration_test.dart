@@ -278,14 +278,17 @@ class _FakeSubscriptionManager extends SubscriptionManager {
 /// NoOp AnalyticsService that prevents network calls and timer leaks
 class NoopAnalyticsService extends AnalyticsService {
   @override
-  Future<void> trackVideoView(video, {String source = 'mobile'}) async {
+  Future<void> trackVideoView(
+    VideoEvent video, {
+    String source = 'mobile',
+  }) async {
     // No-op - prevent network calls in tests
   }
 
   @override
   Future<void> trackVideoViewWithUser(
-    video, {
-    required userId,
+    VideoEvent video, {
+    required String? userId,
     String source = 'mobile',
   }) async {
     // No-op - prevent network calls in tests
@@ -293,14 +296,14 @@ class NoopAnalyticsService extends AnalyticsService {
 
   @override
   Future<void> trackDetailedVideoView(
-    video, {
+    VideoEvent video, {
     required String source,
     required String eventType,
-    watchDuration,
-    totalDuration,
-    loopCount,
-    completedVideo,
-    trafficSource = ViewTrafficSource.unknown,
+    Duration? watchDuration,
+    Duration? totalDuration,
+    double? loopCount,
+    bool? completedVideo,
+    ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
     String? sourceDetail,
   }) async {
     // No-op - prevent network calls in tests
@@ -308,15 +311,15 @@ class NoopAnalyticsService extends AnalyticsService {
 
   @override
   Future<void> trackDetailedVideoViewWithUser(
-    video, {
-    required userId,
+    VideoEvent video, {
+    required String? userId,
     required String source,
     required String eventType,
-    watchDuration,
-    totalDuration,
-    loopCount,
-    completedVideo,
-    trafficSource = ViewTrafficSource.unknown,
+    Duration? watchDuration,
+    Duration? totalDuration,
+    double? loopCount,
+    bool? completedVideo,
+    ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
     String? sourceDetail,
   }) async {
     // No-op - prevent network calls in tests

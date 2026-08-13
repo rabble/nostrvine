@@ -29,9 +29,7 @@ void main(List<String> args) async {
   if (violationCount > 0) {
     debugPrint('❌ Found $violationCount Future.delayed violations:\n');
 
-    for (final violation in violations) {
-      debugPrint(violation);
-    }
+    violations.forEach(debugPrint);
 
     debugPrint('\nReplace Future.delayed with explicit async coordination.');
     exit(1);

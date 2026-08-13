@@ -47,7 +47,7 @@ class AuthServiceChannelMocks {
 
   /// Installs the secure-storage, capability, and native-signer channel mocks
   /// AuthService reaches during sign-in / restore.
-  static AuthServiceChannelMocks install() {
+  factory AuthServiceChannelMocks.install() {
     final mocks = AuthServiceChannelMocks._();
     _installSecureStorageHandlers(mocks.secureStorage);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

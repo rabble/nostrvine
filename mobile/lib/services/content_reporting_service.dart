@@ -55,7 +55,7 @@ class ReportResult {
   /// the optimistic answer.
   final ReportDelivery delivery;
 
-  static ReportResult createSuccess(
+  factory ReportResult.createSuccess(
     String reportId, {
     required ReportDelivery delivery,
   }) => ReportResult(
@@ -65,7 +65,7 @@ class ReportResult {
     delivery: delivery,
   );
 
-  static ReportResult failure(String error) => ReportResult(
+  factory ReportResult.failure(String error) => ReportResult(
     success: false,
     error: error,
     timestamp: DateTime.now(),
@@ -106,7 +106,7 @@ class ContentReport {
     'tags': tags,
   };
 
-  static ContentReport fromJson(Map<String, dynamic> json) => ContentReport(
+  factory ContentReport.fromJson(Map<String, dynamic> json) => ContentReport(
     reportId: json['reportId'] as String,
     eventId: json['eventId'] as String,
     authorPubkey: json['authorPubkey'] as String?,

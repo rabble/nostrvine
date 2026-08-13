@@ -24,6 +24,8 @@
 // cannot keep this file out of CI (#5340 regression, #5738); the skip tag
 // runs it as a separate suite, which --exclude-tags integration then skips.
 @Tags(['skip_very_good_optimization', 'integration'])
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

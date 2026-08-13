@@ -136,11 +136,11 @@ class _DeveloperOptionsScreenState
     );
 
     // All available environment configurations
-    final environments = [
-      const EnvironmentConfig(environment: AppEnvironment.production),
-      const EnvironmentConfig(environment: AppEnvironment.staging),
-      const EnvironmentConfig(environment: AppEnvironment.test),
-      const EnvironmentConfig(environment: AppEnvironment.poc),
+    const environments = [
+      EnvironmentConfig.production,
+      EnvironmentConfig(environment: AppEnvironment.staging),
+      EnvironmentConfig(environment: AppEnvironment.test),
+      EnvironmentConfig(environment: AppEnvironment.poc),
     ];
 
     final pageLoadHistory = ref.read(pageLoadHistoryProvider);

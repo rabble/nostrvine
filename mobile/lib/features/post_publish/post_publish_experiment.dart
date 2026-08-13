@@ -180,9 +180,7 @@ class PostPublishExperiment {
   }
 
   void failed(Set<String> publishIds) {
-    for (final publishId in publishIds) {
-      _publishVariants.remove(publishId);
-    }
+    publishIds.forEach(_publishVariants.remove);
   }
 
   Future<void> createAgainTapped(PostPublishCreateAgainOffer offer) async {

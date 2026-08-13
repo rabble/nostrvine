@@ -1,0 +1,11 @@
+include: ../analysis_options.yaml
+
+analyzer:
+  errors:
+    # Same reason as `test/analysis_options.yaml`: test doubles expose an
+    # `Object? somethingError` knob that a test sets to make the fake fail,
+    # then `throw` it, and that knob has to carry both an `Exception` and an
+    # `Error`. There are no violations here today, but the idiom is the same
+    # one `test/` uses, so the exemption belongs in both trees. Enforced in
+    # `lib`.
+    only_throw_errors: ignore

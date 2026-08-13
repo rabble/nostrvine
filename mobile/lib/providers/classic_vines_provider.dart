@@ -83,6 +83,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
   }) async {
     final videoEventService = ref.read(videoEventServiceProvider);
     Object? restError;
+    StackTrace? restStackTrace;
 
     Future<HomeFeedResult> fetchRestPage({
       required bool retryOnError,
@@ -189,8 +190,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         } else {
           return restFeedState(result: recoveryPage);
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
         restError = e;
+        restStackTrace = stackTrace;
         Log.warning(
           '🎬 ClassicVinesFeed: REST API error, falling back to Nostr: $e',
           name: 'ClassicVinesFeedProvider',
@@ -221,7 +223,11 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final topClassics = classicVideos.take(_pageSize).toList()..shuffle();
 
     if (topClassics.isEmpty && preserveCurrentOnEmptyFallback) {
-      throw restError ?? StateError('Classics API unavailable');
+      final failure = restError;
+      if (failure == null) {
+        throw StateError('Classics API unavailable');
+      }
+      Error.throwWithStackTrace(failure, restStackTrace ?? StackTrace.current);
     }
 
     return VideoFeedState(

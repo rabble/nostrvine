@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart'
     show NostrClient, RelayConnectionStatus, RelayRemoveSource, RelayState;
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -408,6 +409,7 @@ class _RelaySetChangeCoordinator {
   }
 }
 
+@immutable
 class _RelayIntentScope {
   const _RelayIntentScope({
     required this.defaultRelayUrl,

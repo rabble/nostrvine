@@ -138,6 +138,7 @@ SubtitleCuesProvider _subtitleCuesProvider(VideoEvent video) {
   );
 }
 
+@immutable
 class _SubtitleCueDisplay {
   const _SubtitleCueDisplay(this.text);
 

@@ -15,6 +15,8 @@
 // HttpOverrides.global; VGV merged-isolate tests must keep flutter_test's HTTP
 // mock intact.
 @Tags(['skip_very_good_optimization', 'integration'])
+library;
+
 import 'dart:convert';
 import 'dart:io';
 

@@ -11,7 +11,6 @@ analyzer:
     - "build/**"
   errors:
     avoid_catches_without_on_clauses: ignore
-    avoid_equals_and_hash_code_on_mutable_classes: ignore
     avoid_positional_boolean_parameters: ignore
     avoid_returning_this: ignore
     avoid_types_on_closure_parameters: ignore
@@ -24,32 +23,34 @@ analyzer:
     inference_failure_on_function_return_type: ignore
     inference_failure_on_instance_creation: ignore
     inference_failure_on_untyped_parameter: ignore
-    join_return_with_assignment: ignore
-    library_annotations: ignore
     list_element_type_not_assignable: ignore
-    only_throw_errors: ignore
     prefer_int_literals: ignore
     sort_constructors_first: ignore
     strict_raw_type: ignore
-    type_annotate_public_apis: ignore
     unawaited_futures: ignore
 
 linter:
   rules:
     avoid_dynamic_calls: false
     depend_on_referenced_packages: false
+    # Requires `TODO(username)`; a `#` in the parentheses fails the rule. The
+    # repo mandates `TODO(#issue)` instead (`.claude/rules/code_style.md`), so
+    # the two conventions are mutually exclusive.
     flutter_style_todos: false
     lines_longer_than_80_chars: false
+    # Six of the ten findings switch on `RouteType`, which has 61 values and
+    # only four that map to a tab. Enumerating the rest would add ~330 lines of
+    # dead cases across `main.dart`, `app_shell.dart` and the back handler.
     no_default_cases: false
+    # Every finding is a DI port with two to six implementors, not a function
+    # in class clothing. The suggested fix — a top-level function — removes the
+    # named type that `implements` clauses and test doubles hang off.
     one_member_abstracts: false
-    prefer_constructors_over_static_methods: false
-    prefer_foreach: false
     # The repo convention is named-parameter constructor injection into private
     # fields (~385 app sites), so this conflicts with prescribed DI style.
     prefer_initializing_formals: false
     public_member_api_docs: false
     sort_pub_dependencies: false
     unreachable_from_main: false
-    use_named_constants: false
     omit_local_variable_types: false
     use_setters_to_change_properties: false

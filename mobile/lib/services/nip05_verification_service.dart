@@ -26,8 +26,9 @@ enum Nip05VerificationStatus {
 }
 
 /// Request for verification
+@immutable
 class _VerificationRequest {
-  _VerificationRequest(this.pubkey, this.nip05);
+  const _VerificationRequest(this.pubkey, this.nip05);
 
   final String pubkey;
   final String nip05;
