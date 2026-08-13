@@ -3756,7 +3756,7 @@
   },
   "libraryDeleteClipsWarning": "此操作无法撤销。视频文件将从你的设备上永久删除。",
   "libraryPreparingVideo": "正在准备视频...",
-  "libraryCreateVideo": "创作视频",
+  "libraryCreateVideo": "创作视频 ({count})",
   "libraryClipsSavedToDestination": "{count, plural, =1{1 个片段} other{{count} 个片段}}已保存到{destination}",
   "@libraryClipsSavedToDestination": {
     "placeholders": {

@@ -2521,7 +2521,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{Akan dihapus otomatis hari ini} =1{Akan dihapus otomatis besok} other{Akan dihapus otomatis dalam {daysLeft} hari}}",
     "libraryCouldNotLoadClips": "Tidak bisa memuat klip",
     "libraryCouldNotLoadDrafts": "Tidak bisa memuat draf",
-    "libraryCreateVideo": "Buat video",
+    "libraryCreateVideo": "Buat video ({count})",
     "libraryDeleteClipMessage": "Yakin ingin menghapus klip ini?",
     "libraryDeleteClipTitle": "Hapus klip",
     "libraryDeleteClipsMessage": "Yakin ingin menghapus {count, plural, one{# klip terpilih} other{# klip terpilih}}?",

@@ -6686,7 +6686,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryPreparingVideo => 'Se pregătește videoclipul...';
 
   @override
-  String get libraryCreateVideo => 'Creează video';
+  String libraryCreateVideo(int count) {
+    return 'Creează video ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

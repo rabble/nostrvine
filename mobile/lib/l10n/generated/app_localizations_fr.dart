@@ -6609,7 +6609,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get libraryPreparingVideo => 'Préparation de la vidéo...';
 
   @override
-  String get libraryCreateVideo => 'Créer une vidéo';
+  String libraryCreateVideo(int count) {
+    return 'Créer une vidéo ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

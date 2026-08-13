@@ -6576,7 +6576,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryPreparingVideo => 'Menyediakan video...';
 
   @override
-  String get libraryCreateVideo => 'Cipta Video';
+  String libraryCreateVideo(int count) {
+    return 'Cipta Video ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

@@ -2724,7 +2724,7 @@
     },
     "libraryDeleteClipsWarning": "Това действие не може да бъде отменено. Видео файловете ще бъдат премахнати за постоянно от твоето устройство.",
     "libraryPreparingVideo": "Видеоклипът се подготвя...",
-    "libraryCreateVideo": "Създаване на видео",
+    "libraryCreateVideo": "Създаване на видео ({count})",
     "libraryClipsSavedToDestination": "{count, plural, =1{1 клип} other{{count} клипа}} запазен{count, plural, =1{} other{и}} в {destination}",
     "@libraryClipsSavedToDestination": {
         "placeholders": {

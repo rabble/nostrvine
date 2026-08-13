@@ -6536,7 +6536,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryPreparingVideo => 'Đang chuẩn bị video...';
 
   @override
-  String get libraryCreateVideo => 'Tạo video';
+  String libraryCreateVideo(int count) {
+    return 'Tạo video ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

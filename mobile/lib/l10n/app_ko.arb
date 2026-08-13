@@ -1852,7 +1852,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{오늘 자동 삭제됨} =1{내일 자동 삭제됨} other{{daysLeft}일 후 자동 삭제됨}}",
     "libraryCouldNotLoadClips": "클립을 불러올 수 없어요",
     "libraryCouldNotLoadDrafts": "임시 저장 영상을 불러올 수 없어요",
-    "libraryCreateVideo": "동영상 만들기",
+    "libraryCreateVideo": "동영상 만들기 ({count})",
     "libraryDeleteClipMessage": "이 클립을 삭제할까요?",
     "libraryDeleteClipTitle": "클립 삭제",
     "libraryDeleteClipsMessage": "선택한 클립 {count, plural, =1{1개} other{{count}개}}를 삭제할까요?",

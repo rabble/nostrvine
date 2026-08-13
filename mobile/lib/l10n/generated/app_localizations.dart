@@ -11420,8 +11420,8 @@ abstract class AppLocalizations {
   /// No description provided for @libraryCreateVideo.
   ///
   /// In en, this message translates to:
-  /// **'Create Video'**
-  String get libraryCreateVideo;
+  /// **'Create Video ({count})'**
+  String libraryCreateVideo(int count);
 
   /// No description provided for @libraryClipsSavedToDestination.
   ///

@@ -637,6 +637,12 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
           // point of a selection that survives a filter switch.
           final visibleSelectedClipIds = clipsState.visibleSelectedClipIds;
           final hasVisibleSelection = visibleSelectedClipIds.isNotEmpty;
+          // The create-video bar tracks the whole selection instead, so a
+          // selection that outlived the filter it was made under still has
+          // something on screen accounting for it. Without that the grid
+          // shows no marked clip and the state is indistinguishable from
+          // having selected nothing at all.
+          final selectedCount = clipsState.selectedClipIds.length;
           final targetAspectRatio = libraryTargetAspectRatioForSelection(
             selectionMode: widget.selectionMode,
             editorClips: editorClips,
@@ -733,7 +739,8 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                               !widget.selectionMode &&
                               selectionEnabled &&
                               isClipsTabActive &&
-                              hasVisibleSelection,
+                              selectedCount > 0,
+                          selectedCount: selectedCount,
                           onPressed: () => _createVideoFromSelected(
                             context,
                             selectedClips: clipsState.selectedClips,
@@ -898,9 +905,19 @@ class _LibraryContent extends StatelessWidget {
 }
 
 class _CreateVideoBar extends StatelessWidget {
-  const _CreateVideoBar({required this.visible, required this.onPressed});
+  const _CreateVideoBar({
+    required this.visible,
+    required this.selectedCount,
+    required this.onPressed,
+  });
 
   final bool visible;
+
+  /// How many clips the button would build the video from. Shown on the
+  /// label because a selection can outlive the filter it was made under, so
+  /// the grid alone does not always account for it.
+  final int selectedCount;
+
   final VoidCallback onPressed;
 
   @override
@@ -924,7 +941,7 @@ class _CreateVideoBar extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: DivineButton(
                     expanded: true,
-                    label: context.l10n.libraryCreateVideo,
+                    label: context.l10n.libraryCreateVideo(selectedCount),
                     onPressed: onPressed,
                   ),
                 ),

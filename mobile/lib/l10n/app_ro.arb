@@ -2522,7 +2522,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{Se șterge automat azi} =1{Se șterge automat mâine} other{Se șterge automat în {daysLeft} zile}}",
     "libraryCouldNotLoadClips": "Nu s-au putut încărca clipurile",
     "libraryCouldNotLoadDrafts": "Nu s-au putut încărca ciornele",
-    "libraryCreateVideo": "Creează video",
+    "libraryCreateVideo": "Creează video ({count})",
     "libraryDeleteClipMessage": "Ștergi acest clip?",
     "libraryDeleteClipTitle": "Șterge clipul",
     "libraryDeleteClipsMessage": "Ștergi {count, plural, one{# clip selectat} other{# clipuri selectate}}?",

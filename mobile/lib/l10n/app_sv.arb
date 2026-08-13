@@ -2522,7 +2522,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{Raderas automatiskt i dag} =1{Raderas automatiskt i morgon} other{Raderas automatiskt om {daysLeft} dagar}}",
     "libraryCouldNotLoadClips": "Det gick inte att ladda klipp",
     "libraryCouldNotLoadDrafts": "Det gick inte att ladda utkast",
-    "libraryCreateVideo": "Skapa video",
+    "libraryCreateVideo": "Skapa video ({count})",
     "libraryDeleteClipMessage": "Vill du ta bort det här klippet?",
     "libraryDeleteClipTitle": "Ta bort klipp",
     "libraryDeleteClipsMessage": "Vill du ta bort {count, plural, one{# valt klipp} other{# valda klipp}}?",

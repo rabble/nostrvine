@@ -614,6 +614,27 @@ void main() {
         );
         expect(clipsBloc.state.selectedClipIds, {'unfiled'});
       });
+
+      // What survives an action is off screen by definition, so the grid
+      // shows no marked clip. Without the create-video bar accounting for
+      // it, that is indistinguishable from having selected nothing.
+      testWidgets('the surviving selection stays visible on the create bar', (
+        tester,
+      ) async {
+        when(
+          () => mockClipLibraryService.softDelete(any()),
+        ).thenAnswer((_) async => true);
+
+        await selectAcrossFilters(tester);
+        expect(find.text(en.libraryCreateVideo(2)), findsOneWidget);
+
+        await tester.tap(
+          find.bySemanticsLabel(en.libraryDeleteSelectedClipsTooltip),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryCreateVideo(1)), findsOneWidget);
+      });
     });
 
     group('empty state', () {

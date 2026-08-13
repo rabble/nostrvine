@@ -2530,7 +2530,7 @@
     "libraryTrashAutoDeletes": "{daysLeft, plural, =0{Se elimina automáticamente hoy} =1{Se elimina automáticamente mañana} other{Se elimina automáticamente en {daysLeft} días}}",
     "libraryCouldNotLoadClips": "No se pudieron cargar los clips",
     "libraryCouldNotLoadDrafts": "No se pudieron cargar los borradores",
-    "libraryCreateVideo": "Crear video",
+    "libraryCreateVideo": "Crear video ({count})",
     "libraryDeleteClipMessage": "¿Seguro que quieres eliminar este clip?",
     "libraryDeleteClipTitle": "Eliminar clip",
     "libraryDeleteClipsMessage": "¿Seguro que quieres eliminar {count, plural, one{# clip seleccionado} other{# clips seleccionados}}?",

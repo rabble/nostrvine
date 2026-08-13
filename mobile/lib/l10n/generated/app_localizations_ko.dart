@@ -6273,7 +6273,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryPreparingVideo => '동영상 준비 중...';
 
   @override
-  String get libraryCreateVideo => '동영상 만들기';
+  String libraryCreateVideo(int count) {
+    return '동영상 만들기 ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {

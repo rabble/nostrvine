@@ -6493,7 +6493,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryPreparingVideo => 'Video hazırlanıyor...';
 
   @override
-  String get libraryCreateVideo => 'Video oluştur';
+  String libraryCreateVideo(int count) {
+    return 'Video oluştur ($count)';
+  }
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {
