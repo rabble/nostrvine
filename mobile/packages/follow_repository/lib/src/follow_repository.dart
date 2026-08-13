@@ -152,6 +152,7 @@ class FollowRepository {
   List<String> _followingPubkeys = [];
   Event? _currentUserContactListEvent;
   bool _isInitialized = false;
+  final Completer<void> _initializedCompleter = Completer<void>();
 
   // In-memory cache — my followers (populated after first fetch)
   List<String> _cachedMyFollowersPubkeys = [];
@@ -168,6 +169,18 @@ class FollowRepository {
   List<String> get followingPubkeys => List.unmodifiable(_followingPubkeys);
   bool get isInitialized => _isInitialized;
   int get followingCount => _followingPubkeys.length;
+
+  /// Completes once [initialize] has finished, including the authoritative
+  /// relay query.
+  ///
+  /// Anything that publishes a contact list on its own schedule — rather
+  /// than in response to the user following someone — must wait for this.
+  /// [initialize] emits the LocalStorage snapshot on [followingStream]
+  /// seconds before the relay answers, and every derived source can lag or
+  /// truncate (#6109); publishing from one destroys the follows it is
+  /// missing. Never completes while the user has no keys, since
+  /// [initialize] returns early and stays retryable.
+  Future<void> get initialized => _initializedCompleter.future;
 
   /// Drops entries that are not 32-byte hex pubkeys.
   ///
@@ -1625,6 +1638,9 @@ class FollowRepository {
       }
 
       _isInitialized = true;
+      if (!_initializedCompleter.isCompleted) {
+        _initializedCompleter.complete();
+      }
 
       // Guarantee at least one post-seed emission for "no follows" users.
       // When the user follows nobody, _emitFollowingList() never fires

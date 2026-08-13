@@ -154,8 +154,14 @@ void main() {
   /// The two repositories are handed to the container rather than built by
   /// their own providers, which would drag in auth, Drift and funnelcake.
   /// The reconciler itself is production code, not a copy of it.
+  ///
+  /// [initializeFollows] mirrors what the app does on launch. Pass false to
+  /// model a session whose follow list has not loaded yet — the reconciler
+  /// refuses to publish from an uninitialized repository, because until the
+  /// relay query lands the list is a LocalStorage snapshot that can lag or
+  /// truncate (#6109).
   Future<({FollowRepository follows, ContentBlocklistRepository blocks})>
-  buildStack(FakeRelay relay) async {
+  buildStack(FakeRelay relay, {bool initializeFollows = true}) async {
     await CacheSync.init(dao: _MemoryCacheDao());
 
     final factory = _LoopbackFactory(relay.port);
@@ -197,6 +203,9 @@ void main() {
       indexerRelayUrls: const [],
       blockedPubkeys: blocks.blockedPubkeysForAccount,
     );
+    if (initializeFollows) {
+      await follows.initialize();
+    }
 
     final container = ProviderContainer(
       overrides: [
@@ -300,7 +309,7 @@ void main() {
 
       // Session two is a cold start: a fresh repository whose in-memory list
       // has not been seeded, exactly as on a new install or new sign-in.
-      final cold = await buildStack(relay);
+      final cold = await buildStack(relay, initializeFollows: false);
       expect(
         cold.follows.isFollowing(targetPubkey),
         isFalse,
@@ -346,7 +355,7 @@ void main() {
       await warm.follows.follow(targetPubkey);
       await relay.awaitPublished(3);
 
-      final cold = await buildStack(relay);
+      final cold = await buildStack(relay, initializeFollows: false);
       await cold.follows.toggleFollow(targetPubkey);
       await relay.awaitPublished(3, count: 2);
 

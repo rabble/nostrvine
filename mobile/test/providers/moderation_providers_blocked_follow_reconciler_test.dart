@@ -35,9 +35,11 @@ void main() {
   late ContentBlocklistRepository blocklistRepository;
   late StreamController<List<String>> followingController;
   late List<String> followingPubkeys;
+  late Completer<void> initializedCompleter;
 
   Future<ProviderContainer> createContainer({
     String signingPubkey = ourPubkey,
+    bool followsInitialized = true,
   }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final prefs = await SharedPreferences.getInstance();
@@ -55,6 +57,12 @@ void main() {
     when(
       () => followRepository.followingStream,
     ).thenAnswer((_) => followingController.stream);
+    when(
+      () => followRepository.isInitialized,
+    ).thenAnswer((_) => followsInitialized);
+    when(
+      () => followRepository.initialized,
+    ).thenAnswer((_) => initializedCompleter.future);
     when(
       () => followRepository.republishContactList(),
     ).thenAnswer((_) async {});
@@ -81,6 +89,7 @@ void main() {
   setUp(() {
     followingPubkeys = <String>[];
     followingController = StreamController<List<String>>.broadcast();
+    initializedCompleter = Completer<void>()..complete();
   });
 
   tearDown(() async {
@@ -191,16 +200,62 @@ void main() {
       verifyNever(() => followRepository.republishContactList());
     });
 
+    // FollowRepository.initialize() emits the LocalStorage snapshot on
+    // followingStream seconds before the relay answers. That snapshot can
+    // lag or truncate (#6109), and republishing from it would drop every
+    // follow it is missing — on the write side, where no merge guard
+    // catches it.
+    test('does not republish before the relay load has landed', () async {
+      followingPubkeys = <String>[blockedFollow, otherFollow];
+      initializedCompleter = Completer<void>();
+      final container = await createContainer(followsInitialized: false);
+      container.read(blockedFollowReconcilerProvider);
+
+      await blocklistRepository.blockUser(blockedFollow, ourPubkey: ourPubkey);
+      await Future<void>.delayed(Duration.zero);
+      followingController.add(followingPubkeys);
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(() => followRepository.republishContactList());
+    });
+
+    // A launch where the relay list matches LocalStorage merges without
+    // emitting, so both stream triggers stay silent. Initialization
+    // completing is what settles a contradiction that was already on disk.
+    test(
+      'reconciles when initialization completes without an emission',
+      () async {
+        followingPubkeys = <String>[blockedFollow];
+        initializedCompleter = Completer<void>();
+        final container = await createContainer(followsInitialized: false);
+        await blocklistRepository.blockUser(
+          blockedFollow,
+          ourPubkey: ourPubkey,
+        );
+        container.read(blockedFollowReconcilerProvider);
+
+        when(() => followRepository.isInitialized).thenAnswer((_) => true);
+        initializedCompleter.complete();
+        await Future<void>.delayed(Duration.zero);
+
+        verify(() => followRepository.republishContactList()).called(1);
+      },
+    );
+
+    // Subscribing before the block keeps the startup reconcile a no-op, so
+    // the only republish that can appear here is one a trigger caused.
     test('does not republish on an unblock', () async {
       followingPubkeys = <String>[blockedFollow];
       final container = await createContainer();
-      await blocklistRepository.blockUser(blockedFollow, ourPubkey: ourPubkey);
       container.read(blockedFollowReconcilerProvider);
+
+      await blocklistRepository.blockUser(blockedFollow, ourPubkey: ourPubkey);
+      await Future<void>.delayed(Duration.zero);
 
       await blocklistRepository.unblockUser(blockedFollow);
       await Future<void>.delayed(Duration.zero);
 
-      verifyNever(() => followRepository.republishContactList());
+      verify(() => followRepository.republishContactList()).called(1);
     });
   });
 }

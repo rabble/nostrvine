@@ -635,13 +635,22 @@ String _$blocklistSyncBridgeHash() =>
 /// but blocking never runs through follow/unfollow and nothing republishes
 /// kind 3 on a schedule — so without a trigger the contradiction would sit
 /// on relays until the user's next unrelated follow, possibly never (#6903).
-/// Two triggers cover it:
+/// Three triggers cover it:
 ///
 /// - a fresh block, via [ContentBlocklistRepository.changes];
 /// - the follow list arriving, via `followingStream`. This is the one that
 ///   heals a block made before the list finished loading — a fresh install,
 ///   a new sign-in, a cleared cache — and settles contradictions that
 ///   predate this code.
+/// - [FollowRepository.initialized], for the launch where the relay list
+///   matches LocalStorage: the merge emits nothing then, so the two stream
+///   triggers would both miss a contradiction that was already on disk.
+///
+/// Every trigger is gated on [FollowRepository.isInitialized]. Until the
+/// relay query lands, `followingStream` carries the LocalStorage snapshot,
+/// and republishing from a derived source destroys the follows it is
+/// missing — the #6109 class of loss, on the write side where no merge
+/// guard can catch it.
 ///
 /// Watch this at app shell level.
 
@@ -655,13 +664,22 @@ final blockedFollowReconcilerProvider = BlockedFollowReconcilerProvider._();
 /// but blocking never runs through follow/unfollow and nothing republishes
 /// kind 3 on a schedule — so without a trigger the contradiction would sit
 /// on relays until the user's next unrelated follow, possibly never (#6903).
-/// Two triggers cover it:
+/// Three triggers cover it:
 ///
 /// - a fresh block, via [ContentBlocklistRepository.changes];
 /// - the follow list arriving, via `followingStream`. This is the one that
 ///   heals a block made before the list finished loading — a fresh install,
 ///   a new sign-in, a cleared cache — and settles contradictions that
 ///   predate this code.
+/// - [FollowRepository.initialized], for the launch where the relay list
+///   matches LocalStorage: the merge emits nothing then, so the two stream
+///   triggers would both miss a contradiction that was already on disk.
+///
+/// Every trigger is gated on [FollowRepository.isInitialized]. Until the
+/// relay query lands, `followingStream` carries the LocalStorage snapshot,
+/// and republishing from a derived source destroys the follows it is
+/// missing — the #6109 class of loss, on the write side where no merge
+/// guard can catch it.
 ///
 /// Watch this at app shell level.
 
@@ -675,13 +693,22 @@ final class BlockedFollowReconcilerProvider
   /// but blocking never runs through follow/unfollow and nothing republishes
   /// kind 3 on a schedule — so without a trigger the contradiction would sit
   /// on relays until the user's next unrelated follow, possibly never (#6903).
-  /// Two triggers cover it:
+  /// Three triggers cover it:
   ///
   /// - a fresh block, via [ContentBlocklistRepository.changes];
   /// - the follow list arriving, via `followingStream`. This is the one that
   ///   heals a block made before the list finished loading — a fresh install,
   ///   a new sign-in, a cleared cache — and settles contradictions that
   ///   predate this code.
+  /// - [FollowRepository.initialized], for the launch where the relay list
+  ///   matches LocalStorage: the merge emits nothing then, so the two stream
+  ///   triggers would both miss a contradiction that was already on disk.
+  ///
+  /// Every trigger is gated on [FollowRepository.isInitialized]. Until the
+  /// relay query lands, `followingStream` carries the LocalStorage snapshot,
+  /// and republishing from a derived source destroys the follows it is
+  /// missing — the #6109 class of loss, on the write side where no merge
+  /// guard can catch it.
   ///
   /// Watch this at app shell level.
   BlockedFollowReconcilerProvider._()
@@ -718,4 +745,4 @@ final class BlockedFollowReconcilerProvider
 }
 
 String _$blockedFollowReconcilerHash() =>
-    r'fc1984cf42eeea2e379e1b427e39cf1df545a839';
+    r'fe0ea7d6109c4ad00d4aeee68052c045db7ae84e';

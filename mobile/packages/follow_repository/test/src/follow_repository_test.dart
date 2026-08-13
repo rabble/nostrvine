@@ -843,6 +843,34 @@ void main() {
       });
     });
 
+    group('initialized', () {
+      test('does not complete while the user has no keys', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        var completed = false;
+        unawaited(repository.initialized.then((_) => completed = true));
+
+        await repository.initialize();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(repository.isInitialized, isFalse);
+        expect(completed, isFalse);
+      });
+
+      test('completes once initialize finishes', () async {
+        await repository.initialize();
+
+        await expectLater(repository.initialized, completes);
+        expect(repository.isInitialized, isTrue);
+      });
+
+      test('stays completed across a repeated initialize', () async {
+        await repository.initialize();
+        await repository.initialize();
+
+        await expectLater(repository.initialized, completes);
+      });
+    });
+
     group('unfollow', () {
       test('throws when not authenticated', () async {
         when(() => mockNostrClient.hasKeys).thenReturn(false);
