@@ -133,10 +133,11 @@ class Nip07Service {
         );
       }
 
+      if (_currentPublicKey != pubkey) {
+        _userRelays = null;
+      }
       _currentPublicKey = pubkey;
       _isConnected = true;
-
-      await _loadUserRelays();
 
       Log.info(
         'NIP-07 authentication successful',
@@ -172,28 +173,37 @@ class Nip07Service {
 
   /// Read the extension's relay list into [userRelays].
   ///
-  /// `getRelays` is optional in NIP-07, so an extension that omits it — or one
-  /// that fails the call — leaves [userRelays] null instead of failing the
-  /// connection.
-  Future<void> _loadUserRelays() async {
-    _userRelays = null;
+  /// Some extensions still expose the historical `getRelays` method even
+  /// though it is no longer part of NIP-07. Read it lazily so a relay prompt
+  /// cannot block silent startup reconnect.
+  Future<Map<String, dynamic>?> loadUserRelays() async {
+    if (!isConnected) return null;
+    final connectedPubkey = _currentPublicKey;
+    final cachedRelays = _userRelays;
+    if (cachedRelays != null) return cachedRelays;
+
     try {
-      final pending = _extension!.getRelays();
+      final pending = _extension?.getRelays();
       if (pending == null) {
         Log.debug(
           'Extension does not implement getRelays',
           name: 'Nip07Service',
           category: LogCategory.system,
         );
-        return;
+        return null;
       }
 
-      _userRelays = await pending;
+      final relays = await pending;
+      if (!isConnected || _currentPublicKey != connectedPubkey) {
+        return null;
+      }
+      _userRelays = relays;
       Log.debug(
         'Retrieved ${_userRelays?.length ?? 0} relays from extension',
         name: 'Nip07Service',
         category: LogCategory.system,
       );
+      return _userRelays;
     } catch (e) {
       Log.warning(
         'Could not read relays from extension: $e',
@@ -201,6 +211,10 @@ class Nip07Service {
         category: LogCategory.system,
       );
       // Not a critical error, continue without relays
+      if (isConnected && _currentPublicKey == connectedPubkey) {
+        _userRelays = null;
+      }
+      return null;
     }
   }
 

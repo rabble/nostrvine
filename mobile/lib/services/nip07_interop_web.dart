@@ -71,8 +71,8 @@ class _WebNostrExtension implements NostrExtension {
 
   @override
   Future<Map<String, dynamic>>? getRelays() {
-    // getRelays is optional in NIP-07 and invoking a member the extension
-    // never defined throws a JS TypeError, so probe before calling.
+    // getRelays is a de facto legacy extension method; probe before calling
+    // because invoking an undefined JS member throws a TypeError.
     if (!_js.has('getRelays')) return null;
     final promise = _js.getRelays();
     if (promise == null) return null;
