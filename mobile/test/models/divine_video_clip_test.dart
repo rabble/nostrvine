@@ -268,10 +268,14 @@ void main() {
   group('DivineVideoClip source provenance', () {
     test('round-trips through JSON when populated', () {
       final source = clip('/videos/clip.mp4').copyWith(
-        sourceAuthorPubkey: 'source-author-pubkey',
-        sourceEventId: 'source-event-id',
-        sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
-        sourceRelayHint: 'wss://relay.divine.video',
+        sourceCredits: const [
+          model.ClipSourceCredit(
+            authorPubkey: 'source-author-pubkey',
+            eventId: 'source-event-id',
+            addressableId: '34236:source-author-pubkey:source-d-tag',
+            relayUrl: 'wss://relay.divine.video',
+          ),
+        ],
       );
 
       final json = source.toJson();
@@ -284,11 +288,71 @@ void main() {
       expect(json['sourceRelayHint'], 'wss://relay.divine.video');
 
       final restored = DivineVideoClip.fromJson(json, '/videos');
+      expect(restored.sourceCredits, hasLength(1));
       expect(restored.sourceAuthorPubkey, source.sourceAuthorPubkey);
       expect(restored.sourceEventId, source.sourceEventId);
       expect(restored.sourceAddressableId, source.sourceAddressableId);
       expect(restored.sourceRelayHint, source.sourceRelayHint);
     });
+
+    test(
+      'stores multiple source credits with scalar first-credit fallback',
+      () {
+        final source = clip('/videos/clip.mp4').copyWith(
+          sourceCredits: const [
+            model.ClipSourceCredit(
+              authorPubkey: 'source-author-a',
+              eventId: 'source-event-a',
+              addressableId: '34236:source-author-a:source-a',
+              relayUrl: 'wss://relay-a.divine.video',
+            ),
+            model.ClipSourceCredit(
+              authorPubkey: 'source-author-b',
+              eventId: 'source-event-b',
+              relayUrl: 'wss://relay-b.divine.video',
+            ),
+          ],
+        );
+
+        final restored = DivineVideoClip.fromJson(source.toJson(), '/videos');
+
+        expect(restored.sourceCredits, hasLength(2));
+        expect(restored.sourceAuthorPubkey, 'source-author-a');
+        expect(restored.sourceEventId, 'source-event-a');
+        expect(restored.sourceAddressableId, '34236:source-author-a:source-a');
+        expect(restored.sourceRelayHint, 'wss://relay-a.divine.video');
+        expect(restored.sourceCredits[1].authorPubkey, 'source-author-b');
+        expect(restored.sourceCredits[1].eventId, 'source-event-b');
+        expect(
+          restored.sourceCredits[1].relayUrl,
+          'wss://relay-b.divine.video',
+        );
+      },
+    );
+
+    test(
+      'drops malformed source credit entries instead of failing restore',
+      () {
+        final json = clip('/videos/clip.mp4').toJson()
+          ..['sourceCredits'] = [
+            {
+              'eventId': 'missing-author',
+              'addressableId': '34236:source-author-a:source-a',
+            },
+            {
+              'authorPubkey': 'source-author-b',
+              'eventId': 'source-event-b',
+              'addressableId': '34236:source-author-b:source-b',
+              'relayUrl': 'wss://relay-b.divine.video',
+            },
+          ];
+
+        final restored = DivineVideoClip.fromJson(json, '/videos');
+
+        expect(restored.sourceCredits, hasLength(1));
+        expect(restored.sourceCredits.single.authorPubkey, 'source-author-b');
+      },
+    );
 
     test('defaults to null for legacy JSON and omits empty keys', () {
       final json = clip('/videos/clip.mp4').toJson();
@@ -302,32 +366,58 @@ void main() {
       expect(restored.sourceEventId, isNull);
       expect(restored.sourceAddressableId, isNull);
       expect(restored.sourceRelayHint, isNull);
+      expect(restored.sourceCredits, isEmpty);
     });
 
     test('survives copyWith and can be cleared explicitly', () {
       final source = clip('/videos/clip.mp4').copyWith(
-        sourceAuthorPubkey: 'source-author-pubkey',
-        sourceEventId: 'source-event-id',
-        sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
-        sourceRelayHint: 'wss://relay.divine.video',
+        sourceCredits: const [
+          model.ClipSourceCredit(
+            authorPubkey: 'source-author-pubkey',
+            eventId: 'source-event-id',
+            addressableId: '34236:source-author-pubkey:source-d-tag',
+            relayUrl: 'wss://relay.divine.video',
+          ),
+        ],
       );
 
       final copied = source.copyWith(duration: const Duration(seconds: 6));
+      expect(copied.sourceCredits, source.sourceCredits);
       expect(copied.sourceAuthorPubkey, source.sourceAuthorPubkey);
       expect(copied.sourceEventId, source.sourceEventId);
       expect(copied.sourceAddressableId, source.sourceAddressableId);
       expect(copied.sourceRelayHint, source.sourceRelayHint);
 
-      final cleared = copied.copyWith(
-        clearSourceAuthorPubkey: true,
-        clearSourceEventId: true,
-        clearSourceAddressableId: true,
-        clearSourceRelayHint: true,
-      );
+      final cleared = copied.copyWith(clearSourceCredits: true);
       expect(cleared.sourceAuthorPubkey, isNull);
       expect(cleared.sourceEventId, isNull);
       expect(cleared.sourceAddressableId, isNull);
       expect(cleared.sourceRelayHint, isNull);
+      expect(cleared.sourceCredits, isEmpty);
+    });
+
+    test('carries every credit onto a split or duplicated clip', () {
+      final merged = clip('/videos/clip.mp4').copyWith(
+        sourceCredits: const [
+          model.ClipSourceCredit(
+            authorPubkey: 'source-author-a',
+            addressableId: '34236:source-author-a:source-a',
+            relayUrl: 'wss://relay-a.divine.video',
+          ),
+          model.ClipSourceCredit(
+            authorPubkey: 'source-author-b',
+            addressableId: '34236:source-author-b:source-b',
+          ),
+        ],
+      );
+
+      // A new id makes this a new logical clip, which resets chroma/transition
+      // state. Provenance is a fact about the footage, so it must survive.
+      final half = merged.copyWith(
+        id: 'c2',
+        trimEnd: const Duration(seconds: 1),
+      );
+      expect(half.sourceCredits, equals(merged.sourceCredits));
     });
   });
 

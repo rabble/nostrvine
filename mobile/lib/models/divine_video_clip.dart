@@ -6,7 +6,7 @@ import 'dart:io';
 
 import 'package:divine_camera/divine_camera.dart'
     show CameraLensMetadata, DivineCameraLens;
-import 'package:models/models.dart' as model show AspectRatio;
+import 'package:models/models.dart' as model show AspectRatio, ClipSourceCredit;
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -43,13 +43,21 @@ class DivineVideoClip {
     this.transition,
     this.chromaKey,
     this.chromaKeySourcePath,
-    this.sourceAuthorPubkey,
-    this.sourceEventId,
-    this.sourceAddressableId,
-    this.sourceRelayHint,
+    String? sourceAuthorPubkey,
+    String? sourceEventId,
+    String? sourceAddressableId,
+    String? sourceRelayHint,
+    List<model.ClipSourceCredit> sourceCredits = const [],
   }) : assert(
          video != null || stopMotionFrames != null,
          'A clip must have either a video file or stop-motion frames',
+       ),
+       sourceCredits = _normalizedSourceCredits(
+         sourceCredits: sourceCredits,
+         sourceAuthorPubkey: sourceAuthorPubkey,
+         sourceEventId: sourceEventId,
+         sourceAddressableId: sourceAddressableId,
+         sourceRelayHint: sourceRelayHint,
        ),
        _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
@@ -161,18 +169,28 @@ class DivineVideoClip {
   /// matches what the clip is now.
   final String? chromaKeySourcePath;
 
+  /// All factual source credits carried by this clip.
+  ///
+  /// A clip imported from a published video has one; a clip merged from
+  /// several imported clips has one per distinct source. The legacy scalar
+  /// getters below are a back-compat view of the first credit.
+  final List<model.ClipSourceCredit> sourceCredits;
+
+  model.ClipSourceCredit? get _firstSourceCredit =>
+      sourceCredits.isEmpty ? null : sourceCredits.first;
+
   /// Original video author's pubkey when this local clip was imported from an
   /// existing published video.
-  final String? sourceAuthorPubkey;
+  String? get sourceAuthorPubkey => _firstSourceCredit?.authorPubkey;
 
   /// Original source event id for imported clips.
-  final String? sourceEventId;
+  String? get sourceEventId => _firstSourceCredit?.eventId;
 
   /// Addressable kind 34236 coordinate for the source video when available.
-  final String? sourceAddressableId;
+  String? get sourceAddressableId => _firstSourceCredit?.addressableId;
 
   /// Relay hint for fetching the source video or author attribution.
-  final String? sourceRelayHint;
+  String? get sourceRelayHint => _firstSourceCredit?.relayUrl;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -371,16 +389,17 @@ class DivineVideoClip {
     ClipChromaKey? chromaKey,
     String? chromaKeySourcePath,
     bool clearChromaKey = false,
-    String? sourceAuthorPubkey,
-    bool clearSourceAuthorPubkey = false,
-    String? sourceEventId,
-    bool clearSourceEventId = false,
-    String? sourceAddressableId,
-    bool clearSourceAddressableId = false,
-    String? sourceRelayHint,
-    bool clearSourceRelayHint = false,
+    // Provenance is copied as a whole list: the scalar source fields are a
+    // read-only view of its first entry, so setting one here could only mean
+    // "replace the whole list with a single credit" — which silently drops the
+    // rest of a merged clip's credits.
+    List<model.ClipSourceCredit>? sourceCredits,
+    bool clearSourceCredits = false,
   }) {
     final isNewLogicalClip = id != null && id != this.id;
+    final nextSourceCredits = clearSourceCredits
+        ? const <model.ClipSourceCredit>[]
+        : (sourceCredits ?? this.sourceCredits);
 
     return DivineVideoClip(
       id: id ?? this.id,
@@ -430,18 +449,7 @@ class DivineVideoClip {
       chromaKeySourcePath: isNewLogicalClip || clearChromaKey
           ? null
           : (chromaKeySourcePath ?? this.chromaKeySourcePath),
-      sourceAuthorPubkey: clearSourceAuthorPubkey
-          ? null
-          : (sourceAuthorPubkey ?? this.sourceAuthorPubkey),
-      sourceEventId: clearSourceEventId
-          ? null
-          : (sourceEventId ?? this.sourceEventId),
-      sourceAddressableId: clearSourceAddressableId
-          ? null
-          : (sourceAddressableId ?? this.sourceAddressableId),
-      sourceRelayHint: clearSourceRelayHint
-          ? null
-          : (sourceRelayHint ?? this.sourceRelayHint),
+      sourceCredits: nextSourceCredits,
     );
   }
 
@@ -492,6 +500,10 @@ class DivineVideoClip {
       if (sourceAddressableId != null)
         'sourceAddressableId': sourceAddressableId,
       if (sourceRelayHint != null) 'sourceRelayHint': sourceRelayHint,
+      if (sourceCredits.isNotEmpty)
+        'sourceCredits': sourceCredits
+            .map((credit) => credit.toJson())
+            .toList(),
     };
   }
 
@@ -620,7 +632,40 @@ class DivineVideoClip {
       sourceEventId: json['sourceEventId'] as String?,
       sourceAddressableId: json['sourceAddressableId'] as String?,
       sourceRelayHint: json['sourceRelayHint'] as String?,
+      sourceCredits: model.ClipSourceCredit.listFromJson(json['sourceCredits']),
     );
+  }
+
+  static List<model.ClipSourceCredit> _normalizedSourceCredits({
+    required List<model.ClipSourceCredit> sourceCredits,
+    String? sourceAuthorPubkey,
+    String? sourceEventId,
+    String? sourceAddressableId,
+    String? sourceRelayHint,
+  }) {
+    final credits = <model.ClipSourceCredit>[
+      ...sourceCredits,
+      if (sourceAuthorPubkey != null && sourceAuthorPubkey.isNotEmpty)
+        model.ClipSourceCredit(
+          authorPubkey: sourceAuthorPubkey,
+          eventId: sourceEventId,
+          addressableId: sourceAddressableId,
+          relayUrl: sourceRelayHint,
+        )
+      else if (sourceAddressableId != null && sourceAddressableId.isNotEmpty)
+        model.ClipSourceCredit.fromAddressableId(
+          addressableId: sourceAddressableId,
+          eventId: sourceEventId,
+          relayUrl: sourceRelayHint,
+        ),
+    ];
+
+    final seen = <String>{};
+    return List.unmodifiable([
+      for (final credit in credits)
+        if (credit.authorPubkey.isNotEmpty && seen.add(credit.identityKey))
+          credit,
+    ]);
   }
 
   /// Parses a persisted [ClipTransition], degrading to `null` (a hard cut) when

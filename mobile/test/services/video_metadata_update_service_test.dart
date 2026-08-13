@@ -832,6 +832,93 @@ void main() {
       });
 
       test(
+        'preserves clip-source tags when manual inspired-by is cleared',
+        () async {
+          const sourceCreator =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          const sourceAddressableId = '34236:$sourceCreator:source-vid';
+          final video = _testVideo(
+            extraTags: const [
+              [
+                'a',
+                sourceAddressableId,
+                'wss://source.relay',
+                'mention',
+              ],
+              [
+                'a',
+                sourceAddressableId,
+                'wss://source.relay',
+                clipSourceCreditTagMarker,
+              ],
+              [
+                'p',
+                sourceCreator,
+                'wss://source.relay',
+                'inspired-by',
+              ],
+            ],
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect(
+            capturedTags,
+            isNot(
+              contains(
+                equals([
+                  'a',
+                  sourceAddressableId,
+                  'wss://source.relay',
+                  'mention',
+                ]),
+              ),
+            ),
+          );
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'a',
+                sourceAddressableId,
+                'wss://source.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+          expect(
+            capturedTags,
+            isNot(
+              contains(
+                equals([
+                  'p',
+                  sourceCreator,
+                  'wss://source.relay',
+                  'inspired-by',
+                ]),
+              ),
+            ),
+          );
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'p',
+                sourceCreator,
+                'wss://source.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+        },
+      );
+
+      test(
         'drops a mention p-tag when its pubkey is promoted to collaborator',
         () async {
           const promoted =

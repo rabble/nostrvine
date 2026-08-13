@@ -1604,6 +1604,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String get audioAttributionUnavailableSound => 'آواز دستیاب نہیں';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return '@$creatorName +$additionalCreatorCount سے متاثر';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return '@$creatorName سے متاثر';
   }
@@ -7419,11 +7427,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoIconPlaceholderLabel => 'ویڈیو';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return '$creatorName سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔';
-  }
-
-  @override
   String get publishErrorNotSignedIn =>
       'ویڈیوز شائع کرنے کے لیے براہ کرم سائن ان کریں۔';
 
@@ -7634,6 +7637,14 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoClipDelete => 'کلپ حذف کریں';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return '$creatorName +$additionalCreatorCount سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

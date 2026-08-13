@@ -592,6 +592,8 @@
     "videoFollowButtonFollow": "Obserwuj",
     "audioAttributionOriginalSound": "Oryginalny dźwięk",
     "audioAttributionUnavailableSound": "Dźwięk niedostępny",
+    "videoInspiredByAttributionMultiple": "Zainspirowane przez @{creatorName} +{additionalCreatorCount}",
+    "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "videoInspiredByAttribution": "Zainspirowane przez @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {
@@ -4839,8 +4841,6 @@
     "videoEditorAudioImportAudio": "Zaimportuj dźwięk",
     "videoEditorAudioImportFailed": "Import dźwięku nie powiódł się.",
     "videoIconPlaceholderLabel": "Film",
-    "videoInspiredByAttributionSemanticLabel": "Zainspirowane przez {creatorName}. Dotknij, aby zobaczyć jego profil.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filtr: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Brak wyników dla „{query}”",
@@ -4877,6 +4877,8 @@
     "videoClipSaveTo": "Zapisz do {destination}",
     "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
     "videoClipDelete": "Usuń klip",
+    "inspiredByAttributionMultipleSemanticLabel": "Zainspirowane przez {creatorName} +{additionalCreatorCount}. Dotknij, aby zobaczyć jego profil.",
+    "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "inspiredByAttributionSemanticLabel": "Zainspirowane przez {creatorName}. Dotknij, aby zobaczyć jego profil.",
     "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchVideosSortOptionsLabel": "Sortuj wyniki filmów",

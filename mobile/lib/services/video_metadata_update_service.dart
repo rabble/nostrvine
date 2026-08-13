@@ -4,7 +4,8 @@
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
-import 'package:models/models.dart' show VideoEvent;
+import 'package:models/models.dart'
+    show ClipSourceCredit, VideoEvent, clipSourceCreditTagMarker;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -110,7 +111,35 @@ bool _isEditRebuiltTag(List<String> tag, {required bool isVideoReply}) {
       tag[1].startsWith('${NIP71VideoKinds.addressableShortVideo}:')) {
     return true;
   }
+  // clip-source tags are factual provenance for reused footage. The metadata
+  // edit flow preserves them, then re-derives missing clip-source p-tags from
+  // the preserved a-tags so clearing manual attribution does not erase creator
+  // notification targets.
   return false;
+}
+
+List<ClipSourceCredit> _clipSourceCreditsFromPreservedTags(
+  Iterable<List<String>> tags,
+) {
+  final credits = <ClipSourceCredit>[];
+  final seen = <String>{};
+
+  for (final tag in tags) {
+    if (tag.length < 4 ||
+        tag[0] != 'a' ||
+        tag[3].toLowerCase() != clipSourceCreditTagMarker ||
+        !tag[1].startsWith('${NIP71VideoKinds.addressableShortVideo}:')) {
+      continue;
+    }
+
+    final credit = ClipSourceCredit.fromAddressableId(
+      addressableId: tag[1],
+      relayUrl: tag[2].isEmpty ? null : tag[2],
+    );
+    if (seen.add(credit.identityKey)) credits.add(credit);
+  }
+
+  return credits;
 }
 
 /// Sends collaborator invites to any pubkeys added since the last publish.
@@ -344,6 +373,13 @@ class VideoMetadataUpdateService {
       }
 
       tags.addAll(preservedTags);
+      tags.addAll(
+        buildClipSourceCreditPTags(
+          existingTags: tags,
+          clipSourceCredits: _clipSourceCreditsFromPreservedTags(preservedTags),
+          selfPubkey: _authService.currentPublicKeyHex,
+        ),
+      );
 
       // p-tag the inspired-by creator(s) so they are notifiable. Emitted
       // after [preservedTags] so preserved caption-mention p-tags win dedup

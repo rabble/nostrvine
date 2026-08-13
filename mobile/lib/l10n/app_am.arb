@@ -678,6 +678,8 @@
     "videoFollowButtonFollow": "ተከተል",
     "audioAttributionOriginalSound": "ኦሪጅናል ድምጽ",
     "audioAttributionUnavailableSound": "ድምጽ አይገኝም",
+    "videoInspiredByAttributionMultiple": "በ@{creatorName} +{additionalCreatorCount} የተነሳሳ",
+    "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "videoInspiredByAttribution": "በ@{creatorName} የተነሳሳ",
     "@videoInspiredByAttribution": {
         "placeholders": {
@@ -4964,8 +4966,6 @@
     "videoEditorAudioImportAudio": "ኦዲዮ አስመጣ",
     "videoEditorAudioImportFailed": "ኦዲዮ ማስመጣት አልተሳካም።",
     "videoIconPlaceholderLabel": "ቪዲዮ",
-    "videoInspiredByAttributionSemanticLabel": "በ{creatorName} የተነሳሳ። መገለጫቸውን ለማየት መታ ያድርጉ።",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "ማጣሪያ፡ {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "ለ\"{query}\" ምንም ውጤት አልተገኘም",
@@ -5002,6 +5002,8 @@
     "videoClipSaveTo": "ወደ {destination} አስቀምጥ",
     "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
     "videoClipDelete": "ክሊፕ ሰርዝ",
+    "inspiredByAttributionMultipleSemanticLabel": "በ{creatorName} +{additionalCreatorCount} የተነሳሳ። መገለጫቸውን ለማየት መታ ያድርጉ።",
+    "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "inspiredByAttributionSemanticLabel": "በ{creatorName} የተነሳሳ። መገለጫቸውን ለማየት መታ ያድርጉ።",
     "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchVideosSortOptionsLabel": "የቪዲዮ ውጤቶችን ደርድር",

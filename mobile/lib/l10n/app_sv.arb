@@ -592,6 +592,8 @@
     "videoFollowButtonFollow": "Följ",
     "audioAttributionOriginalSound": "Originalljud",
     "audioAttributionUnavailableSound": "Ljud otillgängligt",
+    "videoInspiredByAttributionMultiple": "Inspirerad av @{creatorName} +{additionalCreatorCount}",
+    "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "videoInspiredByAttribution": "Inspirerad av @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {
@@ -4839,8 +4841,6 @@
     "videoEditorAudioImportAudio": "Importera ljud",
     "videoEditorAudioImportFailed": "Ljudimporten misslyckades.",
     "videoIconPlaceholderLabel": "Video",
-    "videoInspiredByAttributionSemanticLabel": "Inspirerad av {creatorName}. Tryck för att se deras profil.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filter: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Inga resultat hittades för \"{query}\"",
@@ -4877,6 +4877,8 @@
     "videoClipSaveTo": "Spara till {destination}",
     "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
     "videoClipDelete": "Ta bort klipp",
+    "inspiredByAttributionMultipleSemanticLabel": "Inspirerad av {creatorName} +{additionalCreatorCount}. Tryck för att se deras profil.",
+    "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "inspiredByAttributionSemanticLabel": "Inspirerad av {creatorName}. Tryck för att se deras profil.",
     "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchVideosSortOptionsLabel": "Sortera videoresultat",

@@ -1510,6 +1510,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get audioAttributionUnavailableSound => '声音不可用';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return '灵感来自 @$creatorName +$additionalCreatorCount';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return '灵感来自 @$creatorName';
   }
@@ -7055,11 +7063,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoIconPlaceholderLabel => '视频';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return '灵感来自 $creatorName。点按查看 TA 的主页。';
-  }
-
-  @override
   String get publishErrorNotSignedIn => '请登录后再发布视频。';
 
   @override
@@ -7251,6 +7254,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoClipDelete => '删除片段';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return '灵感来自 $creatorName +$additionalCreatorCount。点按查看 TA 的主页。';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

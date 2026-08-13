@@ -6,7 +6,12 @@ import 'dart:convert';
 import 'package:db_client/db_client.dart';
 import 'package:flutter/widgets.dart' show SizedBox;
 import 'package:models/models.dart'
-    show AspectRatio, AudioEvent, InspiredByInfo, NativeProofData;
+    show
+        AspectRatio,
+        AudioEvent,
+        ClipSourceCredit,
+        InspiredByInfo,
+        NativeProofData;
 import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -42,6 +47,7 @@ class DivineVideoDraft {
     this.collaboratorPubkeys = const {},
     this.inspiredByVideo,
     this.inspiredByNpub,
+    this.clipSourceCredits = const [],
     this.selectedSound,
     this.audioShareAttribution,
     this.contentWarning,
@@ -67,6 +73,7 @@ class DivineVideoDraft {
     Set<String> collaboratorPubkeys = const {},
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
+    List<ClipSourceCredit> clipSourceCredits = const [],
     AudioEvent? selectedSound,
     AudioShareAttribution? audioShareAttribution,
     String? contentWarning,
@@ -96,6 +103,7 @@ class DivineVideoDraft {
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
+      clipSourceCredits: clipSourceCredits,
       selectedSound: selectedSound,
       audioShareAttribution: audioShareAttribution,
       contentWarning: contentWarning,
@@ -191,6 +199,9 @@ class DivineVideoDraft {
             )
           : null,
       inspiredByNpub: json['inspiredByNpub'] as String?,
+      clipSourceCredits: ClipSourceCredit.listFromJson(
+        json['clipSourceCredits'],
+      ),
       // New format: full AudioEvent object
       // Old format (selectedAudioEventId/selectedAudioRelay) is ignored -
       // user must re-select sound if loading old draft
@@ -199,9 +210,7 @@ class DivineVideoDraft {
           : null,
       audioShareAttribution: json['audioShareAttribution'] is Map
           ? AudioShareAttribution.fromJson(
-              Map<String, dynamic>.from(
-                json['audioShareAttribution'] as Map,
-              ),
+              Map<String, dynamic>.from(json['audioShareAttribution'] as Map),
             )
           : null,
       contentWarning: json['contentWarning'] as String?,
@@ -282,6 +291,9 @@ class DivineVideoDraft {
   /// NIP-27 npub reference for general "Inspired By" a creator.
   final String? inspiredByNpub;
 
+  /// Factual credits for clips reused from published videos.
+  final List<ClipSourceCredit> clipSourceCredits;
+
   /// Currently selected audio event for the video.
   /// Contains the full AudioEvent data including URL, title, and start offset.
   /// Persisted to drafts so the sound selection survives app restarts.
@@ -356,6 +368,7 @@ class DivineVideoDraft {
     Set<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
+    List<ClipSourceCredit>? clipSourceCredits,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
     Object? audioShareAttribution = _sentinel,
@@ -398,6 +411,7 @@ class DivineVideoDraft {
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
     inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
     inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
+    clipSourceCredits: clipSourceCredits ?? this.clipSourceCredits,
     selectedSound: clearSelectedSound
         ? null
         : (selectedSound ?? this.selectedSound),
@@ -456,6 +470,7 @@ class DivineVideoDraft {
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
+      clipSourceCredits: clipSourceCredits,
       selectedSound: selectedSound,
       audioShareAttribution: audioShareAttribution,
       contentWarning: contentWarning,
@@ -491,6 +506,10 @@ class DivineVideoDraft {
       'collaboratorPubkeys': collaboratorPubkeys.toList(),
     if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
+    if (clipSourceCredits.isNotEmpty)
+      'clipSourceCredits': clipSourceCredits
+          .map((credit) => credit.toJson())
+          .toList(),
     if (selectedSound != null) 'selectedSound': selectedSound!.toJson(),
     if (audioShareAttribution != null)
       'audioShareAttribution': audioShareAttribution!.toJson(),
@@ -582,5 +601,6 @@ class DivineVideoDraft {
           collaboratorPubkeys.isNotEmpty ||
           inspiredByVideo != null ||
           inspiredByNpub != null ||
+          clipSourceCredits.isNotEmpty ||
           expireTime != null);
 }

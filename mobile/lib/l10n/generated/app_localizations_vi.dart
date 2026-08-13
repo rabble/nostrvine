@@ -1608,6 +1608,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get audioAttributionUnavailableSound => 'Âm thanh không khả dụng';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Lấy cảm hứng từ @$creatorName +$additionalCreatorCount';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Lấy cảm hứng từ @$creatorName';
   }
@@ -7426,11 +7434,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoIconPlaceholderLabel => 'Video';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Lấy cảm hứng từ $creatorName. Chạm để xem hồ sơ của họ.';
-  }
-
-  @override
   String get publishErrorNotSignedIn => 'Vui lòng đăng nhập để đăng video.';
 
   @override
@@ -7638,6 +7641,14 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoClipDelete => 'Xóa clip';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Lấy cảm hứng từ $creatorName +$additionalCreatorCount. Chạm để xem hồ sơ của họ.';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

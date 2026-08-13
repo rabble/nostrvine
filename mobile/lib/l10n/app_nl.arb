@@ -592,6 +592,8 @@
     "videoFollowButtonFollow": "Volgen",
     "audioAttributionOriginalSound": "Origineel geluid",
     "audioAttributionUnavailableSound": "Geluid niet beschikbaar",
+    "videoInspiredByAttributionMultiple": "Geïnspireerd door @{creatorName} +{additionalCreatorCount}",
+    "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "videoInspiredByAttribution": "Geïnspireerd door @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {
@@ -4839,8 +4841,6 @@
     "videoEditorAudioImportAudio": "Audio importeren",
     "videoEditorAudioImportFailed": "Audio importeren mislukt.",
     "videoIconPlaceholderLabel": "Video",
-    "videoInspiredByAttributionSemanticLabel": "Geïnspireerd door {creatorName}. Tik om hun profiel te bekijken.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filter: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Geen resultaten gevonden voor \"{query}\"",
@@ -4877,6 +4877,8 @@
     "videoClipSaveTo": "Opslaan bij {destination}",
     "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
     "videoClipDelete": "Clip verwijderen",
+    "inspiredByAttributionMultipleSemanticLabel": "Geïnspireerd door {creatorName} +{additionalCreatorCount}. Tik om hun profiel te bekijken.",
+    "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "inspiredByAttributionSemanticLabel": "Geïnspireerd door {creatorName}. Tik om hun profiel te bekijken.",
     "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchVideosSortOptionsLabel": "Videoresultaten sorteren",

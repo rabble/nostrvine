@@ -78,6 +78,28 @@ Publishing is centralized in `mobile/lib/utils/collaborator_tags.dart`, and
 parsing is enforced in `mobile/packages/models/lib/src/video_event.dart` and
 `mobile/packages/models/lib/src/video_stats.dart`.
 
+### Divine Attribution Markers
+
+Attribution reuses the same marker convention on `p` tags, and extends it to
+`a` tags. All of these are Divine conventions rather than NIP-71 fields.
+
+| Tag | Format | Description |
+|-----|--------|-------------|
+| `a` | `["a", "34236:<pubkey>:<d>", "<relay>", "mention"]` | The video the creator chose as their Inspired By source. Written at publish. |
+| `a` | `["a", "34236:<pubkey>:<d>", "<relay>", "inspired-by"]` | The same reference, rewritten by the metadata edit flow. |
+| `a` | `["a", "34236:<pubkey>:<d>", "<relay>", "clip-source"]` | A published video this one actually reuses footage from. One per distinct source. |
+| `p` | `["p", "<pubkey>", "<relay>", "inspired-by"]` | Notifies the Inspired By creator (NIP-27: a mention without a `p` tag does not notify). |
+| `p` | `["p", "<pubkey>", "<relay>", "clip-source"]` | Notifies the author of reused footage. |
+
+`clip-source` is a factual claim about footage in the video; `mention` /
+`inspired-by` is the creator's own attribution choice. They are emitted
+independently even when they point at the same source video, so clearing manual
+Inspired By attribution during metadata edit does not erase factual clip
+provenance. Publishing lives in
+`mobile/lib/utils/inspired_by_tags.dart` and
+`mobile/lib/services/video_event_publisher.dart`; parsing in
+`mobile/packages/models/lib/src/video_event.dart`.
+
 ### Event Metadata
 
 | Tag | Format | Description | Required |

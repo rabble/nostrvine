@@ -768,6 +768,8 @@
   "@audioAttributionUnavailableSound": {
     "description": "Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound."
   },
+  "videoInspiredByAttributionMultiple": "@{creatorName} +{additionalCreatorCount} سے متاثر",
+  "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
   "videoInspiredByAttribution": "@{creatorName} سے متاثر",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -4244,14 +4246,6 @@
   "videoEditorAudioImportAudio": "آڈیو درآمد کریں",
   "videoEditorAudioImportFailed": "آڈیو درآمد ناکام۔",
   "videoIconPlaceholderLabel": "ویڈیو",
-  "videoInspiredByAttributionSemanticLabel": "{creatorName} سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔",
-  "@videoInspiredByAttributionSemanticLabel": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
   "publishErrorNotSignedIn": "ویڈیوز شائع کرنے کے لیے براہ کرم سائن ان کریں۔",
   "publishErrorNoRetry": "دوبارہ کوشش کے لیے کوئی اپلوڈ نہیں۔",
   "publishErrorNoInternet": "کوئی انٹرنیٹ کنکشن نہیں۔ اپنا Wi-Fi یا موبائل ڈیٹا چیک کر کے دوبارہ کوشش کریں۔",
@@ -4415,6 +4409,8 @@
     }
   },
   "videoClipDelete": "کلپ حذف کریں",
+  "inspiredByAttributionMultipleSemanticLabel": "{creatorName} +{additionalCreatorCount} سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔",
+  "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
   "inspiredByAttributionSemanticLabel": "{creatorName} سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔",
   "@inspiredByAttributionSemanticLabel": {
     "placeholders": {

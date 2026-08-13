@@ -2212,6 +2212,133 @@ void main() {
         expect(container.read(clipManagerProvider).clips, isEmpty);
       });
 
+      test(
+        'drops clip-source credits when the reused clip is deleted',
+        () async {
+          const sourceCreator =
+              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'reused',
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                sourceAuthorPubkey: sourceCreator,
+                sourceAddressableId: '34236:$sourceCreator:reused-source',
+                sourceRelayHint: 'wss://source.relay',
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            clipSourceCredits: const [
+              ClipSourceCredit(
+                authorPubkey: sourceCreator,
+                addressableId: '34236:$sourceCreator:reused-source',
+                relayUrl: 'wss://source.relay',
+              ),
+            ],
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+          container.read(clipManagerProvider.notifier).replaceClips([
+            DivineVideoClip(
+              id: 'local',
+              video: EditorVideo.file(clipVideoPath),
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ], autosave: false);
+
+          expect(
+            container
+                .read(videoEditorProvider.notifier)
+                .getActiveDraft()
+                .clipSourceCredits,
+            isEmpty,
+            reason:
+                'a clip-source credit is a factual claim about footage in the '
+                'video; deleting the reused clip must not leave the credit '
+                'behind to be published and notify its creator',
+          );
+        },
+      );
+
+      test(
+        'drops clip-source credits of a clip whose media went missing',
+        () async {
+          const sourceCreator =
+              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'present',
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+              DivineVideoClip(
+                id: 'orphan',
+                video: EditorVideo.file('${tempDir.path}/deleted.mp4'),
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                sourceAuthorPubkey: sourceCreator,
+                sourceAddressableId: '34236:$sourceCreator:reused-source',
+                sourceRelayHint: 'wss://source.relay',
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            clipSourceCredits: const [
+              ClipSourceCredit(
+                authorPubkey: sourceCreator,
+                addressableId: '34236:$sourceCreator:reused-source',
+                relayUrl: 'wss://source.relay',
+              ),
+            ],
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+
+          expect(
+            container
+                .read(videoEditorProvider.notifier)
+                .getActiveDraft()
+                .clipSourceCredits,
+            isEmpty,
+            reason:
+                'restore drops the orphaned clip, so its footage is no longer '
+                'in the video and its credit must go with it',
+          );
+        },
+      );
+
       test('restores the saved cover position onto state', () async {
         final draft = DivineVideoDraft.create(
           id: 'draft-1',
@@ -2638,6 +2765,8 @@ void main() {
 
     DivineVideoClip timelineClip({
       String id = 'clip-1',
+      String? sourceAuthorPubkey,
+      String? sourceEventId,
       String? sourceAddressableId,
       String? sourceRelayHint,
     }) {
@@ -2648,6 +2777,8 @@ void main() {
         recordedAt: DateTime(2026),
         targetAspectRatio: .vertical,
         originalAspectRatio: 9 / 16,
+        sourceAuthorPubkey: sourceAuthorPubkey,
+        sourceEventId: sourceEventId,
         sourceAddressableId: sourceAddressableId,
         sourceRelayHint: sourceRelayHint,
       );
@@ -2749,15 +2880,17 @@ void main() {
       );
     });
 
-    test('does not credit clips when reused sources disagree', () {
+    test('keeps all clip-source credits when reused sources disagree', () {
       container.read(clipManagerProvider.notifier).replaceClips([
         timelineClip(
           id: 'source-a',
+          sourceAuthorPubkey: 'd' * 64,
           sourceAddressableId: '34236:${'d' * 64}:source-a',
           sourceRelayHint: 'wss://source-a.relay',
         ),
         timelineClip(
           id: 'source-b',
+          sourceAuthorPubkey: 'e' * 64,
           sourceAddressableId: '34236:${'e' * 64}:source-b',
           sourceRelayHint: 'wss://source-b.relay',
         ),
@@ -2768,6 +2901,34 @@ void main() {
           .getActiveDraft();
 
       expect(draft.inspiredByVideo, isNull);
+      expect(
+        draft.clipSourceCredits.map((credit) => credit.addressableId),
+        equals([
+          '34236:${'d' * 64}:source-a',
+          '34236:${'e' * 64}:source-b',
+        ]),
+      );
+    });
+
+    test('credits author-only reused clip provenance', () {
+      container.read(clipManagerProvider.notifier).replaceClips([
+        timelineClip(
+          id: 'author-only',
+          sourceAuthorPubkey: sourceCreator,
+          sourceEventId: sourceVideoId,
+          sourceRelayHint: 'wss://source.relay',
+        ),
+      ], autosave: false);
+
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(draft.inspiredByVideo, isNull);
+      expect(draft.clipSourceCredits, hasLength(1));
+      expect(draft.clipSourceCredits.single.authorPubkey, sourceCreator);
+      expect(draft.clipSourceCredits.single.eventId, sourceVideoId);
+      expect(draft.clipSourceCredits.single.relayUrl, 'wss://source.relay');
     });
   });
 

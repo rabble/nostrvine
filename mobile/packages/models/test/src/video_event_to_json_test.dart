@@ -75,6 +75,13 @@ VideoEvent _fullVideo() => VideoEvent(
     relayUrl: 'wss://relay.divine.video',
   ),
   inspiredByNpub: 'npub1examplenpubvalue',
+  clipSourceCredits: const [
+    ClipSourceCredit(
+      authorPubkey: 'abc123',
+      addressableId: '34236:abc123:clip-source',
+      relayUrl: 'wss://relay.divine.video',
+    ),
+  ],
   nostrEventTags: const [
     ['d', 'abc123def'],
     ['title', 'A short loop'],
@@ -148,6 +155,7 @@ const _expectedKeys = <String>{
   'collaboratorPubkeys',
   'inspiredByVideo',
   'inspiredByNpub',
+  'clipSourceCredits',
   'textTrackRef',
   'textTrackRefs',
   'textTrackContent',
@@ -367,6 +375,15 @@ void main() {
       );
       expect(restored.inspiredByVideo, equals(original.inspiredByVideo));
       expect(restored.inspiredByNpub, equals(original.inspiredByNpub));
+      expect(restored.clipSourceCredits, equals(original.clipSourceCredits));
+      expect(
+        restored.clipSourceCredits.single.addressableId,
+        equals(original.clipSourceCredits.single.addressableId),
+      );
+      expect(
+        restored.clipSourceCredits.single.relayUrl,
+        equals(original.clipSourceCredits.single.relayUrl),
+      );
       expect(restored.textTrackRef, equals(original.textTrackRef));
       expect(restored.textTrackContent, equals(original.textTrackContent));
       expect(

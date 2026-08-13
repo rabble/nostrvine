@@ -1625,6 +1625,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get audioAttributionUnavailableSound => 'Звукът е недостъпен';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Вдъхновен от @$creatorName +$additionalCreatorCount';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Вдъхновен от @$creatorName';
   }
@@ -7491,11 +7499,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoIconPlaceholderLabel => 'Видео';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Вдъхновено от $creatorName. Докосни, за да видиш профила им.';
-  }
-
-  @override
   String get publishErrorNotSignedIn => 'Влез, за да публикуваш видеа.';
 
   @override
@@ -7704,6 +7707,14 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoClipDelete => 'Изтрий клипа';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Вдъхновено от $creatorName +$additionalCreatorCount. Докосни, за да видиш профила им.';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

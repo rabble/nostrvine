@@ -45,23 +45,36 @@ class InspiredByAttributionRow extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    // Determine the creator pubkey from the attribution source
-    final creatorPubkey = _resolveCreatorPubkey();
-    if (creatorPubkey == null || creatorPubkey.isEmpty) {
+    final creatorPubkeys = _resolveCreatorPubkeys();
+    if (creatorPubkeys.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return _InspiredByContent(creatorPubkey: creatorPubkey, isActive: isActive);
+    return _InspiredByContent(
+      creatorPubkeys: creatorPubkeys,
+      isActive: isActive,
+    );
   }
 
-  /// Resolve the creator pubkey from either inspiredByVideo or inspiredByNpub.
-  String? _resolveCreatorPubkey() {
+  /// Resolve creator pubkeys from explicit inspired-by metadata and factual
+  /// clip credits without hiding either source of attribution.
+  List<String> _resolveCreatorPubkeys() {
+    final pubkeys = <String>[];
+    final seen = <String>{};
+
+    void addPubkey(String pubkey) {
+      final trimmed = pubkey.trim();
+      if (trimmed.isNotEmpty && seen.add(trimmed.toLowerCase())) {
+        pubkeys.add(trimmed);
+      }
+    }
+
     if (video.inspiredByVideo != null) {
-      return video.inspiredByVideo!.creatorPubkey;
+      addPubkey(video.inspiredByVideo!.creatorPubkey);
     }
     if (video.inspiredByNpub != null) {
       try {
-        return NostrKeyUtils.decode(video.inspiredByNpub!);
+        addPubkey(NostrKeyUtils.decode(video.inspiredByNpub!));
       } catch (e) {
         Log.warning(
           'Failed to decode inspiredByNpub '
@@ -69,25 +82,28 @@ class InspiredByAttributionRow extends ConsumerWidget {
           name: 'InspiredByAttributionRow',
           category: LogCategory.ui,
         );
-        return null;
       }
     }
-    return null;
+    for (final credit in video.clipSourceCredits) {
+      addPubkey(credit.authorPubkey);
+    }
+    return pubkeys;
   }
 }
 
 /// The actual content showing inspired-by attribution.
 class _InspiredByContent extends ConsumerWidget {
   const _InspiredByContent({
-    required this.creatorPubkey,
+    required this.creatorPubkeys,
     required this.isActive,
   });
 
-  final String creatorPubkey;
+  final List<String> creatorPubkeys;
   final bool isActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final creatorPubkey = creatorPubkeys.first;
     final creatorProfile = ref
         .watch(userProfileReactiveProvider(creatorPubkey))
         .value;
@@ -95,13 +111,29 @@ class _InspiredByContent extends ConsumerWidget {
     final creatorName =
         creatorProfile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(creatorPubkey);
+    // The extra-creator count is part of the localized sentence rather than
+    // concatenated onto the name, so a translator can place it — appending it
+    // in Dart puts it on the wrong side in RTL locales.
+    final extraCreatorCount = creatorPubkeys.length - 1;
+    final attribution = extraCreatorCount == 0
+        ? context.l10n.videoInspiredByAttribution(creatorName)
+        : context.l10n.videoInspiredByAttributionMultiple(
+            creatorName,
+            extraCreatorCount,
+          );
+    final semanticLabel = extraCreatorCount == 0
+        ? context.l10n.inspiredByAttributionSemanticLabel(creatorName)
+        : context.l10n.inspiredByAttributionMultipleSemanticLabel(
+            creatorName,
+            extraCreatorCount,
+          );
 
     return GestureDetector(
       onTap: () => _navigateToCreatorProfile(context),
       child: Semantics(
         identifier: 'inspired_by_attribution_row',
         button: true,
-        label: context.l10n.inspiredByAttributionSemanticLabel(creatorName),
+        label: semanticLabel,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -119,7 +151,7 @@ class _InspiredByContent extends ConsumerWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  context.l10n.videoInspiredByAttribution(creatorName),
+                  attribution,
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 12,
@@ -144,6 +176,7 @@ class _InspiredByContent extends ConsumerWidget {
   }
 
   void _navigateToCreatorProfile(BuildContext context) {
+    final creatorPubkey = creatorPubkeys.first;
     Log.info(
       'Navigating to inspired-by creator profile: $creatorPubkey',
       name: 'InspiredByAttributionRow',

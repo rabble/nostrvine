@@ -1619,6 +1619,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get audioAttributionUnavailableSound => 'Som indisponível';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Inspirado em @$creatorName +$additionalCreatorCount';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Inspirado em @$creatorName';
   }
@@ -7469,11 +7477,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoIconPlaceholderLabel => 'Vídeo';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Inspirado por $creatorName. Toque para ver o perfil dele.';
-  }
-
-  @override
   String get publishErrorNotSignedIn =>
       'Entre na sua conta para publicar vídeos.';
 
@@ -7684,6 +7687,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoClipDelete => 'Excluir clipe';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Inspirado por $creatorName +$additionalCreatorCount. Toque para ver o perfil dele.';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

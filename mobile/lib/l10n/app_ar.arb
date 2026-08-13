@@ -592,6 +592,8 @@
     "videoFollowButtonFollow": "متابعة",
     "audioAttributionOriginalSound": "صوت أصلي",
     "audioAttributionUnavailableSound": "الصوت غير متاح",
+    "videoInspiredByAttributionMultiple": "مستوحى من @{creatorName} +{additionalCreatorCount}",
+    "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "videoInspiredByAttribution": "مستوحى من @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {
@@ -4839,8 +4841,6 @@
     "videoEditorAudioImportAudio": "استيراد صوت",
     "videoEditorAudioImportFailed": "فشل استيراد الصوت.",
     "videoIconPlaceholderLabel": "فيديو",
-    "videoInspiredByAttributionSemanticLabel": "مستوحى من {creatorName}. اضغط لعرض ملفه الشخصي.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "التصفية: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "لم يتم العثور على نتائج لـ \"{query}\"",
@@ -4877,6 +4877,8 @@
     "videoClipSaveTo": "حفظ في {destination}",
     "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
     "videoClipDelete": "حذف المقطع",
+    "inspiredByAttributionMultipleSemanticLabel": "مستوحى من {creatorName} +{additionalCreatorCount}. اضغط لعرض ملفه الشخصي.",
+    "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "inspiredByAttributionSemanticLabel": "مستوحى من {creatorName}. اضغط لعرض ملفه الشخصي.",
     "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchVideosSortOptionsLabel": "ترتيب نتائج الفيديو",

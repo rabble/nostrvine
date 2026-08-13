@@ -117,31 +117,6 @@ Duration outerPublishTimeoutFor(int relayCount) {
   return derived;
 }
 
-List<List<String>> _buildMentionPTags(
-  Iterable<String> pubkeys, {
-  Iterable<String> excludedPubkeys = const [],
-}) {
-  final excluded = excludedPubkeys
-      .map((pubkey) => pubkey.trim().toLowerCase())
-      .where(NostrHexUtils.isValidPubkey)
-      .toSet();
-  final seen = <String>{};
-  final tags = <List<String>>[];
-
-  for (final pubkey in pubkeys) {
-    final normalizedPubkey = pubkey.trim().toLowerCase();
-    if (!NostrHexUtils.isValidPubkey(normalizedPubkey) ||
-        excluded.contains(normalizedPubkey) ||
-        !seen.add(normalizedPubkey)) {
-      continue;
-    }
-
-    tags.add(['p', normalizedPubkey, collaboratorInviteRelayHint, 'mention']);
-  }
-
-  return tags;
-}
-
 /// Result of a single REST-then-WebSocket publish attempt.
 enum _EventPublishOutcome {
   /// The event was accepted (REST 200, or a WebSocket send succeeded).
@@ -897,6 +872,7 @@ class VideoEventPublisher {
     String? inspiredByAddressableId,
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
+    List<ClipSourceCredit> clipSourceCredits = const [],
     AudioEvent? selectedAudio,
     AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
@@ -926,6 +902,7 @@ class VideoEventPublisher {
       inspiredByAddressableId: inspiredByAddressableId,
       inspiredByRelayUrl: inspiredByRelayUrl,
       inspiredByNpub: inspiredByNpub,
+      clipSourceCredits: clipSourceCredits,
       selectedAudio: selectedAudio,
       audioShareAttribution: audioShareAttribution,
       selectedAudioEventId: selectedAudioEventId,
@@ -973,6 +950,7 @@ class VideoEventPublisher {
     String? inspiredByAddressableId,
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
+    List<ClipSourceCredit> clipSourceCredits = const [],
     AudioEvent? selectedAudio,
     AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
@@ -1017,6 +995,7 @@ class VideoEventPublisher {
       inspiredByAddressableId: inspiredByAddressableId,
       inspiredByRelayUrl: inspiredByRelayUrl,
       inspiredByNpub: inspiredByNpub,
+      clipSourceCredits: clipSourceCredits,
       selectedAudio: selectedAudio,
       audioShareAttribution: audioShareAttribution,
       selectedAudioEventId: selectedAudioEventId,
@@ -1054,6 +1033,7 @@ class VideoEventPublisher {
     String? inspiredByAddressableId,
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
+    List<ClipSourceCredit> clipSourceCredits = const [],
     AudioEvent? selectedAudio,
     AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
@@ -1425,7 +1405,7 @@ class VideoEventPublisher {
 
       tags.addAll(buildCollaboratorPTags(collaboratorPubkeys));
       tags.addAll(
-        _buildMentionPTags(
+        buildMentionPTags(
           mentionedPubkeys,
           excludedPubkeys: collaboratorPubkeys,
         ),
@@ -1450,10 +1430,17 @@ class VideoEventPublisher {
         tags.add([
           'a',
           inspiredByAddressableId,
-          inspiredByRelayUrl ?? 'wss://relay.divine.video',
+          inspiredByRelayUrl ?? inspiredByPTagRelayHint,
           'mention',
         ]);
       }
+
+      tags.addAll(
+        buildClipSourceCreditATags(
+          clipSourceCredits: clipSourceCredits,
+          selfPubkey: selfPubkey,
+        ),
+      );
 
       // p-tag the inspired-by creator(s) so they are notifiable. Added after
       // the collaborator/mention p-tags so those win dedup and caption
@@ -1469,6 +1456,13 @@ class VideoEventPublisher {
             addressableId: inspiredByAddressableId,
             npub: inspiredByNpub,
             relayHint: inspiredByRelayUrl,
+            selfPubkey: _authService?.currentPublicKeyHex,
+          ),
+        );
+        tags.addAll(
+          buildClipSourceCreditPTags(
+            existingTags: tags,
+            clipSourceCredits: clipSourceCredits,
             selfPubkey: _authService?.currentPublicKeyHex,
           ),
         );

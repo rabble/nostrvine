@@ -4,6 +4,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart'
+    show ClipSourceCredit, clipSourceCreditTagMarker;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -57,6 +59,8 @@ void main() {
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
   const inspiredPersonPubkey =
       'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+  const secondClipCreatorPubkey =
+      'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
   const rootAuthorPubkey =
       'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
@@ -200,6 +204,51 @@ void main() {
     },
   );
 
+  test(
+    'emits clip-source a-tag even when the source is also inspired-by',
+    () async {
+      stubSignAndPublish();
+
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        inspiredByAddressableId: inspiredByAddressableId,
+        inspiredByRelayUrl: 'wss://source.relay',
+        clipSourceCredits: const [
+          ClipSourceCredit(
+            authorPubkey: inspiredCreatorPubkey,
+            eventId: 'source-event-a',
+            addressableId: inspiredByAddressableId,
+            relayUrl: 'wss://source.relay',
+          ),
+        ],
+      );
+
+      expect(result, isTrue);
+      expect(
+        _containsTag(capturedTags, const [
+          'a',
+          inspiredByAddressableId,
+          'wss://source.relay',
+          'mention',
+        ]),
+        isTrue,
+      );
+      expect(
+        _containsTag(capturedTags, const [
+          'a',
+          inspiredByAddressableId,
+          'wss://source.relay',
+          clipSourceCreditTagMarker,
+        ]),
+        isTrue,
+        reason:
+            'clip-source is factual provenance, so it must survive later '
+            'metadata edits that clear manual inspired-by attribution',
+      );
+      expect(_countPTagsFor(capturedTags, inspiredCreatorPubkey), equals(1));
+    },
+  );
+
   test('emits an inspired-by p-tag for a person (npub) reference', () async {
     stubSignAndPublish();
     final npub = NostrKeyUtils.encodePubKey(inspiredPersonPubkey);
@@ -233,6 +282,128 @@ void main() {
       expect(_countPTagsFor(capturedTags, inspiredPersonPubkey), equals(1));
     },
   );
+
+  test('emits a-tags and p-tags for multiple clip source credits', () async {
+    stubSignAndPublish();
+
+    final result = await publisher.publishDirectUpload(
+      createUpload(),
+      clipSourceCredits: const [
+        ClipSourceCredit(
+          authorPubkey: inspiredCreatorPubkey,
+          eventId: 'source-event-a',
+          addressableId: inspiredByAddressableId,
+          relayUrl: 'wss://source-a.relay',
+        ),
+        ClipSourceCredit(
+          authorPubkey: secondClipCreatorPubkey,
+          eventId: 'source-event-b',
+          addressableId: '34236:$secondClipCreatorPubkey:source-b',
+          relayUrl: 'wss://source-b.relay',
+        ),
+      ],
+    );
+
+    expect(result, isTrue);
+    expect(
+      _containsTag(capturedTags, const [
+        'a',
+        inspiredByAddressableId,
+        'wss://source-a.relay',
+        clipSourceCreditTagMarker,
+      ]),
+      isTrue,
+    );
+    expect(
+      _containsTag(capturedTags, const [
+        'a',
+        '34236:$secondClipCreatorPubkey:source-b',
+        'wss://source-b.relay',
+        clipSourceCreditTagMarker,
+      ]),
+      isTrue,
+    );
+    expect(
+      _containsTag(
+        capturedTags,
+        buildClipSourceCreditPTag(
+          inspiredCreatorPubkey,
+          relayHint: 'wss://source-a.relay',
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      _containsTag(
+        capturedTags,
+        buildClipSourceCreditPTag(
+          secondClipCreatorPubkey,
+          relayHint: 'wss://source-b.relay',
+        ),
+      ),
+      isTrue,
+    );
+  });
+
+  test('emits a p-tag for author-only clip source credit', () async {
+    stubSignAndPublish();
+
+    final result = await publisher.publishDirectUpload(
+      createUpload(),
+      clipSourceCredits: const [
+        ClipSourceCredit(
+          authorPubkey: inspiredCreatorPubkey,
+          eventId: 'source-event-a',
+          relayUrl: 'wss://source.relay',
+        ),
+      ],
+    );
+
+    expect(result, isTrue);
+    expect(
+      capturedTags.any(
+        (tag) => tag.length >= 4 && tag[0] == 'a' && tag[3] == 'clip-source',
+      ),
+      isFalse,
+    );
+    expect(
+      _containsTag(
+        capturedTags,
+        buildClipSourceCreditPTag(
+          inspiredCreatorPubkey,
+          relayHint: 'wss://source.relay',
+        ),
+      ),
+      isTrue,
+    );
+  });
+
+  test('self-suppresses clip source a-tags and p-tags', () async {
+    stubSignAndPublish();
+
+    final result = await publisher.publishDirectUpload(
+      createUpload(),
+      clipSourceCredits: const [
+        ClipSourceCredit(
+          authorPubkey: testPubkey,
+          addressableId: '34236:$testPubkey:own-source',
+          relayUrl: 'wss://source.relay',
+        ),
+      ],
+    );
+
+    expect(result, isTrue);
+    expect(
+      capturedTags.any(
+        (tag) =>
+            tag.length >= 2 &&
+            tag[0] == 'a' &&
+            tag[1] == '34236:$testPubkey:own-source',
+      ),
+      isFalse,
+    );
+    expect(_countPTagsFor(capturedTags, testPubkey), equals(0));
+  });
 
   test(
     'emits a single p-tag when video and person reference the same creator',

@@ -592,6 +592,8 @@
     "videoFollowButtonFollow": "Suivre",
     "audioAttributionOriginalSound": "Son original",
     "audioAttributionUnavailableSound": "Son indisponible",
+    "videoInspiredByAttributionMultiple": "Inspiré par @{creatorName} +{additionalCreatorCount}",
+    "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "videoInspiredByAttribution": "Inspiré par @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {
@@ -4839,8 +4841,6 @@
     "videoEditorAudioImportAudio": "Importer un audio",
     "videoEditorAudioImportFailed": "Échec de l'import audio.",
     "videoIconPlaceholderLabel": "Vidéo",
-    "videoInspiredByAttributionSemanticLabel": "Inspiré par {creatorName}. Touche pour voir son profil.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filtre : {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Aucun résultat pour « {query} »",
@@ -4877,6 +4877,8 @@
     "videoClipSaveTo": "Enregistrer dans {destination}",
     "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
     "videoClipDelete": "Supprimer le clip",
+    "inspiredByAttributionMultipleSemanticLabel": "Inspiré par {creatorName} +{additionalCreatorCount}. Touche pour voir son profil.",
+    "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "inspiredByAttributionSemanticLabel": "Inspiré par {creatorName}. Touche pour voir son profil.",
     "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchVideosSortOptionsLabel": "Trier les résultats vidéo",

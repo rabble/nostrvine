@@ -15,10 +15,7 @@ class InspiredByInfo {
   /// Creates an [InspiredByInfo] from an addressable event identifier.
   ///
   /// The [addressableId] must be in the format `34236:<pubkey>:<dTag>`.
-  const InspiredByInfo({
-    required this.addressableId,
-    this.relayUrl,
-  });
+  const InspiredByInfo({required this.addressableId, this.relayUrl});
 
   /// Creates an [InspiredByInfo] from its JSON representation.
   factory InspiredByInfo.fromJson(Map<String, dynamic> json) => InspiredByInfo(
@@ -66,4 +63,106 @@ class InspiredByInfo {
 
   @override
   String toString() => 'InspiredByInfo(addressableId: $addressableId)';
+}
+
+/// Marker used on Nostr `a`/`p` tags that carry factual reused-clip credit.
+const clipSourceCreditTagMarker = 'clip-source';
+
+/// Factual provenance credit for a clip reused from a published video.
+///
+/// Unlike [InspiredByInfo], this can represent authorship-only provenance
+/// when the source event had no addressable `d` tag.
+@immutable
+class ClipSourceCredit {
+  const ClipSourceCredit({
+    required this.authorPubkey,
+    this.eventId,
+    this.addressableId,
+    this.relayUrl,
+  });
+
+  factory ClipSourceCredit.fromAddressableId({
+    required String addressableId,
+    String? relayUrl,
+    String? eventId,
+  }) => ClipSourceCredit(
+    authorPubkey: InspiredByInfo(addressableId: addressableId).creatorPubkey,
+    eventId: eventId,
+    addressableId: addressableId,
+    relayUrl: relayUrl,
+  );
+
+  static ClipSourceCredit? tryFromJson(Map<String, dynamic> json) {
+    final authorPubkey = json['authorPubkey'];
+    if (authorPubkey is! String || authorPubkey.isEmpty) return null;
+
+    return ClipSourceCredit(
+      authorPubkey: authorPubkey,
+      eventId: _stringOrNull(json['eventId']),
+      addressableId: _stringOrNull(json['addressableId']),
+      relayUrl: _stringOrNull(json['relayUrl']),
+    );
+  }
+
+  static List<ClipSourceCredit> listFromJson(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map<dynamic, dynamic>>()
+        .map(
+          (credit) =>
+              ClipSourceCredit.tryFromJson(Map<String, dynamic>.from(credit)),
+        )
+        .nonNulls
+        .toList(growable: false);
+  }
+
+  static String? _stringOrNull(Object? value) => value is String ? value : null;
+
+  final String authorPubkey;
+  final String? eventId;
+  final String? addressableId;
+  final String? relayUrl;
+
+  bool get hasAddressableSource =>
+      addressableId != null && addressableId!.isNotEmpty;
+
+  InspiredByInfo? get inspiredByInfo => hasAddressableSource
+      ? InspiredByInfo(addressableId: addressableId!, relayUrl: relayUrl)
+      : null;
+
+  String get identityKey {
+    final addressable = addressableId;
+    if (addressable != null && addressable.isNotEmpty) {
+      return 'a:${addressable.toLowerCase()}';
+    }
+
+    final event = eventId;
+    if (event != null && event.isNotEmpty) {
+      return 'e:${event.toLowerCase()}';
+    }
+
+    return 'p:${authorPubkey.toLowerCase()}';
+  }
+
+  Map<String, dynamic> toJson() => {
+    'authorPubkey': authorPubkey,
+    if (eventId != null) 'eventId': eventId,
+    if (addressableId != null) 'addressableId': addressableId,
+    if (relayUrl != null) 'relayUrl': relayUrl,
+  };
+
+  /// Equality follows [identityKey] so provenance lists can dedupe the same
+  /// source even when later relay/event hints are richer.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ClipSourceCredit && identityKey == other.identityKey;
+
+  @override
+  int get hashCode => identityKey.hashCode;
+
+  @override
+  String toString() =>
+      'ClipSourceCredit(authorPubkey: $authorPubkey, '
+      'addressableId: $addressableId, eventId: $eventId)';
 }

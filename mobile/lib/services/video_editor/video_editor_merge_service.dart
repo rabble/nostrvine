@@ -1,3 +1,4 @@
+import 'package:models/models.dart' as model show ClipSourceCredit;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' show EditorVideo;
@@ -46,10 +47,7 @@ class VideoEditorMergeService {
     );
 
     final first = clips.first;
-    // Imported-source attribution only survives a merge when every input
-    // shares the same source; a mix of sources has no single author to
-    // credit, so the merged clip keeps none.
-    final keepSource = clips.every((clip) => _sameSource(clip, first));
+    final sourceCredits = _sourceCreditsFromClips(clips);
     return DivineVideoClip(
       id: 'merged_${DateTime.now().microsecondsSinceEpoch}',
       video: EditorVideo.file(outputPath),
@@ -59,16 +57,22 @@ class VideoEditorMergeService {
       originalAspectRatio: first.originalAspectRatio,
       thumbnailPath: first.thumbnailPath,
       lensMetadata: first.lensMetadata,
-      sourceAuthorPubkey: keepSource ? first.sourceAuthorPubkey : null,
-      sourceEventId: keepSource ? first.sourceEventId : null,
-      sourceAddressableId: keepSource ? first.sourceAddressableId : null,
-      sourceRelayHint: keepSource ? first.sourceRelayHint : null,
+      sourceCredits: sourceCredits,
     );
   }
 
-  static bool _sameSource(DivineVideoClip a, DivineVideoClip b) =>
-      a.sourceAuthorPubkey == b.sourceAuthorPubkey &&
-      a.sourceEventId == b.sourceEventId &&
-      a.sourceAddressableId == b.sourceAddressableId &&
-      a.sourceRelayHint == b.sourceRelayHint;
+  static List<model.ClipSourceCredit> _sourceCreditsFromClips(
+    List<DivineVideoClip> clips,
+  ) {
+    final credits = <model.ClipSourceCredit>[];
+    final seen = <String>{};
+
+    for (final clip in clips) {
+      for (final credit in clip.sourceCredits) {
+        if (seen.add(credit.identityKey)) credits.add(credit);
+      }
+    }
+
+    return credits;
+  }
 }

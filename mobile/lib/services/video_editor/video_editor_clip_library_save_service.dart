@@ -91,12 +91,11 @@ class VideoEditorClipLibrarySaveService {
       thumbnailPath: thumbnail?.path ?? clip.thumbnailPath,
       thumbnailTimestamp: thumbnail?.timestamp,
       lensMetadata: clip.lensMetadata,
-      // A flatten re-renders the same logical clip, so its imported-source
-      // attribution carries over unchanged.
-      sourceAuthorPubkey: clip.sourceAuthorPubkey,
-      sourceEventId: clip.sourceEventId,
-      sourceAddressableId: clip.sourceAddressableId,
-      sourceRelayHint: clip.sourceRelayHint,
+      // A flatten re-renders the same logical clip, so every imported-source
+      // credit carries over unchanged — a merged clip keeps all of them, since
+      // the library clip is reusable in later videos and a dropped credit here
+      // would be permanent.
+      sourceCredits: clip.sourceCredits,
     );
   }
 

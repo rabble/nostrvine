@@ -768,6 +768,8 @@
   "@audioAttributionUnavailableSound": {
     "description": "Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound."
   },
+  "videoInspiredByAttributionMultiple": "灵感来自 @{creatorName} +{additionalCreatorCount}",
+  "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
   "videoInspiredByAttribution": "灵感来自 @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -4244,14 +4246,6 @@
   "videoEditorAudioImportAudio": "导入音频",
   "videoEditorAudioImportFailed": "音频导入失败。",
   "videoIconPlaceholderLabel": "视频",
-  "videoInspiredByAttributionSemanticLabel": "灵感来自 {creatorName}。点按查看 TA 的主页。",
-  "@videoInspiredByAttributionSemanticLabel": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
   "publishErrorNotSignedIn": "请登录后再发布视频。",
   "publishErrorNoRetry": "没有可重试的上传。",
   "publishErrorNoInternet": "没有网络连接。请检查 Wi-Fi 或移动数据后重试。",
@@ -4415,6 +4409,8 @@
     }
   },
   "videoClipDelete": "删除片段",
+  "inspiredByAttributionMultipleSemanticLabel": "灵感来自 {creatorName} +{additionalCreatorCount}。点按查看 TA 的主页。",
+  "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
   "inspiredByAttributionSemanticLabel": "灵感来自 {creatorName}。点按查看 TA 的主页。",
   "@inspiredByAttributionSemanticLabel": {
     "placeholders": {
