@@ -243,7 +243,7 @@ bucket_name = "proofmode-verification-cache"
 ```dart
 // Mobile app sends ProofManifest to verification server
 final response = await http.post(
-  'https://verify.openvine.co/verify',
+  'https://verify.divine.video/verify',
   body: jsonEncode({
     'proofManifest': manifest.toJson(),
     'publicKey': keyService.publicKey,

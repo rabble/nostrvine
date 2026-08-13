@@ -228,9 +228,9 @@ Users can subscribe to multiple Faro moderators:
 // Default Faro moderators
 final defaultModerators = [
   ModeratorProfile(
-    pubkey: 'openvine_faro_pubkey',
+    pubkey: 'divine_faro_pubkey',
     displayName: 'Divine Safety',
-    faroUrl: 'https://faro.openvine.co',
+    faroUrl: 'https://faro.divine.video',
     description: 'Official Divine content safety team',
     specialties: ['csam', 'illegal', 'violence'],
   ),
