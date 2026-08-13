@@ -46,6 +46,18 @@ class OthersFollowersBloc
   final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
 
+  /// Whether we follow [targetPubkey], as the follow graph presents it.
+  ///
+  /// Blocking leaves the local follow in place and drops it only from the
+  /// kind 3 we publish (#6903), so the raw read still reports true for a
+  /// blocked account. Answering true here would keep listing us among that
+  /// account's followers, contradicting what we publish. `OthersFollowingBloc`
+  /// already applies the same blocked-or-severed rule to the mirror screen.
+  bool _isFollowingTarget(String targetPubkey) =>
+      !_blocklistRepository.isBlocked(targetPubkey) &&
+      !_blocklistRepository.isFollowSevered(targetPubkey) &&
+      _followRepository.isFollowing(targetPubkey);
+
   /// Handle request to load another user's followers list.
   ///
   /// Delegates to [FollowRepository.watchOthersFollowersCached] for
@@ -82,9 +94,7 @@ class OthersFollowersBloc
           forceRefresh: event.forceRefresh,
         ),
         onData: (result) {
-          final isFollowingTarget = _followRepository.isFollowing(
-            event.targetPubkey,
-          );
+          final isFollowingTarget = _isFollowingTarget(event.targetPubkey);
           final visiblePubkeys = filterOtherFollowerPubkeys(
             pubkeys: result.data.pubkeys,
             blocklistRepository: _blocklistRepository,

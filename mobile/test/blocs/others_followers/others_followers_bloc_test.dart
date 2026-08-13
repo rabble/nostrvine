@@ -34,6 +34,9 @@ void main() {
 
       // Default: nothing is blocked
       when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
+      when(
+        () => mockBlocklistRepository.isFollowSevered(any()),
+      ).thenReturn(false);
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
     });
 
@@ -50,6 +53,50 @@ void main() {
     });
 
     group('OthersFollowersListLoadRequested', () {
+      // The sibling screen (OthersFollowingBloc) hides the current user from a
+      // blocked target's *following* list. This screen gated the same rule on a
+      // raw isFollowing() read instead, so after a block it kept listing the
+      // current user as a follower of the account they just blocked —
+      // contradicting the kind 3 we publish (#6903).
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        "hides the current user from a blocked target's follower list",
+        setUp: () {
+          when(
+            () => mockBlocklistRepository.isBlocked(validPubkey('target')),
+          ).thenReturn(true);
+          // The local follow survives a block by design, so the raw read
+          // still reports true here.
+          when(
+            () => mockFollowRepository.isFollowing(validPubkey('target')),
+          ).thenReturn(true);
+          when(
+            () => mockFollowRepository.watchOthersFollowersCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowersSnapshot>>.value(
+              CacheResult.live(
+                FollowersSnapshot(
+                  pubkeys: [testCurrentUserPubkey, validPubkey('follower1')],
+                  count: 2,
+                ),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(
+            bloc.state.followersPubkeys,
+            isNot(contains(testCurrentUserPubkey)),
+          );
+          expect(bloc.state.followersPubkeys, [validPubkey('follower1')]);
+        },
+      );
+
       blocTest<OthersFollowersBloc, OthersFollowersState>(
         'emits [loading, success] with followers from repository',
         setUp: () {
