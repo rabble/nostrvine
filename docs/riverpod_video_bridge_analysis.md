@@ -1,5 +1,12 @@
 # VideoEventBridge Analysis & Riverpod Migration Design
 
+> **Status: historical.** This is the original migration proposal, not shipped
+> code, and the code samples below have drifted from what landed. `VideoEventBridge`
+> no longer exists, `CurationService` is now `CurationRepository` behind
+> `curationRepositoryProvider`, `CurationSetType.featured` was never built, and
+> `refreshTrendingFromAnalytics` was deleted as dead code in #5286. Read it as a
+> record of the design discussion; trust the current implementation over it.
+
 ## 📊 Current Architecture Analysis
 
 ### VideoEventBridge Dependencies Map

@@ -1,4 +1,4 @@
-// Fetch COMPLETE kind 0 events from OpenVine relay - ALL DATA
+// Fetch COMPLETE kind 0 events from the Divine relay - ALL DATA
 import 'dart:async';
 import 'dart:io';
 
@@ -12,9 +12,11 @@ import 'package:nostr_sdk/relay/relay_status.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+const _relayUrl = 'wss://relay.divine.video';
+
 void main() async {
   Log.info(
-    '📋 Fetching COMPLETE kind 0 events from OpenVine relay...\n',
+    '📋 Fetching COMPLETE kind 0 events from the Divine relay...\n',
     name: 'Kind0Fetcher',
   );
 
@@ -31,14 +33,11 @@ void main() async {
   await nostrClient.refreshPublicKey();
 
   // Connect to relay
-  final relay = RelayBase(
-    'wss://relay3.openvine.co',
-    RelayStatus('wss://relay3.openvine.co'),
-  );
+  final relay = RelayBase(_relayUrl, RelayStatus(_relayUrl));
   await nostrClient.addRelay(relay, autoSubscribe: true);
   await Future.delayed(const Duration(milliseconds: 500));
 
-  Log.info('🔌 Connected to wss://relay3.openvine.co', name: 'Kind0Fetcher');
+  Log.info('🔌 Connected to $_relayUrl', name: 'Kind0Fetcher');
 
   // Create subscription for ALL kind 0 events
   final filter = Filter(kinds: [0], limit: 100); // Get up to 100
@@ -57,7 +56,7 @@ void main() async {
 
   // Save complete data to file
   final output = StringBuffer();
-  output.writeln('COMPLETE KIND 0 EVENTS FROM OPENVINE RELAY');
+  output.writeln('COMPLETE KIND 0 EVENTS FROM $_relayUrl');
   output.writeln('Total events: ${events.length}');
   output.writeln('Generated: ${DateTime.now()}');
   output.writeln('=' * 120);
@@ -96,7 +95,7 @@ void main() async {
   await file.writeAsString(output.toString());
 
   Log.info(
-    '\n✅ COMPLETE! Found ${events.length} total kind 0 events on OpenVine relay',
+    '\n✅ COMPLETE! Found ${events.length} total kind 0 events on $_relayUrl',
     name: 'Kind0Fetcher',
   );
   Log.info(

@@ -28,7 +28,7 @@ For reports of illegal content (especially CSAM), our response is **immediate**.
 
 ### Technical Implementation
 
-**Report Events**: All reports are Nostr events (kind 1984) published to our relay infrastructure at `wss://relay3.openvine.co` and other subscribed relays.
+**Report Events**: All reports are Nostr events (kind 1984) published to our relay infrastructure at `wss://relay.divine.video` and other subscribed relays.
 
 **Services**:
 - `ContentReportingService` - Handles report submission (lib/services/content_reporting_service.dart)
@@ -41,7 +41,7 @@ For reports of illegal content (especially CSAM), our response is **immediate**.
 
 The moderation team monitors reports through:
 
-1. **Relay Subscriptions**: Subscribe to kind 1984 events on relay3.openvine.co
+1. **Relay Subscriptions**: Subscribe to kind 1984 events on relay.divine.video
 2. **Report Dashboard**: Custom Nostr client for viewing all incoming reports
 3. **Alert System**: High-priority reports (CSAM, threats) trigger immediate alerts
 
@@ -62,7 +62,7 @@ Reports are triaged by severity:
 
 When objectionable content is confirmed:
 
-1. **Relay Deletion**: Content event is deleted from relay3.openvine.co via NIP-09 deletion event
+1. **Relay Deletion**: Content event is deleted from relay.divine.video via NIP-09 deletion event
 2. **Media Removal**: Video/thumbnail files removed from media.divine.video CDN
 3. **Client-Side Filtering**: Content added to global filter list (NIP-51 mute list)
 4. **Network Propagation**: Deletion events propagated to other relays
@@ -145,7 +145,7 @@ Divine implements a **stackable moderation system** giving users control:
 ### What We Control
 
 Divine directly moderates content on:
-- `relay3.openvine.co` (our primary relay)
+- `relay.divine.video` (our primary relay)
 - `media.divine.video` (our CDN)
 - The Divine mobile app (client-side filtering)
 
@@ -159,7 +159,7 @@ Due to Nostr's decentralized nature:
 ### Our Responsibility
 
 We are responsible **only for content hosted on our infrastructure**. We enforce strict moderation on:
-- Events accepted by relay3.openvine.co
+- Events accepted by relay.divine.video
 - Media served via media.divine.video
 - Content displayed in the Divine app
 
@@ -233,7 +233,7 @@ Published quarterly at divine.video/transparency:
 **For Apple App Review**:
 - **Email**: support@divine.video
 - **Emergency CSAM Reports**: security@divine.video (immediate response)
-- **Relay**: wss://relay3.openvine.co (for monitoring reports via Nostr)
+- **Relay**: wss://relay.divine.video (for monitoring reports via Nostr)
 
 **For Law Enforcement**:
 - **Email**: legal@divine.video

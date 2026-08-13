@@ -22,9 +22,7 @@ class _MockNostrSigner extends Mock implements NostrSigner {}
 void main() {
   setUpAll(() {
     registerFallbackValue(<Filter>[]);
-    registerFallbackValue(
-      Event('0' * 64, 1, <List<String>>[], ''),
-    );
+    registerFallbackValue(Event('0' * 64, 1, <List<String>>[], ''));
     registerFallbackValue(<String>[]);
   });
 
@@ -67,62 +65,33 @@ void main() {
       curationRepository.dispose();
     });
 
-    test(
-      'should have manual refresh method for trending',
-      () {
-        expect(
-          curationRepository.refreshTrendingFromAnalytics,
-          isA<Function>(),
-        );
-      },
-    );
+    test('should get videos for different curation set types', () {
+      final editorsPicks = curationRepository.getVideosForSetType(
+        CurationSetType.editorsPicks,
+      );
+      final trending = curationRepository.getVideosForSetType(
+        CurationSetType.trending,
+      );
+      expect(editorsPicks, isA<List<VideoEvent>>());
+      expect(trending, isA<List<VideoEvent>>());
+    });
 
-    test(
-      'should fall back to local algorithm when analytics '
-      'unavailable',
-      () {
-        final trendingVideos = curationRepository.getVideosForSetType(
-          CurationSetType.trending,
-        );
-        expect(trendingVideos, isNotNull);
-      },
-    );
+    test('should handle empty video events gracefully', () {
+      when(() => mockVideoEventCache.discoveryVideos).thenReturn([]);
 
-    test(
-      'should get videos for different curation set types',
-      () {
-        final editorsPicks = curationRepository.getVideosForSetType(
-          CurationSetType.editorsPicks,
-        );
-        final trending = curationRepository.getVideosForSetType(
-          CurationSetType.trending,
-        );
-        expect(editorsPicks, isA<List<VideoEvent>>());
-        expect(trending, isA<List<VideoEvent>>());
-      },
-    );
+      final service = CurationRepository(
+        nostrService: mockNostrService,
+        videoEventCache: mockVideoEventCache,
+        likesRepository: mockLikesRepository,
+        signer: mockSigner,
+        divineTeamPubkeys: const [],
+      );
 
-    test(
-      'should handle empty video events gracefully',
-      () {
-        when(() => mockVideoEventCache.discoveryVideos).thenReturn([]);
+      final trending = service.getVideosForSetType(CurationSetType.trending);
 
-        final service = CurationRepository(
-          nostrService: mockNostrService,
-          videoEventCache: mockVideoEventCache,
-          likesRepository: mockLikesRepository,
-          signer: mockSigner,
-          divineTeamPubkeys: const [],
-        );
+      expect(trending, isEmpty);
 
-        final trending = service.getVideosForSetType(
-          CurationSetType.trending,
-        );
-
-        expect(trending, isEmpty);
-
-        service.dispose();
-      },
-    );
+      service.dispose();
+    });
   });
 }

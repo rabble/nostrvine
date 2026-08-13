@@ -8,6 +8,14 @@ class VideoUrlResolver {
   VideoUrlResolver._();
 
   /// Corrects the common `apt.openvine.co` typo to `api.openvine.co`.
+  ///
+  /// The target stays on the legacy host on purpose (#5286). These are content
+  /// URLs already published inside archive events, shaped
+  /// `/media/<timestamp>-<hash>` — an openvine-era scheme, not the
+  /// content-addressed sha256 paths Divine serves from `media.divine.video`.
+  /// Retargeting to `api.divine.video` would name a route that host does not
+  /// serve, so it would be wrong rather than merely unhelpful. `apt` is the
+  /// typo, and it does not resolve at all.
   static String fixOpenvineTypo(String url) {
     if (url.contains('apt.openvine.co')) {
       return url.replaceAll('apt.openvine.co', 'api.openvine.co');

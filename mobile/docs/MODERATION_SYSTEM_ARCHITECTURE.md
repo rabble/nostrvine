@@ -470,13 +470,13 @@ class ModerationPreferences {
 // Divine provides curated default moderators
 final defaultModerators = [
   ModeratorProfile(
-    pubkey: 'openvine_safety_team_pubkey',
+    pubkey: 'divine_safety_team_pubkey',
     displayName: 'Divine Safety',
     description: 'Official Divine content safety team',
     specialties: ['csam', 'illegal', 'malware'],
     policy: ModerationPolicy(
-      policyUrl: 'https://openvine.com/moderation-policy',
-      coveredNamespaces: ['com.openvine.moderation'],
+      policyUrl: 'https://divine.video/moderation-policy',
+      coveredNamespaces: ['video.divine.moderation'],
       language: 'en',
       isOpen: false,
     ),

@@ -22,9 +22,7 @@ class _MockNostrSigner extends Mock implements NostrSigner {}
 void main() {
   setUpAll(() {
     registerFallbackValue(<Filter>[]);
-    registerFallbackValue(
-      Event('0' * 64, 1, <List<String>>[], ''),
-    );
+    registerFallbackValue(Event('0' * 64, 1, <List<String>>[], ''));
     registerFallbackValue(<String>[]);
   });
 
@@ -74,45 +72,24 @@ void main() {
       });
     });
 
-    group('analyticsTrendingVideos', () {
-      test('returns empty list initially', () {
-        expect(
-          curationRepository.analyticsTrendingVideos,
-          isEmpty,
-        );
-      });
-    });
-
     group('getVideosForSet', () {
       test('returns empty list for unknown set ID', () {
-        expect(
-          curationRepository.getVideosForSet('nonexistent'),
-          isEmpty,
-        );
+        expect(curationRepository.getVideosForSet('nonexistent'), isEmpty);
       });
     });
 
     group('getCurationSet', () {
       test('returns null for unknown set ID', () {
-        expect(
-          curationRepository.getCurationSet('nonexistent'),
-          isNull,
-        );
+        expect(curationRepository.getCurationSet('nonexistent'), isNull);
       });
 
-      test(
-        'returns sample curation set for editors picks',
-        () {
-          final set = curationRepository.getCurationSet(
-            CurationSetType.editorsPicks.id,
-          );
-          expect(set, isNotNull);
-          expect(
-            set!.title,
-            CurationSetType.editorsPicks.displayName,
-          );
-        },
-      );
+      test('returns sample curation set for editors picks', () {
+        final set = curationRepository.getCurationSet(
+          CurationSetType.editorsPicks.id,
+        );
+        expect(set, isNotNull);
+        expect(set!.title, CurationSetType.editorsPicks.displayName);
+      });
     });
 
     group('getCurationSetByType', () {
@@ -121,43 +98,20 @@ void main() {
           CurationSetType.trending,
         );
         expect(set, isNotNull);
-        expect(
-          set!.title,
-          CurationSetType.trending.displayName,
-        );
+        expect(set!.title, CurationSetType.trending.displayName);
       });
     });
 
-    group('clearMissingVideosCache', () {
-      test(
-        'does nothing when missing cache is empty',
-        () {
-          // Should not throw
-          curationRepository.clearMissingVideosCache();
-        },
-      );
-    });
-
     group('curationSets', () {
-      test(
-        'returns sample curation sets after initialization',
-        () {
-          final sets = curationRepository.curationSets;
-          expect(sets, isNotEmpty);
-          expect(
-            sets.any(
-              (s) => s.id == CurationSetType.editorsPicks.id,
-            ),
-            isTrue,
-          );
-          expect(
-            sets.any(
-              (s) => s.id == CurationSetType.trending.id,
-            ),
-            isTrue,
-          );
-        },
-      );
+      test('returns sample curation sets after initialization', () {
+        final sets = curationRepository.curationSets;
+        expect(sets, isNotEmpty);
+        expect(
+          sets.any((s) => s.id == CurationSetType.editorsPicks.id),
+          isTrue,
+        );
+        expect(sets.any((s) => s.id == CurationSetType.trending.id), isTrue);
+      });
     });
   });
 }

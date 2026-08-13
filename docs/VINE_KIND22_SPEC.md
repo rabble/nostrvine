@@ -4,6 +4,8 @@
 
 This document describes how we use Nostr kind 22 events to store archived Vine videos, including our custom extensions and data storage patterns.
 
+> **On the `api.openvine.co` URLs below:** these are the literal values embedded in archive events that were already published, so they are recorded here as-is. They are *content* URLs in immutable stored data, not a backend the client picks — nothing new should be pointed at that host. Divine's current hosts are `api.divine.video` (REST), `relay.divine.video` (relay), and `media.divine.video` (media).
+
 ## Event Structure
 
 ### Basic Kind 22 Format
