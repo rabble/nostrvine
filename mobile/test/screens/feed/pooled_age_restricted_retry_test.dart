@@ -938,7 +938,10 @@ class _RetryHarnessState extends State<_RetryHarness> {
         path: '/',
         builder: (_, _) => Scaffold(
           body: ValueListenableBuilder<bool>(
-            valueListenable: widget.hostVisible ?? _hostAlwaysVisible,
+            // A const listenable that never fires, for the harnesses that keep
+            // the retry caller mounted for the whole test.
+            valueListenable:
+                widget.hostVisible ?? const AlwaysStoppedAnimation<bool>(true),
             builder: (_, hostVisible, _) {
               if (!hostVisible) return const SizedBox.shrink();
               return Consumer(
@@ -1049,9 +1052,6 @@ class _AutoRetryHarness extends StatelessWidget {
     );
   }
 }
-
-/// Default for harnesses that never remove the retry caller from the tree.
-final ValueNotifier<bool> _hostAlwaysVisible = ValueNotifier(true);
 
 final _video = VideoEvent(
   id: _videoId,
