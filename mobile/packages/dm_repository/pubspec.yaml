@@ -12,8 +12,6 @@ dependencies:
   db_client:
     path: ../db_client
   equatable: ^2.0.7
-  flutter:
-    sdk: flutter
   meta: ^1.17.0
   models:
     path: ../models

@@ -5,10 +5,10 @@
 
 import 'dart:async';
 
+import 'package:dm_repository/src/compute.dart';
 import 'package:dm_repository/src/dm_send_budget.dart';
 import 'package:dm_repository/src/dm_send_policy.dart';
 import 'package:dm_repository/src/gift_wrap_build_worker.dart';
-import 'package:flutter/foundation.dart' show compute;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';

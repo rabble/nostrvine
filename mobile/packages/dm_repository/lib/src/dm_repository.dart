@@ -11,7 +11,9 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/src/build_mode.dart';
 import 'package:dm_repository/src/collaborator_invite_recovery.dart';
+import 'package:dm_repository/src/compute.dart';
 import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
@@ -21,7 +23,6 @@ import 'package:dm_repository/src/dm_shared_video_citation.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/dm_verify_isolate.dart';
 import 'package:dm_repository/src/nip17_message_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
