@@ -2309,7 +2309,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'آپ کے شائع کردہ ایونٹس پر Divine کلائنٹ ٹیگ شامل کریں تاکہ دیگر Nostr ایپس انہیں درست طریقے سے منسوب کر سکیں۔';
+      'آپ کے شائع کردہ ایونٹس پر Divine کلائنٹ ٹیگ شامل کریں تاکہ دیگر Nostr ایپس انہیں درست طریقے سے منسوب کر سکیں۔ اس کے بغیر، آپ کی بھیجی گئی رپورٹس ہمارے ماڈریٹرز کے جائزے میں کم وزن رکھتی ہیں۔';
 
   @override
   String get nostrSettingsRemoveKeys => 'اس اکاؤنٹ کو اس ڈیوائس سے ہٹائیں';

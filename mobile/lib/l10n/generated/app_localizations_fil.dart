@@ -2348,7 +2348,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Maglagay ng Divine client tag sa mga event na pina-publish mo para maituro ito nang tama ng ibang Nostr apps.';
+      'Maglagay ng Divine client tag sa mga event na pina-publish mo para maituro ito nang tama ng ibang Nostr apps. Kung wala ito, mas magaan ang timbang ng mga report mong pinapadala kapag sinusuri ng mga moderator namin.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Alisin ang mga Key sa Device';

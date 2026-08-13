@@ -2371,7 +2371,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include o etichetă de client Divine în evenimentele pe care le publici, ca alte aplicații Nostr să le poată atribui corect.';
+      'Include o etichetă de client Divine în evenimentele pe care le publici, ca alte aplicații Nostr să le poată atribui corect. Fără ea, raportările pe care le trimiți cântăresc mai puțin când moderatorii noștri le analizează.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Elimină cheile de pe dispozitiv';

@@ -4015,10 +4015,10 @@ abstract class AppLocalizations {
   /// **'Client Attribution'**
   String get nostrSettingsClientAttribution;
 
-  /// No description provided for @nostrSettingsClientAttributionSubtitle.
+  /// Subtitle for the Nostr settings client-attribution switch. The second sentence states the consequence of turning it off: a report with no client tag is still reviewed, but cannot count toward automatic moderation action.
   ///
   /// In en, this message translates to:
-  /// **'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.'**
+  /// **'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly. Without it, reports you send carry less weight when our moderators review them.'**
   String get nostrSettingsClientAttributionSubtitle;
 
   /// No description provided for @nostrSettingsRemoveKeys.

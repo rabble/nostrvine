@@ -2289,7 +2289,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'أضِف وسم عميل Divine إلى الأحداث التي تنشرها حتى تتمكن تطبيقات Nostr الأخرى من إسنادها بشكل صحيح.';
+      'أضِف وسم عميل Divine إلى الأحداث التي تنشرها حتى تتمكن تطبيقات Nostr الأخرى من إسنادها بشكل صحيح. بدونه، تحمل البلاغات التي ترسلها وزنًا أقل عند مراجعتها من مشرفينا.';
 
   @override
   String get nostrSettingsRemoveKeys => 'إزالة المفاتيح من الجهاز';

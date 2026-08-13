@@ -2325,7 +2325,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Sertakan tag klien Divine pada acara yang anda terbitkan supaya apl Nostr lain dapat mengatribusikannya dengan betul.';
+      'Sertakan tag klien Divine pada acara yang anda terbitkan supaya apl Nostr lain dapat mengatribusikannya dengan betul. Tanpanya, laporan yang anda hantar kurang berat semasa moderator kami menyemaknya.';
 
   @override
   String get nostrSettingsRemoveKeys =>

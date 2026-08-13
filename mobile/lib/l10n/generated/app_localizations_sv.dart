@@ -2303,7 +2303,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Lägg till en Divine-klienttagg på events du publicerar så att andra Nostr-appar kan attribuera dem korrekt.';
+      'Lägg till en Divine-klienttagg på events du publicerar så att andra Nostr-appar kan attribuera dem korrekt. Utan den väger dina rapporter mindre när våra moderatorer granskar dem.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Ta bort nycklar från enheten';

@@ -2348,7 +2348,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Добавяй клиентски таг на Divine към събитията, които публикуваш, за да могат другите Nostr приложения да ги приписват правилно.';
+      'Добавяй клиентски таг на Divine към събитията, които публикуваш, за да могат другите Nostr приложения да ги приписват правилно. Без него сигналите, които подаваш, тежат по-малко, когато модераторите ни ги преглеждат.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Махни ключовете от устройството';

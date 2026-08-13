@@ -2306,7 +2306,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly. Without it, reports you send carry less weight when our moderators review them.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Remove this account from this device';

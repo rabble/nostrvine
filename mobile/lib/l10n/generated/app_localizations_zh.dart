@@ -2197,7 +2197,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      '在你发布的事件上附带 Divine 客户端标记，方便其他 Nostr 应用正确识别来源。';
+      '在你发布的事件上附带 Divine 客户端标记，方便其他 Nostr 应用正确识别来源。没有它，你提交的举报在我们审核时的权重会更低。';
 
   @override
   String get nostrSettingsRemoveKeys => '从此设备移除此账号';

@@ -2175,7 +2175,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      '公開するイベントに Divine のクライアントタグを含めて、他の Nostr アプリが正しく出典を示せるようにするよ。';
+      '公開するイベントに Divine のクライアントタグを含めて、他の Nostr アプリが正しく出典を示せるようにするよ。これがないと、送った報告はモデレーターが確認するときの重みが小さくなるよ。';
 
   @override
   String get nostrSettingsRemoveKeys => 'このデバイスから鍵を削除';

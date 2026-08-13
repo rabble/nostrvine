@@ -2540,7 +2540,7 @@
     "nostrSettingsKeyManagement": "Pamamahala ng key",
     "nostrSettingsKeyManagementSubtitle": "I-export, i-backup, at i-restore ang iyong Nostr keys",
     "nostrSettingsClientAttribution": "Pagkilala sa kliyente",
-    "nostrSettingsClientAttributionSubtitle": "Maglagay ng Divine client tag sa mga event na pina-publish mo para maituro ito nang tama ng ibang Nostr apps.",
+    "nostrSettingsClientAttributionSubtitle": "Maglagay ng Divine client tag sa mga event na pina-publish mo para maituro ito nang tama ng ibang Nostr apps. Kung wala ito, mas magaan ang timbang ng mga report mong pinapadala kapag sinusuri ng mga moderator namin.",
     "nostrSettingsRemoveKeys": "Alisin ang mga Key sa Device",
     "nostrSettingsRemoveKeysSubtitle": "Burahin ang private key mo sa device na ito lang. Mananatili ang content mo sa mga relay, pero kakailanganin mo ang nsec backup mo para ma-access ulit ang account mo.",
     "nostrSettingsCouldNotRemoveKeys": "Hindi naalis ang mga key sa device na ito. Subukan ulit.",

@@ -3649,7 +3649,7 @@
     "nostrSettingsKeyManagement": "Anahtar Yönetimi",
     "nostrSettingsKeyManagementSubtitle": "Nostr anahtarlarını dışa aktar, yedekle ve geri yükle",
     "nostrSettingsClientAttribution": "İstemci Atfı",
-    "nostrSettingsClientAttributionSubtitle": "Yayınladığın etkinliklere Divine istemci etiketini ekle, böylece diğer Nostr uygulamaları bunları doğru şekilde atfedebilir.",
+    "nostrSettingsClientAttributionSubtitle": "Yayınladığın etkinliklere Divine istemci etiketini ekle, böylece diğer Nostr uygulamaları bunları doğru şekilde atfedebilir. O olmadan gönderdiğin bildirimler, moderatörlerimiz incelerken daha az ağırlık taşır.",
     "nostrSettingsRemoveKeys": "Anahtarları Cihazdan Kaldır",
     "nostrSettingsRemoveKeysSubtitle": "Özel anahtarını yalnızca bu cihazdan sil. İçeriğin rölelerde kalır, ancak hesabına tekrar erişmek için nsec yedeğine ihtiyacın olur.",
     "nostrSettingsCouldNotRemoveKeys": "Anahtarlar bu cihazdan kaldırılamadı. Lütfen tekrar dene.",
