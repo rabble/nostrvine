@@ -763,10 +763,12 @@ workflows:
   e2e-smoke-ios:
     name: E2E Smoke Tests (iOS)
     working_directory: mobile
-    # Measured: the verified green run is ~12 min end to end (build 6a7bb0d4).
-    # 20 leaves headroom without letting a hung driver bill an hour, which is
-    # what the previous 60 allowed.
-    max_build_duration: 20
+    # Two green runs measured 12 min and 15m42s end to end (builds 6a7bb0d4
+    # and 6a7d30c1); the spread is cache warmth. 25 covers the slower one with
+    # room to spare while still stopping a hung Maestro driver from billing the
+    # hour the previous 60 allowed — a hang is what 60 actually cost us
+    # (build 6a7d2a83).
+    max_build_duration: 25
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.0
