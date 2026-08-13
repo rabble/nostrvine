@@ -74,6 +74,10 @@ class DivineSnackbarContainer extends StatelessWidget {
   static const double _labelVerticalPadding = 12;
   static const double _stackedActionBottom = 4;
 
+  /// How many lines the message may take while it still shares its row with
+  /// the actions — the design's two-line banner.
+  static const int _inlineLabelMaxLines = 2;
+
   /// The label of the snackbar.
   final String label;
 
@@ -140,24 +144,36 @@ class DivineSnackbarContainer extends StatelessWidget {
   /// Label colour that stays legible on the resolved surface.
   Color _labelColor(VineThemeColors colors) {
     if (_hasLightSurface) return VineTheme.primaryDarkGreen;
-    return error ? VineTheme.error : colors.primaryText;
+    return error ? colors.onErrorContainer : colors.primaryText;
   }
 
   /// Colour of an affirmative action.
-  Color get _affirmativeColor =>
-      _hasLightSurface ? VineTheme.primaryDarkGreen : VineTheme.vineGreen;
+  ///
+  /// [VineTheme.vineGreen] holds 9:1 on the dark surface but only 1.76:1 on
+  /// the light one, so a light appearance — the theme's own or a
+  /// caller-supplied [backgroundColor] — takes the dark green instead.
+  Color _affirmativeColor(VineThemeColors colors) =>
+      _hasLightSurface || colors.isLight
+      ? VineTheme.primaryDarkGreen
+      : VineTheme.vineGreen;
 
   /// Accent shared by a lone action button and the dismiss icon: the error
   /// red on an error banner, the brand green otherwise.
-  Color get _accentColor =>
-      error && !_hasLightSurface ? VineTheme.error : _affirmativeColor;
+  ///
+  /// The red resolves through the palette rather than [VineTheme.error], which
+  /// is the dark value and reads 3.1:1 on the light error container.
+  Color _accentColor(VineThemeColors colors) => error && !_hasLightSurface
+      ? colors.onErrorContainer
+      : _affirmativeColor(colors);
 
   /// Whether the action row has to move below the message.
   ///
-  /// The design keeps action and message on one line while they both fit, and
-  /// drops the action onto its own right-aligned row once they stop fitting —
+  /// The design's own threshold is its two-line banner: the action keeps the
+  /// message's row while the message still fits in [_inlineLabelMaxLines]
+  /// beside it, and drops onto its own right-aligned row once it does not —
   /// otherwise a long action label squeezes the message into a column of
-  /// single words.
+  /// single words. So a long message with a short action still wraps inline
+  /// rather than spending a third row on an "Undo".
   bool _stacksActions(
     BuildContext context,
     double availableWidth,
@@ -188,10 +204,20 @@ class DivineSnackbarContainer extends StatelessWidget {
     if (_hasSecondaryAction) {
       used += actionWidth(secondaryActionLabel!) + _gap;
     }
-    if (_hasDismiss) used += _DismissButton.width + _gap;
+    if (_hasDismiss) used += _DismissButton.widthOf(context) + _gap;
 
-    return measure(label, labelStyle) + used >
-        availableWidth - _sideEdge - _endInset;
+    final labelWidth = availableWidth - _sideEdge - _endInset - used;
+    if (labelWidth <= 0) return true;
+
+    final painter = TextPainter(
+      text: TextSpan(text: label, style: labelStyle),
+      textDirection: textDirection,
+      textScaler: textScaler,
+      maxLines: _inlineLabelMaxLines,
+    )..layout(maxWidth: labelWidth);
+    final overflows = painter.didExceedMaxLines;
+    painter.dispose();
+    return overflows;
   }
 
   @override
@@ -200,7 +226,8 @@ class DivineSnackbarContainer extends StatelessWidget {
     final labelStyle = VineTheme.labelLargeFont(color: _labelColor(colors));
     // The banner's accent is what a lone action wears; the buttons below
     // re-resolve it when a destructive secondary changes the pairing.
-    final actionStyle = VineTheme.titleMediumFont(color: _accentColor);
+    final accent = _accentColor(colors);
+    final actionStyle = VineTheme.titleMediumFont(color: accent);
 
     final actions = <Widget>[
       if (_hasAction)
@@ -210,7 +237,7 @@ class DivineSnackbarContainer extends StatelessWidget {
           // With a destructive secondary action present, the primary is the
           // affirmative choice (green) even in an error snackbar; a lone
           // action follows the banner's own accent.
-          color: _hasSecondaryAction ? _affirmativeColor : _accentColor,
+          color: _hasSecondaryAction ? _affirmativeColor(colors) : accent,
           textStyle: actionStyle,
         ),
       if (_hasSecondaryAction)
@@ -218,13 +245,13 @@ class DivineSnackbarContainer extends StatelessWidget {
           label: secondaryActionLabel!,
           onPressed: onSecondaryActionPressed!,
           // Secondary is the destructive choice (e.g. Delete).
-          color: VineTheme.error,
+          color: colors.onErrorContainer,
           textStyle: actionStyle,
         ),
       if (_hasDismiss)
         _DismissButton(
           onPressed: onDismissPressed!,
-          color: _accentColor,
+          color: accent,
           semanticLabel: dismissSemanticLabel,
         ),
     ];
@@ -339,10 +366,12 @@ class _StackedLayout extends StatelessWidget {
             right: endInset,
             bottom: DivineSnackbarContainer._stackedActionBottom,
           ),
+          // Flexible so an action too wide even for the full banner wraps
+          // inside it rather than running off the edge.
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             spacing: DivineSnackbarContainer._gap,
-            children: actions,
+            children: [for (final action in actions) Flexible(child: action)],
           ),
         ),
       ],
@@ -379,7 +408,9 @@ class _ActionButton extends StatelessWidget {
         minimumSize: const Size(minWidth, height),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(
+            Radius.circular(DivineSnackbarContainer._radius),
+          ),
         ),
       ),
       child: Text(
@@ -398,8 +429,17 @@ class _DismissButton extends StatelessWidget {
     required this.semanticLabel,
   });
 
-  /// Total width including the button's own transparent outer padding.
-  static const double width = 48;
+  /// The 48px tap target [DivineIconButton] centres its 40px pill in.
+  static const double tapTarget = 48;
+
+  /// Transparent outer padding [DivineIconButton] adds on each side when it
+  /// has no border, which `ghostSecondary` does not.
+  static const double outerPadding = 2;
+
+  /// Total rendered width, scaler included — the tap target scales with text,
+  /// the transparent padding around it does not.
+  static double widthOf(BuildContext context) =>
+      DivineIcon.scaleSize(context, tapTarget) + outerPadding * 2;
 
   final VoidCallback onPressed;
   final Color color;

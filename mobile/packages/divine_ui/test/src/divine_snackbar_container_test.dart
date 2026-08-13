@@ -11,9 +11,11 @@ void main() {
       VoidCallback? onActionPressed,
       String? secondaryActionLabel,
       VoidCallback? onSecondaryActionPressed,
+      VoidCallback? onDismissPressed,
+      ThemeData? theme,
     }) {
       return MaterialApp(
-        theme: VineTheme.theme,
+        theme: theme ?? VineTheme.theme,
         home: Scaffold(
           body: DivineSnackbarContainer(
             label: label,
@@ -22,6 +24,7 @@ void main() {
             onActionPressed: onActionPressed,
             secondaryActionLabel: secondaryActionLabel,
             onSecondaryActionPressed: onSecondaryActionPressed,
+            onDismissPressed: onDismissPressed,
           ),
         ),
       );
@@ -310,6 +313,20 @@ void main() {
         expect(container.secondaryActionLabel, 'Delete');
         expect(container.onSecondaryActionPressed, equals(onDelete));
       });
+
+      testWidgets('passes the dismiss parameters through', (tester) async {
+        void onDismiss() {}
+
+        final snackBar = DivineSnackbarContainer.snackBar(
+          'Saved',
+          onDismissPressed: onDismiss,
+          dismissSemanticLabel: 'Close',
+        );
+
+        final container = snackBar.content as DivineSnackbarContainer;
+        expect(container.onDismissPressed, equals(onDismiss));
+        expect(container.dismissSemanticLabel, 'Close');
+      });
     });
 
     group('sizing', () {
@@ -431,6 +448,75 @@ void main() {
         final button = tester.getRect(find.byType(DivineIconButton));
         expect(button.left, greaterThan(label.right));
       });
+
+      // The placement measurement reserves a fixed width for this button, so
+      // the two drift apart silently if the button's own geometry changes.
+      // 48px tap target + the 2px transparent padding it carries on each side.
+      testWidgets('renders at the width the placement measurement reserves', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Test message', onDismissPressed: () {}),
+        );
+
+        expect(tester.getRect(find.byType(DivineIconButton)).width, 52);
+      });
+
+      testWidgets('sits after the action when both are present', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Copied',
+            actionLabel: 'Undo',
+            onActionPressed: () {},
+            onDismissPressed: () {},
+          ),
+        );
+
+        final action = tester.getRect(find.text('Undo'));
+        final dismiss = tester.getRect(find.byType(DivineIconButton));
+        expect(dismiss.left, greaterThanOrEqualTo(action.right));
+      });
+    });
+
+    group('light appearance', () {
+      // The error label resolves through `onErrorContainer` rather than the
+      // `VineTheme.error` constant, which is the dark value and holds only
+      // 3.1:1 on the light error container — under the 4.5:1 floor its
+      // Inter 14/600 needs as normal text.
+      testWidgets('error label uses the light error token', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Error message',
+            error: true,
+            theme: VineTheme.lightTheme,
+          ),
+        );
+
+        final text = tester.widget<Text>(find.text('Error message'));
+        expect(text.style?.color, VineTheme.lightColors.onErrorContainer);
+        expect(text.style?.color, isNot(VineTheme.error));
+      });
+
+      // `vineGreen` reads 1.76:1 on the light surface, so a light appearance
+      // takes the dark green even without a caller-supplied background.
+      testWidgets('action darkens its green on the light surface', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Copied',
+            actionLabel: 'Undo',
+            onActionPressed: () {},
+            theme: VineTheme.lightTheme,
+          ),
+        );
+
+        final text = tester.widget<Text>(find.text('Undo'));
+        expect(text.style?.color, VineTheme.primaryDarkGreen);
+        expect(text.style?.color, isNot(VineTheme.vineGreen));
+      });
     });
 
     group('action placement', () {
@@ -474,6 +560,59 @@ void main() {
         final banner = tester.getRect(find.byType(DecoratedBox));
         final button = tester.getRect(find.byType(TextButton));
         expect(banner.right - button.right, 16);
+      });
+
+      // The threshold is the design's two-line banner, not "the message fits
+      // on one line" — a long message with a short action still wraps beside
+      // it rather than spending a third row on an "Undo".
+      testWidgets('keeps a short action beside a message that wraps to two '
+          'lines', (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        // Wide enough to need a second line beside the action, not a third:
+        // the old one-line measurement stacked this, the two-line rule keeps
+        // it inline.
+        const message = 'We could not reach the relay';
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: message,
+            actionLabel: 'Undo',
+            onActionPressed: () {},
+          ),
+        );
+
+        final label = tester.getRect(find.text(message));
+        final action = tester.getRect(find.text('Undo'));
+        expect(label.height, greaterThan(24));
+        expect(action.left, greaterThan(label.right));
+      });
+
+      // On its own row the actions are Flexible, so one too wide even for the
+      // full banner wraps inside it rather than running off the edge.
+      testWidgets('wraps an over-wide action inside the banner', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'We could not reach the relay just now',
+            actionLabel: 'Try reconnecting to the relay one more time now',
+            onActionPressed: () {},
+          ),
+        );
+
+        expect(tester.takeException(), isNull);
+        final banner = tester.getRect(find.byType(DecoratedBox));
+        final button = tester.getRect(find.byType(TextButton));
+        expect(button.right, lessThanOrEqualTo(banner.right));
+        expect(button.left, greaterThanOrEqualTo(banner.left));
       });
     });
 
