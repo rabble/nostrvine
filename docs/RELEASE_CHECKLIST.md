@@ -7,6 +7,10 @@ Use this checklist for P1 release prep and store submission. This replaces older
 
 ## 1. Freeze The Candidate
 
+"Freeze" here means pin the commit you are about to build. It is not a merge
+freeze — Divine does not run release freezes, including before launch. See
+[Release Policy: No Freezes](P1_LAUNCH_HUB.md#release-policy-no-freezes).
+
 - [ ] Confirm the target commit is on `main` or the intended release branch.
 - [ ] Confirm `mobile/pubspec.yaml` has the release version and build number you expect.
 - [ ] Review `git status` and remove temporary files, logs, or unfinished work.
