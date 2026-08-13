@@ -75,6 +75,11 @@ abstract class TimelineConstants {
   /// Extra hit-test area around each trim handle.
   static const double trimHitAreaExtra = 32;
 
+  /// How far a trim handle's grab zone reaches past the edge of the strip it
+  /// belongs to. Layout boxes along the way must expand their hit-testing by
+  /// this much, or a handle sitting on a strip's boundary is unreachable.
+  static const double trimHitOverhang = trimHandleWidth + trimHitAreaExtra;
+
   /// Minimum trimmed duration for a clip.
   static const Duration minTrimDuration = Duration(milliseconds: 60);
 
