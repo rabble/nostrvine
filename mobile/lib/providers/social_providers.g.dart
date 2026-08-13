@@ -570,7 +570,7 @@ final class ClipLibraryServiceProvider
 }
 
 String _$clipLibraryServiceHash() =>
-    r'5ccf19e6775ad70d7ed14468c8929a363e13d9f4';
+    r'c48f13bf88aa748a6a888a47b30214e34e90c9fd';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -626,7 +626,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'b5fea23e08fa3a852f0dd4c7535e7e6072306605';
+    r'88d3fbc4b5f453357c72dd0d65e6fa09a82960d6';
 
 /// Hashtag service depends on Video event service and cache service
 

@@ -4,7 +4,9 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:openvine/constants/clip_library_constants.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/clip_category.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -12,29 +14,36 @@ import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:uuid/uuid.dart';
 
 class ClipLibraryService {
   ClipLibraryService({
     required ClipsDao clipsDao,
     required DraftsDao draftsDao,
+    required ClipCategoriesDao clipCategoriesDao,
     this.ownerPubkey,
   }) : _clipsDao = clipsDao,
-       _draftsDao = draftsDao;
+       _draftsDao = draftsDao,
+       _clipCategoriesDao = clipCategoriesDao;
 
   /// How long a soft-deleted clip stays in the trash bin before the
-  /// startup purge sweep permanently removes it. Shared between
-  /// [purgeExpiredTrash] and the trash UI countdown so the user-facing
-  /// "Auto-deletes in N days" copy stays in sync with the actual cutoff.
-  static const Duration trashRetention = Duration(days: 30);
+  /// startup purge sweep permanently removes it. Aliases
+  /// [ClipLibraryConstants.trashRetention], which the trash UI reads too so
+  /// the user-facing "Auto-deletes in N days" copy stays in sync with the
+  /// actual cutoff.
+  static const Duration trashRetention = ClipLibraryConstants.trashRetention;
 
   final ClipsDao _clipsDao;
   final DraftsDao _draftsDao;
+  final ClipCategoriesDao _clipCategoriesDao;
 
   /// Hex pubkey of the current account. When set, new clips are tagged
   /// with this owner and queries filter by it (plus legacy NULL rows).
   final String? ownerPubkey;
 
   static const String _storageKey = 'clip_library';
+
+  static const _uuid = Uuid();
 
   /// Migrate clips from SharedPreferences to Drift database.
   ///
@@ -107,6 +116,11 @@ class ClipLibraryService {
       category: LogCategory.video,
     );
 
+    final existingLibraryRow = await _clipsDao.getClipById(clip.id);
+    final existingAutosaveRow = existingLibraryRow == null
+        ? await _clipsDao.getClipById(_autosaveDraftRowId(clip.id))
+        : null;
+
     await _clipsDao.upsertClip(
       id: clip.id,
       orderIndex: 0,
@@ -121,6 +135,21 @@ class ClipLibraryService {
           : null,
       ownerPubkey: ownerPubkey,
     );
+
+    if (existingLibraryRow == null && existingAutosaveRow != null) {
+      if (existingAutosaveRow.categoryId != null) {
+        await _clipsDao.setClipCategory(
+          id: clip.id,
+          categoryId: existingAutosaveRow.categoryId,
+        );
+      }
+      if (existingAutosaveRow.archivedAt != null) {
+        await _clipsDao.setClipArchived(
+          id: clip.id,
+          archivedAt: existingAutosaveRow.archivedAt,
+        );
+      }
+    }
   }
 
   /// Get all clips from the library, sorted by creation date (newest first).
@@ -170,6 +199,10 @@ class ClipLibraryService {
 
   /// Deserialize a single clip [row], returning `null` (and logging) when the
   /// row is corrupt so one bad clip can't abort the whole list load.
+  ///
+  /// The organization columns (`category_id`, `archived_at`) live on the row
+  /// rather than inside the JSON blob, so they are copied onto the parsed
+  /// clip here — the column stays the single source of truth.
   DivineVideoClip? _tryParseClipRow(
     ClipRow row,
     String documentsPath, {
@@ -177,7 +210,10 @@ class ClipLibraryService {
   }) {
     try {
       final clipJson = json.decode(row.data) as Map<String, dynamic>;
-      return DivineVideoClip.fromJson(clipJson, documentsPath);
+      return DivineVideoClip.fromJson(
+        clipJson,
+        documentsPath,
+      ).copyWith(categoryId: row.categoryId, archivedAt: row.archivedAt);
     } catch (e) {
       Log.error(
         '❌ Skipping corrupt $label ${row.id}: $e',
@@ -264,6 +300,142 @@ class ClipLibraryService {
       );
     }
     return ok;
+  }
+
+  /// Every category owned by the current account, in chip-row order.
+  Future<List<ClipCategory>> getCategories() async {
+    try {
+      final rows = await _clipCategoriesDao.getCategories(
+        ownerPubkey: ownerPubkey,
+      );
+      return [
+        for (final row in rows)
+          ClipCategory(
+            id: row.id,
+            name: row.name,
+            createdAt: row.createdAt,
+            orderIndex: row.orderIndex,
+          ),
+      ];
+    } catch (e) {
+      Log.error(
+        '❌ Failed to load clip categories: $e',
+        name: 'ClipLibraryService',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+  }
+
+  /// Create a category named [rawName], appended after the existing ones.
+  ///
+  /// Returns the created category, or `null` when [rawName] holds no usable
+  /// text after trimming — a blank name is rejected rather than stored.
+  Future<ClipCategory?> createCategory(String rawName) async {
+    final name = ClipCategory.sanitizeName(rawName);
+    if (name == null) return null;
+
+    final highest = await _clipCategoriesDao.highestOrderIndex(
+      ownerPubkey: ownerPubkey,
+    );
+    final category = ClipCategory(
+      id: _uuid.v4(),
+      name: name,
+      createdAt: DateTime.now(),
+      orderIndex: (highest ?? -1) + 1,
+    );
+    await _clipCategoriesDao.upsertCategory(
+      id: category.id,
+      name: category.name,
+      createdAt: category.createdAt,
+      orderIndex: category.orderIndex,
+      ownerPubkey: ownerPubkey,
+    );
+    Log.debug(
+      '🗂️ Created clip category: ${category.id}',
+      name: 'ClipLibraryService',
+      category: LogCategory.video,
+    );
+    return category;
+  }
+
+  /// Rename the category [id] to [rawName].
+  ///
+  /// Returns false when the category is gone or [rawName] holds no usable
+  /// text after trimming.
+  Future<bool> renameCategory({
+    required String id,
+    required String rawName,
+  }) async {
+    final name = ClipCategory.sanitizeName(rawName);
+    if (name == null) return false;
+    return _clipCategoriesDao.renameCategory(id: id, name: name);
+  }
+
+  /// Delete the category [id]. Its clips are kept and fall back to the
+  /// library's default view.
+  ///
+  /// Returns true if the category existed.
+  Future<bool> deleteCategory(String id) async {
+    final deleted = await _clipCategoriesDao.deleteCategory(id);
+    if (deleted) {
+      Log.debug(
+        '🗂️ Deleted clip category: $id',
+        name: 'ClipLibraryService',
+        category: LogCategory.video,
+      );
+    }
+    return deleted;
+  }
+
+  /// File the clip [clipId] under [categoryId], or pass `null` to remove it
+  /// from its current category.
+  ///
+  /// Filing into a category also clears the archive marker. A category's view
+  /// hides archived clips, so leaving the marker set would file the clip into
+  /// a place it could never show up — the move would silently do nothing.
+  /// Unfiling (`categoryId == null`) leaves the marker alone: taking a clip
+  /// out of a category is not a request to un-archive it.
+  Future<void> setClipCategory({
+    required String clipId,
+    required String? categoryId,
+  }) async {
+    await _writeToBothClipRows(
+      clipId,
+      (id) => _clipsDao.setClipCategory(
+        id: id,
+        categoryId: categoryId,
+        clearArchived: categoryId != null,
+      ),
+    );
+  }
+
+  /// Archive or unarchive the clip [clipId]. Archived clips stay in the
+  /// library but are hidden from its default view.
+  Future<void> setClipArchived({
+    required String clipId,
+    required bool archived,
+  }) async {
+    final archivedAt = archived ? DateTime.now() : null;
+    await _writeToBothClipRows(
+      clipId,
+      (id) => _clipsDao.setClipArchived(id: id, archivedAt: archivedAt),
+    );
+  }
+
+  /// Apply [write] to a clip's library row **and** its autosave-draft copy
+  /// (row id `<autoSaveId>:<clipId>`).
+  ///
+  /// A set that has been through the editor exists as both rows, and
+  /// [getAllClips] surfaces whichever is present. Writing only one leaves the
+  /// other stale, so the clip's category or archive state would flip back the
+  /// next time the surviving row is the one that gets loaded.
+  Future<void> _writeToBothClipRows(
+    String clipId,
+    Future<bool> Function(String rowId) write,
+  ) async {
+    await write(clipId);
+    await write(_autosaveDraftRowId(clipId));
   }
 
   /// Permanently removes a single clip's library row, leaving its on-disk

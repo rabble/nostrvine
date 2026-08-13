@@ -17,6 +17,8 @@ class DraftClipData {
     required this.data,
     this.filePath,
     this.thumbnailPath,
+    this.categoryId,
+    this.archivedAt,
   });
 
   final String id;
@@ -26,6 +28,8 @@ class DraftClipData {
   final String data;
   final String? filePath;
   final String? thumbnailPath;
+  final String? categoryId;
+  final DateTime? archivedAt;
 }
 
 @DriftAccessor(tables: [Drafts, Clips])
@@ -336,14 +340,21 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
         ),
       );
 
+      final existingClipRows = await (select(
+        clips,
+      )..where((t) => t.draftId.equals(id))).get();
+      final existingById = {for (final row in existingClipRows) row.id: row};
+
       // 2. Delete existing clips for this draft
       await (delete(clips)..where((t) => t.draftId.equals(id))).go();
 
       // 3. Insert new clips
       for (final clipData in clipDataList) {
+        final rowId = '$id:${clipData.id}';
+        final existingRow = existingById[rowId];
         await into(clips).insertOnConflictUpdate(
           ClipsCompanion.insert(
-            id: '$id:${clipData.id}',
+            id: rowId,
             draftId: Value(id),
             orderIndex: Value(clipData.orderIndex),
             durationMs: clipData.durationMs,
@@ -352,6 +363,8 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
             filePath: Value(clipData.filePath),
             thumbnailPath: Value(clipData.thumbnailPath),
             ownerPubkey: Value(ownerPubkey),
+            categoryId: Value(clipData.categoryId ?? existingRow?.categoryId),
+            archivedAt: Value(clipData.archivedAt ?? existingRow?.archivedAt),
           ),
         );
       }

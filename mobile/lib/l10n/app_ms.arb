@@ -3734,7 +3734,6 @@
   "libraryDeleteSelectedClipsTooltip": "Padam klip dipilih",
   "libraryCloseSemanticLabel": "Tutup pustaka",
   "libraryStopSelectingClipsSemanticLabel": "Berhenti memilih klip",
-  "libraryOpenTrashSemanticLabel": "Buka klip yang baru dipadam",
   "librarySortClipsSemanticLabel": "Isih klip",
   "librarySelectClipsSemanticLabel": "Pilih klip",
   "libraryGridSizeLabel": "Saiz grid",
@@ -5073,10 +5072,6 @@
   "videoRecorderClipUndoLabel": "Buat Asal",
   "@videoRecorderClipUndoLabel": {
     "description": "Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray."
-  },
-  "libraryTrashTitle": "Baru dipadam",
-  "@libraryTrashTitle": {
-    "description": "Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window."
   },
   "libraryTrashEmptyTitle": "Tong sampah kosong",
   "@libraryTrashEmptyTitle": {
@@ -6959,5 +6954,33 @@
   "verifyHowItWorksOtherSide": "Akaun Twitter anda mengesahkan: “Ya, profil Divine itu milik saya.”",
   "verifyHowItWorksBothSides": "Kami semak kedua-dua pihak. Jika sepadan, anda disahkan. Tiada siapa boleh memalsukannya — nama dan foto boleh disalin, menyiar dari akaun sebenar anda tidak.",
   "verifyHowItWorksOwnership": "Pautan ini berada pada identiti Nostr anda sendiri, jadi anda boleh membuangnya dari sini bila-bila masa.",
-  "generalSettingsSectionIdentity": "Identiti"
+  "generalSettingsSectionIdentity": "Identiti",
+  "libraryFilterAll": "Semua",
+  "libraryFilterArchive": "Arkib",
+  "libraryFilterDeleted": "Dipadam",
+  "libraryCategoryNewChipLabel": "Baharu",
+  "libraryCategoryCreateSemanticLabel": "Cipta kategori",
+  "libraryCategoryCreateTitle": "Kategori baharu",
+  "libraryCategoryCreateAction": "Cipta",
+  "libraryCategoryRenameTitle": "Namakan semula kategori",
+  "libraryCategoryRenameAction": "Namakan semula",
+  "libraryCategoryDeleteAction": "Padam kategori",
+  "libraryCategoryNameLabel": "Nama kategori",
+  "libraryCategoryDeleteConfirmTitle": "Padam “{name}”?",
+  "libraryCategoryDeleteConfirmMessage": "Klip anda kekal. Ia cuma kembali ke Semua.",
+  "libraryCategoryManageSemanticLabel": "Namakan semula atau padam kategori ini",
+  "libraryCategoryMoveTitle": "Alih ke",
+  "libraryCategoryMoveNone": "Tiada kategori",
+  "libraryCategoryMoveNewCategory": "Kategori baharu",
+  "libraryArchiveAction": "Arkibkan",
+  "libraryUnarchiveAction": "Nyaharkib",
+  "libraryMoveSelectedClipsTooltip": "Alih klip yang dipilih",
+  "libraryCategoryEmptyTitle": "Belum ada apa-apa di sini",
+  "libraryCategoryEmptySubtitle": "Pilih beberapa klip dan alihkannya ke kategori ini.",
+  "libraryArchiveEmptyTitle": "Tiada apa-apa dalam arkib",
+  "libraryArchiveEmptySubtitle": "Klip yang diarkibkan menunggu di sini, jauh daripada pustaka utama anda.",
+  "libraryClipsMovedToCategory": "{count, plural, other{{count} klip dialihkan ke {name}}}",
+  "libraryClipsRemovedFromCategory": "{count, plural, other{{count} klip dikeluarkan daripada kategorinya}}",
+  "libraryClipsArchived": "{count, plural, other{{count} klip diarkibkan}}",
+  "libraryClipsUnarchived": "{count, plural, other{{count} klip kembali ke pustaka anda}}"
 }

@@ -4,8 +4,10 @@
 import 'dart:async';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/models/clip_category.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
@@ -58,6 +60,27 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     on<ClipsLibraryRestoreClips>(_onRestoreClips, transformer: droppable());
     on<ClipsLibraryHardDeleteClip>(_onHardDeleteClip, transformer: droppable());
     on<ClipsLibraryEmptyTrash>(_onEmptyTrash, transformer: droppable());
+    on<ClipsLibraryFilterChanged>(_onFilterChanged);
+    on<ClipsLibraryCategoryCreated>(
+      _onCategoryCreated,
+      transformer: sequential(),
+    );
+    on<ClipsLibraryCategoryRenamed>(
+      _onCategoryRenamed,
+      transformer: sequential(),
+    );
+    on<ClipsLibraryCategoryDeleted>(
+      _onCategoryDeleted,
+      transformer: sequential(),
+    );
+    on<ClipsLibraryClipsMovedToCategory>(
+      _onClipsMovedToCategory,
+      transformer: sequential(),
+    );
+    on<ClipsLibraryClipsArchiveChanged>(
+      _onClipsArchiveChanged,
+      transformer: sequential(),
+    );
   }
 
   /// SharedPreferences key for the persisted [ClipSort] selection.
@@ -127,6 +150,27 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     return sorted;
   }
 
+  /// Returns the clips [filter] admits, sorted by [sort].
+  ///
+  /// The trash filter yields an empty list on purpose: trashed clips are not
+  /// part of [ClipsLibraryState.clips] at all, they live in
+  /// [ClipsLibraryState.trashedClips] and the UI renders them from there.
+  static List<DivineVideoClip> _visibleClips(
+    List<DivineVideoClip> clips,
+    ClipLibraryFilter filter,
+    ClipSort sort,
+  ) {
+    final matching = switch (filter) {
+      ClipLibraryAllFilter() => clips.where((c) => c.archivedAt == null),
+      ClipLibraryArchiveFilter() => clips.where((c) => c.archivedAt != null),
+      ClipLibraryCategoryFilter(:final categoryId) => clips.where(
+        (c) => c.archivedAt == null && c.categoryId == categoryId,
+      ),
+      ClipLibraryTrashFilter() => const <DivineVideoClip>[],
+    };
+    return _applySort(matching.toList(), sort);
+  }
+
   Future<void> _onLoadRequested(
     ClipsLibraryLoadRequested event,
     Emitter<ClipsLibraryState> emit,
@@ -135,6 +179,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
 
     try {
       final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
+      final categories = await _clipLibraryService.getCategories();
 
       Log.debug(
         '📚 Loaded ${clips.length} clips from library',
@@ -156,11 +201,14 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         }
       }
 
+      final filter = _resolveFilter(state.filter, categories);
       emit(
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
-          sortedClips: _applySort(clips, state.clipSort),
+          categories: categories,
+          filter: filter,
+          sortedClips: _visibleClips(clips, filter, state.clipSort),
           selectedClipIds: preSelectedIds,
           preSelectedIds: event.preSelectedIds,
           disabledClipIds: event.disabledClipIds,
@@ -269,7 +317,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
-          sortedClips: _applySort(clips, state.clipSort),
+          sortedClips: _visibleClips(clips, state.filter, state.clipSort),
           selectedClipIds: const {},
           selectedDuration: Duration.zero,
           lastDeletedCount: deletedCount,
@@ -323,7 +371,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
-          sortedClips: _applySort(clips, state.clipSort),
+          sortedClips: _visibleClips(clips, state.filter, state.clipSort),
           selectedClipIds: selectedIds,
           selectedDuration: selectedDuration,
           lastDeletedCount: 1,
@@ -486,7 +534,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     emit(
       state.copyWith(
         clipSort: event.sort,
-        sortedClips: _applySort(state.clips, event.sort),
+        sortedClips: _visibleClips(state.clips, state.filter, event.sort),
       ),
     );
   }
@@ -655,6 +703,214 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     }
   }
 
+  /// Keeps [current] only while it still points at something selectable,
+  /// falling back to All when its category has been deleted (on another
+  /// device, by a sibling bloc, or by the category-delete handler).
+  static ClipLibraryFilter _resolveFilter(
+    ClipLibraryFilter current,
+    List<ClipCategory> categories,
+  ) {
+    if (current is! ClipLibraryCategoryFilter) return current;
+    final stillExists = categories.any((c) => c.id == current.categoryId);
+    return stillExists ? current : const ClipLibraryAllFilter();
+  }
+
+  void _onFilterChanged(
+    ClipsLibraryFilterChanged event,
+    Emitter<ClipsLibraryState> emit,
+  ) {
+    if (event.filter == state.filter) return;
+
+    // Trashed and active clips are different domains: a selection made in one
+    // must not survive into the other, or a bulk action would hit clips the
+    // user can no longer see. Switching between the active filters keeps the
+    // selection, so picking clips across categories still works.
+    final crossesTrashBoundary =
+        (event.filter is ClipLibraryTrashFilter) != state.isShowingTrash;
+
+    emit(
+      state.copyWith(
+        filter: event.filter,
+        sortedClips: _visibleClips(state.clips, event.filter, state.clipSort),
+        selectedClipIds: crossesTrashBoundary ? const {} : null,
+        selectedDuration: crossesTrashBoundary ? Duration.zero : null,
+        clearOrganizeResult: true,
+      ),
+    );
+
+    if (event.filter is ClipLibraryTrashFilter) {
+      add(const ClipsLibraryTrashLoadRequested());
+    }
+  }
+
+  Future<void> _onCategoryCreated(
+    ClipsLibraryCategoryCreated event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    try {
+      final created = await _clipLibraryService.createCategory(event.name);
+      // A blank or whitespace-only name is rejected by the service; there is
+      // nothing to report and nothing to reload.
+      if (created == null) return;
+
+      for (final clipId in event.clipIds) {
+        await _clipLibraryService.setClipCategory(
+          clipId: clipId,
+          categoryId: created.id,
+        );
+      }
+
+      await _reloadAfterOrganize(
+        emit,
+        result: event.clipIds.isEmpty
+            ? null
+            : ClipsLibraryOrganizeResult(
+                action: ClipsLibraryOrganizeAction.movedToCategory,
+                clipIds: event.clipIds,
+                categoryName: created.name,
+              ),
+      );
+    } catch (e, stackTrace) {
+      _handleOrganizeFailure('create category', e, stackTrace, emit);
+    }
+  }
+
+  Future<void> _onCategoryRenamed(
+    ClipsLibraryCategoryRenamed event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    try {
+      final renamed = await _clipLibraryService.renameCategory(
+        id: event.categoryId,
+        rawName: event.name,
+      );
+      if (!renamed) return;
+      emit(
+        state.copyWith(categories: await _clipLibraryService.getCategories()),
+      );
+    } catch (e, stackTrace) {
+      _handleOrganizeFailure('rename category', e, stackTrace, emit);
+    }
+  }
+
+  Future<void> _onCategoryDeleted(
+    ClipsLibraryCategoryDeleted event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    try {
+      final deleted = await _clipLibraryService.deleteCategory(
+        event.categoryId,
+      );
+      if (!deleted) return;
+      await _reloadAfterOrganize(emit);
+    } catch (e, stackTrace) {
+      _handleOrganizeFailure('delete category', e, stackTrace, emit);
+    }
+  }
+
+  Future<void> _onClipsMovedToCategory(
+    ClipsLibraryClipsMovedToCategory event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    if (event.clipIds.isEmpty) return;
+
+    try {
+      for (final clipId in event.clipIds) {
+        await _clipLibraryService.setClipCategory(
+          clipId: clipId,
+          categoryId: event.categoryId,
+        );
+      }
+
+      final targetId = event.categoryId;
+      final target = targetId == null
+          ? null
+          : state.categories.firstWhereOrNull((c) => c.id == targetId);
+
+      await _reloadAfterOrganize(
+        emit,
+        result: ClipsLibraryOrganizeResult(
+          action: targetId == null
+              ? ClipsLibraryOrganizeAction.removedFromCategory
+              : ClipsLibraryOrganizeAction.movedToCategory,
+          clipIds: event.clipIds,
+          categoryName: target?.name,
+        ),
+      );
+    } catch (e, stackTrace) {
+      _handleOrganizeFailure('move clips to category', e, stackTrace, emit);
+    }
+  }
+
+  Future<void> _onClipsArchiveChanged(
+    ClipsLibraryClipsArchiveChanged event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    if (event.clipIds.isEmpty) return;
+
+    try {
+      for (final clipId in event.clipIds) {
+        await _clipLibraryService.setClipArchived(
+          clipId: clipId,
+          archived: event.archived,
+        );
+      }
+
+      await _reloadAfterOrganize(
+        emit,
+        result: ClipsLibraryOrganizeResult(
+          action: event.archived
+              ? ClipsLibraryOrganizeAction.archived
+              : ClipsLibraryOrganizeAction.unarchived,
+          clipIds: event.clipIds,
+        ),
+      );
+    } catch (e, stackTrace) {
+      _handleOrganizeFailure('archive clips', e, stackTrace, emit);
+    }
+  }
+
+  /// Reloads clips and categories after an organization change and clears the
+  /// selection, since the affected clips have usually just left the view.
+  Future<void> _reloadAfterOrganize(
+    Emitter<ClipsLibraryState> emit, {
+    ClipsLibraryOrganizeResult? result,
+  }) async {
+    final clips = _applyTypeFilter(await _clipLibraryService.getAllClips());
+    final categories = await _clipLibraryService.getCategories();
+    final filter = _resolveFilter(state.filter, categories);
+
+    emit(
+      state.copyWith(
+        status: ClipsLibraryStatus.loaded,
+        clips: clips,
+        categories: categories,
+        filter: filter,
+        sortedClips: _visibleClips(clips, filter, state.clipSort),
+        selectedClipIds: const {},
+        selectedDuration: Duration.zero,
+        lastOrganizeResult: result,
+        clearOrganizeResult: result == null,
+      ),
+    );
+  }
+
+  void _handleOrganizeFailure(
+    String action,
+    Object error,
+    StackTrace stackTrace,
+    Emitter<ClipsLibraryState> emit,
+  ) {
+    Log.error(
+      '📚 Failed to $action: $error',
+      name: 'ClipsLibraryBloc',
+      category: LogCategory.video,
+    );
+    // Matrix-NO: the category and archive writes are local Drift IO.
+    addError(error, stackTrace);
+    emit(state.copyWith(status: ClipsLibraryStatus.error));
+  }
+
   /// Reloads both the active and trashed clip lists. Used after restore
   /// so both views reflect the change.
   Future<void> _reloadClipsAndTrash(Emitter<ClipsLibraryState> emit) async {
@@ -668,7 +924,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
             ? ClipsLibraryStatus.trashLoaded
             : ClipsLibraryStatus.loaded,
         clips: clips,
-        sortedClips: _applySort(clips, state.clipSort),
+        sortedClips: _visibleClips(clips, state.filter, state.clipSort),
         trashedClips: trashed,
         clearDeletedClipIds: true,
       ),

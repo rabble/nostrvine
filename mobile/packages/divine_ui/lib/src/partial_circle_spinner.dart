@@ -51,12 +51,12 @@ class _PartialCircleSpinnerState extends State<PartialCircleSpinner>
   void didUpdateWidget(PartialCircleSpinner oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.progress != oldWidget.progress) {
-      unawaited(
-        _controller.animateTo(
-          widget.progress,
-          duration: const Duration(milliseconds: 200),
-        ),
-      );
+      _controller
+          .animateTo(
+            widget.progress,
+            duration: const Duration(milliseconds: 200),
+          )
+          .ignore();
     }
   }
 

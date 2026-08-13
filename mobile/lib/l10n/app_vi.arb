@@ -3734,7 +3734,6 @@
   "libraryDeleteSelectedClipsTooltip": "Xóa clip đã chọn",
   "libraryCloseSemanticLabel": "Đóng thư viện",
   "libraryStopSelectingClipsSemanticLabel": "Dừng chọn clip",
-  "libraryOpenTrashSemanticLabel": "Mở các clip đã xóa gần đây",
   "librarySortClipsSemanticLabel": "Sắp xếp clip",
   "librarySelectClipsSemanticLabel": "Chọn clip",
   "libraryGridSizeLabel": "Kích thước lưới",
@@ -5073,10 +5072,6 @@
   "videoRecorderClipUndoLabel": "Hoàn tác",
   "@videoRecorderClipUndoLabel": {
     "description": "Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray."
-  },
-  "libraryTrashTitle": "Đã xóa gần đây",
-  "@libraryTrashTitle": {
-    "description": "Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window."
   },
   "libraryTrashEmptyTitle": "Thùng rác trống",
   "@libraryTrashEmptyTitle": {
@@ -6959,5 +6954,33 @@
   "verifyHowItWorksOtherSide": "Tài khoản Twitter của bạn xác nhận: “Đúng, hồ sơ Divine đó là của tôi.”",
   "verifyHowItWorksBothSides": "Chúng tôi kiểm tra cả hai phía. Khớp nhau là bạn được xác minh. Không ai giả được — tên và ảnh thì sao chép được, đăng từ tài khoản thật của bạn thì không.",
   "verifyHowItWorksOwnership": "Các liên kết nằm trên chính danh tính Nostr của bạn, nên bạn có thể gỡ chúng ở đây bất cứ lúc nào.",
-  "generalSettingsSectionIdentity": "Danh tính"
+  "generalSettingsSectionIdentity": "Danh tính",
+  "libraryFilterAll": "Tất cả",
+  "libraryFilterArchive": "Lưu trữ",
+  "libraryFilterDeleted": "Đã xoá",
+  "libraryCategoryNewChipLabel": "Mới",
+  "libraryCategoryCreateSemanticLabel": "Tạo danh mục",
+  "libraryCategoryCreateTitle": "Danh mục mới",
+  "libraryCategoryCreateAction": "Tạo",
+  "libraryCategoryRenameTitle": "Đổi tên danh mục",
+  "libraryCategoryRenameAction": "Đổi tên",
+  "libraryCategoryDeleteAction": "Xoá danh mục",
+  "libraryCategoryNameLabel": "Tên danh mục",
+  "libraryCategoryDeleteConfirmTitle": "Xoá “{name}”?",
+  "libraryCategoryDeleteConfirmMessage": "Các clip vẫn còn đó. Chúng chỉ quay lại mục Tất cả.",
+  "libraryCategoryManageSemanticLabel": "Đổi tên hoặc xoá danh mục này",
+  "libraryCategoryMoveTitle": "Chuyển tới",
+  "libraryCategoryMoveNone": "Không có danh mục",
+  "libraryCategoryMoveNewCategory": "Danh mục mới",
+  "libraryArchiveAction": "Lưu trữ",
+  "libraryUnarchiveAction": "Bỏ lưu trữ",
+  "libraryMoveSelectedClipsTooltip": "Chuyển các clip đã chọn",
+  "libraryCategoryEmptyTitle": "Chưa có gì ở đây",
+  "libraryCategoryEmptySubtitle": "Chọn vài clip rồi chuyển vào danh mục này.",
+  "libraryArchiveEmptyTitle": "Chưa lưu trữ gì",
+  "libraryArchiveEmptySubtitle": "Clip đã lưu trữ nằm chờ ở đây, tách khỏi thư viện chính của bạn.",
+  "libraryClipsMovedToCategory": "{count, plural, other{Đã chuyển {count} clip tới {name}}}",
+  "libraryClipsRemovedFromCategory": "{count, plural, other{Đã đưa {count} clip ra khỏi danh mục}}",
+  "libraryClipsArchived": "{count, plural, other{Đã lưu trữ {count} clip}}",
+  "libraryClipsUnarchived": "{count, plural, other{{count} clip đã trở lại thư viện}}"
 }

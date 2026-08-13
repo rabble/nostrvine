@@ -223,6 +223,8 @@ class DraftStorageService {
           thumbnailPath: clip.thumbnailPath != null
               ? p.basename(clip.thumbnailPath!)
               : null,
+          categoryId: clip.categoryId,
+          archivedAt: clip.archivedAt,
         ),
       );
     }

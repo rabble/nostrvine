@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   late AppDatabase database;
@@ -384,6 +385,20 @@ void main() {
           database.schemaVersion,
           reason: 'onUpgrade must record the current schema version',
         );
+
+        final categoryTable = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='clip_categories'",
+            )
+            .get();
+        expect(
+          categoryTable,
+          hasLength(1),
+          reason: 'the v3 step must run after legacy v1 normalization',
+        );
+        expect(await _columnNames(database, 'clips'), contains('category_id'));
+        expect(await _columnNames(database, 'clips'), contains('archived_at'));
 
         for (final table in _v1NormalizationTables) {
           final rows = await database
@@ -1237,6 +1252,163 @@ void main() {
       });
     });
 
+    group('schema repair', () {
+      test(
+        'repairs the v4 clip organization schema on a damaged current-version '
+        'database',
+        () async {
+          await database.customSelect('SELECT 1').get();
+          await database.close();
+          final raw = sqlite3.open(tempDbPath);
+          try {
+            raw
+              ..execute('ALTER TABLE clips RENAME TO clips_old;')
+              ..execute('''
+              CREATE TABLE clips (
+                id TEXT NOT NULL PRIMARY KEY,
+                draft_id TEXT,
+                order_index INTEGER NOT NULL DEFAULT 0,
+                duration_ms INTEGER NOT NULL,
+                recorded_at INTEGER NOT NULL,
+                data TEXT NOT NULL,
+                file_path TEXT,
+                thumbnail_path TEXT,
+                owner_pubkey TEXT,
+                deleted_at INTEGER
+              )
+            ''')
+              ..execute('''
+                INSERT INTO clips (
+                  id,
+                  draft_id,
+                  order_index,
+                  duration_ms,
+                  recorded_at,
+                  data,
+                  file_path,
+                  thumbnail_path,
+                  owner_pubkey,
+                  deleted_at
+                )
+                SELECT
+                  id,
+                  draft_id,
+                  order_index,
+                  duration_ms,
+                  recorded_at,
+                  data,
+                  file_path,
+                  thumbnail_path,
+                  owner_pubkey,
+                  deleted_at
+                FROM clips_old
+              ''')
+              ..execute('DROP TABLE clips_old;')
+              ..execute('DROP INDEX IF EXISTS idx_clip_category_id;')
+              ..execute('DROP TABLE IF EXISTS clip_categories;')
+              // Stays at the current version: an upgrade would set
+              // `hadUpgrade` and skip the guarded probe entirely, leaving the
+              // v4 migration — not the repair path — to do the work.
+              ..execute('PRAGMA user_version = 4;');
+          } finally {
+            raw.close();
+          }
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database.customSelect('SELECT 1').get();
+
+          final columns = await database
+              .customSelect('PRAGMA table_info(clips)')
+              .get();
+          final columnNames = {
+            for (final row in columns) row.data['name'] as String,
+          };
+          expect(columnNames, contains('category_id'));
+          expect(columnNames, contains('archived_at'));
+
+          final categoryTable = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='clip_categories'",
+              )
+              .get();
+          expect(
+            categoryTable,
+            hasLength(1),
+            reason: 'the probe must rebuild the category table it checks for',
+          );
+
+          final indexes = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='index' "
+                "AND name IN ('idx_clip_category_id', "
+                "'idx_clip_category_owner_pubkey')",
+              )
+              .get();
+          expect(
+            indexes,
+            hasLength(2),
+            reason: 'both category indexes are recovery-critical',
+          );
+
+          // The category DAO has to work off the rebuilt table, not just
+          // report that its name is back in sqlite_master.
+          await database.clipCategoriesDao.upsertCategory(
+            id: 'cat-repaired',
+            name: 'Repaired',
+            createdAt: DateTime(2026),
+          );
+          final categories = await database.clipCategoriesDao.getCategories();
+          expect(categories.map((c) => c.id), contains('cat-repaired'));
+        },
+      );
+
+      test('schema parity — clip_categories fresh-install matches runtime '
+          'CREATE-IF-NOT-EXISTS path', () async {
+        // Drift builds this table on a fresh install and migration, while
+        // `_createClipCategoriesTableIfMissing` builds it during repair. The
+        // two definitions live apart, so column order, nullability, defaults,
+        // the primary key, and the indexes have to be pinned equal.
+        final freshColumns = await _collectTableInfo(
+          database,
+          'clip_categories',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'clip_categories',
+        );
+
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason: 'precondition: fresh install should have clip_categories',
+        );
+
+        await database.customStatement('DROP TABLE clip_categories');
+        await database.close();
+
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='clip_categories'",
+            )
+            .get();
+
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'clip_categories',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'clip_categories',
+        );
+
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
+    });
+
     group('identity caches (#3936)', () {
       test('upgrade path — pre-#3936 database gets both identity tables on '
           'reopen', () async {
@@ -1274,6 +1446,46 @@ void main() {
         final verificationRow = await database.identityVerificationsDao
             .getVerification(testPubkey);
         expect(verificationRow, isNotNull);
+      });
+
+      test('recovery path — restores the staleness stamps on an existing '
+          'identity_events table', () async {
+        // The stamps arrived in v3 by altering a table that already existed,
+        // so a damaged database can hold identity_events without them. The
+        // probe only recovers what normalization can actually rebuild — if
+        // these two drifted apart the probe would fire on every startup and
+        // never repair anything.
+        await database.customStatement(
+          'ALTER TABLE identity_events DROP COLUMN source_created_at',
+        );
+        await database.customStatement(
+          'ALTER TABLE identity_events DROP COLUMN source_event_id',
+        );
+        await database.close();
+
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+        final columns = await _collectTableInfo(database, 'identity_events');
+        final names = columns.map((column) => column.first).toList();
+        expect(
+          names,
+          containsAll(<String>['source_created_at', 'source_event_id']),
+          reason: 'the recovery probe must restore the v3 staleness stamps',
+        );
+
+        // A second reopen must find nothing left to repair.
+        await database.close();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database.identityEventsDao.upsertEvent(
+          pubkey: testPubkey,
+          tagsJson: '[["i","github:alice","proof-a"]]',
+          sourceKind: 10011,
+          sourceCreatedAt: 1700000000,
+          sourceEventId: 'e' * 64,
+        );
+        final restored = await database.identityEventsDao.getEvent(testPubkey);
+        expect(restored?.sourceCreatedAt, 1700000000);
+        expect(restored?.sourceEventId, 'e' * 64);
       });
 
       test('schema parity — identity_events fresh-install matches runtime '
@@ -1766,6 +1978,7 @@ const _v1NormalizationTables = <String>[
   'nip05_verifications',
   'pending_actions',
   'clips',
+  'clip_categories',
   'drafts',
   'direct_messages',
   'conversations',
@@ -1801,6 +2014,8 @@ const _v1NormalizationRepairIndexes = <String>[
   'idx_personal_reactions_addressable_id',
   'idx_notification_owner_timestamp',
   'idx_seen_videos_last_seen_at',
+  'idx_clip_category_id',
+  'idx_clip_category_owner_pubkey',
 ];
 
 /// The set of column names on [table] per `pragma table_info`.

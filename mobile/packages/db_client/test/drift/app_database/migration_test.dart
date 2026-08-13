@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
-import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v4.dart' as v4;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -18,32 +18,39 @@ void main() {
   });
 
   group('schema validation', () {
-    test('current schema version is 3', () {
-      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 3);
+    test('current schema version is 4', () {
+      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 4);
     });
 
-    test('v3 schema is valid and up to date', () async {
+    test('v4 schema is valid and up to date', () async {
+      final schema = await verifier.schemaAt(4);
+      final db = AppDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 4);
+      await db.close();
+    });
+
+    test('v3 schema migrates to v4', () async {
       final schema = await verifier.schemaAt(3);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 3);
+      await verifier.migrateAndValidate(db, 4);
       await db.close();
     });
 
-    test('v2 schema migrates to v3', () async {
+    test('v2 schema migrates to v4', () async {
       final schema = await verifier.schemaAt(2);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 3);
+      await verifier.migrateAndValidate(db, 4);
       await db.close();
     });
 
-    test('legacy v1 schema migrates to v3', () async {
+    test('legacy v1 schema migrates to v4', () async {
       final schema = await verifier.schemaAt(1);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 3);
+      await verifier.migrateAndValidate(db, 4);
       await db.close();
     });
 
-    test('migrates v2 profile statistic follower timestamps to v3', () async {
+    test('migrates v2 profile statistic follower timestamps', () async {
       final schema = await verifier.schemaAt(2);
       final cachedAt =
           DateTime.now()
@@ -67,7 +74,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 3);
+      await verifier.migrateAndValidate(db, 4);
 
       final rows = await db
           .customSelect(
@@ -83,19 +90,16 @@ void main() {
         byPubkey['withcounts']!.read<int?>('follower_counts_updated_at'),
         cachedAt,
       );
-      expect(
-        byPubkey.containsKey('withoutcounts'),
-        isFalse,
-      );
+      expect(byPubkey.containsKey('withoutcounts'), isFalse);
       await db.close();
     });
 
-    test('v2 identity_events rows survive the v3 upgrade unstamped', () async {
+    test('v2 identity_events rows survive the upgrade unstamped', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 2,
-        newVersion: 3,
+        newVersion: 4,
         createOld: v2.DatabaseAtV2.new,
-        createNew: v3.DatabaseAtV3.new,
+        createNew: v4.DatabaseAtV4.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) => batch.insert(
           oldDb.identityEvents,
@@ -117,5 +121,47 @@ void main() {
         },
       );
     });
+
+    test(
+      'v2 clips survive the v4 migration uncategorized and unarchived',
+      () async {
+        final schema = await verifier.schemaAt(2);
+        schema.rawDatabase.execute(
+          'INSERT INTO clips (id, duration_ms, recorded_at, data) '
+          'VALUES (?, ?, ?, ?)',
+          ['clip-1', 3000, 1700000000, '{}'],
+        );
+
+        final db = AppDatabase(schema.newConnection());
+        await verifier.migrateAndValidate(db, 4);
+
+        final migrated = await db.clipsDao.getClipById('clip-1');
+        expect(migrated?.id, 'clip-1');
+        expect(migrated?.categoryId, null);
+        expect(migrated?.archivedAt, null);
+        await db.close();
+      },
+    );
+
+    test(
+      'v3 clips survive the v4 migration uncategorized and unarchived',
+      () async {
+        final schema = await verifier.schemaAt(3);
+        schema.rawDatabase.execute(
+          'INSERT INTO clips (id, duration_ms, recorded_at, data) '
+          'VALUES (?, ?, ?, ?)',
+          ['clip-1', 3000, 1700000000, '{}'],
+        );
+
+        final db = AppDatabase(schema.newConnection());
+        await verifier.migrateAndValidate(db, 4);
+
+        final migrated = await db.clipsDao.getClipById('clip-1');
+        expect(migrated?.id, 'clip-1');
+        expect(migrated?.categoryId, null);
+        expect(migrated?.archivedAt, null);
+        await db.close();
+      },
+    );
   });
 }

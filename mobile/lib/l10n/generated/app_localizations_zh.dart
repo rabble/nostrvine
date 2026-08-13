@@ -6163,9 +6163,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => '停止选择片段';
 
   @override
-  String get libraryOpenTrashSemanticLabel => '打开最近删除的片段';
-
-  @override
   String get librarySortClipsSemanticLabel => '对片段排序';
 
   @override
@@ -8142,9 +8139,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => '撤销';
-
-  @override
-  String get libraryTrashTitle => '最近删除';
 
   @override
   String get libraryTrashEmptyTitle => '回收站是空的';
@@ -11234,4 +11228,122 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => '身份';
+
+  @override
+  String get libraryFilterAll => '全部';
+
+  @override
+  String get libraryFilterArchive => '归档';
+
+  @override
+  String get libraryFilterDeleted => '已删除';
+
+  @override
+  String get libraryCategoryNewChipLabel => '新建';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => '创建分类';
+
+  @override
+  String get libraryCategoryCreateTitle => '新建分类';
+
+  @override
+  String get libraryCategoryCreateAction => '创建';
+
+  @override
+  String get libraryCategoryRenameTitle => '重命名分类';
+
+  @override
+  String get libraryCategoryRenameAction => '重命名';
+
+  @override
+  String get libraryCategoryDeleteAction => '删除分类';
+
+  @override
+  String get libraryCategoryNameLabel => '分类名称';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return '删除“$name”？';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage => '片段还在，只是回到“全部”里。';
+
+  @override
+  String get libraryCategoryManageSemanticLabel => '重命名或删除此分类';
+
+  @override
+  String get libraryCategoryMoveTitle => '移动到';
+
+  @override
+  String get libraryCategoryMoveNone => '无分类';
+
+  @override
+  String get libraryCategoryMoveNewCategory => '新建分类';
+
+  @override
+  String get libraryArchiveAction => '归档';
+
+  @override
+  String get libraryUnarchiveAction => '取消归档';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => '移动所选片段';
+
+  @override
+  String get libraryCategoryEmptyTitle => '这里还没有内容';
+
+  @override
+  String get libraryCategoryEmptySubtitle => '选几个片段，把它们移到这个分类里。';
+
+  @override
+  String get libraryArchiveEmptyTitle => '归档里还没有内容';
+
+  @override
+  String get libraryArchiveEmptySubtitle => '归档的片段在这里等着，不会挤在主素材库里。';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已将 $count 个片段移到 $name',
+      one: '已将 1 个片段移到 $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已将 $count 个片段移出分类',
+      one: '已将 1 个片段移出分类',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已归档 $count 个片段',
+      one: '已归档 1 个片段',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个片段已回到素材库',
+      one: '1 个片段已回到素材库',
+    );
+    return '$_temp0';
+  }
 }

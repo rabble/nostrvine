@@ -6544,10 +6544,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ihinto ang pagpili ng mga clip';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Buksan ang mga kamakailang na-delete na clip';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Ayusin ang mga clip';
 
   @override
@@ -8659,9 +8655,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'I-undo';
-
-  @override
-  String get libraryTrashTitle => 'Kamakailan lang na nabura';
 
   @override
   String get libraryTrashEmptyTitle => 'Walang laman ang basurahan';
@@ -11990,4 +11983,126 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Pagkakakilanlan';
+
+  @override
+  String get libraryFilterAll => 'Lahat';
+
+  @override
+  String get libraryFilterArchive => 'Archive';
+
+  @override
+  String get libraryFilterDeleted => 'Na-delete';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Bago';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Gumawa ng kategorya';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Bagong kategorya';
+
+  @override
+  String get libraryCategoryCreateAction => 'Gumawa';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Palitan ang pangalan ng kategorya';
+
+  @override
+  String get libraryCategoryRenameAction => 'Palitan ang pangalan';
+
+  @override
+  String get libraryCategoryDeleteAction => 'I-delete ang kategorya';
+
+  @override
+  String get libraryCategoryNameLabel => 'Pangalan ng kategorya';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'I-delete ang “$name”?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Nananatili ang mga clip mo. Babalik lang sila sa Lahat.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Palitan ang pangalan o i-delete ang kategoryang ito';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Ilipat sa';
+
+  @override
+  String get libraryCategoryMoveNone => 'Walang kategorya';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Bagong kategorya';
+
+  @override
+  String get libraryArchiveAction => 'I-archive';
+
+  @override
+  String get libraryUnarchiveAction => 'I-unarchive';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Ilipat ang mga napiling clip';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Wala pa rito';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Pumili ng ilang clip at ilipat sila sa kategoryang ito.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Walang naka-archive';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Naghihintay dito ang mga naka-archive na clip, hiwalay sa pangunahing library mo.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip ang inilipat sa $name',
+      one: '$count clip ang inilipat sa $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip ang inalis sa kategorya nila',
+      one: '$count clip ang inalis sa kategorya nito',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip ang na-archive',
+      one: '$count clip ang na-archive',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip ang bumalik sa library mo',
+      one: '$count clip ang bumalik sa library mo',
+    );
+    return '$_temp0';
+  }
 }

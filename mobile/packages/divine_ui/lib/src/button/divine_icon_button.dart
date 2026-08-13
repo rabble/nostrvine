@@ -414,7 +414,13 @@ class _DivineIconButtonContent extends StatelessWidget {
       button: true,
       enabled: _isEnabled,
       child: Padding(
-        padding: .all(_hasBorder ? 0 : _borderWidth),
+        // Compensates the outer size a border adds, so bordered and
+        // borderless buttons occupy the same box. The small variant needs
+        // none: its explicit 48px tap-target box above already fixes the
+        // outer size, so adding it there would push the button to 52.
+        padding: .all(
+          _hasBorder || size == DivineIconButtonSize.small ? 0 : _borderWidth,
+        ),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 150),
           opacity: _isEnabled ? 1.0 : _disabledOpacity,

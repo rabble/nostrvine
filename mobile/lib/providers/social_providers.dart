@@ -643,6 +643,7 @@ ClipLibraryService clipLibraryService(Ref ref) {
   return ClipLibraryService(
     clipsDao: db.clipsDao,
     draftsDao: db.draftsDao,
+    clipCategoriesDao: db.clipCategoriesDao,
     ownerPubkey: ownerPubkey,
   );
 }
@@ -768,6 +769,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             () => db.clipsDao.deleteAllForUser(userPubkey),
           );
           await safeDelete(
+            'clipCategories',
+            () => db.clipCategoriesDao.deleteAllForUser(userPubkey),
+          );
+          await safeDelete(
             'pendingUploads',
             () => db.pendingUploadsDao.deleteAllForUser(userPubkey),
           );
@@ -802,6 +807,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
       sourceOwnerPubkey: DraftStorageService.anonymousOwnerPubkey,
     );
     await db.clipsDao.claimLegacyRows(
+      userPubkey,
+      sourceOwnerPubkey: DraftStorageService.anonymousOwnerPubkey,
+    );
+    await db.clipCategoriesDao.claimLegacyRows(
       userPubkey,
       sourceOwnerPubkey: DraftStorageService.anonymousOwnerPubkey,
     );

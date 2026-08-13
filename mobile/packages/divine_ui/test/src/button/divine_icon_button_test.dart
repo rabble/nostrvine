@@ -285,6 +285,38 @@ void main() {
       );
 
       testWidgets(
+        'small size occupies 48px regardless of whether the type has a border',
+        (tester) async {
+          // The border compensation belongs to `base`, where a border grows
+          // the outer box. `small` already pins its outer size with an
+          // explicit 48px tap-target box, so applying it there too made every
+          // borderless type 52px and shifted any row mixing the two.
+          final sizes = <DivineIconButtonType, Size>{};
+          for (final type in [
+            DivineIconButtonType.secondary,
+            DivineIconButtonType.error,
+            DivineIconButtonType.primary,
+            DivineIconButtonType.ghost,
+          ]) {
+            await tester.pumpWidget(
+              buildTestWidget(
+                size: DivineIconButtonSize.small,
+                type: type,
+                onPressed: () {},
+              ),
+            );
+            sizes[type] = tester.getSize(find.byType(DivineIconButton));
+          }
+
+          expect(
+            sizes.values,
+            everyElement(const Size(48, 48)),
+            reason: 'got $sizes',
+          );
+        },
+      );
+
+      testWidgets(
         'base size: InkWell tap target matches the 48px pill exactly',
         (tester) async {
           await tester.pumpWidget(buildTestWidget(onPressed: () {}));

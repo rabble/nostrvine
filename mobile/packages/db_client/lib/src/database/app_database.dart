@@ -20,6 +20,7 @@ const legacyV1NormalizationRepairTables = <String>[
   'pending_actions',
   'drafts',
   'clips',
+  'clip_categories',
   'direct_messages',
   'conversations',
   'outgoing_dms',
@@ -49,6 +50,8 @@ const legacyV1NormalizationRepairIndexes = <String>[
   'idx_personal_reactions_addressable_id',
   'idx_notification_owner_timestamp',
   'idx_seen_videos_last_seen_at',
+  'idx_clip_category_id',
+  'idx_clip_category_owner_pubkey',
 ];
 
 /// Main application database using Drift
@@ -71,6 +74,7 @@ const legacyV1NormalizationRepairIndexes = <String>[
     Nip05Verifications,
     Drafts,
     Clips,
+    ClipCategories,
     DirectMessages,
     DmMessageReactions,
     Conversations,
@@ -99,6 +103,7 @@ const legacyV1NormalizationRepairIndexes = <String>[
     Nip05VerificationsDao,
     DraftsDao,
     ClipsDao,
+    ClipCategoriesDao,
     DirectMessagesDao,
     DmReactionsDao,
     ConversationsDao,
@@ -122,13 +127,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       await _normalizeLegacyV1Schema();
+      await _createClipCategoryIndexes();
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -153,6 +159,9 @@ class AppDatabase extends _$AppDatabase {
           'INTEGER NULL',
         );
         await _backfillFollowerCountTimestamps();
+      }
+      if (from < 4) {
+        await _migrateToV4ClipCategories(m);
       }
     },
     beforeOpen: (details) async {
@@ -191,6 +200,50 @@ class AppDatabase extends _$AppDatabase {
       'WHERE follower_counts_updated_at IS NULL '
       'AND (follower_count IS NOT NULL OR following_count IS NOT NULL)',
     );
+  }
+
+  /// Adds the v4 entities: user-created clip categories and the clip
+  /// archive marker.
+  Future<void> _migrateToV4ClipCategories(Migrator m) async {
+    if (!await _tableExists('clip_categories')) {
+      await m.createTable(clipCategories);
+    }
+
+    final clipColumns = await _columnNames('clips');
+    if (!clipColumns.contains('category_id')) {
+      await m.addColumn(clips, clips.categoryId);
+    }
+    if (!clipColumns.contains('archived_at')) {
+      await m.addColumn(clips, clips.archivedAt);
+    }
+    await _createClipCategoryIndexes();
+  }
+
+  Future<void> _createClipCategoriesTableIfMissing() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS clip_categories (
+        id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        order_index INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        owner_pubkey TEXT NULL,
+        PRIMARY KEY (id)
+      )
+    ''');
+  }
+
+  /// Creates the indexes backing category lookups. Kept out of
+  /// [_migrateToV4ClipCategories] so `onCreate` — which builds the tables
+  /// through `createAll` rather than the migration steps — gets them too.
+  Future<void> _createClipCategoryIndexes() async {
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_category_id
+      ON clips (category_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_category_owner_pubkey
+      ON clip_categories (owner_pubkey)
+    ''');
   }
 
   /// Normalizes all historical schema drift from version 1 to version 2.
@@ -413,6 +466,11 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_clip_deleted_at
       ON clips (deleted_at)
     ''');
+
+    await _addColumnIfMissing('clips', 'category_id', 'TEXT NULL');
+    await _addColumnIfMissing('clips', 'archived_at', 'INTEGER NULL');
+    await _createClipCategoriesTableIfMissing();
+    await _createClipCategoryIndexes();
 
     // Check if direct_messages table exists, create if missing
     final dmResult = await customSelect(
@@ -875,6 +933,22 @@ class AppDatabase extends _$AppDatabase {
       ''');
     }
 
+    // The staleness stamps arrived in v3 on an already-existing table, so a
+    // damaged database can carry identity_events without them. Recreating the
+    // table above only covers the missing-table case; these two cover the
+    // missing-column case that the v3 upgrade would otherwise be the only
+    // path to.
+    await _addColumnIfMissing(
+      'identity_events',
+      'source_created_at',
+      'INTEGER NULL',
+    );
+    await _addColumnIfMissing(
+      'identity_events',
+      'source_event_id',
+      'TEXT NULL',
+    );
+
     // Check if identity_verifications table exists, create if missing.
     // Added for #3936 — same pattern as identity_events above. No index:
     // the only access is a primary-key lookup on pubkey.
@@ -1016,7 +1090,14 @@ class AppDatabase extends _$AppDatabase {
 
     const requiredColumns = <String, List<String>>{
       'event': ['d_tag'],
-      'clips': ['file_path', 'thumbnail_path', 'owner_pubkey', 'deleted_at'],
+      'clips': [
+        'file_path',
+        'thumbnail_path',
+        'owner_pubkey',
+        'deleted_at',
+        'category_id',
+        'archived_at',
+      ],
       'drafts': [
         'rendered_file_path',
         'rendered_thumbnail_path',
@@ -1055,6 +1136,7 @@ class AppDatabase extends _$AppDatabase {
       'outgoing_dms': ['send_batch_id'],
       'personal_reactions': ['addressable_id'],
       'profile_statistics': ['follower_counts_updated_at'],
+      'identity_events': ['source_created_at', 'source_event_id'],
     };
 
     for (final entry in requiredColumns.entries) {

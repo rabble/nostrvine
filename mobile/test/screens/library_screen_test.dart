@@ -119,6 +119,9 @@ void main() {
         () => mockClipLibraryService.getAllClips(),
       ).thenAnswer((_) async => []);
       when(
+        () => mockClipLibraryService.getCategories(),
+      ).thenAnswer((_) async => []);
+      when(
         () => mockDraftStorageService.getAllDrafts(),
       ).thenAnswer((_) async => []);
     });
@@ -459,6 +462,40 @@ void main() {
         expect(clipsBloc.state.isLibrarySelectionMode, isFalse);
         expect(clipsBloc.state.selectedClipIds, isEmpty);
       });
+    });
+
+    group('filter selection', () {
+      DivineVideoClip savedClip() => DivineVideoClip(
+        id: 'saved-clip',
+        video: EditorVideo.file('/test/saved.mp4'),
+        duration: const Duration(seconds: 2),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: models.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      test(
+        'uses the full clip set when a selected clip is hidden by a filter',
+        () {
+          final clip = savedClip();
+          // The filtered list is empty by default, matching an empty active
+          // filter while the original selection remains in the full clip set.
+          final state = ClipsLibraryState(
+            clips: [clip],
+            selectedClipIds: {clip.id},
+            filter: const ClipLibraryArchiveFilter(),
+          );
+
+          expect(
+            libraryTargetAspectRatioForSelection(
+              selectionMode: false,
+              editorClips: const [],
+              clipsState: state,
+            ),
+            clip.targetAspectRatio.value,
+          );
+        },
+      );
     });
 
     group('empty state', () {

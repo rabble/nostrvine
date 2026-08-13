@@ -6496,10 +6496,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Stoppen met clips selecteren';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Onlangs verwijderde clips openen';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Clips sorteren';
 
   @override
@@ -8597,9 +8593,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Ongedaan maken';
-
-  @override
-  String get libraryTrashTitle => 'Recent verwijderd';
 
   @override
   String get libraryTrashEmptyTitle => 'Prullenbak is leeg';
@@ -11920,4 +11913,127 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Identiteit';
+
+  @override
+  String get libraryFilterAll => 'Alles';
+
+  @override
+  String get libraryFilterArchive => 'Archief';
+
+  @override
+  String get libraryFilterDeleted => 'Verwijderd';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Nieuw';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Een categorie maken';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Nieuwe categorie';
+
+  @override
+  String get libraryCategoryCreateAction => 'Maken';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Categorie hernoemen';
+
+  @override
+  String get libraryCategoryRenameAction => 'Hernoemen';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Categorie verwijderen';
+
+  @override
+  String get libraryCategoryNameLabel => 'Naam van de categorie';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return '‘$name’ verwijderen?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Je clips blijven gewoon staan. Ze gaan alleen terug naar Alles.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Deze categorie hernoemen of verwijderen';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Verplaatsen naar';
+
+  @override
+  String get libraryCategoryMoveNone => 'Geen categorie';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Nieuwe categorie';
+
+  @override
+  String get libraryArchiveAction => 'Archiveren';
+
+  @override
+  String get libraryUnarchiveAction => 'Uit archief halen';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip =>
+      'Geselecteerde clips verplaatsen';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Hier staat nog niets';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Selecteer een paar clips en verplaats ze naar deze categorie.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Niets gearchiveerd';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Gearchiveerde clips wachten hier, buiten je hoofdbibliotheek.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips verplaatst naar $name',
+      one: '1 clip verplaatst naar $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips uit hun categorie gehaald',
+      one: '1 clip uit de categorie gehaald',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips gearchiveerd',
+      one: '1 clip gearchiveerd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips terug in je bibliotheek',
+      one: '1 clip terug in je bibliotheek',
+    );
+    return '$_temp0';
+  }
 }

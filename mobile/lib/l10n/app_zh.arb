@@ -3734,7 +3734,6 @@
   "libraryDeleteSelectedClipsTooltip": "删除选中片段",
   "libraryCloseSemanticLabel": "关闭素材库",
   "libraryStopSelectingClipsSemanticLabel": "停止选择片段",
-  "libraryOpenTrashSemanticLabel": "打开最近删除的片段",
   "librarySortClipsSemanticLabel": "对片段排序",
   "librarySelectClipsSemanticLabel": "选择片段",
   "libraryGridSizeLabel": "网格大小",
@@ -5073,10 +5072,6 @@
   "videoRecorderClipUndoLabel": "撤销",
   "@videoRecorderClipUndoLabel": {
     "description": "Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray."
-  },
-  "libraryTrashTitle": "最近删除",
-  "@libraryTrashTitle": {
-    "description": "Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window."
   },
   "libraryTrashEmptyTitle": "回收站是空的",
   "@libraryTrashEmptyTitle": {
@@ -6959,5 +6954,33 @@
   "verifyHowItWorksOtherSide": "你的 Twitter 账号确认：“是的，那个 Divine 资料是我的。”",
   "verifyHowItWorksBothSides": "我们两边都核对。对得上，你就通过了。这没法伪造——名字和照片可以抄，但没法从你真正的账号发帖。",
   "verifyHowItWorksOwnership": "这些关联存在你自己的 Nostr 身份里，你随时可以在这里移除。",
-  "generalSettingsSectionIdentity": "身份"
+  "generalSettingsSectionIdentity": "身份",
+  "libraryFilterAll": "全部",
+  "libraryFilterArchive": "归档",
+  "libraryFilterDeleted": "已删除",
+  "libraryCategoryNewChipLabel": "新建",
+  "libraryCategoryCreateSemanticLabel": "创建分类",
+  "libraryCategoryCreateTitle": "新建分类",
+  "libraryCategoryCreateAction": "创建",
+  "libraryCategoryRenameTitle": "重命名分类",
+  "libraryCategoryRenameAction": "重命名",
+  "libraryCategoryDeleteAction": "删除分类",
+  "libraryCategoryNameLabel": "分类名称",
+  "libraryCategoryDeleteConfirmTitle": "删除“{name}”？",
+  "libraryCategoryDeleteConfirmMessage": "片段还在，只是回到“全部”里。",
+  "libraryCategoryManageSemanticLabel": "重命名或删除此分类",
+  "libraryCategoryMoveTitle": "移动到",
+  "libraryCategoryMoveNone": "无分类",
+  "libraryCategoryMoveNewCategory": "新建分类",
+  "libraryArchiveAction": "归档",
+  "libraryUnarchiveAction": "取消归档",
+  "libraryMoveSelectedClipsTooltip": "移动所选片段",
+  "libraryCategoryEmptyTitle": "这里还没有内容",
+  "libraryCategoryEmptySubtitle": "选几个片段，把它们移到这个分类里。",
+  "libraryArchiveEmptyTitle": "归档里还没有内容",
+  "libraryArchiveEmptySubtitle": "归档的片段在这里等着，不会挤在主素材库里。",
+  "libraryClipsMovedToCategory": "{count, plural, =1{已将 1 个片段移到 {name}} other{已将 {count} 个片段移到 {name}}}",
+  "libraryClipsRemovedFromCategory": "{count, plural, =1{已将 1 个片段移出分类} other{已将 {count} 个片段移出分类}}",
+  "libraryClipsArchived": "{count, plural, =1{已归档 1 个片段} other{已归档 {count} 个片段}}",
+  "libraryClipsUnarchived": "{count, plural, =1{1 个片段已回到素材库} other{{count} 个片段已回到素材库}}"
 }

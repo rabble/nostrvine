@@ -142,3 +142,98 @@ final class ClipsLibraryHardDeleteClip extends ClipsLibraryEvent {
 final class ClipsLibraryEmptyTrash extends ClipsLibraryEvent {
   const ClipsLibraryEmptyTrash();
 }
+
+/// Event to switch which slice of the library the grid shows.
+///
+/// Selecting [ClipLibraryTrashFilter] loads the trashed clips, which are
+/// held separately from the active ones.
+final class ClipsLibraryFilterChanged extends ClipsLibraryEvent {
+  const ClipsLibraryFilterChanged(this.filter);
+
+  /// The filter to apply.
+  final ClipLibraryFilter filter;
+
+  @override
+  List<Object?> get props => [filter];
+}
+
+/// Event to create a new user category and file [clipIds] into it.
+///
+/// [clipIds] may be empty, which just creates the empty category.
+final class ClipsLibraryCategoryCreated extends ClipsLibraryEvent {
+  const ClipsLibraryCategoryCreated(this.name, {this.clipIds = const {}});
+
+  /// The user-entered name. Blank input is rejected by the bloc.
+  final String name;
+
+  /// Clips to move into the new category right away.
+  final Set<String> clipIds;
+
+  @override
+  List<Object?> get props => [name, clipIds];
+}
+
+/// Event to rename an existing user category.
+final class ClipsLibraryCategoryRenamed extends ClipsLibraryEvent {
+  const ClipsLibraryCategoryRenamed({
+    required this.categoryId,
+    required this.name,
+  });
+
+  /// The category to rename.
+  final String categoryId;
+
+  /// The user-entered name. Blank input is rejected by the bloc.
+  final String name;
+
+  @override
+  List<Object?> get props => [categoryId, name];
+}
+
+/// Event to delete a user category. Its clips are kept and fall back to
+/// the library's default view.
+final class ClipsLibraryCategoryDeleted extends ClipsLibraryEvent {
+  const ClipsLibraryCategoryDeleted(this.categoryId);
+
+  /// The category to delete.
+  final String categoryId;
+
+  @override
+  List<Object?> get props => [categoryId];
+}
+
+/// Event to file clips under [categoryId], or to unfile them when it is
+/// `null`.
+final class ClipsLibraryClipsMovedToCategory extends ClipsLibraryEvent {
+  const ClipsLibraryClipsMovedToCategory({
+    required this.clipIds,
+    required this.categoryId,
+  });
+
+  /// Clips to move.
+  final Set<String> clipIds;
+
+  /// Target category, or `null` to remove the clips from their category.
+  final String? categoryId;
+
+  @override
+  List<Object?> get props => [clipIds, categoryId];
+}
+
+/// Event to archive or unarchive clips. Archived clips stay in the library
+/// but are hidden from its default view.
+final class ClipsLibraryClipsArchiveChanged extends ClipsLibraryEvent {
+  const ClipsLibraryClipsArchiveChanged({
+    required this.clipIds,
+    required this.archived,
+  });
+
+  /// Clips to archive or unarchive.
+  final Set<String> clipIds;
+
+  /// True to archive, false to bring the clips back.
+  final bool archived;
+
+  @override
+  List<Object?> get props => [clipIds, archived];
+}

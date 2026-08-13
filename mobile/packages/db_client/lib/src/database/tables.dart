@@ -655,6 +655,15 @@ class Clips extends Table {
   /// retention window. See `ClipLibraryService.purgeExpiredTrash`.
   DateTimeColumn get deletedAt => dateTime().nullable().named('deleted_at')();
 
+  /// Id of the user-created [ClipCategories] row this clip is filed under.
+  /// NULL = uncategorized. Cleared when its category is deleted.
+  TextColumn get categoryId => text().nullable().named('category_id')();
+
+  /// Archive marker. NULL = active; non-NULL = archived since this time.
+  /// Archived clips are hidden from the library's default view and shown
+  /// only under its Archive filter.
+  DateTimeColumn get archivedAt => dateTime().nullable().named('archived_at')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -704,6 +713,50 @@ class Clips extends Table {
       'idx_clip_deleted_at',
       'CREATE INDEX IF NOT EXISTS idx_clip_deleted_at '
           'ON clips (deleted_at)',
+    ),
+    Index(
+      'idx_clip_category_id',
+      'CREATE INDEX IF NOT EXISTS idx_clip_category_id '
+          'ON clips (category_id)',
+    ),
+  ];
+}
+
+/// User-created categories for filing library clips.
+///
+/// The library's All, Archive, and Deleted filters are built in, so they have
+/// no row here — this table holds only the categories a user adds themselves.
+/// A clip references at most one of them via [Clips.categoryId].
+@DataClassName('ClipCategoryRow')
+class ClipCategories extends Table {
+  @override
+  String get tableName => 'clip_categories';
+
+  /// Unique category identifier.
+  TextColumn get id => text()();
+
+  /// User-entered display name. Not localized — it is the user's own text.
+  TextColumn get name => text()();
+
+  /// Position of this category in the library's chip row (0-based).
+  IntColumn get orderIndex =>
+      integer().withDefault(const Constant(0)).named('order_index')();
+
+  /// When the category was created.
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+
+  /// Hex public key of the account that owns this category.
+  /// NULL for categories created before an account was known.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_clip_category_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_clip_category_owner_pubkey '
+          'ON clip_categories (owner_pubkey)',
     ),
   ];
 }

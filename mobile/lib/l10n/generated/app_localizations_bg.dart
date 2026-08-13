@@ -6523,10 +6523,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Спри избора на клипове';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Отвори наскоро изтритите клипове';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Сортирай клиповете';
 
   @override
@@ -8638,9 +8634,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Отмени';
-
-  @override
-  String get libraryTrashTitle => 'Наскоро изтрити';
 
   @override
   String get libraryTrashEmptyTitle => 'Кошчето е празно';
@@ -11975,4 +11968,127 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Самоличност';
+
+  @override
+  String get libraryFilterAll => 'Всички';
+
+  @override
+  String get libraryFilterArchive => 'Архив';
+
+  @override
+  String get libraryFilterDeleted => 'Изтрити';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Нова';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Създаване на категория';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Нова категория';
+
+  @override
+  String get libraryCategoryCreateAction => 'Създай';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Преименуване на категорията';
+
+  @override
+  String get libraryCategoryRenameAction => 'Преименувай';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Изтриване на категорията';
+
+  @override
+  String get libraryCategoryNameLabel => 'Име на категорията';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'Да изтрием ли „$name“?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Клиповете ти остават. Просто се връщат във „Всички“.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Преименуване или изтриване на тази категория';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Преместване в';
+
+  @override
+  String get libraryCategoryMoveNone => 'Без категория';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Нова категория';
+
+  @override
+  String get libraryArchiveAction => 'Архивирай';
+
+  @override
+  String get libraryUnarchiveAction => 'Извади от архива';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip =>
+      'Преместване на избраните клипове';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Тук още няма нищо';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Избери няколко клипа и ги премести в тази категория.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Нищо в архива';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Архивираните клипове чакат тук, извън основната ти библиотека.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count клипа са преместени в $name',
+      one: '1 клип е преместен в $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count клипа са извън категорията си',
+      one: '1 клип е извън категорията си',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count клипа са архивирани',
+      one: '1 клип е архивиран',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count клипа се върнаха в библиотеката',
+      one: '1 клип се върна в библиотеката',
+    );
+    return '$_temp0';
+  }
 }

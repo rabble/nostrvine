@@ -8028,6 +8028,28 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _archivedAtMeta = const VerificationMeta(
+    'archivedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+    'archived_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8040,6 +8062,8 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     thumbnailPath,
     ownerPubkey,
     deletedAt,
+    categoryId,
+    archivedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8124,6 +8148,18 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+        _archivedAtMeta,
+        archivedAt.isAcceptableOrUnknown(data['archived_at']!, _archivedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -8173,6 +8209,14 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
       ),
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      ),
+      archivedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}archived_at'],
+      ),
     );
   }
 
@@ -8216,6 +8260,15 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
   /// Trashed clips are filtered out of normal queries and purged after the
   /// retention window. See `ClipLibraryService.purgeExpiredTrash`.
   final DateTime? deletedAt;
+
+  /// Id of the user-created [ClipCategories] row this clip is filed under.
+  /// NULL = uncategorized. Cleared when its category is deleted.
+  final String? categoryId;
+
+  /// Archive marker. NULL = active; non-NULL = archived since this time.
+  /// Archived clips are hidden from the library's default view and shown
+  /// only under its Archive filter.
+  final DateTime? archivedAt;
   const ClipRow({
     required this.id,
     this.draftId,
@@ -8227,6 +8280,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     this.thumbnailPath,
     this.ownerPubkey,
     this.deletedAt,
+    this.categoryId,
+    this.archivedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8250,6 +8305,12 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     }
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
+    }
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<DateTime>(archivedAt);
     }
     return map;
   }
@@ -8276,6 +8337,12 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      archivedAt: archivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archivedAt),
     );
   }
 
@@ -8295,6 +8362,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       thumbnailPath: serializer.fromJson<String?>(json['thumbnailPath']),
       ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      categoryId: serializer.fromJson<String?>(json['categoryId']),
+      archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
     );
   }
   @override
@@ -8311,6 +8380,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       'thumbnailPath': serializer.toJson<String?>(thumbnailPath),
       'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'categoryId': serializer.toJson<String?>(categoryId),
+      'archivedAt': serializer.toJson<DateTime?>(archivedAt),
     };
   }
 
@@ -8325,6 +8396,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     Value<String?> thumbnailPath = const Value.absent(),
     Value<String?> ownerPubkey = const Value.absent(),
     Value<DateTime?> deletedAt = const Value.absent(),
+    Value<String?> categoryId = const Value.absent(),
+    Value<DateTime?> archivedAt = const Value.absent(),
   }) => ClipRow(
     id: id ?? this.id,
     draftId: draftId.present ? draftId.value : this.draftId,
@@ -8338,6 +8411,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
         : this.thumbnailPath,
     ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
   );
   ClipRow copyWithCompanion(ClipsCompanion data) {
     return ClipRow(
@@ -8361,6 +8436,12 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           ? data.ownerPubkey.value
           : this.ownerPubkey,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      archivedAt: data.archivedAt.present
+          ? data.archivedAt.value
+          : this.archivedAt,
     );
   }
 
@@ -8376,7 +8457,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           ..write('filePath: $filePath, ')
           ..write('thumbnailPath: $thumbnailPath, ')
           ..write('ownerPubkey: $ownerPubkey, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('archivedAt: $archivedAt')
           ..write(')'))
         .toString();
   }
@@ -8393,6 +8476,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     thumbnailPath,
     ownerPubkey,
     deletedAt,
+    categoryId,
+    archivedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -8407,7 +8492,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           other.filePath == this.filePath &&
           other.thumbnailPath == this.thumbnailPath &&
           other.ownerPubkey == this.ownerPubkey &&
-          other.deletedAt == this.deletedAt);
+          other.deletedAt == this.deletedAt &&
+          other.categoryId == this.categoryId &&
+          other.archivedAt == this.archivedAt);
 }
 
 class ClipsCompanion extends UpdateCompanion<ClipRow> {
@@ -8421,6 +8508,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
   final Value<String?> thumbnailPath;
   final Value<String?> ownerPubkey;
   final Value<DateTime?> deletedAt;
+  final Value<String?> categoryId;
+  final Value<DateTime?> archivedAt;
   final Value<int> rowid;
   const ClipsCompanion({
     this.id = const Value.absent(),
@@ -8433,6 +8522,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     this.thumbnailPath = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.archivedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ClipsCompanion.insert({
@@ -8446,6 +8537,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     this.thumbnailPath = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.archivedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        durationMs = Value(durationMs),
@@ -8462,6 +8555,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Expression<String>? thumbnailPath,
     Expression<String>? ownerPubkey,
     Expression<DateTime>? deletedAt,
+    Expression<String>? categoryId,
+    Expression<DateTime>? archivedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -8475,6 +8570,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (deletedAt != null) 'deleted_at': deletedAt,
+      if (categoryId != null) 'category_id': categoryId,
+      if (archivedAt != null) 'archived_at': archivedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8490,6 +8587,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Value<String?>? thumbnailPath,
     Value<String?>? ownerPubkey,
     Value<DateTime?>? deletedAt,
+    Value<String?>? categoryId,
+    Value<DateTime?>? archivedAt,
     Value<int>? rowid,
   }) {
     return ClipsCompanion(
@@ -8503,6 +8602,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       deletedAt: deletedAt ?? this.deletedAt,
+      categoryId: categoryId ?? this.categoryId,
+      archivedAt: archivedAt ?? this.archivedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8540,6 +8641,12 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<DateTime>(archivedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -8559,6 +8666,384 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
           ..write('thumbnailPath: $thumbnailPath, ')
           ..write('ownerPubkey: $ownerPubkey, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ClipCategoriesTable extends ClipCategories
+    with TableInfo<$ClipCategoriesTable, ClipCategoryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ClipCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _orderIndexMeta = const VerificationMeta(
+    'orderIndex',
+  );
+  @override
+  late final GeneratedColumn<int> orderIndex = GeneratedColumn<int>(
+    'order_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    orderIndex,
+    createdAt,
+    ownerPubkey,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'clip_categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ClipCategoryRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('order_index')) {
+      context.handle(
+        _orderIndexMeta,
+        orderIndex.isAcceptableOrUnknown(data['order_index']!, _orderIndexMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ClipCategoryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ClipCategoryRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      orderIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}order_index'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
+    );
+  }
+
+  @override
+  $ClipCategoriesTable createAlias(String alias) {
+    return $ClipCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class ClipCategoryRow extends DataClass implements Insertable<ClipCategoryRow> {
+  /// Unique category identifier.
+  final String id;
+
+  /// User-entered display name. Not localized — it is the user's own text.
+  final String name;
+
+  /// Position of this category in the library's chip row (0-based).
+  final int orderIndex;
+
+  /// When the category was created.
+  final DateTime createdAt;
+
+  /// Hex public key of the account that owns this category.
+  /// NULL for categories created before an account was known.
+  final String? ownerPubkey;
+  const ClipCategoryRow({
+    required this.id,
+    required this.name,
+    required this.orderIndex,
+    required this.createdAt,
+    this.ownerPubkey,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['order_index'] = Variable<int>(orderIndex);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    }
+    return map;
+  }
+
+  ClipCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return ClipCategoriesCompanion(
+      id: Value(id),
+      name: Value(name),
+      orderIndex: Value(orderIndex),
+      createdAt: Value(createdAt),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
+    );
+  }
+
+  factory ClipCategoryRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ClipCategoryRow(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      orderIndex: serializer.fromJson<int>(json['orderIndex']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'orderIndex': serializer.toJson<int>(orderIndex),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
+    };
+  }
+
+  ClipCategoryRow copyWith({
+    String? id,
+    String? name,
+    int? orderIndex,
+    DateTime? createdAt,
+    Value<String?> ownerPubkey = const Value.absent(),
+  }) => ClipCategoryRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    orderIndex: orderIndex ?? this.orderIndex,
+    createdAt: createdAt ?? this.createdAt,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
+  );
+  ClipCategoryRow copyWithCompanion(ClipCategoriesCompanion data) {
+    return ClipCategoryRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      orderIndex: data.orderIndex.present
+          ? data.orderIndex.value
+          : this.orderIndex,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClipCategoryRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('orderIndex: $orderIndex, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('ownerPubkey: $ownerPubkey')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, orderIndex, createdAt, ownerPubkey);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ClipCategoryRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.orderIndex == this.orderIndex &&
+          other.createdAt == this.createdAt &&
+          other.ownerPubkey == this.ownerPubkey);
+}
+
+class ClipCategoriesCompanion extends UpdateCompanion<ClipCategoryRow> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<int> orderIndex;
+  final Value<DateTime> createdAt;
+  final Value<String?> ownerPubkey;
+  final Value<int> rowid;
+  const ClipCategoriesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.orderIndex = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ClipCategoriesCompanion.insert({
+    required String id,
+    required String name,
+    this.orderIndex = const Value.absent(),
+    required DateTime createdAt,
+    this.ownerPubkey = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt);
+  static Insertable<ClipCategoryRow> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<int>? orderIndex,
+    Expression<DateTime>? createdAt,
+    Expression<String>? ownerPubkey,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (orderIndex != null) 'order_index': orderIndex,
+      if (createdAt != null) 'created_at': createdAt,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ClipCategoriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<int>? orderIndex,
+    Value<DateTime>? createdAt,
+    Value<String?>? ownerPubkey,
+    Value<int>? rowid,
+  }) {
+    return ClipCategoriesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      orderIndex: orderIndex ?? this.orderIndex,
+      createdAt: createdAt ?? this.createdAt,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (orderIndex.present) {
+      map['order_index'] = Variable<int>(orderIndex.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClipCategoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('orderIndex: $orderIndex, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16897,6 +17382,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $Nip05VerificationsTable(this);
   late final $DraftsTable drafts = $DraftsTable(this);
   late final $ClipsTable clips = $ClipsTable(this);
+  late final $ClipCategoriesTable clipCategories = $ClipCategoriesTable(this);
   late final $DirectMessagesTable directMessages = $DirectMessagesTable(this);
   late final $DmMessageReactionsTable dmMessageReactions =
       $DmMessageReactionsTable(this);
@@ -16954,6 +17440,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       Nip05VerificationsDao(this as AppDatabase);
   late final DraftsDao draftsDao = DraftsDao(this as AppDatabase);
   late final ClipsDao clipsDao = ClipsDao(this as AppDatabase);
+  late final ClipCategoriesDao clipCategoriesDao = ClipCategoriesDao(
+    this as AppDatabase,
+  );
   late final DirectMessagesDao directMessagesDao = DirectMessagesDao(
     this as AppDatabase,
   );
@@ -17005,6 +17494,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     nip05Verifications,
     drafts,
     clips,
+    clipCategories,
     directMessages,
     dmMessageReactions,
     conversations,
@@ -20792,6 +21282,8 @@ typedef $$ClipsTableCreateCompanionBuilder =
       Value<String?> thumbnailPath,
       Value<String?> ownerPubkey,
       Value<DateTime?> deletedAt,
+      Value<String?> categoryId,
+      Value<DateTime?> archivedAt,
       Value<int> rowid,
     });
 typedef $$ClipsTableUpdateCompanionBuilder =
@@ -20806,6 +21298,8 @@ typedef $$ClipsTableUpdateCompanionBuilder =
       Value<String?> thumbnailPath,
       Value<String?> ownerPubkey,
       Value<DateTime?> deletedAt,
+      Value<String?> categoryId,
+      Value<DateTime?> archivedAt,
       Value<int> rowid,
     });
 
@@ -20864,6 +21358,16 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
 
   ColumnFilters<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -20926,6 +21430,16 @@ class $$ClipsTableOrderingComposer
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ClipsTableAnnotationComposer
@@ -20976,6 +21490,16 @@ class $$ClipsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => column,
+  );
 }
 
 class $$ClipsTableTableManager
@@ -21016,6 +21540,8 @@ class $$ClipsTableTableManager
                 Value<String?> thumbnailPath = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<String?> categoryId = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion(
                 id: id,
@@ -21028,6 +21554,8 @@ class $$ClipsTableTableManager
                 thumbnailPath: thumbnailPath,
                 ownerPubkey: ownerPubkey,
                 deletedAt: deletedAt,
+                categoryId: categoryId,
+                archivedAt: archivedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -21042,6 +21570,8 @@ class $$ClipsTableTableManager
                 Value<String?> thumbnailPath = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<String?> categoryId = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion.insert(
                 id: id,
@@ -21054,6 +21584,8 @@ class $$ClipsTableTableManager
                 thumbnailPath: thumbnailPath,
                 ownerPubkey: ownerPubkey,
                 deletedAt: deletedAt,
+                categoryId: categoryId,
+                archivedAt: archivedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -21076,6 +21608,216 @@ typedef $$ClipsTableProcessedTableManager =
       $$ClipsTableUpdateCompanionBuilder,
       (ClipRow, BaseReferences<_$AppDatabase, $ClipsTable, ClipRow>),
       ClipRow,
+      PrefetchHooks Function()
+    >;
+typedef $$ClipCategoriesTableCreateCompanionBuilder =
+    ClipCategoriesCompanion Function({
+      required String id,
+      required String name,
+      Value<int> orderIndex,
+      required DateTime createdAt,
+      Value<String?> ownerPubkey,
+      Value<int> rowid,
+    });
+typedef $$ClipCategoriesTableUpdateCompanionBuilder =
+    ClipCategoriesCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<int> orderIndex,
+      Value<DateTime> createdAt,
+      Value<String?> ownerPubkey,
+      Value<int> rowid,
+    });
+
+class $$ClipCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $ClipCategoriesTable> {
+  $$ClipCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ClipCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ClipCategoriesTable> {
+  $$ClipCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ClipCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ClipCategoriesTable> {
+  $$ClipCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
+}
+
+class $$ClipCategoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ClipCategoriesTable,
+          ClipCategoryRow,
+          $$ClipCategoriesTableFilterComposer,
+          $$ClipCategoriesTableOrderingComposer,
+          $$ClipCategoriesTableAnnotationComposer,
+          $$ClipCategoriesTableCreateCompanionBuilder,
+          $$ClipCategoriesTableUpdateCompanionBuilder,
+          (
+            ClipCategoryRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ClipCategoriesTable,
+              ClipCategoryRow
+            >,
+          ),
+          ClipCategoryRow,
+          PrefetchHooks Function()
+        > {
+  $$ClipCategoriesTableTableManager(
+    _$AppDatabase db,
+    $ClipCategoriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ClipCategoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ClipCategoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ClipCategoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> orderIndex = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ClipCategoriesCompanion(
+                id: id,
+                name: name,
+                orderIndex: orderIndex,
+                createdAt: createdAt,
+                ownerPubkey: ownerPubkey,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<int> orderIndex = const Value.absent(),
+                required DateTime createdAt,
+                Value<String?> ownerPubkey = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ClipCategoriesCompanion.insert(
+                id: id,
+                name: name,
+                orderIndex: orderIndex,
+                createdAt: createdAt,
+                ownerPubkey: ownerPubkey,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ClipCategoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ClipCategoriesTable,
+      ClipCategoryRow,
+      $$ClipCategoriesTableFilterComposer,
+      $$ClipCategoriesTableOrderingComposer,
+      $$ClipCategoriesTableAnnotationComposer,
+      $$ClipCategoriesTableCreateCompanionBuilder,
+      $$ClipCategoriesTableUpdateCompanionBuilder,
+      (
+        ClipCategoryRow,
+        BaseReferences<_$AppDatabase, $ClipCategoriesTable, ClipCategoryRow>,
+      ),
+      ClipCategoryRow,
       PrefetchHooks Function()
     >;
 typedef $$DirectMessagesTableCreateCompanionBuilder =
@@ -25059,6 +25801,8 @@ class $AppDatabaseManager {
       $$DraftsTableTableManager(_db, _db.drafts);
   $$ClipsTableTableManager get clips =>
       $$ClipsTableTableManager(_db, _db.clips);
+  $$ClipCategoriesTableTableManager get clipCategories =>
+      $$ClipCategoriesTableTableManager(_db, _db.clipCategories);
   $$DirectMessagesTableTableManager get directMessages =>
       $$DirectMessagesTableTableManager(_db, _db.directMessages);
   $$DmMessageReactionsTableTableManager get dmMessageReactions =>

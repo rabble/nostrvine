@@ -4054,10 +4054,6 @@
   "@libraryStopSelectingClipsSemanticLabel": {
     "description": "Accessibility label for the library toolbar button that exits clip-selection mode."
   },
-  "libraryOpenTrashSemanticLabel": "Open recently deleted clips",
-  "@libraryOpenTrashSemanticLabel": {
-    "description": "Accessibility label for the library toolbar button that opens the recently deleted clips screen."
-  },
   "librarySortClipsSemanticLabel": "Sort clips",
   "@librarySortClipsSemanticLabel": {
     "description": "Accessibility label for the library toolbar button that opens clip sorting options."
@@ -5251,10 +5247,6 @@
   "videoRecorderClipUndoLabel": "Undo",
   "@videoRecorderClipUndoLabel": {
     "description": "Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray."
-  },
-  "libraryTrashTitle": "Recently deleted",
-  "@libraryTrashTitle": {
-    "description": "Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window."
   },
   "libraryTrashEmptyTitle": "Trash is empty",
   "@libraryTrashEmptyTitle": {
@@ -7305,5 +7297,145 @@
   "generalSettingsSectionIdentity": "Identity",
   "@generalSettingsSectionIdentity": {
     "description": "Section header in General settings above the entry that opens the verified-accounts screen."
+  },
+  "libraryFilterAll": "All",
+  "@libraryFilterAll": {
+    "description": "Clip library filter chip showing every clip that is neither archived nor deleted."
+  },
+  "libraryFilterArchive": "Archive",
+  "@libraryFilterArchive": {
+    "description": "Clip library filter chip that shows archived clips. Noun label, not an imperative action."
+  },
+  "libraryFilterDeleted": "Deleted",
+  "@libraryFilterDeleted": {
+    "description": "Clip library filter chip that opens the trash view for recently deleted clips."
+  },
+  "libraryCategoryNewChipLabel": "New",
+  "@libraryCategoryNewChipLabel": {
+    "description": "Short chip label that creates a new clip-library category."
+  },
+  "libraryCategoryCreateSemanticLabel": "Create a category",
+  "@libraryCategoryCreateSemanticLabel": {
+    "description": "Accessibility label for the chip that creates a new clip-library category."
+  },
+  "libraryCategoryCreateTitle": "New category",
+  "@libraryCategoryCreateTitle": {
+    "description": "Title of the bottom sheet for naming a new clip-library category."
+  },
+  "libraryCategoryCreateAction": "Create",
+  "@libraryCategoryCreateAction": {
+    "description": "Button label that confirms creating a new clip-library category."
+  },
+  "libraryCategoryRenameTitle": "Rename category",
+  "@libraryCategoryRenameTitle": {
+    "description": "Title of the bottom sheet for renaming a clip-library category."
+  },
+  "libraryCategoryRenameAction": "Rename",
+  "@libraryCategoryRenameAction": {
+    "description": "Button or menu label that starts or confirms renaming a clip-library category."
+  },
+  "libraryCategoryDeleteAction": "Delete category",
+  "@libraryCategoryDeleteAction": {
+    "description": "Destructive menu action that deletes only the category, not the clips inside it."
+  },
+  "libraryCategoryNameLabel": "Category name",
+  "@libraryCategoryNameLabel": {
+    "description": "Text-field label for the user's own clip-library category name."
+  },
+  "libraryCategoryDeleteConfirmTitle": "Delete “{name}”?",
+  "@libraryCategoryDeleteConfirmTitle": {
+    "description": "Confirmation title before deleting a user-created clip-library category.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryCategoryDeleteConfirmMessage": "Your clips stay put. They just move back to All.",
+  "@libraryCategoryDeleteConfirmMessage": {
+    "description": "Explains that deleting a category keeps the clips and removes their category assignment."
+  },
+  "libraryCategoryManageSemanticLabel": "Rename or delete this category",
+  "@libraryCategoryManageSemanticLabel": {
+    "description": "Accessibility label for the toolbar button that manages the active clip-library category."
+  },
+  "libraryCategoryMoveTitle": "Move to",
+  "@libraryCategoryMoveTitle": {
+    "description": "Title of the sheet for filing selected clips into a category, archiving them, or removing their category."
+  },
+  "libraryCategoryMoveNone": "No category",
+  "@libraryCategoryMoveNone": {
+    "description": "Move-sheet option that removes selected clips from any user-created category."
+  },
+  "libraryCategoryMoveNewCategory": "New category",
+  "@libraryCategoryMoveNewCategory": {
+    "description": "Move-sheet option that creates a new category before filing the selected clips into it."
+  },
+  "libraryArchiveAction": "Archive",
+  "@libraryArchiveAction": {
+    "description": "Move-sheet action that archives selected clips out of the main library view."
+  },
+  "libraryUnarchiveAction": "Unarchive",
+  "@libraryUnarchiveAction": {
+    "description": "Move-sheet action that brings selected archived clips back into the main library view."
+  },
+  "libraryMoveSelectedClipsTooltip": "Move selected clips",
+  "@libraryMoveSelectedClipsTooltip": {
+    "description": "Accessibility label for the toolbar button that opens the selected-clips move sheet."
+  },
+  "libraryCategoryEmptyTitle": "Nothing filed here yet",
+  "@libraryCategoryEmptyTitle": {
+    "description": "Empty-state title for a user-created category that has no clips."
+  },
+  "libraryCategoryEmptySubtitle": "Select a few clips and move them into this category.",
+  "@libraryCategoryEmptySubtitle": {
+    "description": "Empty-state subtitle for a user-created category that has no clips."
+  },
+  "libraryArchiveEmptyTitle": "Nothing archived",
+  "@libraryArchiveEmptyTitle": {
+    "description": "Empty-state title for the archive filter when no clips are archived."
+  },
+  "libraryArchiveEmptySubtitle": "Archived clips wait here, out of the way of your main library.",
+  "@libraryArchiveEmptySubtitle": {
+    "description": "Empty-state subtitle for the archive filter when no clips are archived."
+  },
+  "libraryClipsMovedToCategory": "{count, plural, =1{1 clip moved to {name}} other{{count} clips moved to {name}}}",
+  "@libraryClipsMovedToCategory": {
+    "description": "Snackbar after selected clips are filed into a user-created category.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryClipsRemovedFromCategory": "{count, plural, =1{1 clip removed from its category} other{{count} clips removed from their category}}",
+  "@libraryClipsRemovedFromCategory": {
+    "description": "Snackbar after selected clips are removed from their user-created category.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryClipsArchived": "{count, plural, =1{1 clip archived} other{{count} clips archived}}",
+  "@libraryClipsArchived": {
+    "description": "Snackbar after selected clips are archived out of the main library view.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryClipsUnarchived": "{count, plural, =1{1 clip back in your library} other{{count} clips back in your library}}",
+  "@libraryClipsUnarchived": {
+    "description": "Snackbar after selected archived clips are returned to the main library view.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

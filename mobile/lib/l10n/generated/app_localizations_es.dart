@@ -6519,10 +6519,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Dejar de seleccionar clips';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Abrir clips eliminados recientemente';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Ordenar clips';
 
   @override
@@ -8640,9 +8636,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Deshacer';
-
-  @override
-  String get libraryTrashTitle => 'Eliminados recientemente';
 
   @override
   String get libraryTrashEmptyTitle => 'La papelera está vacía';
@@ -11979,4 +11972,126 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Identidad';
+
+  @override
+  String get libraryFilterAll => 'Todos';
+
+  @override
+  String get libraryFilterArchive => 'Archivo';
+
+  @override
+  String get libraryFilterDeleted => 'Eliminados';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Nueva';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Crear una categoría';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Nueva categoría';
+
+  @override
+  String get libraryCategoryCreateAction => 'Crear';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Cambiar el nombre de la categoría';
+
+  @override
+  String get libraryCategoryRenameAction => 'Cambiar nombre';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Eliminar categoría';
+
+  @override
+  String get libraryCategoryNameLabel => 'Nombre de la categoría';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return '¿Eliminar «$name»?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Tus clips se quedan. Solo vuelven a Todos.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Cambiar el nombre o eliminar esta categoría';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Mover a';
+
+  @override
+  String get libraryCategoryMoveNone => 'Sin categoría';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Nueva categoría';
+
+  @override
+  String get libraryArchiveAction => 'Archivar';
+
+  @override
+  String get libraryUnarchiveAction => 'Desarchivar';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Mover los clips seleccionados';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Aquí todavía no hay nada';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Selecciona algunos clips y muévelos a esta categoría.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Nada archivado';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Los clips archivados esperan aquí, fuera de tu biblioteca principal.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips movidos a $name',
+      one: '1 clip movido a $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips fuera de su categoría',
+      one: '1 clip fuera de su categoría',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips archivados',
+      one: '1 clip archivado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips de vuelta en tu biblioteca',
+      one: '1 clip de vuelta en tu biblioteca',
+    );
+    return '$_temp0';
+  }
 }
