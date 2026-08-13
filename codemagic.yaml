@@ -1,5 +1,5 @@
 # ABOUTME: Codemagic CI/CD configuration for Divine mobile app builds.
-# ABOUTME: Configured for iOS and Android builds with manual triggering only.
+# ABOUTME: Store builds are manual. e2e-smoke-ios runs on PRs that touch mobile/.
 
 # Steps to setup:
 # 1 - Create the Codemagic project with access to the repository.
