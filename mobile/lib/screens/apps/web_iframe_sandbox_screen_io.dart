@@ -1,5 +1,5 @@
 // ABOUTME: Native-platform stub for the web iframe sandbox screen.
-// ABOUTME: Conditional import keeps dart:html / dart:ui_web off non-web builds.
+// ABOUTME: Conditional import keeps package:web / dart:ui_web off non-web builds.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';

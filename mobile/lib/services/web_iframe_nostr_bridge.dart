@@ -50,7 +50,7 @@ class WebIframeNostrBridge {
   bool _started = false;
 
   /// Hook for tests to drive the bridge with synthesized messages without
-  /// depending on a real `dart:html` `Window`. Not used in production.
+  /// depending on a real browser `Window`. Not used in production.
   @visibleForTesting
   Future<void> handleMessageForTest({
     required String origin,
