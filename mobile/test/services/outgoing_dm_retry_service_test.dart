@@ -2063,8 +2063,9 @@ void main() {
       // the transport bound as a literal because it cannot import
       // `keycast_flutter`, so re-tuning one side without the other fails here
       // rather than silently under-sizing the build. #7092 moved the transport
-      // bound 30s → 20s; `recipientWrapBuild` deliberately held at 65s, so the
-      // margin over the floor widened from 5s to 25s.
+      // bound 30s → 20s, dropping the floor 65s → 45s while
+      // `recipientWrapBuild` deliberately held at 65s, so its margin over the
+      // floor widened from 0s to 20s.
       expect(
         DmSendBudget.boundedSignerFloor,
         KeycastRpc.defaultRequestTimeout * 2 + const Duration(seconds: 5),
