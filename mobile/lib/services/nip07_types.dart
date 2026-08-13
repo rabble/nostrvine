@@ -14,7 +14,10 @@ class NostrExtension {
     throw UnsupportedError('NIP-07 only available on web');
   }
 
-  /// Get the user's relays (optional NIP-07 extension).
+  /// Get the user's relays.
+  ///
+  /// De facto legacy: removed from NIP-07 in nostr-protocol/nips#1779
+  /// (2025-02-14), but Alby and nos2x still ship it.
   Future<Map<String, dynamic>>? getRelays() {
     throw UnsupportedError('NIP-07 only available on web');
   }

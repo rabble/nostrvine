@@ -124,11 +124,12 @@ void main() {
     test(
       'getRelays returns null when the extension does not expose relays',
       () async {
-        when(() => mockService.userRelays).thenReturn(null);
+        when(() => mockService.loadUserRelays()).thenAnswer((_) async => null);
 
         final adapter = Nip07SignerAdapter(mockService);
 
         expect(await adapter.getRelays(), isNull);
+        verify(() => mockService.loadUserRelays()).called(1);
       },
     );
 

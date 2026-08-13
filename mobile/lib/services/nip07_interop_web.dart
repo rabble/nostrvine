@@ -2,6 +2,7 @@
 // ABOUTME: Binds window.nostr (Alby, nos2x, Nostore, ...) to NostrExtension.
 
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 import 'package:openvine/services/nip07_types.dart';
 
@@ -70,6 +71,9 @@ class _WebNostrExtension implements NostrExtension {
 
   @override
   Future<Map<String, dynamic>>? getRelays() {
+    // getRelays is a de facto legacy extension method; probe before calling
+    // because invoking an undefined JS member throws a TypeError.
+    if (!_js.has('getRelays')) return null;
     final promise = _js.getRelays();
     if (promise == null) return null;
     return _getRelaysAsync(promise);

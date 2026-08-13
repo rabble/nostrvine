@@ -28,7 +28,7 @@ class Nip07SignerAdapter implements NostrSigner {
   }
 
   @override
-  Future<Map?> getRelays() async => _service.userRelays;
+  Future<Map?> getRelays() async => _service.loadUserRelays();
 
   @override
   Future<String?> encrypt(String pubkey, String plaintext) =>
