@@ -13,6 +13,7 @@ import 'package:patrol/patrol.dart';
 
 import '../helpers/db_helpers.dart';
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 AppLocalizations get _en => lookupAppLocalizations(const Locale('en'));
@@ -30,6 +31,8 @@ Finder _pinField() => find.descendant(
 );
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Email verification PIN fallback', () {
     // Requires a keycast image with the verify-pin endpoint + the
     // oauth_codes.pin_hash migration (keycast#262). Until ghcr:latest rebuilds

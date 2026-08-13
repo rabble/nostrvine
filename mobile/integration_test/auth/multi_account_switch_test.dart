@@ -16,6 +16,7 @@ import '../helpers/db_helpers.dart';
 import '../helpers/http_helpers.dart';
 import '../helpers/invite_helpers.dart';
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 /// Dismiss the Android notification permission dialog if it appears.
@@ -35,6 +36,8 @@ Future<void> dismissNotificationPermission(PatrolIntegrationTester $) async {
 }
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Multi-account switching', () {
     patrolTest(
       'Keycast A → Keycast B → switch back to A succeeds',

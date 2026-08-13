@@ -9,7 +9,11 @@ import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:patrol/patrol.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'helpers/patrol_semantics.dart';
+
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('migrateLegacyNostrKeys on Device', () {
     late SecureKeyStorage storage;
 

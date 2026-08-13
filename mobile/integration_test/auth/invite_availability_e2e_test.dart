@@ -19,11 +19,14 @@ import 'package:patrol/patrol.dart';
 import '../helpers/invite_admin_helpers.dart';
 import '../helpers/invite_helpers.dart';
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 AppLocalizations get _en => lookupAppLocalizations(const Locale('en'));
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   Future<void> restoreOpenMode() async {
     await setInviteOnboardingMode('open');
   }

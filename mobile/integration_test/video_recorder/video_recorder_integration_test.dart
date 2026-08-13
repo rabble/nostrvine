@@ -14,6 +14,8 @@ import 'package:openvine/services/video_recorder/camera/camera_base_service.dart
 import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
 
+import '../helpers/patrol_semantics.dart';
+
 /// Helper widget that wraps VideoRecorderScreen with required providers
 Widget _buildTestWidget() {
   return ProviderScope(
@@ -44,6 +46,8 @@ Future<void> _grantPermissions(PatrolIntegrationTester $) async {
 }
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Video Recorder Integration Tests', () {
     late CameraService cameraService;
 

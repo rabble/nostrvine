@@ -6,9 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:patrol/patrol.dart';
 
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('App Background / State Restoration', () {
     patrolTest(
       'app state is preserved after backgrounding and reopening',

@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:patrol/patrol.dart';
 
+import '../helpers/patrol_semantics.dart';
+
 /// A small 32x32 RGB JPEG with GPS EXIF data (Berlin coordinates).
 /// Generated via Pillow + piexif. Only ~1 KB so it can live inline.
 const _testImageBase64 =
@@ -84,6 +86,8 @@ bool _containsGpsIfd(Uint8List bytes) {
 }
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('ImageMetadataStripper Integration Tests', () {
     late Directory tempDir;
     late Uint8List fixtureBytes;

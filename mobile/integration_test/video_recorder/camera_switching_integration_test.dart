@@ -8,6 +8,8 @@ import 'package:openvine/services/video_recorder/camera/camera_base_service.dart
 import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
 
+import '../helpers/patrol_semantics.dart';
+
 /// Grant camera and microphone permissions via Patrol native automation.
 Future<void> _grantPermissions(PatrolIntegrationTester $) async {
   const service = PermissionHandlerPermissionsService();
@@ -26,6 +28,8 @@ Future<void> _grantPermissions(PatrolIntegrationTester $) async {
 }
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Camera Switching Integration Tests', () {
     late CameraService cameraService;
 

@@ -9,7 +9,11 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
 
+import '../helpers/patrol_semantics.dart';
+
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Camera Permission Denied', () {
     patrolTest(
       'shows fallback UI when camera permission is denied',

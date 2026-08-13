@@ -14,9 +14,12 @@ import 'package:patrol/patrol.dart';
 
 import '../helpers/db_helpers.dart';
 import '../helpers/navigation_helpers.dart';
+import '../helpers/patrol_semantics.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
+  ignorePlatformSemanticsHandle();
+
   group('Token Refresh', () {
     final testEmail =
         'refresh-${DateTime.now().millisecondsSinceEpoch}@test.divine.video';
