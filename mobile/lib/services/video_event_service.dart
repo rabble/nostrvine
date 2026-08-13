@@ -2378,6 +2378,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           sortBy: sortBy,
         );
 
+        // Disposed while the cache read was in flight, so dispose has already
+        // closed this load's trace. Carrying on would notify a dead
+        // ChangeNotifier and wire a relay subscription the teardown sweep has
+        // already passed, leaving nothing to cancel it.
+        if (_isDisposed) {
+          _pendingSubscriptionIds.remove(subscriptionId);
+          return;
+        }
+
         // 🎯 CACHE DEBUG: Log cached event details
         if (cachedEvents.isNotEmpty &&
             subscriptionType == SubscriptionType.discovery) {

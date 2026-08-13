@@ -500,6 +500,42 @@ void main() {
         },
       );
 
+      test(
+        'disposed: cached events resolve after the service is gone',
+        () async {
+          // The cache read is the await a dispose races with. Resolving it
+          // afterwards ran the cache-first notifyListeners on a dead
+          // ChangeNotifier, which the load then swallowed as its own failure.
+          final cacheRead = Completer<List<Event>>();
+          when(
+            () => mockNostrEventsDao.getEventsByFilter(
+              any(),
+              sortBy: any(named: 'sortBy'),
+            ),
+          ).thenAnswer((_) => cacheRead.future);
+
+          unawaited(
+            videoEventService.subscribeToVideoFeed(
+              subscriptionType: SubscriptionType.profile,
+              authors: ['a' * 64],
+            ),
+          );
+          await pumpEventQueue();
+
+          videoEventService.dispose();
+          cacheRead.complete([_cachedVideoEvent()]);
+          await pumpEventQueue();
+
+          expect(videoEventService.error, isNull);
+          _expectSingleCompletion(
+            performanceMonitor,
+            traceName: 'feed_load_profile',
+            completion: 'disposed',
+            eventCount: 0,
+          );
+        },
+      );
+
       test('setup_error: creating the relay subscription throws', () async {
         withEmptyCache();
         when(
