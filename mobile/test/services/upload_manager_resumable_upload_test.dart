@@ -774,6 +774,7 @@ void main() {
     late UploadManager uploadManager;
     late Directory tempDir;
     late File videoFile;
+    late PathProviderPlatform originalPathProviderInstance;
 
     setUp(() async {
       await TestHelpers.cleanupHiveBox('pending_uploads');
@@ -782,6 +783,12 @@ void main() {
       tempDir = await Directory.systemTemp.createTemp(
         'upload_manager_reusable_',
       );
+      originalPathProviderInstance = PathProviderPlatform.instance;
+      PathProviderPlatform.instance = MockPathProviderPlatform()
+        ..setTemporaryPath(tempDir.path)
+        ..setApplicationDocumentsPath('${tempDir.path}/documents')
+        ..setApplicationSupportPath('${tempDir.path}/support');
+      await TestHelpers.initHiveHome();
       videoFile = File('${tempDir.path}/video.mp4')
         ..writeAsBytesSync(List<int>.generate(32, (index) => index));
 
@@ -797,6 +804,7 @@ void main() {
 
     tearDown(() async {
       uploadManager.dispose();
+      PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
