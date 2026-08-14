@@ -900,6 +900,26 @@ class VineTheme {
   /// video content (caption pills, floating popups, etc.).
   static const Color shadow25 = Color(0x40000000);
 
+  /// Figma `effects/shadow-15` drop-shadow color (15% black), the softer
+  /// half of the [depth1] pair.
+  static const Color shadow15 = Color(0x26000000);
+
+  /// Figma `depth 1` elevation: the drop-shadow pair that lifts a floating
+  /// surface (snackbar, popup) off the page.
+  ///
+  /// Unlike [buttonBoxShadows] — an inward emboss — this is a genuine outward
+  /// shadow, so it must be painted on a [DecoratedBox] outside any [Material]
+  /// that would clip it.
+  static const List<BoxShadow> depth1 = [
+    BoxShadow(color: shadow25, offset: Offset(0, 1), blurRadius: 3),
+    BoxShadow(
+      color: shadow15,
+      offset: Offset(0, 4),
+      blurRadius: 8,
+      spreadRadius: 3,
+    ),
+  ];
+
   /// Figma `effects/shadow-10` drop-shadow pair, for use in
   /// [TextStyle.shadows] on text overlaid on video content or other
   /// bright surfaces (caption block, action-button labels, feed-mode
@@ -1005,7 +1025,10 @@ class VineTheme {
     disabled: onSurfaceDisabled,
     skeleton: skeletonBase,
     errorContainer: errorContainer,
-    onErrorContainer: likeRed,
+    // Was `likeRed` — a like-button colour the error surfaces had borrowed,
+    // frozen there so the constant-to-token migration stayed pixel-neutral.
+    // Figma's `error/error` lifts the pairing from 4.15:1 to 4.65:1.
+    onErrorContainer: error,
     accentPositive: vineGreen,
     accentWarning: accentOrange,
     inverseSurface: inverseSurface,
@@ -1092,9 +1115,7 @@ class VineTheme {
       primarySwatch: _createMaterialColor(vineGreen),
       primaryColor: vineGreen,
       colorScheme: scheme,
-      progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: scheme.primary,
-      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       scaffoldBackgroundColor: colors.background,
       extensions: <ThemeExtension<dynamic>>[colors],
       appBarTheme: AppBarTheme(

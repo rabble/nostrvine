@@ -56,14 +56,17 @@ void main() {
       expect(color, isNot(VineTheme.likeRed));
     });
 
-    testWidgets('destructive row is byte-identical on dark', (tester) async {
+    testWidgets('destructive row tracks the dark error token', (tester) async {
       await openOwnCommentSheet(tester, VineTheme.theme);
 
-      // The dark palette defines onErrorContainer as likeRed itself, so dark
-      // rendering must not move.
+      // This pinned `likeRed` byte-for-byte while the constant-to-token
+      // migration needed dark to stay pixel-neutral. #7147 retired that
+      // invariant by moving `onErrorContainer` onto Figma's `error/error`,
+      // so what is worth holding now is that the row follows the token
+      // rather than a constant of its own.
       final color = deleteLabelColor(tester);
-      expect(color, VineTheme.likeRed);
       expect(color, VineTheme.darkColors.onErrorContainer);
+      expect(color, isNot(VineTheme.likeRed));
     });
   });
 }
