@@ -6,6 +6,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_volume_mute_toggle.dart';
@@ -73,6 +74,18 @@ class _PlayPauseButton extends StatelessWidget {
     final isPlaying = context.select(
       (VideoEditorMainBloc b) => b.state.isPlaying,
     );
+    final isPlayerReady = context.select(
+      (VideoEditorMainBloc b) => b.state.isPlayerReady,
+    );
+    // A frames-only stop-motion composition has no mp4, so the canvas never
+    // creates a native player and `isPlayerReady` stays false forever. Its
+    // playback runs off the canvas's own ticker, which the toggle handler
+    // branches to before any readiness check — so the button must not wait on
+    // a player that will never exist.
+    final isStopMotion = context.select(
+      (ClipEditorBloc b) => isStopMotionComposition(b.state.clips),
+    );
+    final canTogglePlayback = isPlayerReady || isStopMotion;
 
     return DivineIconButton(
       icon: isPlaying ? .pauseFill : .playFill,
@@ -81,9 +94,11 @@ class _PlayPauseButton extends StatelessWidget {
       semanticLabel: isPlaying
           ? context.l10n.videoEditorPauseSemanticLabel
           : context.l10n.videoEditorPlaySemanticLabel,
-      onPressed: () => context.read<VideoEditorMainBloc>().add(
-        const VideoEditorPlaybackToggleRequested(),
-      ),
+      onPressed: canTogglePlayback
+          ? () => context.read<VideoEditorMainBloc>().add(
+              const VideoEditorPlaybackToggleRequested(),
+            )
+          : null,
     );
   }
 }

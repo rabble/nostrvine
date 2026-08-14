@@ -447,6 +447,29 @@ class DivineVideoPlayerInstanceTest {
     }
 
     @Test
+    fun `setClips timeout completes pending result with NOT_READY error`() {
+        capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        val scheduled = slot<Runnable>()
+        every {
+            mockHandler.postDelayed(capture(scheduled), 10_000L)
+        } returns true
+
+        instance.onMethodCall(setClipsCall(), result)
+
+        scheduled.captured.run()
+
+        verify(exactly = 1) {
+            result.error(
+                "NOT_READY",
+                "setClips timed out before player reached STATE_READY",
+                null,
+            )
+        }
+        verify(exactly = 0) { result.success(any()) }
+    }
+
+    @Test
     fun `onPlayerError completes pending setClips result with error`() {
         val listener = capturePlayerListener()
         val result = mockk<MethodChannel.Result>(relaxed = true)

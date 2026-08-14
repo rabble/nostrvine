@@ -358,6 +358,30 @@ void main() {
       },
     );
 
+    test('returns false for a NOT_READY timeout from the native player', () {
+      expect(
+        VideoEditorCanvas.guardClipLoad(
+          () async => throw PlatformException(
+            code: 'NOT_READY',
+            message: 'setClips timed out before player reached STATE_READY',
+          ),
+        ),
+        completion(isFalse),
+      );
+    });
+
+    test('returns false for a PLAYER_ERROR from the native player', () {
+      expect(
+        VideoEditorCanvas.guardClipLoad(
+          () async => throw PlatformException(
+            code: 'PLAYER_ERROR',
+            message: 'Decoder failed while loading clips.',
+          ),
+        ),
+        completion(isFalse),
+      );
+    });
+
     test('rethrows a non-platform error so genuine bugs still surface', () {
       // A programming-invariant violation (StateError/ArgumentError) is not a
       // composition rejection — it must propagate so it reaches Crashlytics
@@ -370,21 +394,43 @@ void main() {
       );
     });
 
-    test('rethrows non-composition platform errors', () {
+    test('rethrows unexpected platform errors', () {
       expect(
         VideoEditorCanvas.guardClipLoad(
           () async => throw PlatformException(
-            code: 'PLAYER_ERROR',
-            message: 'Decoder failed while loading clips.',
+            code: 'INVALID_ARGS',
+            message: 'clips list required',
           ),
         ),
         throwsA(
           isA<PlatformException>().having(
             (error) => error.code,
             'code',
-            'PLAYER_ERROR',
+            'INVALID_ARGS',
           ),
         ),
+      );
+    });
+  });
+
+  group('VideoEditorCanvas.shouldPublishClipLoad', () {
+    test('publishes the active clip load generation', () {
+      expect(
+        VideoEditorCanvas.shouldPublishClipLoad(
+          generation: 3,
+          currentGeneration: 3,
+        ),
+        isTrue,
+      );
+    });
+
+    test('rejects a superseded clip load generation', () {
+      expect(
+        VideoEditorCanvas.shouldPublishClipLoad(
+          generation: 3,
+          currentGeneration: 4,
+        ),
+        isFalse,
       );
     });
   });
