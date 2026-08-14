@@ -271,9 +271,14 @@ class WebSocketConnectionManager {
 
   void _handleDisconnect() {
     _stopHeartbeat();
-    _channelSubscription?.cancel();
-    _channelSubscription = null;
-    _channel = null;
+
+    // Must close the sink, not just drop the reference: the idle heartbeat
+    // and checkHealth() tear down a *live* socket, and cancelling the stream
+    // subscription alone leaves the underlying connection open forever.
+    // Fire-and-forget because every caller is a stream or timer callback with
+    // nowhere to await into; _closeChannel detaches _channel before its first
+    // await, so a reconnect racing this close keeps its fresh channel.
+    unawaited(_closeChannel());
 
     _setState(ConnectionState.disconnected);
     // No automatic reconnection - reconnect happens on-demand when sending
@@ -295,13 +300,17 @@ class WebSocketConnectionManager {
     _channelSubscription?.cancel();
     _channelSubscription = null;
 
-    if (_channel != null) {
-      try {
-        await _channel!.sink.close();
-      } catch (e) {
-        log('Error closing channel: $e');
-      }
-      _channel = null;
+    // Detach before the first await so callers that do not await this future
+    // cannot have a later _doConnect's channel nulled out when the close
+    // finally completes.
+    final channel = _channel;
+    _channel = null;
+    if (channel == null) return;
+
+    try {
+      await channel.sink.close();
+    } catch (e) {
+      log('Error closing channel: $e');
     }
   }
 
