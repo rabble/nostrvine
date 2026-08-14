@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/io_client.dart';
@@ -33,6 +34,29 @@ final RegExp _webHelperCacheFilePattern = RegExp(
   '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}'
   r'-[0-9a-fA-F]{12}\.[A-Za-z0-9]+$',
 );
+
+/// Longest sanitized cache key kept as the readable head of a cache
+/// filename. `NAME_MAX` — the byte limit for a single path component — is
+/// 255 on APFS, ext4 and f2fs, and `File.openWrite` fails with
+/// `ENAMETOOLONG` past it. Proxied image URLs routinely run past 230
+/// characters, and the image cache keys on the raw URL, so the sanitized key
+/// has to be capped rather than trusted. The cap leaves room for the
+/// `_<microseconds>_<seq><ext>` suffix under every value those three parts
+/// can take.
+const int _maxSanitizedKeyLength = 160;
+
+/// Hex characters of the key digest appended when a sanitized key is
+/// shortened, so two keys sharing a long prefix still land on distinct
+/// filenames.
+const int _keyDigestLength = 16;
+
+/// Matches an extension [MediaCacheManager] will carry over from a URL.
+/// Percent-encoded origin URLs embedded in image-proxy paths decode to
+/// segments whose "extension" is an arbitrarily long tail (`.png?v=2`), which
+/// neither describes a container nor matches [_managedCacheFilePattern].
+/// Anything outside this shape falls back to
+/// [MediaCacheConfig.defaultExtension].
+final RegExp _usableExtensionPattern = RegExp(r'^\.[A-Za-z0-9]{1,10}$');
 
 /// Untracked files younger than this are never reclaimed. Covers the window
 /// where a download settled after the sweep's snapshots were taken (its store
@@ -931,15 +955,41 @@ class MediaCacheManager extends CacheManager {
   /// cache key plus a monotonic counter and timestamp so concurrent
   /// downloads of the same key cannot collide on disk.
   ///
-  /// Non-filesystem-safe characters (slashes, colons, `?`, Unicode, etc.) in
-  /// [key] are replaced with `_` so the path never creates unintended
-  /// sub-directories or fails on `File.openWrite`.
+  /// The result always fits within `NAME_MAX`: the key contributes at most
+  /// [_maxSanitizedKeyLength] characters and the extension at most 10, so
+  /// even a 20-digit timestamp and a 19-digit counter leave the name well
+  /// short of 255 bytes.
   String _relativePathFor(String key, String url) {
-    final safeKey = key.replaceAll(RegExp('[^A-Za-z0-9._-]'), '_');
+    final safeKey = _sanitizedKeyFor(key);
     final ext = _extensionFor(url);
     final seq = ++_downloadSeq;
     final ts = DateTime.now().microsecondsSinceEpoch;
     return '${safeKey}_${ts}_$seq$ext';
+  }
+
+  /// Renders [key] as the readable head of a cache filename.
+  ///
+  /// Non-filesystem-safe characters (slashes, colons, `?`, Unicode, etc.) are
+  /// replaced with `_` so the path never creates unintended sub-directories.
+  /// A key past [_maxSanitizedKeyLength] — every image cached under a long
+  /// proxied URL — keeps as much of its head as fits and ends in a digest of
+  /// the full key, so distinct keys cannot be shortened onto the same name.
+  ///
+  /// Only the filename changes: cache lookups resolve through the stored
+  /// `CacheObject.relativePath`, never by recomputing this from the key, so
+  /// entries written before the cap stay reachable.
+  String _sanitizedKeyFor(String key) {
+    final safeKey = key.replaceAll(RegExp('[^A-Za-z0-9._-]'), '_');
+    if (safeKey.length <= _maxSanitizedKeyLength) return safeKey;
+    final digest = sha256
+        .convert(utf8.encode(key))
+        .toString()
+        .substring(0, _keyDigestLength);
+    final head = safeKey.substring(
+      0,
+      _maxSanitizedKeyLength - _keyDigestLength - 1,
+    );
+    return '${head}_$digest';
   }
 
   String _extensionFor(String url) {
@@ -947,7 +997,7 @@ class MediaCacheManager extends CacheManager {
       final uri = Uri.parse(url);
       final last = uri.pathSegments.isEmpty ? '' : uri.pathSegments.last;
       final ext = path.extension(last);
-      if (ext.isNotEmpty) return ext;
+      if (_usableExtensionPattern.hasMatch(ext)) return ext;
     } on Object catch (_) {
       // Fall through to default.
     }
