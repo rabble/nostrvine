@@ -132,6 +132,11 @@ Widget _buildHarness({
 /// for a deactivated root navigator, which resolves the same way only in
 /// release builds — under asserts an ancestor lookup on a deactivated element
 /// throws instead of returning null.
+///
+/// Both ancestors are dropped together on purpose. `MaterialApp` nests
+/// `Localizations` *above* `ScaffoldMessenger`, so a root context that
+/// resolves the messenger but not l10n cannot occur; either the tree is
+/// healthy or a deactivated element nulls out both lookups at once.
 Widget _buildHarnessWithoutAppAncestors({
   required _MockBackgroundPublishBloc publishBloc,
   required _MockAuthService authService,
@@ -445,8 +450,8 @@ void main() {
     );
 
     testWidgets(
-      'buffers the success when the root context has no localization '
-      'ancestor, then replays it once the ancestors appear',
+      'buffers the success when the root context resolves neither app '
+      'ancestor, then replays it once they appear',
       (tester) async {
         stubPublishBloc(const BackgroundPublishState());
         when(() => authService.isAuthenticated).thenReturn(true);
