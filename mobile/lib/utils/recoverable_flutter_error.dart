@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:openvine/utils/expected_network_error.dart';
 
 const _recoverableMediaLoadReason = 'Recoverable media load failure';
 const _recoverableHeroFlightReason = 'Recoverable hero flight layout failure';
+const _expectedNetworkFailureReason = 'Expected network failure';
 const _recoverableMediaHosts = <String>{
   'media.divine.video',
   'cdn.divine.video',
@@ -18,12 +20,11 @@ typedef RecoverableFlutterError = ({
 
   /// Whether the error is still worth a non-fatal Crashlytics report.
   ///
-  /// `false` where the error carries nothing actionable. The decision
-  /// matrix in `.claude/rules/error_handling.md` puts IO failures outside
-  /// Crashlytics, but only the download-without-file branch is silenced so
-  /// far (#7298) — the other recoverable IO signatures still report, and
-  /// widening that is a separate call. The error is logged and presented
-  /// either way.
+  /// `false` where the error carries nothing actionable. The currently
+  /// silenced branches are the download-without-file media-cache failure
+  /// (#7298) and expected DNS failures (#7290). Other recoverable IO
+  /// signatures still report, and widening that is a separate call. The error
+  /// is logged and presented either way.
   bool report,
 });
 
@@ -61,6 +62,13 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
           context.contains('image codec') ||
           context.contains('image resource'));
 
+  if (isExpectedNetworkFailure(details.exception)) {
+    return (reason: _expectedNetworkFailureReason, report: false);
+  }
+
+  // DNS failures are handled above by the typed expected-network predicate.
+  // This string fallback stays intentionally reportable so non-DNS media-host
+  // socket failures, including descriptor-lifecycle bugs, keep their signal.
   final isMediaHostLookup =
       error.contains('SocketException') && hasRecoverableMediaHost;
 
