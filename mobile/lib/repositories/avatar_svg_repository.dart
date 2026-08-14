@@ -193,13 +193,25 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
   /// [parseEvents] is lazy, so the events have to be drained here. Stopping at
   /// the root element would report malformed markup further down the document
   /// as valid and hand the failure back to flutter_svg.
+  ///
+  /// The open-element stack mirrors `SvgParser.endElement`, which reads
+  /// `_parentDrawables.last` with no empty check: an end element outside the
+  /// root throws `StateError: No element` there. Popping only on a name match
+  /// is what makes this the consumer's rule rather than a nesting check —
+  /// `<svg><g></g></g></svg>` keeps a non-empty stack and stays accepted,
+  /// because flutter_svg does not pop on a mismatch either.
   bool _parsesAsSvg(Uint8List bytes) {
     final source = utf8.decode(bytes, allowMalformed: true);
+    final openElements = <String>[];
     String? rootName;
     try {
       for (final event in parseEvents(source)) {
-        if (rootName == null && event is XmlStartElementEvent) {
-          rootName = event.localName;
+        if (event is XmlStartElementEvent) {
+          rootName ??= event.localName;
+          if (!event.isSelfClosing) openElements.add(event.name);
+        } else if (event is XmlEndElementEvent) {
+          if (openElements.isEmpty) return false;
+          if (openElements.last == event.name) openElements.removeLast();
         }
       }
     } on XmlException {

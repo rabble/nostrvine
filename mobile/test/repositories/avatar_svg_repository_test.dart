@@ -99,6 +99,53 @@ void main() {
     expect(repository.load(url), completion(isNull));
   });
 
+  test('rejects an end element sitting after the root element', () {
+    // `SvgParser.endElement` reads `_parentDrawables.last` with no empty
+    // check, so an end element outside the root throws `StateError: No
+    // element` and escapes as the same orphaned future as a tokenizer
+    // failure. Tokenizing alone does not catch this — only the document
+    // structure does.
+    final repository = repositoryFor(
+      http.Response(
+        '$svgOpenTag<rect width="10" height="10"/></svg></foo>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('rejects an end element sitting before the root element', () {
+    final repository = repositoryFor(
+      http.Response(
+        '</foo>$svgOpenTag<rect width="10" height="10"/></svg>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('accepts an unbalanced end element inside the root', () async {
+    // Only trips a debug `assert` in `vector_graphics_compiler`, and
+    // flutter_svg never pops on a name mismatch, so the drawable stack cannot
+    // underflow here. Rejecting it would blank an avatar that renders.
+    final unbalanced = Uint8List.fromList(
+      utf8.encode('$svgOpenTag<g></g></g></svg>'),
+    );
+    final repository = repositoryFor(
+      http.Response.bytes(
+        unbalanced,
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    await expectLater(repository.load(url), completion(unbalanced));
+  });
+
   test('rejects well-formed XML whose root element is not svg', () {
     final repository = repositoryFor(
       http.Response(
