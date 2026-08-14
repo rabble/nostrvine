@@ -148,14 +148,38 @@ bool _nullableBoolMapEquals(
 class VideoEvent {
   // approved, flagged, etc.
 
-  const VideoEvent({
+  /// Normalizes the free-text fields to well-formed UTF-16.
+  ///
+  /// Same display boundary as the `UserProfile` constructor: note content and
+  /// titles arrive as remote relay text, and a lone surrogate anywhere in
+  /// them throws `Invalid argument(s): string is not well-formed UTF-16` out
+  /// of the native paragraph builder. The [displayContent] / [displayTitle]
+  /// getters below still apply the combining-character cap for rendering,
+  /// but they cannot be the crash boundary on their own because callers
+  /// legitimately read the raw fields too — `VideoPerformance.fromVideo`
+  /// renders `title` straight from the model, and measurement passes never
+  /// reach a display getter at all.
+  ///
+  /// [content] and [altText] are round-tripped back to relays on the
+  /// metadata-edit and subtitle-republish paths, so sanitizing them does
+  /// rewrite what gets re-signed. That is deliberate: `Event._getId` runs
+  /// `json.encode` before `utf8.encode`, and that escapes an unpaired
+  /// surrogate as the six literal characters `\ud83d` rather than
+  /// substituting for it, so what we re-sign today re-poisons every client
+  /// that parses it back. The combining-character cap is a different case —
+  /// it would rewrite valid text a user typed — and stays on the display
+  /// getters for that reason.
+  ///
+  /// Identifier, URL, and tag fields are left untouched — they are either hex
+  /// (`id`, `pubkey`, `sha256`) or structural.
+  VideoEvent({
     required this.id,
     required this.pubkey,
     required this.createdAt,
-    required this.content,
+    required String content,
     required this.timestamp,
     this.eventCreatedAt,
-    this.title,
+    String? title,
     this.videoUrl,
     this.thumbnailUrl,
     this.duration,
@@ -170,7 +194,7 @@ class VideoEvent {
     this.vineId,
     this.addressableDTag,
     this.group,
-    this.altText,
+    String? altText,
     this.blurhash,
     this.isRepost = false,
     this.reposterId,
@@ -189,7 +213,7 @@ class VideoEvent {
     this.nostrLikeCount,
     this.nostrCommentCount,
     this.nostrRepostCount,
-    this.authorName,
+    String? authorName,
     this.authorAvatar,
     this.collaboratorPubkeys = const [],
     this.inspiredByVideo,
@@ -205,7 +229,10 @@ class VideoEvent {
     this.proofSummary,
     this.eventKind,
     this.sourceRelay,
-  });
+  }) : content = sanitizeUtf16(content),
+       title = sanitizeUtf16OrNull(title),
+       altText = sanitizeUtf16OrNull(altText),
+       authorName = sanitizeUtf16OrNull(authorName);
 
   /// Reconstructs a [VideoEvent] from a map produced by [toJson].
   ///

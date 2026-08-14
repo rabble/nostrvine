@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:characters/characters.dart';
 import 'package:models/models.dart' as models;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -10,6 +11,7 @@ import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 typedef VideoClipDownloader =
@@ -223,11 +225,28 @@ class VideoClipImportService {
     return null;
   }
 
+  /// Caps an imported clip title, counting grapheme clusters rather than
+  /// UTF-16 code units.
+  ///
+  /// Cutting by code unit splits a surrogate pair whenever the limit lands
+  /// mid-emoji, leaving a lone surrogate that later throws
+  /// `Invalid argument(s): string is not well-formed UTF-16` out of the text
+  /// renderer — i.e. it makes us the source of the malformed text rather than
+  /// the relay. Grapheme-cluster truncation also keeps combining marks
+  /// attached to their base character.
+  ///
+  /// The incoming value is sanitized as well, because `_subtitleTitle` feeds
+  /// this from `VideoEvent.textTrackContent` — the one source here that no
+  /// model-level display boundary covers, since `SubtitleService.parseVtt`
+  /// carries a relay-served cue through verbatim.
   static String? _normalizedTitle(String? value) {
-    final trimmed = value?.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final trimmed = sanitizeUtf16OrNull(
+      value,
+    )?.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (trimmed == null || trimmed.isEmpty) return null;
-    if (trimmed.length <= 80) return trimmed;
-    return '${trimmed.substring(0, 77).trimRight()}...';
+    final graphemes = trimmed.characters;
+    if (graphemes.length <= 80) return trimmed;
+    return '${graphemes.take(77).toString().trimRight()}...';
   }
 
   static String _fallbackTitle(DateTime time) {

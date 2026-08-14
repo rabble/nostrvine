@@ -41,6 +41,14 @@ String sanitizeUtf16(String text) {
   return result?.toString() ?? text;
 }
 
+/// Null-tolerant [sanitizeUtf16] for optional fields.
+///
+/// Returns `null` unchanged; otherwise delegates to [sanitizeUtf16]. Intended
+/// for model constructors that normalize a batch of nullable remote-sourced
+/// text fields in one initializer list.
+String? sanitizeUtf16OrNull(String? text) =>
+    text == null ? null : sanitizeUtf16(text);
+
 /// Normalizes malformed UTF-16 and caps combining diacritical characters per
 /// grapheme cluster to prevent Zalgo text from overflowing layout bounds.
 ///

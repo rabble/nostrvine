@@ -58,6 +58,113 @@ void main() {
       });
     });
 
+    group('UTF-16 well-formedness at the display boundary (#7295)', () {
+      // The bio is the field that had no sanitized display getter, so it
+      // reached `TextPainter.layout` raw from the profile header's
+      // expand/collapse measurement pass and threw
+      // "string is not well-formed UTF-16" out of the paragraph builder.
+      test('replaces lone surrogates in every free-text field', () {
+        final lone = String.fromCharCode(0xDE00);
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          name: 'n$lone',
+          displayName: 'd$lone',
+          about: 'a$lone',
+          picture: 'p$lone',
+          banner: 'b$lone',
+          website: 'w$lone',
+          nip05: 'i$lone',
+          lud16: 'l$lone',
+          lud06: 'u$lone',
+        );
+
+        expect(profile.name, equals('n�'));
+        expect(profile.displayName, equals('d�'));
+        expect(profile.about, equals('a�'));
+        expect(profile.picture, equals('p�'));
+        expect(profile.banner, equals('b�'));
+        expect(profile.website, equals('w�'));
+        expect(profile.nip05, equals('i�'));
+        expect(profile.lud16, equals('l�'));
+        expect(profile.lud06, equals('u�'));
+      });
+
+      test('sanitizes a lone surrogate arriving via fromNostrEvent', () {
+        final event = Event(
+          testPubkey,
+          EventKind.metadata,
+          [],
+          jsonEncode({
+            'about': 'truncated emoji${String.fromCharCode(0xD83D)}',
+            'display_name': 'Bad${String.fromCharCode(0xD83D)}Name',
+          }),
+          createdAt: 1704067200,
+        )..id = testEventId;
+
+        final profile = UserProfile.fromNostrEvent(event);
+
+        expect(profile.about, equals('truncated emoji�'));
+        expect(profile.displayName, equals('Bad�Name'));
+      });
+
+      test('sanitizes a lone surrogate arriving via fromJson', () {
+        final profile = UserProfile.fromJson({
+          'pubkey': testPubkey,
+          'event_id': testEventId,
+          'created_at': testCreatedAt.millisecondsSinceEpoch,
+          'about': 'json${String.fromCharCode(0xDC00)}bio',
+        });
+
+        expect(profile.about, equals('json�bio'));
+      });
+
+      test('keeps copyWith output well-formed', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        ).copyWith(about: 'copy${String.fromCharCode(0xD83D)}bio');
+
+        expect(profile.about, equals('copy�bio'));
+      });
+
+      // Only well-formedness is enforced here. Capping combining marks at
+      // construction would rewrite the user's own bio when the profile editor
+      // seeds from this model and republishes, so Zalgo stays display-only.
+      test('preserves valid emoji and stacked diacritics verbatim', () {
+        const bio = 'hi \u{1F600} o\u0300\u0301\u0302\u0303 done';
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          about: bio,
+        );
+
+        expect(profile.about, equals(bio));
+      });
+
+      // rawData carries the original kind-0 bytes for republishing and must
+      // not be rewritten by the display-side normalization.
+      test('leaves rawData untouched', () {
+        final malformed = 'raw${String.fromCharCode(0xD83D)}';
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: {'about': malformed},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          about: malformed,
+        );
+
+        expect(profile.rawData['about'], equals(malformed));
+        expect(profile.about, equals('raw�'));
+      });
+    });
+
     group('fromNostrEvent', () {
       test('parses valid kind 0 event', () {
         final event = Event(
