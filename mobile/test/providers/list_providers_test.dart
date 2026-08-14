@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -496,6 +497,83 @@ void main() {
     });
   });
 
+  // Regression: an `async*` provider body does not start until the returned
+  // stream is listened to, so a provider that is invalidated (pull-to-refresh)
+  // or unmounted (screen dismissed) first would reach its `ref.watch` /
+  // `ref.read` on an already-disposed Ref and throw
+  // "Cannot use the Ref … after it has been disposed" (#6274, #7294).
+  group('Ref lifecycle on immediate disposal (#7294)', () {
+    _MockVideoEventService buildVideoEventService() {
+      final video = _video(id: _allowedVideoId, pubkey: _ownerA);
+      final videoEventService = _MockVideoEventService();
+      when(() => videoEventService.discoveryVideos).thenReturn(const []);
+      when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+      when(() => videoEventService.profileVideos).thenReturn(const []);
+      when(
+        () => videoEventService.getVideoById(_allowedVideoId),
+      ).thenReturn(video);
+      when(() => videoEventService.shouldHideVideo(video)).thenReturn(false);
+      return videoEventService;
+    }
+
+    test(
+      '$videoEventsByIdsProvider abandons its fetch without touching Ref',
+      () async {
+        final videoEventService = buildVideoEventService();
+        final container = ProviderContainer(
+          overrides: [
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final provider = videoEventsByIdsProvider([_allowedVideoId]);
+
+        final uncaughtErrors = await _captureUncaughtErrors(() async {
+          final subscription = container.listen(provider, (_, _) {});
+          container.invalidate(provider);
+          subscription.close();
+          await Future<void>.delayed(Duration.zero);
+        });
+
+        expect(uncaughtErrors, isEmpty);
+        // The work is abandoned, not merely silent: nothing reads the cache
+        // on behalf of a provider that no longer exists.
+        verifyNever(() => videoEventService.getVideoById(any()));
+      },
+    );
+
+    test(
+      '$curatedListVideoEventsProvider abandons its fetch without touching Ref',
+      () async {
+        const listId = 'curated-list-disposed';
+        final videoEventService = buildVideoEventService();
+        final container = ProviderContainer(
+          overrides: [
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            curatedListVideosProvider(
+              listId,
+            ).overrideWith((ref) => [_allowedVideoId]),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final provider = curatedListVideoEventsProvider(listId);
+
+        final uncaughtErrors = await _captureUncaughtErrors(() async {
+          final subscription = container.listen(provider, (_, _) {});
+          container.invalidate(provider);
+          subscription.close();
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        });
+
+        expect(uncaughtErrors, isEmpty);
+        verifyNever(() => videoEventService.getVideoById(any()));
+      },
+    );
+  });
+
   group(publicCuratedListProvider, () {
     test(
       'fetches once and does not re-run when the lists state re-emits',
@@ -566,4 +644,30 @@ class _StubCuratedListsState extends CuratedListsState {
   Future<List<CuratedList>> build() async => [];
 
   void reEmit() => state = const AsyncValue.data(<CuratedList>[]);
+}
+
+/// Collects everything that escapes [body] as an unhandled error — both
+/// zone-level async errors and `FlutterError.onError` reports.
+///
+/// A disposed-Ref access surfaces this way rather than as a thrown exception
+/// at the call site, so an `expect(..., isEmpty)` on the result is what makes
+/// the lifecycle regression above visible.
+Future<List<Object>> _captureUncaughtErrors(
+  Future<void> Function() body,
+) async {
+  final errors = <Object>[];
+  final previousFlutterError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    errors.add(details.exception);
+  };
+
+  try {
+    await runZonedGuarded(body, (error, _) {
+      errors.add(error);
+    });
+  } finally {
+    FlutterError.onError = previousFlutterError;
+  }
+
+  return errors;
 }

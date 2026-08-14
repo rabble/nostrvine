@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart' show NostrClient;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -13,6 +14,8 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
+import 'package:openvine/services/video_event_service.dart'
+    show VideoEventService;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -157,15 +160,55 @@ Future<List<String>> curatedListVideos(Ref ref, String listId) async {
   return service?.getOrderedVideoIds(listId) ?? [];
 }
 
+/// Provider reads that stop once the owning provider is torn down.
+///
+/// An `async*` provider body does not start until the returned stream is
+/// listened to, and it keeps running for a moment after Riverpod tears the
+/// provider down — so any `Ref` touched across one of its `await`s can land on
+/// a dead `Ref` and throw "Cannot use the Ref … after it has been disposed"
+/// (#6274, #7294). Bundling the reads here keeps the `async*` helpers below
+/// free of `Ref` entirely.
+///
+/// The flag cannot be replaced by `ref.mounted`: `invalidateSelf` runs
+/// `onDispose` immediately but only *schedules* the rebuild, so `ref.mounted`
+/// still reports `true` while the old body is running against a `Ref` that is
+/// already being torn down. Pull-to-refresh takes exactly that path, and the
+/// two disposal tests in `list_providers_test.dart` fail against `ref.mounted`.
+///
+/// A `null` return means the body abandons its work rather than fetching on
+/// behalf of something nobody is listening to any more.
+class _LiveDeps {
+  _LiveDeps(this._ref) {
+    _ref.onDispose(() => _torndown = true);
+  }
+
+  final Ref _ref;
+  bool _torndown = false;
+
+  VideoEventService? get videoEventService =>
+      _torndown ? null : _ref.read(videoEventServiceProvider);
+
+  NostrClient? get nostrClient =>
+      _torndown ? null : _ref.read(nostrServiceProvider);
+}
+
 /// Provider for videos from all members of a user list
+///
+/// The body is a plain function so every `Ref` read happens synchronously
+/// during `build` — see [_LiveDeps] for why an `async*` body cannot
+/// touch `Ref`.
 @riverpod
-Stream<List<VideoEvent>> userListMemberVideos(
-  Ref ref,
-  List<String> pubkeys,
-) async* {
+Stream<List<VideoEvent>> userListMemberVideos(Ref ref, List<String> pubkeys) {
   // Watch discovery videos and filter to only those from list members
   final allVideosAsync = ref.watch(videoEventsProvider);
 
+  return _userListMemberVideos(allVideosAsync, pubkeys);
+}
+
+Stream<List<VideoEvent>> _userListMemberVideos(
+  AsyncValue<List<VideoEvent>> allVideosAsync,
+  List<String> pubkeys,
+) async* {
   await for (final _ in Stream.value(null)) {
     if (allVideosAsync.hasValue) {
       final allVideos = allVideosAsync.value!;
@@ -247,8 +290,14 @@ Future<CuratedList?> publicCuratedList(
 
 /// Provider that fetches actual VideoEvent objects for a curated list
 /// Streams videos as they are fetched from cache or relays
+///
+/// `Ref` is either read synchronously in `build` or guarded by [_LiveDeps] —
+/// this provider is the one that matters most, because
+/// `curated_list_feed_screen` calls
+/// `ref.invalidate(curatedListVideoEventsProvider(listId))` on pull-to-refresh,
+/// which disposes the previous build while it is still awaiting relays.
 @riverpod
-Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
+Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) {
   // Re-run (and therefore re-filter) when the blocklist changes. Broad changes
   // (account switch / identity adoption, relay-synced blocked-by-others,
   // mute-list recovery) bump this version but emit no granular removed-id
@@ -256,6 +305,20 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
   // blocked author without a manual refresh (#5104).
   ref.watch(blocklistVersionProvider);
 
+  return _curatedListVideoEvents(
+    listId: listId,
+    // Watched (not awaited) here so the dependency is registered during build;
+    // the future itself is awaited inside the helper below.
+    videoIdsFuture: ref.watch(curatedListVideosProvider(listId).future),
+    live: _LiveDeps(ref),
+  );
+}
+
+Stream<List<VideoEvent>> _curatedListVideoEvents({
+  required String listId,
+  required Future<List<String>> videoIdsFuture,
+  required _LiveDeps live,
+}) async* {
   Log.info(
     '📋 Fetching videos for curated list: $listId',
     name: 'CuratedListVideoEvents',
@@ -263,7 +326,7 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
   );
 
   // Get the video IDs from the curated list
-  final videoIds = await ref.watch(curatedListVideosProvider(listId).future);
+  final videoIds = await videoIdsFuture;
 
   if (videoIds.isEmpty) {
     Log.info(
@@ -303,8 +366,12 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
     category: LogCategory.video,
   );
 
-  // First check cache via video event service
-  final videoEventService = ref.read(videoEventServiceProvider);
+  // First check cache via video event service. Null means the provider was
+  // disposed while awaiting the list — abandon the fetch instead of reading a
+  // dead Ref (#7294).
+  final videoEventService = live.videoEventService;
+  if (videoEventService == null) return;
+
   final foundVideos = <VideoEvent>[];
   final missingIds = <String>[];
   final missingCoords = <String>[];
@@ -388,8 +455,6 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
       category: LogCategory.video,
     );
 
-    final nostrService = ref.read(nostrServiceProvider);
-
     // Build filters for missing videos
     final filters = <Filter>[];
 
@@ -411,8 +476,12 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
       }
     }
 
+    // Null once the provider is disposed — see the cache lookup above.
+    final nostrClient = live.nostrClient;
+    if (nostrClient == null) return;
+
     if (filters.isNotEmpty) {
-      final eventStream = nostrService.subscribe(filters);
+      final eventStream = nostrClient.subscribe(filters);
       final seenIds = foundVideos.map((v) => v.id.toLowerCase()).toSet();
 
       await for (final event in eventStream) {
@@ -462,15 +531,22 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
 
 /// Provider that fetches VideoEvent objects directly from a list of video IDs
 /// Use this for discovered lists that aren't in local storage
+///
+/// The body is a plain function, and the reads it needs after an `await` go
+/// through [_LiveDeps] — see there for why an `async*` body cannot touch `Ref`.
 @riverpod
-Stream<List<VideoEvent>> videoEventsByIds(
-  Ref ref,
-  List<String> videoIds,
-) async* {
+Stream<List<VideoEvent>> videoEventsByIds(Ref ref, List<String> videoIds) {
   // Re-run (and therefore re-filter) when the blocklist changes — broad changes
   // bump this version but emit no granular removed-id signal (#5104).
   ref.watch(blocklistVersionProvider);
 
+  return _videoEventsByIds(videoIds: videoIds, live: _LiveDeps(ref));
+}
+
+Stream<List<VideoEvent>> _videoEventsByIds({
+  required List<String> videoIds,
+  required _LiveDeps live,
+}) async* {
   Log.info(
     '📋 Fetching ${videoIds.length} videos by IDs',
     name: 'VideoEventsByIds',
@@ -504,8 +580,12 @@ Stream<List<VideoEvent>> videoEventsByIds(
     category: LogCategory.video,
   );
 
-  // First check cache via video event service
-  final videoEventService = ref.read(videoEventServiceProvider);
+  // First check cache via video event service. Null means the provider was
+  // disposed while this body was suspended — abandon the fetch instead of
+  // reading a dead Ref (#7294).
+  final videoEventService = live.videoEventService;
+  if (videoEventService == null) return;
+
   final foundVideos = <VideoEvent>[];
   final missingIds = <String>[];
   final missingCoords = <String>[];
@@ -598,8 +678,6 @@ Stream<List<VideoEvent>> videoEventsByIds(
       category: LogCategory.video,
     );
 
-    final nostrService = ref.read(nostrServiceProvider);
-
     // Build filters for missing videos
     final filters = <Filter>[];
 
@@ -621,8 +699,12 @@ Stream<List<VideoEvent>> videoEventsByIds(
       }
     }
 
+    // Null once the provider is disposed — see the cache lookup above.
+    final nostrClient = live.nostrClient;
+    if (nostrClient == null) return;
+
     if (filters.isNotEmpty) {
-      final eventStream = nostrService.subscribe(filters);
+      final eventStream = nostrClient.subscribe(filters);
       final seenIds = foundVideos.map((v) => v.id.toLowerCase()).toSet();
 
       await for (final event in eventStream) {
