@@ -43,7 +43,9 @@ class HelpClassifyActionButton extends ConsumerWidget {
     final repository = ref.watch(communityContentLabelRepositoryProvider);
     final myPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
     if (repository == null || myPubkey == null || myPubkey.isEmpty) {
-      return const SizedBox.shrink();
+      // Visibility with visible: false doesn't take up layout space,
+      // preventing a permanent 40px gap in Column(spacing: 20).
+      return const Visibility(visible: false);
     }
 
     return VideoActionButton(
