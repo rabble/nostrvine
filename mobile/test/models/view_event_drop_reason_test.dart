@@ -8,6 +8,7 @@ void main() {
   group(ViewEventDropReason, () {
     test('expected skips are not structural', () {
       expect(ViewEventDropReason.notAuthenticated.isStructural, isFalse);
+      expect(ViewEventDropReason.nonAddressableVideoKind.isStructural, isFalse);
       expect(ViewEventDropReason.relayRejected.isStructural, isFalse);
     });
 

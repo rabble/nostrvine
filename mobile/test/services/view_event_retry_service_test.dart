@@ -44,6 +44,7 @@ void main() {
       String eventVideoPubkey = videoPubkey,
       DateTime? createdAt,
       String? addressableDTag = 'd-tag',
+      int? videoEventKind = NIP71VideoKinds.addressableShortVideo,
       String? eventVideoId,
       String? videoVineId,
     }) {
@@ -53,6 +54,7 @@ void main() {
         videoPubkey: eventVideoPubkey,
         videoVineId: videoVineId ?? 'vine-$id',
         videoAddressableDTag: addressableDTag,
+        videoEventKind: videoEventKind,
         userPubkey: userPubkey,
         watchDurationMs: watchDurationMs,
         totalDurationMs: 6000,
@@ -138,6 +140,7 @@ void main() {
       // Without this the publisher skips on a null addressableId, which is
       // what made every queued view event unpublishable (#7169).
       expect(video.addressableDTag, 'd-tag');
+      expect(video.eventKind, NIP71VideoKinds.addressableShortVideo);
       expect(video.addressableId, isNotNull);
       expect(captured[1], 0);
       expect(captured[2], 2);
@@ -355,42 +358,39 @@ void main() {
       },
     );
 
-    test(
-      'publishes self-views and sub-second partial-loop views',
-      () async {
-        await dao.enqueue(
-          makeEvent(id: 'self-view', eventVideoPubkey: userPubkey),
-        );
-        await dao.enqueue(makeEvent(id: 'short-view', watchDurationMs: 999));
-        final service = makeService();
+    test('publishes self-views and sub-second partial-loop views', () async {
+      await dao.enqueue(
+        makeEvent(id: 'self-view', eventVideoPubkey: userPubkey),
+      );
+      await dao.enqueue(makeEvent(id: 'short-view', watchDurationMs: 999));
+      final service = makeService();
 
-        await service.sweep();
+      await service.sweep();
 
-        expect(await dao.getById('self-view'), isNull);
-        expect(await dao.getById('short-view'), isNull);
-        final captured = verify(
-          () => publisher.publishViewEvent(
-            video: captureAny(named: 'video'),
-            startSeconds: captureAny(named: 'startSeconds'),
-            endSeconds: captureAny(named: 'endSeconds'),
-            source: captureAny(named: 'source'),
-            sourceDetail: captureAny(named: 'sourceDetail'),
-            loopCount: captureAny(named: 'loopCount'),
-          ),
-        ).captured;
-        // Two publishes: self-view + short partial-loop view.
-        expect(captured.length, equals(12));
-        final video = captured[0] as VideoEvent;
-        expect(video.id, 'video-self-view');
-        expect(video.pubkey, userPubkey);
-        expect(video.vineId, 'vine-self-view');
-        expect(captured[1], 0);
-        expect(captured[2], 2);
-        expect(captured[3], ViewTrafficSource.home);
-        expect(captured[4], 'following');
-        expect(captured[5], closeTo(0.416, 0.01));
-      },
-    );
+      expect(await dao.getById('self-view'), isNull);
+      expect(await dao.getById('short-view'), isNull);
+      final captured = verify(
+        () => publisher.publishViewEvent(
+          video: captureAny(named: 'video'),
+          startSeconds: captureAny(named: 'startSeconds'),
+          endSeconds: captureAny(named: 'endSeconds'),
+          source: captureAny(named: 'source'),
+          sourceDetail: captureAny(named: 'sourceDetail'),
+          loopCount: captureAny(named: 'loopCount'),
+        ),
+      ).captured;
+      // Two publishes: self-view + short partial-loop view.
+      expect(captured.length, equals(12));
+      final video = captured[0] as VideoEvent;
+      expect(video.id, 'video-self-view');
+      expect(video.pubkey, userPubkey);
+      expect(video.vineId, 'vine-self-view');
+      expect(captured[1], 0);
+      expect(captured[2], 2);
+      expect(captured[3], ViewTrafficSource.home);
+      expect(captured[4], 'following');
+      expect(captured[5], closeTo(0.416, 0.01));
+    });
 
     test(
       'initialize resets interrupted publishing rows and sweeps on foreground',

@@ -57,6 +57,17 @@ class ViewEventPublisher {
     return false;
   }
 
+  ViewEventDropReason _missingAddressableReason(VideoEvent video) {
+    return switch (video.eventKind) {
+      NIP71VideoKinds.shortVideo || NIP71VideoKinds.normalVideo =>
+        ViewEventDropReason.nonAddressableVideoKind,
+      NIP71VideoKinds.addressableShortVideo ||
+      NIP71VideoKinds.addressableNormalVideo =>
+        ViewEventDropReason.missingAddressableDTag,
+      _ => ViewEventDropReason.missingAddressableDTag,
+    };
+  }
+
   /// Publish a video view event.
   ///
   /// [video] - The video that was viewed
@@ -89,11 +100,7 @@ class ViewEventPublisher {
       // View events require an addressable video reference.
       final aTag = video.addressableId;
       if (aTag == null) {
-        return _drop(
-          ViewEventDropReason.missingAddressableDTag,
-          video.id,
-          method,
-        );
+        return _drop(_missingAddressableReason(video), video.id, method);
       }
 
       // Get relay hint

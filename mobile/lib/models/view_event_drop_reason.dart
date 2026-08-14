@@ -18,6 +18,9 @@ enum ViewEventDropReason {
   /// The video carried no addressable `d` tag, so no `a` tag could be built.
   missingAddressableDTag,
 
+  /// The video kind is not addressable, so it cannot be cited by an `a` tag.
+  nonAddressableVideoKind,
+
   /// Signing returned no event.
   signingFailed,
 
@@ -47,6 +50,7 @@ enum ViewEventDropReason {
     ViewEventDropReason.invalidWatchRange => true,
     ViewEventDropReason.notAuthenticated => false,
     ViewEventDropReason.missingAddressableDTag => true,
+    ViewEventDropReason.nonAddressableVideoKind => false,
     ViewEventDropReason.signingFailed => true,
     ViewEventDropReason.unexpectedError => true,
     ViewEventDropReason.relayRejected => false,

@@ -4,6 +4,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/view_event_drop_reason.dart';
@@ -165,6 +166,92 @@ void main() {
         );
         verifyNever(() => mockNostr.publishEvent(any()));
       });
+
+      test(
+        'classifies kind-22 videos without d tags as expected skips',
+        () async {
+          final drops =
+              <({ViewEventDropReason reason, String videoId, String method})>[];
+          publisher = ViewEventPublisher(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            onDrop:
+                (reason, {required String videoId, required String method}) {
+                  drops.add((reason: reason, videoId: videoId, method: method));
+                },
+          );
+
+          final result = await publisher.publishViewEvent(
+            video: createTestVideoEvent(
+              id: 'regular_video_without_d',
+              pubkey: creatorPubkey,
+              clearAddressableDTag: true,
+              eventKind: NIP71VideoKinds.shortVideo,
+            ),
+            startSeconds: 0,
+            endSeconds: 5,
+          );
+
+          expect(result, isFalse);
+          expect(drops, [
+            (
+              reason: ViewEventDropReason.nonAddressableVideoKind,
+              videoId: 'regular_video_without_d',
+              method: 'publishViewEvent',
+            ),
+          ]);
+          verifyNever(
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'classifies addressable videos without d tags as structural',
+        () async {
+          final drops =
+              <({ViewEventDropReason reason, String videoId, String method})>[];
+          publisher = ViewEventPublisher(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            onDrop:
+                (reason, {required String videoId, required String method}) {
+                  drops.add((reason: reason, videoId: videoId, method: method));
+                },
+          );
+
+          final result = await publisher.publishViewEvent(
+            video: createTestVideoEvent(
+              id: 'addressable_video_without_d',
+              pubkey: creatorPubkey,
+              clearAddressableDTag: true,
+              eventKind: NIP71VideoKinds.addressableShortVideo,
+            ),
+            startSeconds: 0,
+            endSeconds: 5,
+          );
+
+          expect(result, isFalse);
+          expect(drops, [
+            (
+              reason: ViewEventDropReason.missingAddressableDTag,
+              videoId: 'addressable_video_without_d',
+              method: 'publishViewEvent',
+            ),
+          ]);
+          verifyNever(
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
 
       test('publishes event successfully', () async {
         final result = await publisher.publishViewEvent(
