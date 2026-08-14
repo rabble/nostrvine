@@ -30,10 +30,11 @@ class _UpdateDialogListenerState extends State<UpdateDialogListener> {
   ///
   /// The wait exists because `GeoBlockingGate` renders a spinner *in place of*
   /// `MaterialApp` while its check is in flight, and `GeoBlockingService` caps
-  /// that check at 10s. Past this budget the gate has resolved without
-  /// producing an app — a geo-blocked user has no navigator to present into
-  /// and never will get one — so waiting further can only re-arm itself for
-  /// the rest of the session.
+  /// that check at 10s. The budget only bites when frames keep arriving while
+  /// no navigator ever appears: a geo-blocked user shown a static screen in
+  /// place of `MaterialApp` produces no frames, so the retry idles on its own
+  /// rather than re-arming. The 30s bound (3x the 10s check) caps that busy
+  /// case, so it can only ever drop a prompt that had no app to appear in.
   static const _navigatorWaitBudget = Duration(seconds: 30);
 
   ({AppUpdateBloc bloc, AppUpdateState state})? _pending;
