@@ -71,10 +71,13 @@ abstract final class HiveStorageService {
   ///
   /// The legacy home is the documents directory, where `Hive.initFlutter()`
   /// pointed. A split box can hold real writes on both sides, so one file wins
-  /// and the other is deleted — the surviving data lands in the home and
-  /// nothing is left behind to be picked up again. [_homeCopyWins] picks the
-  /// winner and [_boxFile] decides which file holds a side's data. Lock files
-  /// carry no data and are recreated on open, so legacy ones are just removed.
+  /// and the other is deleted — chosen over quarantine because quarantined
+  /// files would become permanent uncleaned orphans, while [_homeCopyWins]
+  /// guards the known empty-file false winner before anything is destroyed.
+  /// The surviving data lands in the home and nothing is left behind to be
+  /// picked up again. [_boxFile] decides which file holds a side's data. Lock
+  /// files carry no data and are recreated on open, so legacy ones are just
+  /// removed.
   ///
   /// A failure here must not block startup: the files stay put and the next
   /// launch tries again.
