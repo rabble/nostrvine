@@ -162,10 +162,13 @@ class VideoEvent {
   ///
   /// [content] and [altText] are round-tripped back to relays on the
   /// metadata-edit and subtitle-republish paths, so sanitizing them does
-  /// rewrite what gets re-signed. That is safe: `Utf8Encoder` substitutes
-  /// U+FFFD for an unpaired surrogate anyway, so the wire bytes are identical
-  /// either way. The combining-character cap is *not* wire-safe and stays on
-  /// the display getters for that reason.
+  /// rewrite what gets re-signed. That is deliberate: `Event._getId` runs
+  /// `json.encode` before `utf8.encode`, and that escapes an unpaired
+  /// surrogate as the six literal characters `\ud83d` rather than
+  /// substituting for it, so what we re-sign today re-poisons every client
+  /// that parses it back. The combining-character cap is a different case —
+  /// it would rewrite valid text a user typed — and stays on the display
+  /// getters for that reason.
   ///
   /// Identifier, URL, and tag fields are left untouched — they are either hex
   /// (`id`, `pubkey`, `sha256`) or structural.

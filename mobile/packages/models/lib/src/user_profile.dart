@@ -37,13 +37,18 @@ class UserProfile {
   /// seeds the new kind-0 content from [rawData] but then overwrites
   /// `display_name`, `about`, `website`, `picture` and `banner` from the
   /// typed model the editor was seeded with — so [rawData] does not shield
-  /// them. That is safe: `Utf8Encoder` substitutes U+FFFD for an unpaired
-  /// surrogate anyway, so the bytes on the wire are the same either way.
+  /// them, and any save that carries the typed value through rewrites what
+  /// is stored. That is the point rather than a cost: `jsonEncode` escapes an
+  /// unpaired surrogate as the six literal characters `\ud83d` instead of
+  /// substituting for it, so the value we publish today re-poisons every
+  /// client that parses it back, and NIP-01 has no conformant representation
+  /// for it either. Sanitizing first stops us being a propagation vector.
   ///
   /// Only well-formedness is enforced here, not the combining-character cap
-  /// that [sanitizeForDisplay] applies. Capping diacritics is *not* wire-safe
-  /// — it would silently rewrite a user's own bio on that republish path — so
-  /// Zalgo capping stays on the display getters.
+  /// that [sanitizeForDisplay] applies. An unpaired surrogate is invalid
+  /// input being repaired; stacked diacritics are valid text a user may have
+  /// typed, and capping those on the republish path would silently rewrite
+  /// their own bio — so Zalgo capping stays on the display getters.
   ///
   /// [pubkey] and [eventId] are hex identifiers and are left untouched, as is
   /// [rawData] itself.
