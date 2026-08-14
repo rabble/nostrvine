@@ -281,21 +281,14 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       widget.userIdHex,
     );
 
-    // Show session expired bottom sheet for non-anonymous users, but only
-    // after the background RPC upgrade has definitively resolved. Showing the
-    // sheet while the silent refresh is still in flight would send the user
-    // to the login screen even when the refresh ultimately succeeds.
-    if (widget.isOwnProfile &&
+    // This is the condition, not the trigger. It stays true while the session
+    // is expired, so _SessionExpiredPromptTrigger owns the edge (#7308).
+    final shouldPromptForExpiredSession =
+        widget.isOwnProfile &&
         !isAnonymous &&
         hasExpiredSession &&
         !isRpcUpgradeInProgress &&
-        !isDivineLoginBannerHidden) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          _showSessionExpiredSheet(context, ref, widget.userIdHex);
-        }
-      });
-    }
+        !isDivineLoginBannerHidden;
 
     // Compute pending profile actions for the avatar badge
     final pendingActions = ProfileActionType.pending(
@@ -320,6 +313,14 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       child: Column(
         mainAxisSize: .min,
         children: [
+          // Zero-sized. Owns *when* the session-expired sheet is presented,
+          // so the header's build stays free of route side effects.
+          _SessionExpiredPromptTrigger(
+            shouldPrompt: shouldPromptForExpiredSession,
+            onPrompt: () =>
+                _showSessionExpiredSheet(context, ref, widget.userIdHex),
+          ),
+
           // Navigation buttons — always visible immediately.
           //
           // These are not reliably over media: a profile with no banner image
@@ -479,7 +480,9 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     return blocProfile;
   }
 
-  void _showSessionExpiredSheet(
+  /// Completes when the sheet is closed, so the caller can tell whether one is
+  /// still on screen.
+  Future<void> _showSessionExpiredSheet(
     BuildContext context,
     WidgetRef ref,
     String userIdHex,
@@ -496,7 +499,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     final publishBloc = context.read<BackgroundPublishBloc>();
     final navigator = Navigator.of(context);
 
-    VineBottomSheetPrompt.show(
+    return VineBottomSheetPrompt.show<void>(
       context: context,
       sticker: DivineStickerName.skeletonKey,
       title: l10n.profileSessionExpired,
@@ -538,6 +541,74 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       body: ProfileActionsSheetContent(actions: actions),
     );
   }
+}
+
+/// Presents the session-expired prompt from condition edges without stacking.
+///
+/// The prompt is a route, and its condition stays true for as long as the
+/// session is expired. Owning the trigger here reduces that repeated signal to
+/// an edge: [initState] covers a header that mounts already expired, and
+/// [didUpdateWidget] ignores rebuilds that merely re-report true (#7308).
+///
+/// The edge alone is not enough to rule out stacking, because one term of the
+/// condition flickers without the session changing: `isRpcUpgradeInProgress`
+/// goes true then false on every app resume while the session is expired
+/// (`AuthService._refreshOAuthTokenOnResume`). That is a real `false -> true`
+/// edge arriving while the first sheet is still on screen, so a presentation
+/// that has not been closed yet also suppresses the next one.
+class _SessionExpiredPromptTrigger extends StatefulWidget {
+  const _SessionExpiredPromptTrigger({
+    required this.shouldPrompt,
+    required this.onPrompt,
+  });
+
+  /// Whether the expired-session prompt currently applies.
+  final bool shouldPrompt;
+
+  /// Presents the prompt. Called from a post-frame callback; the returned
+  /// future completes when the sheet is closed.
+  final Future<void> Function() onPrompt;
+
+  @override
+  State<_SessionExpiredPromptTrigger> createState() =>
+      _SessionExpiredPromptTriggerState();
+}
+
+class _SessionExpiredPromptTriggerState
+    extends State<_SessionExpiredPromptTrigger> {
+  bool _isPresenting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.shouldPrompt) _schedulePrompt();
+  }
+
+  @override
+  void didUpdateWidget(_SessionExpiredPromptTrigger oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.shouldPrompt && !oldWidget.shouldPrompt) _schedulePrompt();
+  }
+
+  /// Deferred to the next frame because pushing a route is not allowed while
+  /// the tree that asked for it is still building.
+  void _schedulePrompt() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Re-checked at the end of the frame: the condition can resolve between
+      // arming and firing — a silent refresh succeeding clears the expiry —
+      // and there is no point prompting for a session that is live again.
+      if (!mounted || _isPresenting || !widget.shouldPrompt) return;
+      _isPresenting = true;
+      try {
+        await widget.onPrompt();
+      } finally {
+        if (mounted) _isPresenting = false;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 /// Centered tip/support pill below the bio.
