@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:unified_logger/unified_logger.dart';
 import 'package:xml/xml.dart';
+import 'package:xml/xml_events.dart';
 
 abstract class AvatarSvgRepository {
   /// Loads and validates a remote avatar SVG.
@@ -109,7 +110,7 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
       return null;
     }
 
-    if (!_isWellFormedSvg(bytes)) {
+    if (!_parsesAsSvg(bytes)) {
       _logRejected(uri, contentType, 'malformed-svg');
       return null;
     }
@@ -176,10 +177,35 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
   bool _isAsciiWhitespace(int byte) =>
       byte == 0x09 || byte == 0x0A || byte == 0x0D || byte == 0x20;
 
-  bool _isWellFormedSvg(Uint8List bytes) {
-    final source = utf8.decode(bytes, allowMalformed: false);
-    final document = XmlDocument.parse(source);
-    return document.rootElement.name.local.toLowerCase() == 'svg';
+  /// Whether [bytes] survive the exact XML pass `flutter_svg` performs, with
+  /// `svg` as the root element.
+  ///
+  /// This mirrors the consumer deliberately: `SvgBytesLoader.provideSvg`
+  /// decodes with `allowMalformed: true`, and `SvgParser` tokenizes with
+  /// `parseEvents` and no nesting or document validation. A stricter check
+  /// rejects avatars flutter_svg renders fine; a laxer one lets a parse
+  /// failure reach flutter_svg, where the call site can no longer catch it —
+  /// `Cache.putIfAbsent` hangs a success-only `then` on the decode future and
+  /// drops the derived future, so the failure also surfaces as an unhandled
+  /// zone error and a Crashlytics non-fatal, even though `errorBuilder`
+  /// already renders the placeholder (#7296).
+  ///
+  /// [parseEvents] is lazy, so the events have to be drained here. Stopping at
+  /// the root element would report malformed markup further down the document
+  /// as valid and hand the failure back to flutter_svg.
+  bool _parsesAsSvg(Uint8List bytes) {
+    final source = utf8.decode(bytes, allowMalformed: true);
+    String? rootName;
+    try {
+      for (final event in parseEvents(source)) {
+        if (rootName == null && event is XmlStartElementEvent) {
+          rootName = event.localName;
+        }
+      }
+    } on XmlException {
+      return false;
+    }
+    return rootName?.toLowerCase() == 'svg';
   }
 
   _AvatarSvgCacheEntry? _readCache(String url) {

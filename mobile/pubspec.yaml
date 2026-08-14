@@ -195,6 +195,9 @@ dependencies:
   share_plus: ^12.0.0 # Cross-platform sharing
   google_fonts: ^6.3.2 # For using Google Fonts including Pacifico
   flutter_svg: ^2.0.10+1 # For custom SVG icons
+  # Pre-flights remote SVG avatars through the same tokenizer flutter_svg uses
+  # before handing bytes to SvgPicture (see AvatarSvgRepository, #7296).
+  xml: ^6.5.0
   skeletonizer: ^2.1.2 # Skeleton loading animations with shimmer effect
 
   # Blurhash Service - Blurhash generation and decoding for image placeholders
@@ -387,7 +390,6 @@ dev_dependencies:
   fake_async: ^1.3.3
   mocktail: ^1.0.3
   bloc_test: ^10.0.0
-  xml: ^6.5.0
 
   # Code generation
   build_runner: ^2.15.0

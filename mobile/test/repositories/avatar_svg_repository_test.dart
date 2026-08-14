@@ -76,6 +76,72 @@ void main() {
     expect(repository.load(url), completion(isNull));
   });
 
+  test('rejects markup that only breaks after the root element', () {
+    // Crashlytics b97ccc46 shape: a well-formed <svg> root on line 1 and an
+    // unterminated tag deep into line 2. A validator that stops once it has
+    // seen the root element accepts this and hands the parse failure to
+    // flutter_svg, where it escapes as an unhandled zone error (#7296).
+    final repository = repositoryFor(
+      http.Response(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">\n'
+        '<path d="M0 0 L1 1" ${'a' * 140} <circle r="1"/>\n'
+        '</svg>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('rejects well-formed XML whose root element is not svg', () {
+    final repository = repositoryFor(
+      http.Response(
+        '<html><body>not an svg</body></html>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('accepts SVG payloads carrying non-UTF-8 bytes', () async {
+    // flutter_svg decodes with `allowMalformed: true`, so a stray Latin-1 byte
+    // renders fine. Rejecting it here would blank an avatar that works.
+    final latin1InText = Uint8List.fromList([
+      ...utf8.encode('<svg xmlns="http://www.w3.org/2000/svg"><text>caf'),
+      0xE9,
+      ...utf8.encode('</text></svg>'),
+    ]);
+    final repository = repositoryFor(
+      http.Response.bytes(
+        latin1InText,
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    await expectLater(repository.load(url), completion(latin1InText));
+  });
+
+  test('accepts mismatched nesting that flutter_svg tolerates', () async {
+    // `SvgParser` calls `parseEvents` without nesting validation, so sloppy
+    // generator output still renders. Only tokenizer failures may be rejected.
+    final mismatched = Uint8List.fromList(
+      utf8.encode('<svg xmlns="http://www.w3.org/2000/svg"><g><rect/></svg>'),
+    );
+    final repository = repositoryFor(
+      http.Response.bytes(
+        mismatched,
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    await expectLater(repository.load(url), completion(mismatched));
+  });
+
   test('rejects non-200 responses', () {
     final repository = repositoryFor(
       http.Response(
