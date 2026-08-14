@@ -10818,7 +10818,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsStorageError => '문제가 발생했습니다';
 
   @override
-  String get settingsStorageMaxSizeLabel => '최대 캐시 크기';
+  String get settingsStorageMaxVideoCacheLabel => '최대 동영상 캐시';
 
   @override
   String settingsStorageApproxVideos(int count) {

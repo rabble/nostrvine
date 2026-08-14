@@ -11408,7 +11408,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsStorageError => 'Algo deu errado';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Tamanho máximo do cache';
+  String get settingsStorageMaxVideoCacheLabel => 'Cache de vídeos máximo';
 
   @override
   String settingsStorageApproxVideos(int count) {

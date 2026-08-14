@@ -11437,7 +11437,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get settingsStorageError => 'Нещо се обърка';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Максимален размер на кеша';
+  String get settingsStorageMaxVideoCacheLabel => 'Максимален кеш за видео';
 
   @override
   String settingsStorageApproxVideos(int count) {

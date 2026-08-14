@@ -73,7 +73,8 @@ class StorageState extends Equatable {
   const StorageState({
     this.cacheStatus = StorageCacheStatus.initial,
     this.cacheSizeBytes = 0,
-    this.cacheLimitBytes = kCacheLimitDefaultBytes,
+    this.cacheUsage = CacheUsage.empty,
+    this.videoCacheLimitBytes = kCacheLimitDefaultBytes,
     this.libraryStatus = StorageLibraryStatus.idle,
     this.brokenClips = const [],
     this.recoveryStatus = StorageRecoveryStatus.idle,
@@ -86,8 +87,11 @@ class StorageState extends Equatable {
   /// Bytes currently held by the clearable caches.
   final int cacheSizeBytes;
 
+  /// Clearable cache usage split by category and matching budget.
+  final CacheUsage cacheUsage;
+
   /// The configured maximum video-cache size, in bytes.
-  final int cacheLimitBytes;
+  final int videoCacheLimitBytes;
 
   /// Lifecycle of the clip-library audit section.
   final StorageLibraryStatus libraryStatus;
@@ -105,7 +109,8 @@ class StorageState extends Equatable {
   StorageState copyWith({
     StorageCacheStatus? cacheStatus,
     int? cacheSizeBytes,
-    int? cacheLimitBytes,
+    CacheUsage? cacheUsage,
+    int? videoCacheLimitBytes,
     StorageLibraryStatus? libraryStatus,
     List<DivineVideoClip>? brokenClips,
     StorageRecoveryStatus? recoveryStatus,
@@ -114,7 +119,8 @@ class StorageState extends Equatable {
     return StorageState(
       cacheStatus: cacheStatus ?? this.cacheStatus,
       cacheSizeBytes: cacheSizeBytes ?? this.cacheSizeBytes,
-      cacheLimitBytes: cacheLimitBytes ?? this.cacheLimitBytes,
+      cacheUsage: cacheUsage ?? this.cacheUsage,
+      videoCacheLimitBytes: videoCacheLimitBytes ?? this.videoCacheLimitBytes,
       libraryStatus: libraryStatus ?? this.libraryStatus,
       brokenClips: brokenClips ?? this.brokenClips,
       recoveryStatus: recoveryStatus ?? this.recoveryStatus,
@@ -127,7 +133,8 @@ class StorageState extends Equatable {
   List<Object?> get props => [
     cacheStatus,
     cacheSizeBytes,
-    cacheLimitBytes,
+    cacheUsage,
+    videoCacheLimitBytes,
     libraryStatus,
     brokenClips,
     recoveryStatus,

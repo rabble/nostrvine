@@ -5032,7 +5032,7 @@
   "settingsStorageRemoveBrokenButton": "壊れたクリップを削除",
   "settingsStorageBrokenClipsRemoved": "壊れたクリップを削除しました",
   "settingsStorageError": "問題が発生しました",
-  "settingsStorageMaxSizeLabel": "最大キャッシュサイズ",
+  "settingsStorageMaxVideoCacheLabel": "最大動画キャッシュ",
   "settingsStorageApproxVideos": "≈ {count} 本の動画",
   "settingsStorageRemoveBrokenConfirmTitle": "壊れたクリップを削除しますか？",
   "settingsStorageRepairSectionTitle": "インストールを修復",

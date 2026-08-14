@@ -18,6 +18,7 @@ import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/temp_render_janitor.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
 import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_progress_reporter.dart';
@@ -451,10 +452,8 @@ class UploadManager implements BackgroundAwareService {
     // that render has gone missing, so it has to re-render rather than
     // dereference a video that was never there.
     //
-    // Each fallback render is a transient mp4 in the app documents dir that no
-    // draft row references. Track the (source, materialized) pairs so they can
-    // be reaped once the upload has consumed them — otherwise every fallback
-    // leaks a full-resolution mp4 that reference cleanup can never discover.
+    // Each fallback render is a transient mp4 in the app documents dir.
+    // Track the pairs so they can be reaped once the upload has consumed them.
     final transientRenders =
         <({DivineVideoClip source, DivineVideoClip materialized})>[];
     Future<DivineVideoClip> materializedSource(DivineVideoClip clip) async {
@@ -483,6 +482,7 @@ class UploadManager implements BackgroundAwareService {
       }
 
       final tempDir = await getTemporaryDirectory();
+      TempRenderJanitor.deleteStaleMergedUploadRenders(tempDir, pendingUploads);
       final mergedPath = path.join(
         tempDir.path,
         'merged_${DateTime.now().microsecondsSinceEpoch}.mp4',

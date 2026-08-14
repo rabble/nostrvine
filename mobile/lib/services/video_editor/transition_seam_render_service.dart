@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:divine_video_player/divine_video_player.dart' as player;
 import 'package:flutter/foundation.dart';
+import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/extensions/divine_video_clip_player_mapping.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
@@ -61,7 +62,7 @@ class TransitionSeamRenderService {
   /// that holds persisted seams and the budget defaults to 200 MB.
   TransitionSeamRenderService({
     @visibleForTesting Future<Directory> Function()? documentsDirectoryProvider,
-    @visibleForTesting int maxSeamCacheBytes = _defaultMaxSeamCacheBytes,
+    @visibleForTesting int maxSeamCacheBytes = kSeamCacheLimitBytes,
   }) : _documentsDirectoryProvider =
            documentsDirectoryProvider ?? getApplicationDocumentsDirectory,
        _maxSeamCacheBytes = maxSeamCacheBytes;
@@ -70,8 +71,6 @@ class TransitionSeamRenderService {
   /// `transition_seams/` directory. Seam files are individually small, but
   /// every distinct trim/transition tweak mints a new one, so without a cap
   /// the directory grows without limit across editor sessions.
-  static const int _defaultMaxSeamCacheBytes = 200 * 1024 * 1024;
-
   final Future<Directory> Function() _documentsDirectoryProvider;
   final int _maxSeamCacheBytes;
 

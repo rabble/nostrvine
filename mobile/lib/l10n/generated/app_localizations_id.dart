@@ -11276,7 +11276,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsStorageError => 'Terjadi kesalahan';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Ukuran cache maksimum';
+  String get settingsStorageMaxVideoCacheLabel => 'Cache video maksimum';
 
   @override
   String settingsStorageApproxVideos(int count) {

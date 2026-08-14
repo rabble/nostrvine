@@ -5032,7 +5032,7 @@
   "settingsStorageRemoveBrokenButton": "Rimuovi clip danneggiate",
   "settingsStorageBrokenClipsRemoved": "Clip danneggiate rimosse",
   "settingsStorageError": "Qualcosa è andato storto",
-  "settingsStorageMaxSizeLabel": "Dimensione massima cache",
+  "settingsStorageMaxVideoCacheLabel": "Cache video massima",
   "settingsStorageApproxVideos": "≈ {count} video",
   "settingsStorageRemoveBrokenConfirmTitle": "Rimuovere le clip danneggiate?",
   "settingsStorageRepairSectionTitle": "Ripara l'installazione",

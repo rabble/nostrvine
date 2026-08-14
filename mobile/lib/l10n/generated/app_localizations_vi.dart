@@ -11309,7 +11309,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsStorageError => 'Có gì đó không ổn';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Dung lượng đệm tối đa';
+  String get settingsStorageMaxVideoCacheLabel => 'Bộ nhớ đệm video tối đa';
 
   @override
   String settingsStorageApproxVideos(int count) {

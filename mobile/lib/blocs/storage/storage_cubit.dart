@@ -39,15 +39,17 @@ class StorageCubit extends Cubit<StorageState> {
     emit(
       state.copyWith(
         cacheStatus: StorageCacheStatus.loading,
-        cacheLimitBytes: _service.cacheLimitBytes(),
+        videoCacheLimitBytes: _service.videoCacheLimitBytes(),
       ),
     );
     try {
-      final bytes = await _service.cacheSizeBytes();
+      final usage = await _service.cacheUsage();
       emit(
         state.copyWith(
           cacheStatus: StorageCacheStatus.ready,
-          cacheSizeBytes: bytes,
+          cacheSizeBytes: usage.totalBytes,
+          cacheUsage: usage,
+          videoCacheLimitBytes: _service.videoCacheLimitBytes(),
         ),
       );
     } catch (error, stackTrace) {
@@ -58,27 +60,28 @@ class StorageCubit extends Cubit<StorageState> {
 
   /// Reflects a slider drag without persisting — keeps the label live while
   /// the user is still choosing.
-  void previewCacheLimit(int bytes) =>
-      emit(state.copyWith(cacheLimitBytes: bytes));
+  void previewVideoCacheLimit(int bytes) =>
+      emit(state.copyWith(videoCacheLimitBytes: bytes));
 
   /// Persists the chosen [bytes] limit, applies it, and refreshes the size
   /// (the cache may have been trimmed). Surfaces a busy status while the
   /// forced trim + re-measure runs so the stale size can't be acted on.
-  Future<void> commitCacheLimit(int bytes) async {
+  Future<void> commitVideoCacheLimit(int bytes) async {
     emit(
       state.copyWith(
         cacheStatus: StorageCacheStatus.loading,
-        cacheLimitBytes: bytes,
+        videoCacheLimitBytes: bytes,
       ),
     );
     try {
-      await _service.setCacheLimit(bytes);
-      final size = await _service.cacheSizeBytes();
+      await _service.setVideoCacheLimit(bytes);
+      final usage = await _service.cacheUsage();
       emit(
         state.copyWith(
           cacheStatus: StorageCacheStatus.ready,
-          cacheSizeBytes: size,
-          cacheLimitBytes: _service.cacheLimitBytes(),
+          cacheSizeBytes: usage.totalBytes,
+          cacheUsage: usage,
+          videoCacheLimitBytes: _service.videoCacheLimitBytes(),
         ),
       );
     } catch (error, stackTrace) {
@@ -92,11 +95,12 @@ class StorageCubit extends Cubit<StorageState> {
     emit(state.copyWith(cacheStatus: StorageCacheStatus.clearing));
     try {
       await _service.clearCaches();
-      final bytes = await _service.cacheSizeBytes();
+      final usage = await _service.cacheUsage();
       emit(
         state.copyWith(
           cacheStatus: StorageCacheStatus.cleared,
-          cacheSizeBytes: bytes,
+          cacheSizeBytes: usage.totalBytes,
+          cacheUsage: usage,
         ),
       );
     } catch (error, stackTrace) {

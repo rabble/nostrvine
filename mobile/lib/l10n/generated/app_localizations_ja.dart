@@ -10790,7 +10790,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsStorageError => '問題が発生しました';
 
   @override
-  String get settingsStorageMaxSizeLabel => '最大キャッシュサイズ';
+  String get settingsStorageMaxVideoCacheLabel => '最大動画キャッシュ';
 
   @override
   String settingsStorageApproxVideos(int count) {

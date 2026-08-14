@@ -11464,7 +11464,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get settingsStorageError => 'May nangyaring mali';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Pinakamataas na laki ng cache';
+  String get settingsStorageMaxVideoCacheLabel =>
+      'Pinakamataas na cache ng video';
 
   @override
   String settingsStorageApproxVideos(int count) {

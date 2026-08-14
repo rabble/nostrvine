@@ -5032,7 +5032,7 @@
   "settingsStorageRemoveBrokenButton": "Elimină clipurile deteriorate",
   "settingsStorageBrokenClipsRemoved": "Clipuri deteriorate eliminate",
   "settingsStorageError": "Ceva n-a mers bine",
-  "settingsStorageMaxSizeLabel": "Dimensiune maximă cache",
+  "settingsStorageMaxVideoCacheLabel": "Cache video maxim",
   "settingsStorageApproxVideos": "≈ {count} videoclipuri",
   "settingsStorageRemoveBrokenConfirmTitle": "Elimini clipurile deteriorate?",
   "settingsStorageRepairSectionTitle": "Repară instalarea",

@@ -5032,7 +5032,7 @@
   "settingsStorageRemoveBrokenButton": "Eliminar clips dañados",
   "settingsStorageBrokenClipsRemoved": "Clips dañados eliminados",
   "settingsStorageError": "Algo salió mal",
-  "settingsStorageMaxSizeLabel": "Tamaño máximo de caché",
+  "settingsStorageMaxVideoCacheLabel": "Caché máxima de videos",
   "settingsStorageApproxVideos": "≈ {count} videos",
   "settingsStorageRemoveBrokenConfirmTitle": "¿Eliminar clips dañados?",
   "settingsStorageRepairSectionTitle": "Reparar instalación",

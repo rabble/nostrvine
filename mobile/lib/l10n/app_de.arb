@@ -5032,7 +5032,7 @@
   "settingsStorageRemoveBrokenButton": "Defekte Clips entfernen",
   "settingsStorageBrokenClipsRemoved": "Defekte Clips entfernt",
   "settingsStorageError": "Etwas ist schiefgelaufen",
-  "settingsStorageMaxSizeLabel": "Maximale Cache-Größe",
+  "settingsStorageMaxVideoCacheLabel": "Maximaler Video-Cache",
   "settingsStorageApproxVideos": "≈ {count} Videos",
   "settingsStorageRemoveBrokenConfirmTitle": "Defekte Clips entfernen?",
   "settingsStorageRepairSectionTitle": "Installation reparieren",

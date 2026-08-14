@@ -246,7 +246,9 @@ class _CacheLimitControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final cubit = context.read<StorageCubit>();
-    final limit = context.select((StorageCubit c) => c.state.cacheLimitBytes);
+    final limit = context.select(
+      (StorageCubit c) => c.state.videoCacheLimitBytes,
+    );
     final clampedBytes = limit.clamp(kCacheLimitMinBytes, kCacheLimitMaxBytes);
     final clamped = clampedBytes.toDouble();
     final approxVideos = clampedBytes ~/ kApproxVideoBytes;
@@ -258,7 +260,7 @@ class _CacheLimitControl extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              l10n.settingsStorageMaxSizeLabel,
+              l10n.settingsStorageMaxVideoCacheLabel,
               style: VineTheme.bodyMediumFont(
                 color: context.vineColors.primaryText,
               ),
@@ -276,8 +278,8 @@ class _CacheLimitControl extends StatelessWidget {
               (kCacheLimitMaxBytes - kCacheLimitMinBytes) ~/
               (512 * 1024 * 1024),
           value: clamped,
-          onChanged: (value) => cubit.previewCacheLimit(value.round()),
-          onChangeEnd: (value) => cubit.commitCacheLimit(value.round()),
+          onChanged: (value) => cubit.previewVideoCacheLimit(value.round()),
+          onChangeEnd: (value) => cubit.commitVideoCacheLimit(value.round()),
         ),
         Text(
           l10n.settingsStorageApproxVideos(approxVideos),
@@ -521,9 +523,7 @@ class _RepairFootprint extends StatelessWidget {
       ),
       StorageRecoveryStatus.measured => Text(
         l10n.settingsStorageRepairFootprint(_formatBytes(bytes)),
-        style: VineTheme.titleMediumFont(
-          color: context.vineColors.primaryText,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       _ => const SizedBox.shrink(),
     };

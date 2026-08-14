@@ -11377,7 +11377,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsStorageError => 'Er ging iets mis';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Maximale cachegrootte';
+  String get settingsStorageMaxVideoCacheLabel => 'Maximale videocache';
 
   @override
   String settingsStorageApproxVideos(int count) {

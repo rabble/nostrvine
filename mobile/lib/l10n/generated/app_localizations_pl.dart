@@ -11543,8 +11543,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get settingsStorageError => 'Coś poszło nie tak';
 
   @override
-  String get settingsStorageMaxSizeLabel =>
-      'Maksymalny rozmiar pamięci podręcznej';
+  String get settingsStorageMaxVideoCacheLabel =>
+      'Maksymalna pamięć podręczna wideo';
 
   @override
   String settingsStorageApproxVideos(int count) {

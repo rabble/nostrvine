@@ -11284,7 +11284,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsStorageError => 'Bir şeyler ters gitti';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Maksimum önbellek boyutu';
+  String get settingsStorageMaxVideoCacheLabel => 'Maksimum video önbelleği';
 
   @override
   String settingsStorageApproxVideos(int count) {

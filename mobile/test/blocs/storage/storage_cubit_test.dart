@@ -32,6 +32,21 @@ void main() {
 
     StorageCubit build() => StorageCubit(service: service);
 
+    // A non-default budget, mirrored by the stubbed `videoCacheLimitBytes`:
+    // `cacheUsage()` builds the video category's limit from that same prefs
+    // read, so the two can never disagree in production.
+    const configuredVideoLimit = 1536 * 1024 * 1024;
+
+    const cacheUsage = CacheUsage(
+      video: CacheUsageCategory(
+        usedBytes: 1024,
+        limitBytes: configuredVideoLimit,
+      ),
+      images: CacheUsageCategory(usedBytes: 512, limitBytes: 4 * 1024),
+      transitionSeams: CacheUsageCategory(usedBytes: 256, limitBytes: 8 * 1024),
+      tempRenders: CacheUsageCategory(usedBytes: 256),
+    );
+
     group('loadCacheSize', () {
       // A non-default saved budget so the failure test proves the limit
       // survives a size-measurement failure rather than resetting to default.
@@ -40,16 +55,21 @@ void main() {
       blocTest<StorageCubit, StorageState>(
         'emits loading then ready with the size',
         setUp: () {
-          when(service.cacheSizeBytes).thenAnswer((_) async => 2048);
-          when(service.cacheLimitBytes).thenReturn(kCacheLimitDefaultBytes);
+          when(service.videoCacheLimitBytes).thenReturn(configuredVideoLimit);
+          when(service.cacheUsage).thenAnswer((_) async => cacheUsage);
         },
         build: build,
         act: (cubit) => cubit.loadCacheSize(),
         expect: () => const [
-          StorageState(cacheStatus: StorageCacheStatus.loading),
+          StorageState(
+            cacheStatus: StorageCacheStatus.loading,
+            videoCacheLimitBytes: configuredVideoLimit,
+          ),
           StorageState(
             cacheStatus: StorageCacheStatus.ready,
             cacheSizeBytes: 2048,
+            cacheUsage: cacheUsage,
+            videoCacheLimitBytes: configuredVideoLimit,
           ),
         ],
       );
@@ -57,19 +77,19 @@ void main() {
       blocTest<StorageCubit, StorageState>(
         'keeps the saved limit and emits failure when sizing throws',
         setUp: () {
-          when(service.cacheLimitBytes).thenReturn(savedLimit);
-          when(service.cacheSizeBytes).thenThrow(Exception('boom'));
+          when(service.videoCacheLimitBytes).thenReturn(savedLimit);
+          when(service.cacheUsage).thenThrow(Exception('boom'));
         },
         build: build,
         act: (cubit) => cubit.loadCacheSize(),
         expect: () => const [
           StorageState(
             cacheStatus: StorageCacheStatus.loading,
-            cacheLimitBytes: savedLimit,
+            videoCacheLimitBytes: savedLimit,
           ),
           StorageState(
             cacheStatus: StorageCacheStatus.failure,
-            cacheLimitBytes: savedLimit,
+            videoCacheLimitBytes: savedLimit,
           ),
         ],
         errors: () => [isA<Exception>()],
@@ -81,7 +101,7 @@ void main() {
         'emits clearing then ready with the refreshed size',
         setUp: () {
           when(service.clearCaches).thenAnswer((_) async {});
-          when(service.cacheSizeBytes).thenAnswer((_) async => 0);
+          when(service.cacheUsage).thenAnswer((_) async => CacheUsage.empty);
         },
         build: build,
         seed: () => const StorageState(cacheSizeBytes: 4096),
@@ -150,34 +170,56 @@ void main() {
       const oneGb = 1024 * 1024 * 1024;
 
       blocTest<StorageCubit, StorageState>(
-        'previewCacheLimit updates the limit without persisting',
+        'previewVideoCacheLimit updates the limit without persisting',
         build: build,
-        act: (cubit) => cubit.previewCacheLimit(oneGb),
-        expect: () => const [StorageState(cacheLimitBytes: oneGb)],
-        verify: (_) => verifyNever(() => service.setCacheLimit(any())),
+        act: (cubit) => cubit.previewVideoCacheLimit(oneGb),
+        expect: () => const [StorageState(videoCacheLimitBytes: oneGb)],
+        verify: (_) => verifyNever(() => service.setVideoCacheLimit(any())),
       );
 
       blocTest<StorageCubit, StorageState>(
-        'commitCacheLimit persists the limit and refreshes the size',
+        'commitVideoCacheLimit persists the limit and refreshes the size',
         setUp: () {
-          when(() => service.setCacheLimit(any())).thenAnswer((_) async {});
-          when(service.cacheSizeBytes).thenAnswer((_) async => 512);
-          when(service.cacheLimitBytes).thenReturn(oneGb);
+          when(
+            () => service.setVideoCacheLimit(any()),
+          ).thenAnswer((_) async {});
+          when(service.cacheUsage).thenAnswer(
+            (_) async => const CacheUsage(
+              video: CacheUsageCategory(usedBytes: 512, limitBytes: oneGb),
+              images: CacheUsageCategory(usedBytes: 0),
+              transitionSeams: CacheUsageCategory(
+                usedBytes: 0,
+                limitBytes: kSeamCacheLimitBytes,
+              ),
+              tempRenders: CacheUsageCategory(usedBytes: 0),
+            ),
+          );
+          when(service.videoCacheLimitBytes).thenReturn(oneGb);
         },
         build: build,
-        act: (cubit) => cubit.commitCacheLimit(oneGb),
+        act: (cubit) => cubit.commitVideoCacheLimit(oneGb),
         expect: () => const [
           StorageState(
             cacheStatus: StorageCacheStatus.loading,
-            cacheLimitBytes: oneGb,
+            videoCacheLimitBytes: oneGb,
           ),
           StorageState(
             cacheStatus: StorageCacheStatus.ready,
-            cacheLimitBytes: oneGb,
+            videoCacheLimitBytes: oneGb,
             cacheSizeBytes: 512,
+            cacheUsage: CacheUsage(
+              video: CacheUsageCategory(usedBytes: 512, limitBytes: oneGb),
+              images: CacheUsageCategory(usedBytes: 0),
+              transitionSeams: CacheUsageCategory(
+                usedBytes: 0,
+                limitBytes: kSeamCacheLimitBytes,
+              ),
+              tempRenders: CacheUsageCategory(usedBytes: 0),
+            ),
           ),
         ],
-        verify: (_) => verify(() => service.setCacheLimit(oneGb)).called(1),
+        verify: (_) =>
+            verify(() => service.setVideoCacheLimit(oneGb)).called(1),
       );
     });
 
@@ -238,10 +280,8 @@ void main() {
 
       blocTest<StorageCubit, StorageState>(
         'recoverFromCorruptedCache emits failure when the wipe reports false',
-        build: () => StorageCubit(
-          service: service,
-          recoverAllCaches: () async => false,
-        ),
+        build: () =>
+            StorageCubit(service: service, recoverAllCaches: () async => false),
         act: (cubit) => cubit.recoverFromCorruptedCache(),
         expect: () => const [
           StorageState(recoveryStatus: StorageRecoveryStatus.recovering),
