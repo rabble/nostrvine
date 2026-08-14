@@ -385,6 +385,12 @@ dev_dependencies:
 
   very_good_analysis: ^10.2.0
 
+  # Powers scripts/check_post_close_emit_ceiling.sh, which needs a real Dart
+  # AST to tell Cubit.emit (throws after close) from an event handler's
+  # Emitter.call (cancelled, so a no-op). Already in the tree transitively via
+  # build_runner; named here so the guard does not depend on that staying true.
+  analyzer: ^12.1.0
+
   # Testing
   fake_async: ^1.3.3
   mocktail: ^1.0.3
