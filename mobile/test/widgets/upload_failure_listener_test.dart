@@ -123,6 +123,37 @@ Widget _buildHarness({
   );
 }
 
+/// Builds a harness whose [NavigatorKeys.root] navigator sits *outside*
+/// [MaterialApp], so the root context is mounted but resolves neither
+/// [Localizations] nor [ScaffoldMessenger].
+///
+/// This is the shape #7289 crashed on: reading l10n off a context that is
+/// mounted but has no localization ancestor throws a null check. It is also
+/// what a deactivated root navigator looks like — `mounted` stays true while
+/// every inherited lookup returns null.
+Widget _buildHarnessWithoutAppAncestors({
+  required _MockBackgroundPublishBloc publishBloc,
+  required _MockAuthService authService,
+}) {
+  return ProviderScope(
+    overrides: [authServiceProvider.overrideWithValue(authService)],
+    child: BlocProvider<BackgroundPublishBloc>.value(
+      value: publishBloc,
+      child: app.UploadFailureListener(
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Navigator(
+            key: NavigatorKeys.root,
+            onGenerateRoute: (_) => PageRouteBuilder<void>(
+              pageBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /// Creates a [BackgroundUpload] with result == null (in-progress).
 BackgroundUpload _inProgress(String id) =>
     BackgroundUpload(draft: _FakeDraft(id), result: null, progress: 0.5);
@@ -403,6 +434,29 @@ void main() {
         );
 
         publishStream.add(_succeededState('draft-no-root'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'does not throw when the root context has no localization ancestor',
+      (tester) async {
+        stubPublishBloc(const BackgroundPublishState());
+        when(() => authService.isAuthenticated).thenReturn(true);
+
+        await tester.pumpWidget(
+          _buildHarnessWithoutAppAncestors(
+            publishBloc: publishBloc,
+            authService: authService,
+          ),
+        );
+
+        publishStream.add(_succeededState('draft-no-l10n'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
