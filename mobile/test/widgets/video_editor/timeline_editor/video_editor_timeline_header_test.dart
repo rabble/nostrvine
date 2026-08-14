@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -190,6 +191,42 @@ void main() {
         final playButton = buttonBySemanticLabel(tester, 'Play');
 
         expect(playButton.onPressed, isNull);
+      });
+
+      // A frames-only composition never creates a native player, so
+      // isPlayerReady stays false for its whole lifetime — gating the button
+      // on it alone would make stop-motion preview permanently unplayable.
+      testWidgets('keeps play button enabled for a stop-motion composition', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            mainState: const VideoEditorMainState(),
+            clipState: ClipEditorState(clips: [_stopMotionClip()]),
+          ),
+        );
+
+        final playButton = buttonBySemanticLabel(tester, 'Play');
+
+        expect(playButton.onPressed, isNotNull);
+      });
+
+      testWidgets('dispatches toggle event for a stop-motion composition', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            mainState: const VideoEditorMainState(),
+            clipState: ClipEditorState(clips: [_stopMotionClip()]),
+          ),
+        );
+
+        await tester.tap(find.bySemanticsLabel('Play'));
+        await tester.pump();
+
+        verify(
+          () => mockMainBloc.add(const VideoEditorPlaybackToggleRequested()),
+        ).called(1);
       });
     });
 
@@ -411,6 +448,28 @@ DivineIconButton buttonBySemanticLabel(WidgetTester tester, String label) {
     matching: find.byType(DivineIconButton),
   );
   return tester.widget<DivineIconButton>(finder.first);
+}
+
+/// A frames-only clip: `isStopMotion` requires a null [EditorVideo] plus
+/// frames, which is exactly the shape that never gets a native player.
+DivineVideoClip _stopMotionClip() {
+  return DivineVideoClip(
+    id: 'stop-motion-1',
+    stopMotionFrames: const [
+      StopMotionClipFrame(
+        path: '/d/a.jpg',
+        duration: Duration(milliseconds: 83),
+      ),
+      StopMotionClipFrame(
+        path: '/d/b.jpg',
+        duration: Duration(milliseconds: 83),
+      ),
+    ],
+    duration: const Duration(milliseconds: 166),
+    recordedAt: DateTime(2025),
+    originalAspectRatio: 9 / 16,
+    targetAspectRatio: .vertical,
+  );
 }
 
 DivineVideoClip _createTestClip({required String id, int seconds = 2}) {
