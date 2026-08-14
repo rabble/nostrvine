@@ -64,7 +64,6 @@ export 'signer/local_nostr_signer.dart';
 export 'signer/isolate_decrypt_signer.dart';
 export 'signer/nostr_signer.dart';
 export 'signer/pubkey_only_nostr_signer.dart';
-export 'signer/signer_failure.dart';
 export 'subscription.dart';
 export 'upload/blossom_uploader.dart';
 export 'upload/nip96_uploader.dart';

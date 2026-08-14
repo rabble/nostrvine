@@ -13,6 +13,7 @@ import 'package:keycast_flutter/src/models/keycast_session.dart';
 import 'package:keycast_flutter/src/oauth/oauth_config.dart';
 import 'package:keycast_flutter/src/rpc/keycast_rpc.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:nostr_sdk/signer/signer_failure.dart';
 
 void main() {
   group('KeycastRpc', () {

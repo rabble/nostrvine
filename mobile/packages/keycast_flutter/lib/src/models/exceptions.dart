@@ -1,7 +1,7 @@
 // ABOUTME: Custom exceptions for Keycast operations
 // ABOUTME: Provides typed exceptions for session, OAuth, RPC, and key errors
 
-import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:nostr_sdk/signer/signer_failure.dart';
 
 class KeycastException implements Exception {
   KeycastException(this.message);
