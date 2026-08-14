@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {
   group('classifyRecoverableFlutterError', () {
@@ -17,10 +18,10 @@ void main() {
         library: 'package:flutter/src/painting/_network_image_io.dart',
       );
 
-      expect(
-        classifyRecoverableFlutterError(details),
-        (reason: 'Recoverable media load failure', report: true),
-      );
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: true,
+      ));
     });
 
     // A raw NetworkImage that fails with a non-404 HTTP status (401, 403, 500,
@@ -40,23 +41,52 @@ void main() {
           library: 'image resource service',
         );
 
-        expect(
-          classifyRecoverableFlutterError(details),
-          (reason: 'Recoverable media load failure', report: true),
-        );
+        expect(classifyRecoverableFlutterError(details), (
+          reason: 'Recoverable media load failure',
+          report: true,
+        ));
       });
     }
 
-    test('classifies Divine media host lookup failures as recoverable', () {
+    test('classifies Divine media host lookup failures as unreported', () {
       const details = FlutterErrorDetails(
         exception: SocketException("Failed host lookup: 'media.divine.video'"),
         library: 'dart:_http',
       );
 
-      expect(
-        classifyRecoverableFlutterError(details),
-        (reason: 'Recoverable media load failure', report: true),
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Expected network failure',
+        report: false,
+      ));
+    });
+
+    test('classifies wrapped relay host lookup failures as unreported', () {
+      final details = FlutterErrorDetails(
+        exception: WebSocketChannelException.from(
+          const SocketException("Failed host lookup: 'relay.divine.video'"),
+        ),
+        library: 'dart:async',
       );
+
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Expected network failure',
+        report: false,
+      ));
+    });
+
+    test('still reports non-DNS Divine media socket failures', () {
+      final details = FlutterErrorDetails(
+        exception: Exception(
+          'SocketException: OS Error: Bad file descriptor, '
+          'address = media.divine.video',
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: true,
+      ));
     });
 
     test('classifies invalid image data failures as recoverable', () {
@@ -65,10 +95,10 @@ void main() {
         library: 'dart:ui',
       );
 
-      expect(
-        classifyRecoverableFlutterError(details),
-        (reason: 'Recoverable media load failure', report: true),
-      );
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: true,
+      ));
     });
 
     test('classifies interrupted Divine media downloads as recoverable', () {
@@ -80,10 +110,10 @@ void main() {
         library: 'dart:_http',
       );
 
-      expect(
-        classifyRecoverableFlutterError(details),
-        (reason: 'Recoverable media load failure', report: true),
-      );
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: true,
+      ));
     });
 
     test('classifies dart:_http missing-host URI failures as recoverable', () {
@@ -92,10 +122,10 @@ void main() {
         library: 'dart:_http',
       );
 
-      expect(
-        classifyRecoverableFlutterError(details),
-        (reason: 'Recoverable media load failure', report: true),
-      );
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: true,
+      ));
     });
 
     test('classifies MediaCacheImageProvider download-without-file failures as '
@@ -106,11 +136,9 @@ void main() {
       // falls back to a placeholder instead of a fatal crash (#5782 follow
       // up: the download-without-file branch was still reported as fatal).
       //
-      // report is false because a dead URL is a plain IO failure, which
-      // `.claude/rules/error_handling.md` puts outside Crashlytics (#7298).
-      // This is the only silenced branch: every other recoverable-media
-      // signature above asserts the full record with report: true, so
-      // widening the silence turns those tests red.
+      // report is false because a dead URL is a plain IO failure with no
+      // actionable signal beyond the URL that the negative cache already acts
+      // on (#7298).
       const details = FlutterErrorDetails(
         exception: MediaCacheImageLoadException(
           'https://web.archive.org/web/20150907190604/'
@@ -119,10 +147,10 @@ void main() {
         library: 'package:media_cache/src/media_cache_image_provider.dart',
       );
 
-      expect(
-        classifyRecoverableFlutterError(details),
-        (reason: 'Recoverable media load failure', report: false),
-      );
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: false,
+      ));
     });
 
     test('classifies hero flight layout failures as recoverable', () {
@@ -156,10 +184,10 @@ void main() {
         ),
       );
 
-      expect(
-        classifyRecoverableFlutterError(details),
-        (reason: 'Recoverable hero flight layout failure', report: true),
-      );
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable hero flight layout failure',
+        report: true,
+      ));
     });
 
     test('classifies hero placeholder measurement failures as recoverable', () {
@@ -186,10 +214,10 @@ void main() {
         ),
       );
 
-      expect(
-        classifyRecoverableFlutterError(details),
-        (reason: 'Recoverable hero flight layout failure', report: true),
-      );
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable hero flight layout failure',
+        report: true,
+      ));
     });
 
     test(

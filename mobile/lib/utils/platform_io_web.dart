@@ -134,6 +134,19 @@ class PathNotFoundException extends FileSystemException {
   PathNotFoundException(super.message, [super.path, super.osError]);
 }
 
+// SocketException stub for web platform. Web has no dart:io sockets, so this
+// is never thrown or instantiated — it exists so `is SocketException` checks
+// compile for web and correctly evaluate to false.
+class SocketException implements Exception {
+  SocketException(this.message, {this.osError});
+
+  final String message;
+  final OSError? osError;
+
+  @override
+  String toString() => 'SocketException: $message';
+}
+
 // Process stub for web platform
 class Process {
   static Future<ProcessResult> run(
