@@ -123,6 +123,43 @@ Widget _buildHarness({
   );
 }
 
+/// Builds a harness whose [NavigatorKeys.root] navigator sits *outside*
+/// [MaterialApp], so the root context is mounted but resolves neither
+/// [Localizations] nor [ScaffoldMessenger].
+///
+/// This is the shape #7289 crashed on: reading l10n off a context that is
+/// mounted but has no localization ancestor throws a null check. It stands in
+/// for a deactivated root navigator, which resolves the same way only in
+/// release builds — under asserts an ancestor lookup on a deactivated element
+/// throws instead of returning null.
+///
+/// Both ancestors are dropped together on purpose. `MaterialApp` nests
+/// `Localizations` *above* `ScaffoldMessenger`, so a root context that
+/// resolves the messenger but not l10n cannot occur; either the tree is
+/// healthy or a deactivated element nulls out both lookups at once.
+Widget _buildHarnessWithoutAppAncestors({
+  required _MockBackgroundPublishBloc publishBloc,
+  required _MockAuthService authService,
+}) {
+  return ProviderScope(
+    overrides: [authServiceProvider.overrideWithValue(authService)],
+    child: BlocProvider<BackgroundPublishBloc>.value(
+      value: publishBloc,
+      child: app.UploadFailureListener(
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Navigator(
+            key: NavigatorKeys.root,
+            onGenerateRoute: (_) => PageRouteBuilder<void>(
+              pageBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /// Creates a [BackgroundUpload] with result == null (in-progress).
 BackgroundUpload _inProgress(String id) =>
     BackgroundUpload(draft: _FakeDraft(id), result: null, progress: 0.5);
@@ -409,6 +446,51 @@ void main() {
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(tester.takeException(), isNull);
         expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'buffers the success when the root context resolves neither app '
+      'ancestor, then replays it once they appear',
+      (tester) async {
+        stubPublishBloc(const BackgroundPublishState());
+        when(() => authService.isAuthenticated).thenReturn(true);
+
+        await tester.pumpWidget(
+          _buildHarnessWithoutAppAncestors(
+            publishBloc: publishBloc,
+            authService: authService,
+          ),
+        );
+
+        publishStream.add(_succeededState('draft-no-l10n'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+
+        // Failing closed must hand the count back, not swallow it: once the
+        // ancestors resolve, the buffered success replays on the next state.
+        // The key is detached first so the root navigator is rebuilt under
+        // [MaterialApp] rather than reparented with its ancestor-less route.
+        await tester.pumpWidget(
+          _buildHarness(
+            publishBloc: publishBloc,
+            authService: authService,
+            wireRootNavigatorKey: false,
+          ),
+        );
+        await tester.pumpWidget(
+          _buildHarness(publishBloc: publishBloc, authService: authService),
+        );
+        publishStream.add(const BackgroundPublishState());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
       },
     );
 

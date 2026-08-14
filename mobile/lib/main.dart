@@ -3052,7 +3052,14 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
 /// Uses [NavigatorKeys.root] to resolve both localization and
 /// [ScaffoldMessenger] from inside the app tree. The listener itself is mounted
 /// above [MaterialApp], so its own [BuildContext] does not have localization or
-/// scaffold ancestors in production.
+/// scaffold ancestors in production — reading l10n from it is what threw the
+/// null check in #7289 before the root context was adopted.
+///
+/// Both ancestors are resolved nullably: `mounted` only says the element still
+/// exists, not that it can still reach its inherited ancestors — a deactivated
+/// element reports `mounted` while every ancestor lookup returns null. Failing
+/// closed here hands the count back to the caller's buffer/replay path instead
+/// of throwing out of the bloc listener.
 bool _showPublishSuccessSnackbar(
   int count, {
   required ProviderContainer container,
@@ -3060,8 +3067,10 @@ bool _showPublishSuccessSnackbar(
 }) {
   final navContext = NavigatorKeys.root.currentContext;
   if (navContext == null || !navContext.mounted) return false;
-  final l10n = navContext.l10n;
-  ScaffoldMessenger.of(navContext).showSnackBar(
+  final l10n = Localizations.of<AppLocalizations>(navContext, AppLocalizations);
+  final messenger = ScaffoldMessenger.maybeOf(navContext);
+  if (l10n == null || messenger == null) return false;
+  messenger.showSnackBar(
     SnackBar(
       content: Text(
         l10n.uploadPublishedCountMessage(count),
