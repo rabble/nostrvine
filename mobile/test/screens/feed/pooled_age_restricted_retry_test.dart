@@ -623,8 +623,8 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text(_adultContentHiddenTitle), findsOneWidget);
 
-        // The feed item that opened the sheet scrolls out of the pool and is
-        // disposed while the sheet is still up (#7291).
+        // A non-append-only feed emit clears the error state behind the open
+        // sheet, unmounting the overlay that opened it (#7291).
         hostVisible.value = false;
         await tester.pump();
 
