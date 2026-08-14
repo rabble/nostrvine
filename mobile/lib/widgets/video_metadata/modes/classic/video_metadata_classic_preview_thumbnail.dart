@@ -8,6 +8,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class VideoMetadataClassicPreviewThumbnail extends ConsumerStatefulWidget {
   const VideoMetadataClassicPreviewThumbnail({super.key});
@@ -78,10 +79,34 @@ class _VideoMetadataClassicPreviewThumbnailState
     if (_controller != null) return;
 
     final controller = DivineVideoPlayerController(useTexture: true);
-    await controller.initialize();
-    if (mounted) await controller.setSource(VideoClip.file(filePath));
-    if (mounted) await controller.setLooping(looping: true);
-    if (mounted) await controller.play();
+    try {
+      await controller.initialize();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.setSource(VideoClip.file(filePath));
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.setLooping(looping: true);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.play();
+    } catch (e, stackTrace) {
+      Log.error(
+        'Classic metadata preview player failed to load',
+        name: 'VideoMetadataClassicPreviewThumbnail',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      unawaited(controller.dispose());
+      return;
+    }
     if (!mounted) return;
 
     setState(() {

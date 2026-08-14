@@ -74,16 +74,43 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
       return;
     }
 
-    if (mounted) _controller = DivineVideoPlayerController(useTexture: true);
-    if (mounted) await _controller!.initialize();
-    if (mounted) await _controller!.setSource(VideoClip.file(file.path));
-    if (mounted) await _controller!.setLooping(looping: true);
-    if (mounted) await _controller!.play();
-
-    if (!mounted) return;
+    final controller = DivineVideoPlayerController(useTexture: true);
+    try {
+      await controller.initialize();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.setSource(VideoClip.file(file.path));
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.setLooping(looping: true);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.play();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Clip preview player failed to load',
+        name: 'VideoClipPreview',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      unawaited(controller.dispose());
+      return;
+    }
 
     // Rebuild once video dimensions become available.
-    _stateSubscription = _controller!.stateStream.listen((state) {
+    _controller = controller;
+    _stateSubscription = controller.stateStream.listen((state) {
       if (mounted && state.videoWidth > 0 && !_hasDimensions) {
         _hasDimensions = true;
         setState(() {});

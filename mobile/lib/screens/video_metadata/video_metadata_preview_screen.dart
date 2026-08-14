@@ -20,6 +20,7 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_metadata/metadata_hero_corners.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Full-screen preview of the recorded video with metadata overlay.
 ///
@@ -90,15 +91,41 @@ class _VideoMetadataPreviewScreenState
     final video = widget.clip.video;
     if (video == null) return;
 
-    _controller = DivineVideoPlayerController(useTexture: true);
-    if (mounted) await _controller!.initialize();
-    if (mounted) {
-      await _controller!.setSource(VideoClip.file(await video.safeFilePath()));
+    final controller = DivineVideoPlayerController(useTexture: true);
+    try {
+      await controller.initialize();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.setSource(VideoClip.file(await video.safeFilePath()));
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.setLooping(looping: true);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await controller.play();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      _controller = controller;
+      // Rebuild so DivineVideoPlayer receives the now-initialized controller.
+      setState(() {});
+    } catch (e, stackTrace) {
+      Log.error(
+        'Metadata preview player failed to load',
+        name: 'VideoMetadataPreviewScreen',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      unawaited(controller.dispose());
     }
-    if (mounted) await _controller!.setLooping(looping: true);
-    if (mounted) await _controller!.play();
-    // Rebuild so DivineVideoPlayer receives the now-initialized controller.
-    if (mounted) setState(() {});
   }
 
   @override

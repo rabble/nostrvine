@@ -413,6 +413,28 @@ void main() {
     });
   });
 
+  group('VideoEditorCanvas.shouldPublishClipLoad', () {
+    test('publishes the active clip load generation', () {
+      expect(
+        VideoEditorCanvas.shouldPublishClipLoad(
+          generation: 3,
+          currentGeneration: 3,
+        ),
+        isTrue,
+      );
+    });
+
+    test('rejects a superseded clip load generation', () {
+      expect(
+        VideoEditorCanvas.shouldPublishClipLoad(
+          generation: 3,
+          currentGeneration: 4,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('VideoEditorCanvas.resolveClipSnapshotSync', () {
     late Directory tempDir;
 

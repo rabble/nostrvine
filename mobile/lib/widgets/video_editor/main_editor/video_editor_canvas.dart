@@ -33,7 +33,6 @@ import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/clip_speed_render_service.dart';
 import 'package:openvine/services/video_editor/stop_motion_audio_preview.dart';
@@ -199,11 +198,8 @@ class VideoEditorCanvas extends StatelessWidget {
   /// failures can mark the player unavailable instead of leaving a broken
   /// native player reported as ready.
   ///
-  /// Swallowing costs the unhandled-async-error path to Crashlytics that #3410
-  /// relied on, and `Log.error` has no Crashlytics sink — so `PLAYER_ERROR` is
-  /// reported explicitly. A decoder that dies mid-edit is a real defect worth a
-  /// non-fatal; `COMPOSITION_ERROR` (stale draft clip) and `NOT_READY` (slow
-  /// OEM decoder) are expected domain failures and stay log-only.
+  /// `PLAYER_ERROR` is left log-only here because this helper lives in the UI
+  /// layer; reportability decisions belong to BLoC/Cubit or service code.
   @visibleForTesting
   static Future<bool> guardClipLoad(Future<void> Function() load) async {
     try {
@@ -222,18 +218,15 @@ class VideoEditorCanvas extends StatelessWidget {
         error: e,
         stackTrace: s,
       );
-      if (e.code == _playerErrorCode) {
-        unawaited(
-          CrashReportingService.instance.recordError(
-            e,
-            s,
-            reason: 'VideoEditorCanvas.guardClipLoad',
-          ),
-        );
-      }
       return false;
     }
   }
+
+  @visibleForTesting
+  static bool shouldPublishClipLoad({
+    required int generation,
+    required int currentGeneration,
+  }) => generation == currentGeneration;
 
   /// Decides how to reconcile the clip [snapshot] read from the editor's
   /// current undo/redo history entry with the app clip state.
@@ -897,7 +890,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// Publishes the outcome of the clip load that claimed [generation], unless a
   /// newer load has superseded it.
   void _endClipLoad(int generation, {required bool isReady}) {
-    if (generation != _clipLoadGeneration) return;
+    if (!VideoEditorCanvas.shouldPublishClipLoad(
+      generation: generation,
+      currentGeneration: _clipLoadGeneration,
+    )) {
+      return;
+    }
     _setPlayerReady(isReady);
   }
 
@@ -1372,11 +1370,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     _pendingSeekTarget = currentPosition;
     final generation = _beginClipLoad();
     unawaited(
-      _setClipsSafely(_videoPlayer, [
+      _setClipsForGeneration(generation, _videoPlayer, [
         ..._buildPlayerClips(clips),
-      ], startPosition: _timelineToPlayer(currentPosition)).then(
-        (loaded) => _endClipLoad(generation, isReady: loaded),
-      ),
+      ], startPosition: _timelineToPlayer(currentPosition)),
     );
     _ensureSeamsRendered(clips);
     _ensureSpeedClipsRendered(clips);
@@ -1455,6 +1451,26 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     );
   }
 
+  Future<bool> _setClipsForGeneration(
+    int generation,
+    DivineVideoPlayerController? player,
+    List<VideoClip> clips, {
+    Duration? startPosition,
+  }) async {
+    try {
+      final loaded = await _setClipsSafely(
+        player,
+        clips,
+        startPosition: startPosition,
+      );
+      _endClipLoad(generation, isReady: loaded);
+      return loaded;
+    } catch (_) {
+      _endClipLoad(generation, isReady: false);
+      rethrow;
+    }
+  }
+
   /// Initializes (or reinitializes) the native video player with [clipPaths].
   Future<void> _initializePlayer(
     List<String> clipPaths, {
@@ -1482,15 +1498,21 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
     await player.initialize();
     if (!mounted || !identical(_videoPlayer, player)) return;
-    final loaded = await _setClipsSafely(
-      player,
-      [
-        ..._buildPlayerClips(clips),
-      ],
-      startPosition: startPosition != null && startPosition > Duration.zero
-          ? _timelineToPlayer(startPosition)
-          : null,
-    );
+    late final bool loaded;
+    try {
+      loaded = await _setClipsSafely(
+        player,
+        [
+          ..._buildPlayerClips(clips),
+        ],
+        startPosition: startPosition != null && startPosition > Duration.zero
+            ? _timelineToPlayer(startPosition)
+            : null,
+      );
+    } catch (_) {
+      _endClipLoad(generation, isReady: false);
+      rethrow;
+    }
     if (!mounted || !identical(_videoPlayer, player)) return;
     // Composition failed to build (stale/corrupt draft clip): leave the canvas
     // on its thumbnail fallback rather than marking a broken player ready.
@@ -2087,10 +2109,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         _pendingSeekTarget = currentPosition;
         final generation = _beginClipLoad();
         unawaited(
-          _setClipsSafely(_videoPlayer, [
-            ..._buildPlayerClips(clips),
-          ], startPosition: _timelineToPlayer(currentPosition)).then(
-            (loaded) => _endClipLoad(generation, isReady: loaded),
+          _setClipsForGeneration(
+            generation,
+            _videoPlayer,
+            [
+              ..._buildPlayerClips(clips),
+            ],
+            startPosition: _timelineToPlayer(currentPosition),
           ),
         );
         _ensureSeamsRendered(clips);
@@ -2118,10 +2143,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         _pendingSeekTarget = currentPosition;
         final generation = _beginClipLoad();
         unawaited(
-          _setClipsSafely(_videoPlayer, [
-            ..._buildPlayerClips(clips),
-          ], startPosition: _timelineToPlayer(currentPosition)).then(
-            (loaded) => _endClipLoad(generation, isReady: loaded),
+          _setClipsForGeneration(
+            generation,
+            _videoPlayer,
+            [
+              ..._buildPlayerClips(clips),
+            ],
+            startPosition: _timelineToPlayer(currentPosition),
           ),
         );
         _ensureSeamsRendered(clips);
@@ -2377,10 +2405,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             final ownerEpoch = _seekEpoch;
 
             try {
-              final loaded = await _setClipsSafely(_videoPlayer, [
-                ..._buildPlayerClips(state.clips),
-              ], startPosition: _timelineToPlayer(currentPosition));
-              _endClipLoad(generation, isReady: loaded);
+              final loaded = await _setClipsForGeneration(
+                generation,
+                _videoPlayer,
+                [
+                  ..._buildPlayerClips(state.clips),
+                ],
+                startPosition: _timelineToPlayer(currentPosition),
+              );
               if (!loaded) return;
 
               if (!mounted) return;
@@ -2434,10 +2466,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             final ownerEpoch = _seekEpoch;
 
             try {
-              final loaded = await _setClipsSafely(_videoPlayer, [
-                ..._buildPlayerClips(state.clips),
-              ], startPosition: _timelineToPlayer(startPosition));
-              _endClipLoad(generation, isReady: loaded);
+              final loaded = await _setClipsForGeneration(
+                generation,
+                _videoPlayer,
+                [
+                  ..._buildPlayerClips(state.clips),
+                ],
+                startPosition: _timelineToPlayer(startPosition),
+              );
               if (!loaded) return;
               if (mounted) {
                 VideoEditorCanvas.syncPositionAfterTrimRelease(

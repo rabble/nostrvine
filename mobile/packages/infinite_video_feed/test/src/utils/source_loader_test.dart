@@ -127,6 +127,36 @@ void main() {
       expect(logs.first, contains('badUrl'));
     });
 
+    test('fails over when Android reports NOT_READY for a source', () async {
+      final clips = <VideoClip>[];
+      final controller = _RecordingControllerWithFailures(
+        clips.add,
+        failures: [
+          PlatformException(
+            code: 'NOT_READY',
+            message: 'setClips timed out before player reached STATE_READY',
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+
+      final result = await setSourceWithFallbacks(
+        index: 1,
+        controller: controller,
+        sources: ['slowOptimizedUrl', 'rawUrl'],
+        log: logs.add,
+      );
+
+      expect(result, equals(('rawUrl', 1)));
+      expect(
+        clips.map((clip) => clip.uri),
+        equals(['slowOptimizedUrl', 'rawUrl']),
+      );
+      expect(logs, hasLength(1));
+      expect(logs.single, contains('failedSource=slowOptimizedUrl'));
+      expect(logs.single, contains('retrySource=rawUrl'));
+    });
+
     test('advances immediately on HTTP 202 when a fallback remains', () async {
       final clips = <VideoClip>[];
       final controller = _RecordingControllerWithFailures(
