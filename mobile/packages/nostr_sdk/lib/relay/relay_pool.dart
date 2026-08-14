@@ -1194,6 +1194,14 @@ class RelayPool {
     }
   }
 
+  /// Subscription ids that still have a silence probe armed. Tests assert on
+  /// this to prove [unsubscribe] disarms the probe, rather than leaning on the
+  /// [_probeSubscriptionSilence] no-op guard — which would leave a dropped
+  /// `.cancel()` invisible behind a leaked one-shot timer.
+  @visibleForTesting
+  List<String> get armedSilenceProbeSubscriptionIds =>
+      _subscriptionSilenceProbes.keys.toList(growable: false);
+
   /// Releases the one-shot queries [relay] is parked on once it can no longer
   /// answer them.
   ///

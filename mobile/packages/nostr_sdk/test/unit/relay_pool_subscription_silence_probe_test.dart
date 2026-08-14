@@ -139,9 +139,22 @@ void main() {
 
       final subId = subscribeToFeed();
       await Future<void>.delayed(Duration.zero);
+      expect(
+        nostr.relayPool.armedSilenceProbeSubscriptionIds,
+        [subId],
+        reason: 'the probe is armed while the load is live',
+      );
 
       // The user left the screen inside the relay's round-trip time.
       nostr.unsubscribe(subId);
+      expect(
+        nostr.relayPool.armedSilenceProbeSubscriptionIds,
+        isEmpty,
+        reason:
+            'teardown disarms the probe; without this a torn-down load leaks '
+            'a live timer that a same-id re-subscribe could let cycle a '
+            'healthy connection',
+      );
       await Future<void>.delayed(afterProbe);
 
       expect(
