@@ -16,9 +16,8 @@
 # and even a correct tearDownAll restore still leaves the global nulled while the
 # file runs inside the shared isolate.
 #
-# Reads (HttpOverrides.current) and local VineCdnHttpOverrides(...).lookup() do
-# not match — only assignment to `.global` is flagged. lib/ is out of scope (the
-# production VineCdnHttpOverrides install in lib/main.dart is not a test).
+# Reads (HttpOverrides.current) do not match — only assignment to `.global` is
+# flagged. lib/ is out of scope.
 #
 # Usage:
 #   bash mobile/scripts/check_http_overrides_isolation.sh

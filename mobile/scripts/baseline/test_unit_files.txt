@@ -43,4 +43,3 @@ test/unit/utils/search_utils_test.dart
 test/unit/utils/sensitive_http_headers_for_logs_test.dart
 test/unit/utils/sensitive_uri_for_logs_test.dart
 test/unit/video_event_real_parsing_test.dart
-test/unit/vine_cdn_http_overrides_test.dart

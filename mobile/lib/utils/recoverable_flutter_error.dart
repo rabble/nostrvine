@@ -9,6 +9,9 @@ const _recoverableMediaHosts = <String>{
   'media.divine.video',
   'cdn.divine.video',
   'divine.video',
+  // Legacy Vine CDN hosts have no DNS records, the old Fastly edge certificate
+  // expired on 2025-07-10, and cleartext HTTP is blocked by transport policy.
+  // These media loads should fail honestly and fall back to placeholders.
   'v.cdn.vine.co',
   'cdn.vine.co',
 };
