@@ -5409,6 +5409,13 @@ class DmRepository {
   /// applied when the drain completes.
   Future<void> _reconcileReadMarker(Event rumor) async {
     if (!_hasReadMarkerDTag(rumor)) return;
+    // The marker is a self-authored control message: the sender gift-wraps it
+    // to their own pubkey, so the only legitimate author is the local user.
+    // `rumor.pubkey` is the seal signer, authenticated by the Schnorr check in
+    // GiftWrapUtil on every unwrap path, so anything else is forged — the
+    // conversation id below is derived from participant pubkeys alone, which
+    // are public. Fail closed when the local pubkey is unknown. #7343.
+    if (_userPubkey.isEmpty || rumor.pubkey != _userPubkey) return;
     final Object? decoded;
     try {
       decoded = jsonDecode(rumor.content);

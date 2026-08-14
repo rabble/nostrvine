@@ -7092,6 +7092,96 @@ void main() {
           expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
         },
       );
+
+      // Delivers [rumor] as the decrypted payload of a single incoming gift
+      // wrap on the live subscription, and returns the processed-wrap ledger
+      // that wrap was offered to.
+      Future<_InMemoryProcessedGiftWrapsDao> deliverMarkerRumor(
+        Event rumor,
+      ) async {
+        final ledger = _InMemoryProcessedGiftWrapsDao();
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+        ).thenAnswer((_) async => false);
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final repository = createRepository(
+          processedGiftWrapsDao: ledger,
+          rumorDecryptor: (_, _) async => rumor,
+        );
+        await repository.startListening();
+        controller.add(
+          Event.fromJson({
+            'id': _giftWrapEventId,
+            'pubkey':
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'created_at': 1700000000,
+            'kind': EventKind.giftWrap,
+            'tags': [
+              ['p', _validPubkeyA],
+            ],
+            'content': 'encrypted',
+            'sig': '',
+          }),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        return ledger;
+      }
+
+      Event readMarkerFrom(String authorPubkey) => Event.fromJson({
+        'id': _rumorEventId,
+        'pubkey': authorPubkey,
+        'created_at': 1700000300,
+        'kind': EventKind.appSpecificData,
+        'tags': [
+          ['d', 'divine/dm-read/v1'],
+        ],
+        'content': jsonEncode({
+          'v': 1,
+          'read': {tupleKey: 1700000300},
+        }),
+        'sig': '',
+      });
+
+      test(
+        'a read marker authored by another pubkey never advances a cursor',
+        () async {
+          // The marker is self-authored by construction — the sender gift-wraps
+          // it to their own pubkey — and `rumor.pubkey` is the seal signer,
+          // authenticated on every unwrap path. So a marker carrying anyone
+          // else's key is forged, including one from the conversation's own
+          // counterparty, who legitimately knows both participant pubkeys and
+          // can therefore name the conversation. #7343.
+          await deliverMarkerRumor(readMarkerFrom(_validPubkeyB));
+
+          verifyNever(
+            () => mockConversationsDao.applyReadCursor(
+              any(),
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'a rejected read marker is still ledgered so it is not re-decrypted '
+        'on every launch',
+        () async {
+          final ledger = await deliverMarkerRumor(
+            readMarkerFrom(_validPubkeyB),
+          );
+
+          expect(ledger.recorded, contains(_giftWrapEventId));
+        },
+      );
     });
 
     // -----------------------------------------------------------------
