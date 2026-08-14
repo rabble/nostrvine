@@ -2053,8 +2053,19 @@ void main() {
       // two transport bounds would fail requests the transport itself would
       // have allowed — the #6046 mistake that #6075 had to revert.
       //
-      // The floor includes the seal construction, ephemeral keypair, NIP-44
-      // encryption and wrap signature that run alongside those round trips.
+      // Strictly greater, not >=: the bound also covers the seal
+      // construction, ephemeral keypair, NIP-44 encryption and wrap signature
+      // that run alongside those round trips. At exactly 2x, two ops each
+      // returning just inside the transport bound would still trip it, which
+      // is the same no-margin shape #6586 was about.
+      //
+      // This is the only place the two packages meet: `dm_repository` restates
+      // the transport bound as a literal because it cannot import
+      // `keycast_flutter`, so re-tuning one side without the other fails here
+      // rather than silently under-sizing the build. #7092 moved the transport
+      // bound 30s → 20s, dropping the floor 65s → 45s while
+      // `recipientWrapBuild` deliberately held at 65s, so its margin over the
+      // floor widened from 0s to 20s.
       expect(
         DmSendBudget.boundedSignerFloor,
         KeycastRpc.defaultRequestTimeout * 2 + const Duration(seconds: 5),
@@ -2072,7 +2083,7 @@ void main() {
       // otherwise a slow-but-recoverable pre-publish send is misclassified as a
       // timeout and retried.
       expect(
-        DmSendBudget.recipientWrapBuild,
+        DmSendBudget.recipientWrapBuildWithBatchFallback,
         greaterThan(
           KeycastRpc.defaultBatchRequestTimeout +
               KeycastRpc.defaultRequestTimeout * 2,

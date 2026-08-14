@@ -2768,7 +2768,9 @@ void main() {
                   .then((r) => result = r),
             );
 
-            async.elapse(DmSendBudget.recipientWrapBuild * 2);
+            async.elapse(
+              DmSendBudget.recipientWrapBuildWithBatchFallback * 2,
+            );
           });
 
           expect(result, isNotNull, reason: 'send must resolve, not hang');
@@ -2777,7 +2779,7 @@ void main() {
           expect(
             (result! as NIP17SendFailure).error,
             'Recipient gift wrap build timed out after '
-            '${DmSendBudget.recipientWrapBuild.inSeconds}s',
+            '${DmSendBudget.recipientWrapBuildWithBatchFallback.inSeconds}s',
           );
           verifyNever(
             () => client.publishEventAwaitOk(

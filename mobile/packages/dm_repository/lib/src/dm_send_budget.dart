@@ -44,7 +44,8 @@
 /// verb refuses, or a per-recipient slot failure all take it — so it remains
 /// part of the bound. The batch attempt is serial with that fallback, though:
 /// if `nip17_wrap_batch` stalls to its transport timeout and then the old
-/// per-wrap path runs, both have to fit inside [recipientWrapBuild].
+/// per-wrap path runs, both have to fit inside
+/// [recipientWrapBuildWithBatchFallback].
 abstract final class DmSendBudget {
   /// The two seal round trips a wrap build spends, at the transport's own
   /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 20s).
@@ -55,13 +56,6 @@ abstract final class DmSendBudget {
   /// than silently under-sizing the bound — which is the #6586 failure mode
   /// itself.
   static const int _twoTransportBoundsSeconds = 40;
-
-  /// One server-side wrap-batch transport bound
-  /// (`KeycastRpc.defaultBatchRequestTimeout`, 30s).
-  ///
-  /// Restated here for the same reason as [_twoTransportBoundsSeconds]. The
-  /// app-layer guard test asserts this against the real Keycast constant.
-  static const int _serverWrapBatchBoundSeconds = 30;
 
   /// Margin inside a wrap-build bound for the local work that runs alongside
   /// the two remote round trips: seal construction, the ephemeral keypair,
@@ -94,9 +88,33 @@ abstract final class DmSendBudget {
     seconds: _boundedSignerFloorSeconds,
   );
 
+  /// Room above [_boundedSignerFloorSeconds] for a signer whose per-op wait is
+  /// **not** bounded by a transport at all: Amber's NIP-55 intent path puts a
+  /// human approval prompt in front of each of the two round trips, and a
+  /// bunker can be arbitrarily slow.
+  ///
+  /// Sized to hold [recipientWrapBuild] at the 65s it has shipped at.
+  /// Re-deriving the transport bound in #7092 lowered the floor beneath this
+  /// window; it said nothing about the window itself, and no observation says
+  /// 65s is the wrong amount of time to let a person approve two prompts.
+  /// Following the floor down to 45s would have spent a user-visible Amber
+  /// regression to buy headroom the send path was not short of — the totals
+  /// below already clear [messagePublishTimeout] with room.
+  static const int _unboundedSignerHeadroomSeconds = 20;
+
   /// Seconds allowed for building the recipient gift wrap. See
   /// [recipientWrapBuild].
   static const int _recipientWrapBuildSeconds =
+      _boundedSignerFloorSeconds + _unboundedSignerHeadroomSeconds;
+
+  /// One server-side wrap-batch transport bound
+  /// (`KeycastRpc.defaultBatchRequestTimeout`, 30s).
+  ///
+  /// Restated here for the same reason as [_twoTransportBoundsSeconds]. The
+  /// app-layer guard test asserts this against the real Keycast constant.
+  static const int _serverWrapBatchBoundSeconds = 30;
+
+  static const int _recipientWrapBuildWithBatchFallbackSeconds =
       _serverWrapBatchBoundSeconds + _boundedSignerFloorSeconds;
 
   /// Seconds allowed for the recipient OK confirmation. See
@@ -123,31 +141,39 @@ abstract final class DmSendBudget {
 
   /// Hard bound on building the recipient gift wrap.
   ///
-  /// Sized as one Keycast server-side wrap-batch attempt at the transport's own
-  /// 30s bound (`KeycastRpc.defaultBatchRequestTimeout`) **plus** the fallback
-  /// build: two Keycast single-op round trips at the transport's own 20s bound
-  /// (`KeycastRpc.defaultRequestTimeout`) **plus**
-  /// [_wrapBuildLocalCryptoSeconds] for the local crypto that runs between and
-  /// after them.
-  ///
-  /// The batch fast path does not consume all of this when it succeeds. The
-  /// additive case is when it times out or throws transiently, then the caller
-  /// falls through to the per-wrap path inside the same [recipientWrapBuild]
-  /// timeout. Sizing only either alternative would let a slow-but-recoverable
-  /// send be misclassified as timed out before any publish.
-  ///
-  /// [_boundedSignerFloorSeconds] is the fallback floor. Tightening below it is
-  /// the specific mistake #6046 made and #6075 reverted. The batch attempt is
-  /// serial with that fallback, so [recipientWrapBuild] must cover their sum.
-  ///
   /// It bounds the *chain*, not the transport, and the chain's slowest signer
-  /// sets its size. On the Amber NIP-55 intent path the `nip44Encrypt` and
-  /// `signEvent` approval waits are
+  /// sets its size. Two constants say so: [_boundedSignerFloorSeconds] is what
+  /// Keycast can cost — two transport bounds plus the local crypto between
+  /// them, so two ops that each returned inside the transport's limit cannot
+  /// together trip this — and [_unboundedSignerHeadroomSeconds] is the room
+  /// above that for signers with no transport bound at all. On the Amber
+  /// NIP-55 intent path the `nip44Encrypt` and `signEvent` approval waits are
   /// human-gated and unbounded; timing out here leaves the recipient publish
   /// unsent, so durable callers classify the row as retryable-pending rather
   /// than red-failed.
+  ///
+  /// Tightening it below the floor is the specific mistake #6046 made and
+  /// #6075 reverted — it fails sends the transport itself would have allowed.
+  /// The app-layer guard test pins the floor because `dm_repository` cannot
+  /// import `keycast_flutter` to check it here.
+  ///
+  /// #7092 re-derived the floor after Keycast's per-op bound dropped to 20s
+  /// (keycast#351 bounds its own handler at 8s, so the ~20-30s single-op
+  /// latency of keycast#291 that #6075 sized against is no longer reachable).
+  /// The floor fell from 65s to 45s; this bound deliberately did not follow it
+  /// down. See [_unboundedSignerHeadroomSeconds].
   static const Duration recipientWrapBuild = Duration(
     seconds: _recipientWrapBuildSeconds,
+  );
+
+  /// Hard bound on a recipient-wrap batch attempt followed by its fallback.
+  ///
+  /// A transient batch failure is serial with the legacy per-wrap build, so the
+  /// send path needs both transport bounds. Kept separate from
+  /// [recipientWrapBuild] because non-batch and out-of-band self-wrap callers
+  /// do not spend the initial batch request.
+  static const Duration recipientWrapBuildWithBatchFallback = Duration(
+    seconds: _recipientWrapBuildWithBatchFallbackSeconds,
   );
 
   /// OK-confirmation window for the recipient wrap.
@@ -214,7 +240,7 @@ abstract final class DmSendBudget {
   /// case is their sum.
   static const Duration chainWorstCase = Duration(
     seconds:
-        _recipientWrapBuildSeconds +
+        _recipientWrapBuildWithBatchFallbackSeconds +
         _recipientOkConfirmSeconds +
         _selfWrapBuildSeconds +
         _selfWrapPublishSeconds,
@@ -227,7 +253,7 @@ abstract final class DmSendBudget {
   /// `OutgoingDmRetryService.interruptedMinAge`.
   static const Duration messagePublishTimeout = Duration(
     seconds:
-        _recipientWrapBuildSeconds +
+        _recipientWrapBuildWithBatchFallbackSeconds +
         _recipientOkConfirmSeconds +
         _selfWrapBuildSeconds +
         _selfWrapPublishSeconds +

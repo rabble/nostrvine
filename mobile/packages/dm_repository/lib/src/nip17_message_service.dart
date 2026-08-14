@@ -500,7 +500,8 @@ class NIP17MessageService {
   /// and the caller owns any fallback behavior.
   ///
   /// [recipientWrapBuildTimeout] bounds the recipient-wrap build, defaulting to
-  /// [DmSendBudget.recipientWrapBuild] for callers whose durable retry queue
+  /// [DmSendBudget.recipientWrapBuildWithBatchFallback] for callers whose
+  /// durable retry queue
   /// can keep a pre-publish timeout pending and re-drive it. Passing `null`
   /// leaves recipient-wrap construction uncapped; only callers with no outer
   /// cap and no retry row should do that, because a slow human-gated signer
@@ -528,7 +529,8 @@ class NIP17MessageService {
     List<String>? targetRelays,
     bool awaitRecipientOk = false,
     bool selfWrapOnSoftUnconfirmed = true,
-    Duration? recipientWrapBuildTimeout = DmSendBudget.recipientWrapBuild,
+    Duration? recipientWrapBuildTimeout =
+        DmSendBudget.recipientWrapBuildWithBatchFallback,
     Duration? selfWrapBuildTimeout = DmSendBudget.selfWrapBuild,
   }) async {
     final recipientWrapBound = recipientWrapBuildTimeout;
