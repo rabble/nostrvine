@@ -5975,14 +5975,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
     }
 
-    // Also update in author buckets (used by profile feeds)
-    foundAny =
-        _authorBuckets.replaceByStableId(
-          updatedVideo.pubkey,
-          updatedVideo,
-          merge: _mergeUpdatedVideo,
-        ) ||
-        foundAny;
+    // Also update in author buckets (used by profile feeds). Kept out of the
+    // `||` so the bucket update cannot be short-circuited away once an earlier
+    // cache has already matched.
+    final replacedInAuthorBucket = _authorBuckets.replaceByStableId(
+      updatedVideo.pubkey,
+      updatedVideo,
+      merge: _mergeUpdatedVideo,
+    );
+    foundAny = foundAny || replacedInAuthorBucket;
 
     if (foundAny) {
       notifyListeners();
