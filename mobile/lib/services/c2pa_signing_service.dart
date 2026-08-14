@@ -223,16 +223,15 @@ class C2paSigningService {
         );
       }
 
-      final sFileNew = signedFile.renameSync(inputFile.path);
-      Log.debug(
-        'Signed file renamed: ${sFileNew.path}',
-        name: 'C2paSigningService',
-        category: LogCategory.video,
+      final sFileNew = _replaceOriginalWithSigned(
+        inputFile: inputFile,
+        signedFile: signedFile,
       );
+      Log.debug('signed file renamed: ${sFileNew.path} ');
 
       final signedSize = await sFileNew.length();
       Log.info(
-        'C2PA signing complete: ${sFileNew.path} (${signedSize ~/ 1024} KB)',
+        'C2PA signing complete: $sFileNew (${signedSize ~/ 1024} KB)',
         name: 'C2paSigningService',
         category: LogCategory.video,
       );
@@ -396,6 +395,26 @@ class C2paSigningService {
     }
   }
 
+  static File _replaceOriginalWithSigned({
+    required File inputFile,
+    required File signedFile,
+  }) {
+    final backupPath =
+        '${inputFile.path}.c2pa-replace-${DateTime.now().microsecondsSinceEpoch}.old';
+    final backupFile = inputFile.renameSync(backupPath);
+
+    try {
+      final replacement = signedFile.renameSync(inputFile.path);
+      backupFile.deleteSync();
+      return replacement;
+    } catch (_) {
+      if (!inputFile.existsSync() && backupFile.existsSync()) {
+        backupFile.renameSync(inputFile.path);
+      }
+      rethrow;
+    }
+  }
+
   @visibleForTesting
   static C2paSigningFailureReason classifyFailureReason(Object error) {
     if (error is TimeoutException) {
@@ -409,6 +428,7 @@ class C2paSigningService {
     };
 
     if (_containsAny(message, const [
+      'cose signature invalid',
       'signature invalid',
       'invalid signature',
       'signature verification',
@@ -502,8 +522,11 @@ class C2paSigningService {
 
   /// Creates a signer for C2PA operations.
   ///
-  /// Always a [RemoteSigner]: #2161 deleted the local `HardwareSigner`
-  /// branch in favour of the authenticated ProofSign server.
+  /// TODO(#3730): Replace with proper key management:
+  /// - Use HardwareSigner for Secure Enclave (iOS) / StrongBox (Android)x
+  /// - Generate per-user keys during onboarding
+  /// - Store certificates securely
+  /// - Support user-provided certificates via enrollment API
   Future<C2paSigner> _createSigner() async {
     var args = '?platform=';
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
