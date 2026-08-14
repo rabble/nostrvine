@@ -23,10 +23,23 @@ class ChangeEmailCubit extends Cubit<ChangeEmailState> {
       super(const ChangeEmailState());
 
   final AccountCredentialsRepository _repository;
+  Future<void>? _currentEmailLoad;
 
   /// Read the address Keycast has on file. A failure is not surfaced: the form
   /// still works without it, so there is nothing for the user to act on.
   Future<void> loadCurrentEmail() async {
+    final existingLoad = _currentEmailLoad;
+    if (existingLoad != null) {
+      await existingLoad;
+      return;
+    }
+
+    final load = _loadCurrentEmail();
+    _currentEmailLoad = load;
+    await load;
+  }
+
+  Future<void> _loadCurrentEmail() async {
     final status = await _repository.fetchAccountStatus();
     if (isClosed) return;
     final email = status?.email;
@@ -60,6 +73,12 @@ class ChangeEmailCubit extends Cubit<ChangeEmailState> {
   /// only a server verdict moves it to `requestSent` or `failure`.
   Future<void> submit() async {
     if (state.isSubmitting) return;
+
+    final currentEmailLoad = _currentEmailLoad;
+    if (currentEmailLoad != null) {
+      await currentEmailLoad;
+      if (isClosed || state.isSubmitting) return;
+    }
 
     final newEmail = state.newEmail.trim();
     final emailError = _newEmailError(newEmail);
@@ -98,7 +117,8 @@ class ChangeEmailCubit extends Cubit<ChangeEmailState> {
 
     final reason = _reasonFrom(result.failure);
     Log.warning(
-      'Email change refused: $reason',
+      'Email change refused: $reason'
+      '${result.error == null ? '' : ' (${result.error})'}',
       name: 'ChangeEmailCubit',
       category: LogCategory.auth,
     );
@@ -119,7 +139,8 @@ class ChangeEmailCubit extends Cubit<ChangeEmailState> {
     // so "ME@x.com" is the same account as "me@x.com" and would come back as an
     // accepted no-op.
     final current = state.currentEmail;
-    if (current != null && current.toLowerCase() == newEmail.toLowerCase()) {
+    if (current != null &&
+        current.trim().toLowerCase() == newEmail.toLowerCase()) {
       return NewEmailFieldError.sameAsCurrent;
     }
     return null;

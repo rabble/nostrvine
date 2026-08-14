@@ -157,29 +157,39 @@ class _Form extends StatelessWidget {
                       color: context.vineColors.primaryText,
                     ),
                   ),
-                DivineAuthTextField(
-                  controller: newEmailController,
-                  label: context.l10n.changeEmailNewLabel,
-                  enabled: !state.isSubmitting,
-                  autocorrect: false,
-                  keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [AutofillHints.email],
-                  errorText: _newEmailErrorText(context, state.newEmailError),
-                  textInputAction: TextInputAction.next,
-                  onChanged: cubit.updateNewEmail,
-                ),
-                DivineAuthTextField(
-                  controller: passwordController,
-                  label: context.l10n.changeEmailPasswordLabel,
-                  obscureText: true,
-                  enabled: !state.isSubmitting,
-                  autofillHints: const [AutofillHints.password],
-                  errorText: state.passwordMissing
-                      ? context.l10n.authPasswordRequired
-                      : null,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => cubit.submit(),
-                  onChanged: cubit.updatePassword,
+                AutofillGroup(
+                  child: Column(
+                    spacing: 16,
+                    children: [
+                      DivineAuthTextField(
+                        controller: newEmailController,
+                        label: context.l10n.changeEmailNewLabel,
+                        enabled: !state.isSubmitting,
+                        autocorrect: false,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        errorText: _newEmailErrorText(
+                          context,
+                          state.newEmailError,
+                        ),
+                        textInputAction: TextInputAction.next,
+                        onChanged: cubit.updateNewEmail,
+                      ),
+                      DivineAuthTextField(
+                        controller: passwordController,
+                        label: context.l10n.changeEmailPasswordLabel,
+                        obscureText: true,
+                        enabled: !state.isSubmitting,
+                        autofillHints: const [AutofillHints.password],
+                        errorText: state.passwordMissing
+                            ? context.l10n.authPasswordRequired
+                            : null,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => cubit.submit(),
+                        onChanged: cubit.updatePassword,
+                      ),
+                    ],
+                  ),
                 ),
                 if (state.failureReason != null)
                   _FailureMessage(reason: state.failureReason!),

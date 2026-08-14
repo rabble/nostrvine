@@ -310,6 +310,21 @@ void main() {
       expect(result.failure, ChangeEmailFailure.rateLimited);
     });
 
+    test('maps a 5xx to a server fault', () async {
+      final oauth = KeycastOAuth(
+        config: config,
+        httpClient: clientFor(path, status: 503),
+      );
+
+      final result = await oauth.changeEmail(
+        token: 'tok123',
+        newEmail: 'new@example.com',
+        password: 'hunter2',
+      );
+
+      expect(result.failure, ChangeEmailFailure.server);
+    });
+
     test('maps a transport failure to network', () async {
       final oauth = KeycastOAuth(
         config: config,

@@ -17,9 +17,7 @@ void main() {
 
     setUp(() {
       repository = _MockAccountCredentialsRepository();
-      when(
-        () => repository.fetchAccountStatus(),
-      ).thenAnswer((_) async => null);
+      when(() => repository.fetchAccountStatus()).thenAnswer((_) async => null);
     });
 
     ChangeEmailCubit buildSubject() => ChangeEmailCubit(repository: repository);
@@ -43,6 +41,46 @@ void main() {
         ),
       ).thenAnswer((_) async => result);
     }
+
+    blocTest<ChangeEmailCubit, ChangeEmailState>(
+      'waits for the current-address load before accepting a no-op change',
+      build: buildSubject,
+      setUp: () {
+        when(() => repository.fetchAccountStatus()).thenAnswer((_) async {
+          await Future<void>.delayed(Duration.zero);
+          return const KeycastAccountStatus(
+            email: 'old@example.com',
+            emailVerified: true,
+            publicKey: 'abc',
+            verifiedMinor: false,
+          );
+        });
+      },
+      act: (cubit) async {
+        final load = cubit.loadCurrentEmail();
+        cubit
+          ..updateNewEmail('OLD@example.com')
+          ..updatePassword('hunter2');
+        await cubit.submit();
+        await load;
+      },
+      skip: 3,
+      expect: () => [
+        isA<ChangeEmailState>()
+            .having((s) => s.currentEmail, 'currentEmail', 'old@example.com')
+            .having(
+              (s) => s.newEmailError,
+              'newEmailError',
+              NewEmailFieldError.sameAsCurrent,
+            ),
+      ],
+      verify: (_) => verifyNever(
+        () => repository.changeEmail(
+          newEmail: any(named: 'newEmail'),
+          password: any(named: 'password'),
+        ),
+      ),
+    );
 
     blocTest<ChangeEmailCubit, ChangeEmailState>(
       'shows the address Keycast has on file',

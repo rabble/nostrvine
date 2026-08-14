@@ -105,7 +105,8 @@ class ChangePasswordCubit extends Cubit<ChangePasswordState> {
 
     final reason = _reasonFrom(result.failure);
     Log.warning(
-      'Password change refused: $reason',
+      'Password change refused: $reason'
+      '${result.error == null ? '' : ' (${result.error})'}',
       name: 'ChangePasswordCubit',
       category: LogCategory.auth,
     );
