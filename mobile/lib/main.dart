@@ -56,6 +56,7 @@ import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
+import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
@@ -1429,22 +1430,21 @@ Future<void> _startOpenVineApp() async {
   // See #3758.
   final buildTag = '${packageInfo.version}+${packageInfo.buildNumber}';
   unawaited(CrashReportingService.instance.setCustomKey('build_tag', buildTag));
-  final shorebirdUpdater = ShorebirdUpdater();
-  unawaited(
-    _recordBuildProvenance(
-      BuildProvenanceService(
+
+  // Provenance is diagnostic, so it waits for the first frame. Constructing a
+  // ShorebirdUpdater probes the Rust updater over FFI on the calling thread,
+  // which upstream flags as a hang risk while the auto-update thread holds the
+  // config lock — not something to run before runApp.
+  final environment = container.read(currentEnvironmentProvider).environment;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(
+      _recordBuildProvenance(
         packageInfo: packageInfo,
         installSource: installSource,
-        environment: container.read(currentEnvironmentProvider).environment,
-        platform: _startupPlatformName(),
-        shorebirdAvailable: shorebirdUpdater.isAvailable,
-        buildMode: BuildMode.current,
-        readPatchNumber: shorebirdUpdater.isAvailable
-            ? () async => (await shorebirdUpdater.readCurrentPatch())?.number
-            : null,
+        environment: environment,
       ),
-    ),
-  );
+    );
+  });
 
   runApp(
     ContainerSwapHost(
@@ -1458,11 +1458,23 @@ Future<void> _startOpenVineApp() async {
   );
 }
 
-Future<void> _recordBuildProvenance(
-  BuildProvenanceService provenanceService,
-) async {
+Future<void> _recordBuildProvenance({
+  required PackageInfo packageInfo,
+  required InstallSource installSource,
+  required AppEnvironment environment,
+}) async {
   try {
-    final provenance = await provenanceService.resolve();
+    final shorebirdUpdater = ShorebirdUpdater();
+    final provenance = await BuildProvenanceService(
+      packageInfo: packageInfo,
+      installSource: installSource,
+      environment: environment,
+      platform: _startupPlatformName(),
+      shorebirdAvailable: shorebirdUpdater.isAvailable,
+      buildMode: BuildMode.current,
+      readPatchNumber: () async =>
+          (await shorebirdUpdater.readCurrentPatch())?.number,
+    ).resolve();
     Log.info(provenance.summary, name: 'Main', category: LogCategory.system);
     CrashReportingService.instance.log(provenance.summary);
     unawaited(
