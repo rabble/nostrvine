@@ -116,11 +116,16 @@ void main() {
         );
       });
 
-      // Sebastian and Rabble are on the team list and in the curation
-      // constants. The two lists grant different things and are allowed to
-      // diverge, so this only pins that the shared entries agree today —
-      // catching a typo in one copy, not forbidding a future split.
-      test('shared entries agree with the curation constants', () {
+      // Sebastian and Rabble are spelled out in both this file and the
+      // curation constants, so a rotation or a typo can move one copy and
+      // leave the other behind.
+      //
+      // Pinned in one direction only, and deliberately: an account trusted to
+      // publish Divine's official kind-30005 lists is acting as Divine, so it
+      // should carry the badge too. The reverse is not required — the lists
+      // stay separate so that adding a team member never hands out curation
+      // authority, which is the direction that actually matters.
+      test('every curation pubkey is also a team pubkey', () {
         for (final pubkey in AppConstants.divineTeamPubkeys) {
           expect(kDivineTeamPubkeys, contains(pubkey));
         }
