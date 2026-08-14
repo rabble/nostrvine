@@ -473,20 +473,36 @@ void main() {
         );
       });
 
-      test('throws TimeoutException when the request hangs', () async {
-        // Simulates a dead socket (e.g. Android Doze killing the
-        // connection) — the request future never completes.
-        mockClient = MockClient((request) => Completer<http.Response>().future);
+      test(
+        'throws RpcTimeoutException when a single-op request hangs',
+        () async {
+          // Simulates a dead socket (e.g. Android Doze killing the
+          // connection) — the request future never completes. Single-op RPCs
+          // carry the same transient marker as Keycast's own 504 so DM sends
+          // classify both give-up paths identically.
+          mockClient = MockClient(
+            (request) => Completer<http.Response>().future,
+          );
 
-        final rpc = KeycastRpc(
-          nostrApi: 'https://login.divine.video/api/nostr',
-          accessToken: 'test_token',
-          httpClient: mockClient,
-          requestTimeout: const Duration(milliseconds: 50),
-        );
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClient: mockClient,
+            requestTimeout: const Duration(milliseconds: 50),
+          );
 
-        await expectLater(rpc.getPublicKey(), throwsA(isA<TimeoutException>()));
-      });
+          await expectLater(
+            rpc.getPublicKey(),
+            throwsA(
+              isA<RpcTimeoutException>().having(
+                (e) => e,
+                'transient marker',
+                isA<TransientSignerFailure>(),
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('signCanonicalPayload', () {

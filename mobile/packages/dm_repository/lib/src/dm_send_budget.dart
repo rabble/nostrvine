@@ -50,9 +50,10 @@ abstract final class DmSendBudget {
   /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 20s).
   ///
   /// Restated here because `dm_repository` cannot import `keycast_flutter`.
-  /// The app-layer guard test asserts the real relationship, so this going
-  /// stale fails CI rather than silently under-sizing the bound — which is the
-  /// #6586 failure mode itself.
+  /// [boundedSignerFloor] exposes the derived floor so the app-layer guard can
+  /// assert the real relationship. That makes this going stale fail CI rather
+  /// than silently under-sizing the bound — which is the #6586 failure mode
+  /// itself.
   static const int _twoTransportBoundsSeconds = 40;
 
   /// One server-side wrap-batch transport bound
@@ -84,8 +85,11 @@ abstract final class DmSendBudget {
   static const int _boundedSignerFloorSeconds =
       _twoTransportBoundsSeconds + _wrapBuildLocalCryptoSeconds;
 
-  /// Minimum per-wrap build budget for signers that bound their own
-  /// operations. Exposed so the app layer can pin it to Keycast's real bound.
+  /// Minimum wrap-build budget for signers that bound their own operations.
+  ///
+  /// Exposed only so the app-layer guard can compare this package's restated
+  /// Keycast floor against `KeycastRpc.defaultRequestTimeout`, which
+  /// `dm_repository` cannot import directly.
   static const Duration boundedSignerFloor = Duration(
     seconds: _boundedSignerFloorSeconds,
   );
