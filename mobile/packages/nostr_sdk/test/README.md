@@ -12,7 +12,7 @@ This directory contains a comprehensive test suite for the Nostr SDK, created as
 #### `exports_test.dart`
 Validates that all exported classes and constants are properly accessible from the main package:
 - Core classes (Nostr, Event, EventKind, Subscription)
-- Signing implementations (NostrSigner, LocalNostrSigner, PubkeyOnlyNostrSigner)
+- Signing implementations (NostrSigner, LocalNostrSigner, UnauthenticatedSigner)
 - Relay classes (Relay, RelayPool, RelayStatus, RelayType, EventFilter)
 - NIP implementations (Contact, ContactList, Nip19, GroupIdentifier)
 - Utility classes (StringUtil, DateFormatUtil, UploadUtil)

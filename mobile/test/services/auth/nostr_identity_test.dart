@@ -8,6 +8,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 
@@ -764,6 +765,94 @@ void main() {
       );
 
       expect(identity.signsWithLocalKey, isFalse);
+    });
+  });
+
+  group(PubkeyOnlyNostrIdentity, () {
+    late PubkeyOnlyNostrIdentity identity;
+
+    setUp(() {
+      identity = PubkeyOnlyNostrIdentity(pubkey: testPublicKey);
+    });
+
+    tearDown(() async {
+      await LogCaptureService().clearAllLogs();
+    });
+
+    test('still reports the known public key', () async {
+      expect(await identity.getPublicKey(), equals(testPublicKey));
+    });
+
+    // This identity is live — it is built on an offline Divine-OAuth restore
+    // and becomes the app-wide NostrClient's signer. Because it reports a real
+    // pubkey, `hasKeys` and `isReadyForActiveClient` are both true for it, so
+    // it reaches signer call sites that catch only `Exception`, or do not
+    // catch locally at all. These five must therefore return null rather than
+    // throw; the warning log is what makes the skipped gate visible.
+    test('signEvent returns null rather than throwing', () async {
+      final event = Event(testPublicKey, 1, const <List<String>>[], 'hi');
+
+      expect(await identity.signEvent(event), isNull);
+    });
+
+    test('signEvent logs the skipped signing gate', () async {
+      final event = Event(testPublicKey, 1, const <List<String>>[], 'hi');
+
+      await LogCaptureService().clearAllLogs();
+
+      expect(await identity.signEvent(event), isNull);
+
+      final logs = LogCaptureService().getRecentLogs();
+      expect(
+        logs.any(
+          (entry) =>
+              entry.level == LogLevel.warning &&
+              entry.category == LogCategory.auth &&
+              entry.name == 'PubkeyOnlyNostrIdentity' &&
+              entry.message.contains('No signer: cannot sign an event') &&
+              entry.message.contains(testPublicKey),
+        ),
+        isTrue,
+      );
+    });
+
+    test('encrypt returns null rather than throwing', () async {
+      expect(await identity.encrypt(testPublicKey, 'plaintext'), isNull);
+    });
+
+    test('decrypt returns null rather than throwing', () async {
+      expect(await identity.decrypt(testPublicKey, 'ciphertext'), isNull);
+    });
+
+    test('nip44Encrypt returns null rather than throwing', () async {
+      expect(await identity.nip44Encrypt(testPublicKey, 'plaintext'), isNull);
+    });
+
+    test('nip44Decrypt returns null rather than throwing', () async {
+      expect(await identity.nip44Decrypt(testPublicKey, 'ciphertext'), isNull);
+    });
+
+    // Regression guard: signCanonicalPayload's null means "capability
+    // unsupported" (same as Bunker/Amber/NIP-07, whose protocols have no such
+    // verb), not "skipped gate" — so it must stay null and stay unlogged.
+    test(
+      'signCanonicalPayload returns null without logging',
+      () async {
+        await LogCaptureService().clearAllLogs();
+
+        expect(
+          await identity.signCanonicalPayload(Uint8List.fromList([1, 2, 3])),
+          isNull,
+        );
+        expect(LogCaptureService().getRecentLogs(), isEmpty);
+      },
+    );
+
+    test('getRelays returns null without logging', () async {
+      await LogCaptureService().clearAllLogs();
+
+      expect(await identity.getRelays(), isNull);
+      expect(LogCaptureService().getRecentLogs(), isEmpty);
     });
   });
 }

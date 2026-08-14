@@ -5508,6 +5508,39 @@ void main() {
         },
       );
 
+      // The signer can throw rather than return null — a Keycast RPC error or
+      // timeout does, on a fully keyed account. Nothing between here and the
+      // signer catches, and this method's own handler is `on Exception`, so
+      // without local containment the throw left claimUsername entirely.
+      test(
+        'returns UsernameClaimError when the signer throws',
+        () async {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenThrow(StateError('no signer'));
+
+          final usernameClaimResult = await profileRepository.claimUsername(
+            username: 'username',
+          );
+
+          expect(
+            usernameClaimResult,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Signing failed',
+            ),
+          );
+
+          // The request never left the device, so no name was claimed.
+          verifyNever(() => mockHttpClient.post(any()));
+        },
+      );
+
       test(
         'sends lowercase username in payload for mixed-case input',
         () async {

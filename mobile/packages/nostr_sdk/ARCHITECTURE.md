@@ -103,7 +103,7 @@ abstract class NostrSigner {
 **Implementations:**
 - **LocalNostrSigner**: Local private key signing
 - **NostrRemoteSigner**: NIP-46 remote signing
-- **PubkeyOnlyNostrSigner**: Read-only mode
+- **UnauthenticatedSigner**: Keyless signed-out state
 - **AndroidNostrSigner**: NIP-55 Android signer integration
 
 ### 5. Local Storage (`lib/relay_local/`)
