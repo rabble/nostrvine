@@ -16,6 +16,11 @@ Finder _specialCheckmark() => find.byWidgetPredicate(
   (w) => w is DivineIcon && w.icon == DivineIconName.check,
 );
 
+/// Pubkey on the profile-checkmark allowlist in
+/// `lib/widgets/special_profile_checkmark.dart`.
+const _specialProfilePubkey =
+    'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4';
+
 void main() {
   const defaultPubkey =
       'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
@@ -70,12 +75,7 @@ void main() {
   });
 
   testWidgets('shows a checkmark for special profile pubkey', (tester) async {
-    await tester.pumpWidget(
-      buildSubject(
-        pubkey:
-            'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
-      ),
-    );
+    await tester.pumpWidget(buildSubject(pubkey: _specialProfilePubkey));
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);
