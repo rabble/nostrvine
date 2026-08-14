@@ -77,7 +77,7 @@ lib/
 ├── signer/                 # Signing implementations
 │   ├── nostr_signer.dart
 │   ├── local_nostr_signer.dart
-│   └── pubkey_only_nostr_signer.dart
+│   └── unauthenticated_signer.dart
 ├── relay/                  # Relay management
 │   ├── relay_pool.dart
 │   ├── relay.dart
