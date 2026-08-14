@@ -3070,6 +3070,9 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       mockDraftStorage = _MockDraftStorageService();
+      when(
+        () => mockDraftStorage.draftExists(any()),
+      ).thenAnswer((_) async => false);
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -3194,6 +3197,9 @@ void main() {
       // later wipe a new session's recovery point. So a stalled cleanup keeps
       // isSavingDraft true and the save unresolved rather than being dropped.
       when(() => mockDraftStorage.saveDraft(any())).thenAnswer((_) async {});
+      when(
+        () => mockDraftStorage.draftExists(VideoEditorConstants.autoSaveId),
+      ).thenAnswer((_) async => true);
 
       fakeAsync((async) {
         // Create the completer inside the fake zone so completing it later is
@@ -3263,6 +3269,9 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       mockDraftStorage = _MockDraftStorageService();
       database = AppDatabase.test(NativeDatabase.memory());
+      when(
+        () => mockDraftStorage.draftExists(any()),
+      ).thenAnswer((_) async => false);
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -3305,6 +3314,15 @@ void main() {
 
       fakeAsync((async) {
         final notifier = container.read(videoEditorProvider.notifier);
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              limitClipDuration: false,
+              video: EditorVideo.file('/path/to/video.mp4'),
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+              duration: const Duration(seconds: 6),
+            );
         notifier.updateMetadata(title: 'Almost lost');
 
         bool? result;
@@ -3328,6 +3346,44 @@ void main() {
         verifyNoMoreInteractions(mockDraftStorage);
       });
     });
+
+    test('deletes autosave instead of persisting a zero-clip draft', () async {
+      when(
+        () => mockDraftStorage.draftExists(VideoEditorConstants.autoSaveId),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockDraftStorage.deleteDraft(VideoEditorConstants.autoSaveId),
+      ).thenAnswer((_) async {});
+
+      final result = await container
+          .read(videoEditorProvider.notifier)
+          .autosaveChanges();
+
+      expect(result, isFalse);
+      verify(
+        () => mockDraftStorage.deleteDraft(VideoEditorConstants.autoSaveId),
+      ).called(1);
+      verifyNever(
+        () => mockDraftStorage.saveDraft(
+          any(),
+          deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
+        ),
+      );
+    });
+
+    test(
+      'removeAutosavedDraft is a no-op when autosave is already gone',
+      () async {
+        await container
+            .read(videoEditorProvider.notifier)
+            .removeAutosavedDraft();
+
+        verify(
+          () => mockDraftStorage.draftExists(VideoEditorConstants.autoSaveId),
+        ).called(1);
+        verifyNever(() => mockDraftStorage.deleteDraft(any()));
+      },
+    );
   });
 
   group('VideoEditorProvider deferred file cleanup', () {
@@ -3363,6 +3419,9 @@ void main() {
       database = AppDatabase.test(NativeDatabase.memory());
       tempDir = Directory.systemTemp.createTempSync('editor_defer_test');
       containerDisposed = false;
+      when(
+        () => mockDraftStorage.draftExists(any()),
+      ).thenAnswer((_) async => false);
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -3401,6 +3460,20 @@ void main() {
       return orphan;
     }
 
+    void addTimelineClip() {
+      final source = File(p.join(tempDir.path, 'source.mp4'))
+        ..writeAsBytesSync(const [0, 1, 2, 3]);
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            limitClipDuration: false,
+            video: EditorVideo.file(source.path),
+            targetAspectRatio: AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+            duration: const Duration(seconds: 6),
+          );
+    }
+
     Future<void> expectFileReaped(File file, {required String reason}) async {
       for (var attempt = 0; attempt < 20; attempt++) {
         await pumpEventQueue();
@@ -3412,6 +3485,7 @@ void main() {
 
     test('an autosave keeps its orphaned files alive', () async {
       final orphan = stubDeferringAutosave();
+      addTimelineClip();
       final notifier = container.read(videoEditorProvider.notifier);
 
       await notifier.autosaveChanges();
@@ -3428,6 +3502,7 @@ void main() {
 
     test('reset reaps deferred files at editor-session end', () async {
       final orphan = stubDeferringAutosave();
+      addTimelineClip();
       final notifier = container.read(videoEditorProvider.notifier);
       await notifier.autosaveChanges();
 
@@ -3445,6 +3520,7 @@ void main() {
 
     test('container teardown reaps deferred files as a safety net', () async {
       final orphan = stubDeferringAutosave();
+      addTimelineClip();
       await container.read(videoEditorProvider.notifier).autosaveChanges();
       expect(orphan.existsSync(), isTrue);
 

@@ -421,8 +421,8 @@ void main() {
         await renderStarted;
         expect(
           proVideoEditor.cancelCalls,
-          equals(['tracked-render']),
-          reason: 'renders unconditionally pre-cancel the task id',
+          isEmpty,
+          reason: 'new renders do not cancel native work before registration',
         );
         expect(
           VideoEditorRenderService.activeNativeTaskIdsForTesting,
@@ -437,7 +437,7 @@ void main() {
 
         expect(
           proVideoEditor.cancelCalls,
-          equals(['tracked-render', 'tracked-render']),
+          equals(['tracked-render']),
         );
         await renderCancellation;
         expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);

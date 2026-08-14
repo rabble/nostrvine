@@ -16,8 +16,10 @@ import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/native_render_task_registry.dart';
+import 'package:openvine/services/video_editor/render_cancellation_registry.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
+import 'package:openvine/services/video_editor/video_render_failures.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -25,55 +27,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Why a render produced no output.
-///
-/// Carried by [VideoRenderFailedException] and reported as the
-/// `failure_reason` attribute on the `video_generation` trace, so a render
-/// that fails on device can be told apart from one that was superseded (#7125).
-enum VideoRenderFailureReason {
-  /// Nothing to render — the clip list was empty.
-  emptyClips('empty_clips'),
-
-  /// A stop-motion clip could not be assembled into its base video.
-  stopMotionAssembly('stop_motion_assembly'),
-
-  /// The native render pipeline threw.
-  nativeRender('native_render'),
-
-  /// The native task was cancelled — by the user, or by teardown
-  /// (`AppLifecycleState.detached`) cancelling every in-flight task.
-  canceled('canceled');
-
-  const VideoRenderFailureReason(this.traceValue);
-
-  /// Stable identifier used in telemetry. Independent of the enum name so a
-  /// rename cannot silently split a Firebase dimension.
-  final String traceValue;
-}
-
-/// Thrown when a render finished without producing a video.
-class VideoRenderFailedException implements Exception {
-  const VideoRenderFailedException(this.reason, {this.cause});
-
-  final VideoRenderFailureReason reason;
-
-  /// The underlying error, when the failure came from a throw rather than a
-  /// guard. Native failures surface here as `PlatformException`.
-  final Object? cause;
-
-  /// Compact telemetry label, e.g. `native_render:PlatformException`.
-  ///
-  /// The cause's type — never its message — so device paths and other
-  /// free-form native text stay out of the trace attribute.
-  String get traceValue => cause == null
-      ? reason.traceValue
-      : '${reason.traceValue}:${cause.runtimeType}';
-
-  @override
-  String toString() =>
-      'VideoRenderFailedException(${reason.traceValue})'
-      '${cause == null ? '' : ': $cause'}';
-}
+export 'package:openvine/services/video_editor/video_render_failures.dart';
 
 /// Result of normalizing clips to a target aspect ratio.
 class _NormalizationResult {
@@ -334,8 +288,6 @@ class VideoEditorRenderService {
   static final _compositeProgressController =
       StreamController<ProgressModel>.broadcast();
 
-  static final Set<String> _cancelledTaskIds = <String>{};
-
   @visibleForTesting
   static double proofModeProgressBudgetForClipCount(int clipCount) {
     final normalizedClipCount = clipCount < 1 ? 1 : clipCount;
@@ -364,12 +316,12 @@ class VideoEditorRenderService {
   @visibleForTesting
   static void resetActiveNativeTaskIdsForTesting() {
     NativeRenderTaskRegistry.reset();
-    _cancelledTaskIds.clear();
+    RenderCancellationRegistry.reset();
   }
 
   @visibleForTesting
   static bool isTaskCancellationRequestedForTesting(String taskId) =>
-      _cancelledTaskIds.contains(taskId);
+      RenderCancellationRegistry.isCancellationRequested(taskId);
 
   @visibleForTesting
   static void emitCompositeProgressForTesting({
@@ -456,6 +408,7 @@ class VideoEditorRenderService {
     }
 
     final effectiveTaskId = taskId ?? clips.first.id;
+    final renderToken = RenderCancellationRegistry.start(effectiveTaskId);
     // Frames-only stop-motion clips need an assembly pass (stills → base mp4)
     // before the composite render. That pass gets its own slice of the
     // progress budget — without it the bar sits at 0% for the whole (slow)
@@ -608,6 +561,7 @@ class VideoEditorRenderService {
 
       return (clip, proofManifestJson);
     } finally {
+      RenderCancellationRegistry.finish(effectiveTaskId, renderToken);
       await progressTracker.dispose();
       await _cleanupTempFiles(intermediateStopMotionPaths);
     }
@@ -1351,33 +1305,41 @@ class VideoEditorRenderService {
         (task: reducedTask, settle: settleDelay, reduced: true),
     ];
 
-    _cancelledTaskIds.remove(baseTask.id);
-    for (var i = 0; i < attempts.length; i++) {
-      final attempt = attempts[i];
-      if (attempt.settle > Duration.zero) {
-        await Future<void>.delayed(attempt.settle);
-      }
-      _throwIfCancellationRequested(baseTask.id);
-      try {
-        await encode(attempt.task);
+    final renderGeneration = RenderCancellationRegistry.startIfIdle(
+      baseTask.id,
+    );
+    try {
+      for (var i = 0; i < attempts.length; i++) {
+        final attempt = attempts[i];
+        if (attempt.settle > Duration.zero) {
+          await Future<void>.delayed(attempt.settle);
+        }
         _throwIfCancellationRequested(baseTask.id);
-        return;
-      } on RenderEncoderException catch (e) {
-        final isLast = i == attempts.length - 1;
-        Log.warning(
-          '⚠️ Export encoder init failed on attempt ${i + 1}/${attempts.length}'
-          '${attempt.reduced ? ' (reduced resolution)' : ''}'
-          '${isLast ? '' : '; retrying'}: $e',
-          name: _logName,
-          category: .video,
-        );
-        if (isLast) rethrow;
+        try {
+          await encode(attempt.task);
+          _throwIfCancellationRequested(baseTask.id);
+          return;
+        } on RenderEncoderException catch (e) {
+          final isLast = i == attempts.length - 1;
+          Log.warning(
+            '⚠️ Export encoder init failed on attempt ${i + 1}/${attempts.length}'
+            '${attempt.reduced ? ' (reduced resolution)' : ''}'
+            '${isLast ? '' : '; retrying'}: $e',
+            name: _logName,
+            category: .video,
+          );
+          if (isLast) rethrow;
+        }
+      }
+    } finally {
+      if (renderGeneration.started) {
+        RenderCancellationRegistry.finish(baseTask.id, renderGeneration.token);
       }
     }
   }
 
   static void _throwIfCancellationRequested(String taskId) {
-    if (_cancelledTaskIds.remove(taskId)) {
+    if (RenderCancellationRegistry.consumeCancellation(taskId)) {
       throw const RenderCanceledException();
     }
   }
@@ -1487,11 +1449,15 @@ class VideoEditorRenderService {
     String outputPath,
     VideoRenderData task,
   ) async {
-    await renderNativeVideoToFile(outputPath, task);
+    await renderNativeVideoToFile(
+      outputPath,
+      task,
+      reuseActiveCancellation: true,
+    );
   }
 
   static Future<void> cancelTask(String id) async {
-    _cancelledTaskIds.add(id);
+    RenderCancellationRegistry.cancel(id);
     await _cancelNativeTaskOnly(id);
   }
 
@@ -1529,15 +1495,27 @@ class VideoEditorRenderService {
     // Surface native renderer warnings through ProVideoEditorLogForwarder for
     // #4801 diagnostics while clean renders stay quiet.
     NativeLogLevel? nativeLogLevel = NativeLogLevel.warning,
+    bool reuseActiveCancellation = false,
   }) async {
-    _cancelledTaskIds.remove(task.id);
-    await _cancelNativeTaskOnly(task.id);
+    final renderGeneration = reuseActiveCancellation
+        ? RenderCancellationRegistry.startIfIdle(task.id)
+        : (token: RenderCancellationRegistry.start(task.id), started: true);
+    if (NativeRenderTaskRegistry.activeTaskIds.contains(task.id)) {
+      await _cancelNativeTaskOnly(task.id);
+    }
     return NativeRenderTaskRegistry.track(task.id, () {
-      return ProVideoEditor.instance.renderVideoToFile(
-        outputPath,
-        task,
-        nativeLogLevel: nativeLogLevel,
-      );
+      return Future.sync(() {
+        _throwIfCancellationRequested(task.id);
+        return ProVideoEditor.instance.renderVideoToFile(
+          outputPath,
+          task,
+          nativeLogLevel: nativeLogLevel,
+        );
+      }).whenComplete(() {
+        if (renderGeneration.started) {
+          RenderCancellationRegistry.finish(task.id, renderGeneration.token);
+        }
+      });
     });
   }
 

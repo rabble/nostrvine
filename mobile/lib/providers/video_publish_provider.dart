@@ -196,13 +196,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       reset();
 
       await Future.wait([
-        ref
-            .read(clipManagerProvider.notifier)
-            .clearAll(keepAutosavedDraft: keepAutosavedDraft),
-        ref
-            .read(videoEditorProvider.notifier)
-            .reset(keepAutosavedDraft: keepAutosavedDraft),
+        ref.read(clipManagerProvider.notifier).clearSessionClips(),
+        ref.read(videoEditorProvider.notifier).reset(keepAutosavedDraft: true),
       ]);
+      if (!keepAutosavedDraft) {
+        await ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
+      }
     } catch (error, stackTrace) {
       Log.error(
         '❌ Failed to clear video providers: $error',
