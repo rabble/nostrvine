@@ -30,7 +30,16 @@
 // or a callback handed to a detached sink like `.listen` / `.then` / `Timer` —
 // with no `isClosed` guard between that point and the call. `emitIfOpen` /
 // `addIfOpen` from lib/blocs/close_guard.dart clear a site, as does an
-// `if (isClosed) return;` after the await.
+// `if (isClosed) return;` after the await — including the `if (isClosed) {
+// await cleanup(); return; }` form, since that await only runs on the path
+// that never reaches the call. The guard has to be this instance's:
+// `someController.isClosed` clears nothing. It also only covers the rest of
+// the block it sits in — an await above an enclosing block still suspends the
+// code after that block. A loop body counts as suspended throughout when it
+// awaits anywhere, since its tail runs before its head runs again.
+//
+// Classes and `mixin ... on Bloc/Cubit/BlocBase` bodies are both walked, since
+// a mixin reaches the same `emit`.
 //
 // Exit codes: 0 clean run, 2 bad usage / unreadable scan dir.
 import 'dart:io';
@@ -177,16 +186,37 @@ List<PostCloseSite> findPostCloseSites(
     final relative = file.path.startsWith('$pathPrefix/')
         ? file.path.substring(pathPrefix.length + 1)
         : file.path;
-    for (final decl in parsed.unit.declarations.whereType<ClassDeclaration>()) {
-      final superName = decl.extendsClause?.superclass.name.lexeme ?? '';
-      final isBloc = superName == 'Bloc' || superName.endsWith('Bloc');
-      final isCubit = superName == 'Cubit' || superName.endsWith('Cubit');
+    for (final decl in parsed.unit.declarations) {
+      final String typeName;
+      final List<String> supertypes;
+      if (decl is ClassDeclaration) {
+        typeName = decl.namePart.typeName.lexeme;
+        final superclass = decl.extendsClause?.superclass.name.lexeme;
+        supertypes = superclass == null ? const [] : [superclass];
+      } else if (decl is MixinDeclaration) {
+        // A `mixin ... on Cubit<S>` reaches the same emit as the class does,
+        // so scanning only classes would leave a one-line way past the guard.
+        typeName = decl.name.lexeme;
+        supertypes = [
+          for (final constraint
+              in decl.onClause?.superclassConstraints ?? const <NamedType>[])
+            constraint.name.lexeme,
+        ];
+      } else {
+        continue;
+      }
+      final isBloc = supertypes.any((name) => name.endsWith('Bloc'));
+      // `BlocBase` is the mixin constraint that reaches `emit` without
+      // reaching `add`, so it counts as a cubit rather than a bloc.
+      final isCubit = supertypes.any(
+        (name) => name.endsWith('Cubit') || name == 'BlocBase',
+      );
       if (!isBloc && !isCubit) continue;
       _Scanner(
         sites,
         path: relative,
         lineInfo: parsed.lineInfo,
-        type: decl.namePart.typeName.lexeme,
+        type: typeName,
         isBloc: isBloc,
       ).scan(decl);
     }
@@ -198,8 +228,8 @@ List<PostCloseSite> findPostCloseSites(
   return sites;
 }
 
-/// Source-order walk over one class body, tracking per member whether a
-/// suspension point has been crossed since the last `isClosed` guard.
+/// Source-order walk over one class or mixin body, tracking per member whether
+/// a suspension point has been crossed since the last `isClosed` guard.
 class _Scanner {
   _Scanner(
     this.sites, {
@@ -225,7 +255,7 @@ class _Scanner {
   /// the handler's `Emitter.call` rather than `BlocBase.emit`.
   bool emitterInScope = false;
 
-  void scan(ClassDeclaration declaration) =>
+  void scan(CompilationUnitMember declaration) =>
       _children(declaration, guarded: false);
 
   void _children(AstNode node, {required bool guarded}) {
@@ -234,18 +264,57 @@ class _Scanner {
     }
   }
 
-  bool _mentionsIsClosed(AstNode? node) =>
-      node != null && node.toSource().contains('isClosed');
+  /// Whether [node] tests *this* instance's `isClosed`.
+  ///
+  /// `someController.isClosed` says nothing about whether this bloc is still
+  /// open, so only the receiverless and `this.` forms clear a site.
+  bool _mentionsIsClosed(AstNode? node) {
+    if (node == null) return false;
+    if (node is SimpleIdentifier && node.name == 'isClosed') {
+      final parent = node.parent;
+      final qualified =
+          (parent is PropertyAccess && parent.propertyName == node) ||
+          (parent is PrefixedIdentifier && parent.identifier == node);
+      if (!qualified) return true;
+    }
+    if (node is PropertyAccess &&
+        node.target is ThisExpression &&
+        node.propertyName.name == 'isClosed') {
+      return true;
+    }
+    return node.childEntities.whereType<AstNode>().any(_mentionsIsClosed);
+  }
+
+  /// Whether [node] suspends the frame it sits in.
+  ///
+  /// A closure body is skipped: its `await` suspends the closure, not the loop
+  /// or method asking the question.
+  bool _containsAwait(AstNode node) {
+    for (final child in node.childEntities.whereType<AstNode>()) {
+      if (child is FunctionExpression) continue;
+      if (child is AwaitExpression || _containsAwait(child)) return true;
+    }
+    return false;
+  }
 
   /// `if (isClosed) return;` and friends — everything after it in this block is
   /// reachable only while open.
+  ///
+  /// Only the *exit* has to be unconditional, not the whole arm: the shape the
+  /// close-guard rule recommends is often `if (isClosed) { await cleanup();
+  /// return; }`, and an await that runs only on the closed path never suspends
+  /// the path that falls through.
   bool _isEarlyReturnGuard(Statement statement) {
     if (statement is! IfStatement) return false;
     if (!_mentionsIsClosed(statement.expression)) return false;
     final then = statement.thenStatement;
     final body = then is Block ? then.statements : [then];
-    return body.isNotEmpty &&
-        body.every((s) => s is ReturnStatement || s is BreakStatement);
+    if (body.isEmpty) return false;
+    final exit = body.last;
+    return exit is ReturnStatement ||
+        exit is BreakStatement ||
+        exit is ContinueStatement ||
+        (exit is ExpressionStatement && exit.expression is ThrowExpression);
   }
 
   void _node(AstNode node, {required bool guarded}) {
@@ -273,6 +342,11 @@ class _Scanner {
     }
 
     if (node is Block) {
+      // A block may not run at all (an `if` arm, a loop body), so what follows
+      // it is suspended if *either* path suspended: the one through the block,
+      // or the one around it. Without the join, a guard inside a conditional
+      // arm would silently clear every call after the arm closes.
+      final enteredSuspended = suspended;
       for (final statement in node.statements) {
         if (_isEarlyReturnGuard(statement)) {
           suspended = false;
@@ -280,11 +354,23 @@ class _Scanner {
         }
         _node(statement, guarded: guarded);
       }
+      suspended |= enteredSuspended;
       return;
     }
 
     if (node is IfStatement && _mentionsIsClosed(node.expression)) {
       _children(node, guarded: true);
+      return;
+    }
+
+    // A loop body's tail suspends before its head runs again, so a call above
+    // the await is still reachable across one on the next iteration.
+    if (node is ForStatement || node is WhileStatement || node is DoStatement) {
+      suspended =
+          suspended ||
+          (node is ForStatement && node.awaitKeyword != null) ||
+          _containsAwait(node);
+      _children(node, guarded: guarded);
       return;
     }
 

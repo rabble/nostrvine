@@ -124,6 +124,94 @@ class FooCubit extends Cubit<int> {
       expect(sites, hasLength(1));
     });
 
+    test('a guard that cleans up before returning still clears the site', () {
+      // The shape the close-guard rule recommends when there is work to undo
+      // on the closed path. The await inside the arm never runs on the path
+      // that falls through, so it does not re-suspend the emit below.
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> stop() async {
+    final path = await _recorder.stop();
+    if (isClosed) {
+      await _deleteFile(path);
+      return;
+    }
+    emit(1);
+  }
+}
+''');
+
+      expect(sites, isEmpty);
+    });
+
+    test('a guard inside a conditional arm does not clear the rest', () {
+      // The arm may not run, so the await above it still reaches emit(2).
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> load() async {
+    await _read();
+    if (flag) {
+      if (isClosed) return;
+      emit(1);
+    }
+    emit(2);
+  }
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.line, 8);
+    });
+
+    test('counts an emit above the await in a loop body', () {
+      // The tail suspends before the head runs again, so from the second
+      // iteration on this emit is reached across an await.
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> load() async {
+    for (final x in xs) {
+      emit(x);
+      await _read();
+    }
+  }
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.line, 4);
+    });
+
+    test("another object's isClosed does not clear the site", () {
+      // `_controller.isClosed` says nothing about whether this cubit is open.
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> load() async {
+    final value = await _read();
+    if (_controller.isClosed) return;
+    emit(value);
+  }
+}
+''');
+
+      expect(sites, hasLength(1));
+    });
+
+    test('counts an emit in a mixin on a cubit', () {
+      // Scanning only classes would leave `mixin ... on Cubit` as a one-line
+      // way past the ratchet.
+      final sites = scan('''
+mixin FooMixin on Cubit<int> {
+  Future<void> load() async {
+    final value = await _read();
+    emit(value);
+  }
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.type, 'FooMixin');
+    });
+
     test('emitIfOpen clears the site', () {
       final sites = scan('''
 class FooCubit extends Cubit<int> with CloseGuardedEmit<int> {
