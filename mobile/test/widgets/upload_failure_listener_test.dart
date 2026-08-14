@@ -128,9 +128,10 @@ Widget _buildHarness({
 /// [Localizations] nor [ScaffoldMessenger].
 ///
 /// This is the shape #7289 crashed on: reading l10n off a context that is
-/// mounted but has no localization ancestor throws a null check. It is also
-/// what a deactivated root navigator looks like — `mounted` stays true while
-/// every inherited lookup returns null.
+/// mounted but has no localization ancestor throws a null check. It stands in
+/// for a deactivated root navigator, which resolves the same way only in
+/// release builds — under asserts an ancestor lookup on a deactivated element
+/// throws instead of returning null.
 Widget _buildHarnessWithoutAppAncestors({
   required _MockBackgroundPublishBloc publishBloc,
   required _MockAuthService authService,
@@ -444,7 +445,8 @@ void main() {
     );
 
     testWidgets(
-      'does not throw when the root context has no localization ancestor',
+      'buffers the success when the root context has no localization '
+      'ancestor, then replays it once the ancestors appear',
       (tester) async {
         stubPublishBloc(const BackgroundPublishState());
         when(() => authService.isAuthenticated).thenReturn(true);
@@ -463,6 +465,27 @@ void main() {
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(tester.takeException(), isNull);
         expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+
+        // Failing closed must hand the count back, not swallow it: once the
+        // ancestors resolve, the buffered success replays on the next state.
+        // The key is detached first so the root navigator is rebuilt under
+        // [MaterialApp] rather than reparented with its ancestor-less route.
+        await tester.pumpWidget(
+          _buildHarness(
+            publishBloc: publishBloc,
+            authService: authService,
+            wireRootNavigatorKey: false,
+          ),
+        );
+        await tester.pumpWidget(
+          _buildHarness(publishBloc: publishBloc, authService: authService),
+        );
+        publishStream.add(const BackgroundPublishState());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
       },
     );
 
