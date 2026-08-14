@@ -6,10 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/change_password/change_password_cubit.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/account_credentials_providers.dart';
+import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/utils/validators.dart';
 
 /// Page layer: reads the repository from Riverpod and hands it to the cubit.
@@ -67,7 +68,9 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     final message = context.l10n.changePasswordSuccess;
     // Lets the platform password manager offer to update the saved entry.
     TextInput.finishAutofillContext();
-    context.pop();
+    // safePop rather than pop: a cold-entered stack has nothing to pop, and
+    // succeeding at the change must not end in a crash.
+    context.safePop(fallback: GeneralSettingsScreen.path);
     messenger.showSnackBar(DivineSnackbarContainer.snackBar(message));
   }
 
@@ -79,7 +82,8 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       appBar: DiVineAppBar(
         title: context.l10n.accountSettingsChangePassword,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: () =>
+            context.safePop(fallback: GeneralSettingsScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: BlocConsumer<ChangePasswordCubit, ChangePasswordState>(

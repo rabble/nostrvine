@@ -57,6 +57,9 @@ void main() {
       when(() => authService.isAuthenticated).thenReturn(true);
       when(() => authService.isAnonymous).thenReturn(false);
       when(() => authService.hasExpiredOAuthSession).thenReturn(false);
+      when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.automatic);
       when(() => audioSharingService.isAudioSharingEnabled).thenReturn(false);
       when(
         () => audioSharingService.setAudioSharingEnabled(any()),

@@ -5,10 +5,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/change_email/change_email_cubit.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/account_credentials_providers.dart';
+import 'package:openvine/screens/settings/general_settings_screen.dart';
 
 /// Page layer: reads the repository from Riverpod and hands it to the cubit.
 ///
@@ -62,7 +63,8 @@ class _ChangeEmailViewState extends State<ChangeEmailView> {
       appBar: DiVineAppBar(
         title: context.l10n.accountSettingsChangeEmail,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: () =>
+            context.safePop(fallback: GeneralSettingsScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: BlocBuilder<ChangeEmailCubit, ChangeEmailState>(
@@ -224,7 +226,8 @@ class _RequestSent extends StatelessWidget {
         DivineButton(
           expanded: true,
           label: context.l10n.changeEmailSentDone,
-          onPressed: context.pop,
+          onPressed: () =>
+              context.safePop(fallback: GeneralSettingsScreen.path),
         ),
         SizedBox(height: 32 + MediaQuery.viewPaddingOf(context).bottom),
       ],
