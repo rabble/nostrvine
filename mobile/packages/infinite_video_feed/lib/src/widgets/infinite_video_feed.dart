@@ -60,7 +60,6 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.nearEndThreshold = 10,
     this.onVideoLoopCompleted,
     this.onVideoStalled,
-    this.derivativeFailureCache,
     this.slowLoadThreshold = const Duration(seconds: 8),
     this.preloadGracePeriod = const Duration(seconds: 3),
     this.isActive = true,
@@ -137,13 +136,6 @@ class InfiniteVideoFeed extends StatefulWidget {
   ///
   /// Must be initialized before passing it in.
   final MediaCacheManager cache;
-
-  /// Cache of recently failed Divine derivative sources.
-  ///
-  /// When `null`, the feed creates an in-memory cache for its own controller
-  /// window. Tests and owning widgets may inject one to preserve demotion state
-  /// across feed rebuilds.
-  final DerivativeFailureCache? derivativeFailureCache;
 
   /// The initial video index to display.
   final int initialIndex;
@@ -529,8 +521,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       ..addListener(_syncPagePosition);
 
     _sources = PlaybackSourceRegistry();
-    _derivativeFailures =
-        widget.derivativeFailureCache ?? DerivativeFailureCache();
+    _derivativeFailures = DerivativeFailureCache();
     _prefetcher = DiskPrefetcher(cache: widget.cache, log: _log);
     // coverage:ignore-start
     // Callback wiring only; exercised transitively by watchdog/detector tests
