@@ -313,6 +313,8 @@ dependencies:
   window_manager: ^0.5.1
   firebase_core: ^4.4.0
   firebase_crashlytics: ^5.0.7
+  firebase_performance: ^0.11.1+4
+  firebase_messaging: ^16.1.1
   go_router: ^16.2.4
   # Runtime splash-screen control via FlutterNativeSplash.preserve/remove.
   # Used ONLY for the runtime API — do NOT add a flutter_native_splash:
@@ -337,8 +339,6 @@ dependencies:
   # 3.x bundles the selected native SQLite implementation through hooks, and
   # extra Flutter-specific native SQLite providers can make plain SQLite win.
   sqlite3: ^3.3.3
-  firebase_performance: ^0.11.1+4
-  firebase_messaging: ^16.1.1
   audio_session: ^0.2.2
   pro_video_editor: ^2.11.2
   pro_image_editor: ^13.3.1
