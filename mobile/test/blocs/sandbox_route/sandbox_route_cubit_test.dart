@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -128,6 +130,43 @@ void main() {
         verifyNever(mockService.fetchApprovedApps);
       },
     );
+
+    group('closed mid-flight', () {
+      test(
+        'load drops a resolved app instead of emitting after close',
+        () async {
+          final fetch = Completer<List<NostrAppDirectoryEntry>>();
+          when(mockService.fetchApprovedApps).thenAnswer((_) => fetch.future);
+
+          final cubit = SandboxRouteCubit(
+            appId: 'primal-app',
+            directoryService: mockService,
+          );
+          final loading = cubit.load();
+          await cubit.close();
+          fetch.complete([_fixture()]);
+
+          await expectLater(loading, completes);
+          expect(cubit.state, isA<SandboxRouteLoading>());
+        },
+      );
+
+      test('load drops a failure instead of emitting after close', () async {
+        final fetch = Completer<List<NostrAppDirectoryEntry>>();
+        when(mockService.fetchApprovedApps).thenAnswer((_) => fetch.future);
+
+        final cubit = SandboxRouteCubit(
+          appId: 'primal-app',
+          directoryService: mockService,
+        );
+        final loading = cubit.load();
+        await cubit.close();
+        fetch.completeError(Exception('network error'));
+
+        await expectLater(loading, completes);
+        expect(cubit.state, isA<SandboxRouteLoading>());
+      });
+    });
   });
 }
 

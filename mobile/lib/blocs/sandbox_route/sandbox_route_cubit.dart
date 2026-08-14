@@ -40,6 +40,9 @@ class SandboxRouteCubit extends Cubit<SandboxRouteState> {
     if (state is SandboxRouteResolved) return;
     try {
       final apps = await _directoryService.fetchApprovedApps();
+      // The fetch cannot be cancelled, so it can resolve after the route was
+      // popped and this cubit closed.
+      if (isClosed) return;
       for (final app in apps) {
         if (app.id == _appId || app.slug == _appId) {
           emit(SandboxRouteResolved(app));
@@ -49,6 +52,7 @@ class SandboxRouteCubit extends Cubit<SandboxRouteState> {
       emit(const SandboxRouteNotFound());
     } catch (error, stackTrace) {
       addError(error, stackTrace);
+      if (isClosed) return;
       emit(const SandboxRouteNotFound());
     }
   }

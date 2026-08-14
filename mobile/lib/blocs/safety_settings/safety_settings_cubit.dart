@@ -67,6 +67,10 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
     emit(state.copyWith(status: SafetySettingsStatus.loading));
     await _ageVerificationService.initialize();
     await _moderationLabelService.ensureLoaded();
+    // Leaving the screen mid-load closes the cubit while these awaits are
+    // still pending. Bailing here also stops the subscription below from
+    // being created after [close] already ran past its cancel.
+    if (isClosed) return;
     emit(
       state.copyWith(
         status: SafetySettingsStatus.ready,
@@ -111,7 +115,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
       }
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(isAgeVerified: previous));
+      _emitIfOpen(state.copyWith(isAgeVerified: previous));
     }
   }
 
@@ -126,7 +130,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
       await _divineHostFilterService.setShowDivineHostedOnly(value);
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(showDivineHostedOnly: previous));
+      _emitIfOpen(state.copyWith(showDivineHostedOnly: previous));
     }
   }
 
@@ -156,7 +160,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(isPeopleIFollowEnabled: previous));
+      _emitIfOpen(state.copyWith(isPeopleIFollowEnabled: previous));
     }
   }
 
@@ -170,7 +174,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
     if (trimmed.isEmpty) return;
     final hexPubkey = npubToHexOrNull(trimmed) ?? trimmed;
     await _moderationLabelService.addLabeler(hexPubkey);
-    emit(
+    _emitIfOpen(
       state.copyWith(customLabelers: _moderationLabelService.customLabelers),
     );
   }
@@ -178,7 +182,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   /// Unsubscribe from a custom labeler.
   Future<void> removeLabeler(String pubkey) async {
     await _moderationLabelService.removeLabeler(pubkey);
-    emit(
+    _emitIfOpen(
       state.copyWith(customLabelers: _moderationLabelService.customLabelers),
     );
   }
@@ -190,11 +194,18 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   /// frame as the mutation.
   Future<void> unblockUser(String pubkey) async {
     await _contentBlocklistRepository.unblockUser(pubkey);
-    emit(
+    _emitIfOpen(
       state.copyWith(
         blockedUsers: _contentBlocklistRepository.runtimeBlockedUsers,
       ),
     );
+  }
+
+  /// Every mutation here awaits a service call that cannot be cancelled, so
+  /// leaving the screen mid-flight resolves it against a closed cubit.
+  void _emitIfOpen(SafetySettingsState nextState) {
+    if (isClosed) return;
+    emit(nextState);
   }
 
   @override

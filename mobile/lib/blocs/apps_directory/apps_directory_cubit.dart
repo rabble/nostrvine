@@ -21,10 +21,12 @@ class AppsDirectoryCubit extends Cubit<AppsDirectoryState> {
     emit(state.copyWith(status: AppsDirectoryStatus.loading));
     try {
       final apps = await _directoryService.fetchApprovedApps();
-      emit(state.copyWith(status: AppsDirectoryStatus.loaded, apps: apps));
+      _emitIfOpen(
+        state.copyWith(status: AppsDirectoryStatus.loaded, apps: apps),
+      );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(state.copyWith(status: AppsDirectoryStatus.error));
+      _emitIfOpen(state.copyWith(status: AppsDirectoryStatus.error));
     }
   }
 
@@ -32,10 +34,19 @@ class AppsDirectoryCubit extends Cubit<AppsDirectoryState> {
   Future<void> refreshApps() async {
     try {
       final apps = await _directoryService.fetchApprovedApps();
-      emit(state.copyWith(status: AppsDirectoryStatus.loaded, apps: apps));
+      _emitIfOpen(
+        state.copyWith(status: AppsDirectoryStatus.loaded, apps: apps),
+      );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(state.copyWith(status: AppsDirectoryStatus.error));
+      _emitIfOpen(state.copyWith(status: AppsDirectoryStatus.error));
     }
+  }
+
+  /// The directory fetch cannot be cancelled, so it can resolve after the
+  /// screen is gone and the cubit closed.
+  void _emitIfOpen(AppsDirectoryState nextState) {
+    if (isClosed) return;
+    emit(nextState);
   }
 }

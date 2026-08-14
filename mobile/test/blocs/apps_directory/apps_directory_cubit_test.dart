@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -83,6 +85,41 @@ void main() {
       ],
       errors: () => [isA<Exception>()],
     );
+
+    group('closed mid-flight', () {
+      test(
+        'loadApps drops the result instead of emitting after close',
+        () async {
+          final fetch = Completer<List<NostrAppDirectoryEntry>>();
+          when(mockService.fetchApprovedApps).thenAnswer((_) => fetch.future);
+
+          final cubit = AppsDirectoryCubit(directoryService: mockService);
+          final loading = cubit.loadApps();
+          await cubit.close();
+          fetch.complete([_fixture()]);
+
+          await expectLater(loading, completes);
+          expect(cubit.state.status, AppsDirectoryStatus.loading);
+          expect(cubit.state.apps, isEmpty);
+        },
+      );
+
+      test(
+        'refreshApps drops a failure instead of emitting after close',
+        () async {
+          final fetch = Completer<List<NostrAppDirectoryEntry>>();
+          when(mockService.fetchApprovedApps).thenAnswer((_) => fetch.future);
+
+          final cubit = AppsDirectoryCubit(directoryService: mockService);
+          final refreshing = cubit.refreshApps();
+          await cubit.close();
+          fetch.completeError(Exception('network error'));
+
+          await expectLater(refreshing, completes);
+          expect(cubit.state.status, AppsDirectoryStatus.initial);
+        },
+      );
+    });
   });
 }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:badge_repository/badge_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -290,6 +292,64 @@ void main() {
         ),
       ],
     );
+
+    group('closed mid-flight', () {
+      test(
+        'load drops the dashboard instead of emitting after close',
+        () async {
+          final dashboardLoad = Completer<BadgeDashboardData>();
+          when(
+            repository.loadDashboard,
+          ).thenAnswer((_) => dashboardLoad.future);
+
+          final cubit = BadgesCubit(repository: repository);
+          final loading = cubit.load();
+          await cubit.close();
+          dashboardLoad.complete(dashboard);
+
+          await expectLater(loading, completes);
+          expect(cubit.state.status, BadgesStatus.loading);
+          expect(cubit.state.awarded, isEmpty);
+        },
+      );
+
+      test(
+        'acceptAward drops the reload instead of emitting after close',
+        () async {
+          final dashboardLoad = Completer<BadgeDashboardData>();
+          when(() => repository.acceptAward(any())).thenAnswer((_) async {});
+          when(
+            repository.loadDashboard,
+          ).thenAnswer((_) => dashboardLoad.future);
+
+          final cubit = BadgesCubit(repository: repository);
+          final accepting = cubit.acceptAward(awardedBadge);
+          await cubit.close();
+          dashboardLoad.complete(dashboard);
+
+          await expectLater(accepting, completes);
+          expect(cubit.state.actionStatus, BadgeActionStatus.accepting);
+        },
+      );
+
+      test(
+        'acceptAward drops a failure instead of emitting after close',
+        () async {
+          final publish = Completer<void>();
+          when(
+            () => repository.acceptAward(any()),
+          ).thenAnswer((_) => publish.future);
+
+          final cubit = BadgesCubit(repository: repository);
+          final accepting = cubit.acceptAward(awardedBadge);
+          await cubit.close();
+          publish.completeError(Exception('relay rejected'));
+
+          await expectLater(accepting, completes);
+          expect(cubit.state.actionStatus, BadgeActionStatus.accepting);
+        },
+      );
+    });
   });
 }
 

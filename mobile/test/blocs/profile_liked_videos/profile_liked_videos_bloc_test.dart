@@ -1180,6 +1180,33 @@ void main() {
         // After closing, stream events should not cause errors
         expect(() => likedIdsController.add(['event1']), returnsNormally);
       });
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'drops a synchronous liked-ids replay when closed mid-dispatch',
+        setUp: () {
+          // The repository stream replays synchronously on listen (rxdart's
+          // startWith does this), so `emit.forEach`'s callback runs inside the
+          // handler itself — which `close()` still drains.
+          when(() => mockLikesRepository.watchLikedEventIds()).thenAnswer(
+            (_) => Stream<List<String>>.multi(
+              (controller) => controller.addSync(const ['event2', 'event1']),
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: const ['event1'],
+          videos: [createTestVideo('event1')],
+        ),
+        act: (bloc) async {
+          bloc.add(const ProfileLikedVideosSubscriptionRequested());
+          // No await in between: the handler is still queued, so `close()`
+          // drains it and the reconcile dispatch lands on a closed bloc.
+          await bloc.close();
+        },
+        errors: () => <Object>[],
+      );
     });
 
     group('Other user profile (targetUserPubkey)', () {

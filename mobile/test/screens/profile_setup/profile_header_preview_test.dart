@@ -63,6 +63,7 @@ void main() {
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
       bloc = _MockProfileEditorBloc();
       when(() => bloc.state).thenReturn(const ProfileEditorState());
+      when(() => bloc.isClosed).thenReturn(false);
       nameController = TextEditingController();
       tempDir = await Directory.systemTemp.createTemp('header_preview_test');
     });
@@ -150,6 +151,22 @@ void main() {
       expect(launcher.callCount, 0);
       verifyNever(() => bloc.add(any()));
       expect(find.text(l10n.profileSetupImageSelectionFailed), findsOneWidget);
+    });
+
+    testWidgets('drops the upload when the editor closed during the crop', (
+      tester,
+    ) async {
+      // Picking and cropping are full screens; leaving the profile editor
+      // while they are open closes the bloc before the crop returns.
+      stubPickedFile([9, 9, 9]);
+      final launcher = _FakeCropLauncher(Uint8List.fromList([1, 2, 3, 4]));
+      await pump(tester, launcher.launch);
+      when(() => bloc.isClosed).thenReturn(true);
+
+      await pickBannerFromGallery(tester);
+
+      expect(launcher.callCount, 1);
+      verifyNever(() => bloc.add(any()));
     });
   });
 }

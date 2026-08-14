@@ -34,6 +34,9 @@ class SettingsAccountCubit extends Cubit<SettingsAccountState> {
     try {
       final accounts = await _authService.getKnownAccounts();
       final draftCount = await _draftStorageService.getDraftCount();
+      // Neither read can be cancelled, so both can resolve after the account
+      // sheet was dismissed and this cubit closed.
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: SettingsAccountStatus.loaded,
@@ -44,6 +47,7 @@ class SettingsAccountCubit extends Cubit<SettingsAccountState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
+      if (isClosed) return;
       emit(state.copyWith(status: SettingsAccountStatus.failure));
     }
   }

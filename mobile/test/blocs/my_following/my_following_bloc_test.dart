@@ -68,6 +68,51 @@ void main() {
       bloc.close();
     });
 
+    group('closed mid-dispatch', () {
+      late StreamController<List<String>> followingStream;
+
+      setUp(() {
+        followingStream = StreamController<List<String>>.broadcast();
+        when(
+          () => mockFollowRepository.followingStream,
+        ).thenAnswer((_) => followingStream.stream);
+        when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
+          (_) => const Stream<CacheResult<FollowingSnapshot>>.empty(),
+        );
+      });
+
+      tearDown(() async {
+        await followingStream.close();
+      });
+
+      test('does not subscribe when the load drains during close', () async {
+        final bloc = createBloc();
+        bloc.add(const MyFollowingListLoadRequested());
+        // No await in between: `close()` drains the queued load, so the
+        // handler runs after the event controller is already closed.
+        await bloc.close();
+
+        // Subscribing here would outlive close() entirely, and its first
+        // delivery would dispatch into a closed event controller.
+        expect(followingStream.hasListener, isFalse);
+        expect(() => followingStream.add(const []), returnsNormally);
+        await Future<void>.delayed(Duration.zero);
+      });
+
+      test('drops a repository emission that lands while closing', () async {
+        final bloc = createBloc();
+        bloc.add(const MyFollowingListLoadRequested());
+        await Future<void>.delayed(Duration.zero);
+        expect(followingStream.hasListener, isTrue);
+
+        final closing = bloc.close();
+        followingStream.add([validPubkey('late')]);
+        await closing;
+
+        expect(followingStream.hasListener, isFalse);
+      });
+    });
+
     group('MyFollowingListLoadRequested', () {
       blocTest<MyFollowingBloc, MyFollowingState>(
         'emits success with pubkeys from stream',
