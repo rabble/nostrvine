@@ -1371,16 +1371,28 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // Source failover depends on runtime native playback errors and source
   // switching on an initialized controller, which package tests cannot
   // simulate without the platform player backend.
-  Future<void> _retryWithNextSource(int index) async {
+  /// Advances [index] to its next playback source.
+  ///
+  /// Set [recordSourceFailure] only when the failover is caused by a typed
+  /// source-level failure. Slow loads and stalls are transient network
+  /// conditions, so they must not demote an otherwise healthy derivative —
+  /// this mirrors the gate `setSourceWithFallbacks` applies before calling
+  /// `onFailoverSourceFailure`.
+  Future<void> _retryWithNextSource(
+    int index, {
+    bool recordSourceFailure = false,
+  }) async {
     if (!_sources.hasSources(index)) {
       _log('No sources to retry for index $index');
       _onVideoStalled(index);
       return;
     }
 
-    final failedSource = _sources.activeSourceFor(index);
-    if (failedSource != null) {
-      _derivativeFailures.recordFailureForSource(failedSource);
+    if (recordSourceFailure) {
+      final failedSource = _sources.activeSourceFor(index);
+      if (failedSource != null) {
+        _derivativeFailures.recordFailureForSource(failedSource);
+      }
     }
 
     final nextSource = _sources.advance(index);
@@ -1745,7 +1757,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
               _sources.hasSources(index) &&
               _sources.canAdvance(index);
           if (shouldFailover) {
-            unawaited(_retryWithNextSource(index));
+            unawaited(
+              _retryWithNextSource(
+                index,
+                recordSourceFailure: errorCode?.shouldFailover ?? false,
+              ),
+            );
             return;
           }
 
