@@ -163,6 +163,70 @@ void main() {
       expect(_boxFile(documentsDir, boxName).existsSync(), isFalse);
     });
 
+    test('keeps the home copy when the newer stranded one is empty', () async {
+      const boxName = HiveBoxNames.pushNotificationPreferencesDirty;
+      await Directory(homePath).create(recursive: true);
+
+      // Opening a box read-only creates a 0-byte file, so the stranded side
+      // ends up newer than the home copy without ever holding data.
+      _writeBoxFile(documentsDir, boxName, '', modified: DateTime(2026, 8, 12));
+      _writeBoxFile(
+        Directory(homePath),
+        boxName,
+        'home',
+        modified: DateTime(2026, 8, 10),
+      );
+
+      await HiveStorageService.initialize();
+
+      expect(_readBoxFile(Directory(homePath), boxName), 'home');
+      expect(_boxFile(documentsDir, boxName).existsSync(), isFalse);
+    });
+
+    test('takes the stranded copy when the newer home one is empty', () async {
+      const boxName = HiveBoxNames.pushNotificationPreferencesDirty;
+      await Directory(homePath).create(recursive: true);
+
+      _writeBoxFile(
+        documentsDir,
+        boxName,
+        'documents',
+        modified: DateTime(2026, 8, 10),
+      );
+      _writeBoxFile(
+        Directory(homePath),
+        boxName,
+        '',
+        modified: DateTime(2026, 8, 12),
+      );
+
+      await HiveStorageService.initialize();
+
+      expect(_readBoxFile(Directory(homePath), boxName), 'documents');
+      expect(_boxFile(documentsDir, boxName).existsSync(), isFalse);
+    });
+
+    test('falls back to mtime when both copies are empty', () async {
+      const boxName = HiveBoxNames.pushNotificationPreferencesDirty;
+      await Directory(homePath).create(recursive: true);
+
+      _writeBoxFile(documentsDir, boxName, '', modified: DateTime(2026, 8, 12));
+      _writeBoxFile(
+        Directory(homePath),
+        boxName,
+        '',
+        modified: DateTime(2026, 8, 10),
+      );
+
+      await HiveStorageService.initialize();
+
+      expect(
+        _boxFile(Directory(homePath), boxName).lastModifiedSync(),
+        DateTime(2026, 8, 12),
+      );
+      expect(_boxFile(documentsDir, boxName).existsSync(), isFalse);
+    });
+
     test('rescues a stranded box left only as a compacted copy', () async {
       const boxName = HiveBoxNames.notifications;
       _writeCompactedBoxFile(documentsDir, boxName, 'compacted');

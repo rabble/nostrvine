@@ -70,11 +70,11 @@ abstract final class HiveStorageService {
   /// Best-effort move of the boxes left in the legacy home into [home].
   ///
   /// The legacy home is the documents directory, where `Hive.initFlutter()`
-  /// pointed. A split box can hold real writes on both sides, so the more
-  /// recently written file wins and the other is deleted — the newest data
-  /// survives and nothing is left behind to be picked up again. Which file
-  /// holds a side's data is [_boxFile]'s call. Lock files carry no data and
-  /// are recreated on open, so legacy ones are just removed.
+  /// pointed. A split box can hold real writes on both sides, so one file wins
+  /// and the other is deleted — the surviving data lands in the home and
+  /// nothing is left behind to be picked up again. [_homeCopyWins] picks the
+  /// winner and [_boxFile] decides which file holds a side's data. Lock files
+  /// carry no data and are recreated on open, so legacy ones are just removed.
   ///
   /// A failure here must not block startup: the files stay put and the next
   /// launch tries again.
@@ -91,10 +91,7 @@ abstract final class HiveStorageService {
         if (legacyFile == null) continue;
 
         final targetFile = _boxFile(home.path, boxName);
-        if (targetFile != null &&
-            !targetFile.lastModifiedSync().isBefore(
-              legacyFile.lastModifiedSync(),
-            )) {
+        if (targetFile != null && _homeCopyWins(legacyFile, targetFile)) {
           await _deleteLegacyRemains(legacy.path, boxName);
           continue;
         }
@@ -123,6 +120,27 @@ abstract final class HiveStorageService {
         category: LogCategory.storage,
       );
     }
+  }
+
+  /// Whether the copy already in the home should be kept over [legacyFile].
+  ///
+  /// An empty file loses regardless of when it was touched. Hive creates
+  /// `<box>.hive` whenever it opens a box that has no file yet — the
+  /// `else { await hiveFile.create(); }` branch of `findHiveFileAndCleanUp` —
+  /// so a session that only opened and read the stranded side left a 0-byte
+  /// file there with mtime = now. That file is newer than the copy holding the
+  /// real data, and comparing mtime alone would move it on top and take the
+  /// box down to zero bytes.
+  ///
+  /// Only when both sides agree on emptiness does mtime decide, which is the
+  /// original policy: the newer file is the one the last session to write used.
+  static bool _homeCopyWins(File legacyFile, File targetFile) {
+    final legacyEmpty = legacyFile.lengthSync() == 0;
+    final targetEmpty = targetFile.lengthSync() == 0;
+    if (legacyEmpty != targetEmpty) return legacyEmpty;
+    return !targetFile.lastModifiedSync().isBefore(
+      legacyFile.lastModifiedSync(),
+    );
   }
 
   /// The file Hive would open for [boxName] in [directory], or null when the
