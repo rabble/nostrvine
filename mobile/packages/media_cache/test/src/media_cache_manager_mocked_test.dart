@@ -32,6 +32,18 @@ Future<File?> _cancelAndWait(CancellableCacheOperation operation) async {
   return operation.file;
 }
 
+// Drains the microtask + event queue until the manager's deferred
+// [_resolveBaseCacheDir] -> [_downloader.download] step has run and
+// [downloader.downloads] contains the expected number of entries.
+Future<void> pumpDownloads(
+  FakeCancellableDownloader downloader, {
+  int expected = 1,
+}) async {
+  for (var i = 0; i < 50 && downloader.downloads.length < expected; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+  }
+}
+
 void main() {
   setUpTestEnvironment();
 
@@ -552,15 +564,6 @@ void main() {
     });
 
     group('preCacheFiles with mocks', () {
-      Future<void> pumpDownloads(
-        FakeCancellableDownloader downloader, {
-        int expected = 1,
-      }) async {
-        for (var i = 0; i < 50 && downloader.downloads.length < expected; i++) {
-          await Future<void>.delayed(const Duration(milliseconds: 1));
-        }
-      }
-
       test('skips already cached files', () async {
         final mockFile = MockFile();
         final mockFileInfo = MockFileInfo();
@@ -722,18 +725,6 @@ void main() {
     });
 
     group('cacheFileCancellable', () {
-      // Drains the microtask + event queue until the manager's deferred
-      // [_resolveBaseCacheDir] -> [_downloader.download] step has run and
-      // [downloader.downloads] contains the expected number of entries.
-      Future<void> pumpDownloads(
-        FakeCancellableDownloader downloader, {
-        int expected = 1,
-      }) async {
-        for (var i = 0; i < 50 && downloader.downloads.length < expected; i++) {
-          await Future<void>.delayed(const Duration(milliseconds: 1));
-        }
-      }
-
       test(
         'returns completed operation when file is already in manifest',
         () async {
@@ -1178,6 +1169,51 @@ void main() {
         },
       );
 
+      test(
+        'restores a legacy long relativePath from the cache store',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'legacy_relative_path_$timestamp';
+          final cacheDir = Directory('$testTempPath/$cacheKey')
+            ..createSync(recursive: true);
+          final legacyUrl = 'https://cdn.example.com/image/${'a' * 180}.jpg';
+          final legacyName =
+              '${legacyUrl.replaceAll(RegExp('[^A-Za-z0-9._-]'), '_')}'
+              '_1234567890123456_9.jpg';
+          expect(legacyName.length, greaterThan(160));
+          expect(utf8.encode(legacyName).length, lessThanOrEqualTo(255));
+          final cachedFile = await createTestFile(cacheDir, legacyName);
+
+          final repo = MockCacheInfoRepository();
+          final cacheObject = CacheObject(
+            legacyUrl,
+            key: legacyUrl,
+            relativePath: legacyName,
+            validTill: DateTime.now().add(const Duration(days: 7)),
+            id: 1,
+          );
+          when(repo.open).thenAnswer((_) async => true);
+          when(repo.getAllObjects).thenAnswer((_) async => [cacheObject]);
+
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            repoOverride: repo,
+            tempDirectoryProvider: () async => Directory(testTempPath),
+          );
+
+          await cacheManager.initialize();
+
+          final restored = cacheManager.getCachedFileSync(legacyUrl);
+          expect(restored, isNotNull);
+          expect(restored!.path, cachedFile.path);
+
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
+
       test('initialize ignores corrupt aliases.json gracefully', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cacheKey = 'alias_corrupt_$timestamp';
@@ -1391,6 +1427,37 @@ void main() {
 
           await pumpDownloads(downloader);
           expect(downloader.downloads.single.targetFile.path, endsWith('.bin'));
+
+          downloader.downloads.single.completeNull();
+          await op.file;
+        },
+      );
+
+      test(
+        'falls back to .bin when configured default extension is unusable',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final downloader = FakeCancellableDownloader();
+
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'dirty_default_ext_$timestamp',
+              enableSyncManifest: true,
+              defaultExtension: '.${'x' * 300}',
+            ),
+            downloaderOverride: downloader,
+          );
+
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/no-extension',
+            key: 'dirty_default_ext_key',
+          );
+
+          await pumpDownloads(downloader);
+          final fileName =
+              downloader.downloads.single.targetFile.uri.pathSegments.last;
+          expect(fileName, endsWith('.bin'));
+          expect(utf8.encode(fileName).length, lessThanOrEqualTo(255));
 
           downloader.downloads.single.completeNull();
           await op.file;
@@ -1803,9 +1870,7 @@ void main() {
           downloaderOverride: downloader,
         );
         final op = cacheManager.cacheFileCancellable(url, key: url);
-        for (var i = 0; i < 50 && downloader.downloads.isEmpty; i++) {
-          await Future<void>.delayed(const Duration(milliseconds: 1));
-        }
+        await pumpDownloads(downloader);
         final download = downloader.downloads.single..completeNull();
         await op.file;
         return download.targetFile.uri.pathSegments.last;
@@ -1817,6 +1882,17 @@ void main() {
         final name = await fileNameFor(
           proxiedUrl(248),
           cacheKey: 'long_url_$timestamp',
+        );
+
+        expect(utf8.encode(name).length, lessThanOrEqualTo(nameMax));
+      });
+
+      test('stays within NAME_MAX for a long multibyte URL key', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+        final name = await fileNameFor(
+          'https://cdn.example.com/avatars/${'動画' * 120}.jpg',
+          cacheKey: 'unicode_url_$timestamp',
         );
 
         expect(utf8.encode(name).length, lessThanOrEqualTo(nameMax));
@@ -1843,7 +1919,6 @@ void main() {
           '$shared?variant=one',
           cacheKey: 'distinct_a_$timestamp',
         );
-        cacheManager.resetForTesting();
         final second = await fileNameFor(
           '$shared?variant=two',
           cacheKey: 'distinct_b_$timestamp',

@@ -1002,7 +1002,8 @@ class MediaCacheManager extends CacheManager {
     } on Object catch (_) {
       // Fall through to default.
     }
-    return _config.defaultExtension;
+    final fallback = _config.defaultExtension;
+    return _usableExtensionPattern.hasMatch(fallback) ? fallback : '.bin';
   }
 
   /// Runs a throttled [enforceCacheLimits] pass once enough downloads have
