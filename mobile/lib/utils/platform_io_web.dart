@@ -3,21 +3,6 @@
 
 import 'package:flutter/foundation.dart';
 
-// InternetAddress stub for web platform
-class InternetAddress {
-  static InternetAddress? tryParse(String address) {
-    if (kIsWeb) {
-      return null;
-    }
-    return null;
-  }
-}
-
-// HttpOverrides stub for web platform
-class HttpOverrides {
-  static dynamic global;
-}
-
 // Platform stub for web platform
 class Platform {
   static String get version => 'web';
