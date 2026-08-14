@@ -7135,20 +7135,21 @@ void main() {
         return ledger;
       }
 
-      Event readMarkerFrom(String authorPubkey) => Event.fromJson({
-        'id': _rumorEventId,
-        'pubkey': authorPubkey,
-        'created_at': 1700000300,
-        'kind': EventKind.appSpecificData,
-        'tags': [
-          ['d', 'divine/dm-read/v1'],
-        ],
-        'content': jsonEncode({
-          'v': 1,
-          'read': {tupleKey: 1700000300},
-        }),
-        'sig': '',
-      });
+      Event readMarkerFrom(String authorPubkey, {int cursor = 1700000300}) =>
+          Event.fromJson({
+            'id': _rumorEventId,
+            'pubkey': authorPubkey,
+            'created_at': 1700000300,
+            'kind': EventKind.appSpecificData,
+            'tags': [
+              ['d', 'divine/dm-read/v1'],
+            ],
+            'content': jsonEncode({
+              'v': 1,
+              'read': {tupleKey: cursor},
+            }),
+            'sig': '',
+          });
 
       test(
         'a read marker authored by another pubkey never advances a cursor',
@@ -7180,6 +7181,34 @@ void main() {
           );
 
           expect(ledger.recorded, contains(_giftWrapEventId));
+        },
+      );
+
+      test(
+        'a self-authored marker cannot ratchet a cursor past the local clock',
+        () async {
+          // applyReadCursor only ever moves a cursor forward, so a corrupt
+          // clock on one of the user's own devices would otherwise pin every
+          // conversation read forever, with no way back. Mirrors the
+          // persistedCreatedAt clamp applied to every incoming rumor. #7343.
+          const farFuture = 4102444800; // 2100-01-01T00:00:00Z
+
+          await deliverMarkerRumor(
+            readMarkerFrom(_validPubkeyA, cursor: farFuture),
+          );
+
+          final applied =
+              verify(
+                    () => mockConversationsDao.applyReadCursor(
+                      conversationId,
+                      captureAny(),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
+                  ).captured.single
+                  as int;
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          expect(applied, isNot(farFuture));
+          expect(applied, lessThanOrEqualTo(nowSec));
         },
       );
     });

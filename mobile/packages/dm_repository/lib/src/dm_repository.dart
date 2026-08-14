@@ -5425,22 +5425,28 @@ class DmRepository {
     if (decoded is! Map) return;
     final read = decoded['read'];
     if (read is! Map) return;
+    // The cursor only ever moves forward, so an out-of-range value can never be
+    // undone: one marker published by a device with a corrupt clock would pin
+    // every conversation read for good. Clamp to the local clock, the same way
+    // an incoming rumor's own created_at is clamped for ordering. #7343.
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     for (final entry in read.entries) {
       final tupleKey = entry.key;
       final ts = entry.value;
       if (tupleKey is! String || ts is! int) continue;
+      final cursor = ts > nowSec ? nowSec : ts;
       final pubkeys = tupleKey.split(',');
       if (pubkeys.length < 2) continue;
       final conversationId = computeConversationId(pubkeys);
       final applied = await _conversationsDao.applyReadCursor(
         conversationId,
-        ts,
+        cursor,
         ownerPubkey: _ownerPubkey,
       );
       if (!applied) {
         final existing = _pendingReadCursors[conversationId];
-        if (existing == null || ts > existing) {
-          _pendingReadCursors[conversationId] = ts;
+        if (existing == null || cursor > existing) {
+          _pendingReadCursors[conversationId] = cursor;
         }
       }
     }
