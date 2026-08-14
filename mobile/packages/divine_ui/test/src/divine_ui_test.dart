@@ -102,6 +102,8 @@ void main() {
         'skeleton': (c) => c.skeleton,
         'errorContainer': (c) => c.errorContainer,
         'onErrorContainer': (c) => c.onErrorContainer,
+        'accentPositive': (c) => c.accentPositive,
+        'accentWarning': (c) => c.accentWarning,
         'inverseSurface': (c) => c.inverseSurface,
         'inverseOnSurface': (c) => c.inverseOnSurface,
         'mediaChrome': (c) => c.mediaChrome,
@@ -134,6 +136,8 @@ void main() {
         skeleton: color,
         errorContainer: color,
         onErrorContainer: color,
+        accentPositive: color,
+        accentWarning: color,
         inverseSurface: color,
         inverseOnSurface: color,
         mediaChrome: color,
@@ -163,6 +167,8 @@ void main() {
           skeleton: const Color(0xFF000015),
           errorContainer: const Color(0xFF000016),
           onErrorContainer: const Color(0xFF000017),
+          accentPositive: const Color(0xFF00001A),
+          accentWarning: const Color(0xFF00001B),
           inverseSurface: const Color(0xFF000018),
           inverseOnSurface: const Color(0xFF000019),
           mediaChrome: const Color(0xFF00000F),
@@ -190,6 +196,8 @@ void main() {
         expect(copied.skeleton, const Color(0xFF000015));
         expect(copied.errorContainer, const Color(0xFF000016));
         expect(copied.onErrorContainer, const Color(0xFF000017));
+        expect(copied.accentPositive, const Color(0xFF00001A));
+        expect(copied.accentWarning, const Color(0xFF00001B));
         expect(copied.inverseSurface, const Color(0xFF000018));
         expect(copied.inverseOnSurface, const Color(0xFF000019));
         expect(copied.mediaChrome, const Color(0xFF00000F));
@@ -281,6 +289,8 @@ void main() {
             skeleton: token == 'skeleton' ? Colors.white : null,
             errorContainer: token == 'errorContainer' ? Colors.white : null,
             onErrorContainer: token == 'onErrorContainer' ? Colors.white : null,
+            accentPositive: token == 'accentPositive' ? Colors.white : null,
+            accentWarning: token == 'accentWarning' ? Colors.white : null,
             inverseSurface: token == 'inverseSurface' ? Colors.white : null,
             inverseOnSurface: token == 'inverseOnSurface' ? Colors.white : null,
             mediaChrome: token == 'mediaChrome' ? Colors.white : null,

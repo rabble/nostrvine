@@ -35,6 +35,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     required this.skeleton,
     required this.errorContainer,
     required this.onErrorContainer,
+    required this.accentPositive,
+    required this.accentWarning,
     required this.inverseSurface,
     required this.inverseOnSurface,
     required this.mediaChrome,
@@ -140,6 +142,25 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// Content color on [errorContainer].
   final Color onErrorContainer;
 
+  /// Healthy-status accent, drawn directly on [background] — a connected
+  /// integration, a completed step.
+  ///
+  /// Its dark value is [VineTheme.vineGreen], so dark mode is unchanged. The
+  /// brand green is 2.08:1 on the light canvas, below the 3:1 non-text floor,
+  /// so the light value is the seeded tone the light `colorScheme.primary`
+  /// already resolves to. Reusing it keeps one green in light mode rather
+  /// than introducing a second, near-identical one.
+  final Color accentPositive;
+
+  /// Attention-status accent, drawn directly on [background] — an expired
+  /// authorization, a step that needs the user to come back to it.
+  ///
+  /// Its dark value is [VineTheme.accentOrange], so dark mode is unchanged.
+  /// This one labels body copy as well as icons, so the light value clears
+  /// 4.5:1 rather than 3:1 — and is pitched at [accentPositive]'s ratio on
+  /// [background] so the two accents carry the same weight side by side.
+  final Color accentWarning;
+
   /// Surface that contrasts with [background], used by tertiary actions.
   final Color inverseSurface;
 
@@ -185,6 +206,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     Color? skeleton,
     Color? errorContainer,
     Color? onErrorContainer,
+    Color? accentPositive,
+    Color? accentWarning,
     Color? inverseSurface,
     Color? inverseOnSurface,
     Color? mediaChrome,
@@ -215,6 +238,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     skeleton: skeleton ?? this.skeleton,
     errorContainer: errorContainer ?? this.errorContainer,
     onErrorContainer: onErrorContainer ?? this.onErrorContainer,
+    accentPositive: accentPositive ?? this.accentPositive,
+    accentWarning: accentWarning ?? this.accentWarning,
     inverseSurface: inverseSurface ?? this.inverseSurface,
     inverseOnSurface: inverseOnSurface ?? this.inverseOnSurface,
     mediaChrome: mediaChrome ?? this.mediaChrome,
@@ -254,6 +279,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       skeleton: Color.lerp(skeleton, other.skeleton, t),
       errorContainer: Color.lerp(errorContainer, other.errorContainer, t),
       onErrorContainer: Color.lerp(onErrorContainer, other.onErrorContainer, t),
+      accentPositive: Color.lerp(accentPositive, other.accentPositive, t),
+      accentWarning: Color.lerp(accentWarning, other.accentWarning, t),
       inverseSurface: Color.lerp(inverseSurface, other.inverseSurface, t),
       inverseOnSurface: Color.lerp(inverseOnSurface, other.inverseOnSurface, t),
       mediaChrome: Color.lerp(mediaChrome, other.mediaChrome, t),
@@ -294,6 +321,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
           skeleton == other.skeleton &&
           errorContainer == other.errorContainer &&
           onErrorContainer == other.onErrorContainer &&
+          accentPositive == other.accentPositive &&
+          accentWarning == other.accentWarning &&
           inverseSurface == other.inverseSurface &&
           inverseOnSurface == other.inverseOnSurface &&
           mediaChrome == other.mediaChrome &&
@@ -326,6 +355,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     skeleton,
     errorContainer,
     onErrorContainer,
+    accentPositive,
+    accentWarning,
     inverseSurface,
     inverseOnSurface,
     mediaChrome,
@@ -975,6 +1006,8 @@ class VineTheme {
     skeleton: skeletonBase,
     errorContainer: errorContainer,
     onErrorContainer: likeRed,
+    accentPositive: vineGreen,
+    accentWarning: accentOrange,
     inverseSurface: inverseSurface,
     inverseOnSurface: inverseOnSurface,
     mediaChrome: scrim80,
@@ -1009,6 +1042,8 @@ class VineTheme {
     skeleton: Color(0xFFE7E4E1),
     errorContainer: Color(0xFFFFE7E2),
     onErrorContainer: Color(0xFF8C1D18),
+    accentPositive: Color(0xFF226A4C),
+    accentWarning: Color(0xFFAE3100),
     inverseSurface: Color(0xFF07241B),
     inverseOnSurface: Color(0xFFFFFFFF),
     mediaChrome: Color(0xF2F9F7F6),
