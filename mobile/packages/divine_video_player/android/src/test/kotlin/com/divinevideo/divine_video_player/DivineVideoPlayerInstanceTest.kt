@@ -497,6 +497,13 @@ class DivineVideoPlayerInstanceTest {
         ).also { unmockkStatic(SystemClock::class) }
     }
 
+    private fun playbackError(message: String, errorCode: Int): PlaybackException {
+        mockkStatic(SystemClock::class)
+        every { SystemClock.elapsedRealtime() } returns 0L
+        return PlaybackException(message, null, errorCode)
+            .also { unmockkStatic(SystemClock::class) }
+    }
+
     private fun httpStatusError(status: Int): PlaybackException {
         mockkStatic(SystemClock::class)
         mockkStatic(Uri::class)
@@ -520,6 +527,70 @@ class DivineVideoPlayerInstanceTest {
             unmockkStatic(Uri::class)
             unmockkStatic(SystemClock::class)
         }
+    }
+
+    @Test
+    fun `onPlayerError maps residual IO failures to io_error`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+
+        listener.onPlayerError(playbackError("IO unspecified", 2000))
+
+        verify(exactly = 1) {
+            result.error("PLAYER_ERROR", "IO unspecified", mapOf("errorCode" to "io_error"))
+        }
+        verify(exactly = 0) { result.success(any()) }
+    }
+
+    @Test
+    fun `onPlayerError maps residual cleartext IO failures to io_error`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+
+        listener.onPlayerError(playbackError("Cleartext not permitted", 2007))
+
+        verify(exactly = 1) {
+            result.error(
+                "PLAYER_ERROR",
+                "Cleartext not permitted",
+                mapOf("errorCode" to "io_error"),
+            )
+        }
+        verify(exactly = 0) { result.success(any()) }
+    }
+
+    @Test
+    fun `onPlayerError maps residual read-position IO failures to io_error`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+
+        listener.onPlayerError(playbackError("Read position out of range", 2008))
+
+        verify(exactly = 1) {
+            result.error(
+                "PLAYER_ERROR",
+                "Read position out of range",
+                mapOf("errorCode" to "io_error"),
+            )
+        }
+        verify(exactly = 0) { result.success(any()) }
+    }
+
+    @Test
+    fun `onPlayerError maps renderer failures to decoder_error`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+
+        listener.onPlayerError(playbackError("Renderer failed", 5000))
+
+        verify(exactly = 1) {
+            result.error("PLAYER_ERROR", "Renderer failed", mapOf("errorCode" to "decoder_error"))
+        }
+        verify(exactly = 0) { result.success(any()) }
     }
 
     @Test

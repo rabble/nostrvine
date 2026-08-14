@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:infinite_video_feed/src/models/builders.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/services/controller_subscriptions.dart';
+import 'package:infinite_video_feed/src/services/derivative_failure_cache.dart';
 import 'package:infinite_video_feed/src/services/disk_prefetcher.dart';
 import 'package:infinite_video_feed/src/services/load_watchdog.dart';
 import 'package:infinite_video_feed/src/services/playback_source_registry.dart';
@@ -397,6 +398,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // ─── Services ───────────────────────────────────────────────────────────
 
   late final PlaybackSourceRegistry _sources;
+  late final DerivativeFailureCache _derivativeFailures;
   late final DiskPrefetcher _prefetcher;
   late final LoadWatchdog _watchdog;
   late final StalePlaybackDetector _staleDetector;
@@ -519,6 +521,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       ..addListener(_syncPagePosition);
 
     _sources = PlaybackSourceRegistry();
+    _derivativeFailures = DerivativeFailureCache();
     _prefetcher = DiskPrefetcher(cache: widget.cache, log: _log);
     // coverage:ignore-start
     // Callback wiring only; exercised transitively by watchdog/detector tests
@@ -997,6 +1000,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       resolveUrls: (video) => resolvePlaybackSources(
         video,
         urlResolver: widget.urlResolver,
+        derivativeFailureCache: _derivativeFailures,
         // Exclude HLS manifests: prefetch writes static files to disk,
         // but HLS playback needs re-streaming the manifest + segments.
       ).where((url) => !isHlsManifest(url)).toList(),
@@ -1139,6 +1143,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       final playbackSources = resolvePlaybackSources(
         video,
         urlResolver: widget.urlResolver,
+        derivativeFailureCache: _derivativeFailures,
       );
       // Hash-bound auth applies to every resolved source for this index, so
       // the optimized/HLS/raw variants all authenticate, not just the bare URL.
@@ -1192,12 +1197,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             httpHeadersForSource: httpHeadersForSource,
             isLoadCurrent: ownsInit,
             maxPlaybackDuration: widget.maxPlaybackDuration,
+            onFailoverSourceFailure: _derivativeFailures.recordFailureForSource,
           );
           if (!guardInitOwnership('setSourceWithFallbacks(cache)')) return;
           _sources.register(index, playbackSources, openedSourceIdx);
           _log(
             'Network fallback source selected index $index (${video.id}): '
-            'openedSource=$openedSource',
+            'openedSource=$openedSource '
+            'attempt=$openedSourceIdx',
           );
         }
       } else {
@@ -1213,12 +1220,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           httpHeadersForSource: httpHeadersForSource,
           isLoadCurrent: ownsInit,
           maxPlaybackDuration: widget.maxPlaybackDuration,
+          onFailoverSourceFailure: _derivativeFailures.recordFailureForSource,
         );
         if (!guardInitOwnership('setSourceWithFallbacks(network)')) return;
         _sources.register(index, playbackSources, openedSourceIdx);
         _log(
           'Source selected index $index (${video.id}): '
-          'openedSource=$openedSource',
+          'openedSource=$openedSource '
+          'attempt=$openedSourceIdx',
         );
       }
 
@@ -1353,11 +1362,28 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // Source failover depends on runtime native playback errors and source
   // switching on an initialized controller, which package tests cannot
   // simulate without the platform player backend.
-  Future<void> _retryWithNextSource(int index) async {
+  /// Advances [index] to its next playback source.
+  ///
+  /// Set [recordSourceFailure] only when the failover is caused by a typed
+  /// source-level failure. Slow loads and stalls are transient network
+  /// conditions, so they must not demote an otherwise healthy derivative —
+  /// this mirrors the gate `setSourceWithFallbacks` applies before calling
+  /// `onFailoverSourceFailure`.
+  Future<void> _retryWithNextSource(
+    int index, {
+    bool recordSourceFailure = false,
+  }) async {
     if (!_sources.hasSources(index)) {
       _log('No sources to retry for index $index');
       _onVideoStalled(index);
       return;
+    }
+
+    if (recordSourceFailure) {
+      final failedSource = _sources.activeSourceFor(index);
+      if (failedSource != null) {
+        _derivativeFailures.recordFailureForSource(failedSource);
+      }
     }
 
     final nextSource = _sources.advance(index);
@@ -1716,11 +1742,18 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           // Fall back to attempting failover for unknown errors so we
           // don't give up prematurely on unclassified failures.
           final shouldFailover =
-              (errorCode == null || errorCode.shouldFailover) &&
+              (errorCode == null ||
+                  errorCode == NativePlayerErrorCode.unknown ||
+                  errorCode.shouldFailover) &&
               _sources.hasSources(index) &&
               _sources.canAdvance(index);
           if (shouldFailover) {
-            unawaited(_retryWithNextSource(index));
+            unawaited(
+              _retryWithNextSource(
+                index,
+                recordSourceFailure: errorCode?.shouldFailover ?? false,
+              ),
+            );
             return;
           }
 

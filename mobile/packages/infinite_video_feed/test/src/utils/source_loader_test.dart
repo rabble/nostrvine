@@ -152,11 +152,80 @@ void main() {
         equals(['processingUrl', 'rawUrl']),
       );
       expect(delays, isEmpty);
-      expect(
-        logs.where((line) => line.contains('Source processing')),
-        isEmpty,
-      );
+      expect(logs.where((line) => line.contains('Source processing')), isEmpty);
       expect(logs.any((line) => line.contains('retrySource=rawUrl')), isTrue);
+    });
+
+    test('records media-processing source failure before failover', () async {
+      final controller = _RecordingControllerWithFailures(
+        (_) {},
+        failures: [Exception('CoreMediaErrorDomain error -12667 - HTTP 202')],
+      );
+      addTearDown(controller.dispose);
+      final recordedFailures = <String>[];
+
+      await setSourceWithFallbacks(
+        index: 2,
+        controller: controller,
+        sources: ['processingUrl', 'rawUrl'],
+        log: logs.add,
+        onFailoverSourceFailure: recordedFailures.add,
+      );
+
+      expect(recordedFailures, equals(['processingUrl']));
+    });
+
+    test(
+      'records typed failover-class source failure before failover',
+      () async {
+        final controller = _RecordingControllerWithFailures(
+          (_) {},
+          failures: [
+            PlatformException(
+              code: 'PLAYER_ERROR',
+              message: 'ERROR_CODE_IO_UNSPECIFIED',
+              details: const <String, Object?>{'errorCode': 'io_error'},
+            ),
+          ],
+        );
+        addTearDown(controller.dispose);
+        final recordedFailures = <String>[];
+
+        await setSourceWithFallbacks(
+          index: 2,
+          controller: controller,
+          sources: ['derivedMp4', 'hlsUrl'],
+          log: logs.add,
+          onFailoverSourceFailure: recordedFailures.add,
+        );
+
+        expect(recordedFailures, equals(['derivedMp4']));
+      },
+    );
+
+    test('does not record transient timeout failure before failover', () async {
+      final controller = _RecordingControllerWithFailures(
+        (_) {},
+        failures: [
+          PlatformException(
+            code: 'PLAYER_ERROR',
+            message: 'timeout',
+            details: const <String, Object?>{'errorCode': 'timeout'},
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      final recordedFailures = <String>[];
+
+      await setSourceWithFallbacks(
+        index: 2,
+        controller: controller,
+        sources: ['derivedMp4', 'hlsUrl'],
+        log: logs.add,
+        onFailoverSourceFailure: recordedFailures.add,
+      );
+
+      expect(recordedFailures, isEmpty);
     });
 
     test('uses source headers when retrying after HTTP 202', () async {
@@ -217,10 +286,7 @@ void main() {
           logs.where((line) => line.contains('Source processing')),
           hasLength(5),
         );
-        expect(
-          logs.any((line) => line.contains('All sources failed')),
-          isTrue,
-        );
+        expect(logs.any((line) => line.contains('All sources failed')), isTrue);
       },
     );
 

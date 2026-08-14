@@ -45,6 +45,12 @@ enum NativePlayerErrorCode {
   /// iOS: `NSURLErrorTimedOut`.
   timeout,
 
+  /// The platform reported an I/O failure that is not a concrete HTTP,
+  /// network, timeout, or auth condition.
+  ///
+  /// Android: residual `ERROR_CODE_IO_*` values in the 2xxx range.
+  ioError,
+
   /// The media container or segment could not be parsed.
   ///
   /// Android: `ERROR_CODE_PARSING_*` (3xxx range).
@@ -75,6 +81,7 @@ enum NativePlayerErrorCode {
     authRequired => false,
     httpClientError => true,
     httpServerError => true,
+    ioError => true,
     parseError => true,
     networkError => false,
     timeout => false,
@@ -92,6 +99,7 @@ enum NativePlayerErrorCode {
     mediaProcessing => true,
     networkError => true,
     timeout => true,
+    ioError => false,
     authRequired => false,
     httpServerError => false,
     httpClientError => false,
@@ -108,6 +116,7 @@ enum NativePlayerErrorCode {
     'http_server_error' => httpServerError,
     'network_error' => networkError,
     'timeout' => timeout,
+    'io_error' => ioError,
     'parse_error' => parseError,
     'decoder_error' => decoderError,
     _ => unknown,

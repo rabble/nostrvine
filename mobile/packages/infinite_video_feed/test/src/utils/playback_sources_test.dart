@@ -2,6 +2,7 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
+import 'package:infinite_video_feed/src/services/derivative_failure_cache.dart';
 import 'package:infinite_video_feed/src/utils/playback_sources.dart';
 import 'package:models/models.dart';
 
@@ -102,6 +103,33 @@ void main() {
           );
         },
       );
+
+      test('leads with HLS while the derivative has a fresh failure', () {
+        final video = _makeVideo(videoUrl: variantUrl);
+        final cache = DerivativeFailureCache()
+          ..recordFailureForSource(variantUrl);
+
+        expect(
+          resolvePlaybackSources(video, derivativeFailureCache: cache),
+          equals([_hlsUrl, _rawUrl, variantUrl]),
+        );
+      });
+
+      test('restores derivative-first ordering after failure TTL expires', () {
+        var now = DateTime(2026, 8, 14, 12);
+        final cache = DerivativeFailureCache(clock: () => now)
+          ..recordFailureForSource(variantUrl);
+        final video = _makeVideo(videoUrl: variantUrl);
+
+        now = now.add(
+          derivativeFailureCacheTtl + const Duration(milliseconds: 1),
+        );
+
+        expect(
+          resolvePlaybackSources(video, derivativeFailureCache: cache),
+          equals([variantUrl, _rawUrl, _hlsUrl]),
+        );
+      });
     });
 
     group('with resolver returning null', () {
