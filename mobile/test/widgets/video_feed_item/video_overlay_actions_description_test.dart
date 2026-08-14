@@ -26,6 +26,11 @@ Finder _specialCheckmark() => find.byWidgetPredicate(
   (w) => w is DivineIcon && w.icon == DivineIconName.check,
 );
 
+/// Pubkey on the profile-checkmark allowlist in
+/// `lib/widgets/special_profile_checkmark.dart`.
+const _specialProfilePubkey =
+    'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4';
+
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
 
@@ -184,10 +189,12 @@ void main() {
   });
 
   testWidgets(
-    'author line shows checkmark for Kirsten Swasey special profile',
+    'author line shows checkmark for a special profile pubkey',
     (
       tester,
     ) async {
+      testVideo = testVideo.copyWith(pubkey: _specialProfilePubkey);
+
       await tester.pumpWidget(
         testProviderScope(
           additionalOverrides: [
@@ -196,7 +203,7 @@ void main() {
               yield UserProfile(
                 pubkey: pubkey,
                 name: 'Alice',
-                nip05: '_@kirstenswasey.divine.video',
+                nip05: 'alice@example.com',
                 rawData: const {},
                 createdAt: DateTime(2026),
                 eventId: 'kind0_event_id',

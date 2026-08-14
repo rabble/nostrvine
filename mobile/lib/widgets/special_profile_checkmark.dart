@@ -6,40 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 
-const _specialProfileHosts = {
-  'kirstenswasey.divine.video',
-  'rabble.divine.video',
-};
-
+/// Accounts that carry the Divine profile checkmark, identified by pubkey.
+///
+/// Pubkey-only on purpose. Matching a NIP-05 host instead ties the checkmark
+/// to a name the server can reassign, so it would follow the handle to
+/// whoever claims it next rather than staying with the account it was
+/// granted to.
 const _specialProfilePubkeys = {
   'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
 };
 
 bool shouldShowSpecialProfileCheckmark(UserProfile? profile) {
   if (profile == null) return false;
-  return _specialProfilePubkeys.contains(profile.pubkey.toLowerCase()) ||
-      _matchesSpecialProfile(profile.nip05) ||
-      _matchesSpecialProfile(profile.displayNip05);
-}
-
-bool _matchesSpecialProfile(String? identifier) {
-  final host = _hostFromProfileIdentifier(identifier);
-  return _specialProfileHosts.contains(host);
-}
-
-String? _hostFromProfileIdentifier(String? identifier) {
-  if (identifier == null) return null;
-  final value = identifier.trim().toLowerCase();
-  if (value.isEmpty) return null;
-
-  final uri = Uri.tryParse(value);
-  if ((uri?.hasScheme ?? false) && uri!.host.isNotEmpty) {
-    return uri.host;
-  }
-
-  final atIndex = value.indexOf('@');
-  final hostLikeValue = atIndex == -1 ? value : value.substring(atIndex + 1);
-  return hostLikeValue.split('/').first;
+  return _specialProfilePubkeys.contains(profile.pubkey.toLowerCase());
 }
 
 class SpecialProfileCheckmark extends StatelessWidget {

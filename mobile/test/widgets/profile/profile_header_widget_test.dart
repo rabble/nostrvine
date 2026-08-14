@@ -197,6 +197,11 @@ class MockAuthService extends Mock implements AuthService {
 }
 
 const String testUserHex = syntheticTestPubkey;
+
+/// Pubkey on the profile-checkmark allowlist in
+/// `lib/widgets/special_profile_checkmark.dart`.
+const specialProfilePubkey =
+    'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4';
 const issuerUserHex =
     '4f071cf08328c9d9dbb21f5d9d1e51fe2ecf4e7de5a4e59ecdf356f6a6f49f22';
 const recipientUserHex =
@@ -277,9 +282,10 @@ void main() {
       Map<String, dynamic> rawData = const {},
       DateTime? createdAt,
       String eventId = 'test-event',
+      String pubkey = testUserHex,
     }) {
       return UserProfile(
-        pubkey: testUserHex,
+        pubkey: pubkey,
         rawData: {
           'display_name': ?displayName,
           'name': ?name,
@@ -599,11 +605,11 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          userIdHex: testUserHex,
+          userIdHex: specialProfilePubkey,
           isOwnProfile: false,
           suppliedProfile: createTestProfile(
             displayName: 'Checked User',
-            nip05: 'rabble.divine.video',
+            pubkey: specialProfilePubkey,
           ),
         ),
       );

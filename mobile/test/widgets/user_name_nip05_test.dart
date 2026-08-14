@@ -59,34 +59,14 @@ void main() {
     expect(_specialCheckmark(), findsNothing);
   });
 
-  testWidgets('shows a checkmark for Kirsten Swasey special profile', (
+  testWidgets('does not show a checkmark for a divine.video NIP-05', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      buildSubject(nip05: '_@kirstenswasey.divine.video'),
-    );
-    await tester.pump();
-
-    expect(find.text('Alice'), findsOneWidget);
-    expect(_specialCheckmark(), findsOneWidget);
-  });
-
-  testWidgets('matches the Kirsten Swasey profile URL host', (tester) async {
-    await tester.pumpWidget(
-      buildSubject(nip05: 'http://kirstenswasey.divine.video'),
-    );
-    await tester.pump();
-
-    expect(find.text('Alice'), findsOneWidget);
-    expect(_specialCheckmark(), findsOneWidget);
-  });
-
-  testWidgets('shows a checkmark for Rabble special profile', (tester) async {
     await tester.pumpWidget(buildSubject(nip05: '_@rabble.divine.video'));
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);
-    expect(_specialCheckmark(), findsOneWidget);
+    expect(_specialCheckmark(), findsNothing);
   });
 
   testWidgets('shows a checkmark for special profile pubkey', (tester) async {
