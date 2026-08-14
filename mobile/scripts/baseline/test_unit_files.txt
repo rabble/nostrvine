@@ -10,7 +10,6 @@ test/unit/models/video_event_audio_reference_test.dart
 test/unit/models/video_event_blurhash_parsing_test.dart
 test/unit/models/video_event_engagement_enrichment_test.dart
 test/unit/models/video_event_expiration_test.dart
-test/unit/models/video_event_multiple_imeta_test.dart
 test/unit/models/video_event_text_track_test.dart
 test/unit/nostr_sdk/filter_h_tag_test.dart
 test/unit/nostr_sdk/filter_hashtag_test.dart

@@ -17,7 +17,6 @@ const _trustedDomains = {
   'media.divine.video',
   'relay.divine.video',
   'cdn.divine.video',
-  'stream.divine.video',
 };
 
 bool isTrustedExternalLinkHost(String host) {

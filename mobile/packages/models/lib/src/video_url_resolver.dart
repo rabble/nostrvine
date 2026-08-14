@@ -7,6 +7,11 @@
 class VideoUrlResolver {
   VideoUrlResolver._();
 
+  /// Delivery hosts known to be unreachable.
+  ///
+  /// Transitional pending the hostname disposition in divinevideo/divine-blossom#202.
+  static const deadMediaHosts = {'stream.divine.video'};
+
   /// Corrects the common `apt.openvine.co` typo to `api.openvine.co`.
   ///
   /// The target stays on the legacy host on purpose (#5286). These are content
@@ -49,6 +54,17 @@ class VideoUrlResolver {
     }
   }
 
+  /// Whether [url] points at a known dead media delivery host.
+  static bool isKnownDeadMediaUrl(String url) {
+    try {
+      final uri = Uri.parse(fixOpenvineTypo(url));
+      final host = uri.host.toLowerCase();
+      return deadMediaHosts.contains(host);
+    } on FormatException {
+      return false;
+    }
+  }
+
   /// Scores [url] by format preference (higher = better).
   ///
   /// For short videos MP4 is always preferred over HLS (single file, fast,
@@ -67,7 +83,11 @@ class VideoUrlResolver {
 
     // POSTEL'S LAW: Deprioritize known broken URL patterns.
     // The cdn.divine.video/*/manifest/video.m3u8 pattern is often broken;
-    // prefer stream.divine.video HLS or direct MP4 files.
+    // prefer direct MP4 files or generic HLS.
+    if (isKnownDeadMediaUrl(url)) {
+      return 1;
+    }
+
     if (urlLower.contains('cdn.divine.video') &&
         urlLower.contains('/manifest/')) {
       return 5;
@@ -84,12 +104,6 @@ class VideoUrlResolver {
 
     // Any other MP4 - still preferred.
     if (urlLower.contains('.mp4')) return 110;
-
-    // BunnyStream HLS (stream.divine.video) - reliable streaming.
-    if (urlLower.contains('.m3u8') &&
-        urlLower.contains('stream.divine.video')) {
-      return 105;
-    }
 
     // Generic HLS fallback.
     if (urlLower.contains('.m3u8') || urlLower.contains('hls')) return 100;

@@ -60,6 +60,23 @@ void main() {
       });
     });
 
+    group('isKnownDeadMediaUrl', () {
+      test('matches known dead media hosts by parsed host only', () {
+        expect(
+          VideoUrlResolver.isKnownDeadMediaUrl(
+            'https://stream.divine.video/video/playlist.m3u8',
+          ),
+          isTrue,
+        );
+        expect(
+          VideoUrlResolver.isKnownDeadMediaUrl(
+            'https://example.com/stream.divine.video/video.mp4',
+          ),
+          isFalse,
+        );
+      });
+    });
+
     group('scoreVideoUrl', () {
       test('ranks MP4 on cdn.divine.video highest', () {
         expect(
@@ -75,14 +92,27 @@ void main() {
         );
       });
 
-      test('ranks stream.divine.video HLS above generic HLS', () {
+      test('ranks stream.divine.video HLS below generic HLS', () {
         expect(
           VideoUrlResolver.scoreVideoUrl('https://stream.divine.video/v.m3u8'),
-          equals(105),
+          lessThan(
+            VideoUrlResolver.scoreVideoUrl('https://example.com/v.m3u8'),
+          ),
         );
         expect(
           VideoUrlResolver.scoreVideoUrl('https://example.com/v.m3u8'),
           equals(100),
+        );
+      });
+
+      test('ranks stream.divine.video MP4 below live Divine media URLs', () {
+        expect(
+          VideoUrlResolver.scoreVideoUrl(
+            'https://stream.divine.video/video/play_240p.mp4',
+          ),
+          lessThan(
+            VideoUrlResolver.scoreVideoUrl('https://media.divine.video/v.mp4'),
+          ),
         );
       });
 
@@ -168,6 +198,13 @@ void main() {
           'https://example.com/v.mp4',
         ]);
         expect(best, equals('https://example.com/v.mp4'));
+      });
+
+      test('selects a dead media URL when it is the sole valid candidate', () {
+        final best = VideoUrlResolver.selectBestVideoUrl([
+          'https://stream.divine.video/video/play_240p.mp4',
+        ]);
+        expect(best, equals('https://stream.divine.video/video/play_240p.mp4'));
       });
     });
 

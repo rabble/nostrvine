@@ -151,6 +151,39 @@ void main() {
       expect(find.byType(VineCachedImage), findsOneWidget);
     });
 
+    testWidgets('renders blurhash without image load for dead media thumbnail', (
+      tester,
+    ) async {
+      const blurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+      final videoWithDeadThumbnail = createTestVideoEvent(
+        id: 'test-dead-thumbnail',
+        thumbnailUrl:
+            'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/thumbnail.jpg',
+        blurhash: blurhash,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoThumbnailWidget(
+              video: videoWithDeadThumbnail,
+              width: 200,
+              height: 200,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(PassiveAuthThumbnailImage), findsNothing);
+      expect(find.byType(VineCachedImage), findsNothing);
+      expect(
+        tester.widget<BlurhashDisplay>(find.byType(BlurhashDisplay)).blurhash,
+        blurhash,
+      );
+    });
+
     testWidgets(
       'updates missing metadata aspect ratio from the displayed cached image',
       (tester) async {

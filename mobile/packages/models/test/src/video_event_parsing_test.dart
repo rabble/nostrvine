@@ -294,12 +294,7 @@ void main() {
         // Assert
         expect(videoEvent.blurhash, equals('L9AAEz-o?^TK4.%gVs-o009F9E9F'));
         expect(videoEvent.dimensions, equals('720x720'));
-        expect(
-          videoEvent.thumbnailUrl,
-          equals(
-            'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/thumbnail.jpg',
-          ),
-        );
+        expect(videoEvent.thumbnailUrl, isNull);
         expect(
           videoEvent.videoUrl,
           equals(
@@ -315,6 +310,72 @@ void main() {
         expect(videoEvent.mimeType, equals('video/mp4'));
       },
     );
+
+    test('uses a live alternate thumbnail after a dead media thumbnail', () {
+      final nostrEvent = Event(
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        34236,
+        [
+          ['url', 'https://media.divine.video/video.mp4'],
+          [
+            'thumb',
+            'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/thumbnail.jpg',
+          ],
+          ['image', 'https://media.divine.video/fa4a90a3-thumbnail.jpg'],
+          ['blurhash', 'L9AAEz-o?^TK4.%gVs-o009F9E9F'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(
+        videoEvent.thumbnailUrl,
+        equals('https://media.divine.video/fa4a90a3-thumbnail.jpg'),
+      );
+      expect(videoEvent.blurhash, equals('L9AAEz-o?^TK4.%gVs-o009F9E9F'));
+    });
+
+    test('drops a dead media thumbnail while keeping blurhash fallback', () {
+      final nostrEvent = Event(
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        34236,
+        [
+          ['url', 'https://media.divine.video/video.mp4'],
+          [
+            'thumb',
+            'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/thumbnail.jpg',
+          ],
+          ['blurhash', 'L9AAEz-o?^TK4.%gVs-o009F9E9F'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.thumbnailUrl, isNull);
+      expect(videoEvent.blurhash, equals('L9AAEz-o?^TK4.%gVs-o009F9E9F'));
+    });
+
+    test('drops dead media thumbnails restored from persisted JSON', () {
+      final videoEvent = VideoEvent.fromJson(const {
+        'id':
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        'pubkey':
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'createdAt': 1757385263,
+        'content': 'Test video',
+        'videoUrl': 'https://media.divine.video/video.mp4',
+        'thumbnailUrl':
+            'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/thumbnail.jpg',
+        'blurhash': 'L9AAEz-o?^TK4.%gVs-o009F9E9F',
+      });
+
+      expect(videoEvent.thumbnailUrl, isNull);
+      expect(videoEvent.blurhash, equals('L9AAEz-o?^TK4.%gVs-o009F9E9F'));
+    });
 
     test('should not require specific file extensions for video URLs', () {
       // Arrange - URL without typical video extension
@@ -724,10 +785,7 @@ void main() {
         videoEvent.clipSourceCredits[0].addressableId,
         '34236:$creatorPubkey:test-d-tag',
       );
-      expect(
-        videoEvent.clipSourceCredits[1].authorPubkey,
-        secondCreatorPubkey,
-      );
+      expect(videoEvent.clipSourceCredits[1].authorPubkey, secondCreatorPubkey);
       expect(
         videoEvent.clipSourceCredits[1].relayUrl,
         'wss://relay-two.divine.video',
