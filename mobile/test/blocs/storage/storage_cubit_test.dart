@@ -32,8 +32,16 @@ void main() {
 
     StorageCubit build() => StorageCubit(service: service);
 
+    // A non-default budget, mirrored by the stubbed `videoCacheLimitBytes`:
+    // `cacheUsage()` builds the video category's limit from that same prefs
+    // read, so the two can never disagree in production.
+    const configuredVideoLimit = 1536 * 1024 * 1024;
+
     const cacheUsage = CacheUsage(
-      video: CacheUsageCategory(usedBytes: 1024, limitBytes: 2 * 1024),
+      video: CacheUsageCategory(
+        usedBytes: 1024,
+        limitBytes: configuredVideoLimit,
+      ),
       images: CacheUsageCategory(usedBytes: 512, limitBytes: 4 * 1024),
       transitionSeams: CacheUsageCategory(usedBytes: 256, limitBytes: 8 * 1024),
       tempRenders: CacheUsageCategory(usedBytes: 256),
@@ -47,20 +55,21 @@ void main() {
       blocTest<StorageCubit, StorageState>(
         'emits loading then ready with the size',
         setUp: () {
-          when(
-            service.videoCacheLimitBytes,
-          ).thenReturn(kCacheLimitDefaultBytes);
+          when(service.videoCacheLimitBytes).thenReturn(configuredVideoLimit);
           when(service.cacheUsage).thenAnswer((_) async => cacheUsage);
         },
         build: build,
         act: (cubit) => cubit.loadCacheSize(),
         expect: () => const [
-          StorageState(cacheStatus: StorageCacheStatus.loading),
+          StorageState(
+            cacheStatus: StorageCacheStatus.loading,
+            videoCacheLimitBytes: configuredVideoLimit,
+          ),
           StorageState(
             cacheStatus: StorageCacheStatus.ready,
             cacheSizeBytes: 2048,
             cacheUsage: cacheUsage,
-            videoCacheLimitBytes: 2048,
+            videoCacheLimitBytes: configuredVideoLimit,
           ),
         ],
       );

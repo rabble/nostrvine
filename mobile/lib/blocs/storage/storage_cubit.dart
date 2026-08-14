@@ -49,8 +49,7 @@ class StorageCubit extends Cubit<StorageState> {
           cacheStatus: StorageCacheStatus.ready,
           cacheSizeBytes: usage.totalBytes,
           cacheUsage: usage,
-          videoCacheLimitBytes:
-              usage.video.limitBytes ?? _service.videoCacheLimitBytes(),
+          videoCacheLimitBytes: _service.videoCacheLimitBytes(),
         ),
       );
     } catch (error, stackTrace) {
@@ -82,8 +81,7 @@ class StorageCubit extends Cubit<StorageState> {
           cacheStatus: StorageCacheStatus.ready,
           cacheSizeBytes: usage.totalBytes,
           cacheUsage: usage,
-          videoCacheLimitBytes:
-              usage.video.limitBytes ?? _service.videoCacheLimitBytes(),
+          videoCacheLimitBytes: _service.videoCacheLimitBytes(),
         ),
       );
     } catch (error, stackTrace) {
