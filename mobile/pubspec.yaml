@@ -313,8 +313,6 @@ dependencies:
   window_manager: ^0.5.1
   firebase_core: ^4.4.0
   firebase_crashlytics: ^5.0.7
-  # Pinned to the Firebase Core 4.4-compatible FlutterFire release family.
-  firebase_remote_config: 6.1.4
   go_router: ^16.2.4
   # Runtime splash-screen control via FlutterNativeSplash.preserve/remove.
   # Used ONLY for the runtime API — do NOT add a flutter_native_splash:

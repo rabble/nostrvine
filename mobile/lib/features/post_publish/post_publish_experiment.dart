@@ -1,16 +1,11 @@
 // ABOUTME: Deterministically assigns the post-publish create-again experiment.
-// ABOUTME: Uses Firebase Remote Config as a live kill switch.
+// ABOUTME: Assignment is local: sha256 over the pubkey, no remote input.
 
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:analytics/analytics.dart';
 import 'package:crypto/crypto.dart';
-import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:unified_logger/unified_logger.dart';
-
-const postPublishCreateAgainRemoteConfigKey =
-    'post_publish_create_again_enabled';
 
 enum PostPublishVariant {
   control('control'),
@@ -21,86 +16,6 @@ enum PostPublishVariant {
   final String analyticsName;
 }
 
-abstract interface class PostPublishFlagClient {
-  Future<void> initialize();
-  bool get createAgainEnabled;
-  void dispose();
-}
-
-class FirebasePostPublishFlagClient implements PostPublishFlagClient {
-  FirebasePostPublishFlagClient({this.defaultEnabled = true});
-
-  final bool defaultEnabled;
-  FirebaseRemoteConfig? _remoteConfig;
-  StreamSubscription<RemoteConfigUpdate>? _updates;
-  Future<void>? _initialization;
-  bool _defaultsReady = false;
-
-  @override
-  bool get createAgainEnabled {
-    if (!_defaultsReady) return defaultEnabled;
-    try {
-      return _remoteConfig?.getBool(postPublishCreateAgainRemoteConfigKey) ??
-          defaultEnabled;
-    } catch (_) {
-      return defaultEnabled;
-    }
-  }
-
-  @override
-  Future<void> initialize() => _initialization ??= _initialize();
-
-  Future<void> _initialize() async {
-    try {
-      final remoteConfig = FirebaseRemoteConfig.instance;
-      _remoteConfig = remoteConfig;
-      await remoteConfig.setConfigSettings(
-        RemoteConfigSettings(
-          fetchTimeout: const Duration(seconds: 10),
-          minimumFetchInterval: const Duration(hours: 1),
-        ),
-      );
-      await remoteConfig.setDefaults({
-        postPublishCreateAgainRemoteConfigKey: defaultEnabled,
-      });
-      _defaultsReady = true;
-
-      try {
-        await remoteConfig.fetchAndActivate();
-      } catch (error) {
-        Log.warning(
-          'Post-publish Remote Config fetch failed: $error',
-          name: 'FirebasePostPublishFlagClient',
-          category: LogCategory.system,
-        );
-      }
-
-      _updates = remoteConfig.onConfigUpdated.listen((_) async {
-        try {
-          await remoteConfig.activate();
-        } catch (error) {
-          Log.warning(
-            'Post-publish Remote Config activation failed: $error',
-            name: 'FirebasePostPublishFlagClient',
-            category: LogCategory.system,
-          );
-        }
-      });
-    } catch (error) {
-      Log.warning(
-        'Post-publish Remote Config unavailable: $error',
-        name: 'FirebasePostPublishFlagClient',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    unawaited(_updates?.cancel());
-  }
-}
-
 class PostPublishCreateAgainOffer {
   const PostPublishCreateAgainOffer({required this.publishedAt});
 
@@ -109,14 +24,11 @@ class PostPublishCreateAgainOffer {
 
 class PostPublishExperiment {
   PostPublishExperiment({
-    required PostPublishFlagClient flags,
     required AnalyticsEventSink analytics,
     DateTime Function()? now,
-  }) : _flags = flags,
-       _analytics = analytics,
+  }) : _analytics = analytics,
        _now = now ?? DateTime.now;
 
-  final PostPublishFlagClient _flags;
   final AnalyticsEventSink _analytics;
   final DateTime Function() _now;
 
@@ -129,12 +41,8 @@ class PostPublishExperiment {
 
   static const _maxPendingVariants = 32;
 
-  Future<void> initialize() => _flags.initialize();
-
   PostPublishVariant variantForUser(String? pubkeyHex) {
-    if (!_flags.createAgainEnabled || pubkeyHex == null) {
-      return PostPublishVariant.control;
-    }
+    if (pubkeyHex == null) return PostPublishVariant.control;
     // Lowercased so a signer that returns uppercase hex cannot move the same
     // account between buckets.
     final assignmentByte = sha256

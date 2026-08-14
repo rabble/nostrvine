@@ -1929,7 +1929,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
   }
 
   void _initializeDeferredStartup() {
-    unawaited(ref.read(postPublishExperimentProvider).initialize());
     unawaited(
       widget.startupCoordinator.initializeRemaining().catchError((
         Object error,
