@@ -530,6 +530,11 @@ class ProfileLikedVideosBloc
           return state;
         }
 
+        // `close()` closes the event controller before it cancels this
+        // emitter, so a delivery in that window would dispatch into a closed
+        // bloc. There is nothing left to reconcile for at that point.
+        if (isClosed) return state;
+
         Log.info(
           'ProfileLikedVideosBloc: Liked IDs changed, reconciling list',
           name: 'ProfileLikedVideosBloc',

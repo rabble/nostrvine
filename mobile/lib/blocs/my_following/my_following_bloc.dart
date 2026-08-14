@@ -238,9 +238,17 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
       state.rawFollowingPubkeys.isNotEmpty;
 
   void _ensureFollowingSubscription() {
-    _followingSubscription ??= _followRepository.followingStream.listen(
-      (pubkeys) => add(_MyFollowingRepositoryUpdated(pubkeys)),
-    );
+    // `close()` lets already-dispatched events finish, so this can run once
+    // the bloc is closed. A subscription created then is never cancelled —
+    // [close] has already run past its cancel — so it would outlive the bloc
+    // and keep the repository stream alive.
+    if (isClosed) return;
+    _followingSubscription ??= _followRepository.followingStream.listen((
+      pubkeys,
+    ) {
+      if (isClosed) return;
+      add(_MyFollowingRepositoryUpdated(pubkeys));
+    });
   }
 
   bool _samePubkeys(List<String> a, List<String> b) {
@@ -254,7 +262,15 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
 
   @override
   Future<void> close() async {
-    await _followingSubscription?.cancel();
-    return super.close();
+    // Cancel first, but do not await ahead of `super.close()`: `await null`
+    // on a not-yet-created subscription still yields a microtask, and an
+    // already queued `MyFollowingListLoadRequested` ran in it with [isClosed]
+    // still false, subscribed, and was orphaned by the cancel that had
+    // already happened. Capturing the future keeps the cancel guaranteed even
+    // if `super.close()` throws.
+    final cancelled = _followingSubscription?.cancel();
+    _followingSubscription = null;
+    await super.close();
+    await cancelled;
   }
 }

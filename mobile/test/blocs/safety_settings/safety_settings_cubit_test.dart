@@ -439,5 +439,82 @@ void main() {
         ),
       ],
     );
+
+    group('closed mid-flight', () {
+      test('setPeopleIFollowEnabled drops a rollback after close', () async {
+        final toggle = Completer<void>();
+        when(
+          () => moderationLabelService.setFollowingModerationEnabled(
+            any(),
+            followedPubkeys: any(named: 'followedPubkeys'),
+          ),
+        ).thenAnswer((_) => toggle.future);
+
+        final cubit = buildCubit();
+        final toggling = cubit.setPeopleIFollowEnabled(true);
+        await cubit.close();
+        toggle.completeError(Exception('relay fan-out failed'));
+
+        await expectLater(toggling, completes);
+        // The optimistic emit landed before close; the rollback is dropped.
+        expect(cubit.state.isPeopleIFollowEnabled, isTrue);
+      });
+
+      test('unblockUser drops its refresh after close', () async {
+        final unblock = Completer<void>();
+        when(
+          () => blocklistRepository.unblockUser(any()),
+        ).thenAnswer((_) => unblock.future);
+
+        final cubit = buildCubit();
+        final unblocking = cubit.unblockUser('blocked_pubkey');
+        await cubit.close();
+        unblock.complete();
+
+        await expectLater(unblocking, completes);
+      });
+
+      test(
+        'load does not subscribe to the blocklist stream after close',
+        () async {
+          final ensureLoaded = Completer<void>();
+          when(
+            () => moderationLabelService.ensureLoaded(),
+          ).thenAnswer((_) => ensureLoaded.future);
+
+          final cubit = buildCubit();
+          final loading = cubit.load();
+          await cubit.close();
+          ensureLoaded.complete();
+
+          await expectLater(loading, completes);
+          // A subscription created here would outlive close() entirely, since
+          // close() already ran past its cancel.
+          expect(blocklistStream.hasListener, isFalse);
+        },
+      );
+
+      test('load does not subscribe when it resumes inside close', () async {
+        final ensureLoaded = Completer<void>();
+        when(
+          () => moderationLabelService.ensureLoaded(),
+        ).thenAnswer((_) => ensureLoaded.future);
+
+        final cubit = buildCubit();
+        final loading = cubit.load();
+
+        // The service resolves on the same turn the user leaves the screen,
+        // so load()'s resume is queued ahead of close()'s continuation.
+        // Awaiting the cancel before super.close() yielded a microtask there,
+        // and load() ran in it with isClosed still false — subscribing past
+        // the cancel and leaking both the cubit and the subscription.
+        ensureLoaded.complete();
+        final closing = cubit.close();
+        await closing;
+
+        await expectLater(loading, completes);
+        expect(blocklistStream.hasListener, isFalse);
+      });
+    });
   });
 }

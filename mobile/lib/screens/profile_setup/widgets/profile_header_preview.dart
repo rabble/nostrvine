@@ -244,7 +244,10 @@ class _BannerEditButton extends ConsumerWidget {
       bytes: selection.bytes,
     );
 
-    if (cropped == null) return;
+    // Picking and cropping are full screens the user can sit in for minutes,
+    // and neither can be cancelled from here — by the time they return, the
+    // profile editor may already be torn down.
+    if (cropped == null || editorBloc.isClosed) return;
 
     editorBloc.add(
       ProfileBannerUploadRequested(

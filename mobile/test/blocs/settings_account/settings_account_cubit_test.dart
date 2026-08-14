@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for SettingsAccountCubit
 // ABOUTME: Covers load, addNewAccount, and state helpers
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -210,6 +212,45 @@ void main() {
         expect(copied.accounts, equals(testAccounts));
         expect(copied.draftCount, equals(5));
         expect(copied.currentPubkey, equals('pubkey1'));
+      });
+    });
+
+    group('closed mid-flight', () {
+      SettingsAccountCubit createCubit() => SettingsAccountCubit(
+        authService: mockAuthService,
+        draftStorageService: mockDraftStorageService,
+        featureFlagService: mockFeatureFlagService,
+      );
+
+      test('load drops the accounts instead of emitting after close', () async {
+        final accountsRead = Completer<List<KnownAccount>>();
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) => accountsRead.future);
+
+        final cubit = createCubit();
+        final loading = cubit.load();
+        await cubit.close();
+        accountsRead.complete(testAccounts);
+
+        await expectLater(loading, completes);
+        expect(cubit.state.status, SettingsAccountStatus.loading);
+        expect(cubit.state.accounts, isEmpty);
+      });
+
+      test('load drops a failure instead of emitting after close', () async {
+        final accountsRead = Completer<List<KnownAccount>>();
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) => accountsRead.future);
+
+        final cubit = createCubit();
+        final loading = cubit.load();
+        await cubit.close();
+        accountsRead.completeError(Exception('keystore unavailable'));
+
+        await expectLater(loading, completes);
+        expect(cubit.state.status, SettingsAccountStatus.loading);
       });
     });
   });

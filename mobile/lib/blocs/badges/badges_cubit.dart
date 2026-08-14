@@ -65,6 +65,9 @@ class BadgesCubit extends Cubit<BadgesState> {
   Future<void> _loadDashboard() async {
     try {
       final dashboard = await _repository.loadDashboard();
+      // The dashboard load cannot be cancelled, so it can resolve after the
+      // badges screen was popped and this cubit closed.
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: BadgesStatus.loaded,
@@ -82,6 +85,7 @@ class BadgesCubit extends Cubit<BadgesState> {
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: BadgesStatus.error,
@@ -104,6 +108,9 @@ class BadgesCubit extends Cubit<BadgesState> {
     try {
       await action();
       final dashboard = await _repository.loadDashboard();
+      // Publishing plus the reload cannot be cancelled, so they can resolve
+      // after the badges screen was popped and this cubit closed.
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: BadgesStatus.loaded,
@@ -116,6 +123,7 @@ class BadgesCubit extends Cubit<BadgesState> {
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
+      if (isClosed) return;
       emit(
         state.copyWith(
           actionStatus: BadgeActionStatus.error,
