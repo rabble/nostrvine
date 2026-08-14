@@ -96,6 +96,7 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/app_engagement_store.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/services/build_provenance_service.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
@@ -146,6 +147,7 @@ import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     show LayerRasterizerHost;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -1425,10 +1427,22 @@ Future<void> _startOpenVineApp() async {
   // Tag every crash report with the running build so per-error triage doesn't
   // have to cross-reference the release dashboard. Set once, not per-error.
   // See #3758.
+  final buildTag = '${packageInfo.version}+${packageInfo.buildNumber}';
+  unawaited(CrashReportingService.instance.setCustomKey('build_tag', buildTag));
+  final shorebirdUpdater = ShorebirdUpdater();
   unawaited(
-    CrashReportingService.instance.setCustomKey(
-      'build_tag',
-      '${packageInfo.version}+${packageInfo.buildNumber}',
+    _recordBuildProvenance(
+      BuildProvenanceService(
+        packageInfo: packageInfo,
+        installSource: installSource,
+        environment: container.read(currentEnvironmentProvider).environment,
+        platform: _startupPlatformName(),
+        shorebirdAvailable: shorebirdUpdater.isAvailable,
+        buildMode: BuildMode.current,
+        readPatchNumber: shorebirdUpdater.isAvailable
+            ? () async => (await shorebirdUpdater.readCurrentPatch())?.number
+            : null,
+      ),
     ),
   );
 
@@ -1442,6 +1456,59 @@ Future<void> _startOpenVineApp() async {
       ),
     ),
   );
+}
+
+Future<void> _recordBuildProvenance(
+  BuildProvenanceService provenanceService,
+) async {
+  try {
+    final provenance = await provenanceService.resolve();
+    Log.info(provenance.summary, name: 'Main', category: LogCategory.system);
+    CrashReportingService.instance.log(provenance.summary);
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'install_source',
+        provenance.installSource.name,
+      ),
+    );
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'shorebird_available',
+        provenance.shorebirdAvailable,
+      ),
+    );
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'shorebird_patch',
+        provenance.patchLabel,
+      ),
+    );
+  } catch (error, stack) {
+    Log.warning(
+      'Build provenance logging failed: $error',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+    unawaited(
+      CrashReportingService.instance.recordError(
+        error,
+        stack,
+        reason: 'Build provenance logging failed',
+      ),
+    );
+  }
+}
+
+String _startupPlatformName() {
+  if (kIsWeb) return 'web';
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android => 'android',
+    TargetPlatform.iOS => 'ios',
+    TargetPlatform.macOS => 'macos',
+    TargetPlatform.windows => 'windows',
+    TargetPlatform.linux => 'linux',
+    TargetPlatform.fuchsia => 'fuchsia',
+  };
 }
 
 /// Initialize core identity services after the first frame.
