@@ -189,6 +189,9 @@ class RelayPool {
   /// Dropped when the subscription is unsubscribed.
   final Map<String, DateTime> _subscriptionSentAt = {};
 
+  /// Armed silence probes, keyed by subscription id.
+  final Map<String, Timer> _subscriptionSilenceProbes = {};
+
   /// One-shot queries at least one relay has already answered.
   ///
   /// Sticky for the query's lifetime rather than a property of the call that
@@ -229,6 +232,7 @@ class RelayPool {
     this.signatureVerificationPolicy = SignatureVerificationPolicy.all,
     this.silentRepairCooldown = const Duration(seconds: 60),
     this.minSubscriptionAgeBeforeRepair = const Duration(seconds: 10),
+    this.subscriptionSilenceProbe = const Duration(seconds: 8),
     this.tempRelayIdleTimeout = const Duration(seconds: 120),
     this.tempRelaySweepInterval = const Duration(seconds: 60),
   });
@@ -280,6 +284,30 @@ class RelayPool {
   /// deadline, so a caller that actually waited still gets the repair.
   /// Injectable so tests need no wall-clock wait.
   Duration minSubscriptionAgeBeforeRepair;
+
+  /// How long after a subscription's REQ fan-out the pool checks whether any
+  /// relay has answered, and repairs the ones that have not.
+  ///
+  /// Until #7301 the same check only ran from [unsubscribe], which meant a
+  /// relay that swallowed the REQ was found *after* the caller had already
+  /// given up. Nothing else could catch it inside that window either: the REQ
+  /// is sent with `skipReconnect`, so a dropped socket queues it silently; a
+  /// half-open socket accepts it into a dead connection and answers nothing;
+  /// and the idle heartbeat needs 90s of silence. A feed load that started on
+  /// a bad socket was therefore guaranteed to burn its caller's full deadline
+  /// and show an empty screen, which is what made Android — where radio
+  /// transitions produce those sockets far more often — time out ~8x more than
+  /// iOS on the same code.
+  ///
+  /// The default sits far above a healthy relay's round-trip (a few hundred ms)
+  /// and well below the app's 30s feed deadline, so a repair still leaves the
+  /// re-issued REQ most of the window to be answered. Injectable so tests need
+  /// no wall-clock wait.
+  ///
+  /// [minSubscriptionAgeBeforeRepair] has no counterpart here: teardown cancels
+  /// the probe, so a feed the user left inside the relay's round-trip time is
+  /// never judged at all rather than being judged and then excused.
+  Duration subscriptionSilenceProbe;
 
   /// Controls whether [_dispatchTypedFrame] performs expensive Schnorr
   /// verification. The event id is always recomputed first; policy skips only
@@ -522,6 +550,12 @@ class RelayPool {
     }
     _tempRelaySweepTimer?.cancel();
     _tempRelaySweepTimer = null;
+    // Nothing left to repair, and a probe outliving the pool would fire into
+    // an empty relay set on every armed subscription.
+    for (final probe in _subscriptionSilenceProbes.values) {
+      probe.cancel();
+    }
+    _subscriptionSilenceProbes.clear();
   }
 
   /// Drops the pool-side state keyed by [url] so a relay that comes back is
@@ -1101,6 +1135,65 @@ class RelayPool {
     _repairSilentRelays(silent, sentAt);
   }
 
+  /// [_repairRelaysThatNeverServedSubscription], run *while* the subscription
+  /// is still live instead of at its teardown.
+  ///
+  /// Teardown-time repair only helps the next load; the one the user is
+  /// watching has already failed by then. Probing at
+  /// [subscriptionSilenceProbe] applies the same evidence — this relay was
+  /// sent the REQ and has sent nothing back since — early enough that the
+  /// re-issued REQ can still land inside the caller's deadline.
+  ///
+  /// Two shapes of "sent nothing back" are repaired, because from the caller's
+  /// side they are the same failure:
+  ///
+  /// - **Connected but silent**: the half-open zombie [_repairSilentRelays]
+  ///   already handles. Its own filters apply here unchanged, so a relay that
+  ///   streamed events or EOSE'd is left alone and [silentRepairCooldown]
+  ///   still rate-limits per relay.
+  /// - **Not connected**: the REQ was queued rather than written, because
+  ///   [relayDoSubscribe] sends with `skipReconnect`. Nothing periodic
+  ///   reconnects relays, so without this the frame sits in `pendingMessages`
+  ///   until some unrelated event happens to reconnect the socket.
+  void _probeSubscriptionSilence(String subId) {
+    _subscriptionSilenceProbes.remove(subId);
+    if (!_subscriptions.containsKey(subId)) return;
+    final sentAt = _subscriptionSentAt[subId];
+    if (sentAt == null) return;
+
+    final silent = <String>[];
+    final dropped = <Relay>[];
+    for (final relay in [
+      ..._relaysSnapshot(),
+      ..._tempRelaysSnapshot(),
+      ..._cacheRelaysSnapshot(),
+    ]) {
+      if (!relay.hasSubscriptionById(subId)) continue;
+      if (relay.relayStatus.connected == ClientConnected.connected) {
+        silent.add(relay.url);
+      } else {
+        dropped.add(relay);
+      }
+    }
+
+    if (silent.isNotEmpty) _repairSilentRelays(silent, sentAt);
+    for (final relay in dropped) {
+      log(
+        '📡 ${relay.url} was sent subscription $subId while disconnected and '
+        'has not reconnected; connecting so the queued REQ is written',
+      );
+      unawaited(_reconnectDroppedRelay(relay));
+    }
+  }
+
+  Future<void> _reconnectDroppedRelay(Relay relay) async {
+    try {
+      await relay.connect();
+    } catch (e) {
+      log('dropped-relay reconnect failed for ${relay.url}: $e');
+    }
+  }
+
   /// Releases the one-shot queries [relay] is parked on once it can no longer
   /// answer them.
   ///
@@ -1644,6 +1737,12 @@ class RelayPool {
       }
     }
 
+    _subscriptionSilenceProbes[subscription.id]?.cancel();
+    _subscriptionSilenceProbes[subscription.id] = Timer(
+      subscriptionSilenceProbe,
+      () => _probeSubscriptionSilence(subscription.id),
+    );
+
     return subscription.id;
   }
 
@@ -1703,6 +1802,7 @@ class RelayPool {
   }
 
   void unsubscribe(String id) {
+    _subscriptionSilenceProbes.remove(id)?.cancel();
     final subscription = _subscriptions.remove(id);
     // Clean up EOSE tracking for this subscription
     _subscriptionEoseRelays.remove(id);
