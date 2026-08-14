@@ -44,6 +44,9 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("FLUTTER_VERSION: 3.44.9", self.contents)
         self.assertNotIn("3.44.0", self.contents)
 
+    def test_shorebird_preserves_codemagic_flutter_root_for_android_plugins(self) -> None:
+        self.assertIn('echo CODEMAGIC_FLUTTER_ROOT="$FLUTTER_ROOT" >> $CM_ENV', self.contents)
+
     def test_shorebird_patch_commands_publish_to_staging_and_are_signed(self) -> None:
         self.assertIn(
             "shorebird patch android --release-version=${{ inputs.RELEASE_VERSION }} --track=staging",

@@ -164,6 +164,12 @@ definitions:
     - &shorebird_install
       name: Install Shorebird
       script: |
+        # Shorebird swaps FLUTTER_ROOT to its managed engine checkout during
+        # release builds. Keep Codemagic's Flutter SDK path available for local
+        # Android plugins that need compile-only Flutter embedding classes.
+        if [ -n "${FLUTTER_ROOT:-}" ]; then
+          echo CODEMAGIC_FLUTTER_ROOT="$FLUTTER_ROOT" >> $CM_ENV
+        fi
         curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
         echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
     - &write_shorebird_dart_defines

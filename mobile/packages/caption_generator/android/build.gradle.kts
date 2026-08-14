@@ -11,12 +11,29 @@ repositories {
     mavenCentral()
 }
 
-val flutterRoot = providers.environmentVariable("FLUTTER_ROOT")
-    .orElse(providers.environmentVariable("FLUTTER_HOME"))
-    .orNull
-    ?: throw GradleException("FLUTTER_ROOT must be set to compile caption_generator")
-val flutterEmbeddingJar =
-    file("$flutterRoot/bin/cache/artifacts/engine/android-arm64/flutter.jar")
+val flutterRootCandidates = listOf(
+    providers.environmentVariable("FLUTTER_ROOT").orNull,
+    providers.environmentVariable("FLUTTER_HOME").orNull,
+    providers.environmentVariable("CODEMAGIC_FLUTTER_ROOT").orNull,
+).filterNotNull().distinct()
+
+if (flutterRootCandidates.isEmpty()) {
+    throw GradleException(
+        "FLUTTER_ROOT, FLUTTER_HOME, or CODEMAGIC_FLUTTER_ROOT must be set to compile caption_generator",
+    )
+}
+
+val flutterEmbeddingJarCandidates = flutterRootCandidates.flatMap { root ->
+    listOf(
+        file("$root/bin/cache/artifacts/engine/android-arm64/flutter.jar"),
+        file("$root/bin/cache/artifacts/engine/android-arm64-release/flutter.jar"),
+    )
+}
+val flutterEmbeddingJar = flutterEmbeddingJarCandidates.firstOrNull { it.isFile }
+    ?: throw GradleException(
+        "Could not find Flutter Android embedding jar. Checked: " +
+            flutterEmbeddingJarCandidates.joinToString { it.absolutePath },
+    )
 
 android {
     namespace = "co.openvine.caption_generator"
