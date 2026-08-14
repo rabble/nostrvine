@@ -49,6 +49,9 @@ class OverlayVisibility extends _$OverlayVisibility {
   @override
   OverlayVisibilityState build() => const OverlayVisibilityState();
 
+  /// Whether this notifier can still accept writes.
+  bool get isMounted => ref.mounted;
+
   /// Set page overlay state (full-screen overlays like settings).
   /// When a page is open, all video players will be released.
   void setPageOpen(bool isOpen) {
