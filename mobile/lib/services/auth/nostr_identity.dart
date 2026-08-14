@@ -213,7 +213,10 @@ class PubkeyOnlyNostrIdentity extends NostrIdentity {
 /// When a matching local private key is available, signs locally for speed.
 /// Otherwise delegates to the remote [KeycastRpc] signer.
 class KeycastNostrIdentity extends NostrIdentity
-    implements IsolateDecryptSigner, GiftWrapBatchUnwrapper {
+    implements
+        IsolateDecryptSigner,
+        GiftWrapBatchUnwrapper,
+        GiftWrapBatchWrapper {
   /// Creates a Keycast identity.
   ///
   /// [rpcSigner] is the remote Keycast RPC signer.
@@ -298,6 +301,21 @@ class KeycastNostrIdentity extends NostrIdentity
     // the drain decrypts in an isolate instead and never reaches this path.
     if (_rpcSigner case final GiftWrapBatchUnwrapper unwrapper) {
       return unwrapper.nip17UnwrapBatch(giftWraps);
+    }
+    return Future.value();
+  }
+
+  @override
+  Future<List<GiftWrapSlot>?> nip17WrapBatch(
+    Map<String, dynamic> rumor,
+    List<String> recipientPubkeys,
+  ) {
+    // OAuth-only Keycast (no local key) pays a signer round trip per NIP-59
+    // layer; the batch verb builds every recipient's seal and wrap in one. When
+    // a local key is present the send builds both wraps in an isolate instead
+    // and never reaches this path.
+    if (_rpcSigner case final KeycastRpc rpc) {
+      return rpc.nip17WrapBatch(rumor, recipientPubkeys);
     }
     return Future.value();
   }

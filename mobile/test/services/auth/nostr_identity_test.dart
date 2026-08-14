@@ -28,6 +28,8 @@ void main() {
     registerFallbackValue(Event(testPublicKey, 0, [], ''));
     registerFallbackValue(Uint8List(0));
     registerFallbackValue(<Map<String, dynamic>>[]);
+    registerFallbackValue(<String, dynamic>{});
+    registerFallbackValue(<String>[]);
   });
 
   group(LocalNostrIdentity, () {
@@ -296,6 +298,43 @@ void main() {
 
       expect(result, same(slots));
       verify(() => mockKeycastRpc.nip17UnwrapBatch(any())).called(1);
+    });
+
+    test(
+      'nip17WrapBatch returns null when rpcSigner is a generic NostrSigner',
+      () async {
+        // A generic NostrSigner is not a GiftWrapBatchWrapper, so the identity
+        // short-circuits to null and the DM send falls back to the per-wrap
+        // signing path. See #7090.
+        final identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockRpc,
+        );
+
+        expect(await identity.nip17WrapBatch(const {}, const []), isNull);
+      },
+    );
+
+    test('nip17WrapBatch delegates to KeycastRpc', () async {
+      final mockKeycastRpc = _MockKeycastRpc();
+      final slots = [const GiftWrapSlot.failure('encrypt_failed')];
+      when(
+        () => mockKeycastRpc.nip17WrapBatch(any(), any()),
+      ).thenAnswer((_) async => slots);
+
+      final identity = KeycastNostrIdentity(
+        pubkey: testPublicKey,
+        rpcSigner: mockKeycastRpc,
+      );
+
+      final rumor = {'id': 'rumor', 'kind': 14};
+      const recipients = ['peer', 'self'];
+      final result = await identity.nip17WrapBatch(rumor, recipients);
+
+      expect(result, same(slots));
+      // Both params must reach the RPC unchanged: the server parses exactly
+      // [rumorObject, [recipientHex...]].
+      verify(() => mockKeycastRpc.nip17WrapBatch(rumor, recipients)).called(1);
     });
 
     test(

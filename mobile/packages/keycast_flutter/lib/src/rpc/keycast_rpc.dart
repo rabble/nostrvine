@@ -398,6 +398,165 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     }
   }
 
+  /// Runs a batch verb under one deadline, including token refresh and retry.
+  Future<T> _callBatch<T>(
+    String method,
+    List<dynamic> params,
+    T Function(dynamic) fromResult, {
+    bool logHttpErrors = true,
+    bool classifyLocalTimeout = true,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+
+    Never throwTimeout() {
+      if (!classifyLocalTimeout) {
+        throw TimeoutException(
+          '$method request timed out',
+          batchRequestTimeout,
+        );
+      }
+      throw RpcTimeoutException(
+        'Local $method request timed out after '
+        '${batchRequestTimeout.inSeconds}s',
+        method: method,
+      );
+    }
+
+    Duration remaining() {
+      final value = batchRequestTimeout - stopwatch.elapsed;
+      if (value <= Duration.zero) throwTimeout();
+      return value;
+    }
+
+    var response = await _sendRequest(
+      method,
+      params,
+      timeout: remaining(),
+      classifyLocalTimeout: classifyLocalTimeout,
+    );
+
+    if (response.statusCode == 401 && _onTokenRefresh != null) {
+      Log.info(
+        '[Keycast RPC] $method returned 401, attempting token refresh',
+        name: 'KeycastRpc',
+        category: LogCategory.auth,
+      );
+      String? newToken;
+      try {
+        newToken = await _onTokenRefresh().timeout(remaining());
+      } on TimeoutException {
+        throwTimeout();
+      }
+      if (newToken != null) {
+        _accessToken = newToken;
+        response = await _sendRequest(
+          method,
+          params,
+          timeout: remaining(),
+          classifyLocalTimeout: classifyLocalTimeout,
+        );
+      }
+    }
+
+    if (response.statusCode != 200) {
+      if (logHttpErrors) {
+        Log.error(
+          '[Keycast RPC] Error response: ${response.body}',
+          name: 'KeycastRpc',
+          category: LogCategory.auth,
+        );
+      }
+      final message = 'HTTP ${response.statusCode}: ${response.body}';
+      throw response.statusCode == _gatewayTimeoutStatus
+          ? RpcTimeoutException(message, method: method)
+          : RpcException(message, method: method);
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    if (json.containsKey('error') && json['error'] != null) {
+      throw RpcException(json['error'].toString(), method: method);
+    }
+    if (!json.containsKey('result')) {
+      throw RpcException('Missing result in response', method: method);
+    }
+    return fromResult(json['result']);
+  }
+
+  /// Server-side NIP-59 gift-wrap construction for the remote-signer DM send
+  /// path (`nip17_wrap_batch`).
+  ///
+  /// Sends one shared [rumor] plus an ordered [recipientPubkeys] list and gets
+  /// back index-aligned slots — each a signed kind:1059 gift wrap, or a
+  /// per-recipient error code. The server NIP-44-encrypts the rumor and signs
+  /// the kind:13 seal itself, so a 1:1 send (peer + the NIP-17 self copy)
+  /// collapses from four round trips — `nip44Encrypt` + `signEvent` per wrap —
+  /// to one. It also collapses this send's four per-request account-status DB
+  /// queries and four activity-log writes into one of each, which is the part
+  /// that matters under the signer's DB-pool contention.
+  ///
+  /// The server accepts rumor kinds 14 and 15 only; callers must not send
+  /// other kinds (NIP-17 also blesses kind 7 reactions and wrapped kind 5
+  /// deletes, which this verb rejects at request level).
+  ///
+  /// Returns `null` ONLY when the backend does not expose the verb yet, so the
+  /// caller can stop asking for the rest of the session.
+  ///
+  /// Everything else throws — a transient 5xx, an expired token, a rejected
+  /// request, or a transient [RpcTimeoutException]. This is a deliberate
+  /// divergence from
+  /// [nip17UnwrapBatch], which collapses every [RpcException] into `null`:
+  /// there, a caller that latches off pays two decrypt RPCs per wrap; here it
+  /// would pay four signing round trips per DM for the rest of the session, and
+  /// a single blip is not evidence the verb is gone.
+  Future<List<GiftWrapSlot>?> nip17WrapBatch(
+    Map<String, dynamic> rumor,
+    List<String> recipientPubkeys,
+  ) async {
+    try {
+      return await _callBatch(
+        'nip17_wrap_batch',
+        [rumor, recipientPubkeys],
+        (result) => [
+          for (final slot in result as List)
+            _parseWrapSlot(slot as Map<String, dynamic>),
+        ],
+        // Builds a seal + wrap per recipient server-side, so it legitimately
+        // runs longer than a single op — keep it on the batch bound rather
+        // than the tighter single-op [requestTimeout].
+        // The unsupported-method probe is an expected outcome on an older
+        // backend, not an incident; the branch below logs it at info instead.
+        logHttpErrors: false,
+      );
+    } on RpcException catch (error) {
+      if (!_isUnsupportedWrapBatch(error)) rethrow;
+      Log.info(
+        '[Keycast RPC] nip17_wrap_batch unsupported by backend; '
+        'DM sends will use the per-wrap signing path for this session',
+        name: 'KeycastRpc',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+  }
+
+  /// Distinguishes an absent batch verb from ordinary HTTP 400 rejections.
+  bool _isUnsupportedWrapBatch(RpcException error) {
+    final lower = error.message.toLowerCase();
+    return lower.contains('unsupported method') ||
+        lower.contains('method_not_found') ||
+        lower.contains('method not found');
+  }
+
+  static GiftWrapSlot _parseWrapSlot(Map<String, dynamic> slot) {
+    final error = slot['error'];
+    if (error != null) return GiftWrapSlot.failure(error.toString());
+    final giftWrap = slot['gift_wrap'];
+    if (giftWrap is Map<String, dynamic>) {
+      return GiftWrapSlot.success(giftWrap);
+    }
+    return const GiftWrapSlot.failure('invalid_slot');
+  }
+
   static GiftWrapUnwrapSlot _parseUnwrapSlot(Map<String, dynamic> slot) {
     final error = slot['error'];
     if (error != null) return GiftWrapUnwrapSlot.failure(error.toString());

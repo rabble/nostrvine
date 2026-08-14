@@ -13,6 +13,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/nip59/gift_wrap_batch_wrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
@@ -149,6 +150,89 @@ class _LocalIsolateSigner implements IsolateDecryptSigner {
 
   @override
   void close() => _delegate.close();
+}
+
+/// Answers a `nip17_wrap_batch` call. Returning `null` models a backend
+/// without the verb; throwing models a transient failure.
+typedef _OnWrapBatch =
+    Future<List<GiftWrapSlot>?> Function(
+      Map<String, dynamic> rumor,
+      List<String> recipientPubkeys,
+    );
+
+/// A remote signer that supports the server-side gift-wrap batch — the
+/// OAuth-only Keycast shape. Counts the per-wrap signing calls too, so a test
+/// can assert the batch actually replaced them rather than running alongside.
+class _BatchWrapSigner implements NostrSigner, GiftWrapBatchWrapper {
+  _BatchWrapSigner(String privateKeyHex, {required _OnWrapBatch onBatch})
+    : _delegate = LocalNostrSigner(privateKeyHex),
+      _onBatch = onBatch;
+
+  final LocalNostrSigner _delegate;
+  final _OnWrapBatch _onBatch;
+
+  int batchCalls = 0;
+  int nip44EncryptCalls = 0;
+  int signEventCalls = 0;
+
+  @override
+  Future<List<GiftWrapSlot>?> nip17WrapBatch(
+    Map<String, dynamic> rumor,
+    List<String> recipientPubkeys,
+  ) {
+    batchCalls++;
+    return _onBatch(rumor, recipientPubkeys);
+  }
+
+  @override
+  Future<String?> getPublicKey() => _delegate.getPublicKey();
+
+  @override
+  Future<Event?> signEvent(Event event) {
+    signEventCalls++;
+    return _delegate.signEvent(event);
+  }
+
+  @override
+  Future<Map<dynamic, dynamic>?> getRelays() => _delegate.getRelays();
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) =>
+      _delegate.encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) =>
+      _delegate.decrypt(pubkey, ciphertext);
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) {
+    nip44EncryptCalls++;
+    return _delegate.nip44Encrypt(pubkey, plaintext);
+  }
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) =>
+      _delegate.nip44Decrypt(pubkey, ciphertext);
+
+  @override
+  void close() => _delegate.close();
+}
+
+/// A signer that is BOTH isolate-capable and batch-capable — the BYOK Keycast
+/// identity. Pins that the in-process isolate path wins over the network one.
+class _IsolateAndBatchSigner extends _BatchWrapSigner
+    implements IsolateDecryptSigner {
+  _IsolateAndBatchSigner(this._privateKeyHex, {required super.onBatch})
+    : super(_privateKeyHex);
+
+  final String _privateKeyHex;
+
+  @override
+  bool get canDecryptInIsolate => true;
+
+  @override
+  T withPrivateKeyHex<T>(T Function(String hex) operation) =>
+      operation(_privateKeyHex);
 }
 
 // Valid 64-character hex keys for testing.
@@ -2019,6 +2103,601 @@ void main() {
       );
     });
 
+    // #7090. A remote signer pays nip44Encrypt + signEvent per NIP-59 wrap —
+    // four round trips for a 1:1 send once the NIP-17 self copy is counted.
+    // Keycast's `nip17_wrap_batch` builds every recipient's seal and wrap
+    // server-side, collapsing that to one. The verb is optional, so every
+    // failure mode has to land back on the existing per-wrap path.
+    group('server-side gift-wrap batch (#7090)', () {
+      late String localPrivateKey;
+      late String localPubkey;
+
+      setUp(() {
+        localPrivateKey = generatePrivateKey();
+        localPubkey = getPublicKey(localPrivateKey);
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments[0] as Event),
+        );
+      });
+
+      Map<String, dynamic> wrapFor(
+        String recipient, {
+        int kind = EventKind.giftWrap,
+        bool sign = true,
+      }) {
+        final privateKey = generatePrivateKey();
+        final event = Event(
+          getPublicKey(privateKey),
+          kind,
+          [
+            ['p', recipient],
+          ],
+          'ciphertext-$recipient',
+        );
+        if (sign) event.sign(privateKey);
+        return event.toJson();
+      }
+
+      test(
+        'one batch call replaces both per-wrap signing round trips',
+        () async {
+          final signer = _BatchWrapSigner(
+            localPrivateKey,
+            onBatch: (rumor, recipients) async => [
+              GiftWrapSlot.success(wrapFor(recipients[0])),
+              GiftWrapSlot.success(wrapFor(recipients[1])),
+            ],
+          );
+          var mainBuilderCalls = 0;
+
+          final service = NIP17MessageService(
+            signer: signer,
+            senderPublicKey: localPubkey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, _) async {
+              mainBuilderCalls++;
+              return null;
+            },
+          );
+
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'via server batch',
+          );
+          final result = await service.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isTrue);
+          expect(signer.batchCalls, equals(1));
+          // The whole point: zero signer round trips for the seal, and no
+          // per-wrap rebuild for the self copy.
+          expect(signer.nip44EncryptCalls, isZero);
+          expect(signer.signEventCalls, isZero);
+          expect(mainBuilderCalls, isZero);
+          // Both wraps published from the one call: recipient, then self.
+          verify(() => mockNostrClient.publishEvent(any())).called(2);
+        },
+      );
+
+      test(
+        'sends the rumor and [recipient, self] as the batch params',
+        () async {
+          Map<String, dynamic>? seenRumor;
+          List<String>? seenRecipients;
+          final signer = _BatchWrapSigner(
+            localPrivateKey,
+            onBatch: (rumor, recipients) async {
+              seenRumor = rumor;
+              seenRecipients = recipients;
+              return [
+                GiftWrapSlot.success(wrapFor(recipients[0])),
+                GiftWrapSlot.success(wrapFor(recipients[1])),
+              ];
+            },
+          );
+
+          final service = NIP17MessageService(
+            signer: signer,
+            senderPublicKey: localPubkey,
+            nostrService: mockNostrClient,
+          );
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'params check',
+          );
+          final result = await service.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+          expect(result.success, isTrue);
+
+          // The rumor must go over the wire verbatim: the server recomputes
+          // and verifies its id, and every slot seals this exact body, so the
+          // id the durable queue keyed on is the id the recipient dedups on.
+          expect(seenRumor, equals(rumor.toJson()));
+          expect(seenRumor!['id'], equals(rumor.id));
+          // Order is load-bearing — slot 0 is the recipient, slot 1 the NIP-17
+          // self copy.
+          expect(seenRecipients, equals([_recipientPubkey, localPubkey]));
+        },
+      );
+
+      test('falls back to the per-wrap path when the recipient slot '
+          'fails', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            const GiftWrapSlot.failure('encrypt_failed'),
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'recipient slot failed',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        // Recipient wrap + self wrap, both rebuilt the old way.
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test('keeps the recipient wrap and defers the self copy when only the '
+          'self slot fails', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[0])),
+            const GiftWrapSlot.failure('internal'),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'self slot failed',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.selfWrapPublished, isTrue);
+        // Only the self copy was rebuilt; the batch's recipient wrap stands.
+        expect(mainBuilderCalls, equals(1));
+      });
+
+      test('falls back when the slot count does not match the recipient '
+          'count', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[0])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'short slot list',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test('falls back when a slot carries an unusable event', () async {
+        // Parsed as JSON but not a well-formed event: never publish a wrap we
+        // only half understand.
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => const [
+            GiftWrapSlot.success({'not': 'an event'}),
+            GiftWrapSlot.success({'not': 'an event'}),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'unusable slot',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test('falls back when a server wrap is unsigned', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[0], sign: false)),
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'unsigned server wrap',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test('falls back when a server wrap is not kind 1059', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(
+              wrapFor(recipients[0], kind: EventKind.textNote),
+            ),
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'wrong server wrap kind',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test('falls back when server slots are swapped', () async {
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+            GiftWrapSlot.success(wrapFor(recipients[0])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'swapped server wraps',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(mainBuilderCalls, equals(2));
+      });
+
+      test(
+        'latches off after the backend reports the verb unsupported',
+        () async {
+          // A null answer means "this server does not have the verb" — the only
+          // signal strong enough to stop probing for the rest of the session.
+          final signer = _BatchWrapSigner(
+            localPrivateKey,
+            onBatch: (rumor, recipients) async => null,
+          );
+
+          final service = NIP17MessageService(
+            signer: signer,
+            senderPublicKey: localPubkey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, recipient) async =>
+                Event.fromJson(wrapFor(recipient)),
+          );
+
+          for (final content in ['first', 'second']) {
+            final result = await service.sendRumor(
+              rumorEvent: service.buildRumor(
+                recipientPubkey: _recipientPubkey,
+                content: content,
+              ),
+              recipientPubkey: _recipientPubkey,
+            );
+            expect(result.success, isTrue);
+          }
+
+          expect(signer.batchCalls, equals(1));
+        },
+      );
+
+      test('does NOT latch off after a transient batch failure', () async {
+        // A 5xx, an expired token or a timeout is not evidence the verb is
+        // gone. Latching on one would cost the rest of the session four round
+        // trips per DM — the regression this whole change removes.
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async =>
+              throw StateError('HTTP 503: Database temporarily unavailable'),
+        );
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async =>
+              Event.fromJson(wrapFor(recipient)),
+        );
+
+        for (final content in ['first', 'second']) {
+          final result = await service.sendRumor(
+            rumorEvent: service.buildRumor(
+              recipientPubkey: _recipientPubkey,
+              content: content,
+            ),
+            recipientPubkey: _recipientPubkey,
+          );
+          expect(result.success, isTrue);
+        }
+
+        expect(signer.batchCalls, equals(2));
+      });
+
+      test('a policy refusal thrown by the batch still terminalizes as '
+          'blocked', () async {
+        // Keycast's verified_minor gate answers 403 "Operation denied by
+        // policy". The batch rethrows it, the fallback's own encrypt re-hits
+        // it, and sendRumor must classify it terminal rather than retryable.
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async =>
+              throw _RpcExceptionDouble('HTTP 403: Operation denied by policy'),
+        );
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, _) async =>
+              throw _RpcExceptionDouble('HTTP 403: Operation denied by policy'),
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'minor gate',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.blocked, isTrue);
+      });
+
+      for (final (label, kind) in [
+        ('kind-7 reaction', EventKind.reaction),
+        ('kind-5 deletion', EventKind.eventDeletion),
+      ]) {
+        test('never offers a $label rumor to the batch', () async {
+          // keycast rejects anything but kinds 14/15 at request level, so
+          // probing would burn a round trip to learn the same answer every
+          // time — and NIP-17 blesses both of these kinds, so they are not
+          // rare. See #7090 / the keycast follow-up.
+          final signer = _BatchWrapSigner(
+            localPrivateKey,
+            onBatch: (rumor, recipients) async => [
+              GiftWrapSlot.success(wrapFor(recipients[0])),
+              GiftWrapSlot.success(wrapFor(recipients[1])),
+            ],
+          );
+          var mainBuilderCalls = 0;
+
+          final service = NIP17MessageService(
+            signer: signer,
+            senderPublicKey: localPubkey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, recipient) async {
+              mainBuilderCalls++;
+              return Event.fromJson(wrapFor(recipient));
+            },
+          );
+          final result = await service.sendRumor(
+            rumorEvent: service.buildRumor(
+              recipientPubkey: _recipientPubkey,
+              content: label,
+              eventKind: kind,
+            ),
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isTrue);
+          expect(signer.batchCalls, isZero);
+          expect(mainBuilderCalls, equals(2));
+        });
+      }
+
+      test('a kind the batch cannot take does not latch it off for the kinds '
+          'it can', () async {
+        // The kind guard has to be a skip, not a failure: a reaction must not
+        // cost the next message send its fast path.
+        final signer = _BatchWrapSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[0])),
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+          ],
+        );
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, recipient) async =>
+              Event.fromJson(wrapFor(recipient)),
+        );
+
+        final reaction = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: '👍',
+            eventKind: EventKind.reaction,
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+        expect(reaction.success, isTrue);
+        expect(signer.batchCalls, isZero);
+
+        final message = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'message after a reaction',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+        expect(message.success, isTrue);
+        expect(signer.batchCalls, equals(1));
+      });
+
+      test('a local-key signer never reaches the batch, even when its signer '
+          'supports it', () async {
+        // A BYOK Keycast identity is both isolate-capable and batch-capable.
+        // The isolate hop costs zero round trips, so it must win.
+        final signer = _IsolateAndBatchSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[0])),
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+          ],
+        );
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          isolateGiftWrapBatchBuilder: buildGiftWrapBatch,
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'local key wins',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(signer.batchCalls, isZero);
+      });
+
+      test('a failed isolate hop falls to in-process signing, not the '
+          'network', () async {
+        // Same identity, but the isolate seam fails. The main-isolate builder
+        // still signs with the local key at zero round trips, so falling to
+        // the server batch here would be a regression.
+        final signer = _IsolateAndBatchSigner(
+          localPrivateKey,
+          onBatch: (rumor, recipients) async => [
+            GiftWrapSlot.success(wrapFor(recipients[0])),
+            GiftWrapSlot.success(wrapFor(recipients[1])),
+          ],
+        );
+        var mainBuilderCalls = 0;
+
+        final service = NIP17MessageService(
+          signer: signer,
+          senderPublicKey: localPubkey,
+          nostrService: mockNostrClient,
+          isolateGiftWrapBatchBuilder: (_) async =>
+              throw StateError('isolate spawn failed'),
+          giftWrapBuilder: (_, _, recipient) async {
+            mainBuilderCalls++;
+            return Event.fromJson(wrapFor(recipient));
+          },
+        );
+        final result = await service.sendRumor(
+          rumorEvent: service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'isolate failed',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(signer.batchCalls, isZero);
+        expect(mainBuilderCalls, equals(2));
+      });
+    });
+
     // #6586. A 1:1 send costs four remote signer round trips, and no signer
     // interface exposes a per-call timeout — Keycast bounds an op at 20s,
     // Amber's NIP-55 intent path for nip44Encrypt/signEvent is human-gated and
@@ -2089,7 +2768,9 @@ void main() {
                   .then((r) => result = r),
             );
 
-            async.elapse(DmSendBudget.recipientWrapBuild * 2);
+            async.elapse(
+              DmBatchSendBudget.recipientWrapBuild * 2,
+            );
           });
 
           expect(result, isNotNull, reason: 'send must resolve, not hang');
@@ -2098,7 +2779,7 @@ void main() {
           expect(
             (result! as NIP17SendFailure).error,
             'Recipient gift wrap build timed out after '
-            '${DmSendBudget.recipientWrapBuild.inSeconds}s',
+            '${DmBatchSendBudget.recipientWrapBuild.inSeconds}s',
           );
           verifyNever(
             () => client.publishEventAwaitOk(
