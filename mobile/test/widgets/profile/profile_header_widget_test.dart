@@ -166,6 +166,10 @@ class MockAuthService extends Mock implements AuthService {
   final bool isRpcUpgradeInProgressValue;
   final bool tryRefreshResult;
 
+  /// Number of times [tryRefreshExpiredSession] was called. The override below
+  /// bypasses `noSuchMethod`, so mocktail's `verify` cannot see these calls.
+  int tryRefreshCallCount = 0;
+
   @override
   bool get isAnonymous => isAnonymousValue;
 
@@ -186,7 +190,10 @@ class MockAuthService extends Mock implements AuthService {
   bool get isRpcUpgradeInProgress => isRpcUpgradeInProgressValue;
 
   @override
-  Future<bool> tryRefreshExpiredSession() async => tryRefreshResult;
+  Future<bool> tryRefreshExpiredSession() async {
+    tryRefreshCallCount++;
+    return tryRefreshResult;
+  }
 }
 
 const String testUserHex = syntheticTestPubkey;
@@ -333,13 +340,19 @@ void main() {
       bool monetizationLinksEnabled = false,
       ThemeData? theme,
       bool disableAnimations = false,
+      bool renderHeader = true,
+      MockAuthService? authService,
     }) {
-      final authService = MockAuthService(
-        isAnonymousValue: isAnonymous,
-        hasExpiredOAuthSessionValue: hasExpiredSession,
-        isRpcUpgradeInProgressValue: isRpcUpgradeInProgress,
-        tryRefreshResult: tryRefreshResult,
-      );
+      // Pass authService when the test needs the same instance across pumps —
+      // e.g. to read tryRefreshCallCount after the header has been unmounted.
+      final effectiveAuthService =
+          authService ??
+          MockAuthService(
+            isAnonymousValue: isAnonymous,
+            hasExpiredOAuthSessionValue: hasExpiredSession,
+            isRpcUpgradeInProgressValue: isRpcUpgradeInProgress,
+            tryRefreshResult: tryRefreshResult,
+          );
 
       final mockPublishBloc = _MockBackgroundPublishBloc();
       final publishState =
@@ -355,15 +368,19 @@ void main() {
         () => badgeRepository.loadAcceptedBadgesForProfile(any()),
       ).thenAnswer((_) async => acceptedProfileBadges);
 
-      Widget header = ProfileHeaderWidget(
-        userIdHex: userIdHex,
-        isOwnProfile: isOwnProfile,
-        videoCount: videoCount,
-        profile: suppliedProfile,
-        profileStats: profileStats,
-        displayNameHint: displayNameHint,
-        avatarUrlHint: avatarUrlHint,
-      );
+      // renderHeader: false keeps the surrounding tree (and any route already
+      // pushed on the navigator) intact while the header itself unmounts.
+      Widget header = renderHeader
+          ? ProfileHeaderWidget(
+              userIdHex: userIdHex,
+              isOwnProfile: isOwnProfile,
+              videoCount: videoCount,
+              profile: suppliedProfile,
+              profileStats: profileStats,
+              displayNameHint: displayNameHint,
+              avatarUrlHint: avatarUrlHint,
+            )
+          : const SizedBox.shrink();
 
       if (isOwnProfile) {
         if (provideMyProfileBloc) {
@@ -429,7 +446,7 @@ void main() {
                 ? Stream.value(profileStats)
                 : const Stream<ProfileStats?>.empty(),
           ),
-          authServiceProvider.overrideWithValue(authService),
+          authServiceProvider.overrideWithValue(effectiveAuthService),
           badgeRepositoryProvider.overrideWithValue(badgeRepository),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
@@ -2495,6 +2512,169 @@ void main() {
           ).called(1);
         },
       );
+
+      testWidgets('"Maybe later" closes the sheet and persists the dismissal', (
+        tester,
+      ) async {
+        // The ordinary, still-mounted path. Nothing asserted the outcome of
+        // this tap before #7297 reworked the callback.
+        final testProfile = createTestProfile(displayName: 'Test User');
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            hasExpiredSession: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final openSheets = tester
+            .widgetList(find.byType(VineBottomSheetPrompt))
+            .length;
+        expect(openSheets, greaterThan(0));
+
+        await tester.tap(find.text(l10n.profileMaybeLaterLabel).last);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(
+          prefs.getInt('$_dismissedDivineLoginBannerPrefix$testUserHex'),
+          isNotNull,
+        );
+        expect(
+          find.byType(VineBottomSheetPrompt),
+          findsNWidgets(openSheets - 1),
+        );
+      });
+
+      testWidgets('dismisses via "Maybe later" after the header unmounts', (
+        tester,
+      ) async {
+        // Regression for #7297: the sheet is a route, so it stays on screen
+        // and tappable after the header unmounts (the profile shell route
+        // collapses its content as soon as the URL moves on). The buttons
+        // resolved `ref` at tap time, so the tap threw `Using "ref" when a
+        // widget is about to or has been unmounted is unsafe` and the
+        // dismissal was silently dropped.
+        final testProfile = createTestProfile(displayName: 'Test User');
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            hasExpiredSession: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileSessionExpired), findsWidgets);
+
+        // Unmount the header, leaving the sheet route standing.
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            hasExpiredSession: true,
+            sharedPreferences: prefs,
+            renderHeader: false,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(ProfileHeaderWidget), findsNothing);
+        // The header re-shows the sheet on every qualifying build, so more
+        // than one can be stacked. Count them and assert the tapped one goes.
+        final openSheets = tester
+            .widgetList(find.byType(VineBottomSheetPrompt))
+            .length;
+        expect(openSheets, greaterThan(0));
+
+        await tester.tap(find.text(l10n.profileMaybeLaterLabel).last);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(
+          prefs.getInt('$_dismissedDivineLoginBannerPrefix$testUserHex'),
+          isNotNull,
+        );
+        expect(
+          find.byType(VineBottomSheetPrompt),
+          findsNWidgets(openSheets - 1),
+        );
+      });
+
+      testWidgets('signs in from the sheet after the header unmounts', (
+        tester,
+      ) async {
+        // Regression for #7297, primary action: the tap ran
+        // `Navigator.of(context)` on the unmounted header's context. The sheet
+        // must close and the refresh must run; navigation to login-options is
+        // deliberately abandoned, because the deferred navigator is disposed
+        // with the header and the user has already moved on to another screen.
+        final testProfile = createTestProfile(displayName: 'Test User');
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.go(any())).thenReturn(null);
+        final authService = MockAuthService(hasExpiredOAuthSessionValue: true);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            hasExpiredSession: true,
+            sharedPreferences: prefs,
+            goRouter: mockGoRouter,
+            authService: authService,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileSessionExpired), findsWidgets);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            hasExpiredSession: true,
+            sharedPreferences: prefs,
+            goRouter: mockGoRouter,
+            authService: authService,
+            renderHeader: false,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(ProfileHeaderWidget), findsNothing);
+        final openSheets = tester
+            .widgetList(find.byType(VineBottomSheetPrompt))
+            .length;
+        expect(openSheets, greaterThan(0));
+
+        await tester.tap(find.text(l10n.profileSignInButton).last);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(
+          find.byType(VineBottomSheetPrompt),
+          findsNWidgets(openSheets - 1),
+        );
+        expect(authService.tryRefreshCallCount, 1);
+        verifyNever(() => mockGoRouter.go(any()));
+      });
     });
 
     group('MyProfile state fallbacks (own profile)', () {

@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/constants/semantic_ids.dart';
@@ -484,6 +485,17 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     String userIdHex,
   ) {
     final l10n = context.l10n;
+    // The sheet is a route of its own, so it outlives this widget: the
+    // profile content unmounts as soon as the shell route's URL leaves the
+    // profile, while the sheet stays on screen and stays tappable. Resolve
+    // every dependency here, where the header is still mounted — reading
+    // `ref` or looking up an ancestor from a button callback throws once the
+    // header is gone (#7297).
+    final authService = ref.read(authServiceProvider);
+    final prefs = ref.read(sharedPreferencesProvider);
+    final publishBloc = context.read<BackgroundPublishBloc>();
+    final navigator = Navigator.of(context);
+
     VineBottomSheetPrompt.show(
       context: context,
       sticker: DivineStickerName.skeletonKey,
@@ -491,22 +503,26 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       subtitle: l10n.profileSignInToRestore,
       primaryButtonText: l10n.profileSignInButton,
       onPrimaryPressed: () async {
-        Navigator.of(context).pop();
-        final authService = ref.read(authServiceProvider);
+        navigator.pop();
         final refreshed = await authService.tryRefreshExpiredSession();
         if (!context.mounted) return;
         if (refreshed) return;
 
         _deferredLoginOptionsNavigator.goAfterUploadsComplete(
           context: context,
-          publishBloc: context.read(),
+          publishBloc: publishBloc,
         );
       },
       secondaryButtonText: l10n.profileMaybeLaterLabel,
       onSecondaryPressed: () async {
-        final prefs = ref.read(sharedPreferencesProvider);
+        // Close first, persist after: the sheet stays tappable for as long as
+        // the write is in flight, and this is a sheet users are known to tap
+        // repeatedly (#7297), so a second tap would pop the screen underneath.
+        // Awaiting first buys nothing — `setInt` updates the in-memory
+        // SharedPreferences cache synchronously, so the dismissal is already
+        // visible to `isDivineLoginBannerDismissed` before the pop.
+        navigator.pop();
         await dismissDivineLoginBanner(prefs, userIdHex);
-        if (context.mounted) Navigator.of(context).pop();
       },
     );
   }
