@@ -108,7 +108,6 @@ class UserName extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     late String displayName;
     late String effectivePubkey;
-    UserProfile? resolvedProfile;
 
     // When [neverGenerateName] is set, an empty placeholder replaces the
     // generated handle everywhere it would otherwise appear, so the caller
@@ -120,12 +119,10 @@ class UserName extends ConsumerWidget {
     final placeholder = anonymousName ?? (neverGenerateName ? '' : null);
 
     if (userProfile case final userProfile?) {
-      resolvedProfile = userProfile;
       effectivePubkey = userProfile.pubkey;
       displayName = userProfile.betterDisplayName(placeholder);
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
-      resolvedProfile = profileAsync.value;
       effectivePubkey = pubkey!;
 
       // Precedence mirrors UserProfile.betterDisplayName: a real name embedded
@@ -183,7 +180,7 @@ class UserName extends ConsumerWidget {
                 ),
         ),
         if (showProfileBadges &&
-            shouldShowSpecialProfileCheckmark(resolvedProfile))
+            shouldShowSpecialProfileCheckmark(effectivePubkey))
           const SpecialProfileCheckmark(),
         if (isOgViner) const OgVinerBadge(),
       ],

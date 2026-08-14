@@ -141,7 +141,7 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
         (service) => service.isOgViner(userIdHex),
       ),
     );
-    final showCheckmark = shouldShowSpecialProfileCheckmark(profile);
+    final showCheckmark = shouldShowSpecialProfileCheckmark(userIdHex);
     final name = isVanished
         // Deliberately not a UserName: that widget re-resolves the profile
         // through its own provider and falls back to a generated handle, which

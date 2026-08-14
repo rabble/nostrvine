@@ -90,6 +90,35 @@ void main() {
     expect(_specialCheckmark(), findsOneWidget);
   });
 
+  // The badge is decided by pubkey, so it must not wait on a kind-0 that
+  // cannot change the answer. The OG Viner badge beside it already resolves
+  // from the pubkey; gating this one on the profile made the two arrive at
+  // different times, and never at all when the profile failed to resolve.
+  testWidgets('shows a checkmark before the profile resolves', (tester) async {
+    final teamPubkey = kDivineTeamPubkeys.first;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userProfileReactiveProvider(
+            teamPubkey,
+          ).overrideWith((ref) => const Stream<UserProfile?>.empty()),
+          nip05VerificationProvider.overrideWith(
+            (ref, pubkey) async => Nip05VerificationStatus.none,
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: UserName.fromPubKey(teamPubkey)),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(_specialCheckmark(), findsOneWidget);
+  });
+
   testWidgets('does not show a checkmark for a divine.video NIP-05', (
     tester,
   ) async {

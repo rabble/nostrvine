@@ -3,18 +3,21 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:models/models.dart';
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 
-/// Whether [profile] carries the Divine team checkmark.
+/// Whether [pubkeyHex] carries the Divine team checkmark.
 ///
 /// Matches on pubkey alone. A NIP-05 identifier is not an input: the name
 /// server can reassign a handle, which would carry the checkmark to whoever
 /// claims it next.
-bool shouldShowSpecialProfileCheckmark(UserProfile? profile) {
-  if (profile == null) return false;
-  final pubkey = profile.pubkey.toLowerCase();
+///
+/// Takes the pubkey rather than the profile so the badge does not wait on a
+/// kind-0 that cannot change the answer — a team member whose profile is slow
+/// or never resolves still gets their checkmark on first paint.
+bool shouldShowSpecialProfileCheckmark(String? pubkeyHex) {
+  if (pubkeyHex == null) return false;
+  final pubkey = pubkeyHex.toLowerCase();
   return kDivineTeamPubkeys.contains(pubkey) ||
       kLegacyProfileCheckmarkPubkeys.contains(pubkey);
 }
