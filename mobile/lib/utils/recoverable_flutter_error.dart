@@ -18,10 +18,12 @@ typedef RecoverableFlutterError = ({
 
   /// Whether the error is still worth a non-fatal Crashlytics report.
   ///
-  /// `false` for expected IO conditions: per the decision matrix in
-  /// `.claude/rules/error_handling.md`, network and IO failures are not
-  /// reportable, so recording them only drowns real bugs in the dashboard.
-  /// The error is still logged and still presented.
+  /// `false` where the error carries nothing actionable. The decision
+  /// matrix in `.claude/rules/error_handling.md` puts IO failures outside
+  /// Crashlytics, but only the download-without-file branch is silenced so
+  /// far (#7298) — the other recoverable IO signatures still report, and
+  /// widening that is a separate call. The error is logged and presented
+  /// either way.
   bool report,
 });
 
