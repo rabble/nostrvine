@@ -366,7 +366,11 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
               // down along with the rest of this State.
               if (draft.isEmpty || !mounted || cubit.isClosed) return;
               _pendingDraft = draft;
-              cubit.submit(draft);
+              // `retry`, never `submit`: it re-drives the durable row the
+              // failed send parked, instead of minting a second rumor the
+              // recipient renders as a second message (#7316). The draft is
+              // only its fallback, for a send that parked no row at all.
+              cubit.retry(draft);
               _controller.clear();
             },
           ),

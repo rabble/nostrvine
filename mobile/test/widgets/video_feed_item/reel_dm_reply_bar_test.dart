@@ -508,6 +508,72 @@ void main() {
     ).called(1);
   });
 
+  // #7316. The retry action must re-drive the row the failed send parked. A
+  // second `sendMessage` would mint a fresh rumor for the same text, and since
+  // the receiver's only stable dedup key is the rumor id — gift-wrap ids are
+  // randomised per wrap — it would render as a second message alongside the
+  // sweep's replay of the original.
+  testWidgets('tapping Retry re-drives the parked row, never re-sends', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenAnswer(
+      (_) async => const NIP17SendResult.failure(
+        'no relay responded',
+        retryablePending: true,
+        queuedRumorId: 'parked-row',
+      ),
+    );
+    when(
+      () => dmRepo.recoverFullSend(
+        rumorId: any(named: 'rumorId'),
+        resetRetryBudget: any(named: 'resetRetryBudget'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'parked-row',
+        messageEventId: 'g',
+        recipientPubkey: _peer,
+      ),
+    );
+
+    await tester.pumpWidget(wrap(context()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    // Target the action, not its label: the label's own offset is inside the
+    // snackbar's slide transform and a tap there can miss the button.
+    await tester.tap(
+      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+    );
+    await tester.pumpAndSettle();
+
+    verify(
+      () => dmRepo.recoverFullSend(
+        rumorId: 'parked-row',
+        resetRetryBudget: true,
+      ),
+    ).called(1);
+    // The original send, and only it.
+    verify(
+      () => dmRepo.sendMessage(
+        recipientPubkey: _peer,
+        content: 'hello',
+        replyToId: _reelId,
+      ),
+    ).called(1);
+  });
+
   testWidgets('leaves a queued retry snackbar for whatever is on screen', (
     tester,
   ) async {
