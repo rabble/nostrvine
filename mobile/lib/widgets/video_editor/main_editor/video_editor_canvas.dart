@@ -179,6 +179,8 @@ class VideoEditorCanvas extends StatelessWidget {
   }
 
   static const _compositionErrorCode = 'COMPOSITION_ERROR';
+  static const _notReadyErrorCode = 'NOT_READY';
+  static const _playerErrorCode = 'PLAYER_ERROR';
 
   /// Runs a `setClips` [load], swallowing the native unbuildable-composition
   /// rejection.
@@ -192,19 +194,22 @@ class VideoEditorCanvas extends StatelessWidget {
   /// letting the rejection escape as an unhandled async error and surface as a
   /// Crashlytics non-fatal (#3410).
   ///
-  /// Only `COMPOSITION_ERROR` is swallowed; any other error (e.g. a
-  /// `PLAYER_ERROR`, `INVALID_ARGS`, or a `StateError` from a broken invariant)
-  /// is rethrown so it still reaches Crashlytics rather than being silently
-  /// hidden.
+  /// `NOT_READY` and `PLAYER_ERROR` are also swallowed so trim-triggered reload
+  /// failures can mark the player unavailable instead of leaving a broken
+  /// native player reported as ready.
   @visibleForTesting
   static Future<bool> guardClipLoad(Future<void> Function() load) async {
     try {
       await load();
       return true;
     } on PlatformException catch (e, s) {
-      if (e.code != _compositionErrorCode) rethrow;
+      if (e.code != _compositionErrorCode &&
+          e.code != _notReadyErrorCode &&
+          e.code != _playerErrorCode) {
+        rethrow;
+      }
       Log.error(
-        'setClips failed with $_compositionErrorCode: $e',
+        'setClips failed with ${e.code}: $e',
         name: 'VideoEditorCanvas',
         category: LogCategory.video,
         error: e,
@@ -849,13 +854,41 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       .whereType<String>()
       .toList();
 
+  void _setPlayerReady(bool isReady) {
+    if (!mounted) return;
+    _isPlayerReadyNotifier.value = isReady;
+    context.read<VideoEditorMainBloc>().add(
+      VideoEditorPlayerReady(isReady: isReady),
+    );
+  }
+
+  bool _canUseVideoPlayerForUserAction(String action) {
+    if (!_isPlayerReadyNotifier.value) {
+      Log.debug(
+        'Ignoring $action: player is not ready',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+    if (!_isPlayerInitialized) {
+      Log.debug(
+        'Ignoring $action: player is not initialized',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+    return true;
+  }
+
   /// Handles playback restart requests from BLoC.
   void _onPlaybackRestartRequested() {
     if (_isStopMotionComposition) {
       _playStopMotion(from: Duration.zero);
       return;
     }
-    if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
+    if (!_canUseVideoPlayerForUserAction('playback restart')) return;
 
     // Stop the interpolator on the user action so it can't advance the play
     // time from the stale anchor before the next native report re-anchors it;
@@ -876,7 +909,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       _toggleStopMotionPlayback();
       return;
     }
-    if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
+    if (!_canUseVideoPlayerForUserAction('playback toggle')) return;
 
     final isPlaying = _videoPlayer?.state.isPlaying ?? false;
     if (isPlaying) {
@@ -905,7 +938,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       }
       return;
     }
-    if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
+    if (!_canUseVideoPlayerForUserAction('external pause change')) return;
 
     if (isPaused) {
       // Stop the interpolator on pause so it doesn't keep advancing the play
@@ -1388,7 +1421,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // Dispose old player if it exists.
     await _videoPlayerSubscription?.cancel();
     await _videoPlayer?.dispose();
-    if (mounted) _isPlayerReadyNotifier.value = false;
+    _setPlayerReady(false);
 
     final clips = ref.read(clipManagerProvider).clips;
 
@@ -1419,7 +1452,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (!mounted || !identical(_videoPlayer, player)) return;
     // Composition failed to build (stale/corrupt draft clip): leave the canvas
     // on its thumbnail fallback rather than marking a broken player ready.
-    if (!loaded) return;
+    if (!loaded) {
+      _setPlayerReady(false);
+      return;
+    }
 
     if (clips.isEmpty) return;
     _ensureSeamsRendered(clips);
@@ -1427,10 +1463,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     await player.setLooping(looping: true);
     if (!mounted || !identical(_videoPlayer, player)) return;
 
-    _isPlayerReadyNotifier.value = true;
-
-    // Notify BLoC that player is ready
-    context.read<VideoEditorMainBloc>().add(const VideoEditorPlayerReady());
+    _setPlayerReady(true);
 
     // Setup state stream listener
     _videoPlayerSubscription = player.stateStream.listen(_onPlayerStateChanged);
@@ -2008,10 +2041,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         // Pin so a reset report from loading the seam-aware composition
         // doesn't snap the playhead back while paused.
         _pendingSeekTarget = currentPosition;
+        _setPlayerReady(false);
         unawaited(
           _setClipsSafely(_videoPlayer, [
             ..._buildPlayerClips(clips),
-          ], startPosition: _timelineToPlayer(currentPosition)),
+          ], startPosition: _timelineToPlayer(currentPosition)).then(
+            _setPlayerReady,
+          ),
         );
         _ensureSeamsRendered(clips);
         _ensureSpeedClipsRendered(clips);
@@ -2036,10 +2072,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         // Pin so a reset report from loading the seam-aware composition
         // doesn't snap the playhead back while paused.
         _pendingSeekTarget = currentPosition;
+        _setPlayerReady(false);
         unawaited(
           _setClipsSafely(_videoPlayer, [
             ..._buildPlayerClips(clips),
-          ], startPosition: _timelineToPlayer(currentPosition)),
+          ], startPosition: _timelineToPlayer(currentPosition)).then(
+            _setPlayerReady,
+          ),
         );
         _ensureSeamsRendered(clips);
         _ensureSpeedClipsRendered(clips);
@@ -2289,6 +2328,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
             _seekEpoch++;
             _pendingSeekPosition = null;
+            _setPlayerReady(false);
             _isSeeking = true;
             final ownerEpoch = _seekEpoch;
 
@@ -2296,9 +2336,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               final loaded = await _setClipsSafely(_videoPlayer, [
                 ..._buildPlayerClips(state.clips),
               ], startPosition: _timelineToPlayer(currentPosition));
-              if (!loaded) return;
+              if (!loaded) {
+                _setPlayerReady(false);
+                return;
+              }
 
               if (!mounted) return;
+              _setPlayerReady(true);
               _lastReportedPosition = currentPosition;
               _pendingSeekTarget = currentPosition;
               _setLayerPlayTime(currentPosition);
@@ -2342,6 +2386,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             // Composition swap back — invalidate in-flight single-clip seeks.
             _seekEpoch++;
             _pendingSeekPosition = null;
+            _setPlayerReady(false);
             // Claim _isSeeking under the new epoch; try/finally ensures
             // release even if setClips throws.
             _isSeeking = true;
@@ -2351,7 +2396,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               final loaded = await _setClipsSafely(_videoPlayer, [
                 ..._buildPlayerClips(state.clips),
               ], startPosition: _timelineToPlayer(startPosition));
-              if (!loaded) return;
+              if (!loaded) {
+                _setPlayerReady(false);
+                return;
+              }
+              _setPlayerReady(true);
               if (mounted) {
                 VideoEditorCanvas.syncPositionAfterTrimRelease(
                   mainBloc: bloc,

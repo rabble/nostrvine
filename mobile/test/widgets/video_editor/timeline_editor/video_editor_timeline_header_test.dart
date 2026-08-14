@@ -166,7 +166,11 @@ void main() {
       });
 
       testWidgets('dispatches toggle event on tap', (tester) async {
-        await tester.pumpWidget(buildWidget());
+        await tester.pumpWidget(
+          buildWidget(
+            mainState: const VideoEditorMainState(isPlayerReady: true),
+          ),
+        );
 
         await tester.tap(find.bySemanticsLabel('Play'));
         await tester.pump();
@@ -174,6 +178,18 @@ void main() {
         verify(
           () => mockMainBloc.add(const VideoEditorPlaybackToggleRequested()),
         ).called(1);
+      });
+
+      testWidgets('disables play button while the player is not ready', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(mainState: const VideoEditorMainState()),
+        );
+
+        final playButton = buttonBySemanticLabel(tester, 'Play');
+
+        expect(playButton.onPressed, isNull);
       });
     });
 

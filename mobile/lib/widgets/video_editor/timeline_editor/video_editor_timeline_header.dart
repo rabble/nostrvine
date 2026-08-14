@@ -73,6 +73,9 @@ class _PlayPauseButton extends StatelessWidget {
     final isPlaying = context.select(
       (VideoEditorMainBloc b) => b.state.isPlaying,
     );
+    final isPlayerReady = context.select(
+      (VideoEditorMainBloc b) => b.state.isPlayerReady,
+    );
 
     return DivineIconButton(
       icon: isPlaying ? .pauseFill : .playFill,
@@ -81,9 +84,11 @@ class _PlayPauseButton extends StatelessWidget {
       semanticLabel: isPlaying
           ? context.l10n.videoEditorPauseSemanticLabel
           : context.l10n.videoEditorPlaySemanticLabel,
-      onPressed: () => context.read<VideoEditorMainBloc>().add(
-        const VideoEditorPlaybackToggleRequested(),
-      ),
+      onPressed: isPlayerReady
+          ? () => context.read<VideoEditorMainBloc>().add(
+              const VideoEditorPlaybackToggleRequested(),
+            )
+          : null,
     );
   }
 }

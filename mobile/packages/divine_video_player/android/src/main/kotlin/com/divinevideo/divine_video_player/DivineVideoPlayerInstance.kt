@@ -252,7 +252,11 @@ internal class DivineVideoPlayerInstance(
                 name = "DivineVideoPlayer.Freeze",
             )
         }
-        pendingSetClipsResult?.success(null)
+        pendingSetClipsResult?.error(
+            "NOT_READY",
+            "setClips timed out before player reached STATE_READY",
+            null,
+        )
         pendingSetClipsResult = null
     }
 
