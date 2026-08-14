@@ -50,7 +50,7 @@ android {
 
 dependencies {
     add("debugCompileOnly", files(flutterDebugEmbeddingJar))
-    add("debugUnitTestImplementation", files(flutterDebugEmbeddingJar))
+    testImplementation(files(flutterDebugEmbeddingJar))
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
     testImplementation("org.robolectric:robolectric:4.14.1")
