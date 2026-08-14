@@ -12126,4 +12126,85 @@ class AppLocalizationsBg extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Смяна на имейла';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Премести акаунта си на друг адрес';
+
+  @override
+  String get accountSettingsChangePassword => 'Смяна на паролата';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Избери нова парола за вход';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Сесията ти изтече. Влез отново, за да направиш промяната.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Твърде много опити. Изчакай няколко минути.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Не успяхме да стигнем до Divine. Провери връзката и опитай пак.';
+
+  @override
+  String get accountCredentialsUnknown => 'Не се получи. Опитай пак.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Въведи текущата си парола и избери нова.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Текуща парола';
+
+  @override
+  String get changePasswordWrongCurrent => 'Това не е текущата ти парола.';
+
+  @override
+  String get changePasswordSuccess => 'Паролата е сменена.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Ще изпратим линк за потвърждение на новия адрес и на този в акаунта ти. Имейлът се сменя, след като потвърдиш и от двата.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'В акаунта ти: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Нов имейл';
+
+  @override
+  String get changeEmailPasswordLabel => 'Твоята парола';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Това вече е твоят имейл адрес.';
+
+  @override
+  String get changeEmailWrongPassword => 'Това не е твоята парола.';
+
+  @override
+  String get changeEmailSubmit => 'Изпрати линковете за потвърждение';
+
+  @override
+  String get changeEmailSentTitle => 'Два линка са на път';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Потвърди от $email и от адреса в акаунта ти. Имейлът се сменя, щом направиш и двете.';
+  }
+
+  @override
+  String get changeEmailSentExpiry =>
+      'Линковете спират да работят след 24 часа.';
+
+  @override
+  String get changeEmailSentDone => 'Ясно';
 }

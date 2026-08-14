@@ -51,6 +51,9 @@ void main() {
       l10n = lookupAppLocalizations(const Locale('en'));
       when(() => authService.currentPublicKeyHex).thenReturn('pubkeyhex');
       when(() => authService.isRegistered).thenReturn(true);
+      when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.automatic);
       when(repository.loadSettings).thenAnswer((_) async => _defaultEntries);
     });
 
@@ -893,6 +896,9 @@ void main() {
     ) async {
       final authService = _MockAuthService();
       when(() => authService.isRegistered).thenReturn(true);
+      when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.automatic);
       when(
         () => authService.currentPublicKeyHex,
       ).thenReturn('pubkeyhex');

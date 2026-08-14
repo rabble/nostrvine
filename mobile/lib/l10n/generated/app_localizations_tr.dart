@@ -11969,4 +11969,85 @@ class AppLocalizationsTr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'E-postayı değiştir';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Hesabını başka bir adrese taşı';
+
+  @override
+  String get accountSettingsChangePassword => 'Şifreyi değiştir';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Giriş için yeni bir şifre seç';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Oturumun doldu. Bu değişikliği yapmak için tekrar giriş yap.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Çok fazla deneme. Birkaç dakika bekle.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Divine\'a ulaşamadık. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get accountCredentialsUnknown => 'Olmadı. Lütfen tekrar dene.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Mevcut şifreni yaz, sonra yeni bir tane seç.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Mevcut şifre';
+
+  @override
+  String get changePasswordWrongCurrent => 'Bu senin mevcut şifren değil.';
+
+  @override
+  String get changePasswordSuccess => 'Şifre değişti.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Yeni adresine ve hesabındaki adrese birer onay bağlantısı yolluyoruz. E-postan ikisini de onaylayınca değişir.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'Hesabında: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Yeni e-posta';
+
+  @override
+  String get changeEmailPasswordLabel => 'Şifren';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Bu zaten senin e-posta adresin.';
+
+  @override
+  String get changeEmailWrongPassword => 'Bu senin şifren değil.';
+
+  @override
+  String get changeEmailSubmit => 'Onay bağlantılarını gönder';
+
+  @override
+  String get changeEmailSentTitle => 'İki bağlantı yolda';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return '$email adresinden ve hesabındaki adresten onayla. İkisi de bitince e-postan değişir.';
+  }
+
+  @override
+  String get changeEmailSentExpiry =>
+      'Bağlantılar 24 saat sonra geçersiz olur.';
+
+  @override
+  String get changeEmailSentDone => 'Anladım';
 }

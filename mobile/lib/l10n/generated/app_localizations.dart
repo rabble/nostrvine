@@ -20451,6 +20451,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 clip back in your library} other{{count} clips back in your library}}'**
   String libraryClipsUnarchived(int count);
+
+  /// No description provided for @accountSettingsChangeEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Change email'**
+  String get accountSettingsChangeEmail;
+
+  /// No description provided for @accountSettingsChangeEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move your account to a different address'**
+  String get accountSettingsChangeEmailSubtitle;
+
+  /// No description provided for @accountSettingsChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get accountSettingsChangePassword;
+
+  /// No description provided for @accountSettingsChangePasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a new password for signing in'**
+  String get accountSettingsChangePasswordSubtitle;
+
+  /// Shown when the session can no longer authorize an email or password change.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session ran out. Sign in again to make this change.'**
+  String get accountCredentialsNeedsSignIn;
+
+  /// No description provided for @accountCredentialsRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries. Give it a few minutes.'**
+  String get accountCredentialsRateLimited;
+
+  /// No description provided for @accountCredentialsNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach Divine. Check your connection and try again.'**
+  String get accountCredentialsNetwork;
+
+  /// No description provided for @accountCredentialsUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work. Please try again.'**
+  String get accountCredentialsUnknown;
+
+  /// No description provided for @changePasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your current password, then pick a new one.'**
+  String get changePasswordSubtitle;
+
+  /// No description provided for @changePasswordCurrentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get changePasswordCurrentLabel;
+
+  /// No description provided for @changePasswordWrongCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s not your current password.'**
+  String get changePasswordWrongCurrent;
+
+  /// No description provided for @changePasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed.'**
+  String get changePasswordSuccess;
+
+  /// No description provided for @changeEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll email a confirmation link to your new address and to the one on your account. Your email changes once you confirm from both.'**
+  String get changeEmailSubtitle;
+
+  /// Shows the email address currently on the account.
+  ///
+  /// In en, this message translates to:
+  /// **'On your account: {email}'**
+  String changeEmailCurrentAddress(String email);
+
+  /// No description provided for @changeEmailNewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New email'**
+  String get changeEmailNewLabel;
+
+  /// No description provided for @changeEmailPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password'**
+  String get changeEmailPasswordLabel;
+
+  /// No description provided for @changeEmailSameAsCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s already your email address.'**
+  String get changeEmailSameAsCurrent;
+
+  /// No description provided for @changeEmailWrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s not your password.'**
+  String get changeEmailWrongPassword;
+
+  /// No description provided for @changeEmailSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send confirmation links'**
+  String get changeEmailSubmit;
+
+  /// No description provided for @changeEmailSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Two links are on their way'**
+  String get changeEmailSentTitle;
+
+  /// Confirmation copy after an email change was requested; {email} is the new address.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm from {email} and from the address on your account. Your email switches once both are done.'**
+  String changeEmailSentMessage(String email);
+
+  /// No description provided for @changeEmailSentExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'The links stop working after 24 hours.'**
+  String get changeEmailSentExpiry;
+
+  /// No description provided for @changeEmailSentDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get changeEmailSentDone;
 }
 
 class _AppLocalizationsDelegate

@@ -12069,4 +12069,85 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'E-mail wijzigen';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Verplaats je account naar een ander adres';
+
+  @override
+  String get accountSettingsChangePassword => 'Wachtwoord wijzigen';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Kies een nieuw wachtwoord om in te loggen';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Je sessie is verlopen. Log opnieuw in om dit te wijzigen.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Te veel pogingen. Wacht een paar minuten.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'We konden Divine niet bereiken. Check je verbinding en probeer het opnieuw.';
+
+  @override
+  String get accountCredentialsUnknown =>
+      'Dat werkte niet. Probeer het opnieuw.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Typ je huidige wachtwoord en kies daarna een nieuw.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Huidig wachtwoord';
+
+  @override
+  String get changePasswordWrongCurrent => 'Dat is niet je huidige wachtwoord.';
+
+  @override
+  String get changePasswordSuccess => 'Wachtwoord gewijzigd.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'We sturen een bevestigingslink naar je nieuwe adres en naar dat van je account. Je e-mail verandert zodra je beide bevestigt.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'Op je account: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Nieuw e-mailadres';
+
+  @override
+  String get changeEmailPasswordLabel => 'Je wachtwoord';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Dat is al je e-mailadres.';
+
+  @override
+  String get changeEmailWrongPassword => 'Dat is niet je wachtwoord.';
+
+  @override
+  String get changeEmailSubmit => 'Bevestigingslinks sturen';
+
+  @override
+  String get changeEmailSentTitle => 'Er zijn twee links onderweg';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Bevestig vanaf $email en vanaf het adres op je account. Je e-mail wisselt zodra beide gedaan zijn.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'De links werken 24 uur.';
+
+  @override
+  String get changeEmailSentDone => 'Duidelijk';
 }

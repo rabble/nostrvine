@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
+import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/invite_availability_redirects.dart';
@@ -23,6 +24,8 @@ import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/account/change_email_screen.dart';
+import 'package:openvine/screens/settings/account/change_password_screen.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
@@ -134,6 +137,20 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: GeneralSettingsScreen.path,
       name: GeneralSettingsScreen.routeName,
       builder: (_, _) => const GeneralSettingsScreen(),
+      routes: [
+        GoRoute(
+          path: ChangeEmailScreen.subpath,
+          name: ChangeEmailScreen.routeName,
+          redirect: (_, _) => accountCredentialsRedirectIfUnavailable(ref),
+          builder: (_, _) => const ChangeEmailScreen(),
+        ),
+        GoRoute(
+          path: ChangePasswordScreen.subpath,
+          name: ChangePasswordScreen.routeName,
+          redirect: (_, _) => accountCredentialsRedirectIfUnavailable(ref),
+          builder: (_, _) => const ChangePasswordScreen(),
+        ),
+      ],
     ),
     GoRoute(
       path: AppearanceSettingsScreen.path,
@@ -274,4 +291,15 @@ String? supporterRedirectIfDisabled(Ref ref) {
   );
   if (enabled) return null;
   return SettingsScreen.path;
+}
+
+/// Keeps the email/password screens off accounts that have neither.
+///
+/// Only an account created through the Divine login service has credentials
+/// Keycast can change; every other identity signs with a key. General Settings
+/// hides the rows for them, and this closes the deep link.
+String? accountCredentialsRedirectIfUnavailable(Ref ref) {
+  final source = ref.read(authServiceProvider).authenticationSource;
+  if (source == AuthenticationSource.divineOAuth) return null;
+  return GeneralSettingsScreen.path;
 }

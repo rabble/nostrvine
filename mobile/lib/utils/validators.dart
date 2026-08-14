@@ -46,19 +46,39 @@ class AuthValidationMessages {
   final String passwordMismatch;
 }
 
+/// Why an email address failed validation.
+///
+/// The enum forms exist so a bloc can hold a validation outcome in state
+/// without holding a localized string (see `state_management.md`); the
+/// `validate*` string forms below map the same outcomes for screens that own
+/// their own field errors.
+enum EmailValidationError { missing, invalid }
+
+/// Why a password failed validation.
+enum PasswordValidationError { missing, tooShort }
+
+/// Why a password confirmation failed validation.
+enum ConfirmPasswordValidationError { missing, mismatch }
+
 class Validators {
   static String? validateEmail(
     String? value, {
     required AuthValidationMessages messages,
-  }) {
+  }) => switch (emailError(value)) {
+    EmailValidationError.missing => messages.emailRequired,
+    EmailValidationError.invalid => messages.invalidEmail,
+    null => null,
+  };
+
+  static EmailValidationError? emailError(String? value) {
     final email = value?.trim() ?? '';
     if (email.isEmpty) {
-      return messages.emailRequired;
+      return EmailValidationError.missing;
     }
 
     final parts = email.split('@');
     if (parts.length != 2) {
-      return messages.invalidEmail;
+      return EmailValidationError.invalid;
     }
 
     final localPart = parts[0];
@@ -69,7 +89,7 @@ class Validators {
         localPart.endsWith('.') ||
         localPart.contains('..') ||
         domain.contains('..')) {
-      return messages.invalidEmail;
+      return EmailValidationError.invalid;
     }
 
     final domainLabels = domain.split('.');
@@ -79,7 +99,7 @@ class Validators {
               label.isEmpty || label.startsWith('-') || label.endsWith('-'),
         ) ||
         domainLabels.last.length < 2) {
-      return messages.invalidEmail;
+      return EmailValidationError.invalid;
     }
 
     final emailRegex = RegExp(
@@ -89,7 +109,7 @@ class Validators {
     );
 
     if (!emailRegex.hasMatch(email)) {
-      return messages.invalidEmail;
+      return EmailValidationError.invalid;
     }
     return null;
   }
@@ -97,14 +117,20 @@ class Validators {
   static String? validatePassword(
     String? value, {
     required AuthValidationMessages messages,
-  }) {
+  }) => switch (passwordError(value)) {
+    PasswordValidationError.missing => messages.passwordRequired,
+    PasswordValidationError.tooShort => messages.passwordTooShort,
+    null => null,
+  };
+
+  static PasswordValidationError? passwordError(String? value) {
     // Note: passwords are intentionally not trimmed — leading/trailing
     // whitespace is a legitimate part of a user's secret.
     if (value == null || value.isEmpty) {
-      return messages.passwordRequired;
+      return PasswordValidationError.missing;
     }
     if (value.length < 8) {
-      return messages.passwordTooShort;
+      return PasswordValidationError.tooShort;
     }
     return null;
   }
@@ -113,12 +139,21 @@ class Validators {
     String? value, {
     required String password,
     required AuthValidationMessages messages,
+  }) => switch (confirmPasswordError(value, password: password)) {
+    ConfirmPasswordValidationError.missing => messages.confirmPasswordRequired,
+    ConfirmPasswordValidationError.mismatch => messages.passwordMismatch,
+    null => null,
+  };
+
+  static ConfirmPasswordValidationError? confirmPasswordError(
+    String? value, {
+    required String password,
   }) {
     if (value == null || value.isEmpty) {
-      return messages.confirmPasswordRequired;
+      return ConfirmPasswordValidationError.missing;
     }
     if (value != password) {
-      return messages.passwordMismatch;
+      return ConfirmPasswordValidationError.mismatch;
     }
     return null;
   }

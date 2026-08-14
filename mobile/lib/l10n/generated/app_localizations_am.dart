@@ -11697,4 +11697,80 @@ class AppLocalizationsAm extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'ኢሜይል ቀይር';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle => 'መለያህን ወደ ሌላ አድራሻ አዛውር';
+
+  @override
+  String get accountSettingsChangePassword => 'የይለፍ ቃል ቀይር';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle => 'ለመግቢያ አዲስ የይለፍ ቃል ምረጥ';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'ክፍለ ጊዜህ አልቋል። ይህን ለመቀየር እንደገና ግባ።';
+
+  @override
+  String get accountCredentialsRateLimited => 'በጣም ብዙ ሙከራ። ጥቂት ደቂቃ ቆይ።';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Divine ላይ መድረስ አልተቻለም። ግንኙነትህን አረጋግጠህ እንደገና ሞክር።';
+
+  @override
+  String get accountCredentialsUnknown => 'አልተሳካም። እባክህ እንደገና ሞክር።';
+
+  @override
+  String get changePasswordSubtitle => 'አሁን ያለህን የይለፍ ቃል ጻፍ፣ ከዚያ አዲስ ምረጥ።';
+
+  @override
+  String get changePasswordCurrentLabel => 'አሁን ያለ የይለፍ ቃል';
+
+  @override
+  String get changePasswordWrongCurrent => 'ይህ አሁን ያለህ የይለፍ ቃል አይደለም።';
+
+  @override
+  String get changePasswordSuccess => 'የይለፍ ቃል ተቀይሯል።';
+
+  @override
+  String get changeEmailSubtitle =>
+      'ወደ አዲሱ አድራሻህ እና በመለያህ ላይ ወዳለው አድራሻ የማረጋገጫ ማገናኛ እንልካለን። ከሁለቱም ስታረጋግጥ ኢሜይልህ ይቀየራል።';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'በመለያህ ላይ: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'አዲስ ኢሜይል';
+
+  @override
+  String get changeEmailPasswordLabel => 'የይለፍ ቃልህ';
+
+  @override
+  String get changeEmailSameAsCurrent => 'ይህ አስቀድሞ የኢሜይል አድራሻህ ነው።';
+
+  @override
+  String get changeEmailWrongPassword => 'ይህ የይለፍ ቃልህ አይደለም።';
+
+  @override
+  String get changeEmailSubmit => 'የማረጋገጫ ማገናኛዎችን ላክ';
+
+  @override
+  String get changeEmailSentTitle => 'ሁለት ማገናኛዎች በመንገድ ላይ ናቸው';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'ከ$email እና በመለያህ ላይ ካለው አድራሻ አረጋግጥ። ሁለቱም ሲጠናቀቁ ኢሜይልህ ይቀየራል።';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'ማገናኛዎቹ ከ24 ሰዓት በኋላ አይሠሩም።';
+
+  @override
+  String get changeEmailSentDone => 'ገባኝ';
 }

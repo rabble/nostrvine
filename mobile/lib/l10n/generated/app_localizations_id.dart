@@ -11956,4 +11956,84 @@ class AppLocalizationsId extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Ubah email';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Pindahkan akunmu ke alamat lain';
+
+  @override
+  String get accountSettingsChangePassword => 'Ubah kata sandi';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Pilih kata sandi baru untuk masuk';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Sesimu habis. Masuk lagi untuk melakukan perubahan ini.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Terlalu banyak percobaan. Tunggu beberapa menit.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Tidak bisa menghubungi Divine. Cek koneksimu dan coba lagi.';
+
+  @override
+  String get accountCredentialsUnknown => 'Tidak berhasil. Coba lagi.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Ketik kata sandi saat ini, lalu pilih yang baru.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Kata sandi saat ini';
+
+  @override
+  String get changePasswordWrongCurrent => 'Itu bukan kata sandimu saat ini.';
+
+  @override
+  String get changePasswordSuccess => 'Kata sandi diubah.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Kami mengirim tautan konfirmasi ke alamat barumu dan ke alamat di akunmu. Emailmu berubah setelah kamu konfirmasi dari keduanya.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'Di akunmu: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Email baru';
+
+  @override
+  String get changeEmailPasswordLabel => 'Kata sandimu';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Itu sudah jadi alamat emailmu.';
+
+  @override
+  String get changeEmailWrongPassword => 'Itu bukan kata sandimu.';
+
+  @override
+  String get changeEmailSubmit => 'Kirim tautan konfirmasi';
+
+  @override
+  String get changeEmailSentTitle => 'Dua tautan sedang dikirim';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Konfirmasi dari $email dan dari alamat di akunmu. Emailmu berganti setelah keduanya selesai.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'Tautan berhenti berlaku setelah 24 jam.';
+
+  @override
+  String get changeEmailSentDone => 'Oke';
 }

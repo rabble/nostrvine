@@ -11956,4 +11956,85 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Change email';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Move your account to a different address';
+
+  @override
+  String get accountSettingsChangePassword => 'Change password';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Pick a new password for signing in';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Your session ran out. Sign in again to make this change.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Too many tries. Give it a few minutes.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Couldn\'t reach Divine. Check your connection and try again.';
+
+  @override
+  String get accountCredentialsUnknown =>
+      'That didn\'t work. Please try again.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Type your current password, then pick a new one.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Current password';
+
+  @override
+  String get changePasswordWrongCurrent => 'That\'s not your current password.';
+
+  @override
+  String get changePasswordSuccess => 'Password changed.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'We\'ll email a confirmation link to your new address and to the one on your account. Your email changes once you confirm from both.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'On your account: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'New email';
+
+  @override
+  String get changeEmailPasswordLabel => 'Your password';
+
+  @override
+  String get changeEmailSameAsCurrent => 'That\'s already your email address.';
+
+  @override
+  String get changeEmailWrongPassword => 'That\'s not your password.';
+
+  @override
+  String get changeEmailSubmit => 'Send confirmation links';
+
+  @override
+  String get changeEmailSentTitle => 'Two links are on their way';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Confirm from $email and from the address on your account. Your email switches once both are done.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'The links stop working after 24 hours.';
+
+  @override
+  String get changeEmailSentDone => 'Got it';
 }

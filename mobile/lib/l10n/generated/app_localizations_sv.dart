@@ -12005,4 +12005,86 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Byt e-post';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Flytta kontot till en annan adress';
+
+  @override
+  String get accountSettingsChangePassword => 'Byt lösenord';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Välj ett nytt lösenord för inloggning';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Din session tog slut. Logga in igen för att göra ändringen.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'För många försök. Vänta några minuter.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Vi nådde inte Divine. Kolla din uppkoppling och försök igen.';
+
+  @override
+  String get accountCredentialsUnknown => 'Det gick inte. Försök igen.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Skriv ditt nuvarande lösenord och välj sedan ett nytt.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Nuvarande lösenord';
+
+  @override
+  String get changePasswordWrongCurrent =>
+      'Det är inte ditt nuvarande lösenord.';
+
+  @override
+  String get changePasswordSuccess => 'Lösenordet är ändrat.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Vi mejlar en bekräftelselänk till din nya adress och till den på kontot. E-postadressen byts när du bekräftat från båda.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'På ditt konto: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Ny e-post';
+
+  @override
+  String get changeEmailPasswordLabel => 'Ditt lösenord';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Det är redan din e-postadress.';
+
+  @override
+  String get changeEmailWrongPassword => 'Det är inte ditt lösenord.';
+
+  @override
+  String get changeEmailSubmit => 'Skicka bekräftelselänkar';
+
+  @override
+  String get changeEmailSentTitle => 'Två länkar är på väg';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Bekräfta från $email och från adressen på ditt konto. E-posten byts när båda är klara.';
+  }
+
+  @override
+  String get changeEmailSentExpiry =>
+      'Länkarna slutar fungera efter 24 timmar.';
+
+  @override
+  String get changeEmailSentDone => 'Okej';
 }

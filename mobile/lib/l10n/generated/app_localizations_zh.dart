@@ -11338,4 +11338,77 @@ class AppLocalizationsZh extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => '更改邮箱';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle => '把账号换到另一个邮箱地址';
+
+  @override
+  String get accountSettingsChangePassword => '更改密码';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle => '设置一个新的登录密码';
+
+  @override
+  String get accountCredentialsNeedsSignIn => '登录状态已过期。请重新登录后再更改。';
+
+  @override
+  String get accountCredentialsRateLimited => '尝试次数太多，过几分钟再试。';
+
+  @override
+  String get accountCredentialsNetwork => '连不上 Divine。检查网络后再试一次。';
+
+  @override
+  String get accountCredentialsUnknown => '没成功，请再试一次。';
+
+  @override
+  String get changePasswordSubtitle => '输入当前密码，然后设置新密码。';
+
+  @override
+  String get changePasswordCurrentLabel => '当前密码';
+
+  @override
+  String get changePasswordWrongCurrent => '这不是你的当前密码。';
+
+  @override
+  String get changePasswordSuccess => '密码已更改。';
+
+  @override
+  String get changeEmailSubtitle => '我们会向新地址和账号上的地址各发一封确认邮件。两边都确认后邮箱才会更改。';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return '账号邮箱：$email';
+  }
+
+  @override
+  String get changeEmailNewLabel => '新邮箱';
+
+  @override
+  String get changeEmailPasswordLabel => '你的密码';
+
+  @override
+  String get changeEmailSameAsCurrent => '这已经是你的邮箱地址了。';
+
+  @override
+  String get changeEmailWrongPassword => '这不是你的密码。';
+
+  @override
+  String get changeEmailSubmit => '发送确认链接';
+
+  @override
+  String get changeEmailSentTitle => '两封确认邮件已在路上';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return '请在 $email 和账号上的地址两边都确认。两边都完成后邮箱就会切换。';
+  }
+
+  @override
+  String get changeEmailSentExpiry => '链接 24 小时后失效。';
+
+  @override
+  String get changeEmailSentDone => '知道了';
 }

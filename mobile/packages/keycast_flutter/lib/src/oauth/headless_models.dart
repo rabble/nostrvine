@@ -536,3 +536,108 @@ class ExportKeyResult {
   final String? error;
   final ExportKeyFailure? failure;
 }
+
+/// Why a `POST /api/user/change-password` call did not change the password.
+///
+/// Like the export refusals, 401 covers two unrelated causes — a wrong current
+/// password or a bearer token the server no longer accepts — and the response
+/// body discriminates neither, so callers must switch on this enum rather than
+/// on the status code or on [ChangePasswordResult.error], which carries server
+/// prose that is never translated.
+enum ChangePasswordFailure {
+  /// The bearer token is valid but the submitted current password is not.
+  /// Recoverable in place: re-prompt without sending the user elsewhere.
+  wrongPassword,
+
+  /// The bearer token is missing, expired, or rejected. Only a fresh sign-in
+  /// clears it.
+  needsSignIn,
+
+  /// The server rejected the new password (it enforces its own minimum length).
+  weakPassword,
+
+  /// Too many attempts for now — waiting is the remedy, not a retry.
+  rateLimited,
+
+  /// Transport failure, timeout, or a malformed response.
+  network,
+
+  /// Keycast reported an internal fault (5xx).
+  server,
+
+  /// Anything not covered above.
+  unknown,
+}
+
+/// Result from POST /api/user/change-password.
+class ChangePasswordResult {
+  ChangePasswordResult({required this.success, this.error, this.failure});
+
+  factory ChangePasswordResult.success() => ChangePasswordResult(success: true);
+
+  factory ChangePasswordResult.failure(
+    ChangePasswordFailure failure, {
+    String? message,
+  }) => ChangePasswordResult(success: false, error: message, failure: failure);
+
+  final bool success;
+
+  /// Server prose. Written for Keycast's own web UI, never translated — for
+  /// logs and debugging only, never for display.
+  final String? error;
+
+  final ChangePasswordFailure? failure;
+}
+
+/// Why a `POST /api/user/change-email` call did not start an email change.
+///
+/// Note what is deliberately absent: there is no "already taken" value. Keycast
+/// answers 200 for an address that is already registered so the endpoint cannot
+/// be used to probe for accounts, so a caller can never tell that case apart
+/// from an accepted change — and must not try to.
+enum ChangeEmailFailure {
+  /// The bearer token is valid but the submitted account password is not.
+  wrongPassword,
+
+  /// The bearer token is missing, expired, or rejected. Only a fresh sign-in
+  /// clears it.
+  needsSignIn,
+
+  /// The server rejected the address as malformed.
+  invalidEmail,
+
+  /// Too many attempts for now — waiting is the remedy, not a retry.
+  rateLimited,
+
+  /// Transport failure, timeout, or a malformed response.
+  network,
+
+  /// Keycast reported an internal fault (5xx).
+  server,
+
+  /// Anything not covered above.
+  unknown,
+}
+
+/// Result from POST /api/user/change-email.
+///
+/// Success means only that Keycast accepted the request and sent confirmation
+/// links; the address changes when both the old and the new inbox confirm.
+class ChangeEmailResult {
+  ChangeEmailResult({required this.success, this.error, this.failure});
+
+  factory ChangeEmailResult.success() => ChangeEmailResult(success: true);
+
+  factory ChangeEmailResult.failure(
+    ChangeEmailFailure failure, {
+    String? message,
+  }) => ChangeEmailResult(success: false, error: message, failure: failure);
+
+  final bool success;
+
+  /// Server prose. Written for Keycast's own web UI, never translated — for
+  /// logs and debugging only, never for display.
+  final String? error;
+
+  final ChangeEmailFailure? failure;
+}

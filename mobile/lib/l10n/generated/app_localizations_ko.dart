@@ -11465,4 +11465,79 @@ class AppLocalizationsKo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => '이메일 변경';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle => '계정을 다른 주소로 옮기기';
+
+  @override
+  String get accountSettingsChangePassword => '비밀번호 변경';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle => '로그인에 쓸 새 비밀번호 정하기';
+
+  @override
+  String get accountCredentialsNeedsSignIn => '세션이 만료됐어요. 다시 로그인한 뒤 변경해 주세요.';
+
+  @override
+  String get accountCredentialsRateLimited => '시도가 너무 많아요. 몇 분 뒤에 다시 해 주세요.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Divine에 연결하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
+
+  @override
+  String get accountCredentialsUnknown => '잘 안 됐어요. 다시 시도해 주세요.';
+
+  @override
+  String get changePasswordSubtitle => '현재 비밀번호를 입력한 뒤 새 비밀번호를 정하세요.';
+
+  @override
+  String get changePasswordCurrentLabel => '현재 비밀번호';
+
+  @override
+  String get changePasswordWrongCurrent => '현재 비밀번호가 아니에요.';
+
+  @override
+  String get changePasswordSuccess => '비밀번호를 변경했어요.';
+
+  @override
+  String get changeEmailSubtitle =>
+      '새 주소와 계정에 등록된 주소로 확인 링크를 보냅니다. 둘 다 확인하면 이메일이 바뀌어요.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return '계정 주소: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => '새 이메일';
+
+  @override
+  String get changeEmailPasswordLabel => '비밀번호';
+
+  @override
+  String get changeEmailSameAsCurrent => '이미 사용 중인 이메일 주소예요.';
+
+  @override
+  String get changeEmailWrongPassword => '비밀번호가 아니에요.';
+
+  @override
+  String get changeEmailSubmit => '확인 링크 보내기';
+
+  @override
+  String get changeEmailSentTitle => '링크 두 통을 보냈어요';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return '$email과 계정에 등록된 주소에서 확인해 주세요. 둘 다 끝나면 이메일이 바뀝니다.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => '링크는 24시간 뒤에 만료돼요.';
+
+  @override
+  String get changeEmailSentDone => '알겠어요';
 }
