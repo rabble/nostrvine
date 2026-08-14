@@ -77,6 +77,9 @@ extension FlutterError: @retroactive Error {}
     // AppUpdateRepository's download-URL resolution (#6296).
     setupInstallSourceChannel(with: engineBridge)
 
+    // Set up app-icon badge channel.
+    setupAppBadgeChannel(with: engineBridge)
+
     NSLog("✅ AppDelegate: Implicit Flutter engine initialized with UIScene lifecycle")
   }
 
@@ -230,6 +233,43 @@ extension FlutterError: @retroactive Error {}
     }
 
     NSLog("✅ InstallSource: Platform channel registered")
+  }
+
+  /// App-icon badge platform channel.
+  ///
+  /// The Dart side invokes this best-effort on launch, resume, and when the
+  /// unfiltered notifications surface advances the seen watermark. Divine does
+  /// not currently own a persistent app-icon badge count, so the only native
+  /// operation exposed here is clearing it.
+  private func setupAppBadgeChannel(with engineBridge: FlutterImplicitEngineBridge) {
+    let channel = FlutterMethodChannel(
+      name: "divine/app_badge",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+
+    channel.setMethodCallHandler { (call, result) in
+      switch call.method {
+      case "clear":
+        UNUserNotificationCenter.current().setBadgeCount(0) { error in
+          DispatchQueue.main.async {
+            if let error = error {
+              result(FlutterError(
+                code: "BADGE_CLEAR_FAILED",
+                message: error.localizedDescription,
+                details: nil
+              ))
+              return
+            }
+            result(nil)
+          }
+        }
+
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+
+    NSLog("✅ AppBadge: Platform channel registered")
   }
 
   private func setupZendeskChannel(with engineBridge: FlutterImplicitEngineBridge) {

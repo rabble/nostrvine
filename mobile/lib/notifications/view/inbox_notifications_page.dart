@@ -168,7 +168,7 @@ class _InboxNotificationsScaffoldState
   }
 }
 
-class _NotificationTab extends StatefulWidget {
+class _NotificationTab extends ConsumerStatefulWidget {
   const _NotificationTab({
     required this.notificationRepository,
     required this.followRepository,
@@ -182,10 +182,10 @@ class _NotificationTab extends StatefulWidget {
   final Widget child;
 
   @override
-  State<_NotificationTab> createState() => _NotificationTabState();
+  ConsumerState<_NotificationTab> createState() => _NotificationTabState();
 }
 
-class _NotificationTabState extends State<_NotificationTab>
+class _NotificationTabState extends ConsumerState<_NotificationTab>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -193,6 +193,7 @@ class _NotificationTabState extends State<_NotificationTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final appBadgeClearer = ref.watch(appBadgeServiceProvider);
     // Key on the watched dependency identities plus filter so each tab's bloc
     // rebuilds when repositories swap and keeps an independent pagination
     // stream for its server-side category.
@@ -200,11 +201,13 @@ class _NotificationTabState extends State<_NotificationTab>
       key: ValueKey((
         widget.notificationRepository,
         widget.followRepository,
+        appBadgeClearer,
         widget.filter,
       )),
       create: (_) => NotificationFeedBloc(
         notificationRepository: widget.notificationRepository,
         followRepository: widget.followRepository,
+        appBadgeClearer: appBadgeClearer,
         filter: widget.filter,
       )..add(const NotificationFeedStarted()),
       child: widget.child,

@@ -47,6 +47,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     // but only once the user is authenticated.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      unawaited(_clearAppBadge());
 
       final authService = ref.read(authServiceProvider);
       if (!authService.isAuthenticated) {
@@ -131,6 +132,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         // dropped by iOS/Android when app is backgrounded. Without this,
         // subscriptions sent to stale sockets will timeout (30s) with no response.
         _reconnectRelays();
+        unawaited(_clearAppBadge());
         unawaited(
           ref
               .read(notificationRefreshCoordinatorProvider)
@@ -217,6 +219,18 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     } catch (e) {
       Log.warning(
         '📱 Failed to reconnect relays on resume: $e',
+        name: 'AppLifecycleHandler',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  Future<void> _clearAppBadge() async {
+    try {
+      await ref.read(appBadgeServiceProvider).clear();
+    } catch (e, st) {
+      Log.warning(
+        'App badge clear failed during lifecycle handling: $e\n$st',
         name: 'AppLifecycleHandler',
         category: LogCategory.system,
       );

@@ -16,11 +16,14 @@ import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/bloc/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
+import 'package:openvine/services/app_badge_service.dart';
 
 class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockAppBadgeClearer extends Mock implements AppBadgeClearer {}
 
 const _alicePubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -75,14 +78,17 @@ void main() {
   group(NotificationFeedBloc, () {
     late _MockNotificationRepository mockNotificationRepo;
     late _MockFollowRepository mockFollowRepo;
+    late _MockAppBadgeClearer mockAppBadgeClearer;
     late StreamController<NotificationPage> snapshotController;
 
     setUp(() {
       mockNotificationRepo = _MockNotificationRepository();
       mockFollowRepo = _MockFollowRepository();
+      mockAppBadgeClearer = _MockAppBadgeClearer();
       snapshotController = StreamController<NotificationPage>.broadcast();
 
       when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
+      when(() => mockAppBadgeClearer.clear()).thenAnswer((_) async {});
       when(
         () => mockNotificationRepo.watchSnapshot(filter: any(named: 'filter')),
       ).thenAnswer((_) => snapshotController.stream);
@@ -107,16 +113,20 @@ void main() {
       await snapshotController.close();
     });
 
-    NotificationFeedBloc createBloc() => NotificationFeedBloc(
-      notificationRepository: mockNotificationRepo,
-      followRepository: mockFollowRepo,
-    );
+    NotificationFeedBloc createBloc({AppBadgeClearer? appBadgeClearer}) =>
+        NotificationFeedBloc(
+          notificationRepository: mockNotificationRepo,
+          followRepository: mockFollowRepo,
+          appBadgeClearer: appBadgeClearer,
+        );
 
-    NotificationFeedBloc createFollowBloc() => NotificationFeedBloc(
-      notificationRepository: mockNotificationRepo,
-      followRepository: mockFollowRepo,
-      filter: NotificationKind.follow,
-    );
+    NotificationFeedBloc createFollowBloc({AppBadgeClearer? appBadgeClearer}) =>
+        NotificationFeedBloc(
+          notificationRepository: mockNotificationRepo,
+          followRepository: mockFollowRepo,
+          appBadgeClearer: appBadgeClearer,
+          filter: NotificationKind.follow,
+        );
 
     test('resets pagination depth when the feed closes', () async {
       final bloc = createBloc();
@@ -230,6 +240,61 @@ void main() {
             () => mockNotificationRepo.refreshFeed(null),
             () => mockNotificationRepo.markAllAsRead(),
           ]);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'clears the platform app badge after successful unfiltered open',
+        build: () => createBloc(appBadgeClearer: mockAppBadgeClearer),
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        wait: const Duration(milliseconds: 1),
+        expect: () => [
+          NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        verify: (_) {
+          verifyInOrder([
+            () => mockNotificationRepo.refreshFeed(null),
+            () => mockNotificationRepo.markAllAsRead(),
+            () => mockAppBadgeClearer.clear(),
+          ]);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'does not clear the platform app badge for filtered opens',
+        build: () => createFollowBloc(appBadgeClearer: mockAppBadgeClearer),
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        wait: const Duration(milliseconds: 1),
+        expect: () => [
+          NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        verify: (_) {
+          verify(
+            () => mockNotificationRepo.refreshFeed(NotificationKind.follow),
+          ).called(1);
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
+          verifyNever(() => mockAppBadgeClearer.clear());
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'ignores platform app badge clear failures',
+        setUp: () {
+          when(
+            () => mockAppBadgeClearer.clear(),
+          ).thenThrow(Exception('badge clear failed'));
+        },
+        build: () => createBloc(appBadgeClearer: mockAppBadgeClearer),
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        wait: const Duration(milliseconds: 1),
+        expect: () => [
+          NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        verify: (_) {
+          verify(() => mockAppBadgeClearer.clear()).called(1);
         },
       );
 

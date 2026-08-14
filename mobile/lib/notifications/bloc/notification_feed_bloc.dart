@@ -12,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
+import 'package:openvine/services/app_badge_service.dart';
 
 part 'notification_feed_event.dart';
 part 'notification_feed_state.dart';
@@ -28,9 +29,11 @@ class NotificationFeedBloc
   NotificationFeedBloc({
     required NotificationRepository notificationRepository,
     required FollowRepository followRepository,
+    AppBadgeClearer? appBadgeClearer,
     NotificationKind? filter,
   }) : _notificationRepository = notificationRepository,
        _followRepository = followRepository,
+       _appBadgeClearer = appBadgeClearer,
        _filter = filter,
        super(const NotificationFeedState()) {
     on<_SnapshotChanged>(_onSnapshotChanged);
@@ -49,6 +52,7 @@ class NotificationFeedBloc
 
   final NotificationRepository _notificationRepository;
   final FollowRepository _followRepository;
+  final AppBadgeClearer? _appBadgeClearer;
   final NotificationKind? _filter;
   late final StreamSubscription<NotificationPage> _snapshotSubscription;
   int _emptyPageContinuations = 0;
@@ -167,7 +171,10 @@ class NotificationFeedBloc
       );
       _flushPendingEmptyPageContinuation();
       if (_filter == null) {
-        await _markSeenOnOpen();
+        final markSucceeded = await _markSeenOnOpen();
+        if (markSucceeded) {
+          unawaited(_clearAppBadge());
+        }
       }
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
@@ -232,15 +239,17 @@ class NotificationFeedBloc
   /// A seen-advance failure must never blacken the feed, so every error is
   /// caught here and never rethrown — the repository has already restored the
   /// snapshot on failure, so the list stays usable.
-  Future<void> _markSeenOnOpen() async {
+  Future<bool> _markSeenOnOpen() async {
     try {
       await _notificationRepository.markAllAsRead();
+      return true;
     } on Exception catch (e, s) {
       // Typed `FunnelcakeException` (4xx/5xx/timeout) + Drift DAO failures the
       // repository rethrows after rolling the optimistic flip back. Per
       // .claude/rules/error_handling.md these are expected domain failures,
       // NOT Reportable.
       addError(e, s);
+      return false;
     } catch (e, s) {
       // Errors (StateError, TypeError) — matrix-YES invariant violation.
       addError(
@@ -250,6 +259,16 @@ class NotificationFeedBloc
         ),
         s,
       );
+      return false;
+    }
+  }
+
+  Future<void> _clearAppBadge() async {
+    try {
+      await _appBadgeClearer?.clear();
+    } catch (_) {
+      // AppBadgeService is already best-effort and logs platform failures.
+      // Keep test fakes or future implementations from affecting feed state.
     }
   }
 
