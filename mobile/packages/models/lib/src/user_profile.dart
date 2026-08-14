@@ -19,22 +19,58 @@ import 'package:unique_names_generator/unique_names_generator.dart';
 /// Model representing a Nostr user profile from kind 0 events
 @immutable
 class UserProfile {
-  const UserProfile({
+  /// Normalizes every kind-0 string field to well-formed UTF-16.
+  ///
+  /// This is the display boundary for profile text: all four factories below
+  /// funnel through here, so a lone surrogate in remote kind-0 JSON is
+  /// replaced with U+FFFD once, at the point the profile becomes a typed
+  /// model, instead of at each of the ~40 widgets that render these fields.
+  /// Flutter's paragraph builder throws `Invalid argument(s): string is not
+  /// well-formed UTF-16` on a lone surrogate, and the throw is not confined
+  /// to `Text` — `TextPainter.layout` used for measurement (as the profile
+  /// bio's expand/collapse does), `Semantics` labels, tooltips and
+  /// `EditableText` all reach the same native call, so no single widget can
+  /// be the chokepoint. The URL and identifier fields are covered too: a lone
+  /// surrogate is invalid in all of them, and they render like any other text.
+  ///
+  /// These values *are* republished. `ProfileRepository.saveProfileEvent`
+  /// seeds the new kind-0 content from [rawData] but then overwrites
+  /// `display_name`, `about`, `website`, `picture` and `banner` from the
+  /// typed model the editor was seeded with — so [rawData] does not shield
+  /// them. That is safe: `Utf8Encoder` substitutes U+FFFD for an unpaired
+  /// surrogate anyway, so the bytes on the wire are the same either way.
+  ///
+  /// Only well-formedness is enforced here, not the combining-character cap
+  /// that [sanitizeForDisplay] applies. Capping diacritics is *not* wire-safe
+  /// — it would silently rewrite a user's own bio on that republish path — so
+  /// Zalgo capping stays on the display getters.
+  ///
+  /// [pubkey] and [eventId] are hex identifiers and are left untouched, as is
+  /// [rawData] itself.
+  UserProfile({
     required this.pubkey,
     required this.rawData,
     required this.createdAt,
     required this.eventId,
-    this.name,
-    this.displayName,
-    this.about,
-    this.picture,
-    this.banner,
-    this.website,
-    this.nip05,
-    this.lud16,
-    this.lud06,
+    String? name,
+    String? displayName,
+    String? about,
+    String? picture,
+    String? banner,
+    String? website,
+    String? nip05,
+    String? lud16,
+    String? lud06,
     this.rawTags = const [],
-  });
+  }) : name = sanitizeUtf16OrNull(name),
+       displayName = sanitizeUtf16OrNull(displayName),
+       about = sanitizeUtf16OrNull(about),
+       picture = sanitizeUtf16OrNull(picture),
+       banner = sanitizeUtf16OrNull(banner),
+       website = sanitizeUtf16OrNull(website),
+       nip05 = sanitizeUtf16OrNull(nip05),
+       lud16 = sanitizeUtf16OrNull(lud16),
+       lud06 = sanitizeUtf16OrNull(lud06);
 
   /// Create UserProfile from a Nostr kind 0 event
   factory UserProfile.fromNostrEvent(Event event) {

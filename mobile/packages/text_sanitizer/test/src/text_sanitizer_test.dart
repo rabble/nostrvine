@@ -123,6 +123,18 @@ void main() {
     });
   });
 
+  group(sanitizeUtf16OrNull, () {
+    test('returns null for null input', () {
+      expect(sanitizeUtf16OrNull(null), isNull);
+    });
+
+    test('delegates to sanitizeUtf16 for non-null input', () {
+      final input = String.fromCharCodes([0x61, 0xD83D]);
+
+      expect(sanitizeUtf16OrNull(input), equals('a�'));
+    });
+  });
+
   group(sanitizeForDisplay, () {
     test('replaces lone surrogates and caps combining chars', () {
       // lone high surrogate, then o + 4 combining chars

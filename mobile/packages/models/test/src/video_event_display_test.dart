@@ -1,5 +1,5 @@
 // ABOUTME: Tests for VideoEvent.displayTitle and displayContent zalgo-safe
-// ABOUTME: getters that protect UI from combining-character overflow.
+// ABOUTME: getters, and for the constructor's UTF-16 well-formedness boundary.
 
 import 'package:models/models.dart';
 import 'package:test/test.dart';
@@ -9,6 +9,7 @@ void main() {
     String? title,
     String content = '',
     String? authorName,
+    String? altText,
     int createdAt = 1735689600,
     String? publishedAt,
     Map<String, String> rawTags = const {},
@@ -23,6 +24,7 @@ void main() {
     ),
     title: title,
     authorName: authorName,
+    altText: altText,
     publishedAt: publishedAt,
     rawTags: rawTags,
   );
@@ -159,6 +161,48 @@ void main() {
       final video = build(createdAt: 1777489813);
 
       expect(video.hasUnknownOriginalDate, isFalse);
+    });
+  });
+
+  group('UTF-16 well-formedness at the display boundary (#7295)', () {
+    // The display* getters cannot be the only crash boundary: callers read
+    // the raw fields too — `VideoPerformance.fromVideo` renders `title`
+    // straight from the model, and `altText` reaches the paragraph builder
+    // through `Semantics.label` rather than a `Text` widget. A lone surrogate
+    // throws "string is not well-formed UTF-16" from any of them, so the
+    // constructor normalizes once, for every reader.
+    test('replaces a lone surrogate in raw content', () {
+      final video = build(content: 'note${String.fromCharCode(0xD83D)}body');
+
+      expect(video.content, equals('note�body'));
+    });
+
+    test('replaces a lone surrogate in raw title', () {
+      final video = build(title: 'clip${String.fromCharCode(0xDE00)}title');
+
+      expect(video.title, equals('clip�title'));
+    });
+
+    test('replaces a lone surrogate in raw authorName', () {
+      final video = build(authorName: 'by${String.fromCharCode(0xD83D)}me');
+
+      expect(video.authorName, equals('by�me'));
+    });
+
+    test('replaces a lone surrogate in raw altText', () {
+      final video = build(altText: 'a${String.fromCharCode(0xDE00)}dog');
+
+      expect(video.altText, equals('a�dog'));
+    });
+
+    // Zalgo capping stays on the display getters so the raw field keeps the
+    // author's original marks for anything that republishes it.
+    test('preserves emoji and stacked diacritics in raw fields', () {
+      const caption = 'hi \u{1F600} o\u0300\u0301\u0302\u0303 done';
+      final video = build(content: caption);
+
+      expect(video.content, equals(caption));
+      expect(video.displayContent, equals('hi \u{1F600} o\u0300\u0301 done'));
     });
   });
 }
