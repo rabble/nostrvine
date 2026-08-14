@@ -33,6 +33,10 @@ enum C2paSigningFailureReason {
   tls,
   network,
 
+  /// The remote signer returned a signature or credential the C2PA library
+  /// could not validate.
+  signingCredential,
+
   /// This build opted out of C2PA signing; nothing was attempted.
   disabled,
   other,
@@ -180,7 +184,11 @@ class C2paSigningService {
           category: LogCategory.video,
         );
       }
-      Log.info('prepared C2PA manifest json: ${manifestResult.manifestJson}');
+      Log.info(
+        'Prepared C2PA manifest for $filename',
+        name: 'C2paSigningService',
+        category: LogCategory.video,
+      );
 
       // Create signer for RemoteSigning against proofsign
       final signer = await _createSigner();
@@ -215,10 +223,10 @@ class C2paSigningService {
         );
       }
 
-      // Log.debug("replacing original video $videoPath with signed file $signedFile");
-      inputFile.renameSync('${inputFile.path}.old');
-      // Log.debug("original file renamed: ${iFileNew.path} ");
-      final sFileNew = signedFile.renameSync(inputFile.path);
+      final sFileNew = _replaceOriginalWithSigned(
+        inputFile: inputFile,
+        signedFile: signedFile,
+      );
       Log.debug('signed file renamed: ${sFileNew.path} ');
 
       final signedSize = await sFileNew.length();
@@ -387,6 +395,26 @@ class C2paSigningService {
     }
   }
 
+  static File _replaceOriginalWithSigned({
+    required File inputFile,
+    required File signedFile,
+  }) {
+    final backupPath =
+        '${inputFile.path}.c2pa-replace-${DateTime.now().microsecondsSinceEpoch}.old';
+    final backupFile = inputFile.renameSync(backupPath);
+
+    try {
+      final replacement = signedFile.renameSync(inputFile.path);
+      backupFile.deleteSync();
+      return replacement;
+    } catch (_) {
+      if (!inputFile.existsSync() && backupFile.existsSync()) {
+        backupFile.renameSync(inputFile.path);
+      }
+      rethrow;
+    }
+  }
+
   @visibleForTesting
   static C2paSigningFailureReason classifyFailureReason(Object error) {
     if (error is TimeoutException) {
@@ -398,6 +426,16 @@ class C2paSigningService {
         '$code $message $details'.toLowerCase(),
       _ => error.toString().toLowerCase(),
     };
+
+    if (_containsAny(message, const [
+      'cose signature invalid',
+      'signature invalid',
+      'invalid signature',
+      'signature verification',
+      'credential',
+    ])) {
+      return C2paSigningFailureReason.signingCredential;
+    }
 
     if (_containsAny(message, const [
       'tls',
@@ -484,7 +522,7 @@ class C2paSigningService {
 
   /// Creates a signer for C2PA operations.
   ///
-  /// TODO: Replace with proper key management:
+  /// TODO(#3730): Replace with proper key management:
   /// - Use HardwareSigner for Secure Enclave (iOS) / StrongBox (Android)x
   /// - Generate per-user keys during onboarding
   /// - Store certificates securely
