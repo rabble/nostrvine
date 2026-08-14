@@ -68,8 +68,9 @@ class VideoUrlResolver {
   /// Scores [url] by format preference (higher = better).
   ///
   /// For short videos MP4 is always preferred over HLS (single file, fast,
-  /// universal). Dead `vine.co` URLs and the often-broken
-  /// `cdn.divine.video/*/manifest/*.m3u8` pattern are deprioritized.
+  /// universal). Dead `vine.co` URLs, known dead media hosts, and the
+  /// often-broken `cdn.divine.video/*/manifest/*.m3u8` pattern are
+  /// deprioritized.
   static int scoreVideoUrl(String url) {
     final urlLower = url.toLowerCase();
 
@@ -81,13 +82,14 @@ class VideoUrlResolver {
       return -1;
     }
 
-    // POSTEL'S LAW: Deprioritize known broken URL patterns.
-    // The cdn.divine.video/*/manifest/video.m3u8 pattern is often broken;
-    // prefer direct MP4 files or generic HLS.
+    // Keep dead hosts as a last resort only when no better candidate exists.
     if (isKnownDeadMediaUrl(url)) {
       return 1;
     }
 
+    // POSTEL'S LAW: Deprioritize known broken URL patterns.
+    // The cdn.divine.video/*/manifest/video.m3u8 pattern is often broken;
+    // prefer direct MP4 files or generic HLS.
     if (urlLower.contains('cdn.divine.video') &&
         urlLower.contains('/manifest/')) {
       return 5;

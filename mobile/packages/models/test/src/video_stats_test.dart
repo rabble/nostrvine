@@ -1562,6 +1562,83 @@ void main() {
         expect(videoEvent.originalLoops, equals(1000));
       });
 
+      test('drops dead REST thumbnails so blurhash fallback can render', () {
+        final stats = VideoStats(
+          id: 'test-id',
+          pubkey: 'test-pubkey',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          kind: 34236,
+          dTag: 'test-dtag',
+          title: 'Test Video',
+          thumbnail:
+              'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/thumbnail.jpg',
+          videoUrl: 'https://media.divine.video/video.mp4',
+          blurhash: 'LEHV6nWB2yk8',
+          reactions: 0,
+          comments: 0,
+          reposts: 0,
+          engagementScore: 0,
+        );
+
+        final videoEvent = stats.toVideoEvent();
+
+        expect(videoEvent.thumbnailUrl, isNull);
+        expect(videoEvent.blurhash, equals('LEHV6nWB2yk8'));
+      });
+
+      test('replaces dead REST video URLs with canonical sha256 media URL', () {
+        const hash =
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+        final stats = VideoStats(
+          id: 'test-id',
+          pubkey: 'test-pubkey',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          kind: 34236,
+          dTag: 'test-dtag',
+          title: 'Test Video',
+          thumbnail: 'https://media.divine.video/thumb.jpg',
+          videoUrl:
+              'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/playlist.m3u8',
+          sha256: hash,
+          reactions: 0,
+          comments: 0,
+          reposts: 0,
+          engagementScore: 0,
+        );
+
+        final videoEvent = stats.toVideoEvent();
+
+        expect(videoEvent.videoUrl, equals('https://media.divine.video/$hash'));
+        expect(videoEvent.sha256, equals(hash));
+      });
+
+      test('keeps dead REST video URL when no sha256 fallback exists', () {
+        final stats = VideoStats(
+          id: 'test-id',
+          pubkey: 'test-pubkey',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          kind: 34236,
+          dTag: 'test-dtag',
+          title: 'Test Video',
+          thumbnail: 'https://media.divine.video/thumb.jpg',
+          videoUrl:
+              'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/playlist.m3u8',
+          reactions: 0,
+          comments: 0,
+          reposts: 0,
+          engagementScore: 0,
+        );
+
+        final videoEvent = stats.toVideoEvent();
+
+        expect(
+          videoEvent.videoUrl,
+          equals(
+            'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/playlist.m3u8',
+          ),
+        );
+      });
+
       test(
         'promotes content warning tags from REST event data into VideoEvent',
         () {

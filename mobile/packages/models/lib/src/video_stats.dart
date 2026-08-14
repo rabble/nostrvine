@@ -5,6 +5,7 @@
 import 'package:meta/meta.dart';
 import 'package:models/src/engagement_count_parser.dart';
 import 'package:models/src/video_event.dart';
+import 'package:models/src/video_url_resolver.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 /// Video with engagement metrics from Funnelcake API.
@@ -558,6 +559,8 @@ class VideoStats {
         publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
     final normalizedDTag = dTag.isNotEmpty ? dTag : id;
     final expirationTimestamp = int.tryParse(rawTags['expiration'] ?? '');
+    final resolvedVideoUrl = _usableVideoUrl(videoUrl, sha256: sha256);
+    final resolvedThumbnailUrl = _usableThumbnailUrl(thumbnail);
     // Archival Vine counts: prefer the server-resolved embedded_* fields,
     // fall back to the archive-import event tags for relay-shaped payloads.
     final originalLikes = embeddedLikes ?? int.tryParse(rawTags['likes'] ?? '');
@@ -575,8 +578,8 @@ class VideoStats {
         isUtc: true,
       ),
       title: title.isNotEmpty ? title : null,
-      videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
-      thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
+      videoUrl: resolvedVideoUrl,
+      thumbnailUrl: resolvedThumbnailUrl,
       vineId: normalizedDTag.isNotEmpty ? normalizedDTag : null,
       publishedAt: publishedAt?.toString(),
       sha256: sha256,
@@ -650,6 +653,25 @@ String? _firstNonEmptyString(Iterable<Object?> values) {
     }
   }
   return null;
+}
+
+String? _usableVideoUrl(String value, {required String? sha256}) {
+  if (value.isEmpty) return null;
+  if (!VideoUrlResolver.isKnownDeadMediaUrl(value)) return value;
+
+  final hash = sha256?.trim();
+  if (hash != null && hash.length == 64 && _isHex(hash)) {
+    return 'https://media.divine.video/$hash';
+  }
+
+  return value;
+}
+
+String? _usableThumbnailUrl(String value) {
+  if (value.isEmpty) return null;
+  if (!VideoUrlResolver.isValidVideoUrl(value)) return null;
+  if (VideoUrlResolver.isKnownDeadMediaUrl(value)) return null;
+  return value;
 }
 
 String? _dTagFromAddressableId(Object? value) {
