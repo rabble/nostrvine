@@ -1184,9 +1184,11 @@ void main() {
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'drops a synchronous liked-ids replay when closed mid-dispatch',
         setUp: () {
-          // The repository stream replays synchronously on listen (rxdart's
-          // startWith does this), so `emit.forEach`'s callback runs inside the
-          // handler itself — which `close()` still drains.
+          // The real stream is a BehaviorSubject replay, so a late listener
+          // is answered with the last value straight away. Delivering that
+          // synchronously here pins the callback inside the window between
+          // `close()` closing the event controller and cancelling this
+          // emitter — which is where production crashed.
           when(() => mockLikesRepository.watchLikedEventIds()).thenAnswer(
             (_) => Stream<List<String>>.multi(
               (controller) => controller.addSync(const ['event2', 'event1']),

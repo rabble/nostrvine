@@ -92,11 +92,9 @@ void main() {
         // handler runs after the event controller is already closed.
         await bloc.close();
 
-        // Subscribing here would outlive close() entirely, and its first
-        // delivery would dispatch into a closed event controller.
+        // A subscription created here is never cancelled — `close()` already
+        // ran past its cancel — so it would outlive the bloc.
         expect(followingStream.hasListener, isFalse);
-        expect(() => followingStream.add(const []), returnsNormally);
-        await Future<void>.delayed(Duration.zero);
       });
 
       test('drops a repository emission that lands while closing', () async {

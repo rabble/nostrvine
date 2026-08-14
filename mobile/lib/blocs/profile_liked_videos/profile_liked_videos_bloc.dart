@@ -530,15 +530,16 @@ class ProfileLikedVideosBloc
           return state;
         }
 
+        // `close()` closes the event controller before it cancels this
+        // emitter, so a delivery in that window would dispatch into a closed
+        // bloc. There is nothing left to reconcile for at that point.
+        if (isClosed) return state;
+
         Log.info(
           'ProfileLikedVideosBloc: Liked IDs changed, reconciling list',
           name: 'ProfileLikedVideosBloc',
           category: LogCategory.video,
         );
-        // `close()` drains the events still in flight, so this callback can
-        // run after the event controller is already closed. There is nothing
-        // left to reconcile for at that point.
-        if (isClosed) return state;
         add(ProfileLikedVideosReconcileRequested(newIds));
         return state;
       },
@@ -883,14 +884,10 @@ class ProfileLikedVideosBloc
   }
 
   @override
-  Future<void> close() async {
-    // `super.close()` first: it flips [isClosed] synchronously and only then
-    // drains the events still in flight, so the drained handlers see a closed
-    // bloc and skip dispatching. Cancelling first delays that flip and lets
-    // those handlers dispatch follow-up events into a bloc that is going away.
-    await super.close();
-    await _removedVideoIdsSubscription.cancel();
-    await _blocklistSubscription.cancel();
+  Future<void> close() {
+    _removedVideoIdsSubscription.cancel();
+    _blocklistSubscription.cancel();
+    return super.close();
   }
 }
 

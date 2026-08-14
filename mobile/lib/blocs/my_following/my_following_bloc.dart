@@ -238,10 +238,10 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
       state.rawFollowingPubkeys.isNotEmpty;
 
   void _ensureFollowingSubscription() {
-    // `close()` lets already-dispatched events finish, so this can run once the
-    // bloc is closed. Subscribing then would outlive [close] entirely, and the
-    // stream replays synchronously on listen, so the callback would fire
-    // straight into a closed event controller.
+    // `close()` lets already-dispatched events finish, so this can run once
+    // the bloc is closed. A subscription created then is never cancelled —
+    // [close] has already run past its cancel — so it would outlive the bloc
+    // and keep the repository stream alive.
     if (isClosed) return;
     _followingSubscription ??= _followRepository.followingStream.listen((
       pubkeys,
@@ -263,12 +263,13 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   @override
   Future<void> close() async {
     // `super.close()` first: it flips [isClosed] synchronously and only then
-    // drains the events still in flight. Cancelling first opened a window
-    // ahead of that flip instead — awaiting a null subscription still yields
-    // a microtask, and an already queued `MyFollowingListLoadRequested` ran
-    // in it with [isClosed] still false, subscribed, and was orphaned by the
-    // cancel that had already happened. Deliveries during the drain are
-    // dropped by the [isClosed] guard in [_ensureFollowingSubscription].
+    // drains the events still in flight. What used to open a window was the
+    // *await* ahead of that flip — `await null` on a null subscription still
+    // yields a microtask, and an already queued
+    // `MyFollowingListLoadRequested` ran in it with [isClosed] still false,
+    // subscribed, and was orphaned by the cancel that had already happened.
+    // Deliveries during the drain are dropped by the [isClosed] guard in
+    // [_ensureFollowingSubscription]'s listener.
     await super.close();
     await _followingSubscription?.cancel();
     _followingSubscription = null;
