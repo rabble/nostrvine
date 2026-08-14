@@ -165,5 +165,64 @@ void main() {
             'exits from churning healthy connections',
       );
     });
+
+    test(
+      'cycles only the silent relay, sparing a sibling that answered',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
+        await nostr.refreshPublicKey();
+
+        const answeredUrl = 'wss://answered.divine.video';
+        const silentUrl = 'wss://silent.divine.video';
+        final answeredFactory = FakeWebSocketChannelFactory();
+        final silentFactory = FakeWebSocketChannelFactory();
+        await nostr.relayPool.add(
+          RelayBase(
+            answeredUrl,
+            RelayStatus(answeredUrl),
+            channelFactory: answeredFactory,
+          ),
+        );
+        await nostr.relayPool.add(
+          RelayBase(
+            silentUrl,
+            RelayStatus(silentUrl),
+            channelFactory: silentFactory,
+          ),
+        );
+        nostr.relayPool.subscriptionSilenceProbe = probe;
+
+        final subId = subscribeToFeed();
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          _reqFrames(answeredFactory.createdChannels.single),
+          hasLength(1),
+        );
+        expect(_reqFrames(silentFactory.createdChannels.single), hasLength(1));
+
+        // Only the first relay answers; the second stays a silent zombie.
+        answeredFactory.createdChannels.single.simulateMessage(
+          jsonEncode(['EOSE', subId]),
+        );
+
+        await Future<void>.delayed(afterProbe);
+
+        expect(
+          silentFactory.createdChannels,
+          hasLength(2),
+          reason: 'the silent relay is the one the probe must cycle',
+        );
+        expect(
+          answeredFactory.createdChannels,
+          hasLength(1),
+          reason:
+              "a relay that EOSE'd is healthy and must not be cycled, even "
+              'while a sibling on the same load is being repaired',
+        );
+      },
+    );
   });
 }
