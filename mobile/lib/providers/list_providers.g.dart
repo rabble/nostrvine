@@ -315,11 +315,19 @@ final class CuratedListVideosFamily extends $Family
 }
 
 /// Provider for videos from all members of a user list
+///
+/// The body is a plain function so every `Ref` read happens synchronously
+/// during `build` — see [_LiveDeps] for why an `async*` body cannot
+/// touch `Ref`.
 
 @ProviderFor(userListMemberVideos)
 final userListMemberVideosProvider = UserListMemberVideosFamily._();
 
 /// Provider for videos from all members of a user list
+///
+/// The body is a plain function so every `Ref` read happens synchronously
+/// during `build` — see [_LiveDeps] for why an `async*` body cannot
+/// touch `Ref`.
 
 final class UserListMemberVideosProvider
     extends
@@ -330,6 +338,10 @@ final class UserListMemberVideosProvider
         >
     with $FutureModifier<List<VideoEvent>>, $StreamProvider<List<VideoEvent>> {
   /// Provider for videos from all members of a user list
+  ///
+  /// The body is a plain function so every `Ref` read happens synchronously
+  /// during `build` — see [_LiveDeps] for why an `async*` body cannot
+  /// touch `Ref`.
   UserListMemberVideosProvider._({
     required UserListMemberVideosFamily super.from,
     required List<String> super.argument,
@@ -375,9 +387,13 @@ final class UserListMemberVideosProvider
 }
 
 String _$userListMemberVideosHash() =>
-    r'005a02b0974013a6cc82aec093a1e17cf5cc4020';
+    r'acb78c2d384c7425a9ecc45210b60fb0f764ed31';
 
 /// Provider for videos from all members of a user list
+///
+/// The body is a plain function so every `Ref` read happens synchronously
+/// during `build` — see [_LiveDeps] for why an `async*` body cannot
+/// touch `Ref`.
 
 final class UserListMemberVideosFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<VideoEvent>>, List<String>> {
@@ -391,6 +407,10 @@ final class UserListMemberVideosFamily extends $Family
       );
 
   /// Provider for videos from all members of a user list
+  ///
+  /// The body is a plain function so every `Ref` read happens synchronously
+  /// during `build` — see [_LiveDeps] for why an `async*` body cannot
+  /// touch `Ref`.
 
   UserListMemberVideosProvider call(List<String> pubkeys) =>
       UserListMemberVideosProvider._(argument: pubkeys, from: this);
@@ -626,12 +646,24 @@ final class PublicCuratedListFamily extends $Family
 
 /// Provider that fetches actual VideoEvent objects for a curated list
 /// Streams videos as they are fetched from cache or relays
+///
+/// `Ref` is either read synchronously in `build` or guarded by [_LiveDeps] —
+/// this provider is the one that matters most, because
+/// `curated_list_feed_screen` calls
+/// `ref.invalidate(curatedListVideoEventsProvider(listId))` on pull-to-refresh,
+/// which disposes the previous build while it is still awaiting relays.
 
 @ProviderFor(curatedListVideoEvents)
 final curatedListVideoEventsProvider = CuratedListVideoEventsFamily._();
 
 /// Provider that fetches actual VideoEvent objects for a curated list
 /// Streams videos as they are fetched from cache or relays
+///
+/// `Ref` is either read synchronously in `build` or guarded by [_LiveDeps] —
+/// this provider is the one that matters most, because
+/// `curated_list_feed_screen` calls
+/// `ref.invalidate(curatedListVideoEventsProvider(listId))` on pull-to-refresh,
+/// which disposes the previous build while it is still awaiting relays.
 
 final class CuratedListVideoEventsProvider
     extends
@@ -643,6 +675,12 @@ final class CuratedListVideoEventsProvider
     with $FutureModifier<List<VideoEvent>>, $StreamProvider<List<VideoEvent>> {
   /// Provider that fetches actual VideoEvent objects for a curated list
   /// Streams videos as they are fetched from cache or relays
+  ///
+  /// `Ref` is either read synchronously in `build` or guarded by [_LiveDeps] —
+  /// this provider is the one that matters most, because
+  /// `curated_list_feed_screen` calls
+  /// `ref.invalidate(curatedListVideoEventsProvider(listId))` on pull-to-refresh,
+  /// which disposes the previous build while it is still awaiting relays.
   CuratedListVideoEventsProvider._({
     required CuratedListVideoEventsFamily super.from,
     required String super.argument,
@@ -689,10 +727,16 @@ final class CuratedListVideoEventsProvider
 }
 
 String _$curatedListVideoEventsHash() =>
-    r'c75af13b98f9f2859e06bb938119bc8187bd9e90';
+    r'9f195da0426a9a6a75e2dfd097b6b9ec1410010b';
 
 /// Provider that fetches actual VideoEvent objects for a curated list
 /// Streams videos as they are fetched from cache or relays
+///
+/// `Ref` is either read synchronously in `build` or guarded by [_LiveDeps] —
+/// this provider is the one that matters most, because
+/// `curated_list_feed_screen` calls
+/// `ref.invalidate(curatedListVideoEventsProvider(listId))` on pull-to-refresh,
+/// which disposes the previous build while it is still awaiting relays.
 
 final class CuratedListVideoEventsFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<VideoEvent>>, String> {
@@ -707,6 +751,12 @@ final class CuratedListVideoEventsFamily extends $Family
 
   /// Provider that fetches actual VideoEvent objects for a curated list
   /// Streams videos as they are fetched from cache or relays
+  ///
+  /// `Ref` is either read synchronously in `build` or guarded by [_LiveDeps] —
+  /// this provider is the one that matters most, because
+  /// `curated_list_feed_screen` calls
+  /// `ref.invalidate(curatedListVideoEventsProvider(listId))` on pull-to-refresh,
+  /// which disposes the previous build while it is still awaiting relays.
 
   CuratedListVideoEventsProvider call(String listId) =>
       CuratedListVideoEventsProvider._(argument: listId, from: this);
@@ -717,12 +767,18 @@ final class CuratedListVideoEventsFamily extends $Family
 
 /// Provider that fetches VideoEvent objects directly from a list of video IDs
 /// Use this for discovered lists that aren't in local storage
+///
+/// The body is a plain function, and the reads it needs after an `await` go
+/// through [_LiveDeps] — see there for why an `async*` body cannot touch `Ref`.
 
 @ProviderFor(videoEventsByIds)
 final videoEventsByIdsProvider = VideoEventsByIdsFamily._();
 
 /// Provider that fetches VideoEvent objects directly from a list of video IDs
 /// Use this for discovered lists that aren't in local storage
+///
+/// The body is a plain function, and the reads it needs after an `await` go
+/// through [_LiveDeps] — see there for why an `async*` body cannot touch `Ref`.
 
 final class VideoEventsByIdsProvider
     extends
@@ -734,6 +790,9 @@ final class VideoEventsByIdsProvider
     with $FutureModifier<List<VideoEvent>>, $StreamProvider<List<VideoEvent>> {
   /// Provider that fetches VideoEvent objects directly from a list of video IDs
   /// Use this for discovered lists that aren't in local storage
+  ///
+  /// The body is a plain function, and the reads it needs after an `await` go
+  /// through [_LiveDeps] — see there for why an `async*` body cannot touch `Ref`.
   VideoEventsByIdsProvider._({
     required VideoEventsByIdsFamily super.from,
     required List<String> super.argument,
@@ -778,10 +837,13 @@ final class VideoEventsByIdsProvider
   }
 }
 
-String _$videoEventsByIdsHash() => r'e6a653a18021cfbf8221af6045f7f20a93841622';
+String _$videoEventsByIdsHash() => r'71472b817b86016d74247fcb6288e252abf97cbf';
 
 /// Provider that fetches VideoEvent objects directly from a list of video IDs
 /// Use this for discovered lists that aren't in local storage
+///
+/// The body is a plain function, and the reads it needs after an `await` go
+/// through [_LiveDeps] — see there for why an `async*` body cannot touch `Ref`.
 
 final class VideoEventsByIdsFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<VideoEvent>>, List<String>> {
@@ -796,6 +858,9 @@ final class VideoEventsByIdsFamily extends $Family
 
   /// Provider that fetches VideoEvent objects directly from a list of video IDs
   /// Use this for discovered lists that aren't in local storage
+  ///
+  /// The body is a plain function, and the reads it needs after an `await` go
+  /// through [_LiveDeps] — see there for why an `async*` body cannot touch `Ref`.
 
   VideoEventsByIdsProvider call(List<String> videoIds) =>
       VideoEventsByIdsProvider._(argument: videoIds, from: this);
