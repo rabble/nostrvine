@@ -78,6 +78,11 @@ abstract final class HiveStorageService {
   ///
   /// A failure here must not block startup: the files stay put and the next
   /// launch tries again.
+  ///
+  /// TODO(#7347): Remove this sweep once the fixed build has reached the
+  /// installed base. Only a build from before #6958 can strand a box, so after
+  /// that point this walks every box name in the critical startup phase on
+  /// every launch and finds nothing.
   static Future<void> _migrateLegacyBoxes(Directory home) async {
     try {
       final legacy = await getApplicationDocumentsDirectory();
