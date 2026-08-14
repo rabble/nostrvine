@@ -9,6 +9,11 @@ import 'package:openvine/repositories/avatar_svg_repository.dart';
 
 void main() {
   const url = 'https://divine.video/avatar.svg';
+  // flutter_svg needs a viewport on the root element. Fixtures that assert
+  // "flutter_svg renders this" have to carry one, or they fail for an
+  // unrelated reason and the comparison stops meaning anything.
+  const svgOpenTag =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">';
   final validSvgBytes = Uint8List.fromList(
     utf8.encode(
       '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" />',
@@ -110,7 +115,7 @@ void main() {
     // flutter_svg decodes with `allowMalformed: true`, so a stray Latin-1 byte
     // renders fine. Rejecting it here would blank an avatar that works.
     final latin1InText = Uint8List.fromList([
-      ...utf8.encode('<svg xmlns="http://www.w3.org/2000/svg"><text>caf'),
+      ...utf8.encode('$svgOpenTag<text>caf'),
       0xE9,
       ...utf8.encode('</text></svg>'),
     ]);
@@ -129,7 +134,7 @@ void main() {
     // `SvgParser` calls `parseEvents` without nesting validation, so sloppy
     // generator output still renders. Only tokenizer failures may be rejected.
     final mismatched = Uint8List.fromList(
-      utf8.encode('<svg xmlns="http://www.w3.org/2000/svg"><g><rect/></svg>'),
+      utf8.encode('$svgOpenTag<g><rect/></svg>'),
     );
     final repository = repositoryFor(
       http.Response.bytes(
