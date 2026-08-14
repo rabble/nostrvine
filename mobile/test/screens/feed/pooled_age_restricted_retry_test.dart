@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -586,6 +588,119 @@ void main() {
     );
 
     testWidgets(
+      'dismisses the blocked-by-preference sheet after the host feed item is '
+      'disposed',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        final hostVisible = ValueNotifier(true);
+        late ProviderContainer container;
+        addTearDown(playbackStatusCubit.close);
+        addTearDown(hostVisible.dispose);
+
+        when(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            ageVerificationService: _ageService(verified: true),
+            onContainerReady: (value) => container = value,
+            hostVisible: hostVisible,
+            retryPlayback: (_) => _retryRecovered,
+          ),
+        );
+
+        await tester.tap(find.text('Verify'));
+        await tester.pumpAndSettle();
+        expect(find.text(_adultContentHiddenTitle), findsOneWidget);
+
+        // A non-append-only feed emit clears the error state behind the open
+        // sheet, unmounting the overlay that opened it (#7291).
+        hostVisible.value = false;
+        await tester.pump();
+
+        await tester.tap(find.text(_notNowText));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text(_adultContentHiddenTitle), findsNothing);
+        // A pop that runs while the host is gone still has to release the
+        // overlay flag, or the feed stays paused for the rest of the session
+        // (#6239).
+        expect(
+          container.read(overlayVisibilityProvider).hasVisibleOverlay,
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets(
+      'opens Content Filters even after the host feed item is disposed',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        final hostVisible = ValueNotifier(true);
+        late ProviderContainer container;
+        addTearDown(playbackStatusCubit.close);
+        addTearDown(hostVisible.dispose);
+
+        when(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            ageVerificationService: _ageService(verified: true),
+            onContainerReady: (value) => container = value,
+            hostVisible: hostVisible,
+            retryPlayback: (_) => _retryRecovered,
+          ),
+        );
+
+        await tester.tap(find.text('Verify'));
+        await tester.pumpAndSettle();
+
+        hostVisible.value = false;
+        await tester.pump();
+
+        await tester.tap(find.text(_adultContentHiddenAction));
+        await tester.pumpAndSettle();
+
+        // The button has to do what it says even when the overlay that opened
+        // the sheet is gone, or the viewer is left with a CTA that only closes
+        // the sheet (#7350). The push falls back to the root navigator here,
+        // since the caller's context is defunct.
+        expect(tester.takeException(), isNull);
+        expect(find.text(_adultContentHiddenTitle), findsNothing);
+        expect(find.text(_contentFiltersRouteMarker), findsOneWidget);
+        // The sheet flag has to come back down on the way through, or the feed
+        // stays paused for the rest of the session (#6239).
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
+        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+      },
+    );
+
+    testWidgets(
       'surfaces the connectivity message when the remote signer is unreachable',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
@@ -799,6 +914,7 @@ class _RetryHarness extends StatefulWidget {
     this.video,
     this.ageVerificationService,
     this.onContainerReady,
+    this.hostVisible,
   });
 
   final MediaAuthInterceptor mediaAuthInterceptor;
@@ -808,6 +924,10 @@ class _RetryHarness extends StatefulWidget {
   final AgeVerificationService? ageVerificationService;
   final ValueChanged<ProviderContainer>? onContainerReady;
 
+  /// Drives whether the widget that calls the retry is in the tree, so a test
+  /// can dispose the caller's context the way the pooled feed does.
+  final ValueListenable<bool>? hostVisible;
+
   @override
   State<_RetryHarness> createState() => _RetryHarnessState();
 }
@@ -816,22 +936,34 @@ class _RetryHarnessState extends State<_RetryHarness> {
   // A real router, so the sheet's "Open Content Filters" push is exercised
   // rather than stubbed out.
   late final GoRouter _router = GoRouter(
+    // Mirrors app_router.dart, so the CTA's fallback to the root navigator's
+    // context resolves here the way it does in the app.
+    navigatorKey: NavigatorKeys.root,
     routes: [
       GoRoute(
         path: '/',
         builder: (_, _) => Scaffold(
-          body: Consumer(
-            builder: (context, ref, _) {
-              return TextButton(
-                onPressed: () => retryAgeRestrictedPooledVideo(
-                  context: context,
-                  ref: ref,
-                  video: widget.video ?? _video,
-                  index: 0,
-                  resolveSha256: _resolveSha256,
-                  retryPlayback: widget.retryPlayback,
-                ),
-                child: const Text('Verify'),
+          body: ValueListenableBuilder<bool>(
+            // A const listenable that never fires, for the harnesses that keep
+            // the retry caller mounted for the whole test.
+            valueListenable:
+                widget.hostVisible ?? const AlwaysStoppedAnimation<bool>(true),
+            builder: (_, hostVisible, _) {
+              if (!hostVisible) return const SizedBox.shrink();
+              return Consumer(
+                builder: (context, ref, _) {
+                  return TextButton(
+                    onPressed: () => retryAgeRestrictedPooledVideo(
+                      context: context,
+                      ref: ref,
+                      video: widget.video ?? _video,
+                      index: 0,
+                      resolveSha256: _resolveSha256,
+                      retryPlayback: widget.retryPlayback,
+                    ),
+                    child: const Text('Verify'),
+                  );
+                },
               );
             },
           ),

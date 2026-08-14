@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -235,20 +236,35 @@ Future<void> _promptAdultContentHidden(BuildContext context) async {
   final openFilters = await context.showVideoPausingVineBottomSheet<bool>(
     scrollable: false,
     showHeaderDivider: false,
-    body: VineBottomSheetPrompt(
-      sticker: DivineStickerName.trafficCone,
-      title: context.l10n.videoErrorAdultContentHiddenTitle,
-      subtitle: context.l10n.videoErrorAdultContentHiddenBody,
-      primaryButtonText: context.l10n.videoErrorAdultContentHiddenAction,
-      onPrimaryPressed: () =>
-          Navigator.of(context, rootNavigator: true).pop(true),
-      secondaryButtonText: context.l10n.commonNotNow,
-      onSecondaryPressed: () =>
-          Navigator.of(context, rootNavigator: true).pop(false),
+    // The sheet outlives the error overlay that opened it: the overlay is a
+    // conditional child of the feed item, and any non-append-only feed emit
+    // clears the error state behind the open sheet, unmounting it. Resolving
+    // anything through the caller's context on tap then hit a defunct element
+    // and both buttons went inert (#7291). Everything inside the sheet reads
+    // from the sheet's own subtree, which stays mounted while the sheet is up.
+    body: Builder(
+      builder: (sheetContext) => VineBottomSheetPrompt(
+        sticker: DivineStickerName.trafficCone,
+        title: sheetContext.l10n.videoErrorAdultContentHiddenTitle,
+        subtitle: sheetContext.l10n.videoErrorAdultContentHiddenBody,
+        primaryButtonText: sheetContext.l10n.videoErrorAdultContentHiddenAction,
+        onPrimaryPressed: () => Navigator.of(sheetContext).pop(true),
+        secondaryButtonText: sheetContext.l10n.commonNotNow,
+        onSecondaryPressed: () => Navigator.of(sheetContext).pop(false),
+      ),
     ),
   );
-  if (openFilters != true || !context.mounted) return;
-  await context.pushWithVideoPause<void>(ContentFiltersScreen.path);
+  if (openFilters != true) return;
+
+  // Popping the sheet is not enough on its own: the same unmount that made the
+  // buttons inert also leaves the caller's context defunct, so pushing from it
+  // is skipped and the CTA closes the sheet without opening what it names
+  // (#7350). The root navigator outlives every feed item, and go_router wraps
+  // it in an InheritedGoRouter, so a push resolves from there — the same
+  // durable-context route upload_failure_sheet already takes.
+  final target = context.mounted ? context : NavigatorKeys.root.currentContext;
+  if (target == null || !target.mounted) return;
+  await target.pushWithVideoPause<void>(ContentFiltersScreen.path);
 }
 
 /// Surfaces the connectivity-specific message when a remote signer didn't
