@@ -9,7 +9,8 @@ import 'package:openvine/services/app_badge_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channelName = 'divine/app_badge';
-  const channel = MethodChannel(channelName);
+  const defaultChannel = MethodChannel(channelName);
+  const testChannel = MethodChannel('divine/app_badge_test');
 
   Future<void> withPlatform(
     TargetPlatform platform,
@@ -26,7 +27,9 @@ void main() {
   group(AppBadgeService, () {
     tearDown(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null);
+          .setMockMethodCallHandler(defaultChannel, null);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(testChannel, null);
       debugDefaultTargetPlatformOverride = null;
     });
 
@@ -34,12 +37,12 @@ void main() {
       await withPlatform(TargetPlatform.iOS, () async {
         final calls = <MethodCall>[];
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, (call) async {
+            .setMockMethodCallHandler(testChannel, (call) async {
               calls.add(call);
               return null;
             });
 
-        await const AppBadgeService().clear();
+        await const AppBadgeService(channel: testChannel).clear();
 
         expect(calls, hasLength(1));
         expect(calls.single.method, 'clear');
@@ -50,12 +53,12 @@ void main() {
       await withPlatform(TargetPlatform.android, () async {
         var callCount = 0;
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, (call) async {
+            .setMockMethodCallHandler(testChannel, (call) async {
               callCount++;
               return null;
             });
 
-        await const AppBadgeService().clear();
+        await const AppBadgeService(channel: testChannel).clear();
 
         expect(callCount, 0);
       });
@@ -64,11 +67,14 @@ void main() {
     test('swallows PlatformException from the native badge clear', () async {
       await withPlatform(TargetPlatform.iOS, () async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, (call) async {
+            .setMockMethodCallHandler(testChannel, (call) async {
               throw PlatformException(code: 'BADGE_CLEAR_FAILED');
             });
 
-        await expectLater(const AppBadgeService().clear(), completes);
+        await expectLater(
+          const AppBadgeService(channel: testChannel).clear(),
+          completes,
+        );
       });
     });
 
@@ -76,7 +82,10 @@ void main() {
       'swallows MissingPluginException when the native channel is absent',
       () async {
         await withPlatform(TargetPlatform.iOS, () async {
-          await expectLater(const AppBadgeService().clear(), completes);
+          await expectLater(
+            const AppBadgeService(channel: testChannel).clear(),
+            completes,
+          );
         });
       },
     );

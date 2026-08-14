@@ -13,9 +13,17 @@ import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
+import 'package:openvine/services/app_badge_service.dart';
 import 'package:rxdart/rxdart.dart' hide NotificationKind;
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _NoopAppBadgeClearer implements AppBadgeClearer {
+  const _NoopAppBadgeClearer();
+
+  @override
+  Future<void> clear() async {}
+}
 
 /// Controllable fake that mirrors the real repository's shared-source-of-truth
 /// behaviour: a single [BehaviorSubject] feeds both [watchSnapshot] and
@@ -122,6 +130,7 @@ void main() {
         final bloc = NotificationFeedBloc(
           notificationRepository: repository,
           followRepository: followRepository,
+          appBadgeClearer: const _NoopAppBadgeClearer(),
         );
         addTearDown(bloc.close);
         final badge = NotificationBadgeCubit(repository: repository);
@@ -166,6 +175,7 @@ void main() {
         final bloc = NotificationFeedBloc(
           notificationRepository: repository,
           followRepository: followRepository,
+          appBadgeClearer: const _NoopAppBadgeClearer(),
         );
         addTearDown(bloc.close);
         final badge = NotificationBadgeCubit(repository: repository);
@@ -192,6 +202,7 @@ void main() {
       final bloc = NotificationFeedBloc(
         notificationRepository: repository,
         followRepository: followRepository,
+        appBadgeClearer: const _NoopAppBadgeClearer(),
       );
       addTearDown(bloc.close);
       final badge = NotificationBadgeCubit(repository: repository);

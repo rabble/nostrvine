@@ -13,6 +13,7 @@ import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/app_badge_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'notification_feed_event.dart';
 part 'notification_feed_state.dart';
@@ -29,7 +30,7 @@ class NotificationFeedBloc
   NotificationFeedBloc({
     required NotificationRepository notificationRepository,
     required FollowRepository followRepository,
-    AppBadgeClearer? appBadgeClearer,
+    required AppBadgeClearer appBadgeClearer,
     NotificationKind? filter,
   }) : _notificationRepository = notificationRepository,
        _followRepository = followRepository,
@@ -52,7 +53,7 @@ class NotificationFeedBloc
 
   final NotificationRepository _notificationRepository;
   final FollowRepository _followRepository;
-  final AppBadgeClearer? _appBadgeClearer;
+  final AppBadgeClearer _appBadgeClearer;
   final NotificationKind? _filter;
   late final StreamSubscription<NotificationPage> _snapshotSubscription;
   int _emptyPageContinuations = 0;
@@ -265,10 +266,13 @@ class NotificationFeedBloc
 
   Future<void> _clearAppBadge() async {
     try {
-      await _appBadgeClearer?.clear();
-    } catch (_) {
-      // AppBadgeService is already best-effort and logs platform failures.
-      // Keep test fakes or future implementations from affecting feed state.
+      await _appBadgeClearer.clear();
+    } catch (e, st) {
+      Log.warning(
+        'App badge clear failed after notification feed open: $e\n$st',
+        name: 'NotificationFeedBloc',
+        category: LogCategory.system,
+      );
     }
   }
 

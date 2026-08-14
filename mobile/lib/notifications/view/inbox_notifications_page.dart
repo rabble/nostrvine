@@ -201,7 +201,6 @@ class _NotificationTabState extends ConsumerState<_NotificationTab>
       key: ValueKey((
         widget.notificationRepository,
         widget.followRepository,
-        appBadgeClearer,
         widget.filter,
       )),
       create: (_) => NotificationFeedBloc(

@@ -117,14 +117,14 @@ void main() {
         NotificationFeedBloc(
           notificationRepository: mockNotificationRepo,
           followRepository: mockFollowRepo,
-          appBadgeClearer: appBadgeClearer,
+          appBadgeClearer: appBadgeClearer ?? mockAppBadgeClearer,
         );
 
     NotificationFeedBloc createFollowBloc({AppBadgeClearer? appBadgeClearer}) =>
         NotificationFeedBloc(
           notificationRepository: mockNotificationRepo,
           followRepository: mockFollowRepo,
-          appBadgeClearer: appBadgeClearer,
+          appBadgeClearer: appBadgeClearer ?? mockAppBadgeClearer,
           filter: NotificationKind.follow,
         );
 

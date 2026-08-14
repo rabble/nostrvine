@@ -225,7 +225,9 @@ Future<void> _renderBackgroundLocalPush({
 }) async {
   final plugin = FlutterLocalNotificationsPlugin();
   const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const darwinInit = DarwinInitializationSettings();
+  const darwinInit = DarwinInitializationSettings(
+    requestBadgePermission: false,
+  );
   const initSettings = InitializationSettings(
     android: androidInit,
     iOS: darwinInit,
@@ -242,7 +244,8 @@ Future<void> _renderBackgroundLocalPush({
   );
   const details = NotificationDetails(
     android: androidDetails,
-    iOS: DarwinNotificationDetails(),
+    iOS: DarwinNotificationDetails(presentBadge: false),
+    macOS: DarwinNotificationDetails(presentBadge: false),
   );
 
   await plugin.show(
