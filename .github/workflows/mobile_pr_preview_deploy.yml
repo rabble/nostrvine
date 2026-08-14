@@ -69,17 +69,20 @@ jobs:
               pull_number: prNumber,
             });
 
-            const deployable = pr.state === 'open' && pr.head.sha === artifactSha;
+            const deployable =
+              pr.state === 'open' && !pr.draft && pr.head.sha === artifactSha;
 
             core.setOutput('deployable', deployable ? 'true' : 'false');
             core.setOutput('current_sha', pr.head.sha);
             core.setOutput('pr_state', pr.state);
+            core.setOutput('is_draft', pr.draft ? 'true' : 'false');
 
       - name: Skip stale preview artifact
         if: ${{ steps.freshness.outputs.deployable != 'true' }}
         run: |
           echo "Skipping stale preview artifact."
           echo "PR state: ${{ steps.freshness.outputs.pr_state }}"
+          echo "PR draft: ${{ steps.freshness.outputs.is_draft }}"
           echo "Artifact SHA: ${{ steps.metadata.outputs.head_sha }}"
           echo "Current PR SHA: ${{ steps.freshness.outputs.current_sha }}"
 

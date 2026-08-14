@@ -1,4 +1,4 @@
-# ABOUTME: Builds a Flutter web preview artifact for every divine-mobile pull request
+# ABOUTME: Builds a Flutter web preview artifact for every ready-for-review divine-mobile pull request
 # ABOUTME: Uploads a deployable artifact that a trusted workflow later pushes to Cloudflare Pages with Wrangler
 
 name: Mobile PR Preview Build
@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build-preview:
     name: Build Flutter Web Preview
+    # Draft PRs get no preview. The ready_for_review trigger above builds the
+    # first preview the moment the PR leaves draft.
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
