@@ -124,12 +124,9 @@ than treating a missing value as instant.
 The existing profile destination and published-video confirmation remain the
 payoff. A deterministic 50/50 assignment from the authenticated hex pubkey
 adds a create-again action to that confirmation for the `create_again`
-variant. The control variant is unchanged.
+variant. The control variant is unchanged. Assignment is local in the app;
+there is no remote kill switch or Firebase Admin setup for this experiment.
 
-- Remote Config key: `post_publish_create_again_enabled`
-- In-app default: `true`
-- Kill switch: publish the key as `false`; real-time Remote Config updates are
-  activated while the app is running
 - Baseline second-post rate: 44.1%
 
 Events:
@@ -155,9 +152,6 @@ does not make them queryable as dimensions retroactively.
    `mode`.
 2. Create a user-scoped custom dimension named `invite_code` for user property
    `invite_code`.
-3. Create and publish the Remote Config boolean
-   `post_publish_create_again_enabled = true`. Set it to `false` for an
-   immediate kill switch.
 
 The GA4 reporting identity setting does not gate the BigQuery `user_id` field;
 use BigQuery as the campaign source of truth.

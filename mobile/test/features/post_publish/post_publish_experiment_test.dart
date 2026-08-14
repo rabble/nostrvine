@@ -4,19 +4,6 @@ import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/post_publish/post_publish_experiment.dart';
 
-class _FakeFlags implements PostPublishFlagClient {
-  _FakeFlags(this.createAgainEnabled);
-
-  @override
-  bool createAgainEnabled;
-
-  @override
-  void dispose() {}
-
-  @override
-  Future<void> initialize() async {}
-}
-
 class _RecordingSink implements AnalyticsEventSink {
   final events = <({String name, Map<String, Object> parameters})>[];
 
@@ -50,10 +37,7 @@ void main() {
       'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
   test('assigns the same user deterministically across calls', () {
-    final experiment = PostPublishExperiment(
-      flags: _FakeFlags(true),
-      analytics: _RecordingSink(),
-    );
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
     expect(
       experiment.variantForUser(controlPubkey),
@@ -70,10 +54,7 @@ void main() {
   });
 
   test('assigns the same bucket regardless of hex casing', () {
-    final experiment = PostPublishExperiment(
-      flags: _FakeFlags(true),
-      analytics: _RecordingSink(),
-    );
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
     expect(
       experiment.variantForUser(treatmentPubkey.toUpperCase()),
@@ -81,26 +62,16 @@ void main() {
     );
   });
 
-  test('remote flag forces every user into control', () {
-    final experiment = PostPublishExperiment(
-      flags: _FakeFlags(false),
-      analytics: _RecordingSink(),
-    );
+  test('assigns control when no pubkey is available', () {
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
-    expect(
-      experiment.variantForUser(treatmentPubkey),
-      PostPublishVariant.control,
-    );
+    expect(experiment.variantForUser(null), PostPublishVariant.control);
   });
 
   test('records destination, variant, and seconds to create again', () async {
     final sink = _RecordingSink();
     var now = DateTime.utc(2026, 8, 8, 12);
-    final experiment = PostPublishExperiment(
-      flags: _FakeFlags(true),
-      analytics: sink,
-      now: () => now,
-    );
+    final experiment = PostPublishExperiment(analytics: sink, now: () => now);
 
     await experiment.screenShown(
       publishId: 'publish-1',
@@ -124,10 +95,7 @@ void main() {
   });
 
   test('bounds pending assignments that never resolve', () async {
-    final experiment = PostPublishExperiment(
-      flags: _FakeFlags(true),
-      analytics: _RecordingSink(),
-    );
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
     await experiment.screenShown(
       publishId: 'stranded',
@@ -148,10 +116,7 @@ void main() {
   });
 
   test('drops treatment state when a publish fails', () async {
-    final experiment = PostPublishExperiment(
-      flags: _FakeFlags(true),
-      analytics: _RecordingSink(),
-    );
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
     await experiment.screenShown(
       publishId: 'publish-failed',

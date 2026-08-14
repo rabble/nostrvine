@@ -46,17 +46,6 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
 
 class _MockGoRouter extends Mock implements GoRouter {}
 
-class _EnabledFlags implements PostPublishFlagClient {
-  @override
-  bool get createAgainEnabled => true;
-
-  @override
-  void dispose() {}
-
-  @override
-  Future<void> initialize() async {}
-}
-
 class _NoOpAnalytics implements AnalyticsEventSink {
   @override
   Future<void> logEvent({
@@ -245,7 +234,6 @@ void main() {
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
       final experiment = PostPublishExperiment(
-        flags: _EnabledFlags(),
         analytics: _NoOpAnalytics(),
       );
       await experiment.screenShown(
@@ -279,7 +267,6 @@ void main() {
       final router = _MockGoRouter();
       when(() => router.push<void>(any())).thenAnswer((_) async {});
       final experiment = PostPublishExperiment(
-        flags: _EnabledFlags(),
         analytics: _NoOpAnalytics(),
       );
       await experiment.screenShown(
