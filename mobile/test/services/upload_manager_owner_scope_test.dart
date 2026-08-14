@@ -45,6 +45,7 @@ void main() {
         ..setApplicationDocumentsPath('${tempDir.path}/documents')
         ..setApplicationSupportPath('${tempDir.path}/support');
       PathProviderPlatform.instance = mockPathProvider;
+      await TestHelpers.initHiveHome();
 
       mockBlossomService = _MockBlossomUploadService();
       when(

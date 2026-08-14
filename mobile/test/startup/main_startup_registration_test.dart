@@ -20,6 +20,21 @@ void main() {
     );
   });
 
+  test('opens the uploads box only after Hive has a home path', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final coordinator = app.createStartupCoordinatorForTesting(container);
+
+    // HiveStorage is the only owner of Hive's process-global home path, so the
+    // uploads box must not open before it — otherwise the box lands in
+    // whatever directory happens to be current (#6958).
+    expect(
+      coordinator.serviceRegistrationForTesting('UploadManager')?.dependencies,
+      contains('HiveStorage'),
+    );
+  });
+
   test('initializes performance monitoring before runApp', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);

@@ -48,10 +48,8 @@ Future<PendingUploadStore> _openStore({
 /// Hive.openBox returns any already-open box *by name* regardless of path, so a
 /// box another test left open would let save() succeed. Close all boxes first
 /// (swallowing the benign lock-file delete race when the backing temp dir was
-/// already removed), then:
-/// - Null PathProvider -> the init helper's primary path resolution throws.
-/// - Hive's home points at a regular file -> the helper's recovery strategy
-///   (Hive.openBox) cannot create box files either.
+/// already removed), then point Hive's home at a regular file so neither the
+/// normal open nor the helper's recovery strategy can create box files.
 Future<Directory> _forceStorageFailure() async {
   try {
     await Hive.close();
@@ -80,7 +78,6 @@ Future<Directory> _forceStorageFailure() async {
   });
 
   Hive.init(blocker.path);
-  PathProviderPlatform.instance = MockPathProviderPlatform();
   return isolatedDir;
 }
 
@@ -109,6 +106,7 @@ void main() {
         ..setTemporaryPath(tempDir.path)
         ..setApplicationDocumentsPath('${tempDir.path}/documents')
         ..setApplicationSupportPath('${tempDir.path}/support');
+      await TestHelpers.initHiveHome();
     });
 
     tearDown(() async {

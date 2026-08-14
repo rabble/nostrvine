@@ -45,6 +45,7 @@ void main() {
       ..setApplicationDocumentsPath('${tempDir.path}/documents')
       ..setApplicationSupportPath('${tempDir.path}/support');
     PathProviderPlatform.instance = pathProvider;
+    await TestHelpers.initHiveHome();
 
     // Use the reusable test helper to ensure a fresh empty Hive box. The
     // per-test path prevents concurrent Flutter test processes from sharing

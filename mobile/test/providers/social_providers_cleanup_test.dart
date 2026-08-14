@@ -84,6 +84,7 @@ void main() {
         ..setApplicationSupportPath('${tempDir.path}/support')
         ..setApplicationCachePath('${tempDir.path}/cache');
       PathProviderPlatform.instance = mockPathProvider;
+      await TestHelpers.initHiveHome();
 
       uploadManager = UploadManager(
         blossomService: blossomUploadService,

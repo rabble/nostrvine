@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
@@ -74,6 +75,16 @@ void main() {
       } catch (_) {
         // Ignore cleanup errors
       }
+    });
+
+    test('opens the uploads box in the home path Hive was given', () async {
+      // The helper used to call Hive.init itself, re-pointing the
+      // process-global home path mid-startup so that every box opened
+      // afterwards landed in a second directory (#6958). It now opens the box
+      // wherever HiveStorageService already pointed Hive.
+      final box = await UploadInitializationHelper.initializeUploadsBox();
+
+      expect(p.dirname(box.path!), testBoxPath);
     });
 
     test('uses app container path from path_provider', () async {

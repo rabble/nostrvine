@@ -150,9 +150,9 @@ class CacheRecoveryService {
   /// the push service yet plus the published-kinds schema marker, so losing it
   /// strands an unsynced edit.
   ///
-  /// Their files sit under `{appSupport}/openvine/` — the uploads-box
-  /// initializer re-points Hive's home path there during startup — which is
-  /// why [_clearAppSupportDirectory] has to protect them by path as well as
+  /// Their files sit under `{appSupport}/openvine/` — the one home path
+  /// `HiveStorageService` gives Hive — which is why
+  /// [_clearAppSupportDirectory] has to protect them by path as well as
   /// skipping them above.
   static const Set<String> _durableHiveBoxNames = {
     HiveBoxNames.pendingUploads,
@@ -163,9 +163,16 @@ class CacheRecoveryService {
   @visibleForTesting
   static Set<String> get durableHiveBoxNamesForTesting => _durableHiveBoxNames;
 
+  /// `.hivec` is protected alongside `.hive` because it is box data, not a
+  /// scratch file: compaction writes the compacted box there before renaming
+  /// it over the box file, and Hive restores from it when the box file is
+  /// missing. A compaction interrupted between those two steps leaves it as
+  /// the only copy of the box, so clearing it would lose exactly the state
+  /// these boxes are protected for.
   static final List<List<String>> _durableHiveBoxFileSegments = [
     for (final boxName in _durableHiveBoxNames) ...[
       ['openvine', '$boxName.hive'],
+      ['openvine', '$boxName.hivec'],
       ['openvine', '$boxName.lock'],
     ],
   ];
