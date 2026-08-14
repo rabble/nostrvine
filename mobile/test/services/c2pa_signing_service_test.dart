@@ -191,6 +191,8 @@ void main() {
           final result = await service.signVideo(videoPath: video.path);
 
           expect(result.success, isTrue);
+          expect(result.error, isNull);
+          expect(result.failureReason, isNull);
           expect(result.signedFilePath, video.path);
           expect(video.readAsBytesSync(), equals([7, 8, 9, 10, 11]));
           // No `.old` original, no orphaned `c2pa_signed_*` temp file.
