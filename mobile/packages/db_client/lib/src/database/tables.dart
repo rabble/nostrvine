@@ -124,6 +124,16 @@ class UserProfiles extends Table {
 /// Metrics are parsed from video events (kind 34236, etc.) and stored here
 /// for fast sorted queries. This avoids having to parse JSON tags for every
 /// sort/filter operation.
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_metrics_loop_count '
+  'ON video_metrics (loop_count)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_metrics_likes ON video_metrics (likes)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_metrics_views ON video_metrics (views)',
+)
 @DataClassName('VideoMetricRow')
 class VideoMetrics extends Table {
   @override
@@ -148,28 +158,6 @@ class VideoMetrics extends Table {
   @override
   List<String> get customConstraints => [
     'FOREIGN KEY (event_id) REFERENCES event(id) ON DELETE CASCADE',
-  ];
-
-  List<Index> get indexes => [
-    // Index on loop_count for trending/popular queries
-    // (ORDER BY loop_count DESC)
-    Index(
-      'idx_metrics_loop_count',
-      'CREATE INDEX IF NOT EXISTS idx_metrics_loop_count '
-          'ON video_metrics (loop_count)',
-    ),
-
-    // Index on likes for sorting by popularity (ORDER BY likes DESC)
-    Index(
-      'idx_metrics_likes',
-      'CREATE INDEX IF NOT EXISTS idx_metrics_likes ON video_metrics (likes)',
-    ),
-
-    // Index on views for sorting by view count (ORDER BY views DESC)
-    Index(
-      'idx_metrics_views',
-      'CREATE INDEX IF NOT EXISTS idx_metrics_views ON video_metrics (views)',
-    ),
   ];
 }
 
@@ -199,6 +187,10 @@ class ProfileStats extends Table {
 /// Cache of trending/popular hashtags
 ///
 /// Stores hashtag statistics with a 1-hour expiry.
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_hashtag_video_count '
+  'ON hashtag_stats (video_count DESC)',
+)
 @DataClassName('HashtagStatRow')
 class HashtagStats extends Table {
   @override
@@ -212,19 +204,23 @@ class HashtagStats extends Table {
 
   @override
   Set<Column> get primaryKey => {hashtag};
-
-  List<Index> get indexes => [
-    Index(
-      'idx_hashtag_video_count',
-      'CREATE INDEX IF NOT EXISTS idx_hashtag_video_count '
-          'ON hashtag_stats (video_count DESC)',
-    ),
-  ];
 }
 
 /// Persistent storage for notifications
 ///
 /// Stores notification metadata for offline access.
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_notification_timestamp '
+  'ON notifications (timestamp DESC)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_notification_is_read '
+  'ON notifications (is_read)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp '
+  'ON notifications (owner_pubkey, timestamp DESC)',
+)
 @DataClassName('NotificationRow')
 class Notifications extends Table {
   @override
@@ -256,29 +252,19 @@ class Notifications extends Table {
 
   @override
   Set<Column> get primaryKey => {id, ownerPubkey};
-
-  List<Index> get indexes => [
-    Index(
-      'idx_notification_timestamp',
-      'CREATE INDEX IF NOT EXISTS idx_notification_timestamp '
-          'ON notifications (timestamp DESC)',
-    ),
-    Index(
-      'idx_notification_is_read',
-      'CREATE INDEX IF NOT EXISTS idx_notification_is_read '
-          'ON notifications (is_read)',
-    ),
-    Index(
-      'idx_notification_owner_timestamp',
-      'CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp '
-          'ON notifications (owner_pubkey, timestamp DESC)',
-    ),
-  ];
 }
 
 /// Tracks video uploads in progress
 ///
 /// Stores pending upload state for resumption after app restart.
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_pending_upload_status '
+  'ON pending_uploads (status)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_pending_upload_created '
+  'ON pending_uploads (created_at DESC)',
+)
 @DataClassName('PendingUploadRow')
 class PendingUploads extends Table {
   @override
@@ -320,19 +306,6 @@ class PendingUploads extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
-
-  List<Index> get indexes => [
-    Index(
-      'idx_pending_upload_status',
-      'CREATE INDEX IF NOT EXISTS idx_pending_upload_status '
-          'ON pending_uploads (status)',
-    ),
-    Index(
-      'idx_pending_upload_created',
-      'CREATE INDEX IF NOT EXISTS idx_pending_upload_created '
-          'ON pending_uploads (created_at DESC)',
-    ),
-  ];
 }
 
 /// Stores the current user's own reaction events (Kind 7 likes).
@@ -343,6 +316,18 @@ class PendingUploads extends Table {
 ///
 /// Only stores reactions created by the current user, not reactions from
 /// others.
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_personal_reactions_user '
+  'ON personal_reactions (user_pubkey)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id '
+  'ON personal_reactions (reaction_event_id)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id '
+  'ON personal_reactions (addressable_id)',
+)
 @DataClassName('PersonalReactionRow')
 class PersonalReactions extends Table {
   @override
@@ -370,27 +355,6 @@ class PersonalReactions extends Table {
 
   @override
   Set<Column> get primaryKey => {targetEventId, userPubkey};
-
-  List<Index> get indexes => [
-    // Index on user_pubkey for fetching all user's reactions
-    Index(
-      'idx_personal_reactions_user',
-      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_user '
-          'ON personal_reactions (user_pubkey)',
-    ),
-    // Index on reaction_event_id for lookups when processing deletions
-    Index(
-      'idx_personal_reactions_reaction_id',
-      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id '
-          'ON personal_reactions (reaction_event_id)',
-    ),
-    // Index on addressable_id for coordinate-based own-like resolution
-    Index(
-      'idx_personal_reactions_addressable_id',
-      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id '
-          'ON personal_reactions (addressable_id)',
-    ),
-  ];
 }
 
 /// Stores pending offline actions (likes, reposts, follows) for sync on
@@ -1094,6 +1058,18 @@ class Conversations extends Table {
 /// require the repost event ID to create a Kind 5 deletion event.
 ///
 /// Only stores reposts created by the current user, not reposts from others.
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user '
+  'ON personal_reposts (user_pubkey)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_personal_reposts_repost_id '
+  'ON personal_reposts (repost_event_id)',
+)
+@TableIndex.sql(
+  'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user_created '
+  'ON personal_reposts (user_pubkey, created_at DESC)',
+)
 @DataClassName('PersonalRepostRow')
 class PersonalReposts extends Table {
   @override
@@ -1118,27 +1094,6 @@ class PersonalReposts extends Table {
 
   @override
   Set<Column> get primaryKey => {addressableId, userPubkey};
-
-  List<Index> get indexes => [
-    // Index on user_pubkey for fetching all user's reposts
-    Index(
-      'idx_personal_reposts_user',
-      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user '
-          'ON personal_reposts (user_pubkey)',
-    ),
-    // Index on repost_event_id for lookups when processing deletions
-    Index(
-      'idx_personal_reposts_repost_id',
-      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_repost_id '
-          'ON personal_reposts (repost_event_id)',
-    ),
-    // Composite index for user + created_at for ordered queries
-    Index(
-      'idx_personal_reposts_user_created',
-      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user_created '
-          'ON personal_reposts (user_pubkey, created_at DESC)',
-    ),
-  ];
 }
 
 /// Durable queue of outgoing NIP-17 direct messages.

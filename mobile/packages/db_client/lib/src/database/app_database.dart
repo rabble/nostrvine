@@ -175,6 +175,10 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await _repairSchemaV6();
+        // v6: Consolidate explicit index declarations into Drift schema.
+        // Create all indexes that are now managed through @TableIndex.sql()
+        // annotations.
+        await _createConsolidatedIndexes();
       }
     },
     beforeOpen: (details) async {
@@ -289,6 +293,82 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_clip_category_owner_pubkey
       ON clip_categories (owner_pubkey)
     ''');
+  }
+
+  /// Creates all indexes consolidated from explicit `List<Index>` getters.
+  ///
+  /// v6 moves index definitions into @TableIndex.sql() annotations on table
+  /// definitions. This creates indexes for existing v5 databases.
+  Future<void> _createConsolidatedIndexes() async {
+    // VideoMetrics indices
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_metrics_loop_count '
+      'ON video_metrics (loop_count)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_metrics_likes ON video_metrics (likes)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_metrics_views ON video_metrics (views)',
+    );
+
+    // HashtagStats indices
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_hashtag_video_count '
+      'ON hashtag_stats (video_count DESC)',
+    );
+
+    // Notifications indices
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_notification_timestamp '
+      'ON notifications (timestamp DESC)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_notification_is_read '
+      'ON notifications (is_read)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp '
+      'ON notifications (owner_pubkey, timestamp DESC)',
+    );
+
+    // PendingUploads indices
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_pending_upload_status '
+      'ON pending_uploads (status)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_pending_upload_created '
+      'ON pending_uploads (created_at DESC)',
+    );
+
+    // PersonalReactions indices
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_user '
+      'ON personal_reactions (user_pubkey)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id '
+      'ON personal_reactions (reaction_event_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id '
+      'ON personal_reactions (addressable_id)',
+    );
+
+    // PersonalReposts indices
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user '
+      'ON personal_reposts (user_pubkey)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_repost_id '
+      'ON personal_reposts (repost_event_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user_created '
+      'ON personal_reposts (user_pubkey, created_at DESC)',
+    );
   }
 
   /// Normalizes all historical schema drift from version 1 to version 2.

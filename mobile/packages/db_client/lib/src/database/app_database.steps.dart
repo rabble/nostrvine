@@ -4497,6 +4497,21 @@ final class Schema6 extends i0.VersionedSchema {
     identityVerifications,
     seenVideos,
     vanishedProfiles,
+    idxMetricsLoopCount,
+    idxMetricsLikes,
+    idxMetricsViews,
+    idxHashtagVideoCount,
+    idxNotificationTimestamp,
+    idxNotificationIsRead,
+    idxNotificationOwnerTimestamp,
+    idxPendingUploadStatus,
+    idxPendingUploadCreated,
+    idxPersonalReactionsUser,
+    idxPersonalReactionsReactionId,
+    idxPersonalReactionsAddressableId,
+    idxPersonalRepostsUser,
+    idxPersonalRepostsRepostId,
+    idxPersonalRepostsUserCreated,
   ];
   late final Shape0 event = Shape0(
     source: i0.VersionedTable(
@@ -5040,6 +5055,66 @@ final class Schema6 extends i0.VersionedSchema {
       attachedDatabase: database,
     ),
     alias: null,
+  );
+  final i1.Index idxMetricsLoopCount = i1.Index(
+    'idx_metrics_loop_count',
+    'CREATE INDEX IF NOT EXISTS idx_metrics_loop_count ON video_metrics (loop_count)',
+  );
+  final i1.Index idxMetricsLikes = i1.Index(
+    'idx_metrics_likes',
+    'CREATE INDEX IF NOT EXISTS idx_metrics_likes ON video_metrics (likes)',
+  );
+  final i1.Index idxMetricsViews = i1.Index(
+    'idx_metrics_views',
+    'CREATE INDEX IF NOT EXISTS idx_metrics_views ON video_metrics (views)',
+  );
+  final i1.Index idxHashtagVideoCount = i1.Index(
+    'idx_hashtag_video_count',
+    'CREATE INDEX IF NOT EXISTS idx_hashtag_video_count ON hashtag_stats (video_count DESC)',
+  );
+  final i1.Index idxNotificationTimestamp = i1.Index(
+    'idx_notification_timestamp',
+    'CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notifications (timestamp DESC)',
+  );
+  final i1.Index idxNotificationIsRead = i1.Index(
+    'idx_notification_is_read',
+    'CREATE INDEX IF NOT EXISTS idx_notification_is_read ON notifications (is_read)',
+  );
+  final i1.Index idxNotificationOwnerTimestamp = i1.Index(
+    'idx_notification_owner_timestamp',
+    'CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp ON notifications (owner_pubkey, timestamp DESC)',
+  );
+  final i1.Index idxPendingUploadStatus = i1.Index(
+    'idx_pending_upload_status',
+    'CREATE INDEX IF NOT EXISTS idx_pending_upload_status ON pending_uploads (status)',
+  );
+  final i1.Index idxPendingUploadCreated = i1.Index(
+    'idx_pending_upload_created',
+    'CREATE INDEX IF NOT EXISTS idx_pending_upload_created ON pending_uploads (created_at DESC)',
+  );
+  final i1.Index idxPersonalReactionsUser = i1.Index(
+    'idx_personal_reactions_user',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reactions_user ON personal_reactions (user_pubkey)',
+  );
+  final i1.Index idxPersonalReactionsReactionId = i1.Index(
+    'idx_personal_reactions_reaction_id',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id ON personal_reactions (reaction_event_id)',
+  );
+  final i1.Index idxPersonalReactionsAddressableId = i1.Index(
+    'idx_personal_reactions_addressable_id',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id ON personal_reactions (addressable_id)',
+  );
+  final i1.Index idxPersonalRepostsUser = i1.Index(
+    'idx_personal_reposts_user',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user ON personal_reposts (user_pubkey)',
+  );
+  final i1.Index idxPersonalRepostsRepostId = i1.Index(
+    'idx_personal_reposts_repost_id',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reposts_repost_id ON personal_reposts (repost_event_id)',
+  );
+  final i1.Index idxPersonalRepostsUserCreated = i1.Index(
+    'idx_personal_reposts_user_created',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user_created ON personal_reposts (user_pubkey, created_at DESC)',
   );
 }
 

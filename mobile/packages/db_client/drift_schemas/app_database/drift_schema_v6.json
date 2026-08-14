@@ -3150,6 +3150,216 @@
           "pubkey"
         ]
       }
+    },
+    {
+      "id": 27,
+      "references": [
+        2
+      ],
+      "type": "index",
+      "data": {
+        "on": 2,
+        "name": "idx_metrics_loop_count",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_metrics_loop_count ON video_metrics (loop_count)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 28,
+      "references": [
+        2
+      ],
+      "type": "index",
+      "data": {
+        "on": 2,
+        "name": "idx_metrics_likes",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_metrics_likes ON video_metrics (likes)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 29,
+      "references": [
+        2
+      ],
+      "type": "index",
+      "data": {
+        "on": 2,
+        "name": "idx_metrics_views",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_metrics_views ON video_metrics (views)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 30,
+      "references": [
+        4
+      ],
+      "type": "index",
+      "data": {
+        "on": 4,
+        "name": "idx_hashtag_video_count",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_hashtag_video_count ON hashtag_stats (video_count DESC)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 31,
+      "references": [
+        5
+      ],
+      "type": "index",
+      "data": {
+        "on": 5,
+        "name": "idx_notification_timestamp",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notifications (timestamp DESC)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 32,
+      "references": [
+        5
+      ],
+      "type": "index",
+      "data": {
+        "on": 5,
+        "name": "idx_notification_is_read",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_notification_is_read ON notifications (is_read)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 33,
+      "references": [
+        5
+      ],
+      "type": "index",
+      "data": {
+        "on": 5,
+        "name": "idx_notification_owner_timestamp",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp ON notifications (owner_pubkey, timestamp DESC)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 34,
+      "references": [
+        6
+      ],
+      "type": "index",
+      "data": {
+        "on": 6,
+        "name": "idx_pending_upload_status",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_pending_upload_status ON pending_uploads (status)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 35,
+      "references": [
+        6
+      ],
+      "type": "index",
+      "data": {
+        "on": 6,
+        "name": "idx_pending_upload_created",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_pending_upload_created ON pending_uploads (created_at DESC)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 36,
+      "references": [
+        7
+      ],
+      "type": "index",
+      "data": {
+        "on": 7,
+        "name": "idx_personal_reactions_user",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reactions_user ON personal_reactions (user_pubkey)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 37,
+      "references": [
+        7
+      ],
+      "type": "index",
+      "data": {
+        "on": 7,
+        "name": "idx_personal_reactions_reaction_id",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id ON personal_reactions (reaction_event_id)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 38,
+      "references": [
+        7
+      ],
+      "type": "index",
+      "data": {
+        "on": 7,
+        "name": "idx_personal_reactions_addressable_id",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id ON personal_reactions (addressable_id)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 39,
+      "references": [
+        8
+      ],
+      "type": "index",
+      "data": {
+        "on": 8,
+        "name": "idx_personal_reposts_user",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reposts_user ON personal_reposts (user_pubkey)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 40,
+      "references": [
+        8
+      ],
+      "type": "index",
+      "data": {
+        "on": 8,
+        "name": "idx_personal_reposts_repost_id",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reposts_repost_id ON personal_reposts (repost_event_id)",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 41,
+      "references": [
+        8
+      ],
+      "type": "index",
+      "data": {
+        "on": 8,
+        "name": "idx_personal_reposts_user_created",
+        "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reposts_user_created ON personal_reposts (user_pubkey, created_at DESC)",
+        "unique": false,
+        "columns": []
+      }
     }
   ],
   "fixed_sql": [
@@ -3393,6 +3603,141 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"vanished_profiles\" (\"pubkey\" TEXT NOT NULL, \"detected_at\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
+        }
+      ]
+    },
+    {
+      "name": "idx_metrics_loop_count",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_metrics_loop_count ON video_metrics (loop_count)"
+        }
+      ]
+    },
+    {
+      "name": "idx_metrics_likes",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_metrics_likes ON video_metrics (likes)"
+        }
+      ]
+    },
+    {
+      "name": "idx_metrics_views",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_metrics_views ON video_metrics (views)"
+        }
+      ]
+    },
+    {
+      "name": "idx_hashtag_video_count",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_hashtag_video_count ON hashtag_stats (video_count DESC)"
+        }
+      ]
+    },
+    {
+      "name": "idx_notification_timestamp",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notifications (timestamp DESC)"
+        }
+      ]
+    },
+    {
+      "name": "idx_notification_is_read",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_notification_is_read ON notifications (is_read)"
+        }
+      ]
+    },
+    {
+      "name": "idx_notification_owner_timestamp",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp ON notifications (owner_pubkey, timestamp DESC)"
+        }
+      ]
+    },
+    {
+      "name": "idx_pending_upload_status",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_pending_upload_status ON pending_uploads (status)"
+        }
+      ]
+    },
+    {
+      "name": "idx_pending_upload_created",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_pending_upload_created ON pending_uploads (created_at DESC)"
+        }
+      ]
+    },
+    {
+      "name": "idx_personal_reactions_user",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reactions_user ON personal_reactions (user_pubkey)"
+        }
+      ]
+    },
+    {
+      "name": "idx_personal_reactions_reaction_id",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id ON personal_reactions (reaction_event_id)"
+        }
+      ]
+    },
+    {
+      "name": "idx_personal_reactions_addressable_id",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id ON personal_reactions (addressable_id)"
+        }
+      ]
+    },
+    {
+      "name": "idx_personal_reposts_user",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reposts_user ON personal_reposts (user_pubkey)"
+        }
+      ]
+    },
+    {
+      "name": "idx_personal_reposts_repost_id",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reposts_repost_id ON personal_reposts (repost_event_id)"
+        }
+      ]
+    },
+    {
+      "name": "idx_personal_reposts_user_created",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX IF NOT EXISTS idx_personal_reposts_user_created ON personal_reposts (user_pubkey, created_at DESC)"
         }
       ]
     }
