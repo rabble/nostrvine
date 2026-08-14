@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -25,6 +26,23 @@ class _CallbackClient extends http.BaseClient {
     closed = true;
     super.close();
   }
+}
+
+/// A chunk whose element reads throw, so `RandomAccessFile.writeFrom` fails
+/// for it the way a full disk or an IO error would after a successful open.
+class _UnwritableChunk extends ListBase<int> {
+  @override
+  int get length => 32;
+
+  @override
+  set length(int value) => throw UnsupportedError('fixed length');
+
+  @override
+  int operator [](int index) => throw const FileSystemException('write failed');
+
+  @override
+  void operator []=(int index, int value) =>
+      throw UnsupportedError('fixed length');
 }
 
 class _ResultOnlyDownload extends CancellableDownload {
@@ -169,6 +187,83 @@ void main() {
           body.add(utf8.encode('payload'));
           await pumpEventQueue();
           resolved = await download.file;
+          await pumpEventQueue();
+        }, (error, _) => zoneErrors.add(error));
+
+        expect(resolved, isNull);
+        expect(zoneErrors, isEmpty);
+        expect(target.existsSync(), isFalse);
+      });
+    });
+
+    // The open succeeding does not make the sink safe: a write can still fail
+    // (ENOSPC, EIO) after any number of good chunks, and it surfaces on the
+    // same `done` future as a failed open. Both orderings below settle through
+    // `_failWithWriteError`, so they regress together with the group above.
+    group('when a write fails after the file opened', () {
+      late File target;
+
+      setUp(() {
+        target = File('${tempDir.path}/video.mp4');
+      });
+
+      test('completes with null when the write fails mid-stream', () async {
+        // Without the sink's `done` listener this hung forever: nothing
+        // observed the write error, the response stream stayed live, and the
+        // partial file was left behind for the caller to decode.
+        final body = StreamController<List<int>>();
+        addTearDown(body.close);
+        final client = _CallbackClient(
+          (_) async => http.StreamedResponse(body.stream, 200),
+        );
+        final downloader = HttpCancellableDownloader(client);
+
+        final zoneErrors = <Object>[];
+        File? resolved;
+        await runZonedGuarded(() async {
+          final download = downloader.download(
+            url: 'https://example.com/video.mp4',
+            targetFile: target,
+          );
+          await pumpEventQueue();
+          body.add(utf8.encode('good bytes '));
+          await pumpEventQueue();
+          body.add(_UnwritableChunk());
+          await pumpEventQueue();
+          body.add(utf8.encode('bytes that must be discarded'));
+          resolved = await download.file;
+          await pumpEventQueue();
+        }, (error, _) => zoneErrors.add(error));
+
+        expect(resolved, isNull);
+        expect(zoneErrors, isEmpty);
+        expect(target.existsSync(), isFalse);
+      });
+
+      test('completes with null when the last chunk fails to write', () async {
+        // The response ends in the same turn the write fails, so `onDone`
+        // races `done`. Previously `close()` reported success and handed back
+        // a File holding only the bytes written before the failure.
+        final client = _CallbackClient(
+          (_) async => http.StreamedResponse(
+            Stream<List<int>>.fromIterable([
+              utf8.encode('good bytes '),
+              _UnwritableChunk(),
+            ]),
+            200,
+          ),
+        );
+        final downloader = HttpCancellableDownloader(client);
+
+        final zoneErrors = <Object>[];
+        File? resolved;
+        await runZonedGuarded(() async {
+          resolved = await downloader
+              .download(
+                url: 'https://example.com/video.mp4',
+                targetFile: target,
+              )
+              .file;
           await pumpEventQueue();
         }, (error, _) => zoneErrors.add(error));
 
