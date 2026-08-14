@@ -1199,12 +1199,25 @@ void main() {
             () => settled = true,
           );
           var everReadUnsaved = false;
-          for (var i = 0; i < 1000 && !settled; i++) {
+          var sampledToCompletion = false;
+          for (var i = 0; i < 1000; i++) {
+            if (settled) {
+              sampledToCompletion = true;
+              break;
+            }
             everReadUnsaved |= !service.isVideoBookmarkedGlobally(privateVideo);
             await Future<void>.value();
           }
           await racing;
 
+          expect(
+            sampledToCompletion,
+            isTrue,
+            reason:
+                'the loop has to outlast the sync, or the assertion below '
+                'passes without ever having sampled the window - which is the '
+                'inert shape this test replaced',
+          );
           expect(
             everReadUnsaved,
             isFalse,
