@@ -97,17 +97,18 @@ void main() {
         expect(followingStream.hasListener, isFalse);
       });
 
-      test('drops a repository emission that lands while closing', () async {
+      test('cancels the subscription even when close is not awaited', () async {
         final bloc = createBloc();
         bloc.add(const MyFollowingListLoadRequested());
         await Future<void>.delayed(Duration.zero);
         expect(followingStream.hasListener, isTrue);
 
+        // The cancel is issued before `super.close()`, so the listener is
+        // already gone by the time close() yields — nothing can be delivered
+        // into the drain.
         final closing = bloc.close();
-        followingStream.add([validPubkey('late')]);
-        await closing;
-
         expect(followingStream.hasListener, isFalse);
+        await closing;
       });
     });
 

@@ -262,16 +262,15 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
 
   @override
   Future<void> close() async {
-    // `super.close()` first: it flips [isClosed] synchronously and only then
-    // drains the events still in flight. What used to open a window was the
-    // *await* ahead of that flip — `await null` on a null subscription still
-    // yields a microtask, and an already queued
-    // `MyFollowingListLoadRequested` ran in it with [isClosed] still false,
-    // subscribed, and was orphaned by the cancel that had already happened.
-    // Deliveries during the drain are dropped by the [isClosed] guard in
-    // [_ensureFollowingSubscription]'s listener.
-    await super.close();
-    await _followingSubscription?.cancel();
+    // Cancel first, but do not await ahead of `super.close()`: `await null`
+    // on a not-yet-created subscription still yields a microtask, and an
+    // already queued `MyFollowingListLoadRequested` ran in it with [isClosed]
+    // still false, subscribed, and was orphaned by the cancel that had
+    // already happened. Capturing the future keeps the cancel guaranteed even
+    // if `super.close()` throws.
+    final cancelled = _followingSubscription?.cancel();
     _followingSubscription = null;
+    await super.close();
+    await cancelled;
   }
 }

@@ -210,7 +210,14 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
 
   @override
   Future<void> close() async {
-    await _blocklistSub?.cancel();
-    return super.close();
+    // Do not await the cancel ahead of `super.close()`: that await yields a
+    // microtask in which a [load] parked on `ensureLoaded` resumes, sees
+    // [isClosed] as false, and subscribes past the cancel — leaking the
+    // cubit and its subscription. Capturing the future keeps the cancel
+    // guaranteed even if `super.close()` throws.
+    final cancelled = _blocklistSub?.cancel();
+    _blocklistSub = null;
+    await super.close();
+    await cancelled;
   }
 }

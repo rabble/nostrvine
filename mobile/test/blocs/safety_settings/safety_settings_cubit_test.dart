@@ -493,6 +493,28 @@ void main() {
           expect(blocklistStream.hasListener, isFalse);
         },
       );
+
+      test('load does not subscribe when it resumes inside close', () async {
+        final ensureLoaded = Completer<void>();
+        when(
+          () => moderationLabelService.ensureLoaded(),
+        ).thenAnswer((_) => ensureLoaded.future);
+
+        final cubit = buildCubit();
+        final loading = cubit.load();
+
+        // The service resolves on the same turn the user leaves the screen,
+        // so load()'s resume is queued ahead of close()'s continuation.
+        // Awaiting the cancel before super.close() yielded a microtask there,
+        // and load() ran in it with isClosed still false — subscribing past
+        // the cancel and leaking both the cubit and the subscription.
+        ensureLoaded.complete();
+        final closing = cubit.close();
+        await closing;
+
+        await expectLater(loading, completes);
+        expect(blocklistStream.hasListener, isFalse);
+      });
     });
   });
 }
