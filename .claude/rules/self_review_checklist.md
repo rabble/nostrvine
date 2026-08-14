@@ -148,6 +148,15 @@ State management:
   `canPublishNostrWritesNow`. Auth state only says the pubkey is known;
   a Keycast signer with no local key arrives after it. See
   [`state_management.md`](state_management.md#signing-readiness-identity-known-is-not-signer-ready).
+- [ ] Every `emit` / `add` reachable across a suspension point — an
+  `await`, a stream callback, a timer, an unawaited future — is guarded.
+  Use `emitIfOpen` / `addIfOpen` from `lib/blocs/close_guard.dart`, or
+  return early on `isClosed` *after* the await. `close()` does not cancel
+  in-flight work, and the resumed call throws `Cannot emit new states /
+  add new events after calling close`. A guard *before* the await is the
+  bug, not the fix. An `on<Event>` handler's own `emit` parameter is
+  exempt — `Bloc.close()` cancels it. See
+  [`state_management.md`](state_management.md#work-that-outlives-close-emitifopen--addifopen).
 - [ ] No error strings / exception objects in BLoC `state`. Use status
   enums + `addError`. See [`state_management.md`](state_management.md).
 - [ ] No mutable instance variables on a BLoC class. All state lives in
