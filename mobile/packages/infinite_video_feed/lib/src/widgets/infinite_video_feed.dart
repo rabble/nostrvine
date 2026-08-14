@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:infinite_video_feed/src/models/builders.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/services/controller_subscriptions.dart';
+import 'package:infinite_video_feed/src/services/derivative_failure_cache.dart';
 import 'package:infinite_video_feed/src/services/disk_prefetcher.dart';
 import 'package:infinite_video_feed/src/services/load_watchdog.dart';
 import 'package:infinite_video_feed/src/services/playback_source_registry.dart';
@@ -59,6 +60,7 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.nearEndThreshold = 10,
     this.onVideoLoopCompleted,
     this.onVideoStalled,
+    this.derivativeFailureCache,
     this.slowLoadThreshold = const Duration(seconds: 8),
     this.preloadGracePeriod = const Duration(seconds: 3),
     this.isActive = true,
@@ -135,6 +137,13 @@ class InfiniteVideoFeed extends StatefulWidget {
   ///
   /// Must be initialized before passing it in.
   final MediaCacheManager cache;
+
+  /// Cache of recently failed Divine derivative sources.
+  ///
+  /// When `null`, the feed creates an in-memory cache for its own controller
+  /// window. Tests and owning widgets may inject one to preserve demotion state
+  /// across feed rebuilds.
+  final DerivativeFailureCache? derivativeFailureCache;
 
   /// The initial video index to display.
   final int initialIndex;
@@ -397,6 +406,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // ─── Services ───────────────────────────────────────────────────────────
 
   late final PlaybackSourceRegistry _sources;
+  late final DerivativeFailureCache _derivativeFailures;
   late final DiskPrefetcher _prefetcher;
   late final LoadWatchdog _watchdog;
   late final StalePlaybackDetector _staleDetector;
@@ -519,6 +529,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       ..addListener(_syncPagePosition);
 
     _sources = PlaybackSourceRegistry();
+    _derivativeFailures =
+        widget.derivativeFailureCache ?? DerivativeFailureCache();
     _prefetcher = DiskPrefetcher(cache: widget.cache, log: _log);
     // coverage:ignore-start
     // Callback wiring only; exercised transitively by watchdog/detector tests
@@ -997,6 +1009,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       resolveUrls: (video) => resolvePlaybackSources(
         video,
         urlResolver: widget.urlResolver,
+        derivativeFailureCache: _derivativeFailures,
         // Exclude HLS manifests: prefetch writes static files to disk,
         // but HLS playback needs re-streaming the manifest + segments.
       ).where((url) => !isHlsManifest(url)).toList(),
@@ -1139,6 +1152,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       final playbackSources = resolvePlaybackSources(
         video,
         urlResolver: widget.urlResolver,
+        derivativeFailureCache: _derivativeFailures,
       );
       // Hash-bound auth applies to every resolved source for this index, so
       // the optimized/HLS/raw variants all authenticate, not just the bare URL.
@@ -1192,12 +1206,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             httpHeadersForSource: httpHeadersForSource,
             isLoadCurrent: ownsInit,
             maxPlaybackDuration: widget.maxPlaybackDuration,
+            onFailoverSourceFailure: _derivativeFailures.recordFailureForSource,
           );
           if (!guardInitOwnership('setSourceWithFallbacks(cache)')) return;
           _sources.register(index, playbackSources, openedSourceIdx);
           _log(
             'Network fallback source selected index $index (${video.id}): '
-            'openedSource=$openedSource',
+            'openedSource=$openedSource '
+            'attempt=$openedSourceIdx',
           );
         }
       } else {
@@ -1213,12 +1229,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           httpHeadersForSource: httpHeadersForSource,
           isLoadCurrent: ownsInit,
           maxPlaybackDuration: widget.maxPlaybackDuration,
+          onFailoverSourceFailure: _derivativeFailures.recordFailureForSource,
         );
         if (!guardInitOwnership('setSourceWithFallbacks(network)')) return;
         _sources.register(index, playbackSources, openedSourceIdx);
         _log(
           'Source selected index $index (${video.id}): '
-          'openedSource=$openedSource',
+          'openedSource=$openedSource '
+          'attempt=$openedSourceIdx',
         );
       }
 
@@ -1358,6 +1376,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       _log('No sources to retry for index $index');
       _onVideoStalled(index);
       return;
+    }
+
+    final failedSource = _sources.activeSourceFor(index);
+    if (failedSource != null) {
+      _derivativeFailures.recordFailureForSource(failedSource);
     }
 
     final nextSource = _sources.advance(index);
@@ -1716,7 +1739,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           // Fall back to attempting failover for unknown errors so we
           // don't give up prematurely on unclassified failures.
           final shouldFailover =
-              (errorCode == null || errorCode.shouldFailover) &&
+              (errorCode == null ||
+                  errorCode == NativePlayerErrorCode.unknown ||
+                  errorCode.shouldFailover) &&
               _sources.hasSources(index) &&
               _sources.canAdvance(index);
           if (shouldFailover) {

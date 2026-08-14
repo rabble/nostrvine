@@ -47,6 +47,7 @@ Future<(String, int)> setSourceWithFallbacks({
   bool Function()? isLoadCurrent,
   Duration? maxPlaybackDuration,
   SourceLoadDelay delay = Future<void>.delayed,
+  void Function(String source)? onFailoverSourceFailure,
 }) async {
   Object? lastError;
   StackTrace? lastStackTrace;
@@ -130,6 +131,9 @@ Future<(String, int)> setSourceWithFallbacks({
       }
       final nextAttempt = attemptIndex + 1;
       if (nextAttempt < sources.length) {
+        if (_shouldRecordFailoverSourceFailure(error)) {
+          onFailoverSourceFailure?.call(source);
+        }
         log(
           'Source failed index $index: '
           'failedSource=$source '
@@ -154,4 +158,11 @@ Future<(String, int)> setSourceWithFallbacks({
   }
 
   throw StateError('No playback sources resolved for index $index');
+}
+
+bool _shouldRecordFailoverSourceFailure(Object error) {
+  if (isMediaProcessingError(error)) return true;
+
+  final nativeErrorCode = nativePlayerErrorCodeFromError(error);
+  return nativeErrorCode?.shouldFailover ?? false;
 }

@@ -1,6 +1,7 @@
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/services.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
+import 'package:infinite_video_feed/src/services/derivative_failure_cache.dart';
 import 'package:infinite_video_feed/src/utils/canonical_divine_url.dart';
 import 'package:models/models.dart';
 
@@ -37,6 +38,7 @@ import 'package:models/models.dart';
 List<String> resolvePlaybackSources(
   VideoEvent video, {
   String? Function(VideoEvent video)? urlResolver,
+  DerivativeFailureCache? derivativeFailureCache,
 }) {
   final resolvedSource = urlResolver?.call(video) ?? video.videoUrl;
   final originalUrl = video.videoUrl;
@@ -61,9 +63,20 @@ List<String> resolvePlaybackSources(
     // startup" behavior. The bare blob currently fails for range-requesting
     // players until divine-blossom#198 is fixed, so HLS remains behind it as
     // the final recovery source.
-    return isRawBlob
-        ? orderedUniqueSources([resolvedSource, hlsUrl, originalUrl])
-        : orderedUniqueSources([resolvedSource, rawUrl, hlsUrl, originalUrl]);
+    if (isRawBlob) {
+      return orderedUniqueSources([resolvedSource, hlsUrl, originalUrl]);
+    }
+
+    if (derivativeFailureCache?.hasFreshFailureForHash(hash) ?? false) {
+      return orderedUniqueSources([
+        hlsUrl,
+        rawUrl,
+        resolvedSource,
+        originalUrl,
+      ]);
+    }
+
+    return orderedUniqueSources([resolvedSource, rawUrl, hlsUrl, originalUrl]);
   }
 
   return orderedUniqueSources([resolvedSource, originalUrl]);

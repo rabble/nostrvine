@@ -1236,9 +1236,10 @@ internal class DivineVideoPlayerInstance(
             PlaybackException.ERROR_CODE_IO_NO_PERMISSION -> "http_client_error"
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "network_error"
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> "timeout"
-            in 2000..2999 -> "decoder_error"
+            in 2000..2999 -> "io_error"
             in 3000..3999 -> "parse_error"
             in 4000..4999 -> "decoder_error"
+            in 5000..5999 -> "decoder_error"
             in 6000..6999 -> "decoder_error"
             else -> "unknown"
         }

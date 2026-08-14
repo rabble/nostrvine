@@ -20,6 +20,10 @@ void main() {
         expect(NativePlayerErrorCode.httpServerError.shouldFailover, isTrue);
       });
 
+      test('returns true for ioError', () {
+        expect(NativePlayerErrorCode.ioError.shouldFailover, isTrue);
+      });
+
       test('returns true for parseError', () {
         expect(NativePlayerErrorCode.parseError.shouldFailover, isTrue);
       });
@@ -52,6 +56,10 @@ void main() {
 
       test('returns true for timeout', () {
         expect(NativePlayerErrorCode.timeout.isTransient, isTrue);
+      });
+
+      test('returns false for ioError', () {
+        expect(NativePlayerErrorCode.ioError.isTransient, isFalse);
       });
 
       test('returns false for authRequired', () {
@@ -119,6 +127,13 @@ void main() {
         expect(
           NativePlayerErrorCode.fromString('timeout'),
           equals(NativePlayerErrorCode.timeout),
+        );
+      });
+
+      test('parses io_error', () {
+        expect(
+          NativePlayerErrorCode.fromString('io_error'),
+          equals(NativePlayerErrorCode.ioError),
         );
       });
 
