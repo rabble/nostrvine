@@ -687,7 +687,7 @@ void main() {
         // no-op is the right product behaviour. The CTA pops the sheet, then
         // the follow-up push is skipped because the caller's context is
         // defunct by then, so the viewer taps and nothing visible happens.
-        // Making the CTA survive host disposal is a separate change; whoever
+        // Making the CTA survive host disposal is tracked as #7350; whoever
         // does it should flip the marker expectation below and treat that as
         // expected, not as a regression.
         expect(tester.takeException(), isNull);
