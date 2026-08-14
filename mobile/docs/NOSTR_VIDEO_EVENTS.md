@@ -383,7 +383,7 @@ The `.content` field is optional and could contain a free-form note.
 - **No `d` tag** - ephemeral events are not addressable/replaceable
 - **Both `a` and `e` tags are required** - `a` provides stable addressable reference, `e` tracks specific version viewed
 - Multiple `viewed` tags can track multiple segments watched in a single session
-- The `viewed` tag timestamps represent seconds within the video (e.g., `["viewed", "0", "6"]` = watched first 6 seconds)
+- The `viewed` tag carries elapsed playback seconds for the session, not positions within the video. Mobile always emits `["viewed", "0", "<whole seconds watched>"]`, so a 6s video looped twice reports `["viewed", "0", "12"]`, and a sub-second view truncates to `["viewed", "0", "0"]`
 - Analytics services should consume these events in real-time before relays discard them
 - Every session with positive playback time counts, including sub-second views
 - Mobile emits one event per continuous viewing session; returning after
