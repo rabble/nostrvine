@@ -31,6 +31,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/content_label.dart';
+import 'package:openvine/services/author_video_buckets.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -174,7 +175,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   // Keyed event lists for hashtag and author feeds (route-aware)
   final Map<String, List<VideoEvent>> _hashtagBuckets = {};
-  final Map<String, List<VideoEvent>> _authorBuckets = {};
+  final AuthorVideoBuckets _authorBuckets = AuthorVideoBuckets();
 
   // Track active subscriptions per type
   final Map<SubscriptionType, String> _activeSubscriptions = {};
@@ -412,11 +413,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // video can appear in multiple buckets simultaneously.
     final ids = <String>{};
 
-    final authorBucket = _authorBuckets[pubkey];
-    if (authorBucket != null) {
-      for (final video in authorBucket) {
-        ids.add(video.id);
-      }
+    for (final video in _authorBuckets.videosForAuthorUnsorted(pubkey)) {
+      ids.add(video.id);
     }
 
     for (final list in _eventLists.values) {
@@ -448,7 +446,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// APIs instead.
   @visibleForTesting
   void debugSeedAuthorBucket(String pubkey, List<VideoEvent> videos) {
-    _authorBuckets[pubkey] = List.of(videos);
+    _authorBuckets.seed(pubkey, videos);
   }
 
   /// Set the likes repository for fetching live like counts
@@ -913,29 +911,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   /// Get videos for a specific author (keyed for route-aware feeds)
   /// Always returns videos sorted in reverse chronological order (newest first)
-  List<VideoEvent> authorVideos(String pubkeyHex) {
-    final cached = _authorBuckets[pubkeyHex] ?? const [];
-    Log.info(
-      'SVC authorVideos: hex=$pubkeyHex cached=${cached.length}',
-      name: 'Service',
-      category: LogCategory.video,
-    );
-    if (cached.isEmpty) {
-      return cached;
-    }
-
-    // Always sort by newest first before returning to ensure consistent ordering
-    // This is critical for profile grids to display newest videos at the top
-    final sorted = List<VideoEvent>.from(cached);
-    sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    Log.info(
-      'SVC authorVideos: return sorted=${sorted.length} (newest first)',
-      name: 'Service',
-      category: LogCategory.video,
-    );
-    return sorted;
-  }
+  List<VideoEvent> authorVideos(String pubkeyHex) =>
+      _authorBuckets.videosFor(pubkeyHex);
 
   /// Get search results
   List<VideoEvent> get searchResults => getVideos(SubscriptionType.search);
@@ -1086,23 +1063,21 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
 
     // Remove from all author buckets
-    for (final entry in _authorBuckets.entries) {
-      final initialLength = entry.value.length;
-      entry.value.removeWhere((video) {
+    _authorBuckets.removeWhere(
+      (video) {
         final remove = shouldRemove(video);
         if (remove) removedVideoIds.add(video.id);
         return remove;
-      });
-      final removed = initialLength - entry.value.length;
-      if (removed > 0) {
+      },
+      onBucketRemoved: (authorPubkey, removed) {
         removedCount += removed;
         Log.debug(
-          'Removed video $logIdentity from author bucket ${entry.key}',
+          'Removed video $logIdentity from author bucket $authorPubkey',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
-      }
-    }
+      },
+    );
 
     // Remove from all hashtag buckets
     for (final entry in _hashtagBuckets.entries) {
@@ -1388,9 +1363,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     for (final videos in _eventLists.values) {
       yield* videos;
     }
-    for (final videos in _authorBuckets.values) {
-      yield* videos;
-    }
+    yield* _authorBuckets.allVideos;
     for (final videos in _hashtagBuckets.values) {
       yield* videos;
     }
@@ -1427,15 +1400,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       removedCount += initialLength - entry.value.length;
     }
 
-    for (final entry in _authorBuckets.entries) {
-      final initialLength = entry.value.length;
-      entry.value.removeWhere((video) {
-        final remove = shouldRemove(video);
-        if (remove) removedVideoIds.add(video.id);
-        return remove;
-      });
-      removedCount += initialLength - entry.value.length;
-    }
+    removedCount += _authorBuckets.removeWhere((video) {
+      final remove = shouldRemove(video);
+      if (remove) removedVideoIds.add(video.id);
+      return remove;
+    });
 
     for (final entry in _hashtagBuckets.entries) {
       final initialLength = entry.value.length;
@@ -3371,7 +3340,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       category: LogCategory.video,
     );
 
-    // Backfill _authorBuckets with videos by this author that already exist in other subscription types
+    // Backfill the author bucket with videos by this author that already exist in other subscription types
     // This handles the case where the user's videos were already loaded in discovery/home feeds
     // Also includes reposts BY this user (where reposterPubkey matches)
     //
@@ -3380,8 +3349,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // allocations per comparison). This loop runs synchronously on the main
     // thread on every subscribe call, so for an author with many videos and a
     // large cross-feed cache the quadratic form blocked the UI for seconds.
-    final bucket = _authorBuckets.putIfAbsent(pubkey, () => []);
-    final seenBucketIds = {for (final e in bucket) e.id.toLowerCase()};
+    final backfillCandidates = <VideoEvent>[];
     for (final eventList in _eventLists.values) {
       for (final video in eventList) {
         // Include original videos by this author
@@ -3391,18 +3359,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             video.isRepost && video.reposterPubkey == pubkey;
         if (!isOriginalByAuthor && !isRepostByAuthor) continue;
 
-        // Set.add returns false when the (case-insensitive) ID is already
-        // present, giving O(1) dedup in place of the previous linear scan.
-        if (seenBucketIds.add(video.id.toLowerCase())) {
-          bucket.add(video);
-        }
+        backfillCandidates.add(video);
       }
     }
-    // Sort backfilled videos by newest first
-    if (bucket.isNotEmpty) {
-      bucket.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    _authorBuckets.backfillUniqueById(pubkey, backfillCandidates);
+    final authorVideoCount = _authorBuckets.videosFor(pubkey).length;
+    if (authorVideoCount > 0) {
       Log.info(
-        'SVC subscribeToUser: backfilled ${bucket.length} existing videos for $pubkey',
+        'SVC subscribeToUser: backfilled $authorVideoCount existing videos for $pubkey',
         name: 'Service',
         category: LogCategory.video,
       );
@@ -5154,7 +5118,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // This ensures profile views stay up-to-date when videos arrive later
       // in discovery/home feeds (fixes stale 0-video profile state).
       if (authorHex != currentUserPubkey &&
-          _authorBuckets.containsKey(authorHex)) {
+          _authorBuckets.contains(authorHex)) {
         _addToAuthorBucket(videoEvent, authorHex, isHistorical: isHistorical);
       }
     }
@@ -5358,13 +5322,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
           ? videoEvent.reposterPubkey!
           : videoEvent.pubkey;
-      final bucket = _authorBuckets[authorHex];
-      if (bucket != null) {
-        final bucketIndex = bucket.indexWhere((v) => v.id == videoId);
-        if (bucketIndex != -1) {
-          bucket[bucketIndex] = updatedVideo;
-        }
-      }
+      _authorBuckets.replaceById(authorHex, videoId, updatedVideo);
     }
 
     return true;
@@ -5397,30 +5355,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     VideoEvent videoEvent,
     String authorHex, {
     required bool isHistorical,
-  }) {
-    final bucket = _authorBuckets.putIfAbsent(authorHex, () => []);
-
-    // For addressable events (NIP-71), deduplicate by (pubkey, vineId) pair
-    // since each update creates a new event ID but same vineId
-    final existingIndex = bucket.indexWhere(
-      (e) => e.vineId == videoEvent.vineId && e.pubkey == videoEvent.pubkey,
-    );
-
-    if (existingIndex != -1) {
-      // Replace existing video with newer version (higher createdAt wins)
-      if (videoEvent.createdAt > bucket[existingIndex].createdAt) {
-        bucket[existingIndex] = videoEvent;
-      }
-      return false; // Not a new video, just an update
-    } else {
-      if (isHistorical) {
-        bucket.add(videoEvent);
-      } else {
-        bucket.insert(0, videoEvent);
-      }
-      return true; // New video was added
-    }
-  }
+  }) => _authorBuckets.addOrUpdateByVine(
+    videoEvent,
+    authorPubkey: authorHex,
+    isHistorical: isHistorical,
+  );
 
   /// Check if the given subscription parameters match the current active subscription for this type
   bool _isDuplicateSubscription(
@@ -6036,21 +5975,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
     }
 
-    // Also update in author buckets (used by profile feeds)
-    final authorBucket = _authorBuckets[updatedVideo.pubkey];
-    if (authorBucket != null) {
-      final bucketIndex = authorBucket.indexWhere(
-        (existing) =>
-            existing.stableId == updatedVideo.stableId &&
-            existing.pubkey == updatedVideo.pubkey,
-      );
-      if (bucketIndex != -1) {
-        final existingVideo = authorBucket[bucketIndex];
-        final mergedVideo = _mergeUpdatedVideo(existingVideo, updatedVideo);
-        authorBucket[bucketIndex] = mergedVideo;
-        foundAny = true;
-      }
-    }
+    // Also update in author buckets (used by profile feeds). Kept out of the
+    // `||` so the bucket update cannot be short-circuited away once an earlier
+    // cache has already matched.
+    final replacedInAuthorBucket = _authorBuckets.replaceByStableId(
+      updatedVideo.pubkey,
+      updatedVideo,
+      merge: _mergeUpdatedVideo,
+    );
+    foundAny = foundAny || replacedInAuthorBucket;
 
     if (foundAny) {
       notifyListeners();
