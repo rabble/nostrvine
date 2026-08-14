@@ -74,17 +74,18 @@ abstract final class DmSendBudget {
   /// earlier in the chain.
   static const int _wrapBuildLocalCryptoSeconds = 5;
 
-  /// What a per-wrap build costs against a signer that bounds its own
-  /// operations: two transport bounds plus the local crypto between them.
+  /// What a wrap build costs against a signer that bounds its own operations,
+  /// i.e. Keycast: two transport bounds plus the local crypto between them.
   ///
-  /// Exposed so the app-layer guard can compare this package's restated
-  /// Keycast floor against `KeycastRpc.defaultRequestTimeout`, which
-  /// `dm_repository` cannot import directly.
+  /// This is the **floor** under [_recipientWrapBuildSeconds], not its value.
+  /// Sizing the build bound below it would fail requests the transport itself
+  /// would have allowed — the #6046 mistake #6075 had to revert — and the
+  /// app-layer guard test pins that it stays a floor.
   static const int _boundedSignerFloorSeconds =
       _twoTransportBoundsSeconds + _wrapBuildLocalCryptoSeconds;
 
   /// Minimum per-wrap build budget for signers that bound their own
-  /// operations.
+  /// operations. Exposed so the app layer can pin it to Keycast's real bound.
   static const Duration boundedSignerFloor = Duration(
     seconds: _boundedSignerFloorSeconds,
   );
@@ -135,9 +136,9 @@ abstract final class DmSendBudget {
   /// the specific mistake #6046 made and #6075 reverted. The batch attempt is
   /// serial with that fallback, so [recipientWrapBuild] must cover their sum.
   ///
-  /// It bounds the *chain*, not the transport, so it also covers signers whose
-  /// own operation can wait much longer than this method should. On the Amber
-  /// NIP-55 intent path, the `nip44Encrypt` and `signEvent` approval waits are
+  /// It bounds the *chain*, not the transport, and the chain's slowest signer
+  /// sets its size. On the Amber NIP-55 intent path the `nip44Encrypt` and
+  /// `signEvent` approval waits are
   /// human-gated and unbounded; timing out here leaves the recipient publish
   /// unsent, so durable callers classify the row as retryable-pending rather
   /// than red-failed.
