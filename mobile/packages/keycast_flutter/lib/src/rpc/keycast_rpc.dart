@@ -93,7 +93,8 @@ class KeycastRpc
   ///
   /// Callers that need to outlive a slow signer do not lean on this bound
   /// either: the durable outgoing queue re-drives stalled sends and
-  /// `DmSendBudget.messagePublishTimeout` is the send-level backstop (#6046).
+  /// `DmBatchSendBudget.messagePublishTimeout` is the send-level backstop
+  /// (#6046).
   static const Duration defaultRequestTimeout = Duration(seconds: 20);
 
   /// Default timeout for the multi-wrap `nip17_unwrap_batch` verb, which does

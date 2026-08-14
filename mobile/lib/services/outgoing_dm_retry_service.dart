@@ -131,7 +131,7 @@ class OutgoingDmRetryService {
   final DateTime Function() _now;
   final CrashReportingService _crashReporting;
 
-  /// Extra margin over [DmSendBudget.messagePublishTimeout] for the work a
+  /// Extra margin over [DmBatchSendBudget.messagePublishTimeout] for the work a
   /// send does OUTSIDE that backstop — chiefly recipient kind-10050 inbox
   /// resolution, which runs before the publish is wrapped and is not itself
   /// bounded end-to-end. It is a margin, not a guarantee; bounding those
@@ -152,7 +152,7 @@ class OutgoingDmRetryService {
   /// send keeps running past the cap and this guard has to outlive the
   /// IN-FLIGHT send, not merely the cap.
   static final Duration _interruptedMinAge =
-      DmSendBudget.messagePublishTimeout + _inboxResolutionMargin;
+      DmBatchSendBudget.messagePublishTimeout + _inboxResolutionMargin;
 
   /// The interrupted-send guard, for tests that need to age a row across it.
   ///

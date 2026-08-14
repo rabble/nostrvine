@@ -19,6 +19,7 @@ import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
 import 'package:dm_repository/src/dm_send_budget.dart';
+import 'package:dm_repository/src/dm_batch_send_budget.dart';
 import 'package:dm_repository/src/dm_shared_video_citation.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/dm_verify_isolate.dart';
@@ -156,7 +157,7 @@ const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 ///
 /// Every sub-step carries its own bound — see [DmSendBudget], which owns the
 /// derivation. This cap exists only to bound a truly hung await, and it must
-/// sit ABOVE [DmSendBudget.chainWorstCase] or it fires mid-send and
+/// sit ABOVE [DmBatchSendBudget.chainWorstCase] or it fires mid-send and
 /// misclassifies it.
 ///
 /// That is exactly what went wrong in #6586. The bound was hand-derived from a
@@ -179,17 +180,17 @@ const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 ///
 /// That covers the signing chain, not the whole send. Three awaited steps
 /// inside this cap are still unbounded and deliberately NOT in
-/// [DmSendBudget.chainWorstCase]: `refreshPublicKey()` (a real round trip for
+/// [DmBatchSendBudget.chainWorstCase]: `refreshPublicKey()` (a real round trip for
 /// any signer that doesn't cache the pubkey, e.g. a NIP-46 bunker — Keycast
 /// does cache it), the send-policy protected-minor check, and the connectivity
 /// probe. So this cap remains a genuine backstop for those, and
-/// [DmSendBudget.chainWorstCase] is a floor on what a send can cost, not a
+/// [DmBatchSendBudget.chainWorstCase] is a floor on what a send can cost, not a
 /// ceiling. Bounding them is tracked separately.
 ///
 /// A 15s cap here (the original value) fired during routine slow-Keycast
 /// sends, turning sends that were still legitimately in flight into
 /// eternally-retrying rows — the reason this backstop must stay generous.
-const Duration _messagePublishTimeout = DmSendBudget.messagePublishTimeout;
+const Duration _messagePublishTimeout = DmBatchSendBudget.messagePublishTimeout;
 
 /// Outcome of resolving a user's own kind-10050 DM inbox relay list (#4974).
 ///

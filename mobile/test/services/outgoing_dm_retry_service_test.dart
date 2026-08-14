@@ -2076,21 +2076,6 @@ void main() {
       );
     });
 
-    test('the recipient wrap build covers batch timeout plus fallback', () {
-      // #7090: a Keycast send now builds both wraps in one `nip17_wrap_batch`
-      // round trip, but a transient batch timeout falls back to the old
-      // per-wrap path inside the same recipient-build bound. Both have to fit,
-      // otherwise a slow-but-recoverable pre-publish send is misclassified as a
-      // timeout and retried.
-      expect(
-        DmSendBudget.recipientWrapBuildWithBatchFallback,
-        greaterThan(
-          KeycastRpc.defaultBatchRequestTimeout +
-              KeycastRpc.defaultRequestTimeout * 2,
-        ),
-      );
-    });
-
     test('the sweep guard outlives the whole backstop', () {
       // `Future.timeout` does not cancel, so an abandoned send keeps running
       // past the cap. A guard at or below it re-drives a rumor that is still
