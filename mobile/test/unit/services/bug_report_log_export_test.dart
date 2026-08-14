@@ -6,9 +6,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/device_memory_util.dart';
+
+class _MockStorageManagementService extends Mock
+    implements StorageManagementService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -192,6 +197,41 @@ void main() {
           .buildEnvironmentDiagnostics();
 
       expect(diagnostics, isNot(contains('Cache: ')));
+    });
+
+    test('reports cache usage against matching category budgets', () async {
+      final storage = _MockStorageManagementService();
+      when(storage.cacheUsage).thenAnswer(
+        (_) async => const CacheUsage(
+          video: CacheUsageCategory(
+            usedBytes: 1536 * 1024 * 1024,
+            limitBytes: 2 * 1024 * 1024 * 1024,
+          ),
+          images: CacheUsageCategory(
+            usedBytes: 128 * 1024 * 1024,
+            limitBytes: 256 * 1024 * 1024,
+          ),
+          transitionSeams: CacheUsageCategory(
+            usedBytes: 64 * 1024 * 1024,
+            limitBytes: 200 * 1024 * 1024,
+          ),
+          tempRenders: CacheUsageCategory(usedBytes: 32 * 1024 * 1024),
+        ),
+      );
+
+      final diagnostics = await BugReportService(
+        storageManagementService: storage,
+      ).buildEnvironmentDiagnostics();
+
+      expect(
+        diagnostics,
+        contains(
+          'Cache: video 1.5 GB/2.0 GB · images 128.0 MB/256.0 MB · '
+          'seams 64.0 MB/200.0 MB · temp 32.0 MB',
+        ),
+      );
+      expect(diagnostics, isNot(contains('used /')));
+      expect(diagnostics, isNot(contains('limit')));
     });
   });
 

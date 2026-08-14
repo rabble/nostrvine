@@ -5158,6 +5158,7 @@
   "settingsStorageBrokenClipsRemoved": "የተበላሹ ክሊፖች ተወግደዋል",
   "settingsStorageError": "የሆነ ችግር ተፈጥሯል",
   "settingsStorageMaxSizeLabel": "ከፍተኛ የመሸጎጫ መጠን",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "settingsStorageApproxVideos": "≈ {count} ቪዲዮዎች",
   "settingsStorageRemoveBrokenConfirmTitle": "የተበላሹ ክሊፖችን ማስወገድ?",
   "settingsStorageRepairSectionTitle": "ጭነትን ጠግን",

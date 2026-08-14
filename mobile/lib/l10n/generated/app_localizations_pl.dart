@@ -11547,6 +11547,9 @@ class AppLocalizationsPl extends AppLocalizations {
       'Maksymalny rozmiar pamięci podręcznej';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ $count filmów';
   }

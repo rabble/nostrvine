@@ -5033,6 +5033,7 @@
   "settingsStorageBrokenClipsRemoved": "Uszkodzone klipy usunięte",
   "settingsStorageError": "Coś poszło nie tak",
   "settingsStorageMaxSizeLabel": "Maksymalny rozmiar pamięci podręcznej",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "settingsStorageApproxVideos": "≈ {count} filmów",
   "settingsStorageRemoveBrokenConfirmTitle": "Usunąć uszkodzone klipy?",
   "settingsStorageRepairSectionTitle": "Napraw instalację",

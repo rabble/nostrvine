@@ -11308,6 +11308,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsStorageMaxSizeLabel => 'زیادہ سے زیادہ کیش سائز';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ $count ویڈیوز';
   }

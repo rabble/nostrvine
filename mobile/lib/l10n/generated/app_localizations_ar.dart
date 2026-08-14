@@ -11245,6 +11245,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'الحد الأقصى لحجم ذاكرة التخزين المؤقت';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ $count مقطع فيديو';
   }

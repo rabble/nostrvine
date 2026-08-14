@@ -11312,6 +11312,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsStorageMaxSizeLabel => 'Dung lượng đệm tối đa';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ $count video';
   }

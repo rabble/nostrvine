@@ -10821,6 +10821,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsStorageMaxSizeLabel => '최대 캐시 크기';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ 동영상 $count개';
   }

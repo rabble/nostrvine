@@ -4,21 +4,80 @@
 
 import 'dart:io';
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/temp_render_janitor.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Filename prefixes of temp-dir render leftovers that are safe to delete —
-/// each is regenerated on the next save/upload (see
-/// `WatermarkDownloadService` and `UploadManager`).
-const List<String> _tempRenderPrefixes = ['watermarked_', 'merged_'];
+/// Usage and optional budget for one cache category.
+class CacheUsageCategory extends Equatable {
+  /// Creates cache category usage.
+  const CacheUsageCategory({required this.usedBytes, this.limitBytes});
+
+  /// Bytes currently held by this category.
+  final int usedBytes;
+
+  /// Category budget in bytes, or null when the category is unbudgeted.
+  final int? limitBytes;
+
+  @override
+  List<Object?> get props => [usedBytes, limitBytes];
+}
+
+/// Clearable cache usage split by the categories that own their budgets.
+class CacheUsage extends Equatable {
+  /// Creates a cache usage breakdown.
+  const CacheUsage({
+    required this.video,
+    required this.images,
+    required this.transitionSeams,
+    required this.tempRenders,
+  });
+
+  /// Empty cache usage for initial UI state.
+  static const empty = CacheUsage(
+    video: CacheUsageCategory(
+      usedBytes: 0,
+      limitBytes: kCacheLimitDefaultBytes,
+    ),
+    images: CacheUsageCategory(usedBytes: 0),
+    transitionSeams: CacheUsageCategory(
+      usedBytes: 0,
+      limitBytes: kSeamCacheLimitBytes,
+    ),
+    tempRenders: CacheUsageCategory(usedBytes: 0),
+  );
+
+  /// Feed video download cache.
+  final CacheUsageCategory video;
+
+  /// Image and thumbnail cache.
+  final CacheUsageCategory images;
+
+  /// Persisted transition-seam previews.
+  final CacheUsageCategory transitionSeams;
+
+  /// Regenerable temp renders; intentionally unbudgeted.
+  final CacheUsageCategory tempRenders;
+
+  /// Total bytes currently held by all clearable categories.
+  int get totalBytes =>
+      video.usedBytes +
+      images.usedBytes +
+      transitionSeams.usedBytes +
+      tempRenders.usedBytes;
+
+  @override
+  List<Object?> get props => [video, images, transitionSeams, tempRenders];
+}
 
 /// Clears re-downloadable / regenerable media caches and audits the clip
 /// library for broken entries.
@@ -72,14 +131,30 @@ class StorageManagementService {
 
   /// Total bytes currently held by the clearable caches. Best-effort; a
   /// directory that cannot be read contributes zero rather than throwing.
-  Future<int> cacheSizeBytes() async {
+  Future<int> cacheSizeBytes() async => (await cacheUsage()).totalBytes;
+
+  /// Clearable cache usage split by category and matching budget.
+  Future<CacheUsage> cacheUsage() async {
     final temp = await _temporaryDirectoryProvider();
     final docs = await _documentsDirectoryProvider();
     final protectedPaths = _normalizedProtectedTempRenderPaths();
-    return await _dirSize(Directory(p.join(temp.path, _videoCacheDir))) +
-        await _dirSize(Directory(p.join(temp.path, _imageCacheDir))) +
-        await _dirSize(Directory(p.join(docs.path, _seamDir))) +
-        await _tempRenderBytes(temp, protectedPaths);
+    return CacheUsage(
+      video: CacheUsageCategory(
+        usedBytes: await _dirSize(Directory(p.join(temp.path, _videoCacheDir))),
+        limitBytes: videoCacheLimitBytes(),
+      ),
+      images: CacheUsageCategory(
+        usedBytes: await _dirSize(Directory(p.join(temp.path, _imageCacheDir))),
+        limitBytes: _imageCache.maxCacheSizeBytes,
+      ),
+      transitionSeams: CacheUsageCategory(
+        usedBytes: await _dirSize(Directory(p.join(docs.path, _seamDir))),
+        limitBytes: kSeamCacheLimitBytes,
+      ),
+      tempRenders: CacheUsageCategory(
+        usedBytes: await _tempRenderBytes(temp, protectedPaths),
+      ),
+    );
   }
 
   /// Clears every re-downloadable / regenerable cache. The clip library and
@@ -134,14 +209,14 @@ class StorageManagementService {
 
   /// The user-configured video-cache byte budget, or
   /// [kCacheLimitDefaultBytes] when none is set.
-  int cacheLimitBytes() =>
+  int videoCacheLimitBytes() =>
       _prefs.getInt(kCacheLimitPrefKey) ?? kCacheLimitDefaultBytes;
 
   /// Persists [bytes] (clamped to
   /// `[kCacheLimitMinBytes, kCacheLimitMaxBytes]`) as the video-cache budget,
   /// applies it, and trims immediately so a lowered limit shrinks the cache
   /// right away.
-  Future<void> setCacheLimit(int bytes) async {
+  Future<void> setVideoCacheLimit(int bytes) async {
     final clamped = bytes.clamp(kCacheLimitMinBytes, kCacheLimitMaxBytes);
     await _prefs.setInt(kCacheLimitPrefKey, clamped);
     _videoCache.maxCacheSizeBytes = clamped;
@@ -189,7 +264,8 @@ class StorageManagementService {
     if (!temp.existsSync()) return;
     try {
       await for (final entity in temp.list(followLinks: false)) {
-        if (entity is File && _isTempRender(p.basename(entity.path))) {
+        if (entity is File &&
+            TempRenderJanitor.isTempRenderName(p.basename(entity.path))) {
           if (protectedPaths.contains(_normalizePath(entity.path))) continue;
           await action(entity);
         }
@@ -202,9 +278,6 @@ class StorageManagementService {
       );
     }
   }
-
-  bool _isTempRender(String name) =>
-      name.endsWith('.mp4') && _tempRenderPrefixes.any(name.startsWith);
 
   Set<String> _normalizedProtectedTempRenderPaths() => {
     for (final filePath in _protectedTempRenderPaths())

@@ -5033,6 +5033,7 @@
   "settingsStorageBrokenClipsRemoved": "Kapotte clips verwijderd",
   "settingsStorageError": "Er ging iets mis",
   "settingsStorageMaxSizeLabel": "Maximale cachegrootte",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "settingsStorageApproxVideos": "≈ {count} video's",
   "settingsStorageRemoveBrokenConfirmTitle": "Kapotte clips verwijderen?",
   "settingsStorageRepairSectionTitle": "Installatie repareren",

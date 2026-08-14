@@ -10697,6 +10697,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsStorageMaxSizeLabel => '缓存大小上限';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ $count 个视频';
   }

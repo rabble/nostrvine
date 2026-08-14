@@ -5033,6 +5033,7 @@
   "settingsStorageBrokenClipsRemoved": "Klip rusak dihapus",
   "settingsStorageError": "Terjadi kesalahan",
   "settingsStorageMaxSizeLabel": "Ukuran cache maksimum",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "settingsStorageApproxVideos": "≈ {count} video",
   "settingsStorageRemoveBrokenConfirmTitle": "Hapus klip rusak?",
   "settingsStorageRepairSectionTitle": "Perbaiki instalasi",

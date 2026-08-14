@@ -45,8 +45,21 @@ void main() {
 
   setUp(() {
     service = _MockService();
-    when(service.cacheSizeBytes).thenAnswer((_) async => 3 * 1024 * 1024);
-    when(service.cacheLimitBytes).thenReturn(kCacheLimitDefaultBytes);
+    when(service.videoCacheLimitBytes).thenReturn(kCacheLimitDefaultBytes);
+    when(service.cacheUsage).thenAnswer(
+      (_) async => const CacheUsage(
+        video: CacheUsageCategory(
+          usedBytes: 3 * 1024 * 1024,
+          limitBytes: kCacheLimitDefaultBytes,
+        ),
+        images: CacheUsageCategory(usedBytes: 0),
+        transitionSeams: CacheUsageCategory(
+          usedBytes: 0,
+          limitBytes: kSeamCacheLimitBytes,
+        ),
+        tempRenders: CacheUsageCategory(usedBytes: 0),
+      ),
+    );
   });
 
   testWidgets('shows the cache size and both action buttons', (tester) async {
@@ -56,10 +69,7 @@ void main() {
     await tester.pumpWidget(wrap(cubit));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(l10n.settingsStorageCacheInUse('3.0 MB')),
-      findsOneWidget,
-    );
+    expect(find.text(l10n.settingsStorageCacheInUse('3.0 MB')), findsOneWidget);
     expect(find.text(l10n.settingsStorageClearButton), findsOneWidget);
     expect(find.text(l10n.settingsStorageScanButton), findsOneWidget);
   });
@@ -73,13 +83,10 @@ void main() {
     await tester.pumpWidget(wrap(cubit));
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.settingsStorageMaxSizeLabel), findsOneWidget);
+    expect(find.text(l10n.settingsStorageMaxVideoCacheLabel), findsOneWidget);
     expect(find.byType(Slider), findsOneWidget);
     // Default 2 GB budget / ~4 MB per video ≈ 512 videos.
-    expect(
-      find.text(l10n.settingsStorageApproxVideos(512)),
-      findsOneWidget,
-    );
+    expect(find.text(l10n.settingsStorageApproxVideos(512)), findsOneWidget);
   });
 
   testWidgets('a scan with no broken clips reports a healthy library', (
@@ -110,10 +117,7 @@ void main() {
     await tester.tap(find.text(l10n.settingsStorageScanButton));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(l10n.settingsStorageBrokenClipsFound(1)),
-      findsOneWidget,
-    );
+    expect(find.text(l10n.settingsStorageBrokenClipsFound(1)), findsOneWidget);
 
     await tester.tap(find.text(l10n.settingsStorageRemoveBrokenButton));
     await tester.pumpAndSettle();
@@ -134,18 +138,18 @@ void main() {
   testWidgets('dragging the cache-size slider commits a new limit', (
     tester,
   ) async {
-    when(() => service.setCacheLimit(any())).thenAnswer((_) async {});
+    when(() => service.setVideoCacheLimit(any())).thenAnswer((_) async {});
     final cubit = StorageCubit(service: service)..loadCacheSize();
     addTearDown(cubit.close);
 
     await tester.pumpWidget(wrap(cubit));
     await tester.pumpAndSettle();
 
-    // Drag ends -> onChangeEnd -> commitCacheLimit -> setCacheLimit.
+    // Drag ends -> onChangeEnd -> commitVideoCacheLimit -> setVideoCacheLimit.
     await tester.drag(find.byType(Slider), const Offset(120, 0));
     await tester.pumpAndSettle();
 
-    verify(() => service.setCacheLimit(any())).called(1);
+    verify(() => service.setVideoCacheLimit(any())).called(1);
   });
 
   /// Scrolls the repair button into view and opens its confirmation sheet.
@@ -156,9 +160,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('the repair wipe is gated behind a confirmation', (
-    tester,
-  ) async {
+  testWidgets('the repair wipe is gated behind a confirmation', (tester) async {
     var recovered = false;
     final cubit = StorageCubit(
       service: service,

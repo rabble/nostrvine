@@ -11467,6 +11467,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get settingsStorageMaxSizeLabel => 'Pinakamataas na laki ng cache';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ $count video';
   }

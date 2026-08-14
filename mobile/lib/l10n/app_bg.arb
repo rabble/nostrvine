@@ -5164,6 +5164,7 @@
   "settingsStorageBrokenClipsRemoved": "Повредените клипове са премахнати",
   "settingsStorageError": "Нещо се обърка",
   "settingsStorageMaxSizeLabel": "Максимален размер на кеша",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "settingsStorageApproxVideos": "≈ {count} видеа",
   "settingsStorageRemoveBrokenConfirmTitle": "Премахване на повредените клипове?",
   "settingsStorageRepairSectionTitle": "Поправяне на инсталацията",

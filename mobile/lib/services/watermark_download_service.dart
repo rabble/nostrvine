@@ -9,6 +9,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/services/temp_render_janitor.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/watermark_image_generator.dart';
 import 'package:path/path.dart' as p;
@@ -429,36 +430,15 @@ class WatermarkDownloadService {
     }
   }
 
-  /// Renders older than this are safe to delete: no in-flight save can still
-  /// own them. A save whose progress sheet was dismissed keeps rendering in
-  /// the background, and a completed save's file may still be handed to the
-  /// platform share sheet — both live far shorter than this window.
-  static const _staleRenderAge = Duration(hours: 1);
-
   /// Deletes leftover `watermarked_*.mp4` renders in [tempDir] from previous
-  /// saves that are older than [_staleRenderAge]. Called before each new
+  /// saves that are older than [TempRenderJanitor.staleRenderAge]. Called before each new
   /// render so the temp directory stays bounded to roughly the last hour of
   /// renders instead of leaking one full-size video per save.
   /// Best-effort: never throws.
   @visibleForTesting
-  void deleteStaleWatermarkRenders(Directory tempDir) {
-    final cutoff = DateTime.now().subtract(_staleRenderAge);
-    try {
-      for (final entity in tempDir.listSync(followLinks: false)) {
-        if (entity is! File) continue;
-        final name = p.basename(entity.path);
-        if (!name.startsWith('watermarked_') || !name.endsWith('.mp4')) {
-          continue;
-        }
-        try {
-          if (entity.statSync().modified.isAfter(cutoff)) continue;
-          entity.deleteSync();
-        } on Object {
-          // Best-effort; a file we cannot delete is retried on the next save.
-        }
-      }
-    } on Object {
-      // Best-effort; a listing failure must not block the render.
-    }
-  }
+  void deleteStaleWatermarkRenders(Directory tempDir) =>
+      TempRenderJanitor.deleteStaleTempRenders(
+        tempDir,
+        patterns: const [TempRenderPatterns.watermarkedVideo],
+      );
 }

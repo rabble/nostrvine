@@ -610,11 +610,13 @@ class BugReportService {
     final storage = _storageManagementService;
     if (storage != null) {
       try {
-        final usedBytes = await storage.cacheSizeBytes();
-        final limitBytes = storage.cacheLimitBytes();
+        final usage = await storage.cacheUsage();
         buffer.writeln(
-          'Cache: ${_formatBytesShort(usedBytes)} used '
-          '/ ${_formatBytesShort(limitBytes)} limit',
+          'Cache: '
+          'video ${_formatCacheUsageCategory(usage.video)} · '
+          'images ${_formatCacheUsageCategory(usage.images)} · '
+          'seams ${_formatCacheUsageCategory(usage.transitionSeams)} · '
+          'temp ${_formatCacheUsageCategory(usage.tempRenders)}',
         );
       } on Object catch (_) {
         // Cache probe failed; omit the line.
@@ -649,6 +651,13 @@ class BugReportService {
     final mb = bytes / bytesPerMb;
     if (mb >= 1024) return '${(mb / 1024).toStringAsFixed(1)} GB';
     return '${mb.toStringAsFixed(1)} MB';
+  }
+
+  static String _formatCacheUsageCategory(CacheUsageCategory usage) {
+    final limitBytes = usage.limitBytes;
+    final used = _formatBytesShort(usage.usedBytes);
+    if (limitBytes == null) return used;
+    return '$used/${_formatBytesShort(limitBytes)}';
   }
 
   /// Human-readable device identifier for the export header, e.g.

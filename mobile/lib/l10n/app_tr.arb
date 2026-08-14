@@ -5033,6 +5033,7 @@
   "settingsStorageBrokenClipsRemoved": "Bozuk klipler kaldırıldı",
   "settingsStorageError": "Bir şeyler ters gitti",
   "settingsStorageMaxSizeLabel": "Maksimum önbellek boyutu",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "settingsStorageApproxVideos": "≈ {count} video",
   "settingsStorageRemoveBrokenConfirmTitle": "Bozuk klipler kaldırılsın mı?",
   "settingsStorageRepairSectionTitle": "Kurulumu onar",

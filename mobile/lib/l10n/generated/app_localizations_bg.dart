@@ -11440,6 +11440,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get settingsStorageMaxSizeLabel => 'Максимален размер на кеша';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ $count видеа';
   }

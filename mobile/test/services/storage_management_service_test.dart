@@ -36,6 +36,7 @@ void main() {
       prefs = await SharedPreferences.getInstance();
       when(() => videoCache.clearCache()).thenAnswer((_) async {});
       when(() => imageCache.clearCache()).thenAnswer((_) async {});
+      when(() => imageCache.maxCacheSizeBytes).thenReturn(256 * 1024 * 1024);
       service = StorageManagementService(
         videoCache: videoCache,
         imageCache: imageCache,
@@ -89,14 +90,46 @@ void main() {
         writeFile('${docs.path}/transition_seams/s.mp4', 30);
         writeFile('${temp.path}/watermarked_1.mp4', 20);
         writeFile('${temp.path}/merged_2.mp4', 10);
+        writeFile('${temp.path}/merged_audio_3.wav', 40);
         writeFile('${temp.path}/unrelated.txt', 5);
         writeFile('${docs.path}/my_clip.mp4', 999);
 
-        expect(await service.cacheSizeBytes(), 100 + 50 + 30 + 20 + 10);
+        expect(await service.cacheSizeBytes(), 100 + 50 + 30 + 20 + 10 + 40);
       });
 
       test('returns zero when nothing is cached', () async {
         expect(await service.cacheSizeBytes(), 0);
+      });
+
+      test('reports per-category usage against matching budgets', () async {
+        await prefs.setInt(kCacheLimitPrefKey, 3 * 1024);
+        writeFile('${temp.path}/openvine_video_cache/a.mp4', 100);
+        writeFile('${temp.path}/openvine_image_cache/b.jpg', 50);
+        writeFile('${docs.path}/transition_seams/s.mp4', 30);
+        writeFile('${temp.path}/merged_2.mp4', 10);
+
+        final usage = await service.cacheUsage();
+
+        expect(usage.totalBytes, 190);
+        expect(
+          usage.video,
+          const CacheUsageCategory(usedBytes: 100, limitBytes: 3 * 1024),
+        );
+        expect(
+          usage.images,
+          const CacheUsageCategory(
+            usedBytes: 50,
+            limitBytes: 256 * 1024 * 1024,
+          ),
+        );
+        expect(
+          usage.transitionSeams,
+          const CacheUsageCategory(
+            usedBytes: 30,
+            limitBytes: kSeamCacheLimitBytes,
+          ),
+        );
+        expect(usage.tempRenders, const CacheUsageCategory(usedBytes: 10));
       });
     });
 
@@ -105,6 +138,7 @@ void main() {
           'files', () async {
         final watermark = writeFile('${temp.path}/watermarked_1.mp4', 20);
         final merged = writeFile('${temp.path}/merged_2.mp4', 10);
+        final audio = writeFile('${temp.path}/merged_audio_3.wav', 40);
         final seam = writeFile('${docs.path}/transition_seams/s.mp4', 30);
         final unrelated = writeFile('${temp.path}/unrelated.txt', 5);
         final userClip = writeFile('${docs.path}/my_clip.mp4', 999);
@@ -115,6 +149,7 @@ void main() {
         verify(() => imageCache.clearCache()).called(1);
         expect(watermark.existsSync(), isFalse);
         expect(merged.existsSync(), isFalse);
+        expect(audio.existsSync(), isFalse);
         expect(seam.existsSync(), isFalse);
         expect(unrelated.existsSync(), isTrue, reason: 'non-render temp kept');
         expect(userClip.existsSync(), isTrue, reason: 'user clip untouched');
@@ -171,9 +206,7 @@ void main() {
         final present = writeFile('${docs.path}/present.mp4', 10);
         final good = clip('good', present.path);
         final broken = clip('broken', '${docs.path}/gone.mp4');
-        when(
-          clipLibrary.getAllClips,
-        ).thenAnswer((_) async => [good, broken]);
+        when(clipLibrary.getAllClips).thenAnswer((_) async => [good, broken]);
 
         final result = await service.findBrokenClips();
 
@@ -232,33 +265,33 @@ void main() {
     group('cache limit', () {
       const oneGb = 1024 * 1024 * 1024;
 
-      test('cacheLimitBytes returns the default when unset', () {
-        expect(service.cacheLimitBytes(), kCacheLimitDefaultBytes);
+      test('videoCacheLimitBytes returns the default when unset', () {
+        expect(service.videoCacheLimitBytes(), kCacheLimitDefaultBytes);
       });
 
-      test('cacheLimitBytes returns the stored value', () async {
+      test('videoCacheLimitBytes returns the stored value', () async {
         await prefs.setInt(kCacheLimitPrefKey, 3 * oneGb);
-        expect(service.cacheLimitBytes(), 3 * oneGb);
+        expect(service.videoCacheLimitBytes(), 3 * oneGb);
       });
 
-      test('setCacheLimit persists, applies and force-trims', () async {
+      test('setVideoCacheLimit persists, applies and force-trims', () async {
         when(
           () => videoCache.enforceCacheLimits(force: any(named: 'force')),
         ).thenAnswer((_) async {});
 
-        await service.setCacheLimit(oneGb);
+        await service.setVideoCacheLimit(oneGb);
 
         expect(prefs.getInt(kCacheLimitPrefKey), oneGb);
         verify(() => videoCache.maxCacheSizeBytes = oneGb).called(1);
         verify(() => videoCache.enforceCacheLimits(force: true)).called(1);
       });
 
-      test('setCacheLimit clamps below the minimum', () async {
+      test('setVideoCacheLimit clamps below the minimum', () async {
         when(
           () => videoCache.enforceCacheLimits(force: any(named: 'force')),
         ).thenAnswer((_) async {});
 
-        await service.setCacheLimit(1);
+        await service.setVideoCacheLimit(1);
 
         expect(prefs.getInt(kCacheLimitPrefKey), kCacheLimitMinBytes);
       });

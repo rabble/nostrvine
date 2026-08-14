@@ -1,4 +1,4 @@
-// ABOUTME: Shared video-cache byte-budget constants for the storage feature.
+// ABOUTME: Shared cache byte-budget constants for the storage feature.
 // ABOUTME: Neutral home so both the service layer and the settings UI can read
 // ABOUTME: them without the UI importing the service layer (layering ratchet).
 
@@ -17,3 +17,6 @@ const String kCacheLimitPrefKey = 'video_cache_max_bytes';
 /// Rough average size of one cached short video, used to translate a byte
 /// budget into an approximate video count in the UI.
 const int kApproxVideoBytes = 4 * 1024 * 1024;
+
+/// Default upper bound on persisted transition-seam previews (200 MB).
+const int kSeamCacheLimitBytes = 200 * 1024 * 1024;

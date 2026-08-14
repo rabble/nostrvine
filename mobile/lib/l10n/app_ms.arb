@@ -6730,6 +6730,7 @@
     "description": "Generic error shown when a storage operation fails."
   },
   "settingsStorageMaxSizeLabel": "Saiz cache maksimum",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "@settingsStorageMaxSizeLabel": {
     "description": "Label above the slider that sets the maximum video-cache size."
   },

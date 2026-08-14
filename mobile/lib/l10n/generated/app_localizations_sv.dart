@@ -11323,6 +11323,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsStorageMaxSizeLabel => 'Maximal cachestorlek';
 
   @override
+  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+
+  @override
   String settingsStorageApproxVideos(int count) {
     return '≈ $count videor';
   }

@@ -5033,6 +5033,7 @@
   "settingsStorageBrokenClipsRemoved": "تمت إزالة المقاطع التالفة",
   "settingsStorageError": "حدث خطأ ما",
   "settingsStorageMaxSizeLabel": "الحد الأقصى لحجم ذاكرة التخزين المؤقت",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "settingsStorageApproxVideos": "≈ {count} مقطع فيديو",
   "settingsStorageRemoveBrokenConfirmTitle": "إزالة المقاطع التالفة؟",
   "settingsStorageRepairSectionTitle": "إصلاح التثبيت",

@@ -5033,6 +5033,7 @@
   "settingsStorageBrokenClipsRemoved": "Trasiga klipp borttagna",
   "settingsStorageError": "Något gick fel",
   "settingsStorageMaxSizeLabel": "Maximal cachestorlek",
+  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "settingsStorageApproxVideos": "≈ {count} videor",
   "settingsStorageRemoveBrokenConfirmTitle": "Ta bort trasiga klipp?",
   "settingsStorageRepairSectionTitle": "Reparera installationen",
