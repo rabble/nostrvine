@@ -236,12 +236,6 @@ bool writable()
 ```
 Check if any relays are available for writing.
 
-##### isReadOnly()
-```dart
-bool isReadOnly()
-```
-Check if running in read-only mode.
-
 ### Event
 
 Represents a Nostr event.
@@ -414,12 +408,13 @@ LocalNostrSigner.fromPrivateKey(String privateKey)
 LocalNostrSigner.generate()  // Generates new key pair
 ```
 
-### PubkeyOnlyNostrSigner
+### UnauthenticatedSigner
 
-Read-only signer for public key operations.
+Keyless signer used before sign-in and after sign-out. It reports an empty
+public key and throws `StateError` when asked to sign or encrypt.
 
 ```dart
-PubkeyOnlyNostrSigner(String publicKey)
+const UnauthenticatedSigner()
 ```
 
 ### NostrRemoteSigner

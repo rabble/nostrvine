@@ -155,8 +155,8 @@ class PubkeyOnlyNostrIdentity extends NostrIdentity {
   @override
   bool get signsWithLocalKey => false;
 
-  /// Stays `null`: every signer returns `null` here. It means "no NIP-65
-  /// list from this signer", not a failure.
+  /// Stays `null`: this identity has no signer-provided NIP-65 relay list.
+  /// It is a capability answer, not a failure.
   @override
   Future<Map?> getRelays() async => null;
 

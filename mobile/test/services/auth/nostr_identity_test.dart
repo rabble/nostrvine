@@ -836,17 +836,23 @@ void main() {
     // unsupported" (same as Bunker/Amber/NIP-07, whose protocols have no such
     // verb), not "skipped gate" — so it must stay null and stay unlogged.
     test(
-      'signCanonicalPayload still returns null, and does not throw',
+      'signCanonicalPayload returns null without logging',
       () async {
+        await LogCaptureService().clearAllLogs();
+
         expect(
           await identity.signCanonicalPayload(Uint8List.fromList([1, 2, 3])),
           isNull,
         );
+        expect(LogCaptureService().getRecentLogs(), isEmpty);
       },
     );
 
-    test('getRelays still returns null, and does not throw', () async {
+    test('getRelays returns null without logging', () async {
+      await LogCaptureService().clearAllLogs();
+
       expect(await identity.getRelays(), isNull);
+      expect(LogCaptureService().getRecentLogs(), isEmpty);
     });
   });
 }

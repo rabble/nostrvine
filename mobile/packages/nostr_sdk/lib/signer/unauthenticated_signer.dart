@@ -28,8 +28,8 @@ class UnauthenticatedSigner implements NostrSigner {
   @override
   Future<String?> getPublicKey() async => '';
 
-  /// Always `null`: a keyless signer advertises no NIP-65 relay list. Matches
-  /// every other signer in the codebase, which return `null` here too.
+  /// Always `null`: a keyless signer advertises no NIP-65 relay list.
+  /// Local signers use the same answer; remote signers may return a relay map.
   @override
   Future<Map?> getRelays() async => null;
 
