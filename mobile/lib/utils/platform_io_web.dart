@@ -18,13 +18,6 @@ class HttpOverrides {
   static dynamic global;
 }
 
-// VineCdnHttpOverrides stub for web platform
-class VineCdnHttpOverrides {
-  VineCdnHttpOverrides({required this.overrideAddress});
-
-  final dynamic overrideAddress;
-}
-
 // Platform stub for web platform
 class Platform {
   static String get version => 'web';

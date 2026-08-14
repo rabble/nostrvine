@@ -56,8 +56,6 @@ import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
-import 'package:openvine/network/vine_cdn_http_overrides.dart'
-    if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
@@ -922,30 +920,6 @@ Future<void> _startOpenVineApp() async {
   );
   CrashReportingService.instance.logInitializationStep('Bindings initialized');
   StartupPerformanceService.instance.checkpoint('crash_reporting_ready');
-
-  // Enable DNS override for legacy Vine CDN domains if configured (not supported on web)
-  if (!kIsWeb) {
-    const bool enableVineCdnFix = bool.fromEnvironment(
-      'VINE_CDN_DNS_FIX',
-      defaultValue: true,
-    );
-    const String cdnIp = String.fromEnvironment(
-      'VINE_CDN_IP',
-      defaultValue: '151.101.244.157',
-    );
-    if (enableVineCdnFix) {
-      final ip = io.InternetAddress.tryParse(cdnIp);
-      if (ip != null) {
-        io.HttpOverrides.global = VineCdnHttpOverrides(overrideAddress: ip);
-        Log.info('Enabled Vine CDN DNS override to $cdnIp', name: 'Networking');
-      } else {
-        Log.warning(
-          'Invalid VINE_CDN_IP "$cdnIp". DNS override not applied.',
-          name: 'Networking',
-        );
-      }
-    }
-  }
 
   // DEFER window manager initialization until after UI is ready to avoid blocking
   if (defaultTargetPlatform == TargetPlatform.macOS ||

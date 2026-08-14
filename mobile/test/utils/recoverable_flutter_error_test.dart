@@ -60,6 +60,21 @@ void main() {
       ));
     });
 
+    for (final host in const ['v.cdn.vine.co', 'cdn.vine.co']) {
+      test('classifies legacy Vine CDN host lookup failures as unreported for '
+          '$host', () {
+        final details = FlutterErrorDetails(
+          exception: SocketException("Failed host lookup: '$host'"),
+          library: 'dart:_http',
+        );
+
+        expect(classifyRecoverableFlutterError(details), (
+          reason: 'Expected network failure',
+          report: false,
+        ));
+      });
+    }
+
     test('classifies wrapped relay host lookup failures as unreported', () {
       final details = FlutterErrorDetails(
         exception: WebSocketChannelException.from(
