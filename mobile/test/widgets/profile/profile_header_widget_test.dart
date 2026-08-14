@@ -2134,6 +2134,118 @@ void main() {
       );
 
       testWidgets(
+        'presents the session expired sheet once while the session stays '
+        'expired',
+        (tester) async {
+          // Regression for #7308: the sheet was scheduled from build(), and
+          // the condition stays true for as long as the session is expired,
+          // so every qualifying rebuild pushed another identical sheet route
+          // and the user had to dismiss the same prompt repeatedly.
+          final testProfile = createTestProfile(displayName: 'Test User');
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              hasExpiredSession: true,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VineBottomSheetPrompt), findsOneWidget);
+
+          // Rebuild the header with the session still expired. That is the
+          // same expiry, not a new one, so no second sheet may be pushed.
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              hasExpiredSession: true,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VineBottomSheetPrompt), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'does not stack a second sheet when the RPC upgrade flag flickers',
+        (tester) async {
+          // Regression for #7308: `isRpcUpgradeInProgress` goes true then
+          // false on every app resume while the session is expired, so the
+          // condition genuinely transitions false -> true again while the
+          // first sheet is still on screen. Edge detection alone would push a
+          // second sheet on top of it.
+          final testProfile = createTestProfile(displayName: 'Test User');
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+
+          Widget build({required bool isRpcUpgradeInProgress}) =>
+              buildTestWidget(
+                userIdHex: testUserHex,
+                isOwnProfile: true,
+                profile: testProfile,
+                hasExpiredSession: true,
+                isRpcUpgradeInProgress: isRpcUpgradeInProgress,
+                sharedPreferences: prefs,
+              );
+
+          await tester.pumpWidget(build(isRpcUpgradeInProgress: false));
+          await tester.pumpAndSettle();
+          expect(find.byType(VineBottomSheetPrompt), findsOneWidget);
+
+          // App resumes: the background RPC upgrade starts, then fails.
+          await tester.pumpWidget(build(isRpcUpgradeInProgress: true));
+          await tester.pumpAndSettle();
+          await tester.pumpWidget(build(isRpcUpgradeInProgress: false));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VineBottomSheetPrompt), findsOneWidget);
+        },
+      );
+
+      testWidgets('presents the session expired sheet when it expires while '
+          'the profile is open', (tester) async {
+        // Covers the didUpdateWidget arm: the header mounted on a live
+        // session, so initState did not present.
+        final testProfile = createTestProfile(displayName: 'Test User');
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VineBottomSheetPrompt), findsNothing);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            hasExpiredSession: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VineBottomSheetPrompt), findsOneWidget);
+      });
+
+      testWidgets(
         'does not show session expired sheet when dismissed within 30 days',
         (tester) async {
           final testProfile = createTestProfile(displayName: 'Test User');
@@ -2534,10 +2646,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        final openSheets = tester
-            .widgetList(find.byType(VineBottomSheetPrompt))
-            .length;
-        expect(openSheets, greaterThan(0));
+        expect(find.byType(VineBottomSheetPrompt), findsOneWidget);
 
         await tester.tap(find.text(l10n.profileMaybeLaterLabel).last);
         await tester.pumpAndSettle();
@@ -2547,10 +2656,7 @@ void main() {
           prefs.getInt('$_dismissedDivineLoginBannerPrefix$testUserHex'),
           isNotNull,
         );
-        expect(
-          find.byType(VineBottomSheetPrompt),
-          findsNWidgets(openSheets - 1),
-        );
+        expect(find.byType(VineBottomSheetPrompt), findsNothing);
       });
 
       testWidgets('dismisses via "Maybe later" after the header unmounts', (
@@ -2593,12 +2699,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.byType(ProfileHeaderWidget), findsNothing);
-        // The header re-shows the sheet on every qualifying build, so more
-        // than one can be stacked. Count them and assert the tapped one goes.
-        final openSheets = tester
-            .widgetList(find.byType(VineBottomSheetPrompt))
-            .length;
-        expect(openSheets, greaterThan(0));
+        expect(find.byType(VineBottomSheetPrompt), findsOneWidget);
 
         await tester.tap(find.text(l10n.profileMaybeLaterLabel).last);
         await tester.pumpAndSettle();
@@ -2608,10 +2709,7 @@ void main() {
           prefs.getInt('$_dismissedDivineLoginBannerPrefix$testUserHex'),
           isNotNull,
         );
-        expect(
-          find.byType(VineBottomSheetPrompt),
-          findsNWidgets(openSheets - 1),
-        );
+        expect(find.byType(VineBottomSheetPrompt), findsNothing);
       });
 
       testWidgets('signs in from the sheet after the header unmounts', (
@@ -2659,19 +2757,13 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.byType(ProfileHeaderWidget), findsNothing);
-        final openSheets = tester
-            .widgetList(find.byType(VineBottomSheetPrompt))
-            .length;
-        expect(openSheets, greaterThan(0));
+        expect(find.byType(VineBottomSheetPrompt), findsOneWidget);
 
         await tester.tap(find.text(l10n.profileSignInButton).last);
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        expect(
-          find.byType(VineBottomSheetPrompt),
-          findsNWidgets(openSheets - 1),
-        );
+        expect(find.byType(VineBottomSheetPrompt), findsNothing);
         expect(authService.tryRefreshCallCount, 1);
         verifyNever(() => mockGoRouter.go(any()));
       });
