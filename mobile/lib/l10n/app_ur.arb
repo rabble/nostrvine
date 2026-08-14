@@ -6729,11 +6729,7 @@
   "@settingsStorageError": {
     "description": "Generic error shown when a storage operation fails."
   },
-  "settingsStorageMaxSizeLabel": "زیادہ سے زیادہ کیش سائز",
-  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
-  "@settingsStorageMaxSizeLabel": {
-    "description": "Label above the slider that sets the maximum video-cache size."
-  },
+  "settingsStorageMaxVideoCacheLabel": "زیادہ سے زیادہ ویڈیو کیش",
   "settingsStorageApproxVideos": "≈ {count} ویڈیوز",
   "@settingsStorageApproxVideos": {
     "description": "Approximate number of videos that fit in the chosen cache size.",

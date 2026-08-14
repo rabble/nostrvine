@@ -11320,10 +11320,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsStorageError => 'Något gick fel';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Maximal cachestorlek';
-
-  @override
-  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+  String get settingsStorageMaxVideoCacheLabel => 'Maximal videocache';
 
   @override
   String settingsStorageApproxVideos(int count) {

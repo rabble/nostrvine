@@ -10694,10 +10694,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsStorageError => '出了点问题';
 
   @override
-  String get settingsStorageMaxSizeLabel => '缓存大小上限';
-
-  @override
-  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+  String get settingsStorageMaxVideoCacheLabel => '视频缓存上限';
 
   @override
   String settingsStorageApproxVideos(int count) {

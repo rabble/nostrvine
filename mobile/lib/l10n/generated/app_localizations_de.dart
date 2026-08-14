@@ -11462,10 +11462,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsStorageError => 'Etwas ist schiefgelaufen';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Maximale Cache-Größe';
-
-  @override
-  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+  String get settingsStorageMaxVideoCacheLabel => 'Maximaler Video-Cache';
 
   @override
   String settingsStorageApproxVideos(int count) {

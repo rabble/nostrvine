@@ -11366,10 +11366,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get settingsStorageError => 'Sesuatu telah berlaku';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'Saiz cache maksimum';
-
-  @override
-  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+  String get settingsStorageMaxVideoCacheLabel => 'Cache video maksimum';
 
   @override
   String settingsStorageApproxVideos(int count) {

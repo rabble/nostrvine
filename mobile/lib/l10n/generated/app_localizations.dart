@@ -19351,12 +19351,6 @@ abstract class AppLocalizations {
   /// Label above the slider that sets the maximum video-cache size.
   ///
   /// In en, this message translates to:
-  /// **'Maximum cache size'**
-  String get settingsStorageMaxSizeLabel;
-
-  /// Label above the slider that sets the maximum video-cache size.
-  ///
-  /// In en, this message translates to:
   /// **'Maximum video cache'**
   String get settingsStorageMaxVideoCacheLabel;
 

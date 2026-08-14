@@ -11241,11 +11241,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsStorageError => 'حدث خطأ ما';
 
   @override
-  String get settingsStorageMaxSizeLabel =>
-      'الحد الأقصى لحجم ذاكرة التخزين المؤقت';
-
-  @override
-  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+  String get settingsStorageMaxVideoCacheLabel =>
+      'الحد الأقصى لذاكرة تخزين الفيديو المؤقتة';
 
   @override
   String settingsStorageApproxVideos(int count) {

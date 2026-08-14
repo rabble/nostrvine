@@ -6729,11 +6729,7 @@
   "@settingsStorageError": {
     "description": "Generic error shown when a storage operation fails."
   },
-  "settingsStorageMaxSizeLabel": "Dung lượng đệm tối đa",
-  "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
-  "@settingsStorageMaxSizeLabel": {
-    "description": "Label above the slider that sets the maximum video-cache size."
-  },
+  "settingsStorageMaxVideoCacheLabel": "Bộ nhớ đệm video tối đa",
   "settingsStorageApproxVideos": "≈ {count} video",
   "@settingsStorageApproxVideos": {
     "description": "Approximate number of videos that fit in the chosen cache size.",

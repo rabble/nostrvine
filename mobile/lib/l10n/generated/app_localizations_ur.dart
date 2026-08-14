@@ -11305,10 +11305,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsStorageError => 'کچھ غلط ہو گیا';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'زیادہ سے زیادہ کیش سائز';
-
-  @override
-  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+  String get settingsStorageMaxVideoCacheLabel => 'زیادہ سے زیادہ ویڈیو کیش';
 
   @override
   String settingsStorageApproxVideos(int count) {

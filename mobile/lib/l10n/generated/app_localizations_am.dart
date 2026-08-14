@@ -11034,10 +11034,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsStorageError => 'የሆነ ችግር ተፈጥሯል';
 
   @override
-  String get settingsStorageMaxSizeLabel => 'ከፍተኛ የመሸጎጫ መጠን';
-
-  @override
-  String get settingsStorageMaxVideoCacheLabel => 'Maximum video cache';
+  String get settingsStorageMaxVideoCacheLabel => 'ከፍተኛ የቪዲዮ መሸጎጫ';
 
   @override
   String settingsStorageApproxVideos(int count) {

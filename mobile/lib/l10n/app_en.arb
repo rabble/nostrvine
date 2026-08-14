@@ -6877,8 +6877,6 @@
   "@settingsStorageBrokenClipsRemoved": {"description": "Accessibility announcement after broken clips are removed."},
   "settingsStorageError": "Something went wrong",
   "@settingsStorageError": {"description": "Generic error shown when a storage operation fails."},
-  "settingsStorageMaxSizeLabel": "Maximum cache size",
-  "@settingsStorageMaxSizeLabel": {"description": "Label above the slider that sets the maximum video-cache size."},
   "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "@settingsStorageMaxVideoCacheLabel": {"description": "Label above the slider that sets the maximum video-cache size."},
   "settingsStorageApproxVideos": "≈ {count} videos",
