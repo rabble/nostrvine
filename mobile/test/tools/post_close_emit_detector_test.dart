@@ -144,6 +144,26 @@ class FooCubit extends Cubit<int> {
       expect(sites, isEmpty);
     });
 
+    test('an isClosed guard with an else arm still clears the site', () {
+      // Reaching past the `if` at all means the condition was false, so the
+      // else arm does not stop this being a guard.
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> load() async {
+    final value = await _read();
+    if (isClosed) {
+      return;
+    } else {
+      _log('closed');
+    }
+    emit(value);
+  }
+}
+''');
+
+      expect(sites, isEmpty);
+    });
+
     test('a guard inside a conditional arm does not clear the rest', () {
       // The arm may not run, so the await above it still reaches emit(2).
       final sites = scan('''
