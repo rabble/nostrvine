@@ -271,8 +271,8 @@ class KeycastNostrIdentity extends NostrIdentity
     // layer; the batch verb builds every recipient's seal and wrap in one. When
     // a local key is present the send builds both wraps in an isolate instead
     // and never reaches this path.
-    if (_rpcSigner case final GiftWrapBatchWrapper wrapper) {
-      return wrapper.nip17WrapBatch(rumor, recipientPubkeys);
+    if (_rpcSigner case final KeycastRpc rpc) {
+      return rpc.nip17WrapBatch(rumor, recipientPubkeys);
     }
     return Future.value();
   }

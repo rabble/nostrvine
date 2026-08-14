@@ -17,8 +17,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// is not possible.
 typedef TokenRefreshCallback = Future<String?> Function();
 
-class KeycastRpc
-    implements NostrSigner, GiftWrapBatchUnwrapper, GiftWrapBatchWrapper {
+class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   KeycastRpc({
     required this.nostrApi,
     required String accessToken,
@@ -93,8 +92,7 @@ class KeycastRpc
   ///
   /// Callers that need to outlive a slow signer do not lean on this bound
   /// either: the durable outgoing queue re-drives stalled sends and
-  /// `DmBatchSendBudget.messagePublishTimeout` is the send-level backstop
-  /// (#6046).
+  /// `DmSendBudget.messagePublishTimeout` is the send-level backstop (#6046).
   static const Duration defaultRequestTimeout = Duration(seconds: 20);
 
   /// Default timeout for the multi-wrap `nip17_unwrap_batch` verb, which does
@@ -313,7 +311,7 @@ class KeycastRpc
         logHttpErrors: false,
       );
     } on RpcException catch (error) {
-      if (_isUnsupportedMethod(error)) {
+      if (_isUnsupportedSignCanonical(error)) {
         _signCanonicalUnsupported = true;
         Log.info(
           '[Keycast RPC] sign_canonical unsupported by backend; '
@@ -342,23 +340,18 @@ class KeycastRpc
     }
   }
 
-  /// Whether [error] is the backend signalling that the called method is not
+  /// Whether [error] is the backend signalling that `sign_canonical` is not
   /// implemented, as opposed to a transient or auth failure that must stay
   /// retryable.
   ///
   /// Matched against the exact wordings the login backend returns today: the
-  /// HTTP `Unsupported method: <verb>` body and the JSON-RPC `method_not_found`
-  /// error field. Matching on the body is mandatory, not stylistic: keycast
-  /// returns HTTP 400 for an unknown method AND for ordinary bad params, so the
-  /// status code alone cannot tell "this server is too old" from "this request
-  /// was wrong". The match is deliberately narrow — a broader signal (e.g.
-  /// caching on any 4xx) would risk permanently disabling a supported
-  /// capability after a transient blip. If the backend ever rewords this,
-  /// update the substrings here, otherwise every caller silently re-probes an
-  /// absent verb forever.
-  ///
-  /// Verb-agnostic and shared by [signCanonicalPayload] and [nip17WrapBatch].
-  bool _isUnsupportedMethod(RpcException error) {
+  /// HTTP `Unsupported method: sign_canonical` body and the JSON-RPC
+  /// `method_not_found` error field. The match is deliberately narrow — a
+  /// broader signal (e.g. caching on any 4xx) would risk permanently disabling
+  /// a supported capability after a transient blip. If the backend ever rewords
+  /// this, update the substrings here, otherwise canonical binding silently
+  /// re-requests on every publish.
+  bool _isUnsupportedSignCanonical(RpcException error) {
     final lower = error.message.toLowerCase();
     return lower.contains('unsupported method') ||
         lower.contains('method_not_found') ||
@@ -453,7 +446,7 @@ class KeycastRpc
         logHttpErrors: false,
       );
     } on RpcException catch (error) {
-      if (!_isUnsupportedMethod(error)) rethrow;
+      if (!_isUnsupportedWrapBatch(error)) rethrow;
       Log.info(
         '[Keycast RPC] nip17_wrap_batch unsupported by backend; '
         'DM sends will use the per-wrap signing path for this session',
@@ -462,6 +455,14 @@ class KeycastRpc
       );
       return null;
     }
+  }
+
+  /// Distinguishes an absent batch verb from ordinary HTTP 400 rejections.
+  bool _isUnsupportedWrapBatch(RpcException error) {
+    final lower = error.message.toLowerCase();
+    return lower.contains('unsupported method') ||
+        lower.contains('method_not_found') ||
+        lower.contains('method not found');
   }
 
   static GiftWrapSlot _parseWrapSlot(Map<String, dynamic> slot) {
