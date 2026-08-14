@@ -595,6 +595,102 @@ void main() {
           expect(duplicate, isFalse);
         },
       );
+
+      test('dedups a re-wrapped rumor but not a re-minted retry outside the '
+          'matching window', () async {
+        const conversationId = 'receiver_side_convo';
+        const senderPubkey =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        const recipientPubkey =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+        const text = 'reel reply probe';
+        final reelMessageId = 'r' * 64;
+
+        // A manual retry is minted only after the sender's OK-confirm budget
+        // expires, so it is outside the ±5s content match used for
+        // cross-protocol duplicate detection.
+        const firstCreatedAt = 1786700000;
+        const retryCreatedAt = firstCreatedAt + 13;
+
+        Future<bool> ingest({
+          required String rumorId,
+          required String giftWrapId,
+          required int createdAt,
+        }) => dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId,
+          senderPubkey: senderPubkey,
+          content: text,
+          createdAt: createdAt,
+          giftWrapId: giftWrapId,
+          replyToId: reelMessageId,
+          ownerPubkey: recipientPubkey,
+        );
+
+        // Correct retry: one kind-14 rumor, re-wrapped. The wrap id changes,
+        // but the stable receiver key is the rumor id, so only one row inserts.
+        expect(
+          await ingest(
+            rumorId: 'a' * 64,
+            giftWrapId: 'w' * 64,
+            createdAt: firstCreatedAt,
+          ),
+          isTrue,
+        );
+        expect(
+          await ingest(
+            rumorId: 'a' * 64,
+            giftWrapId: 'x' * 64,
+            createdAt: firstCreatedAt,
+          ),
+          isFalse,
+          reason: 'a re-wrapped replay of the same rumor must not insert again',
+        );
+
+        var rendered = await dao.getMessagesForConversation(conversationId);
+        expect(rendered, hasLength(1));
+
+        expect(
+          await dao.hasMatchingMessage(
+            conversationId: conversationId,
+            senderPubkey: senderPubkey,
+            content: text,
+            createdAt: retryCreatedAt,
+            ownerPubkey: recipientPubkey,
+          ),
+          isFalse,
+          reason: '13s apart is outside the ±5s window',
+        );
+        expect(
+          await dao.hasMatchingMessage(
+            conversationId: conversationId,
+            senderPubkey: senderPubkey,
+            content: text,
+            createdAt: firstCreatedAt + 4,
+            ownerPubkey: recipientPubkey,
+          ),
+          isTrue,
+          reason: 'positive control: the ±5s window still fires inside 5s',
+        );
+
+        // The bug: a fresh retry mints a second rumor id. Nothing collapses it.
+        expect(
+          await ingest(
+            rumorId: 'b' * 64,
+            giftWrapId: 'y' * 64,
+            createdAt: retryCreatedAt,
+          ),
+          isTrue,
+        );
+
+        rendered = await dao.getMessagesForConversation(conversationId);
+        expect(
+          rendered,
+          hasLength(2),
+          reason: 'two rumor ids for one message render as two bubbles',
+        );
+        expect(rendered.map((m) => m.content).toSet(), {text});
+      });
     });
 
     group('hasMessageWithSendBatchId', () {

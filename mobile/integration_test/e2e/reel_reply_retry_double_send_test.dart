@@ -70,10 +70,7 @@ void main() {
 
   final replyContext = DmReplyContext(
     conversationId: DmRepository.computeConversationId(
-      [
-        senderPubkey,
-        recipientPubkey,
-      ]..sort(),
+      [senderPubkey, recipientPubkey]..sort(),
     ),
     participantPubkeys: [recipientPubkey],
     isGroup: false,
@@ -281,129 +278,6 @@ void main() {
         );
       },
       timeout: const Timeout(Duration(minutes: 3)),
-    );
-
-    testWidgets(
-      'receiver side: two rumor ids render twice, one rumor re-wrapped '
-      'renders once',
-      (tester) async {
-        // Closes the last inferential step of the test above. That one proves
-        // the sender queues two rumor ids; this one proves what the RECEIVER
-        // does with them, against the real `direct_messages` schema.
-        //
-        // The contrast is the point. NIP-59 gives every gift wrap a fresh
-        // ephemeral key and a randomised `created_at` (59.md: "All other
-        // timestamps SHOULD be tweaked"), so the wrap id is never stable
-        // across a retry — the rumor id is the only handle a receiver has.
-        // `recoverFullSend` replays the SAME rumor and collapses; `sendMessage`
-        // mints a new one and cannot.
-        final db = AppDatabase.test(NativeDatabase.memory());
-        addTearDown(db.close);
-
-        const conversationId = 'receiver-side-convo';
-        const text = 'reel reply probe';
-
-        // Timestamps model the real timeline. The rumor's `created_at` is the
-        // canonical one (NIP-59: "The canonical created_at time belongs to the
-        // rumor"), and the retry's rumor is minted only after the 10s
-        // DmSendBudget.recipientOkConfirm window has expired and the user has
-        // tapped — so the two are ≥10s apart, never the same instant.
-        const firstCreatedAt = 1786700000;
-        const retryCreatedAt = firstCreatedAt + 13;
-
-        Future<bool> ingest({
-          required String rumorId,
-          required String giftWrapId,
-          required int createdAt,
-        }) => db.directMessagesDao.insertMessage(
-          id: rumorId,
-          conversationId: conversationId,
-          senderPubkey: senderPubkey,
-          content: text,
-          createdAt: createdAt,
-          giftWrapId: giftWrapId,
-          replyToId: reelMessageId,
-          ownerPubkey: recipientPubkey,
-        );
-
-        // Correct retry: one rumor, re-wrapped. Two wrap ids, one rumor id.
-        expect(
-          await ingest(
-            rumorId: 'a' * 64,
-            giftWrapId: 'w' * 64,
-            createdAt: firstCreatedAt,
-          ),
-          isTrue,
-        );
-        expect(
-          await ingest(
-            rumorId: 'a' * 64,
-            giftWrapId: 'x' * 64,
-            createdAt: firstCreatedAt,
-          ),
-          isFalse,
-          reason: 'a re-wrapped replay of the same rumor must not insert again',
-        );
-
-        var rendered = await db.directMessagesDao.getMessagesForConversation(
-          conversationId,
-        );
-        logPhase('same rumor id, two wraps -> ${rendered.length} bubble(s)');
-        expect(rendered, hasLength(1));
-
-        // The receive path has one more collapse mechanism above this insert:
-        // `hasMatchingMessage`, a (conversation, sender, content, ±5s) check
-        // run on every NIP-17 receive (dm_repository.dart:1910). It is the
-        // only thing that could catch a re-minted rumor — and it cannot reach
-        // this case, because the retry is ≥10s later by construction. Assert
-        // both halves so a future widening of that window is caught here.
-        expect(
-          await db.directMessagesDao.hasMatchingMessage(
-            conversationId: conversationId,
-            senderPubkey: senderPubkey,
-            content: text,
-            createdAt: retryCreatedAt,
-            ownerPubkey: recipientPubkey,
-          ),
-          isFalse,
-          reason: '13s apart is outside the ±5s window — nothing collapses it',
-        );
-        expect(
-          await db.directMessagesDao.hasMatchingMessage(
-            conversationId: conversationId,
-            senderPubkey: senderPubkey,
-            content: text,
-            createdAt: firstCreatedAt + 4,
-            ownerPubkey: recipientPubkey,
-          ),
-          isTrue,
-          reason: 'positive control: the ±5s window does fire inside 5s',
-        );
-
-        // The bug: a second rumor for the same text. Nothing collapses it.
-        expect(
-          await ingest(
-            rumorId: 'b' * 64,
-            giftWrapId: 'y' * 64,
-            createdAt: retryCreatedAt,
-          ),
-          isTrue,
-        );
-
-        rendered = await db.directMessagesDao.getMessagesForConversation(
-          conversationId,
-        );
-        logPhase('two rumor ids -> ${rendered.length} bubble(s)');
-        for (final row in rendered) {
-          logPhase('  bubble id=${row.id} content="${row.content}"');
-        }
-        expect(
-          rendered,
-          hasLength(2),
-          reason: 'two rumor ids for one message render as two bubbles',
-        );
-        expect(rendered.map((m) => m.content).toSet(), {text});
-      },
     );
   });
 }
