@@ -27,10 +27,12 @@ class SpecialProfileCheckmark extends StatelessWidget {
     super.key,
     this.iconSize = 10,
     this.padding = 2,
+    this.leadingGap = 4,
   });
 
   final double iconSize;
   final double padding;
+  final double leadingGap;
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +41,9 @@ class SpecialProfileCheckmark extends StatelessWidget {
       container: true,
       child: ExcludeSemantics(
         child: Padding(
-          padding: const EdgeInsetsDirectional.only(start: 4),
+          padding: EdgeInsetsDirectional.only(start: leadingGap),
           child: Container(
-            padding: EdgeInsets.all(padding),
+            padding: EdgeInsets.all(DivineIcon.scaleSize(context, padding)),
             decoration: const BoxDecoration(
               color: VineTheme.info,
               shape: BoxShape.circle,

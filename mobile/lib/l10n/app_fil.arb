@@ -3471,7 +3471,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Nag-post ang taong ito ng orihinal na Vine na nakita ng Divine sa archive. Hindi ito badge ng verification ng account.",
     "profileBadgeCheckmarkTitle": "Tsek sa profile",
-    "profileBadgeCheckmarkBody": "Nasa listahan ng profile checkmark ng Divine ang account na ito. Hiwalay ito sa NIP-05, sa mga verified na link ng account, at sa OG Viner status.",
+    "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
     "shareVideoInListsCount": "{count, plural, =1{Nasa {count} list} other{Nasa {count} list}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "I-unfollow",

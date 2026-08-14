@@ -7564,7 +7564,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'هذا الحساب مدرج في قائمة علامات الملف الشخصي لدى Divine. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.';
+      'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.';
 
   @override
   String shareVideoInListsCount(int count) {

@@ -7695,7 +7695,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Questo account è nella lista delle spunte di profilo di Divine. È separato da NIP-05, dai link di account verificati e dallo status OG Viner.';
+      'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.';
 
   @override
   String shareVideoInListsCount(int count) {

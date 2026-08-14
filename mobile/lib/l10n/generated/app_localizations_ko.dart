@@ -7299,7 +7299,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      '이 계정은 Divine의 프로필 체크마크 목록에 있어요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
+      'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.';
 
   @override
   String shareVideoInListsCount(int count) {

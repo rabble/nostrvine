@@ -4404,7 +4404,7 @@
   "ogVinerBadgeLabel": "OG Viner",
   "profileBadgeOgVinerBody": "اس شخص نے ایک اصل Vine پوسٹ کیا تھا جو Divine کو آرکائیو میں ملا۔ یہ اکاؤنٹ کی تصدیق کا بیج نہیں ہے۔",
   "profileBadgeCheckmarkTitle": "پروفائل چیک مارک",
-  "profileBadgeCheckmarkBody": "یہ اکاؤنٹ Divine کی پروفائل چیک مارک فہرست میں ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔",
+  "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
   "shareVideoInListsCount": "{count, plural, =1{1 فہرست میں} other{{count} فہرستوں میں}}",
   "@shareVideoInListsCount": {
     "placeholders": {

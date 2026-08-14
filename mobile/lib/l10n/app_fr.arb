@@ -4892,7 +4892,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Cette personne a publié un Vine original que Divine a retrouvé dans les archives. Ce n'est pas un badge de vérification de compte.",
     "profileBadgeCheckmarkTitle": "Coche de profil",
-    "profileBadgeCheckmarkBody": "Ce compte figure sur la liste des coches de profil de Divine. C'est indépendant de NIP-05, des liens de compte vérifiés et du statut OG Viner.",
+    "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
     "shareVideoInListsCount": "{count, plural, =1{Dans {count} liste} other{Dans {count} listes}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Ne plus suivre",

@@ -7234,7 +7234,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      '这个账号在 Divine 的个人资料对勾名单里。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。';
+      'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.';
 
   @override
   String shareVideoInListsCount(int count) {

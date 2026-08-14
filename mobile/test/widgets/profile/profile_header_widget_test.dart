@@ -344,6 +344,7 @@ void main() {
       bool monetizationLinksEnabled = false,
       ThemeData? theme,
       bool disableAnimations = false,
+      TextScaler? textScaler,
       bool renderHeader = true,
       MockAuthService? authService,
     }) {
@@ -468,9 +469,10 @@ void main() {
           theme: theme,
           home: Builder(
             builder: (context) => MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(disableAnimations: disableAnimations),
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: disableAnimations,
+                textScaler: textScaler ?? MediaQuery.textScalerOf(context),
+              ),
               child: Scaffold(body: SingleChildScrollView(child: header)),
             ),
           ),
@@ -630,6 +632,37 @@ void main() {
       expect(find.text(l10n.profileBadgeCheckmarkTitle), findsWidgets);
       expect(find.text(l10n.profileBadgeCheckmarkBody), findsOneWidget);
       expect(find.text(l10n.commonClose), findsOneWidget);
+    });
+
+    testWidgets('header badges keep matching diameters at capped text scale', (
+      tester,
+    ) async {
+      final teamPubkey = kDivineTeamPubkeys.first;
+      SharedPreferences.setMockInitialValues({
+        ogVinerPubkeysCacheKey: jsonEncode([teamPubkey]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: teamPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Checked OG User',
+            pubkey: teamPubkey,
+          ),
+          sharedPreferences: prefs,
+          textScaler: const TextScaler.linear(2),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SpecialProfileCheckmark), findsOneWidget);
+      expect(find.byType(OgVinerBadge), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(SpecialProfileCheckmark)),
+        equals(tester.getSize(find.byType(OgVinerBadge))),
+      );
     });
 
     testWidgets('badge detail sheet opens the in-app badge editor', (

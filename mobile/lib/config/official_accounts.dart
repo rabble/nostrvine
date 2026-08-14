@@ -1,6 +1,9 @@
 // ABOUTME: Shipped identities Divine treats as its own: the pinned accounts a
 // ABOUTME: protected minor (13-15) may DM (#176), and the team pubkeys that carry
-// ABOUTME: the profile checkmark. The NIP-05 leg is the revocation lever.
+// ABOUTME: the profile checkmark. Pinned accounts keep NIP-05 as a revocation
+// ABOUTME: lever; checkmark-only entries are release-gated.
+
+import 'package:openvine/constants/app_constants.dart';
 
 /// One pinned official account. `pubkeyHex` is the shipped identity; `nip05` is
 /// the canonical identifier whose live resolution must still map back to
@@ -91,7 +94,7 @@ const List<OfficialAccount> kPinnedOfficialAccounts = [
 /// curator silently gained a checkmark.
 const Set<String> kDivineTeamPubkeys = {
   // Rabble
-  'd95aa8fc0eff8e488952495b8064991d27fb96ed8652f12cdedc5a4e8b5ae540',
+  AppConstants.divineTeamPubkey2,
   // Liz
   '0edc2f474484769bc9bf6d471d180e4e280b0bcd719b6da791001beb730cff1b',
   // Daniel
@@ -99,7 +102,7 @@ const Set<String> kDivineTeamPubkeys = {
   // Alex
   '04c106a7b7b1ac0a26f0e2ad22aaa2cfc3263bb7749a165545689282d1975c23',
   // Sebastian
-  '295dbec79ee785496f703c9648f246665d46839c1d5f582c0342b4583da5ccb4',
+  AppConstants.divineTeamPubkey1,
   // Meylis
   '9be8bd90d818407bcf574d11b1c57f104fd53f40fa767abc4a631ee2694b43a3',
   // Matt

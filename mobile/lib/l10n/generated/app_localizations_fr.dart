@@ -7720,7 +7720,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Ce compte figure sur la liste des coches de profil de Divine. C\'est indépendant de NIP-05, des liens de compte vérifiés et du statut OG Viner.';
+      'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.';
 
   @override
   String shareVideoInListsCount(int count) {

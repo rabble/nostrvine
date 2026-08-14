@@ -265,12 +265,14 @@ extension on ProfileBadgeExplanationType {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => const OgVinerBadge(
         size: _profileHeaderBadgeDiameter,
+        leadingGap: 0,
       ),
       // The checkmark sizes from the inside out: glyph plus ring padding.
       ProfileBadgeExplanationType.profileCheckmark =>
         const SpecialProfileCheckmark(
           iconSize: _profileHeaderBadgeDiameter - _checkmarkRing * 2,
           padding: _checkmarkRing,
+          leadingGap: 0,
         ),
     };
   }

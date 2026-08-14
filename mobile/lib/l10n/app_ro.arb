@@ -4892,7 +4892,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Persoana asta a postat un Vine original pe care Divine l-a găsit în arhivă. Nu e o insignă de verificare a contului.",
     "profileBadgeCheckmarkTitle": "Bifa de profil",
-    "profileBadgeCheckmarkBody": "Contul ăsta e pe lista de bife de profil a Divine. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.",
+    "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
     "shareVideoInListsCount": "{count, plural, =1{În 1 listă} few{În {count} liste} other{În {count} de liste}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Nu mai urmări",
