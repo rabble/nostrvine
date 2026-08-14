@@ -4,6 +4,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 
 void main() {
@@ -87,6 +88,43 @@ void main() {
     // de-duplicating.
     test('no retired key is also the current key', () {
       expect(kLegacyModerationPubkeys, isNot(contains(kModerationPubkeyHex)));
+    });
+
+    group('profile checkmark pubkeys', () {
+      // Lookups lowercase the profile's pubkey before testing membership, so
+      // an entry pasted in mixed case matches nobody — no crash, no analyzer
+      // complaint, just a team member who never gets the checkmark.
+      final checkmarkPubkeys = {
+        ...kDivineTeamPubkeys,
+        ...kLegacyProfileCheckmarkPubkeys,
+      };
+
+      test('every entry is a 64-character lowercase hex pubkey', () {
+        for (final pubkey in checkmarkPubkeys) {
+          expect(
+            pubkey,
+            matches(RegExp(r'^[0-9a-f]{64}$')),
+            reason: '$pubkey is not a lowercase hex pubkey',
+          );
+        }
+      });
+
+      test('the two sets do not overlap', () {
+        expect(
+          kDivineTeamPubkeys.intersection(kLegacyProfileCheckmarkPubkeys),
+          isEmpty,
+        );
+      });
+
+      // Sebastian and Rabble are on the team list and in the curation
+      // constants. The two lists grant different things and are allowed to
+      // diverge, so this only pins that the shared entries agree today —
+      // catching a typo in one copy, not forbidding a future split.
+      test('shared entries agree with the curation constants', () {
+        for (final pubkey in AppConstants.divineTeamPubkeys) {
+          expect(kDivineTeamPubkeys, contains(pubkey));
+        }
+      });
     });
   });
 }

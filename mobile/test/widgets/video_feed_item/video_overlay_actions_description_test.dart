@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
@@ -205,10 +206,12 @@ void main() {
   });
 
   testWidgets(
-    'author line shows checkmark for Kirsten Swasey special profile',
+    'author line shows checkmark for a Divine team pubkey',
     (
       tester,
     ) async {
+      testVideo = testVideo.copyWith(pubkey: kDivineTeamPubkeys.first);
+
       await tester.pumpWidget(
         testProviderScope(
           additionalOverrides: [
@@ -217,7 +220,7 @@ void main() {
               yield UserProfile(
                 pubkey: pubkey,
                 name: 'Alice',
-                nip05: '_@kirstenswasey.divine.video',
+                nip05: 'alice@example.com',
                 rawData: const {},
                 createdAt: DateTime(2026),
                 eventId: 'kind0_event_id',

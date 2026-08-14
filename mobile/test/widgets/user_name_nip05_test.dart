@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -59,11 +60,29 @@ void main() {
     expect(_specialCheckmark(), findsNothing);
   });
 
-  testWidgets('shows a checkmark for Kirsten Swasey special profile', (
+  testWidgets('shows a checkmark for a Divine team pubkey', (tester) async {
+    await tester.pumpWidget(buildSubject(pubkey: kDivineTeamPubkeys.first));
+    await tester.pump();
+
+    expect(find.text('Alice'), findsOneWidget);
+    expect(_specialCheckmark(), findsOneWidget);
+  });
+
+  testWidgets('shows a checkmark for a grandfathered pubkey', (tester) async {
+    await tester.pumpWidget(
+      buildSubject(pubkey: kLegacyProfileCheckmarkPubkeys.first),
+    );
+    await tester.pump();
+
+    expect(find.text('Alice'), findsOneWidget);
+    expect(_specialCheckmark(), findsOneWidget);
+  });
+
+  testWidgets('matches a Divine team pubkey case-insensitively', (
     tester,
   ) async {
     await tester.pumpWidget(
-      buildSubject(nip05: '_@kirstenswasey.divine.video'),
+      buildSubject(pubkey: kDivineTeamPubkeys.first.toUpperCase()),
     );
     await tester.pump();
 
@@ -71,35 +90,14 @@ void main() {
     expect(_specialCheckmark(), findsOneWidget);
   });
 
-  testWidgets('matches the Kirsten Swasey profile URL host', (tester) async {
-    await tester.pumpWidget(
-      buildSubject(nip05: 'http://kirstenswasey.divine.video'),
-    );
-    await tester.pump();
-
-    expect(find.text('Alice'), findsOneWidget);
-    expect(_specialCheckmark(), findsOneWidget);
-  });
-
-  testWidgets('shows a checkmark for Rabble special profile', (tester) async {
+  testWidgets('does not show a checkmark for a divine.video NIP-05', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildSubject(nip05: '_@rabble.divine.video'));
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);
-    expect(_specialCheckmark(), findsOneWidget);
-  });
-
-  testWidgets('shows a checkmark for special profile pubkey', (tester) async {
-    await tester.pumpWidget(
-      buildSubject(
-        pubkey:
-            'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
-      ),
-    );
-    await tester.pump();
-
-    expect(find.text('Alice'), findsOneWidget);
-    expect(_specialCheckmark(), findsOneWidget);
+    expect(_specialCheckmark(), findsNothing);
   });
 
   testWidgets('sanitizes embedded display name fallback while profile loads', (
