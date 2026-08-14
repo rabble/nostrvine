@@ -191,5 +191,18 @@ void main() {
             .having((s) => s.status, 'status', ChangePasswordStatus.editing),
       ],
     );
+
+    test('never stringifies the passwords it is holding', () {
+      const state = ChangePasswordState(
+        currentPassword: 'old-secret-value',
+        newPassword: 'new-secret-value',
+        confirmPassword: 'new-secret-value',
+      );
+
+      // Equatable stringifies props by default in debug builds, and anything
+      // that prints a state — DivineBlocObserver's `bloc.lastState` crash key
+      // above all — would carry the plaintext with it.
+      expect(state.toString(), isNot(contains('secret-value')));
+    });
   });
 }

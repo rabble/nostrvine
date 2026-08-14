@@ -80,6 +80,13 @@ class ChangeEmailState extends Equatable {
   /// Set only while [status] is [ChangeEmailStatus.failure].
   final ChangeEmailFailureReason? failureReason;
 
+  /// [password] has to be in [props] for equality, but it must never be
+  /// rendered. Equatable stringifies props by default in debug builds, which
+  /// would put a plaintext password into anything that prints a state —
+  /// `DivineBlocObserver`'s `bloc.lastState` crash key above all.
+  @override
+  bool? get stringify => false;
+
   bool get isSubmitting => status == ChangeEmailStatus.submitting;
 
   bool get canSubmit =>

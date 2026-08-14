@@ -63,6 +63,13 @@ class ChangePasswordState extends Equatable {
   /// Set only while [status] is [ChangePasswordStatus.failure].
   final ChangePasswordFailureReason? failureReason;
 
+  /// The three password fields have to be in [props] for equality, but they
+  /// must never be rendered. Equatable stringifies props by default in debug
+  /// builds, which would put plaintext passwords into anything that prints a
+  /// state — `DivineBlocObserver`'s `bloc.lastState` crash key above all.
+  @override
+  bool? get stringify => false;
+
   bool get isSubmitting => status == ChangePasswordStatus.submitting;
 
   /// True once every field has something in it. Correctness is checked on

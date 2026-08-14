@@ -171,5 +171,17 @@ void main() {
             ),
       ],
     );
+
+    test('never stringifies the password it is holding', () {
+      const state = ChangeEmailState(
+        newEmail: 'new@example.com',
+        password: 'secret-value',
+      );
+
+      // Equatable stringifies props by default in debug builds, and anything
+      // that prints a state — DivineBlocObserver's `bloc.lastState` crash key
+      // above all — would carry the plaintext with it.
+      expect(state.toString(), isNot(contains('secret-value')));
+    });
   });
 }
