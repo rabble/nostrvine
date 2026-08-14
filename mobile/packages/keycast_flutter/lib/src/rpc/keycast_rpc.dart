@@ -377,7 +377,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     List<Map<String, dynamic>> giftWraps,
   ) async {
     try {
-      return await _callBatch(
+      return await _call(
         'nip17_unwrap_batch',
         giftWraps,
         (result) => [
@@ -387,6 +387,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         // The batch verb decrypts many wraps server-side and legitimately runs
         // longer than a single op, so keep it on the longer bound rather than
         // the tighter single-op [requestTimeout].
+        timeout: batchRequestTimeout,
         classifyLocalTimeout: false,
       );
     } on RpcException {
