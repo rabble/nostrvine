@@ -2946,8 +2946,9 @@ class BlossomUploadService {
   /// X-ProofMode-PublicKey, X-ProofMode-Attestation and X-ProofMode-C2PA
   /// headers from the provided ProofManifest JSON.
   ///
-  /// Headers are attached best-effort within [maxProofModeHeaderBytes]. See
-  /// that constant for why an oversized proof is dropped instead of sent.
+  /// Headers are attached best-effort within [maxProofModeHeaderBytes]. Large
+  /// Android attestations can exceed that budget, so bulk proof fields are
+  /// omitted while canonical proof metadata stays in the video event.
   void _addProofModeHeaders(
     Map<String, dynamic> headers,
     String proofManifestJson,
@@ -2994,10 +2995,10 @@ class BlossomUploadService {
         return;
       }
 
-      Log.warning(
-        'ProofMode headers over the $maxProofModeHeaderBytes byte budget; '
-        'sent $usedBytes bytes and dropped ${dropped.join(', ')}. '
-        'The full manifest still ships in the video event proofmode tag.',
+      Log.info(
+        'ProofMode headers trimmed to the $maxProofModeHeaderBytes byte '
+        'budget; sent $usedBytes bytes and omitted ${dropped.join(', ')}. '
+        'The full manifest is canonical in the video event proofmode tag.',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
