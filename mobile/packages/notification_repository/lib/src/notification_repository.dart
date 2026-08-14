@@ -1150,9 +1150,10 @@ class NotificationRepository {
 
   /// Marks all notifications as read on the server and locally.
   ///
-  /// Optimistically flips every item in the snapshot to `isRead: true`,
-  /// then writes through to the API and the local DAO. On failure,
-  /// restores the pre-write snapshot — preserves the rollback semantics
+  /// Always sends the explicit server mark-all request, even when no live
+  /// snapshot has local unread rows. The optimistic local flip still only
+  /// touches feeds that contain unread rows. On failure, restores the
+  /// pre-write snapshot for those feeds — preserving the rollback semantics
   /// introduced by PR #4034 at the repository layer so every consumer
   /// (badge cubit, feed bloc) recovers consistently.
   ///
@@ -1169,7 +1170,6 @@ class NotificationRepository {
       pagesLoadedBefore[feed] = feed.pagesLoaded;
       feed.snapshot.add(page.copyWith(items: _flipAllRead(page.items)));
     }
-    if (snapshotsBefore.isEmpty) return;
 
     try {
       final url = _funnelcakeApiClient

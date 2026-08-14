@@ -143,13 +143,14 @@ class NotificationFeedBloc
   /// (loading -> loaded / failure) are emitted here so the UI can render
   /// the initial spinner and error states.
   ///
-  /// After a successful refresh, advances the server "seen" watermark via
+  /// After a successful refresh, sends the server mark-all write via
   /// [_markSeenOnOpen] so opening the notifications surface clears the unread
   /// badge and the badge thereafter reflects "new since last seen" rather than
   /// the accumulated untapped total (#4708). `_onStarted` fires once per open
   /// (it is dispatched from the keyed `BlocProvider.create` on every mount of
-  /// the notifications surface) and is NOT dispatched on app resume or
-  /// pull-to-refresh, so the watermark only advances on a deliberate open.
+  /// the notifications surface) and is NOT dispatched on app resume. The
+  /// unfiltered pull-to-refresh handler also marks seen after a successful
+  /// refresh because the notifications surface is already deliberately open.
   Future<void> _onStarted(
     NotificationFeedStarted event,
     Emitter<NotificationFeedState> emit,
@@ -227,11 +228,11 @@ class NotificationFeedBloc
     }
   }
 
-  /// Advances the server "seen" watermark when the notifications surface opens.
+  /// Marks notifications seen when the notifications surface is open.
   ///
   /// Reuses [NotificationRepository.markAllAsRead] — the single source of truth
-  /// that posts `read_until = now()` to FunnelCake, optimistically flips the
-  /// snapshot (so the badge clears immediately), and rolls back on failure.
+  /// that sends the server mark-all write, optimistically flips the snapshot
+  /// (so the badge clears immediately), and rolls back on failure.
   /// Going through the repository (not a widget lifecycle hook) is what keeps
   /// the badge convergent; the previous `MarkAllReadOnDispose` widget that
   /// marked-on-*leave* fought the snapshot and was removed in #4758. This marks
@@ -339,6 +340,9 @@ class NotificationFeedBloc
         ),
       );
       _flushPendingEmptyPageContinuation();
+      if (_filter == null) {
+        await _markSeenOnOpen();
+      }
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout). Per

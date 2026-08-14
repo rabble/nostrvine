@@ -234,7 +234,7 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
-          // Seen-on-open advances the server watermark AFTER the refresh so
+          // Seen-on-open sends the server mark-all write AFTER the refresh so
           // the badge clears and thereafter shows "new since last seen".
           verifyInOrder([
             () => mockNotificationRepo.refreshFeed(null),
@@ -679,9 +679,25 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
-          verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
-          // Pull-to-refresh shows current unread; only opening (Started)
-          // advances the seen watermark (#4708).
+          verifyInOrder([
+            () => mockNotificationRepo.refreshFeed(null),
+            () => mockNotificationRepo.markAllAsRead(),
+          ]);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'does not mark seen after filtered refresh',
+        build: createFollowBloc,
+        act: (bloc) => bloc.add(NotificationFeedRefreshed()),
+        expect: () => [
+          NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        verify: (_) {
+          verify(
+            () => mockNotificationRepo.refreshFeed(NotificationKind.follow),
+          ).called(1);
           verifyNever(() => mockNotificationRepo.markAllAsRead());
         },
       );
@@ -704,6 +720,10 @@ void main() {
           ),
         ],
         errors: () => [isA<Exception>()],
+        verify: (_) {
+          verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
+        },
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(

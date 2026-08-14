@@ -5806,15 +5806,44 @@ void main() {
         expect(repository.hasPaginatedBeyondFirstPage, isTrue);
       });
 
-      test('markAllAsRead is a no-op when nothing is unread', () async {
+      test('markAllAsRead posts when nothing is unread locally', () async {
         await repository.markAllAsRead();
 
-        verifyNever(
+        verify(
           () => funnelcakeApiClient.markNotificationsRead(
             pubkey: any(named: 'pubkey'),
             authHeaders: any(named: 'authHeaders'),
           ),
-        );
+        ).called(1);
+        verify(
+          () => notificationsDao.markAllAsRead(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+      });
+
+      test('markAllAsRead does not emit when nothing flips', () async {
+        stubNotifications([
+          makeNotification(read: true),
+        ]);
+        await repository.refresh();
+
+        final emissions = <NotificationPage>[];
+        final subscription = repository.watchSnapshot().listen(emissions.add);
+        addTearDown(subscription.cancel);
+        await Future<void>.delayed(Duration.zero);
+        emissions.clear();
+
+        await repository.markAllAsRead();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(emissions, isEmpty);
+        verify(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).called(1);
       });
 
       test('markAllAsRead optimistically zeros every unread item', () async {
