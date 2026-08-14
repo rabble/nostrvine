@@ -737,15 +737,23 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     );
   }
 
+  /// Warns that some collaborator invites did not go out, offering a retry.
+  ///
+  /// Resolves l10n nullably for the same reason as the publish-success
+  /// snackbar in `main.dart`: a deactivated root element still reports
+  /// `mounted` while every ancestor lookup returns null (#7289).
   void _showCollaboratorInviteWarning({
     required List<CollaboratorInviteWarning> warnings,
   }) {
     final targetContext = NavigatorKeys.root.currentContext;
     if (targetContext == null || !targetContext.mounted) return;
-    final l10n = targetContext.l10n;
 
+    final l10n = Localizations.of<AppLocalizations>(
+      targetContext,
+      AppLocalizations,
+    );
     final messenger = ScaffoldMessenger.maybeOf(targetContext);
-    if (messenger == null) return;
+    if (l10n == null || messenger == null) return;
 
     messenger.showSnackBar(
       SnackBar(
@@ -773,7 +781,11 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   }) async {
     final targetContext = NavigatorKeys.root.currentContext;
     if (targetContext == null || !targetContext.mounted) return;
-    final l10n = targetContext.l10n;
+    final l10n = Localizations.of<AppLocalizations>(
+      targetContext,
+      AppLocalizations,
+    );
+    if (l10n == null) return;
     final repository = ref.read(collaboratorInviteRecoveryRepositoryProvider);
     if (repository == null) {
       messenger.showSnackBar(
