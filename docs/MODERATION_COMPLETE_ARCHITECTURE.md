@@ -48,7 +48,7 @@ Divine uses a **three-tier moderation architecture**:
 **Consumes Labels (kind 1985):**
 - `ModerationLabelService` - Subscribes to trusted labelers
 - `ReportAggregationService` - Aggregates reports from friends
-- `ContentBlocklistRepository` - Tracks own blocks (kind 30000 `d=block`), own mutes (kind 10000), and mutual block/mute; exposes an immutable `ContentPolicyState` snapshot
+- `ContentBlocklistRepository` - Tracks own blocks and own mutes (both kind 10000, the only list it authors) plus mutual block/mute; exposes an immutable `ContentPolicyState` snapshot. Other authors' legacy kind 30000 `d=block` lists are still read so a block from a client that has not upgraded still registers
 - `ContentPolicyEngine` (`mobile/packages/content_policy`) - Applies ordered rules (SelfReference, PubkeyMute, PubkeyBlock, MutualMute) against that snapshot to make filtering decisions
 
 **User Experience:**
@@ -184,7 +184,7 @@ Divine uses a **three-tier moderation architecture**:
 
 1. **ModerationLabelService** - Subscribes to Faro's kind 1985 labels
 2. **ReportAggregationService** - Aggregates community kind 1984 reports
-3. **ContentBlocklistRepository** - Own blocks (kind 30000 `d=block`), own mutes (kind 10000), and mutual block/mute; exposes `ContentPolicyState`
+3. **ContentBlocklistRepository** - Own blocks and own mutes (both kind 10000) plus mutual block/mute; exposes `ContentPolicyState`. Reads other authors' legacy kind 30000 `d=block` lists but no longer publishes that kind (#5462)
 4. **ContentPolicyEngine** - Pure-Dart ordered rules (SelfReference, PubkeyMute, PubkeyBlock, MutualMute) gating every feed/search/profile/comment/notification ingress seam
 5. **ContentReportingService** - Creates kind 1984 reports → Faro
 
@@ -292,7 +292,7 @@ final defaultModerators = [
 | Report Creation | ✅ | ContentReportingService creates kind 1984 |
 | Label Subscription | ✅ | ModerationLabelService subscribes to kind 1985 |
 | Report Aggregation | ✅ | ReportAggregationService aggregates kind 1984 |
-| Mute Lists | ✅ | ContentBlocklistRepository tracks kind 10000 / kind 30000; ContentPolicyEngine applies the rules |
+| Mute Lists | ✅ | ContentBlocklistRepository authors kind 10000 and reads others' legacy kind 30000; ContentPolicyEngine applies the rules |
 | Feed Coordinator | ✅ | ContentPolicyEngine gates every ingress seam directly (no separate coordinator) |
 | Moderator Registry | 🔨 | ModeratorRegistryService - manage Faro subs |
 | UI Components | 🔨 | Content warnings, moderator browse |

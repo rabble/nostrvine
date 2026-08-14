@@ -44,10 +44,13 @@ class OtherProfileScreenRouter extends ConsumerWidget {
       return const BrandedLoadingScaffold();
     }
 
-    // If this user has blocked us, show unavailable
+    // If this user has blocked or muted us, show unavailable. Blocks now
+    // travel on the kind 10000 mute list (#5462), so gating on the legacy
+    // kind 30000 signal alone would miss every block published since.
     if (targetHex != null) {
       final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-      if (blocklistRepository.hasBlockedUs(targetHex)) {
+      if (blocklistRepository.hasMutedUs(targetHex) ||
+          blocklistRepository.hasBlockedUs(targetHex)) {
         return UserNotAvailableScreen(
           onBack: context.pop,
           userIdHex: targetHex,
