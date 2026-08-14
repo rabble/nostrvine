@@ -157,7 +157,13 @@ List<PostCloseSite> findPostCloseSites(
   for (final file in files) {
     final ParseStringResult parsed;
     try {
-      parsed = parseFile(
+      // A counted class extends something whose name ends in `Bloc` or
+      // `Cubit`, so a file naming neither cannot hold one. Skipping those
+      // before the parser sees them drops ~1000 of the ~1600 files under lib.
+      final source = file.readAsStringSync();
+      if (!source.contains('Bloc') && !source.contains('Cubit')) continue;
+      parsed = parseString(
+        content: source,
         path: file.path,
         featureSet: FeatureSet.latestLanguageVersion(),
         throwIfDiagnostics: false,
