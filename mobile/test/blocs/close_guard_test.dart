@@ -41,7 +41,7 @@ class _RelayBloc extends Bloc<_Event, int> {
     on<_Bumped>((event, emit) => emit(state + 1));
   }
 
-  void relayGuarded() => addIfOpen(_Bumped());
+  bool relayGuarded() => addIfOpen(_Bumped());
 
   void relayUnguarded() => add(_Bumped());
 }
@@ -104,7 +104,7 @@ void main() {
       final bloc = _RelayBloc();
       addTearDown(bloc.close);
 
-      expect(bloc.relayGuarded, returnsNormally);
+      expect(bloc.relayGuarded(), isTrue);
       await expectLater(bloc.stream, emits(1));
     });
 
