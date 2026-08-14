@@ -424,7 +424,6 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   /// there, a caller that latches off pays two decrypt RPCs per wrap; here it
   /// would pay four signing round trips per DM for the rest of the session, and
   /// a single blip is not evidence the verb is gone.
-  @override
   Future<List<GiftWrapSlot>?> nip17WrapBatch(
     Map<String, dynamic> rumor,
     List<String> recipientPubkeys,
