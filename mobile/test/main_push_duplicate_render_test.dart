@@ -74,4 +74,34 @@ void main() {
       expect(app.shouldRenderLocalPushNotification(message), isFalse);
     });
   });
+
+  group('handleFirebaseMessagingBackgroundMessage', () {
+    test('still renders a data-only local notification when Firebase init '
+        'fails', () async {
+      const message = RemoteMessage(
+        data: {'title': 'New like', 'body': 'alice liked your video'},
+      );
+      final rendered =
+          <({String? title, String body, Map<String, dynamic> data})>[];
+
+      await app.handleFirebaseMessagingBackgroundMessage(
+        message,
+        initializeFirebase: () async => throw StateError('init failed'),
+        renderLocalPush:
+            ({
+              required int id,
+              required String? title,
+              required String body,
+              required Map<String, dynamic> data,
+            }) async {
+              rendered.add((title: title, body: body, data: data));
+            },
+      );
+
+      expect(rendered, hasLength(1));
+      expect(rendered.single.title, 'New like');
+      expect(rendered.single.body, 'alice liked your video');
+      expect(rendered.single.data, message.data);
+    });
+  });
 }
