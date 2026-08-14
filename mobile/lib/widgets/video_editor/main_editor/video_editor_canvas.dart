@@ -33,6 +33,7 @@ import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/clip_speed_render_service.dart';
 import 'package:openvine/services/video_editor/stop_motion_audio_preview.dart';
@@ -197,7 +198,12 @@ class VideoEditorCanvas extends StatelessWidget {
   /// `NOT_READY` and `PLAYER_ERROR` are also swallowed so trim-triggered reload
   /// failures can mark the player unavailable instead of leaving a broken
   /// native player reported as ready.
-
+  ///
+  /// Swallowing costs the unhandled-async-error path to Crashlytics that #3410
+  /// relied on, and `Log.error` has no Crashlytics sink — so `PLAYER_ERROR` is
+  /// reported explicitly. A decoder that dies mid-edit is a real defect worth a
+  /// non-fatal; `COMPOSITION_ERROR` (stale draft clip) and `NOT_READY` (slow
+  /// OEM decoder) are expected domain failures and stay log-only.
   @visibleForTesting
   static Future<bool> guardClipLoad(Future<void> Function() load) async {
     try {
@@ -216,6 +222,15 @@ class VideoEditorCanvas extends StatelessWidget {
         error: e,
         stackTrace: s,
       );
+      if (e.code == _playerErrorCode) {
+        unawaited(
+          CrashReportingService.instance.recordError(
+            e,
+            s,
+            reason: 'VideoEditorCanvas.guardClipLoad',
+          ),
+        );
+      }
       return false;
     }
   }
