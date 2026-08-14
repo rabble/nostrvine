@@ -7,9 +7,13 @@ import 'package:openvine/repositories/account_credentials_repository.dart';
 
 /// Repository for reading and changing the Keycast-held email and password.
 ///
-/// Rebuilds whenever [authServiceProvider] does, which is what the screens key
-/// their blocs on — a bloc holding the previous account's repository must not
-/// survive an account switch.
+/// What binds a call to an account is the token, not this instance:
+/// `activeAccountKeycastToken` resolves one per call and refuses a session
+/// owned by anyone else, so even a repository that outlived an account switch
+/// cannot spend the previous account's session. The screens still key their
+/// blocs on this instance, which is the `state_management.md` guard for the
+/// day one of the watched dependencies starts rebuilding on auth changes —
+/// today neither does.
 final accountCredentialsRepositoryProvider =
     Provider<AccountCredentialsRepository>((ref) {
       final oauthClient = ref.watch(oauthClientProvider);
