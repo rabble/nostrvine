@@ -264,8 +264,13 @@ void main() {
       // reconciler is what covers it now.
       await stack.blocks.blockUser(targetPubkey, ourPubkey: authorPubkey);
 
+      // Blocking authors the standard NIP-51 kind 10000 mute list only. The
+      // non-standard kind 30000 (d=block) list this used to dual-write was
+      // retired by #5462; the one-time empty replacement that retirement
+      // publishes is gated on a non-empty legacy list read back from the
+      // relay, and this fixture serves nothing back, so no kind 30000 is
+      // published on this path at all.
       await relay.awaitPublished(10000);
-      await relay.awaitPublished(30000);
       expect(stack.blocks.isBlocked(targetPubkey), isTrue);
 
       // The republish the reconciler triggers.
