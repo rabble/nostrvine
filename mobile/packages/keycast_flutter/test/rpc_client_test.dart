@@ -993,6 +993,61 @@ void main() {
         );
       });
 
+      test(
+        'shares one batch deadline across a 401 refresh and retry',
+        () async {
+          var callCount = 0;
+          mockClient = MockClient((request) async {
+            callCount++;
+            if (callCount == 1) {
+              await Future<void>.delayed(const Duration(milliseconds: 100));
+              return http.Response('Unauthorized', 401);
+            }
+            return Completer<http.Response>().future;
+          });
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'expired_token',
+            httpClient: mockClient,
+            onTokenRefresh: () async => 'fresh_token',
+            batchRequestTimeout: const Duration(milliseconds: 250),
+          );
+          final stopwatch = Stopwatch()..start();
+
+          await expectLater(
+            rpc.nip17WrapBatch(rumor, recipients),
+            throwsA(isA<RpcTimeoutException>()),
+          );
+
+          expect(callCount, 2);
+          expect(
+            stopwatch.elapsed,
+            lessThan(const Duration(milliseconds: 330)),
+          );
+        },
+      );
+
+      test(
+        'classifies a refresh timeout as a transient batch timeout',
+        () async {
+          mockClient = MockClient(
+            (request) async => http.Response('Unauthorized', 401),
+          );
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'expired_token',
+            httpClient: mockClient,
+            onTokenRefresh: () => Completer<String?>().future,
+            batchRequestTimeout: const Duration(milliseconds: 50),
+          );
+
+          await expectLater(
+            rpc.nip17WrapBatch(rumor, recipients),
+            throwsA(isA<RpcTimeoutException>()),
+          );
+        },
+      );
+
       test('is bounded by batchRequestTimeout, not the shorter single-op '
           'requestTimeout', () async {
         mockClient = MockClient((request) async {
