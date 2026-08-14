@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/router/app_shell.dart';
+import 'package:openvine/router/go_router_page_name.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/router/providers/page_context_provider.dart';
 import 'package:openvine/router/routes/router_guards.dart';
@@ -36,7 +37,7 @@ List<RouteBase> shellRoutes() {
       // #5242 in its post-splash form. Pinned by shell_transition_test.
       pageBuilder: (context, state, navigationShell) => NoTransitionPage<void>(
         key: state.pageKey,
-        name: state.name ?? state.path,
+        name: goRouterPageName(state),
         arguments: <String, String>{
           ...state.pathParameters,
           ...state.uri.queryParameters,
@@ -190,7 +191,7 @@ List<RouteBase> shellRoutes() {
 Page<void> _branchPage(GoRouterState state, Widget child) {
   return NoTransitionPage<void>(
     key: state.pageKey,
-    name: state.name ?? state.path,
+    name: goRouterPageName(state),
     arguments: <String, String>{
       ...state.pathParameters,
       ...state.uri.queryParameters,

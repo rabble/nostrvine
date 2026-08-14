@@ -9,16 +9,24 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/router/routes/shell.dart';
 import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 
 class _FakeGoRouterState extends Fake implements GoRouterState {
   @override
   ValueKey<String> get pageKey => const ValueKey('shell');
 
   @override
-  String? get name => 'home';
+  String? get name => null;
 
   @override
-  String? get path => '/home';
+  String? get path => null;
+
+  @override
+  GoRoute? get topRoute => GoRoute(
+    path: VideoFeedPage.path,
+    name: VideoFeedPage.routeName,
+    builder: (_, _) => const SizedBox.shrink(),
+  );
 
   @override
   Map<String, String> get pathParameters => const {'tab': 'feed'};
@@ -71,7 +79,7 @@ void main() {
       expect(transitionPage.key, const ValueKey('shell'));
       // Page metadata feeds PageLoadObserver; without it the shell route
       // reports as an unnamed page and startup navigations go untracked.
-      expect(transitionPage.name, 'home');
+      expect(transitionPage.name, VideoFeedPage.routeName);
       expect(transitionPage.restorationId, 'shell');
       expect(transitionPage.arguments, <String, String>{
         'tab': 'feed',
