@@ -275,9 +275,9 @@ class WebSocketConnectionManager {
     // Must close the sink, not just drop the reference: the idle heartbeat
     // and checkHealth() tear down a *live* socket, and cancelling the stream
     // subscription alone leaves the underlying connection open forever.
-    // Fire-and-forget because every caller is a stream or timer callback with
-    // nowhere to await into; _closeChannel detaches _channel before its first
-    // await, so a reconnect racing this close keeps its fresh channel.
+    // Fire-and-forget because every caller is synchronous; _closeChannel
+    // detaches _channel before its first await, so a reconnect racing this
+    // close keeps its fresh channel.
     unawaited(_closeChannel());
 
     _setState(ConnectionState.disconnected);
