@@ -194,31 +194,46 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
   /// the root element would report malformed markup further down the document
   /// as valid and hand the failure back to flutter_svg.
   ///
-  /// The open-element stack mirrors `SvgParser.endElement`, which reads
-  /// `_parentDrawables.last` with no empty check: an end element outside the
-  /// root throws `StateError: No element` there. Popping only on a name match
-  /// is what makes this the consumer's rule rather than a nesting check —
-  /// `<svg><g></g></g></svg>` keeps a non-empty stack and stays accepted,
-  /// because flutter_svg does not pop on a mismatch either.
+  /// Beyond tokenizing, this enforces one document-level rule: no end element
+  /// may sit outside the root. `SvgParser.endElement` reads
+  /// `_parentDrawables.last` with no empty check, so such an element throws
+  /// `StateError: No element` there.
+  ///
+  /// The rule is expressed over the document rather than over flutter_svg's
+  /// own stack on purpose. Mirroring that stack would mean mirroring its push
+  /// rule too — only `addGroup` pushes, so a `rect` left open desynchronises
+  /// the two — and the push set is `vector_graphics_compiler` internals that a
+  /// version bump can move underneath us.
+  ///
+  /// Tracking the root by `svg` nesting depth is what keeps a nested `<svg>`
+  /// working, since its own end tag must not be mistaken for the root's.
+  /// Unbalanced markup *inside* the root stays accepted: it trips only a debug
+  /// `assert` in the compiler and renders in release.
   bool _parsesAsSvg(Uint8List bytes) {
     final source = utf8.decode(bytes, allowMalformed: true);
-    final openElements = <String>[];
     String? rootName;
+    var svgDepth = 0;
+    var rootClosed = false;
     try {
       for (final event in parseEvents(source)) {
         if (event is XmlStartElementEvent) {
           rootName ??= event.localName;
-          if (!event.isSelfClosing) openElements.add(event.name);
+          if (_isSvgTag(event.localName) && !event.isSelfClosing) svgDepth++;
         } else if (event is XmlEndElementEvent) {
-          if (openElements.isEmpty) return false;
-          if (openElements.last == event.name) openElements.removeLast();
+          if (rootName == null || rootClosed) return false;
+          if (_isSvgTag(event.localName)) {
+            svgDepth--;
+            if (svgDepth <= 0) rootClosed = true;
+          }
         }
       }
     } on XmlException {
       return false;
     }
-    return rootName?.toLowerCase() == 'svg';
+    return rootName != null && _isSvgTag(rootName);
   }
+
+  bool _isSvgTag(String localName) => localName.toLowerCase() == 'svg';
 
   _AvatarSvgCacheEntry? _readCache(String url) {
     final cached = _cache.remove(url);
