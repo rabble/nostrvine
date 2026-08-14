@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"ios":{"default":{"projectId":"openvine-co","appId":"1:972941478875:ios:f61272b3cf485df244b5fe","uploadDebugSymbols":true,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"openvine-co","appId":"1:972941478875:ios:f61272b3cf485df244b5fe","uploadDebugSymbols":true,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"openvine-co","configurations":{"ios":"1:972941478875:ios:f61272b3cf485df244b5fe","macos":"1:972941478875:ios:f61272b3cf485df244b5fe"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "openvine-co",
+          "appId": "1:972941478875:android:c716006682f92d9444b5fe",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "openvine-co",
+          "appId": "1:972941478875:ios:f61272b3cf485df244b5fe",
+          "uploadDebugSymbols": true,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "openvine-co",
+          "appId": "1:972941478875:ios:f61272b3cf485df244b5fe",
+          "uploadDebugSymbols": true,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "openvine-co",
+          "configurations": {
+            "android": "1:972941478875:android:c716006682f92d9444b5fe",
+            "ios": "1:972941478875:ios:f61272b3cf485df244b5fe",
+            "macos": "1:972941478875:ios:f61272b3cf485df244b5fe"
+          }
+        }
+      }
+    }
+  }
+}

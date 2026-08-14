@@ -32,7 +32,43 @@ void main() {
       expect(initializeAppCalls, 1);
     });
 
-    test('reuses an existing default Firebase app', () async {
+    test('swallows duplicate-app from native default app auto-init', () async {
+      var initializeAppCalls = 0;
+
+      await ensureDefaultFirebaseInitialized(
+        options: _firebaseOptions,
+        appsProvider: () => const [],
+        initializeApp: ({FirebaseOptions? options}) async {
+          initializeAppCalls++;
+          throw FirebaseException(
+            plugin: 'firebase_core',
+            code: 'duplicate-app',
+            message: 'A Firebase App named "[DEFAULT]" already exists',
+          );
+        },
+      );
+
+      expect(initializeAppCalls, 1);
+    });
+
+    test('rethrows non-duplicate Firebase initialization failures', () async {
+      final error = FirebaseException(
+        plugin: 'firebase_core',
+        code: 'invalid-configuration',
+        message: 'Broken Firebase config',
+      );
+
+      await expectLater(
+        ensureDefaultFirebaseInitialized(
+          options: _firebaseOptions,
+          appsProvider: () => const [],
+          initializeApp: ({FirebaseOptions? options}) async => throw error,
+        ),
+        throwsA(same(error)),
+      );
+    });
+
+    test('uses Firebase.apps fast path after core is initialized', () async {
       var initializeAppCalls = 0;
 
       await ensureDefaultFirebaseInitialized(

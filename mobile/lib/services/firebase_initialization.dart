@@ -11,8 +11,9 @@ typedef FirebaseInitializer =
 /// Ensures the default Firebase app exists exactly once.
 ///
 /// Android can auto-create the default app before Dart startup via the
-/// google-services plugin. Calling [Firebase.initializeApp] again in that state
-/// throws `[core/duplicate-app]`, which disables downstream Firebase services.
+/// google-services plugin. The pre-check covers repeat Dart calls after
+/// Firebase core has loaded its app list; the duplicate-app catch covers native
+/// auto-init discovered during the first Dart initialize call.
 Future<void> ensureDefaultFirebaseInitialized({
   FirebaseOptions? options,
   FirebaseAppsProvider? appsProvider,
@@ -20,7 +21,12 @@ Future<void> ensureDefaultFirebaseInitialized({
 }) async {
   if ((appsProvider ?? () => Firebase.apps)().isNotEmpty) return;
 
-  await (initializeApp ?? Firebase.initializeApp)(
-    options: options ?? DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await (initializeApp ?? Firebase.initializeApp)(
+      options: options ?? DefaultFirebaseOptions.currentPlatform,
+    );
+  } on FirebaseException catch (error) {
+    if (error.code == 'duplicate-app') return;
+    rethrow;
+  }
 }

@@ -169,10 +169,37 @@ bool shouldRenderLocalPushNotification(RemoteMessage message) {
   return body is String && body.isNotEmpty;
 }
 
+typedef BackgroundFirebaseInitializer = Future<void> Function();
+typedef BackgroundLocalPushRenderer =
+    Future<void> Function({
+      required int id,
+      required String? title,
+      required String body,
+      required Map<String, dynamic> data,
+    });
+
 /// Top-level background message handler required by Firebase.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await ensureDefaultFirebaseInitialized();
+  await handleFirebaseMessagingBackgroundMessage(message);
+}
+
+@visibleForTesting
+Future<void> handleFirebaseMessagingBackgroundMessage(
+  RemoteMessage message, {
+  BackgroundFirebaseInitializer initializeFirebase =
+      ensureDefaultFirebaseInitialized,
+  BackgroundLocalPushRenderer renderLocalPush = _renderBackgroundLocalPush,
+}) async {
+  try {
+    await initializeFirebase();
+  } catch (error) {
+    Log.warning(
+      'Firebase init failed in background push handler; attempting local '
+      'notification render: $error',
+      name: 'PushNotifications',
+    );
+  }
 
   // The OS already presents iOS alert pushes (aps.alert); only render a local
   // notification for data-only messages so we don't double-render (#4731).
@@ -182,6 +209,20 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final title = data['title'] as String? ?? 'diVine';
   final body = data['body'] as String? ?? '';
 
+  await renderLocalPush(
+    id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title: title,
+    body: body,
+    data: data,
+  );
+}
+
+Future<void> _renderBackgroundLocalPush({
+  required int id,
+  required String? title,
+  required String body,
+  required Map<String, dynamic> data,
+}) async {
   final plugin = FlutterLocalNotificationsPlugin();
   const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
   const darwinInit = DarwinInitializationSettings();
@@ -205,7 +246,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
 
   await plugin.show(
-    id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    id: id,
     title: title,
     body: body,
     notificationDetails: details,

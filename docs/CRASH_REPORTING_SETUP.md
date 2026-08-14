@@ -15,7 +15,7 @@ reporting. The active Firebase project is **`openvine-co`** (bundle id
 |----------|-----------------|---------------|--------|
 | iOS | `openvine-co` — `firebase_options.dart`, `ios/Runner/GoogleService-Info.plist` | ✅ dSYMs via Codemagic | Production |
 | macOS | `openvine-co` — `macos/Runner/GoogleService-Info.plist` | — | Production (reuses the iOS appId — see note below) |
-| Android | `openvine-co` — `android/app/google-services.json` | ⚠️ R8 mapping upload wired via Gradle; native-symbol upload configured but unverified | `firebase_options.dart` Android options are still being reconciled in #3343 |
+| Android | `openvine-co` — `firebase_options.dart`, `android/app/google-services.json` | ⚠️ R8 mapping upload wired via Gradle; native-symbol upload configured but unverified | Production |
 | Web / Windows / Linux | none | — | Not supported; init is gated off |
 
 `isFirebaseSupported` (`mobile/lib/utils/platform_support.dart`) is a
@@ -24,16 +24,14 @@ currently initialized only when startup passes both `isFirebaseSupported` and
 `!kIsWeb`, so web remains intentionally gated off in app startup.
 
 > **macOS note:** `firebase_options.dart` currently gives macOS the same appId
-> as iOS (`1:972941478875:ios:…`). Confirm this is intentional during the
-> #3343 config reconciliation; a distinct macOS app may warrant its own appId.
+> as iOS (`1:972941478875:ios:…`). Confirm this is intentional; a distinct
+> macOS app may warrant its own appId.
 
-> **Android note:** `google-services.json` already points at `openvine-co`, but
-> `DefaultFirebaseOptions.android` is still a placeholder, so
-> `Firebase.initializeApp` does not yet initialise Android against the real
-> project. The Crashlytics Gradle plugin is already applied and release builds
-> now enable R8, so an obfuscation mapping file is produced and uploaded;
-> native-symbol upload is configured but not yet verified end-to-end.
-> Reconciling the Android options is tracked in #3343.
+> **Android note:** `google-services.json` and
+> `DefaultFirebaseOptions.android` both point at `openvine-co`. The Crashlytics
+> Gradle plugin is already applied and release builds now enable R8, so an
+> obfuscation mapping file is produced and uploaded; native-symbol upload is
+> configured but not yet verified end-to-end.
 
 ## Configuration files
 
@@ -77,8 +75,7 @@ Release builds upload Crashlytics debug symbols automatically. See
 Without this, iOS crash stacks arrive in Crashlytics unsymbolicated.
 
 > **Android note:** Crashlytics upload wiring is present in Gradle and release
-> builds generate an R8 mapping file for symbolication. Android Firebase options
-> still need reconciliation under #3343.
+> builds generate an R8 mapping file for symbolication.
 
 ## Custom keys on every report
 
