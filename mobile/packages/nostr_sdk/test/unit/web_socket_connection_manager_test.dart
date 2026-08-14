@@ -15,6 +15,9 @@ class MockWebSocketSink implements WebSocketSink {
   String? closeReason;
   final Completer<void> _doneCompleter = Completer<void>();
 
+  /// When set, [close] does not finish until this completer completes.
+  Completer<void>? closeGate;
+
   @override
   void add(dynamic data) {
     if (closed) throw StateError('Sink is closed');
@@ -35,6 +38,8 @@ class MockWebSocketSink implements WebSocketSink {
   Future close([int? closeCode, String? closeReason]) async {
     this.closeCode = closeCode;
     this.closeReason = closeReason;
+    final gate = closeGate;
+    if (gate != null) await gate.future;
     closed = true;
     if (!_doneCompleter.isCompleted) {
       _doneCompleter.complete();
@@ -97,6 +102,16 @@ class MockWebSocketChannel implements WebSocketChannel {
   void simulateClose() {
     _closeCode = 1000;
     _streamController.close();
+  }
+
+  /// Holds [sink]'s close in flight until the returned completer completes.
+  ///
+  /// A real close is a network round trip that can outlive a reconnect; the
+  /// mock otherwise finishes it synchronously, which hides ordering bugs.
+  Completer<void> blockClose() {
+    final gate = Completer<void>();
+    _sink.closeGate = gate;
+    return gate;
   }
 
   List<dynamic> get sentMessages => _sink.messages;
@@ -304,6 +319,130 @@ void main() {
         // Should stay disconnected - no automatic reconnect
         expect(manager.state, equals(ConnectionState.disconnected));
         expect(mockFactory.createdChannels.length, equals(1));
+      });
+    });
+
+    // The idle heartbeat and checkHealth() tear down a *live* socket, unlike
+    // the stream-error/stream-done paths where the transport is already gone.
+    // Dropping the channel reference without closing the sink strands an open
+    // connection the manager no longer has a handle to.
+    group('idle disconnect', () {
+      test('closes the channel sink when the heartbeat forces a '
+          'disconnect', () async {
+        final factory = MockWebSocketChannelFactory();
+        final idleManager = WebSocketConnectionManager(
+          url: 'wss://test.relay.com',
+          channelFactory: factory,
+          logger: logMessages.add,
+          config: const WebSocketConfig(
+            heartbeatInterval: Duration(milliseconds: 20),
+            idleTimeout: Duration(milliseconds: 10),
+          ),
+        );
+        addTearDown(idleManager.dispose);
+
+        await idleManager.connect();
+        final idleChannel = factory.lastChannel!;
+        expect(idleChannel.isClosed, isFalse);
+
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+
+        expect(idleManager.state, equals(ConnectionState.disconnected));
+        expect(idleChannel.isClosed, isTrue);
+      });
+
+      test('closes the channel sink when checkHealth finds a stale '
+          'connection', () async {
+        final factory = MockWebSocketChannelFactory();
+        final staleManager = WebSocketConnectionManager(
+          url: 'wss://test.relay.com',
+          channelFactory: factory,
+          logger: logMessages.add,
+          config: const WebSocketConfig(
+            // No heartbeat timer: checkHealth is the only disconnect trigger.
+            heartbeatInterval: Duration.zero,
+            idleTimeout: Duration(milliseconds: 10),
+          ),
+        );
+        addTearDown(staleManager.dispose);
+
+        await staleManager.connect();
+        final staleChannel = factory.lastChannel!;
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+
+        expect(staleManager.checkHealth(), isFalse);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(staleManager.state, equals(ConnectionState.disconnected));
+        expect(staleChannel.isClosed, isTrue);
+      });
+
+      test('reconnects onto a usable fresh channel after an idle '
+          'disconnect', () async {
+        final factory = MockWebSocketChannelFactory();
+        final staleManager = WebSocketConnectionManager(
+          url: 'wss://test.relay.com',
+          channelFactory: factory,
+          logger: logMessages.add,
+          config: const WebSocketConfig(
+            baseReconnectDelay: Duration(milliseconds: 10),
+            heartbeatInterval: Duration.zero,
+            idleTimeout: Duration(milliseconds: 10),
+          ),
+        );
+        addTearDown(staleManager.dispose);
+
+        await staleManager.connect();
+        final staleChannel = factory.lastChannel!;
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        staleManager.checkHealth();
+
+        final sent = await staleManager.send('["REQ","sub1",{}]');
+
+        // Exactly one live socket per cycle: the idle one is closed and the
+        // fresh one still works.
+        expect(sent, isTrue);
+        expect(staleChannel.isClosed, isTrue);
+        expect(factory.createdChannels, hasLength(2));
+        final freshChannel = factory.lastChannel!;
+        expect(freshChannel, isNot(same(staleChannel)));
+        expect(freshChannel.isClosed, isFalse);
+        expect(freshChannel.sentMessages, contains('["REQ","sub1",{}]'));
+      });
+
+      test('keeps the reconnected channel when a slow close lands '
+          'late', () async {
+        final factory = MockWebSocketChannelFactory();
+        final staleManager = WebSocketConnectionManager(
+          url: 'wss://test.relay.com',
+          channelFactory: factory,
+          logger: logMessages.add,
+          config: const WebSocketConfig(
+            baseReconnectDelay: Duration(milliseconds: 10),
+            heartbeatInterval: Duration.zero,
+            idleTimeout: Duration(milliseconds: 10),
+          ),
+        );
+        addTearDown(staleManager.dispose);
+
+        await staleManager.connect();
+        final staleChannel = factory.lastChannel!;
+        final closeGate = staleChannel.blockClose();
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        staleManager.checkHealth();
+
+        expect(await staleManager.send('["REQ","sub1",{}]'), isTrue);
+        final freshChannel = factory.lastChannel!;
+
+        closeGate.complete();
+        await Future<void>.delayed(Duration.zero);
+
+        // The late close must not detach the channel it never owned, or the
+        // manager reports connected while every send drops on the floor.
+        expect(staleChannel.isClosed, isTrue);
+        expect(staleManager.isConnected, isTrue);
+        expect(await staleManager.send('["REQ","sub2",{}]'), isTrue);
+        expect(freshChannel.sentMessages, contains('["REQ","sub2",{}]'));
       });
     });
 
