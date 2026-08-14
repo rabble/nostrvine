@@ -1479,6 +1479,18 @@ Future<void> _recordBuildProvenance({
     CrashReportingService.instance.log(provenance.summary);
     unawaited(
       CrashReportingService.instance.setCustomKey(
+        'environment',
+        provenance.environment.name,
+      ),
+    );
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'build_mode',
+        provenance.buildMode.name,
+      ),
+    );
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
         'install_source',
         provenance.installSource.name,
       ),
