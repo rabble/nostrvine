@@ -24,8 +24,8 @@ currently initialized only when startup passes both `isFirebaseSupported` and
 `!kIsWeb`, so web remains intentionally gated off in app startup.
 
 > **macOS note:** `firebase_options.dart` currently gives macOS the same appId
-> as iOS (`1:972941478875:ios:…`). Confirm this is intentional during the
-> #3343 config reconciliation; a distinct macOS app may warrant its own appId.
+> as iOS (`1:972941478875:ios:…`). Confirm this is intentional; a distinct
+> macOS app may warrant its own appId.
 
 > **Android note:** `google-services.json` and
 > `DefaultFirebaseOptions.android` both point at `openvine-co`. The Crashlytics
