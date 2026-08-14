@@ -9,6 +9,11 @@ import 'package:openvine/repositories/avatar_svg_repository.dart';
 
 void main() {
   const url = 'https://divine.video/avatar.svg';
+  // flutter_svg needs a viewport on the root element. Fixtures that assert
+  // "flutter_svg renders this" have to carry one, or they fail for an
+  // unrelated reason and the comparison stops meaning anything.
+  const svgOpenTag =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">';
   final validSvgBytes = Uint8List.fromList(
     utf8.encode(
       '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" />',
@@ -74,6 +79,170 @@ void main() {
     );
 
     expect(repository.load(url), completion(isNull));
+  });
+
+  test('rejects markup that only breaks after the root element', () {
+    // Crashlytics b97ccc46 shape: a well-formed <svg> root on line 1 and an
+    // unterminated tag deep into line 2. A validator that stops once it has
+    // seen the root element accepts this and hands the parse failure to
+    // flutter_svg, where it escapes as an unhandled zone error (#7296).
+    final repository = repositoryFor(
+      http.Response(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">\n'
+        '<path d="M0 0 L1 1" ${'a' * 140} <circle r="1"/>\n'
+        '</svg>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('rejects an end element sitting after the root element', () {
+    // `SvgParser.endElement` reads `_parentDrawables.last` with no empty
+    // check, so an end element outside the root throws `StateError: No
+    // element` and escapes as the same orphaned future as a tokenizer
+    // failure. Tokenizing alone does not catch this — only the document
+    // structure does.
+    final repository = repositoryFor(
+      http.Response(
+        '$svgOpenTag<rect width="10" height="10"/></svg></foo>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('rejects an end element sitting before the root element', () {
+    final repository = repositoryFor(
+      http.Response(
+        '</foo>$svgOpenTag<rect width="10" height="10"/></svg>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('rejects an end element after the root with a shape left open', () {
+    // A `rect` is a shape, not a group, so flutter_svg never pushes it onto
+    // `_parentDrawables`. Any guard that mirrors that stack instead of the
+    // document desynchronises here and lets the payload through.
+    final repository = repositoryFor(
+      http.Response(
+        '$svgOpenTag<rect width="4" height="4"></svg></rect>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('accepts a nested svg element', () async {
+    // `SvgParser` supports a nested `<svg>` and pushes its own group for it,
+    // so the inner end tag must not be read as the root closing.
+    final nested = Uint8List.fromList(
+      utf8.encode(
+        '$svgOpenTag$svgOpenTag<rect width="4" height="4"/></svg></svg>',
+      ),
+    );
+    final repository = repositoryFor(
+      http.Response.bytes(
+        nested,
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    await expectLater(repository.load(url), completion(nested));
+  });
+
+  test('accepts an unbalanced end element inside the root', () async {
+    // Only trips a debug `assert` in `vector_graphics_compiler`, and
+    // flutter_svg never pops on a name mismatch, so the drawable stack cannot
+    // underflow here. Rejecting it would blank an avatar that renders.
+    final unbalanced = Uint8List.fromList(
+      utf8.encode('$svgOpenTag<g></g></g></svg>'),
+    );
+    final repository = repositoryFor(
+      http.Response.bytes(
+        unbalanced,
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    await expectLater(repository.load(url), completion(unbalanced));
+  });
+
+  test('rejects mismatched nesting whose root end tag comes first', () {
+    // Deliberately stricter than the consumer: `endElement` pops only on a
+    // name match, so `</svg>` with a `<g>` still open never empties
+    // `_parentDrawables` and this renders. Accepting it back would take
+    // mirroring the compiler's push set, which is what the document rule
+    // exists to avoid.
+    final repository = repositoryFor(
+      http.Response(
+        '$svgOpenTag<g><rect/></svg></g>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('rejects well-formed XML whose root element is not svg', () {
+    final repository = repositoryFor(
+      http.Response(
+        '<html><body>not an svg</body></html>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
+  test('accepts SVG payloads carrying non-UTF-8 bytes', () async {
+    // flutter_svg decodes with `allowMalformed: true`, so a stray Latin-1 byte
+    // renders fine. Rejecting it here would blank an avatar that works.
+    final latin1InText = Uint8List.fromList([
+      ...utf8.encode('$svgOpenTag<text>caf'),
+      0xE9,
+      ...utf8.encode('</text></svg>'),
+    ]);
+    final repository = repositoryFor(
+      http.Response.bytes(
+        latin1InText,
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    await expectLater(repository.load(url), completion(latin1InText));
+  });
+
+  test('accepts mismatched nesting that flutter_svg tolerates', () async {
+    // `SvgParser` calls `parseEvents` without nesting validation, so sloppy
+    // generator output still renders. Only tokenizer failures may be rejected.
+    final mismatched = Uint8List.fromList(
+      utf8.encode('$svgOpenTag<g><rect/></svg>'),
+    );
+    final repository = repositoryFor(
+      http.Response.bytes(
+        mismatched,
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    await expectLater(repository.load(url), completion(mismatched));
   });
 
   test('rejects non-200 responses', () {
