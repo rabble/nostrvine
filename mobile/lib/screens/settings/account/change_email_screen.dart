@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/change_email/change_email_cubit.dart';
@@ -13,9 +14,10 @@ import 'package:openvine/screens/settings/general_settings_screen.dart';
 
 /// Page layer: reads the repository from Riverpod and hands it to the cubit.
 ///
-/// The [ValueKey] over the repository is the account-switch guard from
-/// `state_management.md` — a cubit holding the previous account's repository
-/// would otherwise move the wrong account's email address.
+/// The [ValueKey] over the repository is the `state_management.md` guard
+/// against a cubit outliving the dependency it captured. It is not what keeps
+/// a change on the right account — the repository resolves an owner-bound
+/// token per call for that.
 class ChangeEmailScreen extends ConsumerWidget {
   const ChangeEmailScreen({super.key});
 
@@ -57,6 +59,30 @@ class _ChangeEmailViewState extends State<ChangeEmailView> {
     super.dispose();
   }
 
+  void _onChanged(BuildContext context, ChangeEmailState state) {
+    final l10n = context.l10n;
+    final announcement = switch (state.status) {
+      ChangeEmailStatus.editing || ChangeEmailStatus.submitting => null,
+      // The whole form is replaced by the confirmation panel, and nothing moves
+      // focus into it — without this a screen reader answers a submit with
+      // silence.
+      ChangeEmailStatus.requestSent =>
+        '${l10n.changeEmailSentTitle}. '
+            '${l10n.changeEmailSentMessage(state.newEmail.trim())}',
+      ChangeEmailStatus.failure => switch (state.failureReason) {
+        final reason? => changeEmailFailureMessage(context, reason),
+        null => null,
+      },
+    };
+    if (announcement == null) return;
+
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      announcement,
+      Directionality.of(context),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +93,8 @@ class _ChangeEmailViewState extends State<ChangeEmailView> {
             context.safePop(fallback: GeneralSettingsScreen.path),
       ),
       backgroundColor: context.vineColors.background,
-      body: BlocBuilder<ChangeEmailCubit, ChangeEmailState>(
+      body: BlocConsumer<ChangeEmailCubit, ChangeEmailState>(
+        listener: _onChanged,
         builder: (context, state) {
           return Align(
             alignment: Alignment.topCenter,
@@ -235,6 +262,26 @@ class _RequestSent extends StatelessWidget {
   }
 }
 
+/// The refusal copy for [reason].
+///
+/// Shared by the rendered message and the screen-reader announcement so the
+/// two cannot drift.
+@visibleForTesting
+String changeEmailFailureMessage(
+  BuildContext context,
+  ChangeEmailFailureReason reason,
+) {
+  final l10n = context.l10n;
+  return switch (reason) {
+    ChangeEmailFailureReason.wrongPassword => l10n.changeEmailWrongPassword,
+    ChangeEmailFailureReason.invalidEmail => l10n.authEmailInvalid,
+    ChangeEmailFailureReason.needsSignIn => l10n.accountCredentialsNeedsSignIn,
+    ChangeEmailFailureReason.rateLimited => l10n.accountCredentialsRateLimited,
+    ChangeEmailFailureReason.network => l10n.accountCredentialsNetwork,
+    ChangeEmailFailureReason.unknown => l10n.accountCredentialsUnknown,
+  };
+}
+
 /// Why the change was refused, in copy the user can act on.
 class _FailureMessage extends StatelessWidget {
   const _FailureMessage({required this.reason});
@@ -243,20 +290,8 @@ class _FailureMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final message = switch (reason) {
-      ChangeEmailFailureReason.wrongPassword => l10n.changeEmailWrongPassword,
-      ChangeEmailFailureReason.invalidEmail => l10n.authEmailInvalid,
-      ChangeEmailFailureReason.needsSignIn =>
-        l10n.accountCredentialsNeedsSignIn,
-      ChangeEmailFailureReason.rateLimited =>
-        l10n.accountCredentialsRateLimited,
-      ChangeEmailFailureReason.network => l10n.accountCredentialsNetwork,
-      ChangeEmailFailureReason.unknown => l10n.accountCredentialsUnknown,
-    };
-
     return Text(
-      message,
+      changeEmailFailureMessage(context, reason),
       style: VineTheme.bodyMediumFont(color: VineTheme.error),
     );
   }

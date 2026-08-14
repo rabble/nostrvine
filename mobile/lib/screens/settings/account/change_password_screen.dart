@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,9 +16,10 @@ import 'package:openvine/utils/validators.dart';
 
 /// Page layer: reads the repository from Riverpod and hands it to the cubit.
 ///
-/// The [ValueKey] over the repository is the account-switch guard from
-/// `state_management.md` — a cubit holding the previous account's repository
-/// would otherwise change the wrong account's password.
+/// The [ValueKey] over the repository is the `state_management.md` guard
+/// against a cubit outliving the dependency it captured. It is not what keeps
+/// a change on the right account — the repository resolves an owner-bound
+/// token per call for that.
 class ChangePasswordScreen extends ConsumerWidget {
   const ChangePasswordScreen({super.key});
 
@@ -60,19 +62,41 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
   }
 
   void _onChanged(BuildContext context, ChangePasswordState state) {
-    if (state.status != ChangePasswordStatus.success) return;
-
-    // Captured before the pop so the snackbar lands on the screen the user
-    // returns to rather than on a route that is already gone.
-    final messenger = ScaffoldMessenger.of(context);
-    final message = context.l10n.changePasswordSuccess;
-    // Lets the platform password manager offer to update the saved entry.
-    TextInput.finishAutofillContext();
-    // safePop rather than pop: a cold-entered stack has nothing to pop, and
-    // succeeding at the change must not end in a crash.
-    context.safePop(fallback: GeneralSettingsScreen.path);
-    messenger.showSnackBar(DivineSnackbarContainer.snackBar(message));
+    switch (state.status) {
+      case ChangePasswordStatus.editing:
+      case ChangePasswordStatus.submitting:
+        return;
+      case ChangePasswordStatus.failure:
+        final reason = state.failureReason;
+        if (reason == null) return;
+        // The refusal only appears as text below the fields, and nothing moves
+        // focus there — without this a screen reader answers a submit with
+        // silence.
+        _announce(context, changePasswordFailureMessage(context, reason));
+      case ChangePasswordStatus.success:
+        // Captured before the pop so the snackbar lands on the screen the user
+        // returns to rather than on a route that is already gone.
+        final messenger = ScaffoldMessenger.of(context);
+        final message = context.l10n.changePasswordSuccess;
+        // Announced here rather than left to the snackbar: it is shown on the
+        // screen we are about to return to, which screen readers do not
+        // reliably pick up.
+        _announce(context, message);
+        // Lets the platform password manager offer to update the saved entry.
+        TextInput.finishAutofillContext();
+        // safePop rather than pop: a cold-entered stack has nothing to pop, and
+        // succeeding at the change must not end in a crash.
+        context.safePop(fallback: GeneralSettingsScreen.path);
+        messenger.showSnackBar(DivineSnackbarContainer.snackBar(message));
+    }
   }
+
+  void _announce(BuildContext context, String message) =>
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        message,
+        Directionality.of(context),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +237,29 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
   };
 }
 
+/// The refusal copy for [reason].
+///
+/// Shared by the rendered message and the screen-reader announcement so the
+/// two cannot drift.
+@visibleForTesting
+String changePasswordFailureMessage(
+  BuildContext context,
+  ChangePasswordFailureReason reason,
+) {
+  final l10n = context.l10n;
+  return switch (reason) {
+    ChangePasswordFailureReason.wrongCurrentPassword =>
+      l10n.changePasswordWrongCurrent,
+    ChangePasswordFailureReason.weakPassword => l10n.authPasswordTooShort,
+    ChangePasswordFailureReason.needsSignIn =>
+      l10n.accountCredentialsNeedsSignIn,
+    ChangePasswordFailureReason.rateLimited =>
+      l10n.accountCredentialsRateLimited,
+    ChangePasswordFailureReason.network => l10n.accountCredentialsNetwork,
+    ChangePasswordFailureReason.unknown => l10n.accountCredentialsUnknown,
+  };
+}
+
 /// Why the change was refused, in copy the user can act on.
 class _FailureMessage extends StatelessWidget {
   const _FailureMessage({required this.reason});
@@ -221,21 +268,8 @@ class _FailureMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final message = switch (reason) {
-      ChangePasswordFailureReason.wrongCurrentPassword =>
-        l10n.changePasswordWrongCurrent,
-      ChangePasswordFailureReason.weakPassword => l10n.authPasswordTooShort,
-      ChangePasswordFailureReason.needsSignIn =>
-        l10n.accountCredentialsNeedsSignIn,
-      ChangePasswordFailureReason.rateLimited =>
-        l10n.accountCredentialsRateLimited,
-      ChangePasswordFailureReason.network => l10n.accountCredentialsNetwork,
-      ChangePasswordFailureReason.unknown => l10n.accountCredentialsUnknown,
-    };
-
     return Text(
-      message,
+      changePasswordFailureMessage(context, reason),
       style: VineTheme.bodyMediumFont(color: VineTheme.error),
     );
   }

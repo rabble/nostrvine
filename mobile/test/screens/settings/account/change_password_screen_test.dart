@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,28 @@ import 'package:openvine/screens/settings/account/change_password_screen.dart';
 
 class _MockAccountCredentialsRepository extends Mock
     implements AccountCredentialsRepository {}
+
+/// Collects what the screen hands to screen readers.
+List<Object?> _captureAnnouncements(WidgetTester tester) {
+  final announced = <Object?>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (message) async {
+      if (message is Map && message['type'] == 'announce') {
+        announced.add((message['data'] as Map?)?['message']);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announced;
+}
 
 void main() {
   group(ChangePasswordView, () {
@@ -160,6 +183,42 @@ void main() {
 
       expect(find.byType(ChangePasswordView), findsNothing);
       expect(find.text(l10n.changePasswordSuccess), findsOneWidget);
+    });
+
+    testWidgets('reads a refusal out to a screen reader', (tester) async {
+      stubResult(
+        ChangePasswordResult.failure(ChangePasswordFailure.wrongPassword),
+      );
+      final announced = _captureAnnouncements(tester);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await fillForm(tester, current: 'wrong');
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.authUpdatePassword),
+      );
+      await tester.pumpAndSettle();
+
+      // Nothing moves focus to the message, so the announcement is the only
+      // way a screen-reader user learns the submit was refused.
+      expect(announced, contains(l10n.changePasswordWrongCurrent));
+    });
+
+    testWidgets('reads the success out before leaving the screen', (
+      tester,
+    ) async {
+      stubResult(ChangePasswordResult.success());
+      final announced = _captureAnnouncements(tester);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await fillForm(tester);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.authUpdatePassword),
+      );
+      await tester.pumpAndSettle();
+
+      expect(announced, contains(l10n.changePasswordSuccess));
     });
   });
 }

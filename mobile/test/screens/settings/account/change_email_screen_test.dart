@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
@@ -14,6 +15,28 @@ import 'package:openvine/screens/settings/account/change_email_screen.dart';
 
 class _MockAccountCredentialsRepository extends Mock
     implements AccountCredentialsRepository {}
+
+/// Collects what the screen hands to screen readers.
+List<Object?> _captureAnnouncements(WidgetTester tester) {
+  final announced = <Object?>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (message) async {
+      if (message is Map && message['type'] == 'announce') {
+        announced.add((message['data'] as Map?)?['message']);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announced;
+}
 
 void main() {
   group(ChangeEmailView, () {
@@ -139,6 +162,46 @@ void main() {
       expect(
         find.widgetWithText(DivineButton, l10n.changeEmailSubmit),
         findsNothing,
+      );
+    });
+
+    testWidgets('reads a refusal out to a screen reader', (tester) async {
+      stubResult(ChangeEmailResult.failure(ChangeEmailFailure.wrongPassword));
+      final announced = _captureAnnouncements(tester);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await fillForm(tester, password: 'wrong');
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.changeEmailSubmit),
+      );
+      await tester.pumpAndSettle();
+
+      expect(announced, contains(l10n.changeEmailWrongPassword));
+    });
+
+    testWidgets('reads the confirmation panel out when it replaces the form', (
+      tester,
+    ) async {
+      stubResult(ChangeEmailResult.success());
+      final announced = _captureAnnouncements(tester);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await fillForm(tester);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.changeEmailSubmit),
+      );
+      await tester.pumpAndSettle();
+
+      // The whole form is swapped out with nothing moving focus into the
+      // panel, so silence here would leave the user believing nothing happened.
+      expect(
+        announced.single,
+        allOf(
+          contains(l10n.changeEmailSentTitle),
+          contains(l10n.changeEmailSentMessage('new@example.com')),
+        ),
       );
     });
   });
