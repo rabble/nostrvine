@@ -41,6 +41,7 @@ import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -197,11 +198,6 @@ class MockAuthService extends Mock implements AuthService {
 }
 
 const String testUserHex = syntheticTestPubkey;
-
-/// Pubkey on the profile-checkmark allowlist in
-/// `lib/widgets/special_profile_checkmark.dart`.
-const specialProfilePubkey =
-    'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4';
 const issuerUserHex =
     '4f071cf08328c9d9dbb21f5d9d1e51fe2ecf4e7de5a4e59ecdf356f6a6f49f22';
 const recipientUserHex =
@@ -605,11 +601,11 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          userIdHex: specialProfilePubkey,
+          userIdHex: specialProfilePubkeys.first,
           isOwnProfile: false,
           suppliedProfile: createTestProfile(
             displayName: 'Checked User',
-            pubkey: specialProfilePubkey,
+            pubkey: specialProfilePubkeys.first,
           ),
         ),
       );

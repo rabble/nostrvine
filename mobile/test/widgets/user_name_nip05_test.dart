@@ -10,16 +10,12 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 Finder _specialCheckmark() => find.byWidgetPredicate(
   (w) => w is DivineIcon && w.icon == DivineIconName.check,
 );
-
-/// Pubkey on the profile-checkmark allowlist in
-/// `lib/widgets/special_profile_checkmark.dart`.
-const _specialProfilePubkey =
-    'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4';
 
 void main() {
   const defaultPubkey =
@@ -75,7 +71,7 @@ void main() {
   });
 
   testWidgets('shows a checkmark for special profile pubkey', (tester) async {
-    await tester.pumpWidget(buildSubject(pubkey: _specialProfilePubkey));
+    await tester.pumpWidget(buildSubject(pubkey: specialProfilePubkeys.first));
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);

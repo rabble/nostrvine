@@ -16,6 +16,9 @@ const _specialProfilePubkeys = {
   'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
 };
 
+@visibleForTesting
+const Set<String> specialProfilePubkeys = _specialProfilePubkeys;
+
 bool shouldShowSpecialProfileCheckmark(UserProfile? profile) {
   if (profile == null) return false;
   return _specialProfilePubkeys.contains(profile.pubkey.toLowerCase());

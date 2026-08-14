@@ -14,6 +14,7 @@ import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/string_utils.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 
@@ -25,11 +26,6 @@ AppLocalizations _l10n(WidgetTester tester) =>
 Finder _specialCheckmark() => find.byWidgetPredicate(
   (w) => w is DivineIcon && w.icon == DivineIconName.check,
 );
-
-/// Pubkey on the profile-checkmark allowlist in
-/// `lib/widgets/special_profile_checkmark.dart`.
-const _specialProfilePubkey =
-    'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4';
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -188,54 +184,51 @@ void main() {
     expect(_specialCheckmark(), findsNothing);
   });
 
-  testWidgets(
-    'author line shows checkmark for a special profile pubkey',
-    (
-      tester,
-    ) async {
-      testVideo = testVideo.copyWith(pubkey: _specialProfilePubkey);
+  testWidgets('author line shows checkmark for a special profile pubkey', (
+    tester,
+  ) async {
+    testVideo = testVideo.copyWith(pubkey: specialProfilePubkeys.first);
 
-      await tester.pumpWidget(
-        testProviderScope(
-          additionalOverrides: [
-            repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
-            userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
-              yield UserProfile(
-                pubkey: pubkey,
-                name: 'Alice',
-                nip05: 'alice@example.com',
-                rawData: const {},
-                createdAt: DateTime(2026),
-                eventId: 'kind0_event_id',
-              );
-            }),
-            nip05VerificationProvider.overrideWith(
-              (ref, pubkey) async => Nip05VerificationStatus.verified,
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: BlocProvider<VideoInteractionsBloc>.value(
-                value: mockInteractionsBloc,
-                child: VideoOverlayActions(
-                  video: testVideo,
-                  isVisible: true,
-                  isActive: true,
-                ),
+    await tester.pumpWidget(
+      testProviderScope(
+        additionalOverrides: [
+          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
+          userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
+            yield UserProfile(
+              pubkey: pubkey,
+              name: 'Alice',
+              nip05: 'alice@example.com',
+              rawData: const {},
+              createdAt: DateTime(2026),
+              eventId: 'kind0_event_id',
+            );
+          }),
+          nip05VerificationProvider.overrideWith(
+            (ref, pubkey) async => Nip05VerificationStatus.verified,
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider<VideoInteractionsBloc>.value(
+              value: mockInteractionsBloc,
+              child: VideoOverlayActions(
+                video: testVideo,
+                isVisible: true,
+                isActive: true,
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
 
-      expect(find.text('Alice'), findsOneWidget);
-      expect(_specialCheckmark(), findsOneWidget);
-    },
-  );
+    expect(find.text('Alice'), findsOneWidget);
+    expect(_specialCheckmark(), findsOneWidget);
+  });
 
   testWidgets(
     'does not render a dedicated captions button in the action rail',
