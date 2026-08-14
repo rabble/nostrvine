@@ -1175,7 +1175,7 @@ void main() {
       });
 
       test(
-        'a sync racing the toggle cannot duplicate a private item',
+        'a racing sync never blanks the private items it is re-reading',
         () async {
           stubRelay(
             events: [
@@ -1188,21 +1188,43 @@ void main() {
             ],
           );
           final service = createService();
+          await service.syncGlobalBookmarks();
 
-          // The display read and the toggle share one service instance and
-          // neither is serialized, so both reach the decrypt await together.
-          final racingSync = service.syncGlobalBookmarks();
-          final toggle = service.toggleVideoInGlobalBookmarks(privateVideo);
-          await racingSync;
-          final result = await toggle;
+          // Syncs are not serialized (#7163), so a second one re-reads the
+          // list while the share sheet is still asking whether this video is
+          // saved. Sample that question across the whole re-read rather than
+          // at one instant, since the window is only as wide as the decrypt.
+          var settled = false;
+          final racing = service.syncGlobalBookmarks().whenComplete(
+            () => settled = true,
+          );
+          var everReadUnsaved = false;
+          var sampledToCompletion = false;
+          for (var i = 0; i < 1000; i++) {
+            if (settled) {
+              sampledToCompletion = true;
+              break;
+            }
+            everReadUnsaved |= !service.isVideoBookmarkedGlobally(privateVideo);
+            await Future<void>.value();
+          }
+          await racing;
 
-          expect(result.succeeded, isTrue);
           expect(
-            signedContent,
-            isEmpty,
+            sampledToCompletion,
+            isTrue,
             reason:
-                'a private item adopted twice survives List.remove, so the '
-                'relay keeps the bookmark the user was told was removed',
+                'the loop has to outlast the sync, or the assertion below '
+                'passes without ever having sampled the window - which is the '
+                'inert shape this test replaced',
+          );
+          expect(
+            everReadUnsaved,
+            isFalse,
+            reason:
+                'clearing the private items before the decrypt await makes a '
+                'saved video read as unsaved mid-sync, and a save taken in '
+                'that window publishes it as a public tag (#7136)',
           );
         },
       );
