@@ -209,6 +209,11 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
   /// working, since its own end tag must not be mistaken for the root's.
   /// Unbalanced markup *inside* the root stays accepted: it trips only a debug
   /// `assert` in the compiler and renders in release.
+  ///
+  /// The rule is one-directional, though: `endElement` pops only on a name
+  /// match, so an `</svg>` arriving while a group is open never empties
+  /// `_parentDrawables`. `<svg><g><rect/></svg></g>` renders there and is
+  /// rejected here — the price of not coupling to the push set.
   bool _parsesAsSvg(Uint8List bytes) {
     final source = utf8.decode(bytes, allowMalformed: true);
     String? rootName;

@@ -180,6 +180,23 @@ void main() {
     await expectLater(repository.load(url), completion(unbalanced));
   });
 
+  test('rejects mismatched nesting whose root end tag comes first', () {
+    // Deliberately stricter than the consumer: `endElement` pops only on a
+    // name match, so `</svg>` with a `<g>` still open never empties
+    // `_parentDrawables` and this renders. Accepting it back would take
+    // mirroring the compiler's push set, which is what the document rule
+    // exists to avoid.
+    final repository = repositoryFor(
+      http.Response(
+        '$svgOpenTag<g><rect/></svg></g>',
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      ),
+    );
+
+    expect(repository.load(url), completion(isNull));
+  });
+
   test('rejects well-formed XML whose root element is not svg', () {
     final repository = repositoryFor(
       http.Response(
