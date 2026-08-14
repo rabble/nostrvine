@@ -2,6 +2,7 @@
 // ABOUTME: emitIfOpen and addIfOpen no-op instead of throwing after close().
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meta/meta.dart';
 
 /// Guarded `emit` for work that can resume after [BlocBase.close].
 ///
@@ -29,14 +30,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Blocs get the same guard for state; their event dispatch is covered by
 /// [CloseGuardedAdd].
 mixin CloseGuardedEmit<State> on BlocBase<State> {
-  /// Emits [state] unless this instance is already closed.
+  /// Emits [nextState] unless this instance is already closed.
   ///
   /// Returns `true` when the state was emitted, `false` when it was dropped
   /// because the bloc/cubit is closed — useful when the caller has follow-up
   /// work that only makes sense against a live instance.
-  bool emitIfOpen(State state) {
+  ///
+  /// Carries the same visibility as the `BlocBase.emit` it wraps: mixing this
+  /// in must not turn a cubit's state into something its callers can set.
+  @protected
+  @visibleForTesting
+  bool emitIfOpen(State nextState) {
     if (isClosed) return false;
-    emit(state);
+    emit(nextState);
     return true;
   }
 }
