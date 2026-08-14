@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -235,11 +236,12 @@ Future<void> _promptAdultContentHidden(BuildContext context) async {
   final openFilters = await context.showVideoPausingVineBottomSheet<bool>(
     scrollable: false,
     showHeaderDivider: false,
-    // The sheet outlives the feed item that opened it — the pooled feed
-    // disposes items that scroll out of the pool — so resolving anything
-    // through the caller's context on tap crashed on a defunct element
-    // (#7291). Everything inside the sheet reads from the sheet's own
-    // subtree, which stays mounted for as long as the sheet is up.
+    // The sheet outlives the error overlay that opened it: the overlay is a
+    // conditional child of the feed item, and any non-append-only feed emit
+    // clears the error state behind the open sheet, unmounting it. Resolving
+    // anything through the caller's context on tap then hit a defunct element
+    // and both buttons went inert (#7291). Everything inside the sheet reads
+    // from the sheet's own subtree, which stays mounted while the sheet is up.
     body: Builder(
       builder: (sheetContext) => VineBottomSheetPrompt(
         sticker: DivineStickerName.trafficCone,
@@ -252,8 +254,17 @@ Future<void> _promptAdultContentHidden(BuildContext context) async {
       ),
     ),
   );
-  if (openFilters != true || !context.mounted) return;
-  await context.pushWithVideoPause<void>(ContentFiltersScreen.path);
+  if (openFilters != true) return;
+
+  // Popping the sheet is not enough on its own: the same unmount that made the
+  // buttons inert also leaves the caller's context defunct, so pushing from it
+  // is skipped and the CTA closes the sheet without opening what it names
+  // (#7350). The root navigator outlives every feed item, and go_router wraps
+  // it in an InheritedGoRouter, so a push resolves from there — the same
+  // durable-context route upload_failure_sheet already takes.
+  final target = context.mounted ? context : NavigatorKeys.root.currentContext;
+  if (target == null || !target.mounted) return;
+  await target.pushWithVideoPause<void>(ContentFiltersScreen.path);
 }
 
 /// Surfaces the connectivity-specific message when a remote signer didn't

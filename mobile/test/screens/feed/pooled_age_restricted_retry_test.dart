@@ -19,6 +19,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -643,8 +644,7 @@ void main() {
     );
 
     testWidgets(
-      'records the current outcome: Open Content Filters does nothing once '
-      'the host feed item is disposed',
+      'opens Content Filters even after the host feed item is disposed',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         final playbackStatusCubit = VideoPlaybackStatusCubit();
@@ -683,23 +683,20 @@ void main() {
         await tester.tap(find.text(_adultContentHiddenAction));
         await tester.pumpAndSettle();
 
-        // This records what the app does today; it is not a claim that the
-        // no-op is the right product behaviour. The CTA pops the sheet, then
-        // the follow-up push is skipped because the caller's context is
-        // defunct by then, so the viewer taps and nothing visible happens.
-        // Making the CTA survive host disposal is tracked as #7350; whoever
-        // does it should flip the marker expectation below and treat that as
-        // expected, not as a regression.
+        // The button has to do what it says even when the overlay that opened
+        // the sheet is gone, or the viewer is left with a CTA that only closes
+        // the sheet (#7350). The push falls back to the root navigator here,
+        // since the caller's context is defunct.
         expect(tester.takeException(), isNull);
         expect(find.text(_adultContentHiddenTitle), findsNothing);
-        expect(find.text(_contentFiltersRouteMarker), findsNothing);
-        // Regardless of that, both flags have to be back down: the sheet
-        // closed, and the skipped push must not have latched the page flag
-        // on its way out (#6239).
+        expect(find.text(_contentFiltersRouteMarker), findsOneWidget);
+        // The sheet flag has to come back down on the way through, or the feed
+        // stays paused for the rest of the session (#6239).
         expect(
-          container.read(overlayVisibilityProvider).hasVisibleOverlay,
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
           isFalse,
         );
+        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
       },
     );
 
@@ -939,6 +936,9 @@ class _RetryHarnessState extends State<_RetryHarness> {
   // A real router, so the sheet's "Open Content Filters" push is exercised
   // rather than stubbed out.
   late final GoRouter _router = GoRouter(
+    // Mirrors app_router.dart, so the CTA's fallback to the root navigator's
+    // context resolves here the way it does in the app.
+    navigatorKey: NavigatorKeys.root,
     routes: [
       GoRoute(
         path: '/',
