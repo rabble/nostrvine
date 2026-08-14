@@ -248,6 +248,36 @@ void main() {
       );
 
       test(
+        'preserves a durable box left only as a compacted copy',
+        () async {
+          // Compaction interrupted after writing `.hivec` and before renaming
+          // it over the box file leaves it as the only copy of the box.
+          final compacted = write(
+            'support/openvine/${HiveBoxNames.notifications}.hivec',
+            'compacted preferences',
+          );
+          final dirtyCompacted = write(
+            'support/openvine/'
+                '${HiveBoxNames.pushNotificationPreferencesDirty}.hivec',
+            'compacted dirty preferences',
+          );
+          final uploadsCompacted = write(
+            'support/openvine/${HiveBoxNames.pendingUploads}.hivec',
+            'compacted pending uploads',
+          );
+          final scratch = write('support/openvine/scratch.txt', 'scratch');
+
+          final recovered = await CacheRecoveryService.clearAllCaches();
+
+          expect(recovered, isTrue);
+          expect(compacted.existsSync(), isTrue);
+          expect(dirtyCompacted.existsSync(), isTrue);
+          expect(uploadsCompacted.existsSync(), isTrue);
+          expect(scratch.existsSync(), isFalse);
+        },
+      );
+
+      test(
         'cacheSizeBytes excludes protected app support state',
         () async {
           write('support/openvine/database/divine_db.db', 'database');
@@ -270,6 +300,10 @@ void main() {
             'support/openvine/'
                 '${HiveBoxNames.pushNotificationPreferencesDirty}.lock',
             'lock',
+          );
+          write(
+            'support/openvine/${HiveBoxNames.notifications}.hivec',
+            'compacted preferences',
           );
           write('support/openvine/cache/cache_sync.db', 'cache');
           write('support/openvine/scratch.txt', 'scratch');
