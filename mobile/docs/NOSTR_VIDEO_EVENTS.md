@@ -343,7 +343,7 @@ The `.content` field is optional and could contain a free-form note.
 |-----|--------|-------------|----------|
 | `a` | `["a", "<kind>:<pubkey>:<d-tag>", "<relay-url>"]` | Addressable reference to kind 34235 or 34236 video event | **Required** |
 | `e` | `["e", "<event-id>", "<relay-url>"]` | Event ID reference (specific version viewed) | **Required** |
-| `viewed` | `["viewed", "<start>", "<end>"]` | Start/end timestamps in seconds (can repeat) | **Required** |
+| `viewed` | `["viewed", "0", "<whole-seconds-watched>"]` | Elapsed whole playback seconds for this continuous mobile session | **Required** |
 | `loops` | `["loops", "<playthrough-fraction>"]` | Exact finite, non-negative playthrough count emitted by mobile, including partial loops; Funnelcake support is pending #921 | Optional |
 | `source` | `["source", "<source-type>"]` | Traffic source: `home`, `discovery`, `profile`, `share`, `search` | Optional |
 | `client` | `["client", "<name>", "31990:<app-pubkey>:<d-identifier>", "<relay-url>"]` | NIP-89 client attribution for Divine | Optional |
@@ -382,7 +382,6 @@ The `.content` field is optional and could contain a free-form note.
 
 - **No `d` tag** - ephemeral events are not addressable/replaceable
 - **Both `a` and `e` tags are required** - `a` provides stable addressable reference, `e` tracks specific version viewed
-- Multiple `viewed` tags can track multiple segments watched in a single session
 - The `viewed` tag carries elapsed playback seconds for the session, not positions within the video. Mobile always emits `["viewed", "0", "<whole seconds watched>"]`, so a 6s video looped twice reports `["viewed", "0", "12"]`, and a sub-second view truncates to `["viewed", "0", "0"]`
 - Analytics services should consume these events in real-time before relays discard them
 - Every session with positive playback time counts, including sub-second views

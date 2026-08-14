@@ -60,8 +60,8 @@ class ViewEventPublisher {
   /// Publish a video view event.
   ///
   /// [video] - The video that was viewed
-  /// [startSeconds] - When the viewing started (seconds into video)
-  /// [endSeconds] - When the viewing ended (seconds into video)
+  /// [startSeconds] - Elapsed playback seconds at the start of the session
+  /// [endSeconds] - Elapsed playback seconds at the end of the session
   /// [source] - Where the video was discovered/viewed from
   ///
   /// Returns true if the event was published successfully.
@@ -158,92 +158,6 @@ class ViewEventPublisher {
     } catch (e) {
       Log.error(
         'Error publishing view event: $e',
-        name: 'ViewEventPublisher',
-        category: LogCategory.video,
-      );
-      return _drop(ViewEventDropReason.unexpectedError, video.id, method);
-    }
-  }
-
-  /// Publish view event for multiple watched segments.
-  ///
-  /// Use this when the user watched multiple non-contiguous segments
-  /// of the video (e.g., skipped around).
-  Future<bool> publishViewEventWithSegments({
-    required VideoEvent video,
-    required List<(int, int)> segments,
-    ViewTrafficSource source = ViewTrafficSource.unknown,
-    String? sourceDetail,
-  }) async {
-    const method = 'publishViewEventWithSegments';
-    // Filter out invalid segments. Per view=playback-start spec, any
-    // non-inverted segment counts (even <1s without a full loop is valid).
-    final validSegments = segments.where((s) => s.$2 >= s.$1).toList();
-
-    if (validSegments.isEmpty) {
-      return _drop(ViewEventDropReason.invalidWatchRange, video.id, method);
-    }
-
-    if (!_authService.isAuthenticated) {
-      return _drop(ViewEventDropReason.notAuthenticated, video.id, method);
-    }
-
-    try {
-      final aTag = video.addressableId;
-      if (aTag == null) {
-        return _drop(
-          ViewEventDropReason.missingAddressableDTag,
-          video.id,
-          method,
-        );
-      }
-
-      String relayHint = _defaultRelayHint;
-      if (_nostrService.connectedRelays.isNotEmpty) {
-        relayHint = _nostrService.connectedRelays.first;
-      }
-
-      // Build tags with multiple viewed segments
-      final tags = <List<String>>[
-        ['a', aTag, relayHint],
-        ['e', video.id, relayHint],
-        // Add all valid segments
-        for (final segment in validSegments)
-          ['viewed', segment.$1.toString(), segment.$2.toString()],
-        if (sourceDetail != null && sourceDetail.isNotEmpty)
-          ['source', source.tagValue, sourceDetail]
-        else
-          ['source', source.tagValue],
-      ];
-
-      final event = await _authService.createAndSignEvent(
-        kind: viewEventKind,
-        content: '',
-        tags: tags,
-      );
-
-      if (event == null) {
-        return _drop(ViewEventDropReason.signingFailed, video.id, method);
-      }
-
-      final sentEvent = await _nostrService.publishEvent(event);
-
-      if (sentEvent is PublishSuccess) {
-        final totalWatched = validSegments.fold<int>(
-          0,
-          (sum, s) => sum + (s.$2 - s.$1),
-        );
-        Log.info(
-          'View event published: video=${video.id}, segments=${validSegments.length}, total=${totalWatched}s',
-          name: 'ViewEventPublisher',
-          category: LogCategory.video,
-        );
-        return true;
-      }
-      return _drop(ViewEventDropReason.relayRejected, video.id, method);
-    } catch (e) {
-      Log.error(
-        'Error publishing multi-segment view event: $e',
         name: 'ViewEventPublisher',
         category: LogCategory.video,
       );

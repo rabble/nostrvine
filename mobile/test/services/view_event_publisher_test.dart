@@ -97,19 +97,16 @@ void main() {
         verifyNever(() => mockNostr.publishEvent(any()));
       });
 
-      test(
-        'view = playback start: zero-duration segment is valid',
-        () async {
-          final result = await publisher.publishViewEvent(
-            video: createTestVideoEvent(pubkey: creatorPubkey),
-            startSeconds: 0,
-            endSeconds: 0,
-          );
+      test('view = playback start: zero-duration segment is valid', () async {
+        final result = await publisher.publishViewEvent(
+          video: createTestVideoEvent(pubkey: creatorPubkey),
+          startSeconds: 0,
+          endSeconds: 0,
+        );
 
-          expect(result, isTrue);
-          verify(() => mockNostr.publishEvent(any())).called(1);
-        },
-      );
+        expect(result, isTrue);
+        verify(() => mockNostr.publishEvent(any())).called(1);
+      });
 
       test('publishes self-views with video reference tags', () async {
         final result = await publisher.publishViewEvent(
@@ -538,129 +535,6 @@ void main() {
         final tags = captured[0] as List<List<String>>;
         final loopsTags = tags.where((t) => t[0] == 'loops').toList();
         expect(loopsTags, isEmpty);
-      });
-    });
-
-    group('publishViewEventWithSegments', () {
-      test('publishes self-views with segments', () async {
-        final result = await publisher.publishViewEventWithSegments(
-          video: createTestVideoEvent(
-            id: 'self_view_segments_event_id',
-            pubkey: viewerPubkey,
-            vineId: 'self_view_segments_vine_id',
-          ),
-          segments: [(0, 5), (10, 15)],
-          source: ViewTrafficSource.discoveryForYou,
-        );
-
-        expect(result, isTrue);
-        final captured = verify(
-          () => mockAuth.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: captureAny(named: 'tags'),
-          ),
-        ).captured;
-        verify(() => mockNostr.publishEvent(any())).called(1);
-
-        final tags = captured[0] as List<List<String>>;
-        expect(
-          tags.firstWhere((t) => t[0] == 'a')[1],
-          equals('34236:$viewerPubkey:self_view_segments_vine_id'),
-        );
-        expect(
-          tags.firstWhere((t) => t[0] == 'e')[1],
-          equals('self_view_segments_event_id'),
-        );
-        expect(tags.where((t) => t[0] == 'viewed'), [
-          ['viewed', '0', '5'],
-          ['viewed', '10', '15'],
-        ]);
-        expect(tags.firstWhere((t) => t[0] == 'source'), [
-          'source',
-          'discovery:foryou',
-        ]);
-      });
-
-      test('returns false when all segments are inverted', () async {
-        final result = await publisher.publishViewEventWithSegments(
-          video: createTestVideoEvent(pubkey: creatorPubkey),
-          segments: [(5, 3), (10, 9)],
-        );
-
-        expect(result, isFalse);
-        verifyNever(() => mockNostr.publishEvent(any()));
-      });
-
-      test('returns false for segments when video has no real d tag', () async {
-        final result = await publisher.publishViewEventWithSegments(
-          video: createTestVideoEvent(
-            id: 'event_id_without_d',
-            pubkey: creatorPubkey,
-            vineId: 'legacy_vine_id',
-            clearAddressableDTag: true,
-          ),
-          segments: [(0, 5), (10, 15)],
-        );
-
-        expect(result, isFalse);
-        verifyNever(
-          () => mockAuth.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
-          ),
-        );
-        verifyNever(() => mockNostr.publishEvent(any()));
-      });
-
-      test(
-        'view = playback start: zero-length segment (5,5) is valid view',
-        () async {
-          await publisher.publishViewEventWithSegments(
-            video: createTestVideoEvent(pubkey: creatorPubkey),
-            segments: [(0, 5), (5, 5), (10, 15)],
-          );
-
-          final captured = verify(
-            () => mockAuth.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: captureAny(named: 'tags'),
-            ),
-          ).captured;
-
-          final tags = captured[0] as List<List<String>>;
-          final viewedTags = tags.where((t) => t[0] == 'viewed').toList();
-          // All three are valid views per playback-start spec.
-          expect(viewedTags, hasLength(3));
-        },
-      );
-
-      test('publishes multiple viewed tags', () async {
-        final result = await publisher.publishViewEventWithSegments(
-          video: createTestVideoEvent(pubkey: creatorPubkey),
-          segments: [(0, 5), (10, 20)],
-          source: ViewTrafficSource.profile,
-        );
-
-        expect(result, isTrue);
-
-        final captured = verify(
-          () => mockAuth.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: captureAny(named: 'tags'),
-          ),
-        ).captured;
-
-        final tags = captured[0] as List<List<String>>;
-        final viewedTags = tags.where((t) => t[0] == 'viewed').toList();
-        expect(viewedTags, hasLength(2));
-        expect(viewedTags[0][1], equals('0'));
-        expect(viewedTags[0][2], equals('5'));
-        expect(viewedTags[1][1], equals('10'));
-        expect(viewedTags[1][2], equals('20'));
       });
     });
   });
