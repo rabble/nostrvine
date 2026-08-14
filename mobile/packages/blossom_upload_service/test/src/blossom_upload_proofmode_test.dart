@@ -11,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockAuthProvider extends Mock implements BlossomAuthProvider {}
 
@@ -60,12 +61,17 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      await LogCaptureService().clearAllLogs();
       mockAuthProvider = _MockAuthProvider();
       mockDio = _MockDio();
       service = BlossomUploadService(
         authProvider: mockAuthProvider,
         dio: mockDio,
       );
+    });
+
+    tearDown(() async {
+      await LogCaptureService().clearAllLogs();
     });
 
     Options? capturedOptions;
@@ -486,6 +492,57 @@ void main() {
               base64.decode(headers['X-ProofMode-PublicKey'] as String),
             ),
             equals(realWorldPublicKey),
+          );
+        },
+      );
+
+      test(
+        'logs over-budget ProofMode header trimming at info severity',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': 'S' * 821,
+            'publicKey': 'K' * 2048,
+            'deviceAttestation': 'A' * 53826,
+            'c2pa_manifest_id': 'urn:c2pa:7ae319b2-8641-4eea-8203-a1faf72e31e4',
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final trimLogs = LogCaptureService().getRecentLogs().where(
+            (log) =>
+                log.name == 'BlossomUploadService' &&
+                log.message.startsWith('ProofMode headers trimmed'),
+          );
+
+          expect(trimLogs, hasLength(1));
+          expect(trimLogs.single.level, LogLevel.info);
+          expect(
+            trimLogs.single.message,
+            contains('omitted X-ProofMode-Attestation'),
+          );
+          expect(trimLogs.single.message, contains('X-ProofMode-Manifest'));
+
+          final warnings = LogCaptureService().getRecentLogs(
+            minLevel: LogLevel.warning,
+          );
+          expect(
+            warnings.where(
+              (log) =>
+                  log.name == 'BlossomUploadService' &&
+                  log.message.contains('ProofMode headers'),
+            ),
+            isEmpty,
           );
         },
       );
