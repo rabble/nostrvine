@@ -82,6 +82,20 @@ final pendingUploadOwnerCleanupProvider = Provider<PendingUploadOwnerCleanup>((
       ref.read(uploadManagerProvider).deleteAllForOwner(ownerPubkey);
 });
 
+/// Stops the live DM gift-wrap subscription during account cleanup.
+///
+/// The indirection is load-bearing: reading [dmRepositoryProvider] from
+/// [userDataCleanupServiceProvider]'s own callback closes the loop
+/// userDataCleanup → dmRepository → nostrService → authService →
+/// userDataCleanup, which Riverpod's debug cycle guard rejects. See #7389.
+final dmListeningStopProvider = Provider<Future<void> Function()>((ref) {
+  return () async {
+    // Cleanup must not construct a repository just to stop it.
+    if (!ref.exists(dmRepositoryProvider)) return;
+    await ref.read(dmRepositoryProvider).stopListening();
+  };
+});
+
 /// Connectivity trigger for the message retry sweep: fires on EVERY
 /// connectivity transition, including `→ none`. [OutgoingDmRetryService] runs
 /// its own offline probe per pass: an online pass re-drives retryable rows,
@@ -659,6 +673,8 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // Wire database cleanup callback so signOut() clears DM and notification data.
   // Stop DM listening FIRST to prevent in-flight event handlers from writing
   // to tables that are being cleared (H3 race condition fix).
+  // Escaping cleanup reads must go through port providers; direct reads of
+  // auth-dependent providers from this callback can recreate #7389.
   //
   // When [deleteUserData] is true (destructive sign-out or identity change),
   // also deletes per-user DAO rows scoped by [userPubkey].
@@ -683,7 +699,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
 
         await safeCleanup(
           'dmRepository',
-          () => ref.read(dmRepositoryProvider).stopListening(),
+          () => ref.read(dmListeningStopProvider)(),
         );
         try {
           await ref.read(openVineImageCacheClearProvider)();

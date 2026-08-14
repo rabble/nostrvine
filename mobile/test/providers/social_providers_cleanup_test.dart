@@ -196,6 +196,86 @@ void main() {
       );
     });
 
+    test(
+      'database cleanup stops existing dm listener through cycle-safe port',
+      () async {
+        final fakeAuthProvider = Provider<Object>((ref) {
+          ref.watch(userDataCleanupServiceProvider);
+          return Object();
+        });
+        final cycleContainer = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            openVineImageCacheClearProvider.overrideWithValue(() async {}),
+            uploadManagerProvider.overrideWithValue(uploadManager),
+            dmRepositoryProvider.overrideWith((ref) {
+              ref.watch(fakeAuthProvider);
+              return dmRepository;
+            }),
+          ],
+        );
+        addTearDown(cycleContainer.dispose);
+
+        final cleanupSubscription = cycleContainer.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(cleanupSubscription.close);
+        cycleContainer.read(dmRepositoryProvider);
+
+        final service = cleanupSubscription.read();
+        expect(service.onDatabaseCleanup, isNotNull);
+        await service.onDatabaseCleanup!(
+          userPubkey: _pubkeyA,
+          deleteUserData: true,
+        );
+
+        verify(() => dmRepository.stopListening()).called(1);
+      },
+    );
+
+    test(
+      'database cleanup does not build dm repository just to stop it',
+      () async {
+        var dmRepositoryBuilt = false;
+        final fakeAuthProvider = Provider<Object>((ref) {
+          ref.watch(userDataCleanupServiceProvider);
+          return Object();
+        });
+        final cycleContainer = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            openVineImageCacheClearProvider.overrideWithValue(() async {}),
+            uploadManagerProvider.overrideWithValue(uploadManager),
+            dmRepositoryProvider.overrideWith((ref) {
+              dmRepositoryBuilt = true;
+              ref.watch(fakeAuthProvider);
+              return dmRepository;
+            }),
+          ],
+        );
+        addTearDown(cycleContainer.dispose);
+
+        final cleanupSubscription = cycleContainer.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(cleanupSubscription.close);
+
+        final service = cleanupSubscription.read();
+        expect(service.onDatabaseCleanup, isNotNull);
+        await service.onDatabaseCleanup!(
+          userPubkey: _pubkeyA,
+          deleteUserData: true,
+        );
+
+        expect(dmRepositoryBuilt, isFalse);
+        verifyNever(() => dmRepository.stopListening());
+      },
+    );
+
     Future<void> seedDmReaction({
       required String id,
       required String ownerPubkey,
