@@ -980,8 +980,8 @@ void main() {
         );
       });
 
-      test('propagates TimeoutException rather than swallowing it to '
-          'null', () async {
+      test('propagates transient RpcTimeoutException rather than swallowing '
+          'it to null', () async {
         mockClient = MockClient((request) => Completer<http.Response>().future);
 
         await expectLater(
@@ -989,7 +989,7 @@ void main() {
             mockClient,
             batchTimeout: const Duration(milliseconds: 50),
           ).nip17WrapBatch(rumor, recipients),
-          throwsA(isA<TimeoutException>()),
+          throwsA(isA<RpcTimeoutException>()),
         );
       });
 

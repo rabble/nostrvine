@@ -424,7 +424,8 @@ class KeycastRpc
   /// caller can stop asking for the rest of the session.
   ///
   /// Everything else throws — a transient 5xx, an expired token, a rejected
-  /// request, or a [TimeoutException]. This is a deliberate divergence from
+  /// request, or a transient [RpcTimeoutException]. This is a deliberate
+  /// divergence from
   /// [nip17UnwrapBatch], which collapses every [RpcException] into `null`:
   /// there, a caller that latches off pays two decrypt RPCs per wrap; here it
   /// would pay four signing round trips per DM for the rest of the session, and
