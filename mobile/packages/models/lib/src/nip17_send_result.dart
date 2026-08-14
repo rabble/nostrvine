@@ -106,9 +106,15 @@ sealed class NIP17SendResult {
   /// the sweep and the retry each deliver a copy. Receiver-side gift-wrap
   /// dedup keys on the rumor id and cannot collapse two of them.
   ///
-  /// `null` when there is no row to coalesce onto — always on success (the
-  /// row is consumed), on a [blocked] result (the send gate returns before
-  /// the enqueue), and whenever the queue DAO is not wired in.
+  /// `null` on every success, on a [blocked] result (the send gate returns
+  /// before the enqueue), and whenever the queue DAO is not wired in.
+  ///
+  /// On success that usually means there is no row left to point at — a fully
+  /// delivered send consumes it. Partial delivery is the exception: when
+  /// [selfWrapPublished] is `false` the row survives with a retryable
+  /// self-wrap and this still reads `null`. Finishing that row is the retry
+  /// sweep's job (or `recoverSelfWrap`'s); it must never be re-published to
+  /// the recipient, who already has the message — so no handle is offered.
   String? get queuedRumorId => null;
 
   /// The rumor event ID (kind 14/15) — the canonical message

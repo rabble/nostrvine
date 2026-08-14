@@ -3206,8 +3206,11 @@ class DmRepository {
   /// durable row, and the sweep then delivers one copy while the retry
   /// delivers another.
   ///
-  /// Only ever called from the two branches that finalize a surviving row;
-  /// the blocked branch deletes its row and the success branch consumes it.
+  /// Only ever called from the branches that finalize a surviving row — the
+  /// soft-unconfirmed and hard-failure arms of both [sendMessage] and
+  /// [sendGroupMessage]. The blocked branch deletes its row, a cancelled
+  /// group sibling never had one, and the success branch consumes it (except
+  /// on partial delivery — see [NIP17SendResult.queuedRumorId]).
   NIP17SendResult _stampQueuedRow(NIP17SendResult result, String rumorId) =>
       switch (result) {
         NIP17SendSuccess() => result,
@@ -4394,6 +4397,10 @@ class DmRepository {
   /// that inserts `direct_messages`; partial delivery → recipient
   /// `sent` + self `failed` so the recovery path can replay only the
   /// missing self-wraps without re-delivering to recipients).
+  ///
+  /// Each failure that leaves a row behind carries that row's
+  /// [NIP17SendResult.queuedRumorId], so a caller retries by re-driving the
+  /// surviving siblings ([recoverFullSend]) rather than fanning out again.
   @useResult
   Future<List<NIP17SendResult>> sendGroupMessage({
     required List<String> recipientPubkeys,
@@ -4701,6 +4708,13 @@ class DmRepository {
     // Classify each the same way the 1:1 path does — soft-unconfirmed stays
     // pending (plain optimistic bubble), a policy block is terminal (row
     // dropped), and a hard failure marks both wraps failed.
+    //
+    // The two surviving-row branches also stamp their sibling's queued rumor
+    // id onto the returned result, exactly as [sendMessage] does. Without it
+    // a group caller has no handle on the rows this send parked and its only
+    // way to "retry" is a fresh fan-out, which mints a whole second set of
+    // rumors the receiver cannot collapse (#7316). Cancelled and blocked
+    // siblings are deliberately unstamped: both leave no row behind.
     if (outgoingDao != null) {
       for (var i = 0; i < rumors.length; i++) {
         // A sibling skipped for cancellation has no live row to transition;
@@ -4719,12 +4733,14 @@ class DmRepository {
             outgoingDao: outgoingDao,
             rumorId: rumors[i].id,
           );
+          results[i] = _stampQueuedRow(result, rumors[i].id);
         } else {
           await _finalizeAfterRecipientFailure(
             outgoingDao: outgoingDao,
             rumorId: rumors[i].id,
             errorMessage: result.error ?? 'Unknown publish failure',
           );
+          results[i] = _stampQueuedRow(result, rumors[i].id);
         }
       }
     }
