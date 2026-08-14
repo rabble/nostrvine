@@ -70,7 +70,7 @@ void main() {
       await tester.pump();
 
       expect(find.text(en.libraryTrashAutoDeletes(2)), findsOneWidget);
-      expect(find.text('5s'), findsOneWidget);
+      expect(find.text(en.libraryClipDuration('5.00')), findsOneWidget);
       expect(find.text('5.00'), findsNothing);
 
       await tester.tap(find.bySemanticsLabel(en.libraryTrashRestoreLabel));
@@ -79,6 +79,30 @@ void main() {
       verify(
         () => mockBloc.add(const ClipsLibraryRestoreClips({'trashed-clip'})),
       ).called(1);
+    });
+
+    testWidgets('keeps the fractional duration of a sub-second clip', (
+      tester,
+    ) async {
+      final subSecondClip = trashedClip.copyWith(
+        id: 'sub-second-clip',
+        duration: const Duration(milliseconds: 400),
+      );
+
+      await tester.pumpWidget(
+        buildWidget(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.trashLoaded,
+            filter: const ClipLibraryTrashFilter(),
+            trashedClips: [subSecondClip],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(en.libraryClipDuration('0.40')), findsOneWidget);
+      expect(find.text('0.40'), findsNothing);
+      expect(find.text('0s'), findsNothing);
     });
 
     testWidgets('confirms before hard-deleting a clip', (tester) async {

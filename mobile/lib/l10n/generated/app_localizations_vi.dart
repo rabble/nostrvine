@@ -6666,6 +6666,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '$seconds giây';
+  }
+
+  @override
   String get libraryAddClips => 'Thêm';
 
   @override

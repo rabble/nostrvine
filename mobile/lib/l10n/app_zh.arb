@@ -3867,6 +3867,7 @@
       }
     }
   },
+  "libraryClipDuration": "{seconds} 秒",
   "libraryAddClips": "添加",
   "libraryRecordVideo": "录制视频",
   "videoClipSemanticLabel": "视频片段，{duration} 秒",

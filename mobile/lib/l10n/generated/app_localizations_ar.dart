@@ -6613,6 +6613,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '$seconds ث';
+  }
+
+  @override
   String get libraryAddClips => 'إضافة';
 
   @override

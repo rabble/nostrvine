@@ -6521,6 +6521,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '$seconds ሰከ';
+  }
+
+  @override
   String get libraryAddClips => 'አክል';
 
   @override

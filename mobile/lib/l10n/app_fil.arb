@@ -1715,6 +1715,7 @@
     "libraryDeleteClipMessage": "Sigurado ka bang gusto mong burahin ang clip na ito?",
     "libraryClipSelectionTitle": "Mga Clip",
     "librarySecondsRemaining": "{seconds}s ang natitira",
+    "libraryClipDuration": "{seconds}s",
     "libraryAddClips": "Idagdag",
     "libraryRecordVideo": "Mag-record ng Video",
     "videoClipSemanticLabel": "Video clip, {duration} segundo",

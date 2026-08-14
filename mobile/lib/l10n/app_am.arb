@@ -3057,6 +3057,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} ሰከ",
     "libraryAddClips": "አክል",
     "libraryRecordVideo": "ቪዲዮ ይቅረጹ",
     "videoClipSemanticLabel": "የቪዲዮ ክሊፕ፣ {duration} ሰከንድ",

@@ -4206,6 +4206,15 @@
       }
     }
   },
+  "libraryClipDuration": "{seconds}s",
+  "@libraryClipDuration": {
+    "description": "Compact clip duration shown in the library trash row. {seconds} is already formatted with two decimal places, e.g. '5.73'.",
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
   "libraryAddClips": "Add",
   "libraryRecordVideo": "Record a Video",
   "videoClipSemanticLabel": "Video clip, {duration} seconds",

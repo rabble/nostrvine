@@ -6747,6 +6747,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '$seconds Sek';
+  }
+
+  @override
   String get libraryAddClips => 'Hinzufügen';
 
   @override

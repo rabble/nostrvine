@@ -6709,6 +6709,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '${seconds}s';
+  }
+
+  @override
   String get libraryAddClips => 'Tambah';
 
   @override

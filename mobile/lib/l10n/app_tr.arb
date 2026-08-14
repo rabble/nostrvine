@@ -2616,6 +2616,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} sn",
     "libraryTabClips": "Klipler",
     "libraryTabDrafts": "Taslaklar",
     "libraryWebUnavailableDescription": "Taslaklar ve klipler cihazında saklanır; yönetmek için Divine’ı telefonda aç.",

@@ -2625,6 +2625,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} s",
     "libraryTabClips": "Clips",
     "libraryTabDrafts": "Borradores",
     "libraryWebUnavailableDescription": "Los borradores y clips se guardan en tu dispositivo; abre Divine en el teléfono para gestionarlos.",
