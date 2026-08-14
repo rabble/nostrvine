@@ -11,6 +11,7 @@ import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 typedef VideoClipDownloader =
@@ -233,8 +234,15 @@ class VideoClipImportService {
   /// renderer — i.e. it makes us the source of the malformed text rather than
   /// the relay. Grapheme-cluster truncation also keeps combining marks
   /// attached to their base character.
+  ///
+  /// The incoming value is sanitized as well, because `_subtitleTitle` feeds
+  /// this from `VideoEvent.textTrackContent` — the one source here that no
+  /// model-level display boundary covers, since `SubtitleService.parseVtt`
+  /// carries a relay-served cue through verbatim.
   static String? _normalizedTitle(String? value) {
-    final trimmed = value?.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final trimmed = sanitizeUtf16OrNull(
+      value,
+    )?.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (trimmed == null || trimmed.isEmpty) return null;
     final graphemes = trimmed.characters;
     if (graphemes.length <= 80) return trimmed;

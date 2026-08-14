@@ -275,6 +275,31 @@ First useful caption
     expect(title, equals('${'a' * 76}\u{1F600}...'));
   });
 
+  // Regression for #7295: `textTrackContent` is the only title source here
+  // that no model display boundary covers — `SubtitleService.parseVtt` hands
+  // a relay-served cue through verbatim — so a cue under the length cap
+  // carried its lone surrogate straight into `libraryTitle`, which renders as
+  // a plain `Text`.
+  test('sanitizes a lone surrogate carried in a subtitle cue', () {
+    final loneSurrogate = String.fromCharCode(0xD83D);
+
+    final title = VideoClipImportService.defaultLibraryTitleFor(
+      _video(
+        title: '',
+        content: '',
+        textTrackContent:
+            '''
+WEBVTT
+
+00:00.000 --> 00:02.000
+cue text $loneSurrogate here
+''',
+      ),
+    );
+
+    expect(title, equals('cue text \uFFFD here'));
+  });
+
   test('imports an own (non-classic) video as a saved library clip', () async {
     final service = buildService();
 
