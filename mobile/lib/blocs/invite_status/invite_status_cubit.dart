@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:invite_api_client/invite_api_client.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/repositories/invite_availability_repository.dart';
 
@@ -28,7 +29,8 @@ class InviteStatusAuthSession extends Equatable {
   List<Object?> get props => [accountId, isSignerReady];
 }
 
-class InviteStatusCubit extends Cubit<InviteStatusState> {
+class InviteStatusCubit extends Cubit<InviteStatusState>
+    with CloseGuardedEmit<InviteStatusState> {
   InviteStatusCubit({
     required InviteApiClient inviteApiClient,
     required InviteStatusAuthSession initialAuthSession,
@@ -104,7 +106,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
     try {
       final inviteStatus = await _inviteApiClient.getInviteStatus();
       if (!_requestStillBelongsTo(requestAccountId, requestGeneration)) return;
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(
           status: InviteStatusLoadingStatus.loaded,
           inviteStatus: inviteStatus,
@@ -147,7 +149,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
       await _inviteApiClient.generateInvite();
       final inviteStatus = await _inviteApiClient.getInviteStatus();
       if (!_requestStillBelongsTo(requestAccountId, requestGeneration)) return;
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(
           status: InviteStatusLoadingStatus.loaded,
           inviteStatus: inviteStatus,
@@ -231,7 +233,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
       return;
     }
     _cancelAuthWaitTimeout();
-    _emitIfOpen(
+    emitIfOpen(
       InviteStatusState(
         accountId: state.accountId,
         isSignerReady: state.isSignerReady,
@@ -243,11 +245,6 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
       !isClosed &&
       state.accountId == requestAccountId &&
       _sessionGeneration == requestGeneration;
-
-  void _emitIfOpen(InviteStatusState nextState) {
-    if (isClosed) return;
-    emit(nextState);
-  }
 
   void _enterWaitingForAuth() {
     if (isClosed || state.accountId == null || state.isSignerReady) return;
@@ -267,7 +264,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
           state.status != InviteStatusLoadingStatus.waitingForAuth) {
         return;
       }
-      _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
+      emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
     });
   }
 
@@ -285,7 +282,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
     if (!_requestStillBelongsTo(requestAccountId, requestGeneration)) return;
 
     if (error.statusCode == 401) {
-      _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
+      emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
       return;
     }
 
@@ -305,7 +302,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
   }) {
     if (!_requestStillBelongsTo(requestAccountId, requestGeneration)) return;
     addError(error, stackTrace);
-    _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
+    emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
   }
 
   @override

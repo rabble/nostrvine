@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/features/oauth/app_oauth_callback.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
@@ -29,7 +30,8 @@ String generateCrosspostingOAuthNonce() {
   return base64Url.encode(bytes).replaceAll('=', '');
 }
 
-class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
+class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState>
+    with CloseGuardedEmit<CrosspostingSettingsState> {
   CrosspostingSettingsCubit({
     required CrosspostingRepository repository,
     required CrosspostingOAuthLauncher launchOAuth,
@@ -78,7 +80,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
   Future<void> _load({required bool showLoading}) async {
     try {
       if (showLoading &&
-          !_emitIfOpen(
+          !emitIfOpen(
             state.copyWith(
               status: CrosspostingSettingsStatus.loading,
               clearError: true,
@@ -88,7 +90,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
         return;
       }
       if (!showLoading &&
-          !_emitIfOpen(
+          !emitIfOpen(
             state.copyWith(
               pendingAction: CrosspostingPlatformAction.refreshing,
               clearError: true,
@@ -100,7 +102,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
 
       final entries = await _repository.loadSettings();
       if (isClosed) return;
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(
           status: CrosspostingSettingsStatus.loaded,
           entries: entries,
@@ -186,7 +188,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
       }
 
       if (callback == null) {
-        _emitIfOpen(
+        emitIfOpen(
           state.copyWith(
             entries: entries,
             clearPending: true,
@@ -197,7 +199,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
         return;
       }
 
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(
           entries: entries,
           outcome: outcome,
@@ -231,7 +233,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
         addError(error, stackTrace);
       }
       if (isClosed) return;
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(
           entries: [
             for (final entry in state.entries)
@@ -249,7 +251,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
 
       final entries = await _repository.loadSettings();
       if (isClosed) return;
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(entries: entries, clearPending: true, clearError: true),
       );
     } catch (error, stackTrace) {
@@ -281,7 +283,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
     try {
       await _repository.setMode(platform, mode);
       if (isClosed) return;
-      _emitIfOpen(state.copyWith(clearPending: true, clearError: true));
+      emitIfOpen(state.copyWith(clearPending: true, clearError: true));
     } on CrosspostingApiException catch (error, stackTrace) {
       if (isClosed) return;
       addError(error, stackTrace);
@@ -319,12 +321,12 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
 
   void acknowledgeError() {
     if (isClosed || state.error == null) return;
-    _emitIfOpen(state.copyWith(clearError: true));
+    emitIfOpen(state.copyWith(clearError: true));
   }
 
   void acknowledgeOutcome() {
     if (isClosed || state.outcome == null) return;
-    _emitIfOpen(state.copyWith(clearOutcome: true));
+    emitIfOpen(state.copyWith(clearOutcome: true));
   }
 
   bool _tryAcquireOperation() {
@@ -333,19 +335,13 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
         state.pendingAction == null;
   }
 
-  bool _emitIfOpen(CrosspostingSettingsState nextState) {
-    if (isClosed) return false;
-    emit(nextState);
-    return true;
-  }
-
   void _beginAction(
     CrosspostingPlatformAction action,
     CrosspostingPlatform platform, {
     List<CrosspostingPlatformSettings>? entries,
   }) {
     if (isClosed) return;
-    _emitIfOpen(
+    emitIfOpen(
       state.copyWith(
         entries: entries,
         pendingAction: action,
@@ -364,7 +360,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
     if (isClosed) return;
     addError(error, stackTrace);
     if (isClosed) return;
-    _emitIfOpen(
+    emitIfOpen(
       state.copyWith(
         status: status,
         error: CrosspostingSettingsError.generic,
@@ -380,7 +376,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
     List<CrosspostingPlatformSettings>? entries,
   }) {
     if (isClosed) return;
-    _emitIfOpen(
+    emitIfOpen(
       state.copyWith(
         entries: entries,
         error: error,
