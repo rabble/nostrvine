@@ -955,10 +955,11 @@ class MediaCacheManager extends CacheManager {
   /// cache key plus a monotonic counter and timestamp so concurrent
   /// downloads of the same key cannot collide on disk.
   ///
-  /// The result always fits within `NAME_MAX`: the key contributes at most
-  /// [_maxSanitizedKeyLength] characters and the extension at most 10, so
-  /// even a 20-digit timestamp and a 19-digit counter leave the name well
-  /// short of 255 bytes.
+  /// The result always fits within `NAME_MAX`: the sanitizer emits nothing
+  /// outside `[A-Za-z0-9._-]`, so the key's [_maxSanitizedKeyLength]
+  /// characters are [_maxSanitizedKeyLength] bytes, and the extension adds at
+  /// most 11. Even at the 19-digit ceiling for both the timestamp and the
+  /// counter the name stops at 211 bytes, short of 255.
   String _relativePathFor(String key, String url) {
     final safeKey = _sanitizedKeyFor(key);
     final ext = _extensionFor(url);
