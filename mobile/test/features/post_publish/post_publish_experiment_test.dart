@@ -37,9 +37,7 @@ void main() {
       'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
   test('assigns the same user deterministically across calls', () {
-    final experiment = PostPublishExperiment(
-      analytics: _RecordingSink(),
-    );
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
     expect(
       experiment.variantForUser(controlPubkey),
@@ -56,9 +54,7 @@ void main() {
   });
 
   test('assigns the same bucket regardless of hex casing', () {
-    final experiment = PostPublishExperiment(
-      analytics: _RecordingSink(),
-    );
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
     expect(
       experiment.variantForUser(treatmentPubkey.toUpperCase()),
@@ -66,13 +62,16 @@ void main() {
     );
   });
 
+  test('assigns control when no pubkey is available', () {
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
+
+    expect(experiment.variantForUser(null), PostPublishVariant.control);
+  });
+
   test('records destination, variant, and seconds to create again', () async {
     final sink = _RecordingSink();
     var now = DateTime.utc(2026, 8, 8, 12);
-    final experiment = PostPublishExperiment(
-      analytics: sink,
-      now: () => now,
-    );
+    final experiment = PostPublishExperiment(analytics: sink, now: () => now);
 
     await experiment.screenShown(
       publishId: 'publish-1',
@@ -96,9 +95,7 @@ void main() {
   });
 
   test('bounds pending assignments that never resolve', () async {
-    final experiment = PostPublishExperiment(
-      analytics: _RecordingSink(),
-    );
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
     await experiment.screenShown(
       publishId: 'stranded',
@@ -119,9 +116,7 @@ void main() {
   });
 
   test('drops treatment state when a publish fails', () async {
-    final experiment = PostPublishExperiment(
-      analytics: _RecordingSink(),
-    );
+    final experiment = PostPublishExperiment(analytics: _RecordingSink());
 
     await experiment.screenShown(
       publishId: 'publish-failed',
