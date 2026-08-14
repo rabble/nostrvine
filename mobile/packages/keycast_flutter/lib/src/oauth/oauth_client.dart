@@ -1245,6 +1245,174 @@ class KeycastOAuth {
     }
   }
 
+  /// Change the account password for the session behind [token].
+  ///
+  /// Keycast verifies [currentPassword] itself and re-hashes [newPassword]; the
+  /// existing session stays valid, so nothing here signs the user out.
+  ///
+  /// A 401 means either the current password was wrong or the token is no
+  /// longer accepted, and the body says which is which no more clearly than the
+  /// export endpoint's does. The account probe separates them from structured
+  /// state, exactly as [exportKey] does.
+  Future<ChangePasswordResult> changePassword({
+    required String token,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/user/change-password'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'current_password': currentPassword,
+              'new_password': newPassword,
+            }),
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 200) {
+        return ChangePasswordResult.success();
+      }
+
+      final message = _errorMessageFrom(response);
+
+      if (response.statusCode == 401) {
+        final probe = await _probeAccount(token);
+        return ChangePasswordResult.failure(
+          switch (probe) {
+            // A probe that never answered proves nothing, so neither cause may
+            // be reported as a verdict.
+            null => ChangePasswordFailure.unknown,
+            // The token still authenticates, so what the 401 rejected was the
+            // submitted current password.
+            (authenticated: true, status: _) =>
+              ChangePasswordFailure.wrongPassword,
+            _ => ChangePasswordFailure.needsSignIn,
+          },
+          message: message,
+        );
+      }
+
+      // The server enforces its own minimum on the new password. The client
+      // checks the same rule first, so this is the disagreement case — a server
+      // that raised its minimum — and must say so rather than read as a fault.
+      if (response.statusCode == 400) {
+        return ChangePasswordResult.failure(
+          ChangePasswordFailure.weakPassword,
+          message: message,
+        );
+      }
+
+      if (response.statusCode == 429) {
+        return ChangePasswordResult.failure(
+          ChangePasswordFailure.rateLimited,
+          message: message,
+        );
+      }
+
+      if (response.statusCode >= 500) {
+        return ChangePasswordResult.failure(
+          ChangePasswordFailure.server,
+          message: message ?? 'Server error (${response.statusCode})',
+        );
+      }
+
+      return ChangePasswordResult.failure(
+        ChangePasswordFailure.unknown,
+        message: message ?? 'HTTP ${response.statusCode}',
+      );
+    } catch (e) {
+      return ChangePasswordResult.failure(
+        ChangePasswordFailure.network,
+        message: 'Network error: $e',
+      );
+    }
+  }
+
+  /// Start a self-serve email change for the session behind [token].
+  ///
+  /// Keycast re-verifies [password], then mails a confirmation link to
+  /// [newEmail] and a confirm/cancel link to the address on file. The address
+  /// changes only once **both** are confirmed, so a success here means the
+  /// request was accepted — never that the email has changed.
+  ///
+  /// The endpoint answers 200 for an address that is already registered as
+  /// well, without sending anything, so that it cannot be used to probe for
+  /// accounts. That case is indistinguishable from an accepted change by
+  /// design; callers must not try to tell them apart.
+  Future<ChangeEmailResult> changeEmail({
+    required String token,
+    required String newEmail,
+    required String password,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/user/change-email'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'new_email': newEmail, 'password': password}),
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 200) {
+        return ChangeEmailResult.success();
+      }
+
+      final message = _errorMessageFrom(response);
+
+      if (response.statusCode == 401) {
+        final probe = await _probeAccount(token);
+        return ChangeEmailResult.failure(
+          switch (probe) {
+            null => ChangeEmailFailure.unknown,
+            (authenticated: true, status: _) =>
+              ChangeEmailFailure.wrongPassword,
+            _ => ChangeEmailFailure.needsSignIn,
+          },
+          message: message,
+        );
+      }
+
+      if (response.statusCode == 400) {
+        return ChangeEmailResult.failure(
+          ChangeEmailFailure.invalidEmail,
+          message: message,
+        );
+      }
+
+      if (response.statusCode == 429) {
+        return ChangeEmailResult.failure(
+          ChangeEmailFailure.rateLimited,
+          message: message,
+        );
+      }
+
+      if (response.statusCode >= 500) {
+        return ChangeEmailResult.failure(
+          ChangeEmailFailure.server,
+          message: message ?? 'Server error (${response.statusCode})',
+        );
+      }
+
+      return ChangeEmailResult.failure(
+        ChangeEmailFailure.unknown,
+        message: message ?? 'HTTP ${response.statusCode}',
+      );
+    } catch (e) {
+      return ChangeEmailResult.failure(
+        ChangeEmailFailure.network,
+        message: 'Network error: $e',
+      );
+    }
+  }
+
   void close() {
     _client.close();
   }

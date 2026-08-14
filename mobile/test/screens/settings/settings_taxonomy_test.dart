@@ -109,6 +109,9 @@ void main() {
     when(() => authService.isAuthenticated).thenReturn(false);
     when(() => authService.isRegistered).thenReturn(false);
     when(() => authService.isAnonymous).thenReturn(false);
+    when(
+      () => authService.authenticationSource,
+    ).thenReturn(AuthenticationSource.automatic);
     when(() => authService.hasExpiredOAuthSession).thenReturn(false);
     when(() => authService.getKnownAccounts()).thenAnswer((_) async => []);
     when(() => authService.currentPublicKeyHex).thenReturn(null);

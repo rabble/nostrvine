@@ -11440,4 +11440,80 @@ class AppLocalizationsJa extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'メールアドレスを変更';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle => 'アカウントを別のアドレスに移す';
+
+  @override
+  String get accountSettingsChangePassword => 'パスワードを変更';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle => 'ログイン用の新しいパスワードを決める';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'セッションが切れました。もう一度ログインしてから変更してください。';
+
+  @override
+  String get accountCredentialsRateLimited => '試行が多すぎます。数分待ってからどうぞ。';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Divine に接続できませんでした。通信環境を確認してもう一度お試しください。';
+
+  @override
+  String get accountCredentialsUnknown => 'うまくいきませんでした。もう一度お試しください。';
+
+  @override
+  String get changePasswordSubtitle => '現在のパスワードを入力して、新しいパスワードを決めてください。';
+
+  @override
+  String get changePasswordCurrentLabel => '現在のパスワード';
+
+  @override
+  String get changePasswordWrongCurrent => '現在のパスワードと違います。';
+
+  @override
+  String get changePasswordSuccess => 'パスワードを変更しました。';
+
+  @override
+  String get changeEmailSubtitle =>
+      '新しいアドレスと、アカウントに登録中のアドレスの両方に確認リンクを送ります。両方で確認するとメールアドレスが変わります。';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'アカウントのアドレス: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => '新しいメールアドレス';
+
+  @override
+  String get changeEmailPasswordLabel => 'パスワード';
+
+  @override
+  String get changeEmailSameAsCurrent => 'すでにそのメールアドレスを使っています。';
+
+  @override
+  String get changeEmailWrongPassword => 'パスワードが違います。';
+
+  @override
+  String get changeEmailSubmit => '確認リンクを送る';
+
+  @override
+  String get changeEmailSentTitle => '確認リンクを2通送りました';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return '$email と、アカウントに登録中のアドレスの両方で確認してください。両方が終わるとメールアドレスが切り替わります。';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'リンクは24時間で使えなくなります。';
+
+  @override
+  String get changeEmailSentDone => 'わかりました';
 }

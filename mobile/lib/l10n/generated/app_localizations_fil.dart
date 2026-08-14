@@ -12156,4 +12156,86 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Palitan ang email';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Ilipat ang account mo sa ibang address';
+
+  @override
+  String get accountSettingsChangePassword => 'Palitan ang password';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Pumili ng bagong password para sa pag-sign in';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Nag-expire ang session mo. Mag-sign in ulit para gawin ito.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Sobrang dami nang subok. Maghintay ng ilang minuto.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Hindi maabot ang Divine. Tingnan ang koneksyon mo at subukan ulit.';
+
+  @override
+  String get accountCredentialsUnknown => 'Hindi umubra. Subukan ulit.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'I-type ang kasalukuyang password, tapos pumili ng bago.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Kasalukuyang password';
+
+  @override
+  String get changePasswordWrongCurrent =>
+      'Hindi \'yan ang kasalukuyang password mo.';
+
+  @override
+  String get changePasswordSuccess => 'Napalitan ang password.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Magpapadala kami ng confirmation link sa bago mong address at sa nasa account mo. Magbabago ang email mo kapag na-confirm mo pareho.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'Nasa account mo: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Bagong email';
+
+  @override
+  String get changeEmailPasswordLabel => 'Ang password mo';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Email address mo na \'yan.';
+
+  @override
+  String get changeEmailWrongPassword => 'Hindi \'yan ang password mo.';
+
+  @override
+  String get changeEmailSubmit => 'Ipadala ang mga confirmation link';
+
+  @override
+  String get changeEmailSentTitle => 'Papunta na ang dalawang link';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'I-confirm mula sa $email at mula sa address na nasa account mo. Magpapalit ang email mo kapag tapos na pareho.';
+  }
+
+  @override
+  String get changeEmailSentExpiry =>
+      'Titigil gumana ang mga link pagkatapos ng 24 oras.';
+
+  @override
+  String get changeEmailSentDone => 'Sige';
 }

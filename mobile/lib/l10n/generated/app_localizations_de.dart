@@ -12157,4 +12157,87 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'E-Mail ändern';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Verschieb dein Konto auf eine andere Adresse';
+
+  @override
+  String get accountSettingsChangePassword => 'Passwort ändern';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Wähl ein neues Passwort für die Anmeldung';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Deine Sitzung ist abgelaufen. Melde dich neu an, um das zu ändern.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Zu viele Versuche. Warte ein paar Minuten.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Divine ist gerade nicht erreichbar. Prüf deine Verbindung und versuch es erneut.';
+
+  @override
+  String get accountCredentialsUnknown =>
+      'Das hat nicht geklappt. Bitte versuch es erneut.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Gib dein aktuelles Passwort ein und wähl dann ein neues.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Aktuelles Passwort';
+
+  @override
+  String get changePasswordWrongCurrent =>
+      'Das ist nicht dein aktuelles Passwort.';
+
+  @override
+  String get changePasswordSuccess => 'Passwort geändert.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Wir schicken einen Bestätigungslink an deine neue Adresse und an die in deinem Konto. Deine E-Mail ändert sich, sobald du beide bestätigst.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'In deinem Konto: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Neue E-Mail';
+
+  @override
+  String get changeEmailPasswordLabel => 'Dein Passwort';
+
+  @override
+  String get changeEmailSameAsCurrent =>
+      'Das ist bereits deine E-Mail-Adresse.';
+
+  @override
+  String get changeEmailWrongPassword => 'Das ist nicht dein Passwort.';
+
+  @override
+  String get changeEmailSubmit => 'Bestätigungslinks senden';
+
+  @override
+  String get changeEmailSentTitle => 'Zwei Links sind unterwegs';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Bestätige über $email und über die Adresse in deinem Konto. Deine E-Mail wechselt, sobald beides erledigt ist.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'Die Links laufen nach 24 Stunden ab.';
+
+  @override
+  String get changeEmailSentDone => 'Alles klar';
 }

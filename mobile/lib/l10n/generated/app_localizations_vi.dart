@@ -11992,4 +11992,85 @@ class AppLocalizationsVi extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Đổi email';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Chuyển tài khoản sang địa chỉ khác';
+
+  @override
+  String get accountSettingsChangePassword => 'Đổi mật khẩu';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Chọn mật khẩu mới để đăng nhập';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Phiên đăng nhập đã hết hạn. Đăng nhập lại để thực hiện thay đổi này.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Thử quá nhiều lần. Đợi vài phút nhé.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Không kết nối được với Divine. Kiểm tra kết nối rồi thử lại.';
+
+  @override
+  String get accountCredentialsUnknown => 'Chưa được. Thử lại nhé.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Nhập mật khẩu hiện tại, rồi chọn mật khẩu mới.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Mật khẩu hiện tại';
+
+  @override
+  String get changePasswordWrongCurrent =>
+      'Đó không phải mật khẩu hiện tại của bạn.';
+
+  @override
+  String get changePasswordSuccess => 'Đã đổi mật khẩu.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Chúng tôi gửi liên kết xác nhận tới địa chỉ mới và tới địa chỉ trong tài khoản của bạn. Email sẽ đổi khi bạn xác nhận ở cả hai.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'Trong tài khoản: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Email mới';
+
+  @override
+  String get changeEmailPasswordLabel => 'Mật khẩu của bạn';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Đó đã là địa chỉ email của bạn.';
+
+  @override
+  String get changeEmailWrongPassword => 'Đó không phải mật khẩu của bạn.';
+
+  @override
+  String get changeEmailSubmit => 'Gửi liên kết xác nhận';
+
+  @override
+  String get changeEmailSentTitle => 'Hai liên kết đang trên đường tới';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Xác nhận từ $email và từ địa chỉ trong tài khoản của bạn. Email đổi khi xong cả hai.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'Liên kết hết hạn sau 24 giờ.';
+
+  @override
+  String get changeEmailSentDone => 'Đã hiểu';
 }

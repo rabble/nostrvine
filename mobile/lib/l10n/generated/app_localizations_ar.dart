@@ -11917,4 +11917,82 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'تغيير البريد';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle => 'انقل حسابك إلى عنوان آخر';
+
+  @override
+  String get accountSettingsChangePassword => 'تغيير كلمة السر';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'اختر كلمة سر جديدة لتسجيل الدخول';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'انتهت جلستك. سجّل الدخول من جديد لإجراء هذا التغيير.';
+
+  @override
+  String get accountCredentialsRateLimited => 'محاولات كثيرة. انتظر بضع دقائق.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'تعذّر الوصول إلى Divine. تحقق من اتصالك وحاول مجددًا.';
+
+  @override
+  String get accountCredentialsUnknown => 'لم ينجح ذلك. حاول مرة أخرى.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'اكتب كلمة السر الحالية، ثم اختر واحدة جديدة.';
+
+  @override
+  String get changePasswordCurrentLabel => 'كلمة السر الحالية';
+
+  @override
+  String get changePasswordWrongCurrent => 'هذه ليست كلمة السر الحالية.';
+
+  @override
+  String get changePasswordSuccess => 'تم تغيير كلمة السر.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'سنرسل رابط تأكيد إلى عنوانك الجديد وإلى العنوان المسجّل في حسابك. يتغيّر بريدك بعد التأكيد من الاثنين.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'في حسابك: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'بريد جديد';
+
+  @override
+  String get changeEmailPasswordLabel => 'كلمة السر';
+
+  @override
+  String get changeEmailSameAsCurrent => 'هذا هو بريدك الحالي بالفعل.';
+
+  @override
+  String get changeEmailWrongPassword => 'هذه ليست كلمة السر.';
+
+  @override
+  String get changeEmailSubmit => 'إرسال روابط التأكيد';
+
+  @override
+  String get changeEmailSentTitle => 'رابطان في الطريق';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'أكّد من $email ومن العنوان المسجّل في حسابك. يتبدّل بريدك بعد إتمام الاثنين.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'تتوقف الروابط عن العمل بعد 24 ساعة.';
+
+  @override
+  String get changeEmailSentDone => 'فهمت';
 }

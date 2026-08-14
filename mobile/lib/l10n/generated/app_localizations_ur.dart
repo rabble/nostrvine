@@ -11996,4 +11996,85 @@ class AppLocalizationsUr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'ای میل تبدیل کریں';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'اپنا اکاؤنٹ کسی دوسرے پتے پر منتقل کریں';
+
+  @override
+  String get accountSettingsChangePassword => 'پاس ورڈ تبدیل کریں';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'سائن اِن کے لیے نیا پاس ورڈ چنیں';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'آپ کا سیشن ختم ہو گیا۔ یہ تبدیلی کرنے کے لیے دوبارہ سائن اِن کریں۔';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'بہت زیادہ کوششیں۔ چند منٹ انتظار کریں۔';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Divine تک نہیں پہنچ سکے۔ اپنا کنکشن دیکھ کر دوبارہ کوشش کریں۔';
+
+  @override
+  String get accountCredentialsUnknown => 'یہ نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get changePasswordSubtitle =>
+      'اپنا موجودہ پاس ورڈ لکھیں، پھر نیا چنیں۔';
+
+  @override
+  String get changePasswordCurrentLabel => 'موجودہ پاس ورڈ';
+
+  @override
+  String get changePasswordWrongCurrent => 'یہ آپ کا موجودہ پاس ورڈ نہیں ہے۔';
+
+  @override
+  String get changePasswordSuccess => 'پاس ورڈ تبدیل ہو گیا۔';
+
+  @override
+  String get changeEmailSubtitle =>
+      'ہم آپ کے نئے پتے اور اکاؤنٹ والے پتے، دونوں پر تصدیقی لنک بھیجیں گے۔ دونوں سے تصدیق کے بعد آپ کی ای میل بدل جائے گی۔';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'آپ کے اکاؤنٹ پر: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'نئی ای میل';
+
+  @override
+  String get changeEmailPasswordLabel => 'آپ کا پاس ورڈ';
+
+  @override
+  String get changeEmailSameAsCurrent => 'یہ پہلے ہی آپ کا ای میل پتہ ہے۔';
+
+  @override
+  String get changeEmailWrongPassword => 'یہ آپ کا پاس ورڈ نہیں ہے۔';
+
+  @override
+  String get changeEmailSubmit => 'تصدیقی لنک بھیجیں';
+
+  @override
+  String get changeEmailSentTitle => 'دو لنک بھیج دیے گئے ہیں';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return '$email سے اور اپنے اکاؤنٹ والے پتے سے تصدیق کریں۔ دونوں مکمل ہونے پر ای میل بدل جائے گی۔';
+  }
+
+  @override
+  String get changeEmailSentExpiry =>
+      'لنک 24 گھنٹے بعد کام کرنا بند کر دیتے ہیں۔';
+
+  @override
+  String get changeEmailSentDone => 'سمجھ گیا';
 }

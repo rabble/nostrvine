@@ -144,11 +144,22 @@ void main() {
 
       await Future<void>.delayed(Duration.zero);
 
+      // Matched anywhere in the capture rather than at `.last`.
+      // LogCaptureService is a process-global ring buffer and every file in
+      // the shard shares it under `very_good test --optimization`, so leftover
+      // async work from another suite can append a line during the await above
+      // and take the last slot. Requiring one entry to carry both substrings
+      // is what this test is actually about, and it does not depend on the
+      // randomized order the suite runs in.
       final logs = LogCaptureService().getRecentLogs();
-      expect(logs.last.message, contains('Bloc error: _CountCubit'));
       expect(
-        logs.last.message,
-        contains('Exception: staging notifications 500'),
+        logs.map((entry) => entry.message),
+        contains(
+          allOf(
+            contains('Bloc error: _CountCubit'),
+            contains('Exception: staging notifications 500'),
+          ),
+        ),
       );
     });
 

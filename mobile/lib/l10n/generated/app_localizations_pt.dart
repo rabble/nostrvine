@@ -12099,4 +12099,84 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Alterar e-mail';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Leve sua conta para outro endereço';
+
+  @override
+  String get accountSettingsChangePassword => 'Alterar senha';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Escolha uma nova senha para entrar';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Sua sessão expirou. Entre de novo para fazer essa alteração.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Tentativas demais. Espere alguns minutos.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Não deu para falar com a Divine. Confira sua conexão e tente de novo.';
+
+  @override
+  String get accountCredentialsUnknown => 'Não funcionou. Tente de novo.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Digite sua senha atual e escolha uma nova.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Senha atual';
+
+  @override
+  String get changePasswordWrongCurrent => 'Essa não é a sua senha atual.';
+
+  @override
+  String get changePasswordSuccess => 'Senha alterada.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Vamos enviar um link de confirmação para o novo endereço e para o da sua conta. Seu e-mail muda quando você confirmar nos dois.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'Na sua conta: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'Novo e-mail';
+
+  @override
+  String get changeEmailPasswordLabel => 'Sua senha';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Esse já é o seu endereço de e-mail.';
+
+  @override
+  String get changeEmailWrongPassword => 'Essa não é a sua senha.';
+
+  @override
+  String get changeEmailSubmit => 'Enviar links de confirmação';
+
+  @override
+  String get changeEmailSentTitle => 'Dois links estão a caminho';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Confirme em $email e no endereço da sua conta. Seu e-mail muda quando os dois estiverem prontos.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'Os links expiram em 24 horas.';
+
+  @override
+  String get changeEmailSentDone => 'Entendi';
 }

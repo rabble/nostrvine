@@ -12,9 +12,12 @@ import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/crossposting_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
+import 'package:openvine/screens/settings/account/change_email_screen.dart';
+import 'package:openvine/screens/settings/account/change_password_screen.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
@@ -39,6 +42,11 @@ class GeneralSettingsScreen extends ConsumerWidget {
       isFeatureEnabledProvider(FeatureFlag.lightMode),
     );
     final showCrossposting = ref.watch(crosspostingEligibleProvider);
+    // Only a Divine-login account has an email and password to change; every
+    // other identity signs with a key and has no credentials on file.
+    final showAccountCredentials =
+        ref.watch(authServiceProvider).authenticationSource ==
+        AuthenticationSource.divineOAuth;
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -141,6 +149,46 @@ class GeneralSettingsScreen extends ConsumerWidget {
                 onTap: () => context.push(StorageManagementPage.path),
               ),
               DivineSectionHeader(context.l10n.generalSettingsSectionIdentity),
+              if (showAccountCredentials) ...[
+                ListTile(
+                  leading: const DivineIcon(
+                    icon: DivineIconName.envelope,
+                    color: VineTheme.vineGreen,
+                  ),
+                  title: Text(
+                    context.l10n.accountSettingsChangeEmail,
+                    style: _titleStyleOf(context),
+                  ),
+                  subtitle: Text(
+                    context.l10n.accountSettingsChangeEmailSubtitle,
+                    style: _subtitleStyleOf(context),
+                  ),
+                  trailing: DivineIcon(
+                    icon: DivineIconName.caretRight,
+                    color: context.vineColors.mutedText,
+                  ),
+                  onTap: () => context.push(ChangeEmailScreen.path),
+                ),
+                ListTile(
+                  leading: const DivineIcon(
+                    icon: DivineIconName.lockSimple,
+                    color: VineTheme.vineGreen,
+                  ),
+                  title: Text(
+                    context.l10n.accountSettingsChangePassword,
+                    style: _titleStyleOf(context),
+                  ),
+                  subtitle: Text(
+                    context.l10n.accountSettingsChangePasswordSubtitle,
+                    style: _subtitleStyleOf(context),
+                  ),
+                  trailing: DivineIcon(
+                    icon: DivineIconName.caretRight,
+                    color: context.vineColors.mutedText,
+                  ),
+                  onTap: () => context.push(ChangePasswordScreen.path),
+                ),
+              ],
               ListTile(
                 leading: const DivineIcon(
                   icon: DivineIconName.sealCheck,

@@ -12259,4 +12259,84 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Schimbă e-mailul';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Mută-ți contul pe altă adresă';
+
+  @override
+  String get accountSettingsChangePassword => 'Schimbă parola';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Alege o parolă nouă pentru autentificare';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Sesiunea a expirat. Autentifică-te din nou ca să faci schimbarea.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Prea multe încercări. Așteaptă câteva minute.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Nu am putut ajunge la Divine. Verifică-ți conexiunea și încearcă din nou.';
+
+  @override
+  String get accountCredentialsUnknown => 'N-a mers. Încearcă din nou.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Scrie parola actuală, apoi alege una nouă.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Parola actuală';
+
+  @override
+  String get changePasswordWrongCurrent => 'Asta nu e parola ta actuală.';
+
+  @override
+  String get changePasswordSuccess => 'Parolă schimbată.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Trimitem un link de confirmare la noua adresă și la cea din contul tău. E-mailul se schimbă după ce confirmi din ambele.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'În contul tău: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'E-mail nou';
+
+  @override
+  String get changeEmailPasswordLabel => 'Parola ta';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Asta e deja adresa ta de e-mail.';
+
+  @override
+  String get changeEmailWrongPassword => 'Asta nu e parola ta.';
+
+  @override
+  String get changeEmailSubmit => 'Trimite linkurile de confirmare';
+
+  @override
+  String get changeEmailSentTitle => 'Două linkuri sunt pe drum';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Confirmă din $email și din adresa contului tău. E-mailul se schimbă după ce le faci pe amândouă.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'Linkurile expiră după 24 de ore.';
+
+  @override
+  String get changeEmailSentDone => 'Am înțeles';
 }

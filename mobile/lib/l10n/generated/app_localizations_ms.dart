@@ -12053,4 +12053,84 @@ class AppLocalizationsMs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get accountSettingsChangeEmail => 'Tukar e-mel';
+
+  @override
+  String get accountSettingsChangeEmailSubtitle =>
+      'Pindahkan akaun anda ke alamat lain';
+
+  @override
+  String get accountSettingsChangePassword => 'Tukar kata laluan';
+
+  @override
+  String get accountSettingsChangePasswordSubtitle =>
+      'Pilih kata laluan baharu untuk log masuk';
+
+  @override
+  String get accountCredentialsNeedsSignIn =>
+      'Sesi anda tamat. Log masuk semula untuk buat perubahan ini.';
+
+  @override
+  String get accountCredentialsRateLimited =>
+      'Terlalu banyak percubaan. Tunggu beberapa minit.';
+
+  @override
+  String get accountCredentialsNetwork =>
+      'Tak dapat hubungi Divine. Semak sambungan anda dan cuba lagi.';
+
+  @override
+  String get accountCredentialsUnknown => 'Tak menjadi. Sila cuba lagi.';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Taip kata laluan semasa, kemudian pilih yang baharu.';
+
+  @override
+  String get changePasswordCurrentLabel => 'Kata laluan semasa';
+
+  @override
+  String get changePasswordWrongCurrent => 'Itu bukan kata laluan semasa anda.';
+
+  @override
+  String get changePasswordSuccess => 'Kata laluan ditukar.';
+
+  @override
+  String get changeEmailSubtitle =>
+      'Kami hantar pautan pengesahan ke alamat baharu anda dan ke alamat dalam akaun anda. E-mel anda bertukar sebaik anda sahkan kedua-duanya.';
+
+  @override
+  String changeEmailCurrentAddress(String email) {
+    return 'Dalam akaun anda: $email';
+  }
+
+  @override
+  String get changeEmailNewLabel => 'E-mel baharu';
+
+  @override
+  String get changeEmailPasswordLabel => 'Kata laluan anda';
+
+  @override
+  String get changeEmailSameAsCurrent => 'Itu memang alamat e-mel anda.';
+
+  @override
+  String get changeEmailWrongPassword => 'Itu bukan kata laluan anda.';
+
+  @override
+  String get changeEmailSubmit => 'Hantar pautan pengesahan';
+
+  @override
+  String get changeEmailSentTitle => 'Dua pautan dalam perjalanan';
+
+  @override
+  String changeEmailSentMessage(String email) {
+    return 'Sahkan dari $email dan dari alamat dalam akaun anda. E-mel anda bertukar sebaik kedua-duanya selesai.';
+  }
+
+  @override
+  String get changeEmailSentExpiry => 'Pautan tamat selepas 24 jam.';
+
+  @override
+  String get changeEmailSentDone => 'Faham';
 }

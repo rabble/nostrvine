@@ -49,6 +49,9 @@ void main() {
       when(() => authService.isRegistered).thenReturn(false);
       when(() => authService.isAnonymous).thenReturn(false);
       when(() => authService.hasExpiredOAuthSession).thenReturn(false);
+      when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.automatic);
       when(() => authService.getKnownAccounts()).thenAnswer((_) async => []);
       when(() => authService.currentPublicKeyHex).thenReturn(null);
       when(() => audioSharingService.isAudioSharingEnabled).thenReturn(false);
@@ -167,6 +170,51 @@ void main() {
         );
       },
     );
+
+    /// The Identity section sits below the fold on a phone-sized surface, and
+    /// a `ListView` never builds what it cannot show — so a tall viewport is
+    /// what makes "is this row here at all" answerable either way.
+    void useTallViewport(WidgetTester tester) {
+      tester.view.physicalSize = const Size(1200, 4000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
+
+    testWidgets('offers email and password to a Divine-login account', (
+      tester,
+    ) async {
+      final labels = await l10n();
+      useTallViewport(tester);
+      when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.divineOAuth);
+
+      await tester.pumpWidget(wrap(const GeneralSettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(labels.accountSettingsChangeEmail), findsOneWidget);
+      expect(find.text(labels.accountSettingsChangePassword), findsOneWidget);
+    });
+
+    testWidgets('hides email and password from a key-only identity', (
+      tester,
+    ) async {
+      final labels = await l10n();
+      useTallViewport(tester);
+      when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.importedKeys);
+
+      await tester.pumpWidget(wrap(const GeneralSettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(labels.accountSettingsChangeEmail), findsNothing);
+      expect(find.text(labels.accountSettingsChangePassword), findsNothing);
+      // The rest of the Identity section still renders, so the assertion above
+      // is about the row and not about the section being off-screen.
+      expect(find.text(labels.verifyTitle), findsOneWidget);
+    });
 
     testWidgets('square-only switch flips the feed aspect ratio preference', (
       tester,
