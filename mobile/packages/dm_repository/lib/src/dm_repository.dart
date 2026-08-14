@@ -14,12 +14,12 @@ import 'package:db_client/db_client.dart';
 import 'package:dm_repository/src/build_mode.dart';
 import 'package:dm_repository/src/collaborator_invite_recovery.dart';
 import 'package:dm_repository/src/compute.dart';
+import 'package:dm_repository/src/dm_batch_send_budget.dart';
 import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
 import 'package:dm_repository/src/dm_send_budget.dart';
-import 'package:dm_repository/src/dm_batch_send_budget.dart';
 import 'package:dm_repository/src/dm_shared_video_citation.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/dm_verify_isolate.dart';
@@ -180,10 +180,10 @@ const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 ///
 /// That covers the signing chain, not the whole send. Three awaited steps
 /// inside this cap are still unbounded and deliberately NOT in
-/// [DmBatchSendBudget.chainWorstCase]: `refreshPublicKey()` (a real round trip for
-/// any signer that doesn't cache the pubkey, e.g. a NIP-46 bunker — Keycast
-/// does cache it), the send-policy protected-minor check, and the connectivity
-/// probe. So this cap remains a genuine backstop for those, and
+/// [DmBatchSendBudget.chainWorstCase]: `refreshPublicKey()` (a real round trip
+/// for any signer that doesn't cache the pubkey, e.g. a NIP-46 bunker —
+/// Keycast does cache it), the send-policy protected-minor check, and the
+/// connectivity probe. So this cap remains a genuine backstop for those, and
 /// [DmBatchSendBudget.chainWorstCase] is a floor on what a send can cost, not a
 /// ceiling. Bounding them is tracked separately.
 ///
