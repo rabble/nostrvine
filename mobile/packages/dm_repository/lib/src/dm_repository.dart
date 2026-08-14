@@ -5415,7 +5415,14 @@ class DmRepository {
     // GiftWrapUtil on every unwrap path, so anything else is forged — the
     // conversation id below is derived from participant pubkeys alone, which
     // are public. Fail closed when the local pubkey is unknown. #7343.
-    if (_userPubkey.isEmpty || rumor.pubkey != _userPubkey) return;
+    if (_userPubkey.isEmpty || rumor.pubkey != _userPubkey) {
+      Log.debug(
+        'Ignoring DM read marker ${rumor.id}: author mismatch '
+        '(event=${rumor.pubkey}, user=$_userPubkey)',
+        category: LogCategory.system,
+      );
+      return;
+    }
     final Object? decoded;
     try {
       decoded = jsonDecode(rumor.content);
