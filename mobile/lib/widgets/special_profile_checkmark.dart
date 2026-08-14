@@ -1,4 +1,4 @@
-// ABOUTME: Hosts explicit exceptions for profile checkmark display.
+// ABOUTME: Pubkey allowlist that drives profile checkmark display.
 // ABOUTME: Keeps special-case badges separate from generic NIP-05 validation.
 
 import 'package:divine_ui/divine_ui.dart';
