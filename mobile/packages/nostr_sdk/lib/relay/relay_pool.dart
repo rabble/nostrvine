@@ -1154,7 +1154,10 @@ class RelayPool {
   /// - **Not connected**: the REQ was queued rather than written, because
   ///   [relayDoSubscribe] sends with `skipReconnect`. Nothing periodic
   ///   reconnects relays, so without this the frame sits in `pendingMessages`
-  ///   until some unrelated event happens to reconnect the socket.
+  ///   until some unrelated event happens to reconnect the socket. This branch
+  ///   is not gated by [silentRepairCooldown]; it is bounded instead by the
+  ///   probe being one-shot per subscription and by [Relay.connect] no-opping a
+  ///   relay that is already connected or connecting.
   void _probeSubscriptionSilence(String subId) {
     _subscriptionSilenceProbes.remove(subId);
     if (!_subscriptions.containsKey(subId)) return;
