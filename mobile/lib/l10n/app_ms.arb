@@ -3867,6 +3867,7 @@
       }
     }
   },
+  "libraryClipDuration": "{seconds}s",
   "libraryAddClips": "Tambah",
   "libraryRecordVideo": "Rakam Video",
   "videoClipSemanticLabel": "Klip video, {duration} saat",

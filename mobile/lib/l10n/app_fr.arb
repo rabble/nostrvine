@@ -2617,6 +2617,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} s",
     "libraryTabClips": "Clips",
     "libraryTabDrafts": "Brouillons",
     "libraryWebUnavailableDescription": "Les brouillons et clips sont enregistrés sur ton appareil : ouvre Divine sur ton téléphone pour les gérer.",

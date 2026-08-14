@@ -3867,6 +3867,7 @@
       }
     }
   },
+  "libraryClipDuration": "{seconds}s",
   "libraryAddClips": "شامل کریں",
   "libraryRecordVideo": "ویڈیو ریکارڈ کریں",
   "videoClipSemanticLabel": "ویڈیو کلپ، {duration} سیکنڈ",

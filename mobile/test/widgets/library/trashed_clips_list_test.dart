@@ -70,7 +70,7 @@ void main() {
       await tester.pump();
 
       expect(find.text(en.libraryTrashAutoDeletes(2)), findsOneWidget);
-      expect(find.text('5.00s'), findsOneWidget);
+      expect(find.text(en.libraryClipDuration('5.00')), findsOneWidget);
       expect(find.text('5.00'), findsNothing);
 
       await tester.tap(find.bySemanticsLabel(en.libraryTrashRestoreLabel));
@@ -100,7 +100,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('0.40s'), findsOneWidget);
+      expect(find.text(en.libraryClipDuration('0.40')), findsOneWidget);
+      expect(find.text('0.40'), findsNothing);
       expect(find.text('0s'), findsNothing);
     });
 

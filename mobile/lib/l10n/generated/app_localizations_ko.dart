@@ -6390,6 +6390,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '$seconds초';
+  }
+
+  @override
   String get libraryAddClips => '추가';
 
   @override

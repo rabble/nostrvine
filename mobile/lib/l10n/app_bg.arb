@@ -2818,6 +2818,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} сек",
     "libraryAddClips": "Добави",
     "libraryRecordVideo": "Запишете видео",
     "videoClipSemanticLabel": "Видео клип, {duration} секунди",

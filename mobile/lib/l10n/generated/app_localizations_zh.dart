@@ -6346,6 +6346,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
   String get libraryAddClips => '添加';
 
   @override

@@ -2616,6 +2616,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} dtk",
     "libraryTabClips": "Klip",
     "libraryTabDrafts": "Draf",
     "libraryWebUnavailableDescription": "Draf dan klip disimpan di perangkatmu — buka Divine di ponsel untuk mengelolanya.",

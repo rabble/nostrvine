@@ -2617,6 +2617,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} s",
     "libraryTabClips": "Clip",
     "libraryTabDrafts": "Bozze",
     "libraryWebUnavailableDescription": "Bozze e clip sono salvate sul dispositivo: apri Divine sul telefono per gestirle.",

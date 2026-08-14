@@ -11597,6 +11597,12 @@ abstract class AppLocalizations {
   /// **'{seconds}s remaining'**
   String librarySecondsRemaining(String seconds);
 
+  /// Compact clip duration shown in the library trash row. {seconds} is already formatted with two decimal places, e.g. '5.73'.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s'**
+  String libraryClipDuration(String seconds);
+
   /// No description provided for @libraryAddClips.
   ///
   /// In en, this message translates to:

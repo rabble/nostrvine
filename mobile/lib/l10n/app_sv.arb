@@ -2617,6 +2617,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} s",
     "libraryTabClips": "Klipp",
     "libraryTabDrafts": "Utkast",
     "libraryWebUnavailableDescription": "Utkast och klipp sparas på enheten — öppna Divine i mobilen för att hantera dem.",

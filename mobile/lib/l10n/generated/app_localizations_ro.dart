@@ -6823,6 +6823,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '$seconds s';
+  }
+
+  @override
   String get libraryAddClips => 'Adaugă';
 
   @override

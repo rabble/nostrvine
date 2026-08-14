@@ -6361,6 +6361,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String libraryClipDuration(String seconds) {
+    return '$seconds秒';
+  }
+
+  @override
   String get libraryAddClips => '追加';
 
   @override

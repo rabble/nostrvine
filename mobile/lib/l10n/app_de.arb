@@ -2617,6 +2617,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} Sek",
     "libraryTabClips": "Clips",
     "libraryTabDrafts": "Entwürfe",
     "libraryWebUnavailableDescription": "Entwürfe und Clips werden auf deinem Gerät gespeichert. Öffne Divine auf dem Smartphone, um sie zu verwalten.",

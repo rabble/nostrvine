@@ -2617,6 +2617,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds}s",
     "libraryTabClips": "Clips",
     "libraryTabDrafts": "Concepten",
     "libraryWebUnavailableDescription": "Concepten en clips worden op je apparaat opgeslagen. Open Divine op je telefoon om ze te beheren.",

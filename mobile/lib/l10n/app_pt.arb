@@ -2617,6 +2617,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} s",
     "libraryTabClips": "Clipes",
     "libraryTabDrafts": "Rascunhos",
     "libraryWebUnavailableDescription": "Rascunhos e clipes ficam no seu dispositivo — abra o Divine no celular para gerenciá-los.",

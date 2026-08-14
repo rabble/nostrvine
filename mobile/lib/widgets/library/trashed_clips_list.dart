@@ -8,6 +8,7 @@ import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/constants/clip_library_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
@@ -89,7 +90,7 @@ class _TrashedClipTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          '${clip.durationInSeconds.toStringAsFixed(2)}s',
+          context.l10n.libraryClipDuration(clip.duration.toFormattedSeconds()),
           style: VineTheme.titleSmallFont(
             color: context.vineColors.primaryText,
           ),

@@ -3867,6 +3867,7 @@
       }
     }
   },
+  "libraryClipDuration": "{seconds} giây",
   "libraryAddClips": "Thêm",
   "libraryRecordVideo": "Quay video",
   "videoClipSemanticLabel": "Clip video, {duration} giây",

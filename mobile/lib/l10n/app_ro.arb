@@ -2617,6 +2617,7 @@
             }
         }
     },
+    "libraryClipDuration": "{seconds} s",
     "libraryTabClips": "Clipuri",
     "libraryTabDrafts": "Ciorne",
     "libraryWebUnavailableDescription": "Ciornele și clipurile sunt pe dispozitivul tău — deschide Divine pe telefon ca să le gestionezi.",
