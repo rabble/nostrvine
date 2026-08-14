@@ -24,11 +24,5 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/nostr_sdk"
-      # Pin to the Flutter the repo pins in mobile/mise.toml. Without it this
-      # workflow floats on whatever stable is that day, so a formatter roll
-      # turns it red with no code change: 3.47.0's `dart format` reflows two
-      # pre-existing test files that the pinned 3.12.0 formats the other way,
-      # and no content satisfies both. Matches models_ci / creator_sync /
-      # sounds_repository, which already pin for the same reason.
       flutter_version: "3.44.0"
       min_coverage: 20

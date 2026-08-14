@@ -47,13 +47,13 @@
 /// per-wrap path runs, both have to fit inside [recipientWrapBuild].
 abstract final class DmSendBudget {
   /// The two seal round trips a wrap build spends, at the transport's own
-  /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 30s).
+  /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 20s).
   ///
   /// Restated here because `dm_repository` cannot import `keycast_flutter`.
   /// The app-layer guard test asserts the real relationship, so this going
   /// stale fails CI rather than silently under-sizing the bound — which is the
   /// #6586 failure mode itself.
-  static const int _twoTransportBoundsSeconds = 60;
+  static const int _twoTransportBoundsSeconds = 40;
 
   /// One server-side wrap-batch transport bound
   /// (`KeycastRpc.defaultBatchRequestTimeout`, 30s).
@@ -68,18 +68,31 @@ abstract final class DmSendBudget {
   /// secp256k1 signature (`GiftWrapUtil.getGiftWrapEvent`).
   ///
   /// Without it the bound would sit at *exactly* two transport bounds, so two
-  /// ops that each returned just under 30s would still blow it — failing a
+  /// ops that each returned just under 20s would still blow it — failing a
   /// build the transport itself had completed. That is the same
   /// "sized at the worst case with no margin" shape #6586 was about, one step
   /// earlier in the chain.
   static const int _wrapBuildLocalCryptoSeconds = 5;
 
+  /// What a per-wrap build costs against a signer that bounds its own
+  /// operations: two transport bounds plus the local crypto between them.
+  ///
+  /// Exposed so the app-layer guard can compare this package's restated
+  /// Keycast floor against `KeycastRpc.defaultRequestTimeout`, which
+  /// `dm_repository` cannot import directly.
+  static const int _boundedSignerFloorSeconds =
+      _twoTransportBoundsSeconds + _wrapBuildLocalCryptoSeconds;
+
+  /// Minimum per-wrap build budget for signers that bound their own
+  /// operations.
+  static const Duration boundedSignerFloor = Duration(
+    seconds: _boundedSignerFloorSeconds,
+  );
+
   /// Seconds allowed for building the recipient gift wrap. See
   /// [recipientWrapBuild].
   static const int _recipientWrapBuildSeconds =
-      _serverWrapBatchBoundSeconds +
-      _twoTransportBoundsSeconds +
-      _wrapBuildLocalCryptoSeconds;
+      _serverWrapBatchBoundSeconds + _boundedSignerFloorSeconds;
 
   /// Seconds allowed for the recipient OK confirmation. See
   /// [recipientOkConfirm].
@@ -107,7 +120,7 @@ abstract final class DmSendBudget {
   ///
   /// Sized as one Keycast server-side wrap-batch attempt at the transport's own
   /// 30s bound (`KeycastRpc.defaultBatchRequestTimeout`) **plus** the fallback
-  /// build: two Keycast single-op round trips at the transport's own 30s bound
+  /// build: two Keycast single-op round trips at the transport's own 20s bound
   /// (`KeycastRpc.defaultRequestTimeout`) **plus**
   /// [_wrapBuildLocalCryptoSeconds] for the local crypto that runs between and
   /// after them.
@@ -118,14 +131,9 @@ abstract final class DmSendBudget {
   /// timeout. Sizing only either alternative would let a slow-but-recoverable
   /// send be misclassified as timed out before any publish.
   ///
-  /// Tightening it below two transport bounds is the specific mistake #6046
-  /// made and #6075 reverted. That was sized against Keycast running 20-30s per
-  /// single op under DB-pool contention (keycast#291) — a figure that predates
-  /// keycast's own 8s `HTTP_RPC_HANDLER_TIMEOUT`, which now answers 504 rather
-  /// than letting a request run that long. Do not read that as licence to
-  /// shrink this: the server bound is not what this bounds. Amber's NIP-55
-  /// approval is human-gated and a NIP-46 bunker has no bound at all, and both
-  /// take this same path.
+  /// [_boundedSignerFloorSeconds] is the fallback floor. Tightening below it is
+  /// the specific mistake #6046 made and #6075 reverted. The batch attempt is
+  /// serial with that fallback, so [recipientWrapBuild] must cover their sum.
   ///
   /// It bounds the *chain*, not the transport, so it also covers signers whose
   /// own operation can wait much longer than this method should. On the Amber
@@ -174,7 +182,7 @@ abstract final class DmSendBudget {
   /// driven by `DmRepository.recoverSelfWrap`) and
   /// `NIP17MessageService.publishSelfApplicationMarker`. The build is the same
   /// two round trips, so at [selfWrapBuild] it could never finish against a
-  /// signer running near its own 30s-per-op bound.
+  /// signer running near its own 20s-per-op bound.
   ///
   /// It deliberately does **not** cover `sendPrivateMessage`, which builds its
   /// self wrap uncapped. A bound only makes sense where a timed-out build can

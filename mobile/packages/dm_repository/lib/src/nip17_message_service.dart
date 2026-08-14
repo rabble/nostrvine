@@ -601,7 +601,7 @@ class NIP17MessageService {
       // _publishSelfWrap after the recipient publish confirms delivery.
       // Bounded: the wrap build is 2 remote signer round trips, and no signer
       // interface exposes a per-call timeout — the transport's own bound is
-      // whatever that signer chose. Keycast is 30s/op; Amber's NIP-55 intent
+      // whatever that signer chose. Keycast is 20s/op; Amber's NIP-55 intent
       // path for `nip44Encrypt` and `signEvent` is human-gated and unbounded; a
       // bunker can be unbounded too. Without a bound here the chain can outrun
       // the caller's publish backstop, which then fires AFTER the recipient
