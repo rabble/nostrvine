@@ -191,10 +191,8 @@ void main() {
     });
 
     testWidgets(
-      'active to inactive under one second records view and seen (N=0 valid per spec)',
-      (
-        tester,
-      ) async {
+      'active to inactive under one second records a partial-loop view',
+      (tester) async {
         final isActive = ValueNotifier(true);
         final video = ValueNotifier(_video);
         final controller = _stubController(isPlaying: true);
@@ -230,7 +228,7 @@ void main() {
     );
 
     testWidgets(
-      'fling-speed active session records view and seen (N=0 valid per spec)',
+      'fling-speed active session records a partial-loop view and seen state',
       (tester) async {
         final isActive = ValueNotifier(true);
         final video = ValueNotifier(_video);
@@ -416,9 +414,7 @@ void main() {
       await controller.close();
     });
 
-    testWidgets('reactivation after a skipped glance still finalizes', (
-      tester,
-    ) async {
+    testWidgets('sub-second session finalizes once', (tester) async {
       final isActive = ValueNotifier(true);
       final video = ValueNotifier(_video);
       final controller = _stubController(isPlaying: true);
@@ -435,7 +431,7 @@ void main() {
         ),
       );
 
-      // Glance now counts per playback-start spec (N=0 loops is valid).
+      // A glance counts because playback started, even without a full loop.
       now = now.add(const Duration(milliseconds: 300));
       isActive.value = false;
       await tester.pump();
@@ -446,18 +442,6 @@ void main() {
         seenVideosService.records.single.watchDuration,
         const Duration(milliseconds: 300),
       );
-
-      // Per playback-start spec, first 300ms glance already counted as view
-      // (N=0). Reactivation after a finalized view does not extend that view —
-      // it would be a new session on next publish, but same-video reactivation
-      // keeps the already-sent impression deduplicated.
-      final viewEndEvents = _viewEndEvents(analyticsService);
-      expect(viewEndEvents, hasLength(1));
-      expect(
-        viewEndEvents.single.watchDuration,
-        const Duration(milliseconds: 300),
-      );
-      expect(seenVideosService.records, hasLength(1));
       expect(seenVideosService.records.single.videoId, equals('video_id'));
 
       isActive.dispose();
@@ -465,7 +449,58 @@ void main() {
       await controller.close();
     });
 
-    testWidgets('reactivation after a recorded impression sends view_end', (
+    testWidgets('reactivation starts a new view session', (tester) async {
+      final isActive = ValueNotifier(true);
+      final video = ValueNotifier(_video);
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTrackerHarness(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          video: video,
+          isActive: isActive,
+          clock: () => now,
+        ),
+      );
+
+      // A partial loop still counts because playback started.
+      now = now.add(const Duration(milliseconds: 700));
+      isActive.value = false;
+      await tester.pump();
+
+      expect(_viewEndEvents(analyticsService), hasLength(1));
+      expect(seenVideosService.records, hasLength(1));
+
+      // The inactive gap ends the first continuous viewing session. Returning
+      // to the same video starts another session and must publish another view.
+      analyticsService.events.clear();
+      isActive.value = true;
+      await tester.pump();
+      now = now.add(const Duration(seconds: 5));
+      isActive.value = false;
+      await tester.pump();
+
+      final viewEndEvents = _viewEndEvents(analyticsService);
+      expect(viewEndEvents, hasLength(1));
+      expect(viewEndEvents.single.watchDuration, const Duration(seconds: 5));
+      expect(
+        analyticsService.events.where(
+          (event) => event.eventType == 'view_start',
+        ),
+        hasLength(1),
+      );
+      // Seen-video history remains deduplicated across playback sessions.
+      expect(seenVideosService.records, hasLength(1));
+
+      isActive.dispose();
+      video.dispose();
+      await controller.close();
+    });
+
+    testWidgets('reactivation without playback does not publish a view_end', (
       tester,
     ) async {
       final isActive = ValueNotifier(true);
@@ -484,7 +519,6 @@ void main() {
         ),
       );
 
-      // Now counts per playback-start spec (N=0 loops is valid).
       now = now.add(const Duration(milliseconds: 700));
       isActive.value = false;
       await tester.pump();
@@ -492,19 +526,21 @@ void main() {
       expect(_viewEndEvents(analyticsService), hasLength(1));
       expect(seenVideosService.records, hasLength(1));
 
-      // First 700ms view already finalized per playback-start spec; same-video
-      // reactivation after a sent view keeps impression deduped and does not
-      // synthesize a second view_end until the session is torn down and
-      // recreated (e.g. video change). Drain to prove no second emission.
       analyticsService.events.clear();
+      controller.setState(
+        const DivineVideoPlayerState(
+          status: PlaybackStatus.ready,
+          duration: Duration(seconds: 5),
+          isFirstFrameRendered: true,
+        ),
+      );
       isActive.value = true;
       await tester.pump();
       now = now.add(const Duration(seconds: 5));
       isActive.value = false;
       await tester.pump();
 
-      final viewEndEvents = _viewEndEvents(analyticsService);
-      expect(viewEndEvents, isEmpty);
+      expect(_viewEndEvents(analyticsService), isEmpty);
       expect(seenVideosService.records, hasLength(1));
 
       isActive.dispose();
@@ -622,7 +658,11 @@ List<_TrackedAnalyticsEvent> _viewEndEvents(
     .where((event) => event.eventType == 'view_end')
     .toList();
 
-({DivineVideoPlayerController controller, Future<void> Function() close})
+({
+  DivineVideoPlayerController controller,
+  void Function(DivineVideoPlayerState state) setState,
+  Future<void> Function() close,
+})
 _stubController({
   required bool isPlaying,
   Duration duration = const Duration(seconds: 5),
@@ -641,6 +681,10 @@ _stubController({
 
   return (
     controller: controller,
+    setState: (DivineVideoPlayerState next) {
+      state = next;
+      stateController.add(next);
+    },
     close: () async {
       await stateController.close();
       state = const DivineVideoPlayerState();
