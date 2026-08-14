@@ -1427,6 +1427,49 @@ void main() {
     });
 
     group('toVideoEvent', () {
+      test('carries the event kind through to the VideoEvent', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'content': 'Test',
+            'tags': [
+              ['d', 'video-1'],
+              ['url', 'https://example.com/video.mp4'],
+            ],
+          },
+        });
+
+        expect(stats.toVideoEvent().eventKind, equals(34236));
+      });
+
+      test('a non-addressable REST video is not mistaken for kind 34236', () {
+        // Dropping the kind here left every REST-loaded video with a null
+        // eventKind, so the view-event drop classifier could not tell an
+        // expected kind-22 skip from a structural missing-d-tag defect
+        // (#7387), and shareKind guessed 34236 off the vine-id fallback.
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 22,
+            'content': 'Test',
+            'tags': [
+              ['url', 'https://example.com/video.mp4'],
+            ],
+          },
+        });
+
+        final video = stats.toVideoEvent();
+
+        expect(video.eventKind, equals(22));
+        expect(video.addressableId, isNull);
+        expect(video.shareKind, equals(22));
+      });
+
       test(
         'uses REST proof summary when compact video rows omit raw proof tags',
         () {

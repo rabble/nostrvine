@@ -553,6 +553,12 @@ class VideoStats {
   /// Propagates the NIP-40 `expiration` tag (if present in [rawTags]) so the
   /// client can honour server-side expiration on REST-loaded videos the same
   /// way it does for relay-loaded videos.
+  ///
+  /// Propagates [kind] so a REST-loaded video carries the same
+  /// [VideoEvent.eventKind] a relay-loaded one gets from `fromNostrEvent`.
+  /// Without it every REST video reads as an unknown kind, and the
+  /// addressability checks that key on it (view-event drop classification,
+  /// [VideoEvent.shareKind]) silently guess 34236.
   VideoEvent toVideoEvent() {
     final effectiveTimestamp =
         publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
@@ -581,6 +587,7 @@ class VideoStats {
       publishedAt: publishedAt?.toString(),
       sha256: sha256,
       addressableDTag: dTag.isNotEmpty ? dTag : null,
+      eventKind: kind,
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,

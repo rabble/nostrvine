@@ -31,6 +31,7 @@ VideoEvent createTestVideoEvent({
   String? moderationStatus,
   int? originalLoops,
   int? originalLikes,
+  int? eventKind,
 }) {
   return VideoEvent(
     id: id,
@@ -64,5 +65,6 @@ VideoEvent createTestVideoEvent({
     moderationStatus: moderationStatus,
     originalLoops: originalLoops,
     originalLikes: originalLikes,
+    eventKind: eventKind,
   );
 }

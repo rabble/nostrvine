@@ -127,7 +127,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -173,6 +173,9 @@ class AppDatabase extends _$AppDatabase {
         await _migrateToV4ClipCategories(m);
         await _repairSchemaV5();
       }
+      if (from < 6) {
+        await _repairSchemaV6();
+      }
     },
     beforeOpen: (details) async {
       // v1 databases are normalized by onUpgrade. This guarded path remains
@@ -183,6 +186,7 @@ class AppDatabase extends _$AppDatabase {
         await _normalizeLegacyV1Schema();
         await _repairSchemaV3();
         await _repairSchemaV5();
+        await _repairSchemaV6();
       }
 
       // Run cleanup of expired data on every app startup
@@ -219,6 +223,14 @@ class AppDatabase extends _$AppDatabase {
         AND video_vine_id != ''
         AND video_vine_id != video_id
     ''');
+  }
+
+  Future<void> _repairSchemaV6() async {
+    await _addColumnIfMissing(
+      'pending_view_events',
+      'video_event_kind',
+      'INTEGER NULL',
+    );
   }
 
   /// Anchors pre-v3 follower counts to the time they were written.
@@ -840,6 +852,7 @@ class AppDatabase extends _$AppDatabase {
           video_pubkey TEXT NOT NULL,
           video_vine_id TEXT,
           video_addressable_d_tag TEXT,
+          video_event_kind INTEGER,
           user_pubkey TEXT NOT NULL,
           watch_duration_ms INTEGER NOT NULL,
           total_duration_ms INTEGER,
@@ -1171,7 +1184,7 @@ class AppDatabase extends _$AppDatabase {
       'personal_reactions': ['addressable_id'],
       'profile_statistics': ['follower_counts_updated_at'],
       'identity_events': ['source_created_at', 'source_event_id'],
-      'pending_view_events': ['video_addressable_d_tag'],
+      'pending_view_events': ['video_addressable_d_tag', 'video_event_kind'],
     };
 
     for (final entry in requiredColumns.entries) {

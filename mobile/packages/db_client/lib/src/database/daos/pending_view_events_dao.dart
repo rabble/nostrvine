@@ -36,6 +36,7 @@ class PendingViewEvent {
     required this.createdAt,
     this.videoVineId,
     this.videoAddressableDTag,
+    this.videoEventKind,
     this.totalDurationMs,
     this.loopCount,
     this.sourceDetail,
@@ -49,6 +50,7 @@ class PendingViewEvent {
   final String videoPubkey;
   final String? videoVineId;
   final String? videoAddressableDTag;
+  final int? videoEventKind;
   final String userPubkey;
   final int watchDurationMs;
   final int? totalDurationMs;
@@ -67,6 +69,7 @@ class PendingViewEvent {
     String? videoPubkey,
     String? videoVineId,
     String? videoAddressableDTag,
+    int? videoEventKind,
     String? userPubkey,
     int? watchDurationMs,
     int? totalDurationMs,
@@ -84,6 +87,7 @@ class PendingViewEvent {
     videoPubkey: videoPubkey ?? this.videoPubkey,
     videoVineId: videoVineId ?? this.videoVineId,
     videoAddressableDTag: videoAddressableDTag ?? this.videoAddressableDTag,
+    videoEventKind: videoEventKind ?? this.videoEventKind,
     userPubkey: userPubkey ?? this.userPubkey,
     watchDurationMs: watchDurationMs ?? this.watchDurationMs,
     totalDurationMs: totalDurationMs ?? this.totalDurationMs,
@@ -120,6 +124,7 @@ class PendingViewEventsDao extends DatabaseAccessor<AppDatabase>
       videoPubkey: event.videoPubkey,
       videoVineId: Value(event.videoVineId),
       videoAddressableDTag: Value(event.videoAddressableDTag),
+      videoEventKind: Value(event.videoEventKind),
       userPubkey: event.userPubkey,
       watchDurationMs: event.watchDurationMs,
       totalDurationMs: Value(event.totalDurationMs),
@@ -141,6 +146,7 @@ class PendingViewEventsDao extends DatabaseAccessor<AppDatabase>
       videoPubkey: row.videoPubkey,
       videoVineId: row.videoVineId,
       videoAddressableDTag: row.videoAddressableDTag,
+      videoEventKind: row.videoEventKind,
       userPubkey: row.userPubkey,
       watchDurationMs: row.watchDurationMs,
       totalDurationMs: row.totalDurationMs,

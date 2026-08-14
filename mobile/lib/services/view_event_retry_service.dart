@@ -152,6 +152,7 @@ class ViewEventRetryService {
       timestamp: row.createdAt,
       vineId: row.videoVineId,
       addressableDTag: row.videoAddressableDTag,
+      eventKind: row.videoEventKind,
     );
   }
 }

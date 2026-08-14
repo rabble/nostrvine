@@ -1394,6 +1394,10 @@ class PendingViewEvents extends Table {
   TextColumn get videoAddressableDTag =>
       text().nullable().named('video_addressable_d_tag')();
 
+  /// The original NIP-71 video event kind, when known.
+  IntColumn get videoEventKind =>
+      integer().nullable().named('video_event_kind')();
+
   TextColumn get userPubkey => text().named('user_pubkey')();
 
   IntColumn get watchDurationMs => integer().named('watch_duration_ms')();

@@ -95,7 +95,7 @@ void main() {
       final db = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
       // Schema version should match current database version
-      expect(db.schemaVersion, equals(3));
+      expect(db.schemaVersion, equals(6));
 
       await db.close();
       // TODO(any): Fix and re-enable this test

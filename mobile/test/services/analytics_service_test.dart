@@ -209,6 +209,7 @@ void main() {
         timestamp: DateTime.now(),
         vineId: 'vine-id',
         addressableDTag: 'the-d-tag',
+        eventKind: NIP71VideoKinds.addressableShortVideo,
       );
 
       await analyticsService.trackDetailedVideoViewWithUser(
@@ -235,6 +236,10 @@ void main() {
       // Without this the row cannot address its subject, and every retry is
       // skipped by ViewEventPublisher for the lifetime of the queue (#7169).
       expect(retryable.single.videoAddressableDTag, 'the-d-tag');
+      expect(
+        retryable.single.videoEventKind,
+        NIP71VideoKinds.addressableShortVideo,
+      );
       expect(retryable.single.watchDurationMs, 2500);
       expect(retryable.single.totalDurationMs, 6000);
       expect(retryable.single.loopCount, 1);
@@ -242,6 +247,52 @@ void main() {
       expect(retryable.single.sourceDetail, 'following');
       expect(flushCount, 1);
     });
+
+    test(
+      'does not enqueue or directly publish regular videos without d tags',
+      () async {
+        final publisher = _MockViewEventPublisher();
+        final dao = _MockPendingViewEventsDao();
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          viewEventPublisher: publisher,
+          pendingViewEventsDao: dao,
+        );
+        await analyticsService.initialize();
+
+        final video = VideoEvent(
+          id: '22e73ca1faedb07dd3e24c1dca52d849aa75c6e4090eb60c532820b782c93da3',
+          pubkey:
+              'ae73ca1faedb07dd3e24c1dca52d849aa75c6e4090eb60c532820b782c93da3',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          content: 'Test video',
+          timestamp: DateTime.now(),
+          eventKind: NIP71VideoKinds.shortVideo,
+        );
+
+        await analyticsService.trackDetailedVideoViewWithUser(
+          video,
+          userId:
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          source: 'mobile',
+          eventType: 'view_end',
+          watchDuration: const Duration(seconds: 2),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(() => dao.enqueue(any()));
+        verifyNever(
+          () => publisher.publishViewEvent(
+            video: any(named: 'video'),
+            startSeconds: any(named: 'startSeconds'),
+            endSeconds: any(named: 'endSeconds'),
+            source: any(named: 'source'),
+            sourceDetail: any(named: 'sourceDetail'),
+            loopCount: any(named: 'loopCount'),
+          ),
+        );
+      },
+    );
 
     test('does not enqueue when analytics is disabled', () async {
       final tempDir = Directory.systemTemp.createTempSync(

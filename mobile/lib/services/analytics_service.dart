@@ -333,6 +333,17 @@ class AnalyticsService implements BackgroundAwareService {
     String? sourceDetail,
     double? loopCount,
   }) async {
+    if (video.addressableId == null &&
+        (video.eventKind == NIP71VideoKinds.shortVideo ||
+            video.eventKind == NIP71VideoKinds.normalVideo)) {
+      Log.debug(
+        'Skipping pending view event for non-addressable video kind ${video.eventKind}',
+        name: 'AnalyticsService',
+        category: LogCategory.video,
+      );
+      return true;
+    }
+
     final dao = _pendingViewEventsDao;
     if (dao == null || userPubkey == null) return false;
 
@@ -345,6 +356,7 @@ class AnalyticsService implements BackgroundAwareService {
           videoPubkey: video.pubkey,
           videoVineId: video.vineId,
           videoAddressableDTag: video.addressableDTag,
+          videoEventKind: video.eventKind,
           userPubkey: userPubkey,
           watchDurationMs: watchDuration.inMilliseconds,
           totalDurationMs: totalDuration?.inMilliseconds,
