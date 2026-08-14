@@ -19,7 +19,7 @@ void main() {
 
       expect(
         classifyRecoverableFlutterError(details),
-        'Recoverable media load failure',
+        (reason: 'Recoverable media load failure', report: true),
       );
     });
 
@@ -42,7 +42,7 @@ void main() {
 
         expect(
           classifyRecoverableFlutterError(details),
-          'Recoverable media load failure',
+          (reason: 'Recoverable media load failure', report: true),
         );
       });
     }
@@ -55,7 +55,7 @@ void main() {
 
       expect(
         classifyRecoverableFlutterError(details),
-        'Recoverable media load failure',
+        (reason: 'Recoverable media load failure', report: true),
       );
     });
 
@@ -67,7 +67,7 @@ void main() {
 
       expect(
         classifyRecoverableFlutterError(details),
-        'Recoverable media load failure',
+        (reason: 'Recoverable media load failure', report: true),
       );
     });
 
@@ -82,7 +82,7 @@ void main() {
 
       expect(
         classifyRecoverableFlutterError(details),
-        'Recoverable media load failure',
+        (reason: 'Recoverable media load failure', report: true),
       );
     });
 
@@ -94,17 +94,23 @@ void main() {
 
       expect(
         classifyRecoverableFlutterError(details),
-        'Recoverable media load failure',
+        (reason: 'Recoverable media load failure', report: true),
       );
     });
 
     test('classifies MediaCacheImageProvider download-without-file failures as '
-        'recoverable regardless of host', () {
+        'recoverable and unreported regardless of host', () {
       // Dead legacy Vine avatars are commonly served through
       // web.archive.org, which is not in the recoverable-media host set —
       // the exception type alone must classify it, so the broken avatar
       // falls back to a placeholder instead of a fatal crash (#5782 follow
       // up: the download-without-file branch was still reported as fatal).
+      //
+      // report is false because a dead URL is a plain IO failure, which
+      // `.claude/rules/error_handling.md` puts outside Crashlytics (#7298).
+      // This is the only silenced branch: every other recoverable-media
+      // signature above asserts the full record with report: true, so
+      // widening the silence turns those tests red.
       const details = FlutterErrorDetails(
         exception: MediaCacheImageLoadException(
           'https://web.archive.org/web/20150907190604/'
@@ -115,7 +121,7 @@ void main() {
 
       expect(
         classifyRecoverableFlutterError(details),
-        'Recoverable media load failure',
+        (reason: 'Recoverable media load failure', report: false),
       );
     });
 
@@ -152,7 +158,7 @@ void main() {
 
       expect(
         classifyRecoverableFlutterError(details),
-        'Recoverable hero flight layout failure',
+        (reason: 'Recoverable hero flight layout failure', report: true),
       );
     });
 
@@ -182,7 +188,7 @@ void main() {
 
       expect(
         classifyRecoverableFlutterError(details),
-        'Recoverable hero flight layout failure',
+        (reason: 'Recoverable hero flight layout failure', report: true),
       );
     });
 

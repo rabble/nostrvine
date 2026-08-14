@@ -150,11 +150,13 @@ class _HttpDownload implements CancellableDownload {
 
   final _completer = Completer<CancellableDownloadResult>();
   final _abortCompleter = Completer<void>();
-  // ignore: cancel_subscriptions, owned across cancel/stream lifecycle methods.
+
+  /// Owned across the cancel / write-failure / stream lifecycle methods.
   StreamSubscription<List<int>>? _subscription;
   IOSink? _sink;
   bool _isCancelled = false;
   bool _isDone = false;
+  bool _hasWriteFailure = false;
 
   @override
   Future<CancellableDownloadResult> get result => _completer.future;
@@ -219,14 +221,26 @@ class _HttpDownload implements CancellableDownload {
       if (!parent.existsSync()) {
         await parent.create(recursive: true);
       }
-      _sink = _file.openWrite();
+      final sink = _file.openWrite();
+      _sink = sink;
+      // `openWrite()` opens the file lazily and nothing observes that open
+      // until the first write, so a failure — an over-long cache filename
+      // (ENAMETOOLONG), a purged or read-only directory — escapes to the
+      // enclosing zone and is reported as a crash. Watch `done` and then
+      // engage the sink immediately, which hands the pending open a listener
+      // before the first response chunk can arrive. The zero-length write
+      // leaves the file itself untouched.
+      unawaited(sink.done.then<void>((_) {}, onError: _failWithWriteError));
+      sink.add(const <int>[]);
       _subscription = response.stream.listen(
         (chunk) {
           if (_isCancelled) return;
           try {
             _sink?.add(chunk);
           } on Object catch (_) {
-            // Sink errors surface in onError.
+            // Only guards the StateError from adding to a sink a
+            // concurrent cancel already closed. A failed write surfaces
+            // on the sink's `done` future instead.
           }
         },
         onError: (Object error) async {
@@ -247,12 +261,17 @@ class _HttpDownload implements CancellableDownload {
           // into this window and delete a successfully written file.
           _isDone = true;
           try {
-            await _sink?.flush();
+            // `close()` flushes the buffered writes and returns `done`, so a
+            // failed open or write surfaces here. `flush()` must not be used:
+            // once the sink has already reported its failure, it never
+            // completes and would strand this download forever.
             await _sink?.close();
-          } on Object catch (_) {
-            // Best-effort.
+          } on Object catch (error) {
+            await _failWithWriteError(error);
+            return;
           }
           _sink = null;
+          if (_hasWriteFailure) return;
           // coverage:ignore-start
           if (_isCancelled) {
             await _safeDelete();
@@ -290,6 +309,29 @@ class _HttpDownload implements CancellableDownload {
       await _cleanupPartial();
       _safeComplete(const CancellableDownloadResult(file: null));
     }
+  }
+
+  /// Settles this download as a failure after the target file could not be
+  /// opened or written, discarding any partial bytes. Idempotent, and safe to
+  /// call from both the sink's `done` handler and the response stream's
+  /// `onDone` handler.
+  Future<void> _failWithWriteError(Object error) async {
+    final alreadyFailed = _hasWriteFailure;
+    _hasWriteFailure = true;
+    // Drop the sink before anything else can await it: a sink that has
+    // already reported its failure never completes `flush()`.
+    _sink = null;
+    if (!alreadyFailed && !_isCancelled) {
+      Log.warning(
+        'CancellableDownload: write failed for $_url: $error',
+        name: 'MediaCache',
+        category: LogCategory.video,
+      );
+    }
+    await _subscription?.cancel();
+    _subscription = null;
+    await _safeDelete();
+    _safeComplete(const CancellableDownloadResult(file: null));
   }
 
   Future<void> _cleanupPartial() async {

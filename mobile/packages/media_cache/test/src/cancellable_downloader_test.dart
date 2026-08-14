@@ -103,6 +103,81 @@ void main() {
       expect(download.isCancelled, isFalse);
     });
 
+    // Crashlytics 8ddf179042f3ca20d8b4c90ae75f8f77 (#7298): image cache keys
+    // are full URLs, and a web.archive.org-proxied Vine avatar produces a
+    // filename past the 255-byte NAME_MAX of APFS and ext4. `File.openWrite()`
+    // opens lazily, so the resulting ENAMETOOLONG surfaces only on the sink's
+    // `done` future. Nothing observed it, so it reached Crashlytics through
+    // runZonedGuarded, and the download settled wrongly on top of that:
+    // whichever of the two orderings below occurred, the caller was misled.
+    group('when the target file cannot be opened', () {
+      late File target;
+
+      setUp(() {
+        target = File('${tempDir.path}/${'a' * 300}.jpg');
+      });
+
+      test('completes with null when the response ends before the sink '
+          'reports its failure', () async {
+        final client = _CallbackClient(
+          (_) async => http.StreamedResponse(
+            Stream<List<int>>.fromIterable([utf8.encode('payload')]),
+            200,
+          ),
+        );
+        final downloader = HttpCancellableDownloader(client);
+
+        final zoneErrors = <Object>[];
+        File? resolved;
+        await runZonedGuarded(() async {
+          resolved = await downloader
+              .download(
+                url: 'https://example.com/avatar.jpg',
+                targetFile: target,
+              )
+              .file;
+          // Let any straggling sink error land inside the guarded zone.
+          await pumpEventQueue();
+        }, (error, _) => zoneErrors.add(error));
+
+        expect(resolved, isNull);
+        expect(zoneErrors, isEmpty);
+        expect(target.existsSync(), isFalse);
+      });
+
+      test('completes with null when the sink reports its failure before the '
+          'response ends', () async {
+        // The production ordering: bytes arrive over the network, so the open
+        // error lands long before the last chunk. `flush()` on a sink that has
+        // already reported its failure never completes, which stranded this
+        // download — and every caller joined to its cache key — forever.
+        final body = StreamController<List<int>>();
+        addTearDown(body.close);
+        final client = _CallbackClient(
+          (_) async => http.StreamedResponse(body.stream, 200),
+        );
+        final downloader = HttpCancellableDownloader(client);
+
+        final zoneErrors = <Object>[];
+        File? resolved;
+        await runZonedGuarded(() async {
+          final download = downloader.download(
+            url: 'https://example.com/avatar.jpg',
+            targetFile: target,
+          );
+          await pumpEventQueue();
+          body.add(utf8.encode('payload'));
+          await pumpEventQueue();
+          resolved = await download.file;
+          await pumpEventQueue();
+        }, (error, _) => zoneErrors.add(error));
+
+        expect(resolved, isNull);
+        expect(zoneErrors, isEmpty);
+        expect(target.existsSync(), isFalse);
+      });
+    });
+
     test('close releases the underlying client', () async {
       final client = _CallbackClient(
         (_) async => http.StreamedResponse(const Stream.empty(), 200),
