@@ -60,17 +60,20 @@ void main() {
       ));
     });
 
+    // Pins the legacy Vine hosts' _recoverableMediaHosts membership. The
+    // typed-SocketException branch above matches any host, so only a
+    // stringified failure — the shape a codec-wrapped load arrives in —
+    // depends on the set. Dropping the hosts makes these errors fatal again.
     for (final host in const ['v.cdn.vine.co', 'cdn.vine.co']) {
-      test('classifies legacy Vine CDN host lookup failures as unreported for '
-          '$host', () {
+      test('keeps stringified socket failures from $host recoverable', () {
         final details = FlutterErrorDetails(
-          exception: SocketException("Failed host lookup: '$host'"),
+          exception: Exception("SocketException: Failed host lookup: '$host'"),
           library: 'dart:_http',
         );
 
         expect(classifyRecoverableFlutterError(details), (
-          reason: 'Expected network failure',
-          report: false,
+          reason: 'Recoverable media load failure',
+          report: true,
         ));
       });
     }
