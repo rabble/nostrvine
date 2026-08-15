@@ -170,6 +170,21 @@ class ZendeskSupportService {
     }
   }
 
+  /// Blocks until [initialize] has settled, so identity calls made during the
+  /// deferred startup phase do not read a [_initialized] that is only
+  /// transiently false.
+  static Future<void> _awaitInitialization() async {
+    try {
+      await _initializationCompleter.future.timeout(_initializationTimeout);
+    } on TimeoutException {
+      Log.warning(
+        'Zendesk: initialization did not settle within '
+        '${_initializationTimeout.inSeconds}s',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// Store user identity for Zendesk tickets.
   ///
   /// Call this after user login. Stores name/email/npub locally.
@@ -213,6 +228,11 @@ class ZendeskSupportService {
   /// after login without a network call. JWT identity upgrade happens
   /// asynchronously afterward and overrides this when successful.
   static Future<bool> setAnonymousIdentityWithUserInfo() async {
+    // Races startup for the same reason setJwtIdentity does: this is the
+    // fallback identity the JWT upgrade is allowed to fail back to, so it
+    // must not be the one that silently loses the race.
+    await _awaitInitialization();
+
     if (!_initialized) return false;
     if (_userName == null || _userEmail == null) return false;
 
@@ -400,15 +420,7 @@ class ZendeskSupportService {
     required Nip98AuthService nip98Service,
     required String relayManagerUrl,
   }) async {
-    // Wait for initialization to complete before checking _initialized flag
-    try {
-      await _initializationCompleter.future.timeout(_initializationTimeout);
-    } catch (e) {
-      Log.warning(
-        'Zendesk JWT: Initialization timeout or error - $e',
-        category: LogCategory.system,
-      );
-    }
+    await _awaitInitialization();
 
     if (!_initialized) {
       Log.warning(
