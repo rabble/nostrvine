@@ -412,7 +412,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(VideoRecorderView), findsOneWidget);
+        expect(find.byKey(const ValueKey('second')), findsOneWidget);
         expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
         expect(pageOpenChanges, isNot(contains(false)));
       });
