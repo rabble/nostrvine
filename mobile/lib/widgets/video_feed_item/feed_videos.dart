@@ -229,9 +229,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   /// early-returns because both its old/new predicates read the same live
   /// service, so an already-playing item keeps playing behind the overlay
   /// (#5720 M1). Pausing when the gate is closed is idempotent.
-  void _pauseCurrentIfCommunityWarned(
-    CommunityContentLabelService service,
-  ) {
+  void _pauseCurrentIfCommunityWarned(CommunityContentLabelService service) {
     final feedState = _feedKey.currentState;
     if (feedState == null) return;
     final index = feedState.currentIndex;
@@ -245,9 +243,9 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         ...service.warnLabelsFor(widget.videos[index]),
     }.toList();
     if (shouldShowContentWarningOverlay(
-      contentWarningLabels: widget.videos[index].contentWarningLabels,
-      warnLabels: warnLabels,
-    ) &&
+          contentWarningLabels: widget.videos[index].contentWarningLabels,
+          warnLabels: warnLabels,
+        ) &&
         !_revealedContentWarningVideoIds.contains(widget.videos[index].id)) {
       feedState.pauseCurrentPlayback();
     }
@@ -971,9 +969,6 @@ class __OverlayState extends ConsumerState<_Overlay> {
           onSkip: _skipToNextVideo,
         );
       case _OverlayContentWarningMode(:final labels):
-        final isCommunityWarningsEnabled = ref.read(
-          isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
-        );
         return ContentWarningBlurOverlay(
           // Display uses the merged (creator + community) labels so the blur
           // names every warning. Hide-similar must persist ONLY the
@@ -981,18 +976,16 @@ class __OverlayState extends ConsumerState<_Overlay> {
           // must never become a persisted global hide (#4771 warn-only v1).
           labels: labels,
           onReveal: widget.onContentWarningRevealed,
-          onHideSimilar: isCommunityWarningsEnabled
-              ? () {
-                  hideContentWarningsLikeThese(
-                    context: context,
-                    ref: ref,
-                    labels: contentWarningOverlayLabels(
-                      contentWarningLabels: video.contentWarningLabels,
-                      warnLabels: video.warnLabels,
-                    ),
-                  );
-                }
-              : null,
+          onHideSimilar: () {
+            hideContentWarningsLikeThese(
+              context: context,
+              ref: ref,
+              labels: contentWarningOverlayLabels(
+                contentWarningLabels: video.contentWarningLabels,
+                warnLabels: video.warnLabels,
+              ),
+            );
+          },
         );
       case _OverlayInteractiveMode(isReady: final interactiveReady):
         return FeedAutoAdvancePastErrorListener(

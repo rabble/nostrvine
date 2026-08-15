@@ -45,7 +45,7 @@ class HelpClassifyActionButton extends ConsumerWidget {
     if (repository == null || myPubkey == null || myPubkey.isEmpty) {
       // Visibility with visible: false doesn't take up layout space,
       // preventing a permanent 40px gap in Column(spacing: 20).
-      return const Visibility(visible: false);
+      return const Visibility(visible: false, child: SizedBox.shrink());
     }
 
     return VideoActionButton(
