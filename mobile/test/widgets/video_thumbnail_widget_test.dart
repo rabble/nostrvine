@@ -801,6 +801,62 @@ void main() {
     );
 
     testWidgets(
+      'records unavailable non-content-addressed thumbnails without rebuilding during build',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const url = 'https://media.divine.video/not-a-hash.jpg';
+        late StateSetter rebuild;
+        var reportErrorDuringBuild = false;
+        Image? image;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+            child: MaterialApp(
+              home: StatefulBuilder(
+                builder: (context, setState) {
+                  rebuild = setState;
+                  return Row(
+                    children: [
+                      const PassiveAuthThumbnailImage(url: url),
+                      Builder(
+                        builder: (context) {
+                          if (reportErrorDuringBuild) {
+                            image!.errorBuilder!(
+                              tester.element(find.byType(Image)),
+                              NetworkImageLoadException(
+                                statusCode: 401,
+                                uri: Uri.parse(url),
+                              ),
+                              StackTrace.current,
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        image = tester.widget<Image>(find.byType(Image));
+
+        rebuild(() => reportErrorDuringBuild = true);
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        verifyNever(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
       'suppresses repeated unauthenticated Divine thumbnail requests after passive auth is unavailable',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();

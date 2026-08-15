@@ -377,7 +377,15 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
   void _markPassiveAuthUnavailable(String url) {
     _authRetryAttempted = true;
     PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.add(url);
-    if (mounted) setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          widget.url == url &&
+          PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.contains(
+            url,
+          )) {
+        setState(() {});
+      }
+    });
   }
 
   void _resetPassiveAuthState() {
