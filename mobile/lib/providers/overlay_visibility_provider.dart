@@ -47,7 +47,6 @@ class OverlayVisibilityState {
 @Riverpod(keepAlive: true)
 class OverlayVisibility extends _$OverlayVisibility {
   final Set<Object> _pageOpenOwners = {};
-  bool _pageOpenWithoutOwner = false;
 
   @override
   OverlayVisibilityState build() =>
@@ -56,14 +55,7 @@ class OverlayVisibility extends _$OverlayVisibility {
   /// Whether this notifier can still accept writes.
   bool get isMounted => ref.mounted;
 
-  bool get _isPageOpen => _pageOpenWithoutOwner || _pageOpenOwners.isNotEmpty;
-
-  /// Sets page visibility for callers without an independent owner token.
-  /// Owner-held pages remain open when this is set to false.
-  void setPageOpen(bool isOpen) {
-    _pageOpenWithoutOwner = isOpen;
-    _updatePageOpen();
-  }
+  bool get _isPageOpen => _pageOpenOwners.isNotEmpty;
 
   /// Sets page visibility for one independently mounted owner.
   void setPageOpenForOwner(Object owner, {required bool isOpen}) {
@@ -77,7 +69,6 @@ class OverlayVisibility extends _$OverlayVisibility {
 
   /// Clears every page-open source after navigation proves none remain.
   void clearPageOpen() {
-    _pageOpenWithoutOwner = false;
     _pageOpenOwners.clear();
     _updatePageOpen();
   }

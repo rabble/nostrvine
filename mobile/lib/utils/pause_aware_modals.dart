@@ -1,6 +1,6 @@
 // ABOUTME: BuildContext extensions for showing modals/navigating that pause
-// ABOUTME: video playback. Uses setPageOpen for full-screen pages/dialogs
-// ABOUTME: and setBottomSheetOpen for bottom sheets (retains current player).
+// ABOUTME: video playback. Uses owner-held page tokens for full-screen pages
+// ABOUTME: and dialogs, and setBottomSheetOpen for retained bottom sheets.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -29,8 +29,8 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 extension PauseAwareModals on BuildContext {
   /// Pushes a route that automatically pauses video playback.
   ///
-  /// Calls [OverlayVisibility.setPageOpen(true)] before pushing and
-  /// [setPageOpen(false)] when the pushed route is popped.
+  /// Takes an [OverlayVisibility] owner token before pushing and releases that
+  /// token when the pushed route is popped.
   /// This releases all video players to free memory.
   ///
   /// The returned future only completes on a **pop**: go_router completes an
@@ -47,18 +47,20 @@ extension PauseAwareModals on BuildContext {
   }) {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
+    final owner = Object();
 
-    overlayNotifier.setPageOpen(true);
+    overlayNotifier.setPageOpenForOwner(owner, isOpen: true);
 
     return push<T>(location, extra: extra).whenComplete(() {
-      overlayNotifier.setPageOpen(false);
+      if (!overlayNotifier.isMounted) return;
+      overlayNotifier.setPageOpenForOwner(owner, isOpen: false);
     });
   }
 
   /// Shows a dialog that automatically pauses video playback.
   ///
-  /// Calls [OverlayVisibility.setPageOpen(true)] before showing and
-  /// [setPageOpen(false)] after the dialog is dismissed.
+  /// Takes an [OverlayVisibility] owner token before showing and releases that
+  /// token after the dialog is dismissed.
   /// This releases all video players (dialogs block full UI).
   Future<T?> showVideoPausingDialog<T>({
     required WidgetBuilder builder,
@@ -73,8 +75,9 @@ extension PauseAwareModals on BuildContext {
   }) {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
+    final owner = Object();
 
-    overlayNotifier.setPageOpen(true);
+    overlayNotifier.setPageOpenForOwner(owner, isOpen: true);
 
     return showDialog<T>(
       context: this,
@@ -88,7 +91,8 @@ extension PauseAwareModals on BuildContext {
       anchorPoint: anchorPoint,
       traversalEdgeBehavior: traversalEdgeBehavior,
     ).whenComplete(() {
-      overlayNotifier.setPageOpen(false);
+      if (!overlayNotifier.isMounted) return;
+      overlayNotifier.setPageOpenForOwner(owner, isOpen: false);
     });
   }
 
