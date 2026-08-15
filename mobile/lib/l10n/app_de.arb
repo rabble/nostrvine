@@ -5222,5 +5222,5 @@
   "changeEmailSentMessage": "Bestätige über {email} und über die Adresse in deinem Konto. Deine E-Mail wechselt, sobald beides erledigt ist.",
   "changeEmailSentExpiry": "Die Links laufen nach 24 Stunden ab.",
   "changeEmailSentDone": "Alles klar",
-    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
+    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
 }

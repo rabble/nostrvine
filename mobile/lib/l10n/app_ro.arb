@@ -5222,5 +5222,5 @@
   "changeEmailSentMessage": "Confirmă din {email} și din adresa contului tău. E-mailul se schimbă după ce le faci pe amândouă.",
   "changeEmailSentExpiry": "Linkurile expiră după 24 de ore.",
   "changeEmailSentDone": "Am înțeles",
-    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
+    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
 }

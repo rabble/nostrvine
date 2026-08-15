@@ -12060,7 +12060,7 @@ class AppLocalizationsTr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count videos',
-      one: '1 video',
+      one: '$count video',
     );
     return '$_temp0';
   }

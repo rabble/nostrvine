@@ -4553,5 +4553,5 @@
   "changeEmailSentMessage": "{email}과 계정에 등록된 주소에서 확인해 주세요. 둘 다 끝나면 이메일이 바뀝니다.",
   "changeEmailSentExpiry": "링크는 24시간 뒤에 만료돼요.",
   "changeEmailSentDone": "알겠어요",
-    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
+    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
 }

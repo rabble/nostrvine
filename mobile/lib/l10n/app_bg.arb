@@ -5353,5 +5353,5 @@
   "changeEmailSentMessage": "Потвърди от {email} и от адреса в акаунта ти. Имейлът се сменя, щом направиш и двете.",
   "changeEmailSentExpiry": "Линковете спират да работят след 24 часа.",
   "changeEmailSentDone": "Ясно",
-    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
+    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
 }

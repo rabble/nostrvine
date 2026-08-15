@@ -7052,5 +7052,5 @@
   "changeEmailSentMessage": "Xác nhận từ {email} và từ địa chỉ trong tài khoản của bạn. Email đổi khi xong cả hai.",
   "changeEmailSentExpiry": "Liên kết hết hạn sau 24 giờ.",
   "changeEmailSentDone": "Đã hiểu",
-    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
+    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
 }

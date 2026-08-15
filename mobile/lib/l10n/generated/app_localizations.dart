@@ -20599,7 +20599,7 @@ abstract class AppLocalizations {
   /// Secondary line on a people-search result row: how many videos this user has published.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 video} other{{count} videos}}'**
+  /// **'{count, plural, =1{{count} video} other{{count} videos}}'**
   String searchUserVideoCount(int count);
 }
 
