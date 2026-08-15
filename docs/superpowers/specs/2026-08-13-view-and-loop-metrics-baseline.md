@@ -237,13 +237,18 @@ actually gates:
 
 Median public count across the catalogue: **1,417**.
 
-When the post-date/count-hiding feature is enabled, a public count renders on
-about **half** the catalogue, not on 0.044% of it. The design doc's prior
-conclusion — "the public count is effectively never shown; 9,996 videos in
-10,000 render a date" — does not hold under the feature-gated code path.
-Production remains unchanged while `FeatureFlag.videoCardPostDate` is off:
-`resolveVideoCardMeta` returns `video.totalLoops` directly, so every card keeps
-today's count-only behavior until the flag is enabled.
+A public count renders on about **half** the catalogue, not on 0.044% of it.
+The design doc's prior conclusion — "the public count is effectively never
+shown; 9,996 videos in 10,000 render a date" — does not hold.
+
+This is live for everyone, not feature-gated. `FeatureFlag.videoCardPostDate`
+originally gated the rule as a kill switch, but it defaulted off and nothing
+ever set `FF_VIDEO_CARD_POST_DATE`, so it never reached a normal build. #7452
+(merged 2026-08-15 04:31 UTC) deleted the dead flag; `_resolveLoopCount` now
+applies the floor unconditionally to any viewer who is not the video's owner.
+An earlier revision of this paragraph said production was unchanged while the
+flag stayed off — that was written hours before #7452 landed and is no longer
+true.
 
 **The floor decision survives the correction; only its stated rationale
 changes.** The design doc argued the floor was harmless because almost
