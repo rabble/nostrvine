@@ -60,18 +60,23 @@ String? _currentRouterLocation(AccountSwitchController controller) {
       .toString();
 }
 
-/// Retargets an own-profile route from the leaving account to the account that
+/// Retargets an own-account route from the leaving account to the account that
 /// is about to become active.
 ///
-/// Most routes are safe to preserve across an account-container swap. An own
-/// profile URL is identity-bearing, though: carrying `/profile/<old npub>` into
-/// the new container renders the leaving account's profile while the rest of
-/// the app already reflects the target account.
+/// Most routes are safe to preserve across an account-container swap. Own-
+/// account URLs are identity-bearing, though: carrying one into the new
+/// container renders data for the leaving account while the rest of the app
+/// already reflects the target account.
 ///
 /// The routed segment is matched with [routeIdentifiesUser] rather than
-/// compared raw, because the route accepts npub, nprofile and bare hex as well
-/// as the relative `me` — a raw compare leaves the hex and nprofile forms
-/// stranded on the leaving account.
+/// compared raw so equivalent npub, nprofile, hex, and relative `me` forms are
+/// recognized consistently.
+///
+/// Supported user-identifying routes that are retargeted:
+/// - `/profile/<identifier>`
+/// - `/followers/<identifier>`
+/// - `/following/<identifier>`
+/// - `/profile-view/<identifier>`
 String? accountSwitchInitialLocation({
   required String? currentLocation,
   required String? currentPubkeyHex,
@@ -82,7 +87,11 @@ String? accountSwitchInitialLocation({
   final uri = Uri.tryParse(currentLocation);
   if (uri == null) return currentLocation;
   final segments = uri.pathSegments;
-  if (segments.length < 2 || segments.first != 'profile') {
+  // Routes that carry a user identity as the second segment and should be
+  // retargeted when the identity matches the leaving account.
+  const userRoutes = {'profile', 'followers', 'following', 'profile-view'};
+
+  if (segments.length < 2 || !userRoutes.contains(segments.first)) {
     return currentLocation;
   }
 
@@ -90,9 +99,14 @@ String? accountSwitchInitialLocation({
     return currentLocation;
   }
 
-  final targetNpub = NostrKeyUtils.encodePubKey(targetPubkeyHex);
+  final routeType = segments.first;
+  // Followers/following compare this segment directly with the client's hex
+  // key. Profile routes normalize the identifier and conventionally use npub.
+  final targetIdentifier = routeType == 'followers' || routeType == 'following'
+      ? targetPubkeyHex
+      : NostrKeyUtils.encodePubKey(targetPubkeyHex);
   final targetPath =
-      '/profile/$targetNpub${segments.length >= 3 ? '/${segments.skip(2).join('/')}' : ''}';
+      '/$routeType/$targetIdentifier${segments.length >= 3 ? '/${segments.skip(2).join('/')}' : ''}';
   return uri.replace(path: targetPath).toString();
 }
 
