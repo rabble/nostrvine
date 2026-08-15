@@ -375,4 +375,45 @@ void main() {
       expect(primary, isNot(equals(fallback)));
     });
   });
+
+  group('playbackSourceUrlsForPlatform', () {
+    const hash =
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+    test('uses derivative and HLS for extensionless Divine blobs', () {
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      expect(
+        video.playbackSourceUrlsForPlatform,
+        equals([
+          'https://media.divine.video/$hash/720p.mp4',
+          'https://media.divine.video/$hash/hls/stream_720p.m3u8',
+        ]),
+      );
+    });
+
+    test('keeps raw Divine blobs only when raw playback is forced', () async {
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      await videoFormatPreference.setFormat(VideoPlaybackFormat.raw);
+      addTearDown(() => videoFormatPreference.setFormat(null));
+
+      expect(
+        video.playbackSourceUrlsForPlatform,
+        equals([
+          'https://media.divine.video/$hash',
+          'https://media.divine.video/$hash/hls/stream_720p.m3u8',
+        ]),
+      );
+    });
+
+    test('deduplicates non-Divine sources', () {
+      final video = _createVideoWithUrl('https://example.com/video.mp4');
+
+      expect(
+        video.playbackSourceUrlsForPlatform,
+        equals(['https://example.com/video.mp4']),
+      );
+    });
+  });
 }

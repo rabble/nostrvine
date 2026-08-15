@@ -31,11 +31,18 @@ class SubtitleEditorStage extends StatefulWidget {
     required this.totalDuration,
     required this.selectedCue,
     required this.loadFrames,
+    this.playbackUrls = const [],
     super.key,
   });
 
   /// Playable URL of the published video.
   final String videoUrl;
+
+  /// Ordered playback candidates for the preview player.
+  ///
+  /// Falls back to [videoUrl] when empty so existing tests and non-feed callers
+  /// keep their previous behavior.
+  final List<String> playbackUrls;
 
   /// Full event id of the video, used as the media-cache key.
   final String videoId;
@@ -73,6 +80,22 @@ class SubtitleEditorStage extends StatefulWidget {
     if (isPlaying || seekTarget == null) return true;
     final delta = report - seekTarget;
     return (delta.isNegative ? -delta : delta) <= seekSettleTolerance;
+  }
+
+  /// Resolves candidate URLs before they are handed to the native player.
+  @visibleForTesting
+  static Future<List<String>> resolvePreviewPlaybackUrls({
+    required Iterable<String> playbackUrls,
+    required Future<String?> Function(String? url) resolvePlayableUrl,
+  }) async {
+    final seen = <String>{};
+    final resolved = <String>[];
+    for (final source in playbackUrls) {
+      final url = await resolvePlayableUrl(source);
+      if (url == null || url.isEmpty || !seen.add(url)) continue;
+      resolved.add(url);
+    }
+    return resolved;
   }
 
   @override
@@ -199,13 +222,16 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
   }
 
   Future<void> _openPlayer() async {
-    // An m3u8 source has to be resolved to its MP4 before the native player
-    // can take it; for anything else this hands back the URL unchanged.
-    final url = await VideoEventAppExtensions.resolvePlayableUrl(
-      widget.videoUrl,
+    final urls = await SubtitleEditorStage.resolvePreviewPlaybackUrls(
+      playbackUrls: widget.playbackUrls.isEmpty
+          ? [widget.videoUrl]
+          : widget.playbackUrls,
+      // An m3u8 source has to be resolved to its MP4 before the native player
+      // can take it; for anything else this hands back the URL unchanged.
+      resolvePlayableUrl: VideoEventAppExtensions.resolvePlayableUrl,
     );
     if (!mounted) return;
-    if (url == null || url.isEmpty) {
+    if (urls.isEmpty) {
       setState(() => _failed = true);
       return;
     }
@@ -216,7 +242,7 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
     );
     try {
       await controller.initialize();
-      await controller.setSource(VideoClip.network(url));
+      await _setFirstPlayableSource(controller, urls);
       await controller.setLooping(looping: true);
       if (!mounted) {
         await controller.dispose();
@@ -245,6 +271,29 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
         _failed = true;
       });
     }
+  }
+
+  Future<void> _setFirstPlayableSource(
+    DivineVideoPlayerController controller,
+    List<String> urls,
+  ) async {
+    Object? lastError;
+    StackTrace? lastStackTrace;
+    for (final url in urls) {
+      try {
+        await controller.setSource(VideoClip.network(url));
+        return;
+      } on Object catch (error, stackTrace) {
+        lastError = error;
+        lastStackTrace = stackTrace;
+        Log.warning(
+          'Could not open subtitle preview source $url: $error',
+          name: 'SubtitleEditorStage',
+          category: LogCategory.video,
+        );
+      }
+    }
+    Error.throwWithStackTrace(lastError!, lastStackTrace!);
   }
 
   void _onPlayerState(DivineVideoPlayerState state) {

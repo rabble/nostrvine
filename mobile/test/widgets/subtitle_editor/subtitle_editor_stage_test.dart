@@ -171,6 +171,40 @@ void main() {
       );
     });
 
+    test(
+      'resolves preview playback candidates in order and deduplicates',
+      () async {
+        final seen = <String?>[];
+
+        final urls = await SubtitleEditorStage.resolvePreviewPlaybackUrls(
+          playbackUrls: const [
+            'https://media.divine.video/hash/720p.mp4',
+            'https://media.divine.video/hash/hls/master.m3u8',
+            'https://media.divine.video/hash/720p.mp4',
+            '',
+          ],
+          resolvePlayableUrl: (url) async {
+            seen.add(url);
+            if (url?.endsWith('.m3u8') ?? false) {
+              return 'https://media.divine.video/hash/720p.mp4';
+            }
+            return url;
+          },
+        );
+
+        expect(
+          seen,
+          equals([
+            'https://media.divine.video/hash/720p.mp4',
+            'https://media.divine.video/hash/hls/master.m3u8',
+            'https://media.divine.video/hash/720p.mp4',
+            '',
+          ]),
+        );
+        expect(urls, equals(['https://media.divine.video/hash/720p.mp4']));
+      },
+    );
+
     testWidgets('deletes loaded filmstrip files when disposed', (tester) async {
       final frame = File('${temp.path}/frame.jpg')..writeAsStringSync('frame');
       final controller = StreamController<List<TimelineFrame>>();

@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
@@ -289,6 +290,7 @@ class _CueList extends StatelessWidget {
               child: _Stage(
                 state: state,
                 videoUrl: videoUrl,
+                playbackUrls: video.playbackSourceUrlsForPlatform,
                 videoId: video.id,
                 loadFrames: loadFrames,
               ),
@@ -502,12 +504,14 @@ class _Stage extends StatelessWidget {
   const _Stage({
     required this.state,
     required this.videoUrl,
+    required this.playbackUrls,
     required this.videoId,
     required this.loadFrames,
   });
 
   final SubtitleEditorState state;
   final String videoUrl;
+  final List<String> playbackUrls;
   final String videoId;
   final TimelineFrameLoader loadFrames;
 
@@ -519,6 +523,7 @@ class _Stage extends StatelessWidget {
         Expanded(
           child: SubtitleEditorStage(
             videoUrl: videoUrl,
+            playbackUrls: playbackUrls,
             videoId: videoId,
             cues: state.cues,
             totalDuration: Duration(milliseconds: state.timelineDurationMs),

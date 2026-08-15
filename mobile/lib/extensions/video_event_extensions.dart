@@ -22,6 +22,14 @@ String _getBandwidthBasedQuality() {
   }
 }
 
+List<String> _orderedUniqueUrls(Iterable<String?> urls) {
+  final seen = <String>{};
+  return [
+    for (final url in urls)
+      if (url != null && url.isNotEmpty && seen.add(url)) url,
+  ];
+}
+
 /// Extension methods for VideoEvent that require app-level dependencies.
 ///
 /// These methods are separated from the core VideoEvent model because they
@@ -254,6 +262,30 @@ extension VideoEventAppExtensions on VideoEvent {
       return getOptimalVideoUrlForPlatform() ?? url;
     }
     return url;
+  }
+
+  /// Ordered network sources to attempt in short-form preview players.
+  ///
+  /// Mirrors the feed's default source selection: Divine blobs start from the
+  /// transcoded MP4 derivative and fall back to HLS, while the broken bare blob
+  /// URL is withheld unless the user explicitly forces raw playback.
+  List<String> get playbackSourceUrlsForPlatform {
+    final primary = getOptimalVideoUrlForPlatform();
+    final original = videoUrl;
+    final originalIsUnsafeRawBlob =
+        _isRawDivineBlobUrl(original) && primary != original;
+    return _orderedUniqueUrls([
+      primary,
+      getFallbackUrl(),
+      if (!originalIsUnsafeRawBlob) original,
+    ]);
+  }
+
+  bool _isRawDivineBlobUrl(String? url) {
+    if (url == null || url.isEmpty || !isFromDivineServer) return false;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    return _extractVideoHash(url) != null && uri.pathSegments.length == 1;
   }
 
   /// HLS URL selected by bandwidth tracker quality.
