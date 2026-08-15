@@ -6032,6 +6032,10 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Bu sohbetin kiminle olduğunu anlayamadık. Gelen kutundan tekrar aç.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Yalnızca resmi Divine hesaplarına mesaj gönderebilirsin';
 
@@ -7184,6 +7188,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Reddet ve kaldır';
+
+  @override
+  String get messageRequestLoadFailed => 'Bu istek yüklenemedi.';
 
   @override
   String messageRequestFollowersCount(String count) {

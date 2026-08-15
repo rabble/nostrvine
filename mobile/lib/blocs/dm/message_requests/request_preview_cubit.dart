@@ -81,7 +81,21 @@ class RequestPreviewCubit extends Cubit<RequestPreviewState> {
   /// looked up. In-app navigation always passes extras, so only direct
   /// links are denied this way — the view bounces them to the inbox, where
   /// the filtered request list still reaches anything they may access.
+  ///
+  /// Re-entrant: the failure state's retry calls straight back in, which is
+  /// why the first thing it does is go back to [RequestPreviewStatus.loading].
+  /// Without that, a second failure emits an `error` state equal to the one
+  /// already showing, Cubit suppresses it, and the retry produces no spinner
+  /// and no signal that it failed again (#7443 review). Guarded on the current
+  /// status rather than emitted unconditionally, because Cubit lets the very
+  /// first emit through even when it equals the initial state — the cold-start
+  /// call would otherwise cost every entry an extra rebuild.
   Future<void> load() async {
+    if (isClosed) return;
+    if (state.status != RequestPreviewStatus.loading) {
+      emit(state.copyWith(status: RequestPreviewStatus.loading));
+    }
+
     try {
       if (_isDmRestricted() &&
           !allParticipantsApprovedForMinor(

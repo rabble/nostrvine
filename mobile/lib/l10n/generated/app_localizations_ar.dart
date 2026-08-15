@@ -6016,6 +6016,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'تعذّر علينا معرفة صاحب هذه المحادثة. افتحها من صندوق الوارد مرة أخرى.';
+
+  @override
   String get dmSendBlockedMessage => 'يمكنك مراسلة حسابات Divine الرسمية فقط';
 
   @override
@@ -7166,6 +7170,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'رفض وإزالة';
+
+  @override
+  String get messageRequestLoadFailed => 'تعذّر تحميل هذا الطلب.';
 
   @override
   String messageRequestFollowersCount(String count) {

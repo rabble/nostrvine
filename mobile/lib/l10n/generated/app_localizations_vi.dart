@@ -6068,6 +6068,10 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Không xác định được cuộc trò chuyện này với ai. Hãy mở lại từ hộp thư đến.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Bạn chỉ có thể nhắn tin cho các tài khoản Divine chính thức';
 
@@ -7229,6 +7233,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Từ chối và xóa';
+
+  @override
+  String get messageRequestLoadFailed => 'Không tải được yêu cầu này.';
 
   @override
   String messageRequestFollowersCount(String count) {

@@ -6142,6 +6142,10 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Hindi namin matukoy kung kanino ang thread na ito. Buksan ulit ito mula sa iyong inbox.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Opisyal na Divine accounts lang ang pwede mong ma-message';
 
@@ -7312,6 +7316,10 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Tanggihan at alisin';
+
+  @override
+  String get messageRequestLoadFailed =>
+      'Hindi na-load ang message request na ito.';
 
   @override
   String messageRequestFollowersCount(String count) {

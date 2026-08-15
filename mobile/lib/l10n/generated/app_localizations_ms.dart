@@ -6109,6 +6109,10 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Kami tidak dapat mengenal pasti dengan siapa perbualan ini. Buka semula dari peti masuk anda.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Anda hanya boleh menghantar mesej kepada akaun rasmi Divine';
 
@@ -7272,6 +7276,10 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Tolak dan alih keluar';
+
+  @override
+  String get messageRequestLoadFailed =>
+      'Permintaan ini tidak dapat dimuatkan.';
 
   @override
   String messageRequestFollowersCount(String count) {

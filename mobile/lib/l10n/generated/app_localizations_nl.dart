@@ -6093,6 +6093,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'We konden niet zien met wie dit gesprek is. Open het opnieuw vanuit je inbox.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Je kunt alleen officiële Divine-accounts een bericht sturen';
 
@@ -7256,6 +7260,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Weigeren en verwijderen';
+
+  @override
+  String get messageRequestLoadFailed =>
+      'Dit berichtverzoek kon niet worden geladen.';
 
   @override
   String messageRequestFollowersCount(String count) {

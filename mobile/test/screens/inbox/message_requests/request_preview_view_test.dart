@@ -19,6 +19,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_view.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/user_avatar.dart';
@@ -456,6 +457,7 @@ void main() {
             () => mockActionsCubit.declineRequest(any()),
           ).thenAnswer((_) async {});
 
+          when(mockGoRouter.canPop).thenReturn(true);
           when(() => mockGoRouter.pop()).thenAnswer((_) async {});
 
           await tester.pumpWidget(buildSubject());
@@ -471,6 +473,276 @@ void main() {
           verify(() => mockGoRouter.pop()).called(1);
         },
       );
+
+      // The loaded state is deep-linkable too: `loading` is only the first
+      // frame of that same cold entry, so both of its navigating affordances
+      // meet the one-entry stack that plain `pop()` throws on (#6112).
+      testWidgets('back from a cold loaded entry lands on the inbox', (
+        tester,
+      ) async {
+        when(mockGoRouter.canPop).thenReturn(false);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Back'));
+        await tester.pump();
+
+        verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+
+      testWidgets('decline from a cold loaded entry lands on the inbox', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async {});
+        when(mockGoRouter.canPop).thenReturn(false);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Decline and remove'));
+        await tester.pumpAndSettle();
+
+        verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+    });
+
+    // #7335. `build` branched on `denied` only, so `loading` and `error` fell
+    // through to the loaded layout with `participantPubkeys` still empty:
+    // live accept/decline buttons over an unknown sender, a generated
+    // "Adjective Animal N" name in the header, a count of 0, and — per the
+    // August iOS release log — a profile fetch for the empty string that the
+    // REST fallback rejects with "Pubkey cannot be empty" before falling back
+    // to relays for `''`. `loaded` is included because `_resolveParticipants`
+    // returns `[]` for a conversation the DB does not have, which reaches the
+    // same layout by a different route.
+    group('states without a resolved participant', () {
+      late MockProfileRepository mockProfileRepository;
+
+      setUp(() {
+        mockProfileRepository = MockProfileRepository();
+        when(
+          () => mockProfileRepository.getCachedProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () =>
+              mockProfileRepository.watchProfile(pubkey: any(named: 'pubkey')),
+        ).thenAnswer((_) => const Stream<UserProfile?>.empty());
+        when(
+          () => mockProfileRepository.watchProfileStats(
+            pubkey: any(named: 'pubkey'),
+          ),
+        ).thenAnswer((_) => const Stream<ProfileStats?>.empty());
+        when(() => mockPreviewCubit.load()).thenAnswer((_) async {});
+      });
+
+      Widget buildStatusSubject(RequestPreviewState previewState) {
+        when(() => mockPreviewCubit.state).thenReturn(previewState);
+
+        return testMaterialApp(
+          mockAuthService: mockAuthService,
+          mockNostrService: mockNostrClient,
+          mockProfileRepository: mockProfileRepository,
+          additionalOverrides: [
+            goRouterProvider.overrideWithValue(mockGoRouter),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          ],
+          home: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<RequestPreviewCubit>.value(
+                  value: mockPreviewCubit,
+                ),
+                BlocProvider<MessageRequestActionsCubit>.value(
+                  value: mockActionsCubit,
+                ),
+                BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                ),
+              ],
+              child: const RequestPreviewView(),
+            ),
+          ),
+        );
+      }
+
+      // A CircularProgressIndicator never settles, so these pump explicitly.
+      Future<void> pumpTwice(WidgetTester tester, Widget subject) async {
+        await tester.pumpWidget(subject);
+        await tester.pump();
+        await tester.pump();
+      }
+
+      // `loading` is the first frame of every entry to this route, deep links
+      // included, so its back button is the one most likely to meet a one-entry
+      // stack — where a plain `pop()` throws GoError (#6112).
+      testWidgets('back from a cold entry lands on the inbox', (tester) async {
+        when(mockGoRouter.canPop).thenReturn(false);
+
+        await pumpTwice(
+          tester,
+          buildStatusSubject(const RequestPreviewState()),
+        );
+
+        await tester.tap(find.byTooltip('Back'));
+        await tester.pump();
+
+        verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+
+      testWidgets('loading offers no accept action', (tester) async {
+        await pumpTwice(
+          tester,
+          buildStatusSubject(const RequestPreviewState()),
+        );
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text(l10n.messageRequestViewMessagesButton), findsNothing);
+      });
+
+      testWidgets('error offers a retry instead of accept', (tester) async {
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        expect(find.text(l10n.messageRequestLoadFailed), findsOneWidget);
+        expect(find.text(l10n.messageRequestViewMessagesButton), findsNothing);
+
+        await tester.tap(find.text(l10n.commonRetry));
+        await tester.pump();
+
+        verify(() => mockPreviewCubit.load()).called(1);
+      });
+
+      // The unresolved-counterparty gate must not take decline down with the
+      // accept action: `declineRequest` keys off the conversation ID alone, and
+      // stripping it leaves an unwanted request dismissable only by the
+      // inbox-wide "Remove all requests".
+      for (final entry in const {
+        'loading': RequestPreviewState(),
+        'error': RequestPreviewState(status: RequestPreviewStatus.error),
+        'participant-less loaded': RequestPreviewState(
+          status: RequestPreviewStatus.loaded,
+        ),
+      }.entries) {
+        testWidgets('${entry.key} can still decline the request', (
+          tester,
+        ) async {
+          when(
+            () => mockActionsCubit.declineRequest(any()),
+          ).thenAnswer((_) async {});
+          when(mockGoRouter.canPop).thenReturn(true);
+          when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+          await pumpTwice(tester, buildStatusSubject(entry.value));
+
+          await tester.tap(
+            find.text(l10n.messageRequestDeclineAndRemoveButton),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockActionsCubit.declineRequest(conversationId),
+          ).called(1);
+          verify(() => mockGoRouter.pop()).called(1);
+        });
+      }
+
+      // Same one-entry-stack exposure as the back button: decline navigates
+      // away too, and a cold deep link has nothing to pop (#6112).
+      testWidgets('decline from a cold entry lands on the inbox', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async {});
+        when(mockGoRouter.canPop).thenReturn(false);
+
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+
+      testWidgets('error does not name the sender or count its messages', (
+        tester,
+      ) async {
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        expect(
+          find.textContaining(UserProfile.defaultDisplayNameFor('')),
+          findsNothing,
+        );
+        expect(
+          find.textContaining(l10n.messageRequestMessageCount(0)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('loaded without a participant renders the failure state', (
+        tester,
+      ) async {
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(
+              status: RequestPreviewStatus.loaded,
+              messageCount: 2,
+            ),
+          ),
+        );
+
+        expect(find.text(l10n.messageRequestLoadFailed), findsOneWidget);
+        expect(find.text(l10n.messageRequestViewMessagesButton), findsNothing);
+      });
+
+      for (final entry in const {
+        'initial': RequestPreviewState(),
+        'error': RequestPreviewState(status: RequestPreviewStatus.error),
+        'participant-less loaded': RequestPreviewState(
+          status: RequestPreviewStatus.loaded,
+        ),
+      }.entries) {
+        testWidgets(
+          'the ${entry.key} build never reads a profile for the empty pubkey',
+          (tester) async {
+            await pumpTwice(tester, buildStatusSubject(entry.value));
+
+            verifyNever(
+              () => mockProfileRepository.getCachedProfile(pubkey: ''),
+            );
+            verifyNever(
+              () => mockProfileRepository.fetchFreshProfile(pubkey: ''),
+            );
+            verifyNever(() => mockProfileRepository.watchProfile(pubkey: ''));
+          },
+        );
+      }
     });
   });
 }

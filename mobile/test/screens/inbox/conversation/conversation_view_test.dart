@@ -1364,6 +1364,26 @@ void main() {
         },
       );
 
+      // #7335. The one send outcome with nothing to attach to: a send with no
+      // recipient is refused before a queue row exists, so the red bubble that
+      // carries `failed` is never built. Without a toast the composer just
+      // cleared the text field and said nothing.
+      testWidgets('shows a toast when the send had no recipient', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(),
+            state: const ConversationState(
+              sendStatus: SendStatus.noRecipient,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmSendNoRecipientMessage), findsOneWidget);
+      });
+
       testWidgets(
         'does not show a SnackBar when sendStatus stays non-failed '
         '(e.g. sending → sent)',

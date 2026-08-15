@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -52,16 +53,44 @@ class RequestPreviewView extends ConsumerWidget {
     final participantPubkeys = context.select(
       (RequestPreviewCubit cubit) => cubit.state.participantPubkeys,
     );
+
+    final otherPubkey = participantPubkeys.isNotEmpty
+        ? participantPubkeys.first
+        : '';
+
+    // #7335 unresolved-counterparty gate. Everything past this point either
+    // identifies the sender or acts on them, and neither is possible until the
+    // load resolves a counterparty. Falling through was not cosmetic:
+    // `_ActionButtons` went live over an empty `participantPubkeys`, and its
+    // "View messages" opened a conversation whose composer cleared the text
+    // field and then threw before writing a queue row — no bubble, no toast,
+    // no error, so the message looked sent. The header meanwhile named the
+    // sender `UserProfile.defaultDisplayNameFor('')`, a generated "Adjective
+    // Animal N", above a message count of 0.
+    //
+    // Returning before the profile watch below also stops the fetch for `''`
+    // seen repeatedly in the August iOS release log, where the REST profile
+    // fallback rejects it with "Pubkey cannot be empty" and the relay fallback
+    // then goes looking for the empty string.
+    //
+    // `loaded` is gated on the pubkey rather than the status because
+    // `_resolveParticipants` returns `[]` for a conversation the local
+    // database does not have, reaching this same layout without ever failing.
+    if (status == RequestPreviewStatus.loading) {
+      return const _UnresolvedRequestScaffold(
+        child: CircularProgressIndicator(color: VineTheme.primary),
+      );
+    }
+    if (status == RequestPreviewStatus.error || otherPubkey.isEmpty) {
+      return const _UnresolvedRequestScaffold(child: _LoadFailedMessage());
+    }
+
     final messageCount = context.select(
       (RequestPreviewCubit cubit) => cubit.state.messageCount,
     );
     final messages = context.select(
       (RequestPreviewCubit cubit) => cubit.state.messages,
     );
-
-    final otherPubkey = participantPubkeys.isNotEmpty
-        ? participantPubkeys.first
-        : '';
     final currentPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
 
@@ -79,30 +108,117 @@ class RequestPreviewView extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: displayName,
         showBackButton: true,
-        onBackPressed: context.pop,
+        // Same one-entry-stack exposure as the unresolved states below:
+        // `loading` is only the first frame of a cold deep-link entry, and
+        // resolving to `loaded` does not put an entry behind it (#6112).
+        onBackPressed: () => context.safePop(fallback: InboxPage.path),
       ),
-      body: ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(VineTheme.bottomSheetBorderRadius),
-        ),
-        child: ColoredBox(
-          color: context.vineColors.surfaceContainerHigh,
-          child: Column(
-            children: [
-              Expanded(
-                child: _ProfileContent(
-                  displayName: displayName,
-                  profile: profile,
-                  otherPubkey: otherPubkey,
-                  currentPubkey: currentPubkey,
-                  messageCount: messageCount,
-                  messages: messages,
-                ),
+      body: _PreviewBackdrop(
+        child: Column(
+          children: [
+            Expanded(
+              child: _ProfileContent(
+                displayName: displayName,
+                profile: profile,
+                otherPubkey: otherPubkey,
+                currentPubkey: currentPubkey,
+                messageCount: messageCount,
+                messages: messages,
               ),
-              _ActionButtons(participantPubkeys: participantPubkeys),
-            ],
-          ),
+            ),
+            _ActionButtons(participantPubkeys: participantPubkeys),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// The rounded panel every state of this screen sits on.
+class _PreviewBackdrop extends StatelessWidget {
+  const _PreviewBackdrop({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+      ),
+      child: ColoredBox(
+        color: context.vineColors.surfaceContainerHigh,
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Chrome for the states that have no counterparty to name yet (#7335).
+///
+/// Offers no accept action — that one hands the participant list to the
+/// conversation route, and the whole point of this branch is that there isn't
+/// one. Decline stays, because `declineRequest` keys off the conversation ID
+/// alone: a preview read that fails is no reason to make an unwanted request
+/// undismissable, leaving the inbox-wide "Remove all requests" as the only way
+/// out. The app bar falls back to the section title, since the loaded header's
+/// name would be a generated placeholder here.
+class _UnresolvedRequestScaffold extends StatelessWidget {
+  const _UnresolvedRequestScaffold({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.vineColors.surface,
+      appBar: DiVineAppBar(
+        title: context.l10n.inboxMessageRequestsTitle,
+        showBackButton: true,
+        // safePop, not pop: `loading` is the first frame of *every* entry to
+        // this route, deep links included, and a cold deep link leaves a
+        // one-entry stack that plain `pop()` throws on (#6112).
+        onBackPressed: () => context.safePop(fallback: InboxPage.path),
+      ),
+      body: _PreviewBackdrop(
+        child: Column(
+          children: [
+            Expanded(child: Center(child: child)),
+            const _ActionBar(children: [_DeclineAndRemoveButton()]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The read failed. Offers a retry rather than a dead end — the cubit's own
+/// `load()` is idempotent, and a Drift read failure is usually transient.
+class _LoadFailedMessage extends StatelessWidget {
+  const _LoadFailedMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 48),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 16,
+        children: [
+          Text(
+            l10n.messageRequestLoadFailed,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          _OutlinedActionButton(
+            label: l10n.commonRetry,
+            onTap: () => context.read<RequestPreviewCubit>().load(),
+          ),
+        ],
       ),
     );
   }
@@ -299,6 +415,29 @@ class _MessageCountDescription extends StatelessWidget {
   }
 }
 
+/// The bottom action strip, in the same place on every state of this screen so
+/// decline does not move when the load resolves.
+class _ActionBar extends StatelessWidget {
+  const _ActionBar({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 16,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
 class _ActionButtons extends StatelessWidget {
   const _ActionButtons({required this.participantPubkeys});
 
@@ -308,36 +447,43 @@ class _ActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final conversationId = context.read<RequestPreviewCubit>().conversationId;
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 16,
-          children: [
-            _PrimaryActionButton(
-              label: context.l10n.messageRequestViewMessagesButton,
-              onTap: () {
-                context.pushReplacementNamed(
-                  ConversationPage.routeName,
-                  pathParameters: {'id': conversationId},
-                  extra: participantPubkeys,
-                );
-              },
-            ),
-            _SecondaryActionButton(
-              label: context.l10n.messageRequestDeclineAndRemoveButton,
-              onTap: () async {
-                await context.read<MessageRequestActionsCubit>().declineRequest(
-                  conversationId,
-                );
-                if (context.mounted) context.pop();
-              },
-            ),
-          ],
+    return _ActionBar(
+      children: [
+        _PrimaryActionButton(
+          label: context.l10n.messageRequestViewMessagesButton,
+          onTap: () {
+            context.pushReplacementNamed(
+              ConversationPage.routeName,
+              pathParameters: {'id': conversationId},
+              extra: participantPubkeys,
+            );
+          },
         ),
-      ),
+        const _DeclineAndRemoveButton(),
+      ],
+    );
+  }
+}
+
+/// The one action that survives an unresolved counterparty: `declineRequest`
+/// takes the conversation ID, not the participants.
+class _DeclineAndRemoveButton extends StatelessWidget {
+  const _DeclineAndRemoveButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final conversationId = context.read<RequestPreviewCubit>().conversationId;
+
+    return _SecondaryActionButton(
+      label: context.l10n.messageRequestDeclineAndRemoveButton,
+      onTap: () async {
+        await context.read<MessageRequestActionsCubit>().declineRequest(
+          conversationId,
+        );
+        // safePop for the same reason as the app-bar back button above: this
+        // route is deep-linkable, and a cold entry has nothing to pop (#6112).
+        if (context.mounted) context.safePop(fallback: InboxPage.path);
+      },
     );
   }
 }

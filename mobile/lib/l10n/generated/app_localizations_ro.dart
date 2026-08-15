@@ -6222,6 +6222,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Nu am putut afla cu cine e această conversație. Deschide-o din nou din inbox.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Poți trimite mesaje doar conturilor oficiale Divine';
 
@@ -7394,6 +7398,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Refuză și elimină';
+
+  @override
+  String get messageRequestLoadFailed => 'Nu am putut încărca această cerere.';
 
   @override
   String messageRequestFollowersCount(String count) {

@@ -3377,6 +3377,7 @@
       }
     }
   },
+  "dmSendNoRecipientMessage": "Không xác định được cuộc trò chuyện này với ai. Hãy mở lại từ hộp thư đến.",
   "dmSendBlockedMessage": "Bạn chỉ có thể nhắn tin cho các tài khoản Divine chính thức",
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
@@ -4115,6 +4116,7 @@
   "inboxRequestsMarkAllRead": "Đánh dấu tất cả yêu cầu là đã đọc",
   "inboxRequestsRemoveAll": "Xóa tất cả yêu cầu",
   "messageRequestDeclineAndRemoveButton": "Từ chối và xóa",
+  "messageRequestLoadFailed": "Không tải được yêu cầu này.",
   "messageRequestFollowersCount": "{count} người theo dõi",
   "@messageRequestFollowersCount": {
     "placeholders": {

@@ -6059,6 +6059,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Vi kunde inte se vem den här konversationen är med. Öppna den igen från inkorgen.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Du kan bara skicka meddelanden till officiella Divine-konton';
 
@@ -7218,6 +7222,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Avböj och ta bort';
+
+  @override
+  String get messageRequestLoadFailed =>
+      'Kunde inte läsa in den här förfrågan.';
 
   @override
   String messageRequestFollowersCount(String count) {

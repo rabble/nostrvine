@@ -3377,6 +3377,7 @@
       }
     }
   },
+  "dmSendNoRecipientMessage": "ہم نہیں جان سکے کہ یہ گفتگو کس کے ساتھ ہے۔ اسے اپنے ان باکس سے دوبارہ کھولیں۔",
   "dmSendBlockedMessage": "آپ صرف سرکاری Divine اکاؤنٹس کو پیغام بھیج سکتے ہیں",
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
@@ -4115,6 +4116,7 @@
   "inboxRequestsMarkAllRead": "تمام درخواستیں پڑھی ہوئی قرار دیں",
   "inboxRequestsRemoveAll": "تمام درخواستیں ہٹائیں",
   "messageRequestDeclineAndRemoveButton": "انکار کر کے ہٹائیں",
+  "messageRequestLoadFailed": "یہ درخواست لوڈ نہیں ہو سکی۔",
   "messageRequestFollowersCount": "{count} فالوورز",
   "@messageRequestFollowersCount": {
     "placeholders": {

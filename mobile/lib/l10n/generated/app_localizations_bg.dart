@@ -6119,6 +6119,10 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Не разбрахме с кого е този разговор. Отвори го пак от входящите.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Можеш да пишеш само на официални профили на Divine';
 
@@ -7294,6 +7298,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Откажи и премахни';
+
+  @override
+  String get messageRequestLoadFailed => 'Заявката не можа да се зареди.';
 
   @override
   String messageRequestFollowersCount(String count) {

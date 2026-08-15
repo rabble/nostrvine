@@ -6144,6 +6144,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Impossible de savoir avec qui est cette conversation. Rouvre-la depuis ta boîte de réception.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Tu ne peux écrire qu\'aux comptes officiels Divine';
 
@@ -7321,6 +7325,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Refuser et supprimer';
+
+  @override
+  String get messageRequestLoadFailed => 'Impossible de charger cette demande.';
 
   @override
   String messageRequestFollowersCount(String count) {

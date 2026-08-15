@@ -192,9 +192,10 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
           body: BlocListener<ConversationBloc, ConversationState>(
             // A hard failure is shown on the bubble itself (tap → resend/delete),
             // so this listener only handles the toasts that have no bubble —
-            // a policy block and a partial (self-wrap) delivery — plus a
-            // screen-reader announcement (no toast) for hard failures, since
-            // the red in-bubble row is silent to assistive tech until focused.
+            // a policy block, a recipient-less send (#7335), and a partial
+            // (self-wrap) delivery — plus a screen-reader announcement (no
+            // toast) for hard failures, since the red in-bubble row is silent
+            // to assistive tech until focused.
             // Also fire on a sentPartial → sentPartial transition whose rumor-id
             // set changed: with concurrent() sends, a second overlapping partial
             // keeps the same sendStatus and would otherwise never surface its
@@ -205,6 +206,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                         previous.lastPartialSend != current.lastPartialSend)) &&
                 (current.sendStatus == SendStatus.sentPartial ||
                     current.sendStatus == SendStatus.blocked ||
+                    current.sendStatus == SendStatus.noRecipient ||
                     current.sendStatus == SendStatus.failed),
             listener: _onSendOutcome,
             child: Column(
@@ -350,6 +352,24 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       final message = isRetiredModerationAccount(_otherPubkey)
           ? l10n.dmSendBlockedRetiredMessage
           : l10n.dmSendBlockedMessage;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        message,
+        Directionality.of(context),
+      );
+      return;
+    }
+
+    // Nobody to send to (#7335). Like a block, this is refused before a queue
+    // row exists, so there is no bubble to carry it — and unlike a block, the
+    // thread itself is the broken thing, so the copy points back at the inbox
+    // rather than at the peer. No retry: the same tap re-hits the same empty
+    // participant list.
+    if (state.sendStatus == SendStatus.noRecipient) {
+      final message = l10n.dmSendNoRecipientMessage;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
