@@ -399,5 +399,72 @@ void main() {
         expect(outcome.acceptedByAll, isFalse);
       },
     );
+
+    test(
+      'counts an attempted relay whose status still lags the socket',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        final nostr = Nostr(
+          signer,
+          [],
+          (url) => RelayBase(url, RelayStatus(url)),
+        );
+        await nostr.refreshPublicKey();
+
+        final fastFactory = FakeWebSocketChannelFactory();
+        await nostr.relayPool.add(
+          RelayBase(fastUrl, RelayStatus(fastUrl), channelFactory: fastFactory),
+        );
+
+        final slowRelay = RelayBase(
+          slowUrl,
+          RelayStatus(slowUrl),
+          channelFactory: FakeWebSocketChannelFactory(
+            readyDelay: const Duration(milliseconds: 800),
+          ),
+        );
+        final slowAdd = nostr.relayPool.add(slowRelay);
+        await _waitForRelayState(slowRelay, ClientConnected.connecting);
+
+        // `relayStatus.connected` is written from the connection manager's
+        // state stream, so it trails the socket it describes. Force the stale
+        // reading the fan-out can genuinely observe: the manager is already
+        // connecting, the pool-visible status still says disconnect.
+        slowRelay.relayStatus.connected = ClientConnected.disconnect;
+
+        _acceptEventWhenSent(fastFactory, eventId);
+
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': 5},
+          ],
+          eventId: eventId,
+          timeout: const Duration(milliseconds: 250),
+        );
+        await slowAdd;
+
+        expect(outcome.acceptedBy, equals([fastUrl]));
+        expect(
+          outcome.unreachableTargets,
+          equals([slowUrl]),
+          reason:
+              'the fan-out waited out this relay and spent its whole budget '
+              'on it, so it was attempted — deciding that from the lagging '
+              'status field instead would drop it from the denominator',
+        );
+        expect(outcome.targetCount, equals(2));
+        expect(
+          outcome.acceptedByAll,
+          isFalse,
+          reason:
+              'reporting a publish as accepted by all while one relay was '
+              'attempted and stayed silent is the exact signal this outcome '
+              'exists to prevent',
+        );
+      },
+    );
   });
 }
