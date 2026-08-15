@@ -64,10 +64,15 @@ abstract class DmRepositoryReportableSites {
       'sendMessage.outerTransaction';
 
   /// `sendGroupMessage`: parking one sibling's `outgoing_dms` row threw.
-  /// That recipient's publish is skipped so no untraceable wire copy goes
-  /// out; the siblings already parked keep their rows and their handles.
+  /// The batch is unwound before publish so no sibling is silently dropped.
   static const String sendGroupMessageEnqueueSibling =
       'sendGroupMessage.enqueueSibling';
+
+  /// `sendGroupMessage`: after one sibling failed to enqueue, deleting a
+  /// sibling already parked for that same not-yet-published batch also threw.
+  /// The row survives and is returned to the caller as a retry handle.
+  static const String sendGroupMessageUnwindQueuedSibling =
+      'sendGroupMessage.unwindQueuedSibling';
 
   /// `backfillHistoryIfNeeded`: the history drain hit a programming
   /// invariant failure while paging or processing recovered events.

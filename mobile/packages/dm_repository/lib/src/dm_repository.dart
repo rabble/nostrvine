@@ -4402,10 +4402,10 @@ class DmRepository {
   /// [NIP17SendResult.queuedRumorId], so a caller retries by re-driving the
   /// surviving siblings ([recoverFullSend]) rather than fanning out again.
   ///
-  /// A sibling whose enqueue itself fails is reported and returned as a plain
-  /// failure with no `queuedRumorId`, and its publish is skipped — never
-  /// thrown out of this method, which would strand the siblings already
-  /// parked and push the caller back onto a duplicating fresh fan-out.
+  /// If a sibling enqueue fails before any publish starts, the whole batch is
+  /// failed and the siblings already parked are best-effort deleted. Any row
+  /// that cannot be deleted is returned with its `queuedRumorId` so retry can
+  /// re-drive the surviving parked rumor instead of minting a fresh fan-out.
   @useResult
   Future<List<NIP17SendResult>> sendGroupMessage({
     required List<String> recipientPubkeys,
@@ -4518,14 +4518,14 @@ class DmRepository {
     // exist before the first (potentially slow) publish. Same contract as
     // sendMessage: no-op when the queue dao isn't wired in (older test
     // fixtures, NIP-04-only callers).
-    // Guarded per iteration, like the delivery loop below. `enqueue` swallows
-    // PK conflicts but still throws on a real write error (SQLite BUSY/LOCKED
-    // — OutgoingDmRetryService writes this table concurrently). Letting that
-    // escape would abandon the siblings already parked at 0..i-1: the caller
-    // would see a throw, hold no queuedRumorId for them, and a user retry
-    // would fan out fresh rumors alongside the sweep's replay of the parked
-    // ones — the exact double-delivery #7316 exists to close.
-    final failedToEnqueue = <int>{};
+    // `enqueue` swallows PK conflicts but still throws on a real write error
+    // (SQLite BUSY/LOCKED — OutgoingDmRetryService writes this table
+    // concurrently). Because every sibling is queued before any publish, an
+    // enqueue failure can still be made atomic from the user's perspective:
+    // unwind rows already parked, skip publish entirely, and return failures
+    // for the whole batch. If a parked row cannot be deleted, stamp that row's
+    // id onto its failure so retry re-drives the surviving rumor instead of
+    // minting a duplicating fresh fan-out (#7316).
     if (outgoingDao != null) {
       for (var i = 0; i < recipientPubkeys.length; i++) {
         final rumor = rumors[i];
@@ -4548,15 +4548,34 @@ class DmRepository {
             ),
           );
         } on Object catch (e, stackTrace) {
-          // No durable row for this sibling, so its publish is skipped below:
-          // a wire copy with no local trace is invisible to the sender and
-          // unretractable, strictly worse than not sending it.
-          failedToEnqueue.add(i);
           _errorReporter?.call(
             e,
             stackTrace,
             site: DmRepositoryReportableSites.sendGroupMessageEnqueueSibling,
           );
+
+          final failure = NIP17SendResult.failure(
+            'could not queue send for recipient: $e',
+          );
+          final unwindResults = List<NIP17SendResult>.filled(
+            recipientPubkeys.length,
+            failure,
+          );
+          for (var j = 0; j < i; j++) {
+            final parkedRumorId = rumors[j].id;
+            try {
+              await outgoingDao.deleteById(parkedRumorId);
+            } on Object catch (deleteError, deleteStackTrace) {
+              _errorReporter?.call(
+                deleteError,
+                deleteStackTrace,
+                site: DmRepositoryReportableSites
+                    .sendGroupMessageUnwindQueuedSibling,
+              );
+              unwindResults[j] = _stampQueuedRow(failure, parkedRumorId);
+            }
+          }
+          return unwindResults;
         }
       }
     }
@@ -4574,16 +4593,6 @@ class DmRepository {
     final cancelledBeforePublish = <int>{};
     for (var i = 0; i < recipientPubkeys.length; i++) {
       final pubkey = recipientPubkeys[i];
-      // A sibling whose row never got parked: publishing it would put a copy
-      // on the wire that no local row can retract or re-drive. Fail it here
-      // instead, before the cancel interlock below misreads the absent row as
-      // a user cancellation.
-      if (failedToEnqueue.contains(i)) {
-        results.add(
-          const NIP17SendResult.failure('could not queue send for recipient'),
-        );
-        continue;
-      }
       // Cancel interlock, mirroring _recoverFullSendLocked's pre-publish row
       // re-read: each publish can take up to the OK-confirm timeout, a long
       // window in which the user may delete the whole batch. Re-read the
@@ -4748,15 +4757,15 @@ class DmRepository {
     // id onto the returned result, exactly as [sendMessage] does. Without it
     // a group caller has no handle on the rows this send parked and its only
     // way to "retry" is a fresh fan-out, which mints a whole second set of
-    // rumors the receiver cannot collapse (#7316). Cancelled, un-enqueued and
-    // blocked siblings are deliberately unstamped: none leaves a row behind.
+    // rumors the receiver cannot collapse (#7316). Cancelled and blocked
+    // siblings are deliberately unstamped: none leaves a row behind.
     if (outgoingDao != null) {
       for (var i = 0; i < rumors.length; i++) {
-        // A sibling skipped for cancellation, or whose enqueue threw, has no
-        // live row to transition; an update-by-id would match zero rows
-        // anyway, but skipping is explicit and keeps such an index from
-        // resurrecting a queue transition or a thread.
-        if (cancelledBeforePublish.contains(i) || failedToEnqueue.contains(i)) {
+        // A sibling skipped for cancellation has no live row to transition; an
+        // update-by-id would match zero rows anyway, but skipping is explicit
+        // and keeps such an index from resurrecting a queue transition or a
+        // thread.
+        if (cancelledBeforePublish.contains(i)) {
           continue;
         }
         final result = results[i];
@@ -4788,14 +4797,10 @@ class DmRepository {
     // the failed bubbles to retry or delete. All-blocked sends leave no
     // rows behind (terminal), so they create no thread cruft. A fully
     // cancelled batch must NOT resurrect the thread the user just deleted,
-    // so cancelled indexes don't count as retryable failures here. Nor do
-    // un-enqueued ones: they left no row, so the thread would hold no bubble
-    // to retry or delete.
+    // so cancelled indexes don't count as retryable failures here.
     final hasRetryableFailure = results.asMap().entries.any(
       (entry) =>
-          !cancelledBeforePublish.contains(entry.key) &&
-          !failedToEnqueue.contains(entry.key) &&
-          !entry.value.blocked,
+          !cancelledBeforePublish.contains(entry.key) && !entry.value.blocked,
     );
     if (!results.any((r) => r.success) && hasRetryableFailure) {
       await _ensureConversationVisibleAfterSendFailure(
