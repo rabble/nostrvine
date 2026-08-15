@@ -17,8 +17,6 @@ class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 class _MockProfileStatsDao extends Mock implements ProfileStatsDao {}
 
 const _testPubkey = 'abc123def456';
-const _currentUserPubkey =
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 void _registerFallbackValues() {
   registerFallbackValue(<Filter>[]);
@@ -37,8 +35,6 @@ FollowRepository _createRepository({
   ProfileStatRow? persistedRow,
 }) {
   final nostrClient = _MockNostrClient();
-
-  when(() => nostrClient.publicKey).thenReturn(_currentUserPubkey);
 
   // Mock NostrClient.subscribe to return an empty stream (no WS data).
   when(
@@ -63,7 +59,7 @@ FollowRepository _createRepository({
   // Mock DAO writes (no-op).
   when(
     () => dao.upsertStats(
-      pubkey: _testPubkey,
+      pubkey: any(named: 'pubkey'),
       followerCount: any(named: 'followerCount'),
       followingCount: any(named: 'followingCount'),
     ),
@@ -369,7 +365,7 @@ void main() {
         // upsertStats should NOT have been called since value didn't change.
         verifyNever(
           () => dao.upsertStats(
-            pubkey: _testPubkey,
+            pubkey: any(named: 'pubkey'),
             followerCount: any(named: 'followerCount'),
             followingCount: any(named: 'followingCount'),
           ),
