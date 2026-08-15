@@ -17,6 +17,7 @@ import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
+import 'package:openvine/services/video_editor/render_cancellation_registry.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' as pie;
@@ -451,6 +452,30 @@ void main() {
       });
     });
 
+    test(
+      'honors cancellation recorded before the encode loop starts',
+      () async {
+        final token = RenderCancellationRegistry.start('render-task');
+        await VideoEditorRenderService.cancelTask('render-task');
+        var calls = 0;
+
+        await expectLater(
+          VideoEditorRenderService.renderWithEncoderFallback(
+            baseTask: baseTask(),
+            encode: (_) async {
+              calls++;
+            },
+            fallbackAspectRatio: aspectRatio,
+            settleDelay: Duration.zero,
+          ),
+          throwsA(isA<RenderCanceledException>()),
+        );
+
+        expect(calls, 0);
+        RenderCancellationRegistry.finish('render-task', token);
+      },
+    );
+
     test('honors cancellation recorded while encode is running', () async {
       var calls = 0;
 
@@ -575,11 +600,7 @@ void main() {
                 'reason',
                 VideoRenderFailureReason.canceled,
               )
-              .having(
-                (e) => e.cause,
-                'cause',
-                isA<RenderCanceledException>(),
-              ),
+              .having((e) => e.cause, 'cause', isA<RenderCanceledException>()),
         ),
       );
     });

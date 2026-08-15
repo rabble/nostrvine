@@ -485,10 +485,22 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       clearMergeOutputPath: true,
     );
 
-    // Force immediate autosave so draft references are updated before cleanup
-    await _forceAutosave();
+    // Guard against provider disposal during the async gap above: both
+    // branches below reach for providers through `ref` and would throw on a
+    // disposed notifier.
+    if (!ref.mounted) return true;
 
-    // Guard against provider disposal during the async gap above.
+    // Force immediate autosave so draft references are updated before cleanup.
+    // The last clip is different: an empty autosave is not recoverable, so clear
+    // the session instead of writing a zero-clip draft that the reaper later
+    // treats as corruption.
+    if (_clips.isEmpty) {
+      await _clearProviders();
+    } else {
+      await _forceAutosave();
+    }
+
+    // Persisting above is another async gap.
     if (!ref.mounted) return true;
 
     // File cleanup is best-effort: the clip is already gone from state and
@@ -497,8 +509,6 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // rejection — callers and tests rely on the state-mutation contract,
     // not on disk effects.
     try {
-      if (_clips.isEmpty) _clearProviders();
-
       final db = ref.read(databaseProvider);
       await FileCleanupService.deleteRecordingClipFiles(
         clip,
@@ -869,15 +879,19 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     state = ClipManagerState();
   }
 
-  /// Remove all clips and reset state.
+  /// Remove all clips without resetting peer providers or deleting autosave.
   ///
-  /// Clears all recorded clips and resets to initial state.
-  /// Also deletes the autosave draft unless [keepAutosavedDraft] is true.
-  Future<void> clearAll({bool keepAutosavedDraft = false}) async {
+  /// Used by higher-level teardown coordinators that own the rest of the
+  /// session cleanup.
+  Future<void> clearSessionClips() async {
     _cancelPendingDeletionTimer();
     if (state.pendingDeletion != null) {
       await commitPendingDeletion();
     }
+    _clearLocalClipState();
+  }
+
+  void _clearLocalClipState() {
     final clipCount = _clips.length;
     _clips.clear();
     Log.info(
@@ -886,18 +900,22 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       category: .video,
     );
     state = ClipManagerState();
-
-    // Delete autosave draft and its associated files
-    if (!keepAutosavedDraft) {
-      final draftService = ref.read(draftStorageServiceProvider);
-      await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
-      _clearProviders();
-    }
   }
 
-  Future<void> _clearProviders() async {
+  /// Remove all clips and reset state.
+  ///
+  /// Clears all recorded clips and resets to initial state.
+  /// Also deletes the autosave draft unless [keepAutosavedDraft] is true.
+  Future<void> clearAll({bool keepAutosavedDraft = false}) async {
+    await clearSessionClips();
+    await _clearProviders(keepAutosavedDraft: keepAutosavedDraft);
+  }
+
+  Future<void> _clearProviders({bool keepAutosavedDraft = false}) async {
     ref.read(videoPublishProvider.notifier).reset();
-    await ref.read(videoEditorProvider.notifier).reset();
+    await ref
+        .read(videoEditorProvider.notifier)
+        .reset(keepAutosavedDraft: keepAutosavedDraft);
   }
 
   /// Save clip(s) to library.

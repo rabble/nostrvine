@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -18,6 +19,7 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
@@ -116,6 +118,31 @@ void main() {
       final state = container.read(videoPublishProvider);
       expect(state.uploadProgress, 0.0);
       expect(state.publishState, VideoPublishState.idle);
+    });
+
+    test('clearAll deletes autosave once after coordinated teardown', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final draftStorage = _MockDraftStorageService();
+      when(
+        () => draftStorage.draftExists(VideoEditorConstants.autoSaveId),
+      ).thenAnswer((_) async => true);
+      when(
+        () => draftStorage.deleteDraft(VideoEditorConstants.autoSaveId),
+      ).thenAnswer((_) async {});
+      final scopedContainer = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          draftStorageServiceProvider.overrideWithValue(draftStorage),
+        ],
+      );
+      addTearDown(scopedContainer.dispose);
+
+      await scopedContainer.read(videoPublishProvider.notifier).clearAll();
+
+      verify(
+        () => draftStorage.deleteDraft(VideoEditorConstants.autoSaveId),
+      ).called(1);
     });
 
     test('setError preserves other state values', () {

@@ -128,7 +128,7 @@ void main() {
           renderId: 'transform-render-1',
         );
 
-        expect(proVideoEditor.canceledTaskIds, ['transform-render-1']);
+        expect(proVideoEditor.canceledTaskIds, isEmpty);
         expect(proVideoEditor.renderedPaths, hasLength(1));
 
         // The output filename is timestamped per render (so a repeat transform
@@ -153,7 +153,7 @@ void main() {
     );
 
     test(
-      'continues rendering when there is no active render to cancel',
+      'does not cancel before rendering when there is no active render',
       () async {
         proVideoEditor.cancelShouldThrow = true;
         final sourceClip = _clip(
@@ -167,7 +167,7 @@ void main() {
           renderId: 'transform-render-missing',
         );
 
-        expect(proVideoEditor.canceledTaskIds, ['transform-render-missing']);
+        expect(proVideoEditor.canceledTaskIds, isEmpty);
         expect(proVideoEditor.renderedData, hasLength(1));
       },
     );

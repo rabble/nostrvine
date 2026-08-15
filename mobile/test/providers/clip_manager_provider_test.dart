@@ -347,6 +347,11 @@ void main() {
 
       test('deletes the autosave draft by default', () async {
         final notifier = container.read(clipManagerProvider.notifier);
+        when(
+          () => mockDraftStorageService.draftExists(
+            VideoEditorConstants.autoSaveId,
+          ),
+        ).thenAnswer((_) async => true);
         addClip(notifier);
 
         await notifier.clearAll();

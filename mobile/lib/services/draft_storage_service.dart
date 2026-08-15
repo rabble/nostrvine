@@ -377,7 +377,11 @@ class DraftStorageService {
       ownerPubkey: scopedToOwner ? ownerPubkey : null,
     );
     if (row == null) {
-      Log.debug('📝 Draft not found: $id', category: LogCategory.video);
+      Log.debug(
+        '📝 Draft not found: $id',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
+      );
       return null;
     }
 
@@ -577,18 +581,18 @@ class DraftStorageService {
 
   /// Delete a draft by ID and remove associated video/thumbnail files
   Future<void> deleteDraft(String id) async {
-    Log.debug(
-      '🗑️ Deleting draft: $id',
-      name: 'DraftStorageService',
-      category: LogCategory.video,
-    );
-
     // Fetch draft before deleting so we can clean up files. Read across
     // accounts to stay consistent with DraftsDao.deleteDraft, which deletes by
     // primary key — an owner-scoped read would turn every deletion issued by a
     // service whose ownerPubkey no longer matches the row into a silent no-op.
     final draft = await _loadDraftAcrossAccounts(id);
     if (draft == null) return;
+
+    Log.debug(
+      '🗑️ Deleting draft: $id',
+      name: 'DraftStorageService',
+      category: LogCategory.video,
+    );
 
     // Delete the draft and its clip rows first, then delete files — so the
     // reference scan in FileCleanupService no longer sees this draft's clips

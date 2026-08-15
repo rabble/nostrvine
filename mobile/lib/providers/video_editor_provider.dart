@@ -278,7 +278,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     unawaited(_flushDeferredFileCleanup());
     draftId = null;
     if (!keepAutosavedDraft) {
-      unawaited(removeAutosavedDraft());
+      await removeAutosavedDraft();
     }
   }
 
@@ -781,6 +781,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
+      if (clipCount == 0) {
+        await removeAutosavedDraft();
+        return false;
+      }
+
       final draft = getActiveDraft(isAutosave: isAutosavedDraft);
       // Defer orphan cleanup: files this autosave drops may still be reachable
       // through the live undo/redo history (see [_deferredFileCleanup]).
@@ -1122,6 +1127,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// after successfully publishing a video.
   Future<void> removeAutosavedDraft() async {
     try {
+      if (!await _draftService.draftExists(VideoEditorConstants.autoSaveId)) {
+        return;
+      }
       await _draftService.deleteDraft(VideoEditorConstants.autoSaveId);
       Log.debug(
         '🗑️ Deleted autosaved draft',
