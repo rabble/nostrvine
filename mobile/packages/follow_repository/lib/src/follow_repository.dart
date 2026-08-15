@@ -851,9 +851,14 @@ class FollowRepository {
       // Only re-persist when the value actually changed. When hysteresis
       // keeps the old persisted count, skipping the write preserves the
       // original timestamp so the stale check can eventually trigger.
-      if (persisted == null ||
-          stats.followers != persisted.followers ||
-          stats.following != persisted.following) {
+      //
+      // Skip persisting for the current user — MyFollowersBloc owns that
+      // responsibility after blocklist filtering. Persisting raw counts
+      // here would create last-writer-wins conflicts.
+      if (pubkey != _nostrClient.publicKey &&
+          (persisted == null ||
+              stats.followers != persisted.followers ||
+              stats.following != persisted.following)) {
         await _persistFollowerStats(pubkey, stats);
       }
 
