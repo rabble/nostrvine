@@ -9,7 +9,7 @@ import 'package:models/models.dart';
 ///
 /// When [urlResolver] is provided, its output is preferred over
 /// [VideoEvent.videoUrl]. For Divine blob URLs the list is expanded with
-/// canonical HLS and raw variants so the runtime can fail over between them.
+/// canonical alternatives so the runtime can fail over between them.
 ///
 /// For derivative-resolved Divine blobs, avoid falling back to the bare blob.
 /// Until divine-blossom#198 fixes Range support on bare blob URLs, range-
@@ -35,7 +35,8 @@ List<String> resolvePlaybackSources(
     final hlsUrl = canonicalDivineBlobHlsUrl(hash);
     final isAlreadyHls = resolvedSource.contains('/hls/');
     if (isAlreadyHls) {
-      return orderedUniqueSources([resolvedSource, rawUrl, originalUrl]);
+      final originalFallback = originalUrl == rawUrl ? null : originalUrl;
+      return orderedUniqueSources([resolvedSource, originalFallback]);
     }
 
     final isRawBlob = resolvedSource == rawUrl;
@@ -45,11 +46,12 @@ List<String> resolvePlaybackSources(
 
     // TODO(liz): Restore the bare blob fallback after divine-blossom#198
     // fixes Range support on bare blob URLs (#7184).
+    final originalFallback = originalUrl == rawUrl ? null : originalUrl;
     if (derivativeFailureCache?.hasFreshFailureForHash(hash) ?? false) {
-      return orderedUniqueSources([hlsUrl, resolvedSource, originalUrl]);
+      return orderedUniqueSources([hlsUrl, resolvedSource, originalFallback]);
     }
 
-    return orderedUniqueSources([resolvedSource, hlsUrl, originalUrl]);
+    return orderedUniqueSources([resolvedSource, hlsUrl, originalFallback]);
   }
 
   return orderedUniqueSources([resolvedSource, originalUrl]);

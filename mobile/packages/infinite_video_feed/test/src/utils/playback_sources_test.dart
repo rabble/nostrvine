@@ -63,13 +63,20 @@ void main() {
     });
 
     group('when URL is a canonical HLS URL', () {
-      test(
-        'returns [hlsUrl, rawUrl] deduplicated when originalUrl equals hlsUrl',
-        () {
-          final video = _makeVideo(videoUrl: _hlsUrl);
-          expect(resolvePlaybackSources(video), equals([_hlsUrl, _rawUrl]));
-        },
-      );
+      test('does not add the raw blob as a fallback', () {
+        final video = _makeVideo(videoUrl: _hlsUrl);
+        expect(resolvePlaybackSources(video), equals([_hlsUrl]));
+      });
+
+      test('drops a raw original when the resolver selects HLS', () {
+        final video = _makeVideo(videoUrl: _rawUrl);
+        final result = resolvePlaybackSources(
+          video,
+          urlResolver: (_) => _hlsUrl,
+        );
+
+        expect(result, equals([_hlsUrl]));
+      });
     });
 
     group('when URL is the raw blob URL', () {
@@ -100,6 +107,16 @@ void main() {
           expect(resolvePlaybackSources(video), equals([variantUrl, _hlsUrl]));
         },
       );
+
+      test('drops a raw original when the resolver selects a variant', () {
+        final video = _makeVideo(videoUrl: _rawUrl);
+        final result = resolvePlaybackSources(
+          video,
+          urlResolver: (_) => variantUrl,
+        );
+
+        expect(result, equals([variantUrl, _hlsUrl]));
+      });
 
       test('leads with HLS without raw fallback after a fresh failure', () {
         final video = _makeVideo(videoUrl: variantUrl);

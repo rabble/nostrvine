@@ -192,7 +192,7 @@ void main() {
       );
 
       // The processing source is not the last resort, so we do not stall on it:
-      // the guaranteed raw fallback is preferred immediately.
+      // the queued fallback is preferred immediately.
       expect(result, equals(('rawUrl', 1)));
       expect(
         clips.map((clip) => clip.uri),
