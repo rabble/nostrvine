@@ -2810,6 +2810,7 @@
     "dmReelReplySentAnnouncement": "Naipadala ang tugon",
     "dmReelReactionSentAnnouncement": "Nag-react ng {emoji}",
     "dmReelReplyFailed": "Hindi maipadala",
+    "dmReelReplyUnverified": "Hindi makumpirma ang pagpapadala",
     "emojiPickerSearchHint": "Maghanap",
     "emojiCategoryRecent": "Kamakailan",
     "emojiCategorySmileys": "Mga Smiley at Tao",

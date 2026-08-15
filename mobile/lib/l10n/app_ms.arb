@@ -3490,6 +3490,7 @@
     }
   },
   "dmReelReplyFailed": "Tidak dapat menghantar",
+  "dmReelReplyUnverified": "Tidak dapat mengesahkan penghantaran",
   "@dmReelReplyFailed": {
     "description": "Transient toast shown in the reel player when a reply or reaction fails to send."
   },

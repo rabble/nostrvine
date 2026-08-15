@@ -15571,7 +15571,7 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          final _ = await repository.sendGroupMessage(
+          final results = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'one soft recipient',
           );
@@ -15581,6 +15581,16 @@ void main() {
           ).captured;
           final enqueuedB = captured.first as OutgoingDm;
           final enqueuedC = captured.last as OutgoingDm;
+
+          expect(results, hasLength(2));
+          expect(results.last.retryablePending, isTrue);
+          expect(
+            results.last.queuedRumorId,
+            equals(enqueuedC.id),
+            reason:
+                'soft-unconfirmed group siblings leave a live queue row that '
+                'manual retry must re-drive instead of minting a new rumor',
+          );
 
           verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
           // Soft recipient: row stays pending (in-flight clock), only the
@@ -15618,7 +15628,7 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          final _ = await repository.sendGroupMessage(
+          final results = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'one blocked recipient',
           );
@@ -15628,6 +15638,14 @@ void main() {
           ).captured;
           final enqueuedB = captured.first as OutgoingDm;
           final enqueuedC = captured.last as OutgoingDm;
+
+          expect(results, hasLength(2));
+          expect(results.last.blocked, isTrue);
+          expect(
+            results.last.queuedRumorId,
+            isNull,
+            reason: 'policy-blocked group siblings leave no row to re-drive',
+          );
 
           // Both the delivered row and the terminally-blocked row are
           // deleted; a block is terminal, not a retryable failure.
@@ -15664,6 +15682,17 @@ void main() {
 
           expect(results, hasLength(2));
           expect(results.every((r) => !r.success), isTrue);
+
+          final capturedRows = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured.cast<OutgoingDm>();
+          expect(
+            results.map((r) => r.queuedRumorId),
+            equals(capturedRows.map((r) => r.id)),
+            reason:
+                'hard-failed group siblings leave retryable queue rows that '
+                'callers must be able to re-drive',
+          );
 
           verify(
             () => mockOutgoingDmsDao.markRecipientWrapStatus(
@@ -15704,6 +15733,84 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'a sibling enqueue write failure never strands the rows already '
+        'parked ahead of it',
+        () async {
+          // `enqueue` swallows PK conflicts but still throws on a real write
+          // error — SQLite BUSY/LOCKED is reachable because
+          // OutgoingDmRetryService writes this table concurrently. Letting it
+          // escape would hand the caller a throw and no handle on the sibling
+          // already parked, whose only "retry" is then a fresh fan-out the
+          // receiver cannot collapse (#7316).
+          final enqueued = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((
+            invocation,
+          ) async {
+            final row = invocation.positionalArguments.first as OutgoingDm;
+            if (row.recipientPubkey == _validPubkeyC) {
+              throw StateError('database is locked');
+            }
+            enqueued.add(row);
+          });
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('all relays down'),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one sibling cannot be parked',
+          );
+
+          expect(enqueued, hasLength(1));
+          expect(results, hasLength(2));
+          expect(
+            results.first.queuedRumorId,
+            equals(enqueued.single.id),
+            reason:
+                'the sibling that did park must reach the caller with its row '
+                'handle, or a retry re-sends it as a second rumor',
+          );
+          // No row parked for C, so nothing can re-drive or retract it: its
+          // publish must be skipped rather than put an untraceable copy on the
+          // wire.
+          expect(results.last.success, isFalse);
+          expect(results.last.queuedRumorId, isNull);
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyC,
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+          expect(
+            reporterCalls.map((c) => c.site),
+            contains(
+              DmRepositoryReportableSites.sendGroupMessageEnqueueSibling,
             ),
           );
         },
@@ -16496,6 +16603,16 @@ void main() {
           expect(results, hasLength(3));
           expect(results[1].success, isFalse);
           expect(results[2].success, isFalse);
+          expect(
+            results[1].queuedRumorId,
+            isNull,
+            reason: 'cancelled siblings leave no row to re-drive',
+          );
+          expect(
+            results[2].queuedRumorId,
+            isNull,
+            reason: 'cancelled siblings leave no row to re-drive',
+          );
           // Nothing is persisted locally: B's row was gone by the finalize
           // re-read, so the group bubble does not resurrect either.
           verifyNever(

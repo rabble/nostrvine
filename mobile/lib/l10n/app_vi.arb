@@ -3490,6 +3490,7 @@
     }
   },
   "dmReelReplyFailed": "Không gửi được",
+  "dmReelReplyUnverified": "Không xác nhận được đã gửi",
   "@dmReelReplyFailed": {
     "description": "Transient toast shown in the reel player when a reply or reaction fails to send."
   },

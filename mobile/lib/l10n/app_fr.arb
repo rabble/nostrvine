@@ -4224,6 +4224,7 @@
     "dmReelReplySentAnnouncement": "Réponse envoyée",
     "dmReelReactionSentAnnouncement": "Réaction {emoji} envoyée",
     "dmReelReplyFailed": "Échec de l'envoi",
+    "dmReelReplyUnverified": "Envoi non confirmé",
     "emojiPickerSearchHint": "Rechercher",
     "emojiCategoryRecent": "Récents",
     "emojiCategorySmileys": "Smileys et personnes",

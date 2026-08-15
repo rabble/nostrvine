@@ -347,60 +347,103 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     // the player route is gone and this element is defunct.
     final cubit = context.read<InlineReelReplyCubit>();
 
-    if (state.status == InlineReelReplyStatus.failure) {
-      // Restore the draft so the user can retry without retyping.
-      if (draft.isNotEmpty && _controller.text.isEmpty) {
-        _controller.text = draft;
-        _controller.selection = TextSelection.collapsed(offset: draft.length);
-      }
-      _announce(context.l10n.dmReelReplyFailed);
-      _showRetrySnackBar(
-        (markVisible) => SnackBar(
-          content: Text(context.l10n.dmReelReplyFailed),
-          behavior: SnackBarBehavior.floating,
-          onVisible: markVisible,
-          action: SnackBarAction(
-            label: context.l10n.dmSendFailedRetry,
-            onPressed: () {
-              // `mounted` also guards `_controller`, which dispose() tears
-              // down along with the rest of this State.
-              if (draft.isEmpty || !mounted || cubit.isClosed) return;
-              _pendingDraft = draft;
-              cubit.submit(draft);
-              _controller.clear();
-            },
-          ),
-        ),
-      );
-    } else {
-      final router = GoRouter.maybeOf(context);
-      final conversationPath = ConversationPage.pathForId(_ctx.conversationId);
-      final participantPubkeys = List<String>.of(_ctx.participantPubkeys);
-      _announce(context.l10n.dmReelReplySentAnnouncement);
-      widget.screenAnalytics.trackInteraction(
-        ReelReplyConstants.analyticsScreen,
-        'dm_reel_reply_sent',
-        params: {'is_group': _ctx.isGroup ? 1 : 0},
-      );
-      _closeRetrySnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.shareSent),
-          behavior: SnackBarBehavior.floating,
-          action: router == null
-              ? null
-              : SnackBarAction(
-                  label: context.l10n.dmReelReplyViewChat,
-                  onPressed: () => _openChat(
-                    router,
-                    conversationPath: conversationPath,
-                    participantPubkeys: participantPubkeys,
-                  ),
-                ),
-        ),
-      );
+    switch (state.status) {
+      case InlineReelReplyStatus.failure:
+        // The parked rows are captured HERE, bound to the send that failed.
+        // This snackbar can outlive that send — queued behind another, it is
+        // never dismissed by a later success, which can only close a visible
+        // one — and by then `state.queuedRumorIds` describes some other send.
+        _showReplyFailed(draft, cubit, state.queuedRumorIds);
+      case InlineReelReplyStatus.unverifiable:
+        _showReplyUnverified();
+      case InlineReelReplyStatus.success:
+        _showReplySent();
+      case InlineReelReplyStatus.initial:
+      case InlineReelReplyStatus.sending:
+        return;
     }
     cubit.acknowledge();
+  }
+
+  void _showReplyFailed(
+    String draft,
+    InlineReelReplyCubit cubit,
+    List<String> parkedRumorIds,
+  ) {
+    // Restore the draft so the user can retry without retyping.
+    if (draft.isNotEmpty && _controller.text.isEmpty) {
+      _controller.text = draft;
+      _controller.selection = TextSelection.collapsed(offset: draft.length);
+    }
+    _announce(context.l10n.dmReelReplyFailed);
+    _showRetrySnackBar(
+      (markVisible) => SnackBar(
+        content: Text(context.l10n.dmReelReplyFailed),
+        behavior: SnackBarBehavior.floating,
+        onVisible: markVisible,
+        action: SnackBarAction(
+          label: context.l10n.dmSendFailedRetry,
+          onPressed: () {
+            // `mounted` also guards `_controller`, which dispose() tears
+            // down along with the rest of this State.
+            if (draft.isEmpty || !mounted || cubit.isClosed) return;
+            _pendingDraft = draft;
+            // `retry`, never `submit`: it re-drives the durable row the
+            // failed send parked, instead of minting a second rumor the
+            // recipient renders as a second message (#7316). The draft is
+            // only its fallback, for a send that parked no row at all.
+            cubit.retry(queuedRumorIds: parkedRumorIds, content: draft);
+            _controller.clear();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// A retry whose parked row had already gone: delivery is unknown.
+  ///
+  /// Deliberately offers no Retry. The row is consumed, so a further retry
+  /// would fall through to a fresh send and mint the duplicate #7316 closed —
+  /// which is also why the outstanding retry snackbar has to be dismissed
+  /// here rather than left holding a now-duplicating action. "View chat" is
+  /// the honest affordance: it shows the user what actually landed.
+  void _showReplyUnverified() {
+    _announce(context.l10n.dmReelReplyUnverified);
+    _closeRetrySnackBar();
+    _showChatSnackBar(context.l10n.dmReelReplyUnverified);
+  }
+
+  void _showReplySent() {
+    _announce(context.l10n.dmReelReplySentAnnouncement);
+    widget.screenAnalytics.trackInteraction(
+      ReelReplyConstants.analyticsScreen,
+      'dm_reel_reply_sent',
+      params: {'is_group': _ctx.isGroup ? 1 : 0},
+    );
+    _closeRetrySnackBar();
+    _showChatSnackBar(context.l10n.shareSent);
+  }
+
+  void _showChatSnackBar(String message) {
+    final router = GoRouter.maybeOf(context);
+    final conversationPath = ConversationPage.pathForId(_ctx.conversationId);
+    final participantPubkeys = List<String>.of(_ctx.participantPubkeys);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        action: router == null
+            ? null
+            : SnackBarAction(
+                label: context.l10n.dmReelReplyViewChat,
+                onPressed: () => _openChat(
+                  router,
+                  conversationPath: conversationPath,
+                  participantPubkeys: participantPubkeys,
+                ),
+              ),
+      ),
+    );
   }
 
   void _showRetrySnackBar(
@@ -472,7 +515,8 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
           listenWhen: (prev, curr) =>
               prev.status != curr.status &&
               (curr.status == InlineReelReplyStatus.success ||
-                  curr.status == InlineReelReplyStatus.failure),
+                  curr.status == InlineReelReplyStatus.failure ||
+                  curr.status == InlineReelReplyStatus.unverifiable),
           listener: (context, state) => _onReplyOutcome(state),
         ),
         BlocListener<ConversationReactionsCubit, ConversationReactionsState>(

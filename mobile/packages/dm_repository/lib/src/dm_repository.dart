@@ -3206,8 +3206,11 @@ class DmRepository {
   /// durable row, and the sweep then delivers one copy while the retry
   /// delivers another.
   ///
-  /// Only ever called from the two branches that finalize a surviving row;
-  /// the blocked branch deletes its row and the success branch consumes it.
+  /// Only ever called from the branches that finalize a surviving row — the
+  /// soft-unconfirmed and hard-failure arms of both [sendMessage] and
+  /// [sendGroupMessage]. The blocked branch deletes its row, a cancelled
+  /// group sibling never had one, and the success branch consumes it (except
+  /// on partial delivery — see [NIP17SendResult.queuedRumorId]).
   NIP17SendResult _stampQueuedRow(NIP17SendResult result, String rumorId) =>
       switch (result) {
         NIP17SendSuccess() => result,
@@ -4394,6 +4397,15 @@ class DmRepository {
   /// that inserts `direct_messages`; partial delivery → recipient
   /// `sent` + self `failed` so the recovery path can replay only the
   /// missing self-wraps without re-delivering to recipients).
+  ///
+  /// Each failure that leaves a row behind carries that row's
+  /// [NIP17SendResult.queuedRumorId], so a caller retries by re-driving the
+  /// surviving siblings ([recoverFullSend]) rather than fanning out again.
+  ///
+  /// A sibling whose enqueue itself fails is reported and returned as a plain
+  /// failure with no `queuedRumorId`, and its publish is skipped — never
+  /// thrown out of this method, which would strand the siblings already
+  /// parked and push the caller back onto a duplicating fresh fan-out.
   @useResult
   Future<List<NIP17SendResult>> sendGroupMessage({
     required List<String> recipientPubkeys,
@@ -4506,26 +4518,46 @@ class DmRepository {
     // exist before the first (potentially slow) publish. Same contract as
     // sendMessage: no-op when the queue dao isn't wired in (older test
     // fixtures, NIP-04-only callers).
+    // Guarded per iteration, like the delivery loop below. `enqueue` swallows
+    // PK conflicts but still throws on a real write error (SQLite BUSY/LOCKED
+    // — OutgoingDmRetryService writes this table concurrently). Letting that
+    // escape would abandon the siblings already parked at 0..i-1: the caller
+    // would see a throw, hold no queuedRumorId for them, and a user retry
+    // would fan out fresh rumors alongside the sweep's replay of the parked
+    // ones — the exact double-delivery #7316 exists to close.
+    final failedToEnqueue = <int>{};
     if (outgoingDao != null) {
       for (var i = 0; i < recipientPubkeys.length; i++) {
         final rumor = rumors[i];
-        await outgoingDao.enqueue(
-          OutgoingDm(
-            id: rumor.id,
-            conversationId: conversationId,
-            recipientPubkey: recipientPubkeys[i],
-            content: content,
-            createdAt: rumor.createdAt,
-            rumorEventJson: jsonEncode(rumor.toJson()),
-            messageKind: rumor.kind,
-            replyToId: replyToId,
-            recipientWrapStatus: OutgoingWrapStatus.pending,
-            selfWrapStatus: OutgoingWrapStatus.pending,
-            queuedAt: DateTime.now(),
-            ownerPubkey: _userPubkey,
-            sendBatchId: sendBatchId,
-          ),
-        );
+        try {
+          await outgoingDao.enqueue(
+            OutgoingDm(
+              id: rumor.id,
+              conversationId: conversationId,
+              recipientPubkey: recipientPubkeys[i],
+              content: content,
+              createdAt: rumor.createdAt,
+              rumorEventJson: jsonEncode(rumor.toJson()),
+              messageKind: rumor.kind,
+              replyToId: replyToId,
+              recipientWrapStatus: OutgoingWrapStatus.pending,
+              selfWrapStatus: OutgoingWrapStatus.pending,
+              queuedAt: DateTime.now(),
+              ownerPubkey: _userPubkey,
+              sendBatchId: sendBatchId,
+            ),
+          );
+        } on Object catch (e, stackTrace) {
+          // No durable row for this sibling, so its publish is skipped below:
+          // a wire copy with no local trace is invisible to the sender and
+          // unretractable, strictly worse than not sending it.
+          failedToEnqueue.add(i);
+          _errorReporter?.call(
+            e,
+            stackTrace,
+            site: DmRepositoryReportableSites.sendGroupMessageEnqueueSibling,
+          );
+        }
       }
     }
 
@@ -4542,6 +4574,16 @@ class DmRepository {
     final cancelledBeforePublish = <int>{};
     for (var i = 0; i < recipientPubkeys.length; i++) {
       final pubkey = recipientPubkeys[i];
+      // A sibling whose row never got parked: publishing it would put a copy
+      // on the wire that no local row can retract or re-drive. Fail it here
+      // instead, before the cancel interlock below misreads the absent row as
+      // a user cancellation.
+      if (failedToEnqueue.contains(i)) {
+        results.add(
+          const NIP17SendResult.failure('could not queue send for recipient'),
+        );
+        continue;
+      }
       // Cancel interlock, mirroring _recoverFullSendLocked's pre-publish row
       // re-read: each publish can take up to the OK-confirm timeout, a long
       // window in which the user may delete the whole batch. Re-read the
@@ -4701,12 +4743,22 @@ class DmRepository {
     // Classify each the same way the 1:1 path does — soft-unconfirmed stays
     // pending (plain optimistic bubble), a policy block is terminal (row
     // dropped), and a hard failure marks both wraps failed.
+    //
+    // The two surviving-row branches also stamp their sibling's queued rumor
+    // id onto the returned result, exactly as [sendMessage] does. Without it
+    // a group caller has no handle on the rows this send parked and its only
+    // way to "retry" is a fresh fan-out, which mints a whole second set of
+    // rumors the receiver cannot collapse (#7316). Cancelled, un-enqueued and
+    // blocked siblings are deliberately unstamped: none leaves a row behind.
     if (outgoingDao != null) {
       for (var i = 0; i < rumors.length; i++) {
-        // A sibling skipped for cancellation has no live row to transition;
-        // an update-by-id would match zero rows anyway, but skipping is
-        // explicit and keeps a cancelled index from resurrecting anything.
-        if (cancelledBeforePublish.contains(i)) continue;
+        // A sibling skipped for cancellation, or whose enqueue threw, has no
+        // live row to transition; an update-by-id would match zero rows
+        // anyway, but skipping is explicit and keeps such an index from
+        // resurrecting a queue transition or a thread.
+        if (cancelledBeforePublish.contains(i) || failedToEnqueue.contains(i)) {
+          continue;
+        }
         final result = results[i];
         if (result.success) continue;
         if (result.blocked) {
@@ -4719,12 +4771,14 @@ class DmRepository {
             outgoingDao: outgoingDao,
             rumorId: rumors[i].id,
           );
+          results[i] = _stampQueuedRow(result, rumors[i].id);
         } else {
           await _finalizeAfterRecipientFailure(
             outgoingDao: outgoingDao,
             rumorId: rumors[i].id,
             errorMessage: result.error ?? 'Unknown publish failure',
           );
+          results[i] = _stampQueuedRow(result, rumors[i].id);
         }
       }
     }
@@ -4734,12 +4788,16 @@ class DmRepository {
     // the failed bubbles to retry or delete. All-blocked sends leave no
     // rows behind (terminal), so they create no thread cruft. A fully
     // cancelled batch must NOT resurrect the thread the user just deleted,
-    // so cancelled indexes don't count as retryable failures here.
-    final hasNonCancelledFailure = results.asMap().entries.any(
+    // so cancelled indexes don't count as retryable failures here. Nor do
+    // un-enqueued ones: they left no row, so the thread would hold no bubble
+    // to retry or delete.
+    final hasRetryableFailure = results.asMap().entries.any(
       (entry) =>
-          !cancelledBeforePublish.contains(entry.key) && !entry.value.blocked,
+          !cancelledBeforePublish.contains(entry.key) &&
+          !failedToEnqueue.contains(entry.key) &&
+          !entry.value.blocked,
     );
-    if (!results.any((r) => r.success) && hasNonCancelledFailure) {
+    if (!results.any((r) => r.success) && hasRetryableFailure) {
       await _ensureConversationVisibleAfterSendFailure(
         conversationId: conversationId,
         participants: participants,

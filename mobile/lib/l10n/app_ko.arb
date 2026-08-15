@@ -3562,6 +3562,7 @@
     "dmReelReplySentAnnouncement": "답장을 보냈습니다",
     "dmReelReactionSentAnnouncement": "{emoji} 반응함",
     "dmReelReplyFailed": "보내지 못했습니다",
+    "dmReelReplyUnverified": "전송을 확인하지 못했습니다",
     "emojiPickerSearchHint": "검색",
     "emojiCategoryRecent": "최근 사용",
     "emojiCategorySmileys": "스마일리 및 사람",

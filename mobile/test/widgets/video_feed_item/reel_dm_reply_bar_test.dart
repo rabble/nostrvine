@@ -508,6 +508,222 @@ void main() {
     ).called(1);
   });
 
+  // #7316. The retry action must re-drive the row the failed send parked. A
+  // second `sendMessage` would mint a fresh rumor for the same text, and since
+  // the receiver's only stable dedup key is the rumor id — gift-wrap ids are
+  // randomised per wrap — it would render as a second message alongside the
+  // sweep's replay of the original.
+  testWidgets('tapping Retry re-drives the parked row, never re-sends', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenAnswer(
+      (_) async => const NIP17SendResult.failure(
+        'no relay responded',
+        retryablePending: true,
+        queuedRumorId: 'parked-row',
+      ),
+    );
+    when(
+      () => dmRepo.recoverFullSend(
+        rumorId: any(named: 'rumorId'),
+        resetRetryBudget: any(named: 'resetRetryBudget'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'parked-row',
+        messageEventId: 'g',
+        recipientPubkey: _peer,
+      ),
+    );
+
+    await tester.pumpWidget(wrap(context()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    // Target the action, not its label: the label's own offset is inside the
+    // snackbar's slide transform and a tap there can miss the button.
+    await tester.tap(
+      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+    );
+    await tester.pumpAndSettle();
+
+    verify(
+      () => dmRepo.recoverFullSend(
+        rumorId: 'parked-row',
+        resetRetryBudget: true,
+      ),
+    ).called(1);
+    // The original send, and only it.
+    verify(
+      () => dmRepo.sendMessage(
+        recipientPubkey: _peer,
+        content: 'hello',
+        replyToId: _reelId,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('a retry whose row is gone reports unverified, not sent', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenAnswer(
+      (_) async => const NIP17SendResult.failure(
+        'no relay responded',
+        retryablePending: true,
+        queuedRumorId: 'parked-row',
+      ),
+    );
+    // The row is gone: possibly delivered by the sweep, possibly cancelled,
+    // possibly another account's. Delivery cannot be proven either way.
+    when(
+      () => dmRepo.recoverFullSend(
+        rumorId: any(named: 'rumorId'),
+        resetRetryBudget: any(named: 'resetRetryBudget'),
+      ),
+    ).thenThrow(ArgumentError.value('parked-row', 'rumorId', 'no queued row'));
+
+    await tester.pumpWidget(wrap(context()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(
+      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.dmReelReplyUnverified), findsOneWidget);
+    // Claiming "Sent" would assert a delivery nothing confirmed.
+    expect(find.text(l10n.shareSent), findsNothing);
+    // And no second Retry: there is no row left to re-drive, so tapping one
+    // would fall through to a fresh send — the duplicate #7316 closed. The
+    // send count pins that nothing re-sent behind the snackbar's back.
+    expect(
+      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+      findsNothing,
+    );
+    // (The "View chat" affordance this outcome offers instead needs a router
+    // in the tree; `wrap` has none, so the shared snackbar builder drops the
+    // action here. The success path covers that branch.)
+    verify(
+      () => dmRepo.sendMessage(
+        recipientPubkey: _peer,
+        content: 'hello',
+        replyToId: _reelId,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('a retry snackbar outliving its send still re-drives its row', (
+    tester,
+  ) async {
+    // The retry snackbar queues behind another, so the later success cannot
+    // dismiss it (`close()` only works on the visible one). When it finally
+    // surfaces and is tapped, the cubit's live `queuedRumorIds` has been
+    // cleared by that success — so a retry reading state instead of its own
+    // captured ids would fall through to a fresh send and duplicate a row the
+    // sweep is still re-driving.
+    var sends = 0;
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenAnswer((_) async {
+      sends++;
+      if (sends == 1) {
+        return const NIP17SendResult.failure(
+          'no relay responded',
+          retryablePending: true,
+          queuedRumorId: 'parked-row',
+        );
+      }
+      return NIP17SendResult.success(
+        rumorEventId: 'r$sends',
+        messageEventId: 'm$sends',
+        recipientPubkey: _peer,
+      );
+    });
+    when(
+      () => dmRepo.recoverFullSend(
+        rumorId: any(named: 'rumorId'),
+        resetRetryBudget: any(named: 'resetRetryBudget'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'parked-row',
+        messageEventId: 'g',
+        recipientPubkey: _peer,
+      ),
+    );
+
+    await tester.pumpWidget(wrap(context()));
+    await tester.pump();
+
+    final messenger = tester.state<ScaffoldMessengerState>(
+      find.byType(ScaffoldMessenger).first,
+    );
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('unrelated'),
+        duration: Duration(seconds: 30),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // First send fails; its retry snackbar queues behind 'unrelated'.
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    // Second send succeeds, clearing the live handle for the first one's row.
+    await tester.enterText(find.byType(TextField), 'world');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    messenger.removeCurrentSnackBar();
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(
+      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+    );
+    await tester.pumpAndSettle();
+
+    verify(
+      () => dmRepo.recoverFullSend(
+        rumorId: 'parked-row',
+        resetRetryBudget: true,
+      ),
+    ).called(1);
+    // Two deliberate sends, no third: the stale tap re-drove, never re-sent.
+    expect(sends, 2);
+  });
+
   testWidgets('leaves a queued retry snackbar for whatever is on screen', (
     tester,
   ) async {

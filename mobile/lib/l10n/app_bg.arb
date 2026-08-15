@@ -4362,6 +4362,7 @@
     "dmReelReplySentAnnouncement": "Отговорът е изпратен",
     "dmReelReactionSentAnnouncement": "Реагирахте с {emoji}",
     "dmReelReplyFailed": "Изпращането е неуспешно",
+    "dmReelReplyUnverified": "Изпращането не е потвърдено",
     "emojiPickerSearchHint": "Търсене",
     "emojiCategoryRecent": "Скорошни",
     "emojiCategorySmileys": "Емотикони и хора",

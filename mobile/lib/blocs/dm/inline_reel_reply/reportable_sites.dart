@@ -6,4 +6,7 @@
 abstract class InlineReelReplyReportableSites {
   /// The reply submit path.
   static const submit = 'submit';
+
+  /// The reply retry path (re-driving a parked `outgoing_dms` row).
+  static const retry = 'retry';
 }

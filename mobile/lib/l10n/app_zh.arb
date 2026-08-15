@@ -3490,6 +3490,7 @@
     }
   },
   "dmReelReplyFailed": "发送失败",
+  "dmReelReplyUnverified": "无法确认是否已发送",
   "@dmReelReplyFailed": {
     "description": "Transient toast shown in the reel player when a reply or reaction fails to send."
   },

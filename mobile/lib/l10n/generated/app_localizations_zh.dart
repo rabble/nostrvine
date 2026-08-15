@@ -5855,6 +5855,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dmReelReplyFailed => '发送失败';
 
   @override
+  String get dmReelReplyUnverified => '无法确认是否已发送';
+
+  @override
   String dmReactionChipOwnA11yLabel(String emoji) {
     return '你的回应：$emoji';
   }

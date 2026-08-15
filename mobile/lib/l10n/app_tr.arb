@@ -4224,6 +4224,7 @@
     "dmReelReplySentAnnouncement": "Yanıt gönderildi",
     "dmReelReactionSentAnnouncement": "{emoji} ile tepki verildi",
     "dmReelReplyFailed": "Gönderilemedi",
+    "dmReelReplyUnverified": "Gönderim doğrulanamadı",
     "emojiPickerSearchHint": "Ara",
     "emojiCategoryRecent": "Son Kullanılanlar",
     "emojiCategorySmileys": "İfadeler ve İnsanlar",

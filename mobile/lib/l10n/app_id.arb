@@ -4224,6 +4224,7 @@
     "dmReelReplySentAnnouncement": "Balasan terkirim",
     "dmReelReactionSentAnnouncement": "Bereaksi {emoji}",
     "dmReelReplyFailed": "Tidak dapat mengirim",
+    "dmReelReplyUnverified": "Tidak dapat memastikan terkirim",
     "emojiPickerSearchHint": "Cari",
     "emojiCategoryRecent": "Terbaru",
     "emojiCategorySmileys": "Smiley & Orang",
