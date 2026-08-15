@@ -13,6 +13,7 @@ import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/blocs/video_feed/home_feed_resume_manager.dart';
 import 'package:openvine/observability/reportable_error.dart';
@@ -298,20 +299,15 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         }
       }
 
-      _addIfOpen(VideoFeedFollowingListChanged(pubkeys));
+      addIfOpen(VideoFeedFollowingListChanged(pubkeys));
     });
 
     // Subscribe to curated list changes.
     _curatedListsSubscription = _curatedListRepository.subscribedListsStream
         .skip(1)
         .listen((lists) {
-          _addIfOpen(VideoFeedCuratedListsChanged(lists));
+          addIfOpen(VideoFeedCuratedListsChanged(lists));
         });
-  }
-
-  void _addIfOpen(VideoFeedEvent event) {
-    if (isClosed) return;
-    add(event);
   }
 
   @override

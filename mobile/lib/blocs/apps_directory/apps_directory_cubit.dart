@@ -4,11 +4,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 part 'apps_directory_state.dart';
 
 /// Loads approved third-party apps from the directory service.
-class AppsDirectoryCubit extends Cubit<AppsDirectoryState> {
+class AppsDirectoryCubit extends Cubit<AppsDirectoryState>
+    with CloseGuardedEmit<AppsDirectoryState> {
   /// Creates the cubit with the given [directoryService].
   AppsDirectoryCubit({required NostrAppDirectoryService directoryService})
     : _directoryService = directoryService,
@@ -21,12 +23,12 @@ class AppsDirectoryCubit extends Cubit<AppsDirectoryState> {
     emit(state.copyWith(status: AppsDirectoryStatus.loading));
     try {
       final apps = await _directoryService.fetchApprovedApps();
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(status: AppsDirectoryStatus.loaded, apps: apps),
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      _emitIfOpen(state.copyWith(status: AppsDirectoryStatus.error));
+      emitIfOpen(state.copyWith(status: AppsDirectoryStatus.error));
     }
   }
 
@@ -34,19 +36,12 @@ class AppsDirectoryCubit extends Cubit<AppsDirectoryState> {
   Future<void> refreshApps() async {
     try {
       final apps = await _directoryService.fetchApprovedApps();
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(status: AppsDirectoryStatus.loaded, apps: apps),
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      _emitIfOpen(state.copyWith(status: AppsDirectoryStatus.error));
+      emitIfOpen(state.copyWith(status: AppsDirectoryStatus.error));
     }
-  }
-
-  /// The directory fetch cannot be cancelled, so it can resolve after the
-  /// screen is gone and the cubit closed.
-  void _emitIfOpen(AppsDirectoryState nextState) {
-    if (isClosed) return;
-    emit(nextState);
   }
 }

@@ -5,12 +5,14 @@ import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/repositories/avatar_svg_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'avatar_svg_state.dart';
 
-class AvatarSvgCubit extends Cubit<AvatarSvgState> {
+class AvatarSvgCubit extends Cubit<AvatarSvgState>
+    with CloseGuardedEmit<AvatarSvgState> {
   AvatarSvgCubit({required AvatarSvgRepository repository, required String url})
     : _repository = repository,
       _url = url,
@@ -22,18 +24,18 @@ class AvatarSvgCubit extends Cubit<AvatarSvgState> {
   Future<void> load() async {
     if (isClosed || state.status == AvatarSvgStatus.loading) return;
 
-    _emitIfOpen(state.copyWith(status: AvatarSvgStatus.loading));
+    emitIfOpen(state.copyWith(status: AvatarSvgStatus.loading));
     try {
       final bytes = await _repository.load(_url);
       if (isClosed) return;
 
       if (bytes == null) {
-        _emitIfOpen(
+        emitIfOpen(
           state.copyWith(status: AvatarSvgStatus.unavailable, bytes: null),
         );
         return;
       }
-      _emitIfOpen(state.copyWith(status: AvatarSvgStatus.ready, bytes: bytes));
+      emitIfOpen(state.copyWith(status: AvatarSvgStatus.ready, bytes: bytes));
     } on Object catch (error, stackTrace) {
       if (isClosed) return;
 
@@ -45,13 +47,9 @@ class AvatarSvgCubit extends Cubit<AvatarSvgState> {
         stackTrace: stackTrace,
       );
       addError(error, stackTrace);
-      _emitIfOpen(
+      emitIfOpen(
         state.copyWith(status: AvatarSvgStatus.unavailable, bytes: null),
       );
     }
-  }
-
-  void _emitIfOpen(AvatarSvgState nextState) {
-    if (!isClosed) emit(nextState);
   }
 }

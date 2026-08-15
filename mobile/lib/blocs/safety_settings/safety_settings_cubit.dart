@@ -8,6 +8,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/safety_settings/safety_settings_state.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -30,7 +31,8 @@ import 'package:openvine/utils/npub_hex.dart';
 /// to mirror the pre-migration `_setAgeVerified` behavior — unlocking adult
 /// categories on confirm, locking them and filtering the existing feed on
 /// unconfirm.
-class SafetySettingsCubit extends Cubit<SafetySettingsState> {
+class SafetySettingsCubit extends Cubit<SafetySettingsState>
+    with CloseGuardedEmit<SafetySettingsState> {
   SafetySettingsCubit({
     required AgeVerificationService ageVerificationService,
     required ContentFilterService contentFilterService,
@@ -115,7 +117,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
       }
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      _emitIfOpen(state.copyWith(isAgeVerified: previous));
+      emitIfOpen(state.copyWith(isAgeVerified: previous));
     }
   }
 
@@ -130,7 +132,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
       await _divineHostFilterService.setShowDivineHostedOnly(value);
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      _emitIfOpen(state.copyWith(showDivineHostedOnly: previous));
+      emitIfOpen(state.copyWith(showDivineHostedOnly: previous));
     }
   }
 
@@ -160,7 +162,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      _emitIfOpen(state.copyWith(isPeopleIFollowEnabled: previous));
+      emitIfOpen(state.copyWith(isPeopleIFollowEnabled: previous));
     }
   }
 
@@ -174,7 +176,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
     if (trimmed.isEmpty) return;
     final hexPubkey = npubToHexOrNull(trimmed) ?? trimmed;
     await _moderationLabelService.addLabeler(hexPubkey);
-    _emitIfOpen(
+    emitIfOpen(
       state.copyWith(customLabelers: _moderationLabelService.customLabelers),
     );
   }
@@ -182,7 +184,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   /// Unsubscribe from a custom labeler.
   Future<void> removeLabeler(String pubkey) async {
     await _moderationLabelService.removeLabeler(pubkey);
-    _emitIfOpen(
+    emitIfOpen(
       state.copyWith(customLabelers: _moderationLabelService.customLabelers),
     );
   }
@@ -194,18 +196,11 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   /// frame as the mutation.
   Future<void> unblockUser(String pubkey) async {
     await _contentBlocklistRepository.unblockUser(pubkey);
-    _emitIfOpen(
+    emitIfOpen(
       state.copyWith(
         blockedUsers: _contentBlocklistRepository.runtimeBlockedUsers,
       ),
     );
-  }
-
-  /// Every mutation here awaits a service call that cannot be cancelled, so
-  /// leaving the screen mid-flight resolves it against a closed cubit.
-  void _emitIfOpen(SafetySettingsState nextState) {
-    if (isClosed) return;
-    emit(nextState);
   }
 
   @override

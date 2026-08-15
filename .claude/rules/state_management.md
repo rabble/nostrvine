@@ -276,6 +276,83 @@ emit(state.copyWith(
 
 ---
 
+## Work that outlives close(): emitIfOpen / addIfOpen
+
+`close()` does not cancel work that is already in flight. An awaited
+future resumes into a disposed cubit, and the emit throws:
+
+```
+Bad state: Cannot emit new states after calling close
+Bad state: Cannot add new events after calling close
+```
+
+Both shipped as Crashlytics aggregates (#7293). The `add` half is the
+less obvious one: `Bloc.close()` closes the event controller **before**
+draining the queue, so `isClosed` is already `true` while pending
+handlers are still running — any `add` they make lands on a closed
+controller.
+
+**Rule.** Every `emit` or `add` reachable across a suspension point —
+an `await`, a stream callback, a timer, an unawaited future — is
+guarded. Mix in `CloseGuardedEmit` and use the guarded calls from
+[`lib/blocs/close_guard.dart`](../../mobile/lib/blocs/close_guard.dart):
+
+```dart
+class SettingsCubit extends Cubit<SettingsState>
+    with CloseGuardedEmit<SettingsState> {
+  Future<void> load() async {
+    final value = await _service.read();
+    emitIfOpen(state.copyWith(value: value));   // not emit(...)
+  }
+}
+
+// Blocs get addIfOpen from the CloseGuardedAdd extension — no mixin
+// needed, since Bloc.add is public.
+_subscription = _stream.listen((v) => addIfOpen(FooChanged(v)));
+```
+
+Both return `bool`: `false` means the call was dropped because the
+instance is closed, which is occasionally useful when the caller has
+follow-up work that only makes sense against a live instance.
+
+An `if (isClosed) return;` **after** the suspension point works too, and
+is the right shape when there is cleanup to skip as well. A guard
+*before* the await is not a guard — that is the bug.
+
+Prefer cancelling the work where it is cancellable; the guard is for
+genuinely uncancellable in-flight futures. Do not re-invent a private
+`_emitIfOpen` per cubit — four of them had accumulated before #7370
+consolidated them.
+
+### What is NOT affected
+
+An `on<Event>` handler's own `emit` parameter is `Emitter.call`, and
+`Bloc.close()` cancels every live emitter before `super.close()`, so it
+degrades to a silent no-op rather than throwing. Leave those alone — the
+guard is for `BlocBase.emit` (any cubit method, or a bloc method outside
+a handler) and for `Bloc.add`. `addError` never throws after close
+either; it just forwards to `onError`.
+
+### Enforcement
+
+`scripts/check_post_close_emit_ceiling.sh` freezes the per-file count of
+unguarded sites under `mobile/lib` in
+`mobile/scripts/baseline/post_close_emit.txt` — a ceiling that may only
+shrink. It runs in CI (the `generated-files` job), not in the pre-push
+hook. To see the individual sites in a file:
+
+```bash
+cd mobile && dart run scripts/lib/post_close_emit_detector.dart lib --detail
+```
+
+After guarding sites, lock the win:
+
+```bash
+UPDATE_BASELINE=1 bash mobile/scripts/check_post_close_emit_ceiling.sh
+```
+
+---
+
 ## BlocProvider is lazy by default
 
 `BlocProvider(create:)` defaults to `lazy: true` (inherited from

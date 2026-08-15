@@ -221,6 +221,15 @@ jobs:
         run: bash scripts/check_implicit_font_color_ceiling.sh
       - name: 🔙 Verify raw back-button pop count does not increase (safePop ratchet)
         run: bash scripts/check_unsafe_back_pop_ceiling.sh
+      - name: 🧨 Verify post-close emit/add count does not increase (close-guard ratchet)
+        run: |
+          # Issue #7370, prevention follow-up to the #7293 Crashlytics
+          # aggregates fixed in #7356. Freezes the per-file count of bloc/cubit
+          # emit()/add() calls that can run after close() with no isClosed
+          # guard, so the "Cannot emit/add … after calling close" crash class
+          # can only shrink. Fix with emitIfOpen / addIfOpen from
+          # lib/blocs/close_guard.dart.
+          bash scripts/check_post_close_emit_ceiling.sh
       - name: 🔐 Verify no profile publish reaches the ungated read provider (#6423)
         run: bash scripts/check_profile_read_write_split.sh
       - name: 🔨 Verify generated files are up-to-date
