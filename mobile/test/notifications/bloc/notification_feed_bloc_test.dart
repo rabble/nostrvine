@@ -262,8 +262,9 @@ void main() {
         bloc.add(NotificationFeedStarted());
         await Future<void>.delayed(Duration.zero);
         // Empty inbox: the repository emits an empty page from inside
-        // `refreshFeed`, so `notifications` stays empty and the view falls
-        // through to the `status == initial` full-screen spinner branch.
+        // `refreshFeed`, so `notifications` stays empty. This is the case
+        // that would fall through to the full-screen spinner branch if
+        // `loaded` were held across the mark-all write.
         snapshotController.add(NotificationPage.empty);
         await Future<void>.delayed(Duration.zero);
 
@@ -805,16 +806,13 @@ void main() {
         // Refresh resolved, mark-all still pending: content is renderable
         // (`loaded` dismisses the cold-start spinner) but the revalidation bar
         // is still up, because this is the droppable handler's drop window.
-        expect(
-          states,
-          [
-            NotificationFeedState(isRefreshing: true),
-            NotificationFeedState(
-              status: NotificationFeedStatus.loaded,
-              isRefreshing: true,
-            ),
-          ],
-        );
+        expect(states, [
+          NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            isRefreshing: true,
+          ),
+        ]);
 
         bloc.add(NotificationFeedRefreshed());
         await Future<void>.delayed(Duration.zero);
@@ -823,17 +821,14 @@ void main() {
         markCompleter.complete();
         await Future<void>.delayed(Duration.zero);
 
-        expect(
-          states,
-          [
-            NotificationFeedState(isRefreshing: true),
-            NotificationFeedState(
-              status: NotificationFeedStatus.loaded,
-              isRefreshing: true,
-            ),
-            NotificationFeedState(status: NotificationFeedStatus.loaded),
-          ],
-        );
+        expect(states, [
+          NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            isRefreshing: true,
+          ),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ]);
         verify(() => mockNotificationRepo.markAllAsRead()).called(1);
       });
 
