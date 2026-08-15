@@ -48,6 +48,7 @@ Future<(String, int)> setSourceWithFallbacks({
   Duration? maxPlaybackDuration,
   SourceLoadDelay delay = Future<void>.delayed,
   void Function(String source)? onFailoverSourceFailure,
+  void Function(String source)? onSourceLoadFailure,
 }) async {
   Object? lastError;
   StackTrace? lastStackTrace;
@@ -78,6 +79,7 @@ Future<(String, int)> setSourceWithFallbacks({
       abortIfStale(source);
       lastError = error;
       lastStackTrace = stackTrace;
+      onSourceLoadFailure?.call(source);
       final nativeErrorCode = nativePlayerErrorCodeFromError(error);
       if (nativeErrorCode == NativePlayerErrorCode.authRequired) {
         log(
@@ -90,9 +92,8 @@ Future<(String, int)> setSourceWithFallbacks({
         Error.throwWithStackTrace(error, stackTrace);
       }
       // Only wait-and-retry a processing (HTTP 202) source when it is the last
-      // resort. While a fallback is still queued — for Divine that is always
-      // the guaranteed raw blob — prefer it immediately instead of stalling up
-      // to ~19s for a derivative that is still transcoding.
+      // resort. While another source is queued, prefer it immediately instead
+      // of stalling up to ~19s for a derivative that is still transcoding.
       final isLastSource = attemptIndex == sources.length - 1;
       if (isLastSource && isMediaProcessingError(error)) {
         for (final retryDelay in _mediaProcessingRetryDelays) {

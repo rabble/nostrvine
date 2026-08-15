@@ -127,6 +127,23 @@ void main() {
       expect(logs.first, contains('badUrl'));
     });
 
+    test('notifies each failed source before failover succeeds', () async {
+      final controller = _FakeControllerWithOneFailure();
+      addTearDown(controller.dispose);
+      final failedSources = <String>[];
+
+      final result = await setSourceWithFallbacks(
+        index: 1,
+        controller: controller,
+        sources: ['badUrl', 'goodUrl'],
+        log: logs.add,
+        onSourceLoadFailure: failedSources.add,
+      );
+
+      expect(result, equals(('goodUrl', 1)));
+      expect(failedSources, equals(['badUrl']));
+    });
+
     test('fails over when Android reports NOT_READY for a source', () async {
       final clips = <VideoClip>[];
       final controller = _RecordingControllerWithFailures(
@@ -175,7 +192,7 @@ void main() {
       );
 
       // The processing source is not the last resort, so we do not stall on it:
-      // the guaranteed raw fallback is preferred immediately.
+      // the queued fallback is preferred immediately.
       expect(result, equals(('rawUrl', 1)));
       expect(
         clips.map((clip) => clip.uri),

@@ -67,6 +67,28 @@ void main() {
     });
   });
 
+  group('isDivineBlobRawUrl', () {
+    const hash =
+        'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+
+    test('recognizes query-bearing and alternate-host raw blobs', () {
+      expect(
+        isDivineBlobRawUrl('https://media.divine.video/$hash?download=1'),
+        isTrue,
+      );
+      expect(isDivineBlobRawUrl('https://cdn.divine.video/$hash'), isTrue);
+      expect(isDivineBlobRawUrl('https://blossom.divine.video/$hash/'), isTrue);
+    });
+
+    test('rejects derivatives and non-Divine URLs', () {
+      expect(
+        isDivineBlobRawUrl('https://media.divine.video/$hash/720p.mp4'),
+        isFalse,
+      );
+      expect(isDivineBlobRawUrl('https://example.com/$hash'), isFalse);
+    });
+  });
+
   group('canonicalDivineBlobRawUrl', () {
     test('builds the expected raw blob URL', () {
       const hash =

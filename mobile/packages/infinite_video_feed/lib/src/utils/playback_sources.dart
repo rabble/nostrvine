@@ -9,32 +9,14 @@ import 'package:models/models.dart';
 ///
 /// When [urlResolver] is provided, its output is preferred over
 /// [VideoEvent.videoUrl]. For Divine blob URLs the list is expanded with
-/// canonical HLS and raw variants so the runtime can fail over between them.
+/// canonical alternatives so the runtime can fail over between them.
 ///
-/// **Fallback order rationale**: when the resolved source is progressive (raw
-/// blob or `<hash>/720p.mp4`) it is attempted first and HLS is only a fallback.
-/// (When the resolved source is itself an HLS URL — a Developer Options HLS
-/// override or an HLS-only event — that HLS URL is honoured first; the
-/// progressive-first ordering below applies to raw/MP4 resolved sources.)
-/// We deliberately do NOT prefer HLS for progressive sources, for two reasons
-/// specific to Divine:
-///
-/// 1. Divine videos are short (≤ 6.3s). HLS pays a fixed startup cost — fetch
-///    the master playlist, then a media playlist, then the first segment
-///    before a single frame renders. For a clip this short that manifest
-///    round-trip overhead makes HLS noticeably slower to first frame than a
-///    single progressive MP4 request (moov at front, one round trip).
-/// 2. HLS is bad for preloading. A progressive MP4 is one cacheable file we
-///    can warm ahead of the feed; an HLS stream is a manifest tree of many
-///    segments that cannot be single-file cached, so preloading barely helps.
-///
-/// ExoPlayer/AVPlayer use a progressive source for MP4/raw URLs and only
-/// switch to an HLS source for `.m3u8` URLs. On top of the speed and
-/// preloading costs, fresh Divine uploads publish the raw/progressive blob
-/// before their HLS rendition finishes transcoding, so probing
-/// `<hash>/hls/master.m3u8` first returns a manifest with no playable video
-/// track and stalls every video. HLS is kept only as a last-resort fallback
-/// for assets whose progressive source fails to start.
+/// For derivative-resolved Divine blobs, avoid falling back to the bare blob.
+/// Until divine-blossom#198 fixes Range support on bare blob URLs, range-
+/// requesting players can receive a cached XML NoSuchKey response as HTTP 206,
+/// so derivatives should recover through other renditions and HLS instead.
+/// Keep the raw URL only when it is the resolved source, where dropping it
+/// would leave raw/classic-Vine playback with no progressive option.
 List<String> resolvePlaybackSources(
   VideoEvent video, {
   String? Function(VideoEvent video)? urlResolver,
@@ -49,34 +31,32 @@ List<String> resolvePlaybackSources(
 
   final hash = extractCanonicalDivineBlobHash(resolvedSource);
   if (hash != null) {
-    final rawUrl = canonicalDivineBlobRawUrl(hash);
     final hlsUrl = canonicalDivineBlobHlsUrl(hash);
     final isAlreadyHls = resolvedSource.contains('/hls/');
     if (isAlreadyHls) {
-      return orderedUniqueSources([resolvedSource, rawUrl, originalUrl]);
+      final originalFallback =
+          originalUrl != null && isDivineBlobRawUrl(originalUrl)
+          ? null
+          : originalUrl;
+      return orderedUniqueSources([resolvedSource, originalFallback]);
     }
 
-    final isRawBlob = resolvedSource == rawUrl;
-    // Progressive first, HLS last. For a quality variant (e.g. 720p.mp4) the
-    // guaranteed raw blob still comes before HLS so the fallback order
-    // preserves the existing "try another progressive source before paying HLS
-    // startup" behavior. The bare blob currently fails for range-requesting
-    // players until divine-blossom#198 is fixed, so HLS remains behind it as
-    // the final recovery source.
+    final isRawBlob = isDivineBlobRawUrl(resolvedSource);
     if (isRawBlob) {
       return orderedUniqueSources([resolvedSource, hlsUrl, originalUrl]);
     }
 
+    // TODO(liz): Restore the bare blob fallback after divine-blossom#198
+    // fixes Range support on bare blob URLs (#7184).
+    final originalFallback =
+        originalUrl != null && isDivineBlobRawUrl(originalUrl)
+        ? null
+        : originalUrl;
     if (derivativeFailureCache?.hasFreshFailureForHash(hash) ?? false) {
-      return orderedUniqueSources([
-        hlsUrl,
-        rawUrl,
-        resolvedSource,
-        originalUrl,
-      ]);
+      return orderedUniqueSources([hlsUrl, resolvedSource, originalFallback]);
     }
 
-    return orderedUniqueSources([resolvedSource, rawUrl, hlsUrl, originalUrl]);
+    return orderedUniqueSources([resolvedSource, hlsUrl, originalFallback]);
   }
 
   return orderedUniqueSources([resolvedSource, originalUrl]);

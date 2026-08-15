@@ -19,6 +19,8 @@ VideoEvent _makeVideo({String id = 'vid1', String? videoUrl}) => VideoEvent(
 const _hash =
     'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 const _rawUrl = 'https://media.divine.video/$_hash';
+const _cdnRawUrl = 'https://cdn.divine.video/$_hash';
+const _queryRawUrl = 'https://media.divine.video/$_hash?download=1';
 const _hlsUrl = 'https://media.divine.video/$_hash/hls/master.m3u8';
 
 void main() {
@@ -63,13 +65,20 @@ void main() {
     });
 
     group('when URL is a canonical HLS URL', () {
-      test(
-        'returns [hlsUrl, rawUrl] deduplicated when originalUrl equals hlsUrl',
-        () {
-          final video = _makeVideo(videoUrl: _hlsUrl);
-          expect(resolvePlaybackSources(video), equals([_hlsUrl, _rawUrl]));
-        },
-      );
+      test('does not add the raw blob as a fallback', () {
+        final video = _makeVideo(videoUrl: _hlsUrl);
+        expect(resolvePlaybackSources(video), equals([_hlsUrl]));
+      });
+
+      test('drops a raw original when the resolver selects HLS', () {
+        final video = _makeVideo(videoUrl: _queryRawUrl);
+        final result = resolvePlaybackSources(
+          video,
+          urlResolver: (_) => _hlsUrl,
+        );
+
+        expect(result, equals([_hlsUrl]));
+      });
     });
 
     group('when URL is the raw blob URL', () {
@@ -88,30 +97,57 @@ void main() {
         );
         expect(result, equals([_rawUrl, _hlsUrl, otherOriginal]));
       });
+
+      test('keeps a query-bearing raw URL when it is selected', () {
+        final video = _makeVideo(videoUrl: _queryRawUrl);
+
+        expect(resolvePlaybackSources(video), equals([_queryRawUrl, _hlsUrl]));
+      });
     });
 
     group('when URL is a quality-specific Divine variant', () {
       const variantUrl = 'https://media.divine.video/$_hash/720p.mp4';
 
       test(
-        'returns [variantUrl, rawUrl, hlsUrl, originalUrl] deduplicated',
+        'returns [variantUrl, hlsUrl, originalUrl] without raw fallback',
         () {
           final video = _makeVideo(videoUrl: variantUrl);
-          expect(
-            resolvePlaybackSources(video),
-            equals([variantUrl, _rawUrl, _hlsUrl]),
-          );
+          expect(resolvePlaybackSources(video), equals([variantUrl, _hlsUrl]));
         },
       );
 
-      test('leads with HLS while the derivative has a fresh failure', () {
+      test('drops a raw original when the resolver selects a variant', () {
+        final video = _makeVideo(videoUrl: _cdnRawUrl);
+        final result = resolvePlaybackSources(
+          video,
+          urlResolver: (_) => variantUrl,
+        );
+
+        expect(result, equals([variantUrl, _hlsUrl]));
+      });
+
+      test('drops an alternate-host raw original after a fresh failure', () {
+        final video = _makeVideo(videoUrl: _cdnRawUrl);
+        final cache = DerivativeFailureCache()
+          ..recordFailureForSource(variantUrl);
+
+        final result = resolvePlaybackSources(
+          video,
+          urlResolver: (_) => variantUrl,
+          derivativeFailureCache: cache,
+        );
+
+        expect(result, equals([_hlsUrl, variantUrl]));
+      });
+
+      test('leads with HLS without raw fallback after a fresh failure', () {
         final video = _makeVideo(videoUrl: variantUrl);
         final cache = DerivativeFailureCache()
           ..recordFailureForSource(variantUrl);
 
         expect(
           resolvePlaybackSources(video, derivativeFailureCache: cache),
-          equals([_hlsUrl, _rawUrl, variantUrl]),
+          equals([_hlsUrl, variantUrl]),
         );
       });
 
@@ -127,7 +163,7 @@ void main() {
 
         expect(
           resolvePlaybackSources(video, derivativeFailureCache: cache),
-          equals([variantUrl, _rawUrl, _hlsUrl]),
+          equals([variantUrl, _hlsUrl]),
         );
       });
     });

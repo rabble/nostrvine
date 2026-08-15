@@ -10,6 +10,7 @@ import 'package:infinite_video_feed/src/widgets/video_item.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
@@ -143,8 +144,9 @@ Widget _wrapFeed(InfiniteVideoFeed feed) => Directionality(
 void main() {
   late _MockMediaCacheManager cache;
 
-  setUp(() {
+  setUp(() async {
     cache = _MockMediaCacheManager();
+    await LogCaptureService().clearAllLogs();
     // Stub all cache checks to return null — nothing is cached in tests.
     when(() => cache.getCachedFileSync(any())).thenReturn(null);
     // Stub eviction (used when cache file is corrupt on failover).
@@ -1207,6 +1209,52 @@ void main() {
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
           await harness.dispose();
+        }
+      });
+
+      testWidgets('player init failure log includes the failing source', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+
+        const source = 'https://example.com/broken.mp4';
+
+        try {
+          harness.setClipsFailures[0] = <Exception>[
+            PlatformException(
+              code: 'COMPOSITION_ERROR',
+              message: 'parse failed',
+              details: const <String, Object?>{'errorCode': 'parse_error'},
+            ),
+          ];
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('init_log_source', videoUrl: source)],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          final logs = LogCaptureService().getRecentLogs(
+            minLevel: LogLevel.error,
+          );
+          expect(
+            logs.map((log) => log.message),
+            contains('Player init failed failedSource=$source'),
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+          await LogCaptureService().clearAllLogs();
         }
       });
 

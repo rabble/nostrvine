@@ -1129,6 +1129,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       // coverage:ignore-end
     }
 
+    String? lastFailedSource;
+    void rememberFailedSource(String source) {
+      lastFailedSource = source;
+    }
+
     try {
       await controller.initialize();
       if (!guardInitOwnership('initialize')) return;
@@ -1198,6 +1203,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             isLoadCurrent: ownsInit,
             maxPlaybackDuration: widget.maxPlaybackDuration,
             onFailoverSourceFailure: _derivativeFailures.recordFailureForSource,
+            onSourceLoadFailure: rememberFailedSource,
           );
           if (!guardInitOwnership('setSourceWithFallbacks(cache)')) return;
           _sources.register(index, playbackSources, openedSourceIdx);
@@ -1221,6 +1227,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           isLoadCurrent: ownsInit,
           maxPlaybackDuration: widget.maxPlaybackDuration,
           onFailoverSourceFailure: _derivativeFailures.recordFailureForSource,
+          onSourceLoadFailure: rememberFailedSource,
         );
         if (!guardInitOwnership('setSourceWithFallbacks(network)')) return;
         _sources.register(index, playbackSources, openedSourceIdx);
@@ -1251,9 +1258,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         guardInitOwnership('error handling');
         return;
       }
-      _log('Error loading index $index (${video.id}): $e');
+      final sourceDetail = lastFailedSource == null
+          ? ''
+          : ' failedSource=$lastFailedSource';
+      _log('Error loading index $index (${video.id}):$sourceDetail $e');
       Log.error(
-        'Player init failed',
+        'Player init failed$sourceDetail',
         name: _logName,
         category: LogCategory.video,
         error: e,
