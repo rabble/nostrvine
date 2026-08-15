@@ -142,6 +142,35 @@ void main() {
       },
     );
 
+    test('provider rebuild preserves an open bottom sheet overlay', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+
+      notifier.setBottomSheetOpen(true);
+      container.invalidate(overlayVisibilityProvider);
+
+      final state = container.read(overlayVisibilityProvider);
+      expect(state.isBottomSheetOpen, isTrue);
+      expect(state.hasVisibleOverlay, isTrue);
+      expect(state.shouldRetainPlayer, isTrue);
+    });
+
+    test('provider rebuild preserves a closed bottom sheet overlay', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+
+      notifier.setBottomSheetOpen(true);
+      notifier.setBottomSheetOpen(false);
+      container.invalidate(overlayVisibilityProvider);
+
+      final state = container.read(overlayVisibilityProvider);
+      expect(state.isBottomSheetOpen, isFalse);
+      expect(state.hasVisibleOverlay, isFalse);
+      expect(state.shouldRetainPlayer, isFalse);
+    });
+
     test('clearPageOpen resets explicit and owner-held page overlays', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);

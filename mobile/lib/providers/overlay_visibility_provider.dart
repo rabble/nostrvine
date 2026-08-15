@@ -48,10 +48,14 @@ class OverlayVisibilityState {
 class OverlayVisibility extends _$OverlayVisibility {
   final Set<Object> _pageOpenOwners = {};
   bool _pageOpenWithoutOwner = false;
+  bool _isBottomSheetOpen = false;
 
   @override
-  OverlayVisibilityState build() =>
-      OverlayVisibilityState(isPageOpen: _isPageOpen);
+  /// Rebuild from fields because keepAlive notifiers survive provider rebuilds.
+  OverlayVisibilityState build() => OverlayVisibilityState(
+    isPageOpen: _isPageOpen,
+    isBottomSheetOpen: _isBottomSheetOpen,
+  );
 
   /// Whether this notifier can still accept writes.
   bool get isMounted => ref.mounted;
@@ -97,14 +101,16 @@ class OverlayVisibility extends _$OverlayVisibility {
   /// Set bottom sheet overlay state.
   /// When a bottom sheet is open, only the current player is paused.
   void setBottomSheetOpen(bool isOpen) {
-    if (state.isBottomSheetOpen != isOpen) {
-      Log.info(
-        'BottomSheet ${isOpen ? 'opened' : 'closed'}',
-        name: 'OverlayVisibility',
-        category: LogCategory.ui,
-      );
-      state = state.copyWith(isBottomSheetOpen: isOpen);
+    if (_isBottomSheetOpen == isOpen) {
+      return;
     }
+    _isBottomSheetOpen = isOpen;
+    Log.info(
+      'BottomSheet ${isOpen ? 'opened' : 'closed'}',
+      name: 'OverlayVisibility',
+      category: LogCategory.ui,
+    );
+    state = state.copyWith(isBottomSheetOpen: isOpen);
   }
 }
 
