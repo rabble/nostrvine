@@ -123,5 +123,64 @@ void main() {
       );
       expect(attempts, equals(FunnelcakeApiClient.maxGetAttempts));
     });
+
+    test(
+      'spends the timeout budget across attempts, not per attempt',
+      () async {
+        var attempts = 0;
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async {
+          attempts++;
+          // Dead air, the shape that costs a full timeout to detect.
+          await Future<void>.delayed(const Duration(seconds: 5));
+          return http.Response(eventBody, 200);
+        });
+
+        final bounded = FunnelcakeApiClient(
+          baseUrl: baseUrl,
+          httpClient: httpClient,
+          timeout: const Duration(milliseconds: 200),
+          retryBaseDelay: Duration.zero,
+        );
+
+        final elapsed = Stopwatch()..start();
+        await expectLater(
+          bounded.getVideoEvent(eventId),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+        elapsed.stop();
+
+        // Retrying an attempt that already spent the whole budget would
+        // multiply every caller's worst case by maxGetAttempts. Callers await
+        // this inline — the login pre-fetch blocks the post-auth redirect on
+        // it — so the budget has to bound the call, not each attempt.
+        expect(attempts, equals(1));
+        expect(elapsed.elapsed, lessThan(const Duration(milliseconds: 600)));
+      },
+    );
+
+    test('still retries fast failures that leave budget behind', () async {
+      var attempts = 0;
+      when(
+        () => httpClient.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer((_) async {
+        attempts++;
+        if (attempts == 1) throw const SocketException('connection reset');
+        return http.Response(eventBody, 200);
+      });
+
+      final bounded = FunnelcakeApiClient(
+        baseUrl: baseUrl,
+        httpClient: httpClient,
+        timeout: const Duration(milliseconds: 200),
+        retryBaseDelay: Duration.zero,
+      );
+
+      // A reset socket costs almost nothing to detect, so bounding the total
+      // must not cost the retry that a flaky link actually needs.
+      expect(await bounded.getVideoEvent(eventId), isNotNull);
+      expect(attempts, equals(2));
+    });
   });
 }

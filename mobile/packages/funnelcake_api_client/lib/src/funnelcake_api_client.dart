@@ -51,7 +51,9 @@ class FunnelcakeApiClient {
   /// [baseUrl] is the base URL for the Funnelcake API
   /// (e.g., 'https://api.example.com').
   /// [httpClient] is an optional HTTP client for making requests.
-  /// [timeout] is the request timeout duration (defaults to 15 seconds).
+  /// [timeout] bounds a whole call, not a single attempt: a GET spends it
+  /// across every retry and backoff wait, so retrying never multiplies a
+  /// caller's worst case (defaults to 15 seconds).
   /// [retryBaseDelay] seeds the backoff between GET retries; pass
   /// [Duration.zero] in tests to keep suites fast.
   FunnelcakeApiClient({
@@ -150,7 +152,20 @@ class FunnelcakeApiClient {
   /// (429, 5xx). A definitive answer — including 404 — is returned on the
   /// first attempt, because absence is information and must not be
   /// confused with an unreachable server.
+  ///
+  /// [_timeout] bounds the whole call, not one attempt: every attempt and
+  /// backoff wait draws from the same budget. A caller's worst case is
+  /// therefore unchanged by retrying — which matters because callers await
+  /// this inline (the login pre-fetch blocks the post-auth redirect on it),
+  /// and a per-attempt bound would have multiplied that stall by
+  /// [maxGetAttempts]. The trade is that a request which burns the entire
+  /// budget in one attempt is not retried; the fast failures a flaky link
+  /// actually produces — reset sockets, refused connections, 5xx — leave
+  /// almost the whole budget intact and still get every attempt.
   Future<http.Response> _get(Uri uri) async {
+    final elapsed = Stopwatch()..start();
+    Duration remaining() => _timeout - elapsed.elapsed;
+
     var attempt = 0;
     while (true) {
       attempt++;
@@ -163,22 +178,27 @@ class FunnelcakeApiClient {
                 'User-Agent': 'OpenVine-Mobile/1.0',
               },
             )
-            .timeout(_timeout);
+            .timeout(remaining());
 
-        if (attempt < maxGetAttempts &&
+        if (_canRetry(attempt, remaining()) &&
             _isRetryableStatus(response.statusCode)) {
-          await _awaitRetryDelay(attempt);
+          await _awaitRetryDelay(attempt, remaining());
           continue;
         }
         return response;
       } on Object {
         // Nothing above constructs a FunnelcakeException, so any throw here
         // is transport-level and worth another attempt.
-        if (attempt >= maxGetAttempts) rethrow;
-        await _awaitRetryDelay(attempt);
+        if (!_canRetry(attempt, remaining())) rethrow;
+        await _awaitRetryDelay(attempt, remaining());
       }
     }
   }
+
+  /// Whether another GET attempt is allowed after [attempt] failed, with
+  /// [remaining] left of the call's timeout budget.
+  bool _canRetry(int attempt, Duration remaining) =>
+      attempt < maxGetAttempts && remaining > Duration.zero;
 
   /// Whether [statusCode] represents a failure the server may recover from.
   bool _isRetryableStatus(int statusCode) =>
@@ -186,10 +206,17 @@ class FunnelcakeApiClient {
 
   /// Waits out the backoff for [attempt], using full jitter so clients that
   /// lost the same flaky link do not retry in lockstep when it returns.
-  Future<void> _awaitRetryDelay(int attempt) async {
+  ///
+  /// Never waits longer than [remaining], so backoff cannot overrun the
+  /// call's timeout budget on its own.
+  Future<void> _awaitRetryDelay(int attempt, Duration remaining) async {
     if (_retryBaseDelay == Duration.zero) return;
     final exponential = _retryBaseDelay.inMilliseconds * (1 << (attempt - 1));
-    final capped = math.min(exponential, _maxRetryDelay.inMilliseconds);
+    final capped = math.min(
+      math.min(exponential, _maxRetryDelay.inMilliseconds),
+      remaining.inMilliseconds,
+    );
+    if (capped <= 0) return;
     await Future<void>.delayed(
       Duration(milliseconds: _retryJitter.nextInt(capped + 1)),
     );
