@@ -194,7 +194,7 @@ void main() {
       expect(viewEndEvents.single.userId, equals('viewer_pubkey'));
       expect(
         viewEndEvents.single.watchDuration,
-        const Duration(milliseconds: 1100),
+        const Duration(seconds: 1),
       );
       expect(viewEndEvents.single.totalDuration, const Duration(seconds: 5));
       expect(viewEndEvents.single.trafficSource, ViewTrafficSource.home);
@@ -355,10 +355,10 @@ void main() {
 
       final viewEndEvents = _viewEndEvents(analyticsService);
       expect(viewEndEvents, hasLength(1));
-      expect(
-        viewEndEvents.single.watchDuration,
-        const Duration(milliseconds: 1200),
-      );
+      // Whole seconds: the wire format carries seconds, so the tracker
+      // truncates once and keeps the 200ms remainder for the next segment
+      // rather than letting every segment drop its own tail.
+      expect(viewEndEvents.single.watchDuration, const Duration(seconds: 1));
       expect(seenVideosService.records, hasLength(1));
 
       await controller.close();
@@ -740,6 +740,53 @@ void main() {
         // the larger of wraps and watch-ratio *per segment* instead of
         // splitting the cumulative figure reports 2.5 + 3.0 = 5.5.
         expect(total, closeTo(5, 0.001));
+
+        isActive.dispose();
+        isFeedVisible.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
+
+    testWidgets(
+      'sub-second remainders carry across flushes instead of being dropped',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final isFeedVisible = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(isPlaying: true);
+
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            isFeedVisible: isFeedVisible,
+            clock: () => now,
+          ),
+        );
+
+        // Four 1.5s stretches, each interrupted by a cover: 6s watched.
+        for (var i = 0; i < 4; i++) {
+          now = now.add(const Duration(milliseconds: 1500));
+          isFeedVisible.value = false;
+          await tester.pump();
+          isFeedVisible.value = true;
+          await tester.pump();
+        }
+
+        final reported = _viewEndEvents(analyticsService).fold<int>(
+          0,
+          (sum, event) => sum + (event.watchDuration?.inSeconds ?? 0),
+        );
+
+        // The wire carries whole seconds. Truncating each 1.5s segment on its
+        // own reports 1+1+1+1 = 4s of the 6s actually watched; carrying the
+        // remainder reports the full 6.
+        expect(reported, equals(6));
 
         isActive.dispose();
         isFeedVisible.dispose();

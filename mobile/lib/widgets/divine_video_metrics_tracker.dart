@@ -80,7 +80,12 @@ class _DivineVideoMetricsTrackerState
   /// switch) flushes one segment without ending the session — nothing
   /// accumulated after the interruption is lost.
   Duration _watchTotal = Duration.zero;
-  Duration _watchFlushed = Duration.zero;
+
+  /// Whole seconds already reported across this session's end segments.
+  /// The wire format is whole seconds, so the remainder has to carry across
+  /// flushes: truncating each segment independently would lose up to a
+  /// second *per interruption* and drop sub-second segments entirely.
+  int _watchSecondsReported = 0;
   double _wrapsTotal = 0;
 
   /// Cumulative loops already reported in an end segment, and the rounded
@@ -262,13 +267,16 @@ class _DivineVideoMetricsTrackerState
 
     if (!_hasStartedPlayback) return;
 
-    final deltaWatch = _watchTotal - _watchFlushed;
-    // Loops are derived from the session totals and only then split into a
-    // delta. Taking the per-segment max instead would double-credit at every
-    // flush seam: 30s of a 6s video split at 15s reports 2.5 + 3.0 = 5.5.
+    // Both figures are derived from the session totals and only then split
+    // into a delta. Taking a per-segment maximum instead would double-credit
+    // at every flush seam: 30s of a 6s video split at 15s would report
+    // 2.5 + 3.0 = 5.5 loops. Truncating each segment's seconds independently
+    // would lose the remainder at every seam instead of once per session.
+    final cumulativeSeconds = _watchTotal.inSeconds;
+    final deltaSeconds = cumulativeSeconds - _watchSecondsReported;
     final cumulativeLoops = _cumulativeLoops(totalDuration);
     final fractionalLoops = cumulativeLoops - _loopsFlushed;
-    if (deltaWatch <= Duration.zero && fractionalLoops <= 0) return;
+    if (deltaSeconds <= 0 && fractionalLoops <= 0) return;
 
     unawaited(
       _analyticsService
@@ -277,14 +285,14 @@ class _DivineVideoMetricsTrackerState
             userId: _authService.currentPublicKeyHex,
             source: 'mobile',
             eventType: 'view_end',
-            watchDuration: deltaWatch,
+            watchDuration: Duration(seconds: deltaSeconds),
             totalDuration: totalDuration,
             loopCount: fractionalLoops,
             completedVideo:
                 fractionalLoops >= 1 ||
                 (totalDuration != null &&
                     totalDuration > Duration.zero &&
-                    deltaWatch.inMilliseconds >=
+                    deltaSeconds * Duration.millisecondsPerSecond >=
                         totalDuration.inMilliseconds * 0.9),
             trafficSource: widget.trafficSource,
             sourceDetail: widget.sourceDetail,
@@ -298,7 +306,7 @@ class _DivineVideoMetricsTrackerState
           }),
     );
 
-    _watchFlushed = _watchTotal;
+    _watchSecondsReported = cumulativeSeconds;
     _loopsFlushed = cumulativeLoops;
   }
 
@@ -362,7 +370,7 @@ class _DivineVideoMetricsTrackerState
     _playIntervalStartedAt = null;
     _isPlaying = false;
     _watchTotal = Duration.zero;
-    _watchFlushed = Duration.zero;
+    _watchSecondsReported = 0;
     _wrapsTotal = 0;
     _loopsFlushed = 0;
     _seenLoopsRecorded = 0;
