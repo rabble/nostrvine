@@ -33,6 +33,10 @@ enum C2paSigningFailureReason {
   tls,
   network,
 
+  /// The remote signer returned a signature or credential the C2PA library
+  /// could not validate.
+  signingCredential,
+
   /// This build opted out of C2PA signing; nothing was attempted.
   disabled,
   other,
@@ -180,7 +184,11 @@ class C2paSigningService {
           category: LogCategory.video,
         );
       }
-      Log.info('prepared C2PA manifest json: ${manifestResult.manifestJson}');
+      Log.info(
+        'Prepared C2PA manifest for $filename',
+        name: 'C2paSigningService',
+        category: LogCategory.video,
+      );
 
       // Create signer for RemoteSigning against proofsign
       final signer = await _createSigner();
@@ -215,15 +223,16 @@ class C2paSigningService {
         );
       }
 
-      // Log.debug("replacing original video $videoPath with signed file $signedFile");
-      inputFile.renameSync('${inputFile.path}.old');
-      // Log.debug("original file renamed: ${iFileNew.path} ");
       final sFileNew = signedFile.renameSync(inputFile.path);
-      Log.debug('signed file renamed: ${sFileNew.path} ');
+      Log.debug(
+        'Signed file renamed: ${sFileNew.path}',
+        name: 'C2paSigningService',
+        category: LogCategory.video,
+      );
 
       final signedSize = await sFileNew.length();
       Log.info(
-        'C2PA signing complete: $sFileNew (${signedSize ~/ 1024} KB)',
+        'C2PA signing complete: ${sFileNew.path} (${signedSize ~/ 1024} KB)',
         name: 'C2paSigningService',
         category: LogCategory.video,
       );
@@ -400,6 +409,15 @@ class C2paSigningService {
     };
 
     if (_containsAny(message, const [
+      'signature invalid',
+      'invalid signature',
+      'signature verification',
+      'credential',
+    ])) {
+      return C2paSigningFailureReason.signingCredential;
+    }
+
+    if (_containsAny(message, const [
       'tls',
       'ssl',
       'secure connection',
@@ -484,11 +502,8 @@ class C2paSigningService {
 
   /// Creates a signer for C2PA operations.
   ///
-  /// TODO: Replace with proper key management:
-  /// - Use HardwareSigner for Secure Enclave (iOS) / StrongBox (Android)x
-  /// - Generate per-user keys during onboarding
-  /// - Store certificates securely
-  /// - Support user-provided certificates via enrollment API
+  /// Always a [RemoteSigner]: #2161 deleted the local `HardwareSigner`
+  /// branch in favour of the authenticated ProofSign server.
   Future<C2paSigner> _createSigner() async {
     var args = '?platform=';
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {

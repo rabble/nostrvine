@@ -94,6 +94,17 @@ void main() {
         expect(reason, C2paSigningFailureReason.network);
       });
 
+      test('classifies COSE signature failures as signing credentials', () {
+        final reason = C2paSigningService.classifyFailureReason(
+          PlatformException(
+            code: 'ERROR',
+            message: 'Signature: internal error (COSE signature invalid)',
+          ),
+        );
+
+        expect(reason, C2paSigningFailureReason.signingCredential);
+      });
+
       test('returns typed failure reason when remote signing throws', () async {
         final video = writeFile('video.mp4', const [0, 1, 2, 3]);
         final failingService = C2paSigningService(
@@ -155,9 +166,7 @@ void main() {
           final orphans = tempDir
               .listSync()
               .whereType<File>()
-              .where(
-                (f) => f.uri.pathSegments.last.startsWith('c2pa_signed_'),
-              )
+              .where((f) => f.uri.pathSegments.last.startsWith('c2pa_signed_'))
               .toList();
           expect(
             orphans,
@@ -170,94 +179,113 @@ void main() {
       );
     });
 
-    group('resignDerived', () {
+    group('signVideo', () {
       test(
-        'skips re-signing and leaves the file untouched when the source '
-        'carries no manifest',
+        'replaces the original in place and leaves nothing else behind',
         () async {
-          when(
-            () => mockC2pa.readManifestFromFile(any()),
-          ).thenAnswer((_) async => const ManifestStoreInfo());
-
-          final output = writeFile('out.mp4', const [1, 2, 3]);
-          final source = writeFile('src.mp4', const [4, 5, 6]);
-
-          final result = await service.resignDerived(
-            outputPath: output.path,
-            sourcePath: source.path,
-            action: C2paEditActions.edited,
+          final video = writeFile('video.mp4', const [0, 1, 2, 3]);
+          final service = C2paSigningService(
+            c2pa: _WritingC2pa(const [7, 8, 9, 10, 11]),
           );
 
-          expect(result.success, isFalse);
-          verifyNever(() => mockC2pa.createBuilder(any()));
-          expect(output.readAsBytesSync(), equals([1, 2, 3]));
-        },
-      );
-
-      test(
-        'carries the source manifest forward: parentOf ingredient, edit '
-        'action, and writes the signed bytes back in place',
-        () async {
-          when(() => mockC2pa.readManifestFromFile(any())).thenAnswer(
-            (_) async => const ManifestStoreInfo(activeManifest: 'urn:c2pa:x'),
-          );
-
-          final builder = _MockManifestBuilder();
-          when(
-            () => mockC2pa.createBuilder(any()),
-          ).thenAnswer((_) async => builder);
-          when(
-            () => builder.addIngredient(
-              data: any(named: 'data'),
-              mimeType: any(named: 'mimeType'),
-              config: any(named: 'config'),
-            ),
-          ).thenAnswer((_) async {});
-          final signedBytes = Uint8List.fromList(const [9, 9, 9, 9, 9]);
-          when(
-            () => builder.sign(
-              sourceData: any(named: 'sourceData'),
-              mimeType: any(named: 'mimeType'),
-              signer: any(named: 'signer'),
-            ),
-          ).thenAnswer(
-            (_) async =>
-                BuilderSignResult(signedData: signedBytes, manifestSize: 5),
-          );
-
-          final output = writeFile('out.mp4', const [1, 2, 3]);
-          final source = writeFile('src.mp4', const [4, 5, 6]);
-
-          final result = await service.resignDerived(
-            outputPath: output.path,
-            sourcePath: source.path,
-            action: C2paEditActions.edited,
-          );
+          final result = await service.signVideo(videoPath: video.path);
 
           expect(result.success, isTrue);
-
-          final ingredientConfig =
-              verify(
-                    () => builder.addIngredient(
-                      data: any(named: 'data'),
-                      mimeType: any(named: 'mimeType'),
-                      config: captureAny(named: 'config'),
-                    ),
-                  ).captured.single
-                  as IngredientConfig;
-          expect(ingredientConfig.relationship, Relationship.parentOf);
-
-          final recordedAction =
-              verify(() => builder.addAction(captureAny())).captured.single
-                  as ActionConfig;
-          // Literal token: pins the protocol surface, not just the constant.
-          expect(recordedAction.action, 'c2pa.edited');
-
-          verify(() => builder.setIntent(ManifestIntent.edit)).called(1);
-          verify(builder.dispose).called(1);
-          expect(output.readAsBytesSync(), equals(signedBytes));
+          expect(result.signedFilePath, video.path);
+          expect(video.readAsBytesSync(), equals([7, 8, 9, 10, 11]));
+          // No `.old` original, no orphaned `c2pa_signed_*` temp file.
+          expect(
+            tempDir.listSync().whereType<File>().map(
+              (file) => file.uri.pathSegments.last,
+            ),
+            equals(['video.mp4']),
+          );
         },
       );
+    });
+
+    group('resignDerived', () {
+      test('skips re-signing and leaves the file untouched when the source '
+          'carries no manifest', () async {
+        when(
+          () => mockC2pa.readManifestFromFile(any()),
+        ).thenAnswer((_) async => const ManifestStoreInfo());
+
+        final output = writeFile('out.mp4', const [1, 2, 3]);
+        final source = writeFile('src.mp4', const [4, 5, 6]);
+
+        final result = await service.resignDerived(
+          outputPath: output.path,
+          sourcePath: source.path,
+          action: C2paEditActions.edited,
+        );
+
+        expect(result.success, isFalse);
+        verifyNever(() => mockC2pa.createBuilder(any()));
+        expect(output.readAsBytesSync(), equals([1, 2, 3]));
+      });
+
+      test('carries the source manifest forward: parentOf ingredient, edit '
+          'action, and writes the signed bytes back in place', () async {
+        when(() => mockC2pa.readManifestFromFile(any())).thenAnswer(
+          (_) async => const ManifestStoreInfo(activeManifest: 'urn:c2pa:x'),
+        );
+
+        final builder = _MockManifestBuilder();
+        when(
+          () => mockC2pa.createBuilder(any()),
+        ).thenAnswer((_) async => builder);
+        when(
+          () => builder.addIngredient(
+            data: any(named: 'data'),
+            mimeType: any(named: 'mimeType'),
+            config: any(named: 'config'),
+          ),
+        ).thenAnswer((_) async {});
+        final signedBytes = Uint8List.fromList(const [9, 9, 9, 9, 9]);
+        when(
+          () => builder.sign(
+            sourceData: any(named: 'sourceData'),
+            mimeType: any(named: 'mimeType'),
+            signer: any(named: 'signer'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              BuilderSignResult(signedData: signedBytes, manifestSize: 5),
+        );
+
+        final output = writeFile('out.mp4', const [1, 2, 3]);
+        final source = writeFile('src.mp4', const [4, 5, 6]);
+
+        final result = await service.resignDerived(
+          outputPath: output.path,
+          sourcePath: source.path,
+          action: C2paEditActions.edited,
+        );
+
+        expect(result.success, isTrue);
+
+        final ingredientConfig =
+            verify(
+                  () => builder.addIngredient(
+                    data: any(named: 'data'),
+                    mimeType: any(named: 'mimeType'),
+                    config: captureAny(named: 'config'),
+                  ),
+                ).captured.single
+                as IngredientConfig;
+        expect(ingredientConfig.relationship, Relationship.parentOf);
+
+        final recordedAction =
+            verify(() => builder.addAction(captureAny())).captured.single
+                as ActionConfig;
+        // Literal token: pins the protocol surface, not just the constant.
+        expect(recordedAction.action, 'c2pa.edited');
+
+        verify(() => builder.setIntent(ManifestIntent.edit)).called(1);
+        verify(builder.dispose).called(1);
+        expect(output.readAsBytesSync(), equals(signedBytes));
+      });
 
       test(
         'returns failure without signing when the output does not exist',
@@ -322,5 +350,21 @@ class _SlowWritingC2pa extends C2pa {
   }) async {
     await Future<void>.delayed(delay);
     File(destPath).writeAsBytesSync(const [7, 7, 7]);
+  }
+}
+
+class _WritingC2pa extends C2pa {
+  _WritingC2pa(this.bytes);
+
+  final List<int> bytes;
+
+  @override
+  Future<void> signFile({
+    required String sourcePath,
+    required String destPath,
+    required String manifestJson,
+    required C2paSigner signer,
+  }) async {
+    File(destPath).writeAsBytesSync(bytes);
   }
 }
