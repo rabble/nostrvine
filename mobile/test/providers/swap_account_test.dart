@@ -208,16 +208,113 @@ void main() {
       );
     });
 
-    test('preserves a non-profile route that carries the leaving npub', () {
-      // Two segments, so this reaches the identity clause that `/settings`
-      // exits before — it pins the first-segment guard, not the length guard.
+    test('retargets the leaving account followers route', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/followers/$leavingNpub',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/followers/$targetNpub',
+      );
+    });
+
+    test('retargets the leaving account following route', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/following/$leavingNpub',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/following/$targetNpub',
+      );
+    });
+
+    test('retargets the leaving account profile-view route', () {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/profile-view/$leavingNpub',
           currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
-        '/profile-view/$leavingNpub',
+        '/profile-view/$targetNpub',
+      );
+    });
+
+    test('retargets followers route with relative own-account identifier', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/followers/me',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/followers/$targetNpub',
+      );
+    });
+
+    test('retargets following route with bare hex identifier', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/following/$leavingHex',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/following/$targetNpub',
+      );
+    });
+
+    test('retargets profile-view route with nprofile identifier', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile-view/$leavingNprofile',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile-view/$targetNpub',
+      );
+    });
+
+    test('preserves followers route for another user', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/followers/$strangerNpub',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/followers/$strangerNpub',
+      );
+    });
+
+    test('preserves following route for another user', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/following/$strangerNpub',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/following/$strangerNpub',
+      );
+    });
+
+    test('preserves profile-view route for another user', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile-view/$strangerNpub',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile-view/$strangerNpub',
+      );
+    });
+
+    test('retargets followers route and preserves nested segments', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/followers/$leavingNpub/page/2?sort=recent#top',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/followers/$targetNpub/page/2?sort=recent#top',
       );
     });
 
