@@ -1211,16 +1211,19 @@ void main() {
             ),
           ).thenAnswer((invocation) async {
             final limit = invocation.namedArguments[#limit] as int;
-            return _recentPage([
-              for (var i = 0; i < limit; i++)
-                _createVideoStats(
-                  id: 'v$i',
-                  pubkey: 'p$i',
-                  dTag: 'd$i',
-                  videoUrl: 'https://example.com/v$i.mp4',
-                  createdAt: 1704060000 - i,
-                ),
-            ], hasMore: false);
+            return _recentPage(
+              [
+                for (var i = 0; i < limit; i++)
+                  _createVideoStats(
+                    id: 'v$i',
+                    pubkey: 'p$i',
+                    dTag: 'd$i',
+                    videoUrl: 'https://example.com/v$i.mp4',
+                    createdAt: 1704060000 - i,
+                  ),
+              ],
+              hasMore: false,
+            );
           });
 
           final page = await repoWithCache.getNewVideos(limit: 3);
