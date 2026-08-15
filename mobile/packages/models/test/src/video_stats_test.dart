@@ -1427,6 +1427,28 @@ void main() {
     });
 
     group('toVideoEvent', () {
+      test('preserves raw created_at when published_at controls display', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000100,
+            'kind': 34236,
+            'content': 'Test',
+            'tags': [
+              ['d', 'video-1'],
+              ['published_at', '1700000000'],
+              ['url', 'https://example.com/video.mp4'],
+            ],
+          },
+        });
+
+        final video = stats.toVideoEvent();
+
+        expect(video.createdAt, 1700000000);
+        expect(video.nostrCreatedAt, 1700000100);
+      });
+
       test('carries the event kind through to the VideoEvent', () {
         final stats = VideoStats.fromJson(const {
           'event': {

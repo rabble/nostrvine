@@ -578,6 +578,7 @@ class VideoStats {
       id: id,
       pubkey: pubkey,
       createdAt: effectiveTimestamp,
+      eventCreatedAt: createdAt.millisecondsSinceEpoch ~/ 1000,
       content: description ?? '',
       timestamp: DateTime.fromMillisecondsSinceEpoch(
         effectiveTimestamp * 1000,
