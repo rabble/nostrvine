@@ -2086,9 +2086,6 @@ class RelayPool {
 
       final sendStartedWhileConnecting =
           relay.relayStatus.connected == ClientConnected.connecting;
-      final shouldTrackAttempt =
-          sendStartedWhileConnecting ||
-          relay.relayStatus.connected == ClientConnected.connected;
       try {
         // Check if relay requires authentication
         if (relay.relayStatus.alwaysAuth && !relay.relayStatus.authed) {
@@ -2124,11 +2121,10 @@ class RelayPool {
                     return false;
                   },
                 );
-            if ((result ||
-                    timedOut ||
-                    sendStartedWhileConnecting ||
-                    deadlineExpired()) &&
-                shouldTrackAttempt) {
+            if (result ||
+                timedOut ||
+                sendStartedWhileConnecting ||
+                deadlineExpired()) {
               attemptedRelayUrls.add(relay.url);
             }
             if (result) {
@@ -2138,9 +2134,7 @@ class RelayPool {
             log('🔐 Queueing message for authentication: ${message[0]}');
             relay.pendingAuthedMessages.add(message);
             sentTo.add(relay.url);
-            if (shouldTrackAttempt) {
-              attemptedRelayUrls.add(relay.url);
-            }
+            attemptedRelayUrls.add(relay.url);
           }
           log(
             '🔐 Pending authed messages count: ${relay.pendingAuthedMessages.length}',
@@ -2173,11 +2167,10 @@ class RelayPool {
                   return false;
                 },
               );
-          if ((result ||
-                  timedOut ||
-                  sendStartedWhileConnecting ||
-                  deadlineExpired()) &&
-              shouldTrackAttempt) {
+          if (result ||
+              timedOut ||
+              sendStartedWhileConnecting ||
+              deadlineExpired()) {
             attemptedRelayUrls.add(relay.url);
           }
           if (result) {
@@ -2185,7 +2178,7 @@ class RelayPool {
           }
         }
       } catch (err) {
-        if (shouldTrackAttempt) {
+        if (sendStartedWhileConnecting) {
           attemptedRelayUrls.add(relay.url);
         }
         log(err.toString());
