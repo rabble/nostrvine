@@ -180,13 +180,11 @@ class VideoRecorderView extends ConsumerStatefulWidget {
 
 class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     with WidgetsBindingObserver, CodecHeavySurfaceGuard {
-  static int _overlayVisibilityOwnerGeneration = 0;
-
   ProviderSubscription<AudioEvent?>? _soundSubscription;
   OverlayVisibility? _overlayVisibilityNotifier;
   late final CreationAnalyticsTracker _creationAnalyticsTracker;
   VideoRecorderMode? _lastRecorderMode;
-  int? _overlayVisibilityOwnerToken;
+  final Object _overlayVisibilityOwner = Object();
   bool _overlayVisibilityPageOpenAsserted = false;
 
   @override
@@ -268,9 +266,11 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
   void _pauseBackgroundPlayback() {
     if (_overlayVisibilityPageOpenAsserted) return;
     _overlayVisibilityNotifier = ref.read(overlayVisibilityProvider.notifier);
-    _overlayVisibilityOwnerToken = ++_overlayVisibilityOwnerGeneration;
     _overlayVisibilityPageOpenAsserted = true;
-    _overlayVisibilityNotifier!.setPageOpen(true);
+    _overlayVisibilityNotifier!.setPageOpenForOwner(
+      _overlayVisibilityOwner,
+      isOpen: true,
+    );
     Log.info(
       '⏸️ Paused background playback for camera',
       name: 'VideoRecorderScreen',
@@ -280,19 +280,15 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
 
   void _releaseBackgroundPlaybackAfterDispose() {
     final notifier = _overlayVisibilityNotifier;
-    final token = _overlayVisibilityOwnerToken;
-    if (!_overlayVisibilityPageOpenAsserted ||
-        notifier == null ||
-        token == null) {
+    if (!_overlayVisibilityPageOpenAsserted || notifier == null) {
       return;
     }
     _overlayVisibilityPageOpenAsserted = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_overlayVisibilityOwnerGeneration != token) return;
       if (!notifier.isMounted) return;
-      notifier.setPageOpen(false);
+      notifier.setPageOpenForOwner(_overlayVisibilityOwner, isOpen: false);
       Log.info(
-        '▶️ Resumed background playback after camera close',
+        '▶️ Released camera background playback hold',
         name: 'VideoRecorderScreen',
         category: .video,
       );

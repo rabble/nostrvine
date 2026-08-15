@@ -46,6 +46,9 @@ class OverlayVisibilityState {
 /// Notifier for managing overlay visibility state
 @Riverpod(keepAlive: true)
 class OverlayVisibility extends _$OverlayVisibility {
+  final Set<Object> _pageOpenOwners = {};
+  bool _pageOpenWithoutOwner = false;
+
   @override
   OverlayVisibilityState build() => const OverlayVisibilityState();
 
@@ -55,6 +58,22 @@ class OverlayVisibility extends _$OverlayVisibility {
   /// Set page overlay state (full-screen overlays like settings).
   /// When a page is open, all video players will be released.
   void setPageOpen(bool isOpen) {
+    _pageOpenWithoutOwner = isOpen;
+    _updatePageOpen();
+  }
+
+  /// Set page overlay state for one independently mounted owner.
+  void setPageOpenForOwner(Object owner, {required bool isOpen}) {
+    if (isOpen) {
+      _pageOpenOwners.add(owner);
+    } else {
+      _pageOpenOwners.remove(owner);
+    }
+    _updatePageOpen();
+  }
+
+  void _updatePageOpen() {
+    final isOpen = _pageOpenWithoutOwner || _pageOpenOwners.isNotEmpty;
     if (state.isPageOpen != isOpen) {
       Log.info(
         'Page ${isOpen ? 'opened' : 'closed'}',

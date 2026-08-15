@@ -6,6 +6,7 @@ import 'dart:core';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -360,9 +361,13 @@ void main() {
       testWidgets('sets page overlay while mounted and clears it after '
           'dispose', (tester) async {
         final pageOpenChanges = <bool>[];
+        final notificationPhases = <SchedulerPhase>[];
         final subscription = container.listen(
           overlayVisibilityProvider,
-          (_, next) => pageOpenChanges.add(next.isPageOpen),
+          (_, next) {
+            pageOpenChanges.add(next.isPageOpen);
+            notificationPhases.add(SchedulerBinding.instance.schedulerPhase);
+          },
         );
         addTearDown(subscription.close);
 
@@ -371,6 +376,7 @@ void main() {
 
         expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
         expect(pageOpenChanges, equals([true]));
+        expect(notificationPhases, equals([SchedulerPhase.postFrameCallbacks]));
 
         await tester.pumpWidget(
           const MaterialApp(
@@ -383,6 +389,10 @@ void main() {
 
         expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
         expect(pageOpenChanges, equals([true, false]));
+        expect(
+          notificationPhases,
+          everyElement(SchedulerPhase.postFrameCallbacks),
+        );
       });
 
       testWidgets('keeps page overlay open during same-frame recorder swap', (
@@ -415,6 +425,14 @@ void main() {
         expect(find.byKey(const ValueKey('second')), findsOneWidget);
         expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
         expect(pageOpenChanges, isNot(contains(false)));
+
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: Text('Other screen'))),
+        );
+        await tester.pump();
+
+        expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+        expect(pageOpenChanges, equals([false]));
       });
     });
 
@@ -570,6 +588,65 @@ void main() {
           isFalse,
         );
         expect(pageOpenChanges, equals([true, false]));
+      });
+
+      testWidgets('closing a nested recorder keeps the underlying owner open', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({'why_six_seconds_shown': true});
+        final prefs = await SharedPreferences.getInstance();
+        final routeContainer = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            ..._stubStorageOverrides(),
+          ],
+        );
+        addTearDown(routeContainer.dispose);
+
+        await tester.pumpWidget(
+          buildNavigatorTestWidget(
+            fromEditor: false,
+            overrides: const [],
+            container: routeContainer,
+          ),
+        );
+        await tester.tap(find.text('Open recorder'));
+        await tester.pumpAndSettle();
+
+        final firstRecorder = find.byType(VideoRecorderView);
+        Navigator.of(tester.element(firstRecorder)).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoRecorderBloc>.value(value: recorderBloc),
+                BlocProvider<CameraPermissionBloc>(
+                  create: (_) => MockCameraPermissionBloc(),
+                ),
+              ],
+              child: const VideoRecorderView(
+                key: ValueKey('nested-recorder'),
+                fromEditor: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          routeContainer.read(overlayVisibilityProvider).isPageOpen,
+          isTrue,
+        );
+
+        Navigator.of(
+          tester.element(find.byKey(const ValueKey('nested-recorder'))),
+        ).pop();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoRecorderView), findsOneWidget);
+        expect(
+          routeContainer.read(overlayVisibilityProvider).isPageOpen,
+          isTrue,
+        );
       });
 
       testWidgets('clears video publish state when standalone route pops', (

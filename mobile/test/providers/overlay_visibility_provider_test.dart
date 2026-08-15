@@ -69,6 +69,41 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
     });
 
+    test('page stays open until every independent owner releases it', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final firstOwner = Object();
+      final secondOwner = Object();
+
+      notifier.setPageOpenForOwner(firstOwner, isOpen: true);
+      notifier.setPageOpenForOwner(secondOwner, isOpen: true);
+      notifier.setPageOpenForOwner(firstOwner, isOpen: false);
+
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      notifier.setPageOpenForOwner(secondOwner, isOpen: false);
+
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
+    test('owner release preserves an explicitly opened page overlay', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final owner = Object();
+
+      notifier.setPageOpen(true);
+      notifier.setPageOpenForOwner(owner, isOpen: true);
+      notifier.setPageOpenForOwner(owner, isOpen: false);
+
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      notifier.setPageOpen(false);
+
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
     test('isMounted returns false after container disposal', () {
       final container = ProviderContainer();
       final notifier = container.read(overlayVisibilityProvider.notifier);
