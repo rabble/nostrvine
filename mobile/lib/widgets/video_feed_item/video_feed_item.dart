@@ -71,7 +71,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showTopGradient = false,
     this.topOffset = 8.0,
     this.onInteracted,
-    this.omitActionColumn = false,
   }) : previewData = null;
 
   const VideoOverlayActions.preview({
@@ -90,7 +89,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showTopGradient = false,
     this.topOffset = 8.0,
     this.onInteracted,
-    this.omitActionColumn = false,
   }) : video = null;
 
   final Widget? subtitleLayer;
@@ -102,12 +100,6 @@ class VideoOverlayActions extends ConsumerWidget {
   final String? contextTitle;
   final bool isFullscreen;
   final double topOffset;
-
-  /// When true, suppresses the right-side action column so the caller can
-  /// render it themselves alongside their own author info block (matches
-  /// the home feed pattern of placing both in a single shared Stack so
-  /// they cannot vertically drift apart).
-  final bool omitActionColumn;
 
   /// Displays the overlay in preview mode during video creation.
   /// When true, users can preview how their video will appear to other users
@@ -539,29 +531,25 @@ class VideoOverlayActions extends ConsumerWidget {
         // the trailing inset on the fullscreen app bar's More popover.
         // Other consumers (video metadata preview, video editor preview)
         // keep the legacy 16 px so their layouts are unaffected.
-        // Suppressed when [omitActionColumn] is true — the caller
-        // renders the column in their own Stack to keep it vertically
-        // aligned with their own author info block.
-        if (!omitActionColumn)
-          PositionedDirectional(
-            bottom: isFullscreen ? bottomOffset : bottomOffset - 6,
-            end: isFullscreen ? 12 : 16,
-            child: AnimatedOpacity(
-              opacity: isActive ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: IgnorePointer(
-                ignoring: false, // Action buttons SHOULD receive taps
-                child: video == null
-                    ? _PreviewOverlayActionColumn(onInteracted: onInteracted)
-                    : VideoOverlayActionColumn(
-                        video: video,
-                        isFullscreen: isFullscreen,
-                        isPreviewMode: isPreviewMode,
-                        onInteracted: onInteracted,
-                      ),
-              ),
+        PositionedDirectional(
+          bottom: isFullscreen ? bottomOffset : bottomOffset - 6,
+          end: isFullscreen ? 12 : 16,
+          child: AnimatedOpacity(
+            opacity: isActive ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: IgnorePointer(
+              ignoring: false, // Action buttons SHOULD receive taps
+              child: video == null
+                  ? _PreviewOverlayActionColumn(onInteracted: onInteracted)
+                  : VideoOverlayActionColumn(
+                      video: video,
+                      isFullscreen: isFullscreen,
+                      isPreviewMode: isPreviewMode,
+                      onInteracted: onInteracted,
+                    ),
             ),
           ),
+        ),
       ],
     );
   }
