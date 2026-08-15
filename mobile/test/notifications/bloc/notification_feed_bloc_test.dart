@@ -231,6 +231,12 @@ void main() {
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
           NotificationFeedState(isRefreshing: true),
+          // `loaded` lands with the data, before the mark-all write, so the
+          // cold-start spinner is not held open across the POST.
+          NotificationFeedState(
+            isRefreshing: true,
+            status: NotificationFeedStatus.loaded,
+          ),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
@@ -243,6 +249,40 @@ void main() {
         },
       );
 
+      test('drops the cold-start spinner before the mark-all write '
+          'settles', () async {
+        final markCompleter = Completer<void>();
+        when(
+          () => mockNotificationRepo.markAllAsRead(),
+        ).thenAnswer((_) => markCompleter.future);
+
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+
+        bloc.add(NotificationFeedStarted());
+        await Future<void>.delayed(Duration.zero);
+        // Empty inbox: the repository emits an empty page from inside
+        // `refreshFeed`, so `notifications` stays empty and the view falls
+        // through to the `status == initial` full-screen spinner branch.
+        snapshotController.add(NotificationPage.empty);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.notifications, isEmpty);
+        expect(
+          bloc.state.status,
+          NotificationFeedStatus.loaded,
+          reason:
+              'empty state renders instead of a spinner held open for the '
+              'duration of the mark-all POST',
+        );
+        expect(bloc.state.isRefreshing, isTrue);
+
+        markCompleter.complete();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.isRefreshing, isFalse);
+      });
+
       blocTest<NotificationFeedBloc, NotificationFeedState>(
         'clears the platform app badge after successful unfiltered open',
         build: () => createBloc(appBadgeClearer: mockAppBadgeClearer),
@@ -250,6 +290,10 @@ void main() {
         wait: const Duration(milliseconds: 1),
         expect: () => [
           NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(
+            isRefreshing: true,
+            status: NotificationFeedStatus.loaded,
+          ),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
@@ -291,6 +335,10 @@ void main() {
         wait: const Duration(milliseconds: 1),
         expect: () => [
           NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(
+            isRefreshing: true,
+            status: NotificationFeedStatus.loaded,
+          ),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         errors: () => [allOf(isA<Exception>(), isNot(isA<ReportableError>()))],
@@ -340,6 +388,10 @@ void main() {
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
           NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(
+            isRefreshing: true,
+            status: NotificationFeedStatus.loaded,
+          ),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         errors: () => [isA<Exception>()],
@@ -365,6 +417,10 @@ void main() {
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
           NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(
+            isRefreshing: true,
+            status: NotificationFeedStatus.loaded,
+          ),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         errors: () => [
@@ -714,6 +770,13 @@ void main() {
             status: NotificationFeedStatus.failure,
             isRefreshing: true,
           ),
+          // A retry dispatched from `_FailureBody` leaves `failure` as soon as
+          // the refresh succeeds, rather than holding the error screen up
+          // across the mark-all write.
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            isRefreshing: true,
+          ),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
@@ -739,9 +802,18 @@ void main() {
         bloc.add(NotificationFeedRefreshed());
         await Future<void>.delayed(Duration.zero);
 
+        // Refresh resolved, mark-all still pending: content is renderable
+        // (`loaded` dismisses the cold-start spinner) but the revalidation bar
+        // is still up, because this is the droppable handler's drop window.
         expect(
           states,
-          [NotificationFeedState(isRefreshing: true)],
+          [
+            NotificationFeedState(isRefreshing: true),
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              isRefreshing: true,
+            ),
+          ],
         );
 
         bloc.add(NotificationFeedRefreshed());
@@ -755,6 +827,10 @@ void main() {
           states,
           [
             NotificationFeedState(isRefreshing: true),
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              isRefreshing: true,
+            ),
             NotificationFeedState(status: NotificationFeedStatus.loaded),
           ],
         );
