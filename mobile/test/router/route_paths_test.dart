@@ -39,6 +39,7 @@ void main() {
       expect(RoutePaths.libraryDrafts, equals('/drafts'));
       expect(RoutePaths.likedVideos, equals('/liked-videos'));
       expect(RoutePaths.messageRequests, equals('/inbox/message-requests'));
+      expect(RoutePaths.minorAccountReview, equals('/account-review'));
       expect(
         RoutePaths.monetizationLinksSettings,
         equals('/settings/monetization-links'),
@@ -49,6 +50,7 @@ void main() {
       );
       expect(RoutePaths.nip05Settings, equals('/nostr-settings/nip05'));
       expect(RoutePaths.nip05SettingsSubpath, equals('nip05'));
+      expect(RoutePaths.nostrConnect, equals('/nostr-connect'));
       expect(RoutePaths.nostrSettings, equals('/nostr-settings'));
       expect(RoutePaths.notificationSettings, equals('/notification-settings'));
       expect(RoutePaths.notifications, equals('/notifications'));
