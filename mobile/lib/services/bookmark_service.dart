@@ -508,16 +508,14 @@ class BookmarkService {
 
   /// Add an item to global bookmarks.
   ///
-  /// **For tests only.** Production code should use
-  /// [toggleVideoInGlobalBookmarks] which handles reconciliation internally.
-  ///
   /// Reconciles with the relay first and refuses to publish if that fails, so
   /// a device whose cache is empty (fresh install, second device) cannot
   /// replace the user's list with a one-item one.
   ///
-  /// [alreadyReconciled] is an internal implementation detail and must not be
-  /// used from production code — it is exposed for testing flexibility only.
-  @visibleForTesting
+  /// Pass [alreadyReconciled] only when the caller has just run
+  /// [syncGlobalBookmarks] with `requireAuthoritative: true` and the extra
+  /// round trip would be redundant. Callers that have not just completed that
+  /// authoritative sync must leave it false so this method reconciles first.
   Future<bool> addToGlobalBookmarks(
     BookmarkItem item, {
     bool alreadyReconciled = false,
@@ -586,9 +584,10 @@ class BookmarkService {
   /// [addToGlobalBookmarks] — the republished list must be the user's real
   /// one minus [item], not this device's cache minus [item].
   ///
-  /// [alreadyReconciled] is an internal implementation detail and must not be
-  /// used from production code — it is exposed for testing flexibility only.
-  @visibleForTesting
+  /// Pass [alreadyReconciled] only when the caller has just run
+  /// [syncGlobalBookmarks] with `requireAuthoritative: true` and the extra
+  /// round trip would be redundant. Callers that have not just completed that
+  /// authoritative sync must leave it false so this method reconciles first.
   Future<bool> removeFromGlobalBookmarks(
     BookmarkItem item, {
     bool alreadyReconciled = false,
