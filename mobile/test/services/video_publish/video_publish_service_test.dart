@@ -265,6 +265,29 @@ void main() {
         );
       });
 
+      test('reports no d tag when the upload carried an empty one', () async {
+        // An empty videoId is as unusable as a missing one — it would route
+        // to `/video/` and share `divine.video/video/`. Reporting it as null
+        // is what makes the confirmation fall back to the snackbar.
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+          readyUpload: _createPendingUpload(
+            status: UploadStatus.readyToPublish,
+            videoId: '',
+          ),
+        );
+
+        final result = await service.publishVideo(draft: _createTestDraft());
+
+        expect(
+          result,
+          isA<PublishSuccess>().having((r) => r.stableId, 'stableId', isNull),
+        );
+      });
+
       test('holds the bar below 100% until the event lands', () async {
         // Arrange
         _setupSuccessfulPublish(

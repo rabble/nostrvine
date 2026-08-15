@@ -50,8 +50,9 @@ class PublishSuccess extends PublishResult {
   ///
   /// Identifies the video without a relay round-trip, so the post-publish
   /// confirmation can link to `/video/<stableId>` and build a share URL
-  /// while the event is still propagating. Null for an upload that carries
-  /// no `videoId`.
+  /// while the event is still propagating. Null for an upload whose
+  /// `videoId` is absent or empty — never the empty string, so a caller can
+  /// treat non-null as routable.
   final String? stableId;
 
   final List<CollaboratorInviteWarning> inviteWarnings;
@@ -459,8 +460,12 @@ class VideoPublishService {
       onProgressChanged(draftId: draft.id, progress: 1);
 
       Log.info('📝 Published successfully', category: .video);
+      // Empty is as unusable as absent: it would route to `/video/` and share
+      // `divine.video/video/`. Same guard _sendCollaboratorInvites applies to
+      // this field.
+      final videoId = pendingUpload.videoId;
       return PublishSuccess(
-        stableId: pendingUpload.videoId,
+        stableId: (videoId == null || videoId.isEmpty) ? null : videoId,
         inviteWarnings: inviteWarnings,
         audioReuseDegraded: audioReuseDegraded,
       );
