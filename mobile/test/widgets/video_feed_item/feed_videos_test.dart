@@ -155,6 +155,16 @@ const _testVideoId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
 const _testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
+const _viewerPubkey =
+    'f6789012345678901234567890abcdef123456789012345678901234a1b2c3d4e5';
+
+/// Signed-in viewer who is not the creator of [_makeVideo]'s video, so the
+/// non-own-video action slots (Report, Help classify) are rendered.
+MockAuthService _viewerAuthService() {
+  final auth = createMockAuthService();
+  when(() => auth.currentPublicKeyHex).thenReturn(_viewerPubkey);
+  return auth;
+}
 
 VideoEvent _makeVideo({
   String? id,
@@ -1064,7 +1074,7 @@ void main() {
     );
 
     testWidgets(
-      'is inserted into the action column when the flag is on',
+      'is not inserted while the label repository is not ready',
       (tester) async {
         final video = _makeVideo();
         final cubit = _MockVideoPlaybackStatusCubit()
@@ -1074,10 +1084,46 @@ void main() {
           tester,
           videos: [video],
           videoPlaybackStatusCubit: cubit,
+          authService: _viewerAuthService(),
           additionalOverrides: [
             isFeatureEnabledProvider(
               FeatureFlag.communityContentWarnings,
             ).overrideWithValue(true),
+            communityContentLabelRepositoryProvider.overrideWithValue(null),
+          ],
+        );
+        await tester.pump();
+
+        // Flag on but the signer-backed repository is still null: the button
+        // could only render a zero-size child, which still consumes a
+        // Column(spacing: 20) gap. The slot must stay out entirely (#7475).
+        expect(find.byType(HelpClassifyActionButton), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'is inserted into the action column when the action is available',
+      (tester) async {
+        final video = _makeVideo();
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) async => <String>{});
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+          authService: _viewerAuthService(),
+          additionalOverrides: [
+            isFeatureEnabledProvider(
+              FeatureFlag.communityContentWarnings,
+            ).overrideWithValue(true),
+            communityContentLabelRepositoryProvider.overrideWithValue(
+              repository,
+            ),
           ],
         );
         await tester.pump();

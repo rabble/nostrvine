@@ -10,12 +10,11 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/constants/text_scale_limits.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/community_content_label_provider.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/routes/route_extras.dart';
@@ -703,13 +702,12 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           ShareActionButton(video: video, onInteracted: onInteracted),
           if (!isOwnVideo) ...[
             ReportActionButton(video: video, onInteracted: onInteracted),
-            // Gate the slot itself so a default-off build inserts no child
-            // into Column(spacing: 20) — a hidden SizedBox.shrink would still
-            // add a permanent gap between Report and More. The button keeps its
-            // own defensive checks for the repository/pubkey readiness case.
-            if (ref.watch(
-              isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
-            ))
+            // Gate the slot itself so a build that cannot offer the action
+            // inserts no child into Column(spacing: 20) — a hidden
+            // SizedBox.shrink would still add a permanent gap between Report
+            // and More. The gate covers the kill-switch *and* repository /
+            // pubkey readiness; the button keeps the same checks defensively.
+            if (ref.watch(helpClassifyActionAvailableProvider))
               HelpClassifyActionButton(
                 video: video,
                 onInteracted: onInteracted,
