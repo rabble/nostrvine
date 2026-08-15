@@ -63,6 +63,12 @@ abstract class DmRepositoryReportableSites {
   static const String sendMessageOuterTransaction =
       'sendMessage.outerTransaction';
 
+  /// `sendGroupMessage`: parking one sibling's `outgoing_dms` row threw.
+  /// That recipient's publish is skipped so no untraceable wire copy goes
+  /// out; the siblings already parked keep their rows and their handles.
+  static const String sendGroupMessageEnqueueSibling =
+      'sendGroupMessage.enqueueSibling';
+
   /// `backfillHistoryIfNeeded`: the history drain hit a programming
   /// invariant failure while paging or processing recovered events.
   static const String historyDrainUnexpectedFailure =

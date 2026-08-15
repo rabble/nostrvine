@@ -15739,6 +15739,84 @@ void main() {
       );
 
       test(
+        'a sibling enqueue write failure never strands the rows already '
+        'parked ahead of it',
+        () async {
+          // `enqueue` swallows PK conflicts but still throws on a real write
+          // error — SQLite BUSY/LOCKED is reachable because
+          // OutgoingDmRetryService writes this table concurrently. Letting it
+          // escape would hand the caller a throw and no handle on the sibling
+          // already parked, whose only "retry" is then a fresh fan-out the
+          // receiver cannot collapse (#7316).
+          final enqueued = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((
+            invocation,
+          ) async {
+            final row = invocation.positionalArguments.first as OutgoingDm;
+            if (row.recipientPubkey == _validPubkeyC) {
+              throw StateError('database is locked');
+            }
+            enqueued.add(row);
+          });
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('all relays down'),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one sibling cannot be parked',
+          );
+
+          expect(enqueued, hasLength(1));
+          expect(results, hasLength(2));
+          expect(
+            results.first.queuedRumorId,
+            equals(enqueued.single.id),
+            reason:
+                'the sibling that did park must reach the caller with its row '
+                'handle, or a retry re-sends it as a second rumor',
+          );
+          // No row parked for C, so nothing can re-drive or retract it: its
+          // publish must be skipped rather than put an untraceable copy on the
+          // wire.
+          expect(results.last.success, isFalse);
+          expect(results.last.queuedRumorId, isNull);
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyC,
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+          expect(
+            reporterCalls.map((c) => c.site),
+            contains(
+              DmRepositoryReportableSites.sendGroupMessageEnqueueSibling,
+            ),
+          );
+        },
+      );
+
+      test(
         'queue is opt-in: when no OutgoingDmsDao is injected, '
         'sendGroupMessage falls back to the direct-write behaviour',
         () async {
