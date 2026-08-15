@@ -50,12 +50,13 @@ class OverlayVisibility extends _$OverlayVisibility {
   bool _pageOpenWithoutOwner = false;
 
   @override
-  OverlayVisibilityState build() => OverlayVisibilityState(
-    isPageOpen: _pageOpenWithoutOwner || _pageOpenOwners.isNotEmpty,
-  );
+  OverlayVisibilityState build() =>
+      OverlayVisibilityState(isPageOpen: _isPageOpen);
 
   /// Whether this notifier can still accept writes.
   bool get isMounted => ref.mounted;
+
+  bool get _isPageOpen => _pageOpenWithoutOwner || _pageOpenOwners.isNotEmpty;
 
   /// Sets page visibility for callers without an independent owner token.
   /// Owner-held pages remain open when this is set to false.
@@ -82,7 +83,7 @@ class OverlayVisibility extends _$OverlayVisibility {
   }
 
   void _updatePageOpen() {
-    final isOpen = _pageOpenWithoutOwner || _pageOpenOwners.isNotEmpty;
+    final isOpen = _isPageOpen;
     if (state.isPageOpen != isOpen) {
       Log.info(
         'Page ${isOpen ? 'opened' : 'closed'}',
