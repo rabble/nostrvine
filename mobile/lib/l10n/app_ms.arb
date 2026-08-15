@@ -3375,6 +3375,7 @@
       }
     }
   },
+  "dmSendNoRecipientMessage": "Kami tidak dapat mengenal pasti dengan siapa perbualan ini. Buka semula dari peti masuk anda.",
   "dmSendBlockedMessage": "Anda hanya boleh menghantar mesej kepada akaun rasmi Divine",
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."

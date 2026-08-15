@@ -2624,6 +2624,7 @@
     "libraryWebUnavailableHeadline": "La libreria è nell’app mobile",
     "notificationFollowBack": "Segui a tua volta",
     "profileSetupUploadStaged": "Caricata — tocca Salva per applicare",
+    "dmSendNoRecipientMessage": "Non siamo riusciti a capire con chi è questa conversazione. Riaprila dalla posta in arrivo.",
     "dmSendBlockedMessage": "Puoi scrivere solo agli account ufficiali Divine",
     "dmSendBlockedRetiredMessage": "Nessuno legge questa conversazione. Scrivi a Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Questa conversazione è chiusa.",

@@ -6214,6 +6214,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Nu am putut afla cu cine e această conversație. Deschide-o din nou din inbox.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Poți trimite mesaje doar conturilor oficiale Divine';
 

@@ -6117,6 +6117,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Non siamo riusciti a capire con chi è questa conversazione. Riaprila dalla posta in arrivo.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Puoi scrivere solo agli account ufficiali Divine';
 

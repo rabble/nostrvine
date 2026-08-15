@@ -2624,6 +2624,7 @@
     "libraryWebUnavailableHeadline": "Biblioteka jest w aplikacji mobilnej",
     "notificationFollowBack": "Zaobserwuj",
     "profileSetupUploadStaged": "Przesłano — dotknij Zapisz, aby zastosować",
+    "dmSendNoRecipientMessage": "Nie udało się ustalić, z kim jest ta rozmowa. Otwórz ją ponownie ze skrzynki odbiorczej.",
     "dmSendBlockedMessage": "Możesz pisać tylko do oficjalnych kont Divine",
     "dmSendBlockedRetiredMessage": "Nikt nie czyta tej rozmowy. Napisz do Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Ta rozmowa jest zamknięta.",

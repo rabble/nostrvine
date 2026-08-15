@@ -6085,6 +6085,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'We konden niet zien met wie dit gesprek is. Open het opnieuw vanuit je inbox.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Je kunt alleen officiële Divine-accounts een bericht sturen';
 

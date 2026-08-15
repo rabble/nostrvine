@@ -2623,6 +2623,7 @@
     "libraryWebUnavailableHeadline": "Perpustakaan ada di aplikasi seluler",
     "notificationFollowBack": "Ikuti balik",
     "profileSetupUploadStaged": "Diunggah — ketuk Simpan untuk menerapkan",
+    "dmSendNoRecipientMessage": "Kami tidak tahu percakapan ini dengan siapa. Buka lagi dari kotak masuk.",
     "dmSendBlockedMessage": "Kamu hanya bisa mengirim pesan ke akun resmi Divine",
     "dmSendBlockedRetiredMessage": "Tidak ada yang membaca percakapan ini. Kirim pesan ke Divine Moderation saja.",
     "dmRetiredThreadClosedTitle": "Percakapan ini sudah ditutup.",

@@ -10589,6 +10589,12 @@ abstract class AppLocalizations {
   /// **'Video posted, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}'**
   String videoPublishCollaboratorInviteWarning(int count);
 
+  /// SnackBar text shown when a send is dispatched with no recipient (#7335). Unlike every other send failure there is no queue row and so no red "Not delivered" bubble to carry the news, which is why this one outcome gets a toast. Reachable only by opening the conversation route without participants, e.g. a hand-crafted deep link.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t tell who this thread is with. Open it again from your inbox.'**
+  String get dmSendNoRecipientMessage;
+
   /// SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action.
   ///
   /// In en, this message translates to:

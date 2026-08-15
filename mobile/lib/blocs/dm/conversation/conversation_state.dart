@@ -14,7 +14,23 @@ enum ConversationStatus { initial, loading, loaded, error }
 /// [blocked] is a policy block (protected-minor DM restriction, #176): the send
 /// was refused, not a transient failure, so the UI shows distinct copy with NO
 /// retry affordance (retrying only re-hits the same policy).
-enum SendStatus { idle, sending, sent, sentPartial, failed, blocked }
+/// Transient outcome of the most recent send.
+///
+/// [failed] leans on the red "Not delivered" bubble as its affordance, so it
+/// raises no toast. [blocked] and [noRecipient] never produce a queue row and
+/// therefore never produce a bubble, which is why both are toasted instead.
+enum SendStatus {
+  idle,
+  sending,
+  sent,
+  sentPartial,
+  failed,
+  blocked,
+
+  /// Dispatched with an empty recipient list (#7335). Refused before the
+  /// repository, so nothing is enqueued and nothing is retriable.
+  noRecipient,
+}
 
 /// Per-bubble delivery status, derived from the durable `outgoing_dms`
 /// queue row (when present) merged with the persisted `direct_messages`

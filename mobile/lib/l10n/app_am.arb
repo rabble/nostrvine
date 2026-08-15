@@ -2846,6 +2846,7 @@
     },
     "collaboratorInviteDmBody": "በ{title} ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
     "collaboratorInviteDmBodyUntitled": "በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
+    "dmSendNoRecipientMessage": "ይህ ውይይት ከማን ጋር እንደሆነ ማወቅ አልቻልንም። ከመልእክት ሳጥንህ እንደገና ክፈተው።",
     "dmSendBlockedMessage": "መልእክት መላክ የምትችለው ለኦፊሴላዊ የDivine መለያዎች ብቻ ነው",
     "dmSendBlockedRetiredMessage": "ይህን ውይይት የሚያነበው የለም። በምትኩ Divine Moderation ላይ መልእክት ይላኩ።",
     "dmRetiredThreadClosedTitle": "ይህ ውይይት ተዘግቷል።",

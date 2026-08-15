@@ -2624,6 +2624,7 @@
     "libraryWebUnavailableHeadline": "Biblioteca e în aplicația mobilă",
     "notificationFollowBack": "Urmărește înapoi",
     "profileSetupUploadStaged": "Încărcată — apasă pe Salvează pentru a aplica",
+    "dmSendNoRecipientMessage": "Nu am putut afla cu cine e această conversație. Deschide-o din nou din inbox.",
     "dmSendBlockedMessage": "Poți trimite mesaje doar conturilor oficiale Divine",
     "dmSendBlockedRetiredMessage": "Nimeni nu citește această conversație. Scrie către Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Această conversație este închisă.",

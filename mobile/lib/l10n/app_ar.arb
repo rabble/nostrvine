@@ -2616,6 +2616,7 @@
     "libraryWebUnavailableHeadline": "المكتبة متوفّرة في التطبيق على الجوال",
     "notificationFollowBack": "متابعة بالمقابل",
     "profileSetupUploadStaged": "تم الرفع — اضغط على حفظ للتطبيق",
+    "dmSendNoRecipientMessage": "تعذّر علينا معرفة صاحب هذه المحادثة. افتحها من صندوق الوارد مرة أخرى.",
     "dmSendBlockedMessage": "يمكنك مراسلة حسابات Divine الرسمية فقط",
     "dmSendBlockedRetiredMessage": "لا أحد يقرأ هذه المحادثة. راسل Divine Moderation بدلاً من ذلك.",
     "dmRetiredThreadClosedTitle": "هذه المحادثة مغلقة.",

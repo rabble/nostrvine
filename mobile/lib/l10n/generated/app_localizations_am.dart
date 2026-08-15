@@ -5926,6 +5926,10 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'ይህ ውይይት ከማን ጋር እንደሆነ ማወቅ አልቻልንም። ከመልእክት ሳጥንህ እንደገና ክፈተው።';
+
+  @override
   String get dmSendBlockedMessage =>
       'መልእክት መላክ የምትችለው ለኦፊሴላዊ የDivine መለያዎች ብቻ ነው';
 

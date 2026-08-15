@@ -6209,6 +6209,10 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Nie udało się ustalić, z kim jest ta rozmowa. Otwórz ją ponownie ze skrzynki odbiorczej.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Możesz pisać tylko do oficjalnych kont Divine';
 

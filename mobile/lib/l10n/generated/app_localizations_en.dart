@@ -6051,6 +6051,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'We couldn\'t tell who this thread is with. Open it again from your inbox.';
+
+  @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
 

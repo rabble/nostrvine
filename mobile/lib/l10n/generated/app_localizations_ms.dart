@@ -6101,6 +6101,10 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Kami tidak dapat mengenal pasti dengan siapa perbualan ini. Buka semula dari peti masuk anda.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Anda hanya boleh menghantar mesej kepada akaun rasmi Divine';
 

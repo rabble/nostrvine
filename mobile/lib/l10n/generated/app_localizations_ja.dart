@@ -5779,6 +5779,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage => 'この会話の相手がわかりませんでした。受信トレイから開き直してください。';
+
+  @override
   String get dmSendBlockedMessage => 'メッセージを送れるのは公式 Divine アカウントのみです';
 
   @override

@@ -6110,6 +6110,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'No pudimos saber con quién es esta conversación. Ábrela de nuevo desde tu bandeja.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Solo puedes escribir a cuentas oficiales de Divine';
 

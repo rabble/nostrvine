@@ -6008,6 +6008,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'تعذّر علينا معرفة صاحب هذه المحادثة. افتحها من صندوق الوارد مرة أخرى.';
+
+  @override
   String get dmSendBlockedMessage => 'يمكنك مراسلة حسابات Divine الرسمية فقط';
 
   @override

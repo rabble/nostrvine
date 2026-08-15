@@ -6021,6 +6021,10 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Kami tidak tahu percakapan ini dengan siapa. Buka lagi dari kotak masuk.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Kamu hanya bisa mengirim pesan ke akun resmi Divine';
 

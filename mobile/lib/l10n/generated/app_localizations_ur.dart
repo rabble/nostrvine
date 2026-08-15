@@ -6062,6 +6062,10 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'ہم نہیں جان سکے کہ یہ گفتگو کس کے ساتھ ہے۔ اسے اپنے ان باکس سے دوبارہ کھولیں۔';
+
+  @override
   String get dmSendBlockedMessage =>
       'آپ صرف سرکاری Divine اکاؤنٹس کو پیغام بھیج سکتے ہیں';
 

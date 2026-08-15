@@ -212,6 +212,19 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // skipped), and a full recovery success clears the whole snapshot.
     emit(state.copyWith(sendStatus: SendStatus.sending));
 
+    // #7335. An empty list fails the single-recipient test below and takes the
+    // group branch, where `sendGroupMessage` throws ArgumentError before
+    // enqueuing anything. The catch turned that into `failed`, whose only
+    // affordance is the red "Not delivered" bubble — but with no queue row
+    // `statusFor` short-circuits to `delivered` and no bubble is ever built,
+    // so the send failed in complete silence. Refuse it here instead, with a
+    // status the view can toast. Reachable by opening the conversation route
+    // without participants, e.g. a hand-crafted deep link.
+    if (event.recipientPubkeys.isEmpty) {
+      emit(state.copyWith(sendStatus: SendStatus.noRecipient));
+      return;
+    }
+
     try {
       // Partial-delivery: recipient got the message and DmRepository
       // persisted it locally, but the self-addressed gift wrap did not

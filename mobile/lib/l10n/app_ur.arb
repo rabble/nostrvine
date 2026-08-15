@@ -3375,6 +3375,7 @@
       }
     }
   },
+  "dmSendNoRecipientMessage": "ہم نہیں جان سکے کہ یہ گفتگو کس کے ساتھ ہے۔ اسے اپنے ان باکس سے دوبارہ کھولیں۔",
   "dmSendBlockedMessage": "آپ صرف سرکاری Divine اکاؤنٹس کو پیغام بھیج سکتے ہیں",
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."

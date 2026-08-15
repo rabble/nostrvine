@@ -3663,6 +3663,8 @@
       }
     }
   },
+  "dmSendNoRecipientMessage": "We couldn't tell who this thread is with. Open it again from your inbox.",
+  "@dmSendNoRecipientMessage": {"description": "SnackBar text shown when a send is dispatched with no recipient (#7335). Unlike every other send failure there is no queue row and so no red \"Not delivered\" bubble to carry the news, which is why this one outcome gets a toast. Reachable only by opening the conversation route without participants, e.g. a hand-crafted deep link."},
   "dmSendBlockedMessage": "You can only message official Divine accounts",
 
   "@dmSendBlockedMessage": {

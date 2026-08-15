@@ -6134,6 +6134,10 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Hindi namin matukoy kung kanino ang thread na ito. Buksan ulit ito mula sa iyong inbox.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Opisyal na Divine accounts lang ang pwede mong ma-message';
 

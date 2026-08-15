@@ -2624,6 +2624,7 @@
     "libraryWebUnavailableHeadline": "Mediathek ist in der mobilen App",
     "notificationFollowBack": "Zurückfolgen",
     "profileSetupUploadStaged": "Hochgeladen – tippe auf Speichern, um zu übernehmen",
+    "dmSendNoRecipientMessage": "Wir konnten nicht erkennen, mit wem diese Unterhaltung ist. Öffne sie noch mal aus deinem Postfach.",
     "dmSendBlockedMessage": "Du kannst nur offiziellen Divine-Konten schreiben",
     "dmSendBlockedRetiredMessage": "Diese Unterhaltung liest niemand. Schreib stattdessen an Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Diese Unterhaltung ist geschlossen.",

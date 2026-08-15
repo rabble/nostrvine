@@ -3375,6 +3375,7 @@
       }
     }
   },
+  "dmSendNoRecipientMessage": "无法确定这个会话的对象。请从收件箱重新打开。",
   "dmSendBlockedMessage": "你只能给 Divine 官方账号发私信",
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."

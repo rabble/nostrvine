@@ -446,6 +446,51 @@ void main() {
           ],
         );
 
+        // #7335. An empty recipient list failed the single-recipient test and
+        // took the group branch, where `sendGroupMessage` throws ArgumentError
+        // before enqueuing anything. The generic catch emitted `failed`, whose
+        // only affordance is the red "Not delivered" bubble — and with no
+        // queue row, `statusFor` short-circuits to `delivered` and no bubble
+        // exists. The composer had already cleared the text field, so the send
+        // was silent in every channel a sighted user has.
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, noRecipient] and touches no repository send path '
+          'when the recipient list is empty',
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [],
+              content: 'Hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.noRecipient,
+            ),
+          ],
+          verify: (_) {
+            verifyNever(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: any(named: 'recipientPubkey'),
+                content: any(named: 'content'),
+              ),
+            );
+            verifyNever(
+              () => mockDmRepository.sendGroupMessage(
+                recipientPubkeys: any(named: 'recipientPubkeys'),
+                content: any(named: 'content'),
+              ),
+            );
+          },
+        );
+
         blocTest<ConversationBloc, ConversationState>(
           'emits [sending, sent] on a soft-unconfirmed send '
           '(retryablePending) — surfaced as sent, no red failure',

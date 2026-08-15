@@ -5800,6 +5800,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      '이 대화의 상대를 알 수 없어요. 받은 편지함에서 다시 열어 주세요.';
+
+  @override
   String get dmSendBlockedMessage => '공식 Divine 계정에만 메시지를 보낼 수 있어요';
 
   @override

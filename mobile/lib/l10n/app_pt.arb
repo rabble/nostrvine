@@ -2624,6 +2624,7 @@
     "libraryWebUnavailableHeadline": "A biblioteca fica no app móvel",
     "notificationFollowBack": "Seguir de volta",
     "profileSetupUploadStaged": "Enviada — toque em Salvar para aplicar",
+    "dmSendNoRecipientMessage": "Não conseguimos identificar com quem é esta conversa. Abra-a de novo pela caixa de entrada.",
     "dmSendBlockedMessage": "Você só pode mandar mensagem para contas oficiais da Divine",
     "dmSendBlockedRetiredMessage": "Ninguém está lendo esta conversa. Envie uma mensagem para a Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Esta conversa está encerrada.",

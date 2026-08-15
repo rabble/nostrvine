@@ -6024,6 +6024,10 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage =>
+      'Bu sohbetin kiminle olduğunu anlayamadık. Gelen kutundan tekrar aç.';
+
+  @override
   String get dmSendBlockedMessage =>
       'Yalnızca resmi Divine hesaplarına mesaj gönderebilirsin';
 

@@ -5759,6 +5759,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get dmSendNoRecipientMessage => '无法确定这个会话的对象。请从收件箱重新打开。';
+
+  @override
   String get dmSendBlockedMessage => '你只能给 Divine 官方账号发私信';
 
   @override
