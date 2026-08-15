@@ -2831,6 +2831,22 @@
   "uploadProcessingMessage": "Processing video - this may take a few minutes",
   "uploadReadyToPublishMessage": "Video processed successfully and ready to publish",
   "uploadPublishedMessage": "Video published to your profile",
+  "postPublishConfirmationTitle": "Published to your profile",
+  "@postPublishConfirmationTitle": {
+    "description": "Heading of the sheet shown right after a video finishes publishing, offering to view or share it."
+  },
+  "postPublishConfirmationView": "View",
+  "@postPublishConfirmationView": {
+    "description": "Button on the post-publish confirmation that opens the video the user just published."
+  },
+  "postPublishConfirmationShare": "Share",
+  "@postPublishConfirmationShare": {
+    "description": "Button on the post-publish confirmation that opens the system share sheet with a link to the video."
+  },
+  "postPublishConfirmationThumbnailLabel": "Thumbnail of the video you just published",
+  "@postPublishConfirmationThumbnailLabel": {
+    "description": "Screen reader label for the preview image on the post-publish confirmation."
+  },
   "uploadFailedMessage": "Upload failed - please try again",
   "uploadRetryingMessage": "Retrying upload...",
   "uploadPausedMessage": "Upload paused by user",

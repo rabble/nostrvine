@@ -4703,6 +4703,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get uploadPublishedMessage => 'Video pubblicato sul tuo profilo';
 
   @override
+  String get postPublishConfirmationTitle => 'Published to your profile';
+
+  @override
+  String get postPublishConfirmationView => 'Guarda';
+
+  @override
+  String get postPublishConfirmationShare => 'Condividi';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail of the video you just published';
+
+  @override
   String get uploadFailedMessage => 'Caricamento fallito - riprova';
 
   @override

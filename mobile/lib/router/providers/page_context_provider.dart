@@ -215,6 +215,15 @@ RouteContext parseRoute(String path) {
       const RouteContext(type: RouteType.home, videoIndex: 0);
 }
 
+/// Whether [location] is [npub]'s own profile, in either grid or feed mode.
+///
+/// Takes the raw router location (query string and all) so callers can pass
+/// `routerDelegate.currentConfiguration.uri.path` straight through.
+bool isOwnProfileLocation(String location, String npub) {
+  final route = parseRoute(location);
+  return route.type == RouteType.profile && route.npub == npub;
+}
+
 /// Parse a URL path only when its route family is explicitly modeled.
 ///
 /// This is the route normalizer's fail-closed entry point: unknown or

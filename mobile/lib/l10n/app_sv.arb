@@ -1858,6 +1858,8 @@
     "uploadProcessingMessage": "Bearbetar video – det här kan ta några minuter",
     "uploadReadyToPublishMessage": "Videon bearbetades och är redo att publiceras",
     "uploadPublishedMessage": "Videon publicerad till din profil",
+    "postPublishConfirmationView": "Visa",
+    "postPublishConfirmationShare": "Dela",
   "uploadPublishedCountMessage": "{count, plural, =1{Videon publicerad till din profil} other{{count} videor publicerade till din profil}}",
     "uploadFailedMessage": "Uppladdning misslyckades – försök igen",
     "uploadRetryingMessage": "Försöker ladda upp igen...",

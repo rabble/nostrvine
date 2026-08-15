@@ -4431,6 +4431,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get uploadPublishedMessage => '프로필에 영상을 게시했어요';
 
   @override
+  String get postPublishConfirmationTitle => 'Published to your profile';
+
+  @override
+  String get postPublishConfirmationView => '보기';
+
+  @override
+  String get postPublishConfirmationShare => '공유';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail of the video you just published';
+
+  @override
   String get uploadFailedMessage => '업로드에 실패했어요 - 다시 시도해 주세요';
 
   @override

@@ -8057,6 +8057,30 @@ abstract class AppLocalizations {
   /// **'Video published to your profile'**
   String get uploadPublishedMessage;
 
+  /// Heading of the sheet shown right after a video finishes publishing, offering to view or share it.
+  ///
+  /// In en, this message translates to:
+  /// **'Published to your profile'**
+  String get postPublishConfirmationTitle;
+
+  /// Button on the post-publish confirmation that opens the video the user just published.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get postPublishConfirmationView;
+
+  /// Button on the post-publish confirmation that opens the system share sheet with a link to the video.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get postPublishConfirmationShare;
+
+  /// Screen reader label for the preview image on the post-publish confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumbnail of the video you just published'**
+  String get postPublishConfirmationThumbnailLabel;
+
   /// No description provided for @uploadFailedMessage.
   ///
   /// In en, this message translates to:

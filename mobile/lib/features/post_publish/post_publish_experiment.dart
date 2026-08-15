@@ -9,15 +9,21 @@ import 'package:unified_logger/unified_logger.dart';
 
 enum PostPublishVariant {
   control('control'),
-  createAgain('create_again');
+  viewShare('view_share');
 
   const PostPublishVariant(this.analyticsName);
 
   final String analyticsName;
 }
 
-class PostPublishCreateAgainOffer {
-  const PostPublishCreateAgainOffer({required this.publishedAt});
+/// Marks a publish that should get the full confirmation — a sheet offering
+/// View and Share — rather than the bare snackbar the control arm sees.
+///
+/// Deliberately carries no video identity: the listener already holds the
+/// [PublishedVideo] this belongs to, and threading it through here would
+/// couple the experiment to the publish bloc's state model.
+class PostPublishConfirmationOffer {
+  const PostPublishConfirmationOffer({required this.publishedAt});
 
   final DateTime publishedAt;
 }
@@ -51,7 +57,7 @@ class PostPublishExperiment {
         .first;
     return assignmentByte < 128
         ? PostPublishVariant.control
-        : PostPublishVariant.createAgain;
+        : PostPublishVariant.viewShare;
   }
 
   Future<void> screenShown({
@@ -74,16 +80,15 @@ class PostPublishExperiment {
     );
   }
 
-  PostPublishCreateAgainOffer? completed(Set<String> publishIds) {
-    var showCreateAgain = false;
+  PostPublishConfirmationOffer? completed(Set<String> publishIds) {
+    var showConfirmation = false;
     for (final publishId in publishIds) {
-      showCreateAgain =
-          _publishVariants.remove(publishId) ==
-              PostPublishVariant.createAgain ||
-          showCreateAgain;
+      showConfirmation =
+          _publishVariants.remove(publishId) == PostPublishVariant.viewShare ||
+          showConfirmation;
     }
-    return showCreateAgain
-        ? PostPublishCreateAgainOffer(publishedAt: _now())
+    return showConfirmation
+        ? PostPublishConfirmationOffer(publishedAt: _now())
         : null;
   }
 
@@ -91,10 +96,16 @@ class PostPublishExperiment {
     publishIds.forEach(_publishVariants.remove);
   }
 
-  Future<void> createAgainTapped(PostPublishCreateAgainOffer offer) async {
+  Future<void> viewTapped(PostPublishConfirmationOffer offer) =>
+      _logTap('post_publish_view_tapped', offer);
+
+  Future<void> shareTapped(PostPublishConfirmationOffer offer) =>
+      _logTap('post_publish_share_tapped', offer);
+
+  Future<void> _logTap(String name, PostPublishConfirmationOffer offer) async {
     final elapsed = _now().difference(offer.publishedAt).inSeconds;
     await _logEvent(
-      name: 'post_publish_create_again_tapped',
+      name: name,
       parameters: {'seconds_since_publish': elapsed < 0 ? 0 : elapsed},
     );
   }

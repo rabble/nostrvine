@@ -2600,6 +2600,8 @@
   "uploadProcessingMessage": "ویڈیو پروسیس ہو رہی ہے — اس میں چند منٹ لگ سکتے ہیں",
   "uploadReadyToPublishMessage": "ویڈیو کامیابی سے پروسیس ہو گئی اور شائع کرنے کے لیے تیار ہے",
   "uploadPublishedMessage": "ویڈیو آپ کے پروفائل پر شائع ہو گئی",
+  "postPublishConfirmationView": "دیکھیں",
+  "postPublishConfirmationShare": "شیئر",
   "uploadFailedMessage": "اپلوڈ ناکام — براہ کرم دوبارہ کوشش کریں",
   "uploadRetryingMessage": "اپلوڈ دوبارہ کوشش ہو رہی ہے...",
   "uploadPausedMessage": "صارف نے اپلوڈ روک دی",

@@ -4657,6 +4657,19 @@ class AppLocalizationsUr extends AppLocalizations {
   String get uploadPublishedMessage => 'ویڈیو آپ کے پروفائل پر شائع ہو گئی';
 
   @override
+  String get postPublishConfirmationTitle => 'Published to your profile';
+
+  @override
+  String get postPublishConfirmationView => 'دیکھیں';
+
+  @override
+  String get postPublishConfirmationShare => 'شیئر';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail of the video you just published';
+
+  @override
   String get uploadFailedMessage => 'اپلوڈ ناکام — براہ کرم دوبارہ کوشش کریں';
 
   @override

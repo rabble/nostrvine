@@ -4552,6 +4552,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get uploadPublishedMessage => 'ቪዲዮ ወደ መገለጫዎ ታትሟል';
 
   @override
+  String get postPublishConfirmationTitle => 'Published to your profile';
+
+  @override
+  String get postPublishConfirmationView => 'ይመልከቱ';
+
+  @override
+  String get postPublishConfirmationShare => 'አጋራ';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail of the video you just published';
+
+  @override
   String get uploadFailedMessage => 'ሰቀላው አልተሳካም - እባክዎ እንደገና ይሞክሩ';
 
   @override

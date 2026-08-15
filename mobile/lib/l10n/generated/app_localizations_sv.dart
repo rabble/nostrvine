@@ -4646,6 +4646,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get uploadPublishedMessage => 'Videon publicerad till din profil';
 
   @override
+  String get postPublishConfirmationTitle => 'Published to your profile';
+
+  @override
+  String get postPublishConfirmationView => 'Visa';
+
+  @override
+  String get postPublishConfirmationShare => 'Dela';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail of the video you just published';
+
+  @override
   String get uploadFailedMessage => 'Uppladdning misslyckades – försök igen';
 
   @override

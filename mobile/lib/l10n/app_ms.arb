@@ -2600,6 +2600,8 @@
   "uploadProcessingMessage": "Memproses video - ini mungkin mengambil masa beberapa minit",
   "uploadReadyToPublishMessage": "Video berjaya diproses dan sedia untuk diterbitkan",
   "uploadPublishedMessage": "Video diterbitkan ke profil anda",
+  "postPublishConfirmationView": "Lihat",
+  "postPublishConfirmationShare": "Kongsi",
   "uploadFailedMessage": "Muat naik gagal - sila cuba lagi",
   "uploadRetryingMessage": "Mencuba semula muat naik...",
   "uploadPausedMessage": "Muat naik dijeda oleh pengguna",

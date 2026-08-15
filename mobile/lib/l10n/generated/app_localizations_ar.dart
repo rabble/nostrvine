@@ -4612,6 +4612,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get uploadPublishedMessage => 'تم نشر الفيديو في ملفك الشخصي';
 
   @override
+  String get postPublishConfirmationTitle => 'Published to your profile';
+
+  @override
+  String get postPublishConfirmationView => 'عرض';
+
+  @override
+  String get postPublishConfirmationShare => 'مشاركة';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail of the video you just published';
+
+  @override
   String get uploadFailedMessage => 'فشل الرفع - يُرجى المحاولة مرة أخرى';
 
   @override

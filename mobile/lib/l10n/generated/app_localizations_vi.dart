@@ -4652,6 +4652,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get uploadPublishedMessage => 'Video đã được đăng lên hồ sơ của bạn';
 
   @override
+  String get postPublishConfirmationTitle => 'Published to your profile';
+
+  @override
+  String get postPublishConfirmationView => 'Xem';
+
+  @override
+  String get postPublishConfirmationShare => 'Chia sẻ';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail of the video you just published';
+
+  @override
   String get uploadFailedMessage => 'Tải lên thất bại - vui lòng thử lại';
 
   @override

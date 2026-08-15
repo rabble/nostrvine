@@ -1,0 +1,172 @@
+// ABOUTME: Bottom sheet shown when a video finishes publishing, offering to
+// ABOUTME: view or share it rather than only to record another one.
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
+
+/// The payoff moment after a publish: a preview of what just went live, and
+/// the two things a creator actually wants next.
+///
+/// Takes plain data and callbacks rather than reading repositories or
+/// providers, so it renders in a widget test without the app's DI graph.
+class PostPublishConfirmationSheet extends StatelessWidget {
+  const PostPublishConfirmationSheet({
+    required this.onView,
+    required this.onShare,
+    this.thumbnailPath,
+    super.key,
+  });
+
+  /// Local file path of the published video's cover frame, or null when the
+  /// draft carried none. Never a network URL — this renders immediately,
+  /// before the event has propagated anywhere.
+  final String? thumbnailPath;
+
+  final VoidCallback onView;
+  final VoidCallback onShare;
+
+  /// Shows the confirmation over [context]'s navigator.
+  ///
+  /// [onView] and [onShare] fire *after* the sheet closes, so the caller can
+  /// navigate without racing the dismissal animation.
+  static Future<void> show({
+    required BuildContext context,
+    required VoidCallback onView,
+    required VoidCallback onShare,
+    String? thumbnailPath,
+  }) {
+    return VineBottomSheet.show<void>(
+      context: context,
+      scrollable: false,
+      expanded: false,
+      // expanded:false alone would leave isScrollControlled false, which caps
+      // the sheet at 9/16 of the screen — short enough to clip the preview on
+      // a small display. Opting in keeps the wrap-to-content height without
+      // the cap.
+      isScrollControlled: true,
+      showHeaderDivider: false,
+      headerTrailingAction: DivineIconButton(
+        icon: .x,
+        type: .secondary,
+        size: .small,
+        semanticLabel: context.l10n.commonClose,
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      body: PostPublishConfirmationSheet(
+        thumbnailPath: thumbnailPath,
+        onView: () {
+          Navigator.of(context).pop();
+          onView();
+        },
+        onShare: () {
+          Navigator.of(context).pop();
+          onShare();
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 24,
+        children: [
+          _Preview(thumbnailPath: thumbnailPath),
+          Text(
+            l10n.postPublishConfirmationTitle,
+            textAlign: TextAlign.center,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
+          Row(
+            spacing: 12,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: l10n.postPublishConfirmationView,
+                  type: DivineButtonType.secondary,
+                  leadingIcon: DivineIconName.play,
+                  onPressed: onView,
+                ),
+              ),
+              Expanded(
+                child: DivineButton(
+                  label: l10n.postPublishConfirmationShare,
+                  leadingIcon: DivineIconName.share,
+                  onPressed: onShare,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The published video's cover frame, letterboxed in a portrait tile.
+class _Preview extends StatelessWidget {
+  const _Preview({this.thumbnailPath});
+
+  final String? thumbnailPath;
+
+  static const _width = 132.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = thumbnailPath;
+
+    return SizedBox(
+      width: _width,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          // mediaCard, not card: the letterbox sits behind a video frame and
+          // must read as media chrome rather than take the palette's green
+          // cast in either appearance.
+          child: ColoredBox(
+            color: context.vineColors.mediaCard,
+            child: path == null
+                ? const _NoPreview()
+                : Semantics(
+                    label: context.l10n.postPublishConfirmationThumbnailLabel,
+                    image: true,
+                    child: ClipThumbnailImage(
+                      path: path,
+                      fit: BoxFit.cover,
+                      excludeFromSemantics: true,
+                      placeholder: const _NoPreview(),
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NoPreview extends StatelessWidget {
+  const _NoPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Center(
+        child: DivineIcon(
+          icon: DivineIconName.filmSlate,
+          color: context.vineColors.secondaryText,
+          size: 28,
+        ),
+      ),
+    );
+  }
+}
