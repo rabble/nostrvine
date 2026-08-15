@@ -122,7 +122,7 @@ void main() {
         'clip-1_reversed.mp4',
       );
       expect(result.file?.path, expectedOutputPath);
-      expect(proVideoEditor.canceledTaskIds, ['reverse-render-1']);
+      expect(proVideoEditor.canceledTaskIds, isEmpty);
       expect(proVideoEditor.renderedPaths, [expectedOutputPath]);
 
       final renderData = proVideoEditor.renderedData.single;
@@ -163,7 +163,7 @@ void main() {
     });
 
     test(
-      'continues rendering when there is no active render to cancel',
+      'does not cancel before rendering when there is no active render',
       () async {
         proVideoEditor.cancelShouldThrow = true;
         final sourceClip = _clip(
@@ -176,7 +176,7 @@ void main() {
           renderId: 'reverse-render-missing',
         );
 
-        expect(proVideoEditor.canceledTaskIds, ['reverse-render-missing']);
+        expect(proVideoEditor.canceledTaskIds, isEmpty);
         expect(proVideoEditor.renderedData, hasLength(1));
       },
     );
