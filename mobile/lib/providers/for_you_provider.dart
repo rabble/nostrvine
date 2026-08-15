@@ -215,7 +215,7 @@ class ForYouFeed extends _$ForYouFeed {
         category: LogCategory.video,
       );
 
-      _nextCursor = _paginationCursor(result);
+      _nextCursor = result.paginationCursor;
 
       state = AsyncData(
         VideoFeedState(
@@ -256,16 +256,13 @@ class ForYouFeed extends _$ForYouFeed {
   }
 
   VideoFeedState _stateFromResult(HomeFeedResult result) {
-    _nextCursor = _paginationCursor(result);
+    _nextCursor = result.paginationCursor;
     return VideoFeedState(
       videos: dedupeByFeedKey(_filterVideos(result.videos)),
       hasMoreContent: result.hasMore == true && _nextCursor != null,
       lastUpdated: DateTime.now(),
     );
   }
-
-  String? _paginationCursor(HomeFeedResult result) =>
-      result.paginationCursor ?? result.nextCursor?.toString();
 
   List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
     final videoEventService = ref.read(videoEventServiceProvider);
