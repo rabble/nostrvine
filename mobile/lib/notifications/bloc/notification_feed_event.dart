@@ -34,6 +34,14 @@ final class NotificationFeedRefreshed extends NotificationFeedEvent {
   List<Object?> get props => [];
 }
 
+/// The notifications surface became visible again while still mounted.
+final class NotificationFeedBecameVisible extends NotificationFeedEvent {
+  const NotificationFeedBecameVisible();
+
+  @override
+  List<Object?> get props => [];
+}
+
 /// User tapped a notification — mark it as read.
 final class NotificationFeedItemTapped extends NotificationFeedEvent {
   const NotificationFeedItemTapped(this.notificationId);

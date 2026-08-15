@@ -55,6 +55,7 @@ void main() {
 
     Widget buildSubject({
       bool reduceMotion = false,
+      bool isVisible = true,
       InviteAvailabilityCubit? availabilityCubit,
     }) {
       return testMaterialApp(
@@ -77,7 +78,9 @@ void main() {
                   ),
                 BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
               ],
-              child: Scaffold(body: const InboxNotificationsPage()),
+              child: Scaffold(
+                body: InboxNotificationsPage(isVisible: isVisible),
+              ),
             ),
           ),
         ),
@@ -118,6 +121,25 @@ void main() {
         verifyNever(() => mockNotificationRepo.markAllAsRead());
       },
     );
+
+    testWidgets('marks seen again when a kept-alive inbox becomes visible', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(isVisible: false));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+      clearInteractions(mockNotificationRepo);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      verifyNever(() => mockNotificationRepo.refreshFeed(null));
+      verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+    });
 
     testWidgets(
       'opens each tab against its own server-filtered feed and marks seen '
