@@ -81,6 +81,32 @@ void main() {
       expect(result, false);
       expect(ZendeskSupportService.isAvailable, false);
     });
+
+    test('a repeat call keeps a successful initialization', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      final second = await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      // Completing the initialization gate twice used to throw out of
+      // initialize() and, on the way through the catch-all, reset
+      // _initialized on an SDK that had just come up fine.
+      expect(second, true);
+      expect(ZendeskSupportService.isAvailable, true);
+    });
   });
 
   group('ZendeskSupportService.showNewTicketScreen', () {

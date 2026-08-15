@@ -116,7 +116,7 @@ class ZendeskSupportService {
         'Zendesk credentials not configured - bug reports will use email fallback',
         category: LogCategory.system,
       );
-      _initializationCompleter.complete();
+      _completeInitialization();
       return false;
     }
 
@@ -141,7 +141,7 @@ class ZendeskSupportService {
         );
       }
 
-      _initializationCompleter.complete();
+      _completeInitialization();
       return _initialized;
     } on PlatformException catch (e) {
       Log.error(
@@ -149,7 +149,7 @@ class ZendeskSupportService {
         category: LogCategory.system,
       );
       _initialized = false;
-      _initializationCompleter.complete();
+      _completeInitialization();
       return false;
     } catch (e) {
       Log.error(
@@ -157,8 +157,16 @@ class ZendeskSupportService {
         category: LogCategory.system,
       );
       _initialized = false;
-      _initializationCompleter.complete();
+      _completeInitialization();
       return false;
+    }
+  }
+
+  /// Opens the initialization gate. Safe to call on every exit path of
+  /// [initialize], including a repeat call after the SDK is already up.
+  static void _completeInitialization() {
+    if (!_initializationCompleter.isCompleted) {
+      _initializationCompleter.complete();
     }
   }
 
