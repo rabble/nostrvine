@@ -2317,13 +2317,15 @@ class ProfileRepository implements ProfileReader {
     );
     if (hasFollowerSignal) return profiles;
 
-    final indexed = <(int, UserProfile)>[
-      for (var i = 0; i < profiles.length; i++) (i, profiles[i]),
-    ];
-    indexed.sort((a, b) {
-      final byVideos = (b.$2.videoCount ?? 0).compareTo(a.$2.videoCount ?? 0);
-      return byVideos != 0 ? byVideos : a.$1.compareTo(b.$1);
-    });
+    final indexed =
+        <(int, UserProfile)>[
+          for (var i = 0; i < profiles.length; i++) (i, profiles[i]),
+        ]..sort((a, b) {
+          final byVideos = (b.$2.videoCount ?? 0).compareTo(
+            a.$2.videoCount ?? 0,
+          );
+          return byVideos != 0 ? byVideos : a.$1.compareTo(b.$1);
+        });
     return [for (final entry in indexed) entry.$2];
   }
 

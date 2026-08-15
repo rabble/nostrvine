@@ -4090,7 +4090,8 @@ void main() {
       }
 
       test(
-        'searchUsersProgressive ranks by video count when a followers sort is a no-op',
+        'searchUsersProgressive ranks by video count when a followers sort '
+        'is a no-op',
         () async {
           stubRestResults(resultsInServerOrder());
 
@@ -4104,7 +4105,8 @@ void main() {
       );
 
       test(
-        'searchUsersProgressive preserves server order when follower counts are real',
+        'searchUsersProgressive preserves server order when follower counts '
+        'are real',
         () async {
           stubRestResults(resultsInServerOrder(followerCount: 100));
 
@@ -4136,7 +4138,8 @@ void main() {
       );
 
       test(
-        'searchUsersFromApi ranks by video count when a followers sort is a no-op',
+        'searchUsersFromApi ranks by video count when a followers sort is a '
+        'no-op',
         () async {
           stubRestResults(resultsInServerOrder());
 
