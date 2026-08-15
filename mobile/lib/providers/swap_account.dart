@@ -72,6 +72,11 @@ String? _currentRouterLocation(AccountSwitchController controller) {
 /// compared raw, because the route accepts npub, nprofile and bare hex as well
 /// as the relative `me` — a raw compare leaves the hex and nprofile forms
 /// stranded on the leaving account.
+/// Supported user-identifying routes that are retargeted:
+/// - `/profile/<identifier>`
+/// - `/followers/<identifier>`
+/// - `/following/<identifier>`
+/// - `/profile-view/<identifier>`
 String? accountSwitchInitialLocation({
   required String? currentLocation,
   required String? currentPubkeyHex,
@@ -82,7 +87,11 @@ String? accountSwitchInitialLocation({
   final uri = Uri.tryParse(currentLocation);
   if (uri == null) return currentLocation;
   final segments = uri.pathSegments;
-  if (segments.length < 2 || segments.first != 'profile') {
+  // Routes that carry a user identity as the second segment and should be
+  // retargeted when the identity matches the leaving account.
+  const userRoutes = {'profile', 'followers', 'following', 'profile-view'};
+
+  if (segments.length < 2 || !userRoutes.contains(segments.first)) {
     return currentLocation;
   }
 
@@ -90,9 +99,10 @@ String? accountSwitchInitialLocation({
     return currentLocation;
   }
 
+  final routeType = segments.first;
   final targetNpub = NostrKeyUtils.encodePubKey(targetPubkeyHex);
   final targetPath =
-      '/profile/$targetNpub${segments.length >= 3 ? '/${segments.skip(2).join('/')}' : ''}';
+      '/$routeType/$targetNpub${segments.length >= 3 ? '/${segments.skip(2).join('/')}' : ''}';
   return uri.replace(path: targetPath).toString();
 }
 
