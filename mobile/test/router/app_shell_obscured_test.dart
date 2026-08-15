@@ -183,6 +183,12 @@ void main() {
       container
           .read(shellObscuredProvider.notifier)
           .setObscured(obscured: true);
+      final overlayVisibility = container.read(
+        overlayVisibilityProvider.notifier,
+      );
+      final liveOwner = Object();
+      overlayVisibility.setPageOpen(true);
+      overlayVisibility.setPageOpenForOwner(liveOwner, isOpen: true);
       expect(container.read(shellObscuredProvider), isTrue);
 
       await tester.pumpWidget(
@@ -195,9 +201,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // didPush fires once as the fresh shell subscribes, clearing the flag so
-      // the home feed can resume.
+      // didPush fires once as the fresh shell subscribes, clearing the stale
+      // obscured flag without dropping a live page owner.
       expect(container.read(shellObscuredProvider), isFalse);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      // Fresh-shell recovery clears stale unowned state without destroying a
+      // live route owner's hold.
+      overlayVisibility.setPageOpenForOwner(liveOwner, isOpen: false);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
     },
   );
 
