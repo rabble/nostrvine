@@ -55,7 +55,7 @@ void main() {
     expect(observer.pushedNames, contains(VideoFeedPage.routeName));
     expect(
       AnalyticsSurface.routeSurfaceName(VideoFeedPage.routeName),
-      isNot(AnalyticsSurface.unknownRoute),
+      AnalyticsSurface.homeFeed,
     );
   });
 }
