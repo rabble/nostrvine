@@ -83,6 +83,10 @@ class ShareableUser {
   final String? handle;
   final String? picture;
 
+  /// Whether the share row has enough user-visible data for a recipient tile.
+  bool get hasVisibleIdentity =>
+      displayName != null || handle != null || picture != null;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

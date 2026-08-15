@@ -2,6 +2,8 @@
 // ABOUTME: Verifies share icon renders, share sheet opens with correct sections,
 // ABOUTME: and standard action items display in the unified share sheet.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -56,6 +58,16 @@ void main() {
           pubkey: any(named: 'pubkey'),
         ),
       ).thenAnswer((_) async => null);
+      when(
+        () => mockProfileRepository.getCachedProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => <UserProfile>[]);
+      when(
+        () => mockProfileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => <String, UserProfile>{});
 
       testVideo = VideoEvent(
         id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -373,6 +385,38 @@ void main() {
             );
           },
         );
+
+        testWidgets('pending cache-miss rows are not selectable', (
+          tester,
+        ) async {
+          const unknownPubkey =
+              '22222222222222222222222222222222'
+              '22222222222222222222222222222222';
+          final hydration = Completer<Map<String, UserProfile>>();
+          when(() => mockVideoSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([unknownPubkey]);
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: [unknownPubkey],
+            ),
+          ).thenAnswer((_) => hydration.future);
+
+          await pumpOpenSheet(tester);
+
+          expect(find.text('Username'), findsOneWidget);
+
+          await tester.tap(find.text('Username'), warnIfMissed: false);
+          await tester.pump();
+
+          final blocContext = tester.element(find.text('Share with'));
+          expect(
+            blocContext.read<ShareSheetBloc>().state.selectedRecipients,
+            isEmpty,
+          );
+          expect(find.byType(TextField), findsNothing);
+        });
 
         testWidgets(
           'tapping the last selected contact again deselects, restores '

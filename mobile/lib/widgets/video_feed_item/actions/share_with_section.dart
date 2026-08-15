@@ -7,6 +7,10 @@ final List<ShareableUser> _skeletonContacts = List.generate(
   6,
   (_) => const ShareableUser(pubkey: '', displayName: 'Username'),
 );
+const ShareableUser _skeletonContact = ShareableUser(
+  pubkey: '',
+  displayName: 'Username',
+);
 
 // ---------------------------------------------------------------------------
 // "Share with" horizontal contact row
@@ -78,13 +82,20 @@ class _ShareWithSection extends StatelessWidget {
                     }
 
                     final contact = displayContacts[index - 1];
-                    if (!contactsLoaded) {
+                    final isPendingIdentity =
+                        !contactsLoaded || !contact.hasVisibleIdentity;
+                    if (isPendingIdentity) {
                       // Placeholder bone — not interactive, excluded from a11y.
-                      return ExcludeSemantics(
-                        child: _ContactItem(
-                          user: contact,
-                          isSelected: false,
-                          onTap: () {},
+                      return IgnorePointer(
+                        child: ExcludeSemantics(
+                          child: IdentitySkeletonizer(
+                            isLoading: true,
+                            child: _ContactItem(
+                              user: _skeletonContact,
+                              isSelected: false,
+                              onTap: () {},
+                            ),
+                          ),
                         ),
                       );
                     }

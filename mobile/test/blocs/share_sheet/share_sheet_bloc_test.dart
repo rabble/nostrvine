@@ -204,6 +204,14 @@ void main() {
                 'first contact pubkey',
                 testRecipient.pubkey,
               ),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 1)
+              .having(
+                (s) => s.contacts.first.pubkey,
+                'first contact pubkey',
+                testRecipient.pubkey,
+              ),
         ],
       );
 
@@ -268,13 +276,6 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => {
-              profiledFollow: UserProfile(
-                pubkey: profiledFollow,
-                createdAt: DateTime.now(),
-                eventId: 'event-$profiledFollow',
-                rawData: const {},
-                name: 'HydratedAlice',
-              ),
               unprofiledFollow: UserProfile(
                 pubkey: unprofiledFollow,
                 createdAt: DateTime.now(),
@@ -290,7 +291,8 @@ void main() {
         expect: () => [
           const ShareSheetState(status: ShareSheetStatus.loading),
           // Cache-first render: the Drift-cached name shows now; the uncached
-          // follow is present but nameless rather than blocking the row.
+          // follow is present as a pending, non-interactive skeleton row rather
+          // than blocking the whole row.
           isA<ShareSheetState>()
               .having((s) => s.status, 'status', ShareSheetStatus.ready)
               .having((s) => s.contacts.length, 'contacts.length', 2)
@@ -310,7 +312,7 @@ void main() {
               .having(
                 (s) => s.contacts[0].displayName,
                 'first contact name',
-                'HydratedAlice',
+                'CachedAlice',
               )
               .having(
                 (s) => s.contacts[1].displayName,
@@ -332,7 +334,73 @@ void main() {
         },
       );
 
+      late Completer<List<UserProfile>> cacheRead;
       late Completer<Map<String, UserProfile>> hydration;
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'preserves a find-people recipient picked during the cache read',
+        setUp: () {
+          cacheRead = Completer<List<UserProfile>>();
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([profiledFollow]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) => cacheRead.future);
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) async => <String, UserProfile>{});
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ShareSheetContactsLoadRequested());
+          await pumpEventQueue();
+          bloc.add(
+            const ShareSheetRecipientToggled(
+              ShareableUser(
+                pubkey:
+                    'zzzz56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+                displayName: 'Picked Stranger',
+              ),
+            ),
+          );
+          await pumpEventQueue();
+          cacheRead.complete([
+            UserProfile(
+              pubkey: profiledFollow,
+              createdAt: DateTime.now(),
+              eventId: 'event-$profiledFollow',
+              rawData: const {},
+              name: 'CachedAlice',
+            ),
+          ]);
+          await pumpEventQueue();
+        },
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.loading)
+              .having(
+                (s) => s.contacts.first.displayName,
+                'picked first while loading',
+                'Picked Stranger',
+              )
+              .having((s) => s.selectedRecipients.length, 'selected', 1),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having(
+                (s) => s.contacts.map((c) => c.displayName).toList(),
+                'row contents',
+                ['Picked Stranger', 'CachedAlice'],
+              )
+              .having((s) => s.selectedRecipients.length, 'selected', 1),
+        ],
+      );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
         'preserves a find-people-added recipient through the hydration re-emit',
@@ -604,7 +672,7 @@ void main() {
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'does not re-emit when hydration leaves rendered contacts unchanged',
+        'drops unresolved cache misses after hydration returns no profile',
         setUp: () {
           when(() => mockSharingService.recentlySharedWith).thenReturn([]);
           when(
@@ -633,6 +701,9 @@ void main() {
                 'contact name',
                 isNull,
               ),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts, 'contacts', isEmpty),
         ],
         verify: (_) {
           verify(
@@ -677,7 +748,7 @@ void main() {
           // The hydration re-emit lands when it changes what is on screen.
           isA<ShareSheetState>()
               .having((s) => s.status, 'status', ShareSheetStatus.ready)
-              .having((s) => s.contacts.length, 'contacts.length', 2)
+              .having((s) => s.contacts.length, 'contacts.length', 1)
               .having((s) => s.contacts[0].displayName, 'hydrated name', 'Bob'),
         ],
         verify: (_) {
@@ -729,6 +800,20 @@ void main() {
           isA<ShareSheetState>()
               .having((s) => s.status, 'status', ShareSheetStatus.ready)
               .having((s) => s.contacts.length, 'contacts.length', 2)
+              .having(
+                (s) => s.contacts.first.displayName,
+                'first is from recents',
+                'Alice (recent)',
+              )
+              .having(
+                (s) =>
+                    s.contacts.where((c) => c.pubkey == duplicatePubkey).length,
+                'no duplicate pubkey',
+                1,
+              ),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 1)
               .having(
                 (s) => s.contacts.first.displayName,
                 'first is from recents',

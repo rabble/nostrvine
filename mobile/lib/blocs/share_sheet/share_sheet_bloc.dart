@@ -108,11 +108,36 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           .where((pk) => !recentPubkeys.contains(pk))
           .toList();
 
-      List<ShareableUser> buildContacts(Map<String, UserProfile> profiles) => [
+      ShareableUser? identifiedContact(
+        String pubkey,
+        UserProfile? profile,
+      ) {
+        final contact = ShareableUser.fromProfile(pubkey, profile);
+        return contact.hasVisibleIdentity ? contact : null;
+      }
+
+      List<ShareableUser> buildContacts(
+        Map<String, UserProfile> profiles, {
+        required bool includeMisses,
+      }) => [
         ...recentUsers,
         for (final pubkey in remainingFollows)
-          ShareableUser.fromProfile(pubkey, profiles[pubkey]),
+          if (identifiedContact(pubkey, profiles[pubkey]) case final contact?)
+            contact
+          else if (includeMisses)
+            ShareableUser.fromProfile(pubkey, null),
       ];
+
+      List<ShareableUser> mergeVisibleExtras(List<ShareableUser> base) {
+        final basePubkeys = {for (final contact in base) contact.pubkey};
+        return [
+          for (final contact in state.contacts)
+            if (contact.hasVisibleIdentity &&
+                !basePubkeys.contains(contact.pubkey))
+              contact,
+          ...base,
+        ];
+      }
 
       // Cache-first: one batched Drift read already covers what the visible
       // row needs, so the sheet renders now instead of shimmering through
@@ -127,12 +152,20 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           : await _profileRepository.getCachedProfiles(
               pubkeys: remainingFollows,
             );
-      final cachedByPubkey = {for (final p in cached) p.pubkey: p};
+      final cachedByPubkey = {
+        for (final profile in cached)
+          if (identifiedContact(profile.pubkey, profile) != null)
+            profile.pubkey: profile,
+      };
+      final cacheFirstContacts = buildContacts(
+        cachedByPubkey,
+        includeMisses: true,
+      );
 
       emit(
         state.copyWith(
           status: ShareSheetStatus.ready,
-          contacts: buildContacts(cachedByPubkey),
+          contacts: mergeVisibleExtras(cacheFirstContacts),
           clearActionResult: true,
         ),
       );
@@ -153,15 +186,14 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         );
         if (isClosed) return;
 
-        final hydrated = buildContacts({...cachedByPubkey, ...profiles});
+        final hydrated = buildContacts(
+          {...cachedByPubkey, ...profiles},
+          includeMisses: false,
+        );
         // A recipient picked via Find People mid-hydration was prepended to
         // the row by the toggle handler; keep any still-visible extra contacts
         // in their current order through the swap.
-        final merged = [
-          for (final contact in state.contacts)
-            if (!hydrated.any((c) => c.pubkey == contact.pubkey)) contact,
-          ...hydrated,
-        ];
+        final merged = mergeVisibleExtras(hydrated);
         emit(
           state.copyWith(
             status: ShareSheetStatus.ready,

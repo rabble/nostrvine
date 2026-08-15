@@ -44,8 +44,9 @@ abstract interface class ProfileReader {
   /// The batch counterpart to [getCachedProfile]: same local-storage-only
   /// semantics — one `WHERE pubkey IN (...)` read, no relay, no REST — so it
   /// satisfies the signer-free, relay-optional invariant this interface
-  /// guards. Pubkeys without a cached profile are absent from the result,
-  /// which is not order-aligned with [pubkeys].
+  /// guards. Pubkeys without a cached profile, or profiles filtered by the
+  /// repository's block policy, are absent from the result, which is not
+  /// order-aligned with [pubkeys].
   Future<List<UserProfile>> getCachedProfiles({
     required List<String> pubkeys,
   });
