@@ -136,6 +136,41 @@ void main() {
       );
     });
 
+    testWidgets('skips dead pending avatar URLs in the preview', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: 'https://v.cdn.vine.co/v/avatars/staged.jpg',
+        ),
+      );
+
+      await pump(tester);
+
+      expect(
+        tester.widget<UserAvatar>(find.byType(UserAvatar)).imageProvider,
+        isNull,
+      );
+    });
+
+    testWidgets('skips dead persisted avatar URLs in the preview', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        const ProfileEditorState(
+          persistedPictureUrl: 'https://v.cdn.vine.co/v/avatars/persisted.jpg',
+        ),
+      );
+
+      await pump(tester);
+
+      expect(
+        tester.widget<UserAvatar>(find.byType(UserAvatar)).imageProvider,
+        isNull,
+      );
+    });
+
     testWidgets(
       're-subscribes the avatar name when nameController is swapped',
       (tester) async {
@@ -228,9 +263,7 @@ void main() {
       Future<void> pickFromGallery(WidgetTester tester) async {
         await tester.tap(find.byType(DivineIconButton));
         await tester.pumpAndSettle();
-        await tester.tap(
-          find.text(l10n.profileSetupImageUploadFromCameraRoll),
-        );
+        await tester.tap(find.text(l10n.profileSetupImageUploadFromCameraRoll));
         await tester.pumpAndSettle();
       }
 

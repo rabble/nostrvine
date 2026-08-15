@@ -12,6 +12,7 @@ import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
 import 'package:openvine/screens/profile_setup/widgets/image_url_sheet.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_image_actions_sheet.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_image_picker.dart';
+import 'package:openvine/utils/dead_image_hosts.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -148,7 +149,9 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
     }
 
     final pending = editorState.pendingPictureUrl;
-    if (pending != null && pending.isNotEmpty) {
+    if (pending != null &&
+        pending.isNotEmpty &&
+        !isKnownDeadImageHost(pending)) {
       return NetworkImage(pending);
     }
 
@@ -157,7 +160,9 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
     if (editorState.pictureCleared) return null;
 
     final persisted = editorState.persistedPictureUrl;
-    if (persisted != null && persisted.isNotEmpty) {
+    if (persisted != null &&
+        persisted.isNotEmpty &&
+        !isKnownDeadImageHost(persisted)) {
       return NetworkImage(persisted);
     }
 

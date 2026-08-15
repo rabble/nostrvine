@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:openvine/utils/dead_image_hosts.dart';
 import 'package:openvine/utils/open_vine_image_cache.dart';
 
 export 'package:openvine/utils/open_vine_image_cache.dart'
@@ -102,6 +103,13 @@ class _VineCachedImageState extends State<VineCachedImage> {
   }
 
   void _resolveImageStream() {
+    if (isKnownDeadImageHost(widget.imageUrl)) {
+      _removeImageListener();
+      _error = null;
+      _hasImage = false;
+      return;
+    }
+
     final newStream = _imageProvider.resolve(
       createLocalImageConfiguration(context),
     );
@@ -159,6 +167,18 @@ class _VineCachedImageState extends State<VineCachedImage> {
 
   @override
   Widget build(BuildContext context) {
+    // A known-dead host must never be resolved: the origin is gone, so the
+    // request would only burn a failure before landing here anyway.
+    if (isKnownDeadImageHost(widget.imageUrl)) {
+      return _ErrorWidget(
+        error: StateError('known-dead image host: ${widget.imageUrl}'),
+        imageUrl: widget.imageUrl,
+        width: widget.width,
+        height: widget.height,
+        errorWidget: widget.errorWidget,
+      );
+    }
+
     if (_error != null) {
       return _ErrorWidget(
         error: _error!,
