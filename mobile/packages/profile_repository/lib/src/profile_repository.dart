@@ -398,7 +398,10 @@ class ProfileRepository implements ProfileReader {
     required List<String> pubkeys,
   }) async {
     if (pubkeys.isEmpty) return const [];
-    return _userProfilesDao.getProfilesByPubkeys(pubkeys);
+    final profiles = await _userProfilesDao.getProfilesByPubkeys(pubkeys);
+    final blockFilter = _blockFilter;
+    if (blockFilter == null) return profiles;
+    return profiles.where((p) => !blockFilter(p.pubkey)).toList();
   }
 
   /// Persists a profile to local storage (SQLite).

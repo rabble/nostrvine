@@ -125,6 +125,29 @@ void main() {
       },
     );
 
+    test('filters blocked profiles from batch cache reads', () async {
+      final blocked = UserProfile(
+        pubkey: _pubkey,
+        name: 'blocked-name',
+        rawData: const {},
+        createdAt: DateTime.utc(2026),
+        eventId: 'event-id',
+      );
+      when(
+        () => userProfilesDao.getProfilesByPubkeys([_pubkey]),
+      ).thenAnswer((_) async => [blocked]);
+      repository = ProfileRepository(
+        nostrClient: _MockNostrClient(),
+        userProfilesDao: userProfilesDao,
+        httpClient: _MockHttpClient(),
+        blockFilter: (pubkey) => pubkey == _pubkey,
+      );
+
+      final ProfileReader reader = repository;
+
+      expect(await reader.getCachedProfiles(pubkeys: [_pubkey]), isEmpty);
+    });
+
     test('an implementation needs no signer and no relay client', () {
       // _ExhaustiveReader satisfies the contract with neither. If this stops
       // compiling, a signing member reached the interface.

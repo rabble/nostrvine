@@ -79,22 +79,6 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final BaseCacheManager? _cacheManager;
   final VideoClipImportService? _videoClipImportService;
 
-  /// Whether two contact rows render identically, compared over the fields
-  /// the row actually shows. Used to skip a hydration re-emit that would
-  /// only rebuild the row for zero new information.
-  static bool _sameContacts(List<ShareableUser> a, List<ShareableUser> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i].pubkey != b[i].pubkey ||
-          a[i].displayName != b[i].displayName ||
-          a[i].handle != b[i].handle ||
-          a[i].picture != b[i].picture) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   void _addUnexpectedError(
     Object error,
     StackTrace stackTrace,
@@ -154,26 +138,30 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
 
       if (remainingFollows.isEmpty) return;
+      final cacheMisses = [
+        for (final pubkey in remainingFollows)
+          if (!cachedByPubkey.containsKey(pubkey)) pubkey,
+      ];
+      if (cacheMisses.isEmpty) return;
 
       // Hydrate the misses in the background and re-emit only when the row
       // would actually change. A failure here must not erase the cache-first
       // render already on screen.
       try {
         final profiles = await _profileRepository.fetchBatchProfiles(
-          pubkeys: remainingFollows,
+          pubkeys: cacheMisses,
         );
         if (isClosed) return;
 
-        final hydrated = buildContacts(profiles);
+        final hydrated = buildContacts({...cachedByPubkey, ...profiles});
         // A recipient picked via Find People mid-hydration was prepended to
-        // the row by the toggle handler; keep them visible through the swap.
+        // the row by the toggle handler; keep any still-visible extra contacts
+        // in their current order through the swap.
         final merged = [
-          for (final r in state.selectedRecipients)
-            if (!hydrated.any((c) => c.pubkey == r.pubkey)) r,
+          for (final contact in state.contacts)
+            if (!hydrated.any((c) => c.pubkey == contact.pubkey)) contact,
           ...hydrated,
         ];
-        if (_sameContacts(state.contacts, merged)) return;
-
         emit(
           state.copyWith(
             status: ShareSheetStatus.ready,
