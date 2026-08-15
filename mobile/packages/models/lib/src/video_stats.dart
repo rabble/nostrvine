@@ -30,6 +30,7 @@ class VideoStats {
     required this.reposts,
     required this.engagementScore,
     this.publishedAt,
+    this.eventCreatedAt,
     this.description,
     this.sha256,
     this.authorName,
@@ -90,16 +91,21 @@ class VideoStats {
     pubkey = pubkey.toLowerCase();
 
     // Parse created_at - funnelcake returns Unix timestamp (int), not ISO
-    DateTime createdAt;
+    late final DateTime createdAt;
+    int? eventCreatedAt;
     final rawCreatedAt = eventData['created_at'];
     if (rawCreatedAt is int) {
       createdAt = DateTime.fromMillisecondsSinceEpoch(
         rawCreatedAt * 1000,
         isUtc: true,
       );
+      eventCreatedAt = rawCreatedAt;
     } else if (rawCreatedAt is String) {
-      createdAt =
-          DateTime.tryParse(rawCreatedAt)?.toUtc() ?? DateTime.now().toUtc();
+      final parsedCreatedAt = DateTime.tryParse(rawCreatedAt)?.toUtc();
+      createdAt = parsedCreatedAt ?? DateTime.now().toUtc();
+      eventCreatedAt = parsedCreatedAt == null
+          ? null
+          : parsedCreatedAt.millisecondsSinceEpoch ~/ 1000;
     } else {
       createdAt = DateTime.now().toUtc();
     }
@@ -390,6 +396,7 @@ class VideoStats {
       id: id,
       pubkey: pubkey,
       createdAt: createdAt,
+      eventCreatedAt: eventCreatedAt,
       publishedAt: publishedAt,
       kind: (eventData['kind'] as int?) ?? 34236,
       dTag: dTag,
@@ -435,6 +442,10 @@ class VideoStats {
 
   /// When the video was created.
   final DateTime createdAt;
+
+  /// Parsed raw Nostr event `created_at`, or null when the REST value was
+  /// missing or invalid and [createdAt] had to use a display fallback.
+  final int? eventCreatedAt;
 
   /// Unix timestamp of when the video was published (`published_at` tag).
   ///
@@ -578,6 +589,7 @@ class VideoStats {
       id: id,
       pubkey: pubkey,
       createdAt: effectiveTimestamp,
+      eventCreatedAt: eventCreatedAt,
       content: description ?? '',
       timestamp: DateTime.fromMillisecondsSinceEpoch(
         effectiveTimestamp * 1000,
