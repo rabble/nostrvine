@@ -1356,5 +1356,100 @@ void main() {
         );
       },
     );
+    test(
+      'Expired session with still-offline terminal state',
+      () async {
+        // Regression: Terminal offline state must not loop upgrade attempts
+        // indefinitely and must preserve session data for future recovery.
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final pubkey = 'ab' * 32;
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_for_offline',
+          userPubkey: pubkey,
+        );
+        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+        secureStorage['keycast_refresh_token'] = 'refresh_token_for_offline';
+
+        // getSession returns null (no active session after expiry)
+        // refreshSession throws OAuthNetworkException (network offline)
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenThrow(
+          OAuthNetworkException('Network offline'),
+        );
+
+        final authService = createAuthService();
+
+        await runZonedGuarded(
+          () async {
+            await authService.initialize();
+
+            // After timeout, identity downgrades to PubkeyOnly
+            expect(
+              authService.currentIdentity,
+              isA<PubkeyOnlyNostrIdentity>(),
+              reason:
+                  'Terminal offline state downgrades to PubkeyOnlyNostrIdentity '
+                  'when no recovery path exists',
+            );
+
+            // RPC capability is unavailable (no recovery possible)
+            expect(
+              authService.authRpcCapability,
+              equals(AuthRpcCapability.unavailable),
+              reason:
+                  'Terminal offline state sets authRpcCapability to unavailable '
+                  'since network is down and no fallback refresh can occur',
+            );
+
+            // Session is still flagged as expired
+            expect(
+              authService.hasExpiredOAuthSession,
+              isTrue,
+              reason:
+                  'Expired session flag persists even in terminal offline state '
+                  'for UI to show recovery affordances',
+            );
+
+            // Refresh token is preserved for potential future recovery
+            expect(
+              secureStorage['keycast_refresh_token'],
+              equals('refresh_token_for_offline'),
+              reason:
+                  'Refresh token must be preserved in terminal offline state '
+                  'so user can manually retry login when network returns',
+            );
+
+            // Background upgrade does not loop indefinitely
+            // (i.e., no scheduled retry on purely offline state)
+            final deadline = DateTime.now().add(const Duration(seconds: 2));
+            while (authService.isRpcUpgradeInProgress &&
+                DateTime.now().isBefore(deadline)) {
+              await Future<void>.delayed(const Duration(milliseconds: 10));
+            }
+
+            expect(
+              authService.isRpcUpgradeInProgress,
+              isFalse,
+              reason:
+                  'Terminal offline state must not schedule infinite upgrade '
+                  'retry — there is no recovery path on the network',
+            );
+          },
+          (error, stack) {
+            // Ignore background errors
+          },
+        );
+      },
+    );
   });
 }
