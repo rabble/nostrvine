@@ -20,11 +20,10 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
-import 'package:openvine/utils/share_position_origin.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_name.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 enum _CuratedListAction { edit, share, delete, unfollow }
@@ -475,11 +474,11 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     );
     final url = 'https://divine.video$path';
     try {
-      await SharePlus.instance.share(
+      await showShareSheet(
+        context,
         ShareParams(
           text: context.l10n.listShareText(list.name, url),
           subject: context.l10n.listShareSubject(list.name),
-          sharePositionOrigin: sharePositionOriginForContext(context),
         ),
       );
     } on Object catch (error, stackTrace) {

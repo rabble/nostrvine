@@ -12,6 +12,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/utils/share_position_origin.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
@@ -172,7 +173,12 @@ Future<void> _openMinorAccountReviewEmailApp({
   required String body,
 }) async {
   try {
-    await composeEmail(toEmail: supportEmail, subject: subject, body: body);
+    await composeEmail(
+      toEmail: supportEmail,
+      subject: subject,
+      body: body,
+      sharePositionOrigin: shareAnchorForContext(context),
+    );
   } catch (_) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

@@ -12,8 +12,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/services/watermark_download_service.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/retry_after_settings_on_resume.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Shows a bottom sheet that tracks original video save progress.
 Future<void> showSaveOriginalSheet({
@@ -78,7 +78,8 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
   }
 
   Future<void> _shareFile(WatermarkDownloadSuccess success) async {
-    await SharePlus.instance.share(
+    await showShareSheet(
+      context,
       ShareParams(files: [XFile(success.filePath)]),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/share_position_origin.dart';
 
 class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review-parent-consent';
@@ -98,6 +99,7 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
         toEmail: AppConstants.supportEmail,
         subject: context.l10n.minorAccountReviewParentConsentEmailSubject,
         body: context.l10n.minorAccountReviewParentConsentEmailBody,
+        sharePositionOrigin: shareAnchorForContext(context),
       );
     } catch (_) {
       if (!context.mounted) return;

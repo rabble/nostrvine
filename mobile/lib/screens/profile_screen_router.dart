@@ -25,10 +25,10 @@ import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/share_position_origin.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
@@ -169,9 +169,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     final l10n = context.l10n;
     final shareTextFn = l10n.profileShareText;
     final shareSubjectFn = l10n.profileShareSubject;
-    final sharePositionOrigin = sharePositionOriginForContext(
-      shareButtonContext,
-    );
+    final sharePositionOrigin = shareAnchorForContext(shareButtonContext);
 
     try {
       // Get profile info for better share text
@@ -186,12 +184,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       // Create share text with divine.video URL format
       final shareText = shareTextFn(displayName, npub);
 
-      final result = await SharePlus.instance.share(
-        ShareParams(
-          text: shareText,
-          subject: shareSubjectFn(displayName),
-          sharePositionOrigin: sharePositionOrigin,
-        ),
+      final result = await showShareSheetAtOrigin(
+        ShareParams(text: shareText, subject: shareSubjectFn(displayName)),
+        sharePositionOrigin: sharePositionOrigin,
       );
 
       if (result.status == ShareResultStatus.success) {
