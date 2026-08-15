@@ -226,12 +226,57 @@ void main() {
       expect(
         diagnostics,
         contains(
-          'Cache: video 1.5 GB/2.0 GB · images 128.0 MB/256.0 MB · '
-          'seams 64.0 MB/200.0 MB · temp 32.0 MB',
+          'Cache: video 1.5 GB/2.0 GB '
+          '(75.0%, within limit, 1610612736/2147483648 bytes) · '
+          'images 128.0 MB/256.0 MB '
+          '(50.0%, within limit, 134217728/268435456 bytes) · '
+          'seams 64.0 MB/200.0 MB '
+          '(32.0%, within limit, 67108864/209715200 bytes) · '
+          'temp 32.0 MB',
         ),
       );
       expect(diagnostics, isNot(contains('used /')));
-      expect(diagnostics, isNot(contains('limit')));
+      expect(diagnostics, contains('within limit'));
+    });
+
+    test('reports exact cache limit status at and over budget', () async {
+      final storage = _MockStorageManagementService();
+      when(storage.cacheUsage).thenAnswer(
+        (_) async => const CacheUsage(
+          video: CacheUsageCategory(
+            usedBytes: 2 * 1024 * 1024 * 1024,
+            limitBytes: 2 * 1024 * 1024 * 1024,
+          ),
+          images: CacheUsageCategory(
+            usedBytes: 300 * 1024 * 1024,
+            limitBytes: 256 * 1024 * 1024,
+          ),
+          transitionSeams: CacheUsageCategory(
+            usedBytes: 0,
+            limitBytes: 200 * 1024 * 1024,
+          ),
+          tempRenders: CacheUsageCategory(usedBytes: 0),
+        ),
+      );
+
+      final diagnostics = await BugReportService(
+        storageManagementService: storage,
+      ).buildEnvironmentDiagnostics();
+
+      expect(
+        diagnostics,
+        contains(
+          'video 2.0 GB/2.0 GB '
+          '(100.0%, at limit, 2147483648/2147483648 bytes)',
+        ),
+      );
+      expect(
+        diagnostics,
+        contains(
+          'images 300.0 MB/256.0 MB '
+          '(117.2%, over limit by 44.0 MB, 314572800/268435456 bytes)',
+        ),
+      );
     });
   });
 

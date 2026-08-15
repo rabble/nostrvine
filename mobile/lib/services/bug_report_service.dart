@@ -671,7 +671,17 @@ class BugReportService {
     final limitBytes = usage.limitBytes;
     final used = _formatBytesShort(usage.usedBytes);
     if (limitBytes == null) return used;
-    return '$used/${_formatBytesShort(limitBytes)}';
+    final ratio = limitBytes == 0 ? 0 : usage.usedBytes / limitBytes;
+    final percent = (ratio * 100).toStringAsFixed(1);
+    final status = _cacheBudgetStatus(usage.usedBytes, limitBytes);
+    return '$used/${_formatBytesShort(limitBytes)} '
+        '($percent%, $status, ${usage.usedBytes}/$limitBytes bytes)';
+  }
+
+  static String _cacheBudgetStatus(int usedBytes, int limitBytes) {
+    if (usedBytes < limitBytes) return 'within limit';
+    if (usedBytes == limitBytes) return 'at limit';
+    return 'over limit by ${_formatBytesShort(usedBytes - limitBytes)}';
   }
 
   /// Human-readable device identifier for the export header, e.g.
