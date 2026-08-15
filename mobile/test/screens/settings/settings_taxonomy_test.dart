@@ -298,7 +298,7 @@ void main() {
     expect(find.text('Closed Captions'), findsOneWidget);
     expect(find.text('Square videos only'), findsOneWidget);
     expect(find.text('App Language'), findsOneWidget);
-    expect(find.text('Appearance'), findsNothing);
+    expect(find.text('Appearance'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Make my audio available for reuse'),
       120,
@@ -344,18 +344,13 @@ void main() {
     );
   });
 
-  testWidgets('General Settings shows Appearance when Light Mode is enabled', (
+  testWidgets('General Settings shows Appearance', (
     tester,
   ) async {
     await setStandardSurface(tester);
     await tester.pumpWidget(
       wrap(
         const GeneralSettingsScreen(),
-        overrides: [
-          isFeatureEnabledProvider(
-            FeatureFlag.lightMode,
-          ).overrideWithValue(true),
-        ],
       ),
     );
     await tester.pumpAndSettle();

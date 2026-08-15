@@ -2740,12 +2740,8 @@ class _DivineAppState extends ConsumerState<DivineApp>
       if (locale != null) {
         Intl.defaultLocale = locale.toLanguageTag();
       }
-      final lightModeEnabled = ref.watch(
-        isFeatureEnabledProvider(FeatureFlag.lightMode),
-      );
       final themeMode = resolveThemeMode(
         mode: appearanceMode,
-        lightModeEnabled: lightModeEnabled,
       );
       final effectiveBrightness = themeMode == ThemeMode.system
           ? WidgetsBinding.instance.platformDispatcher.platformBrightness

@@ -66,38 +66,25 @@ void main() {
       expect: () => [AppearanceMode.light],
     );
 
-    test('resolves disabled Light Mode to dark', () {
-      expect(
-        resolveThemeMode(
-          mode: AppearanceMode.light,
-          lightModeEnabled: false,
-        ),
-        ThemeMode.dark,
-      );
-    });
-
     test('resolves System to the platform-reactive ThemeMode', () {
       expect(
         resolveThemeMode(
           mode: AppearanceMode.system,
-          lightModeEnabled: true,
         ),
         ThemeMode.system,
       );
     });
 
-    test('resolves enabled explicit modes', () {
+    test('resolves explicit modes without a feature flag', () {
       expect(
         resolveThemeMode(
           mode: AppearanceMode.light,
-          lightModeEnabled: true,
         ),
         ThemeMode.light,
       );
       expect(
         resolveThemeMode(
           mode: AppearanceMode.dark,
-          lightModeEnabled: true,
         ),
         ThemeMode.dark,
       );

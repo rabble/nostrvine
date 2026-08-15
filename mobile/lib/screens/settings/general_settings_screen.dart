@@ -38,9 +38,6 @@ class GeneralSettingsScreen extends ConsumerWidget {
     final showBluesky = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.blueskyPublishing),
     );
-    final showAppearance = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.lightMode),
-    );
     final showCrossposting = ref.watch(crosspostingEligibleProvider);
     // Only a Divine-login account has an email and password to change; every
     // other identity signs with a key and has no credentials on file.
@@ -113,8 +110,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
               const _LongPressRecordingToggle(),
               DivineSectionHeader(context.l10n.generalSettingsSectionApp),
               const _AppLanguageTile(),
-              if (showAppearance)
-                ListTile(
+              ListTile(
                   leading: const DivineIcon(
                     icon: DivineIconName.sun,
                     color: VineTheme.vineGreen,
