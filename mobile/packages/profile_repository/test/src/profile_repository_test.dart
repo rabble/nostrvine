@@ -6756,6 +6756,44 @@ void main() {
         verifyNever(() => mockNostrClient.fetchProfile(any()));
       });
 
+      test('filters blocked profiles when all results are cached', () async {
+        final blocked = UserProfile(
+          pubkey: testPubkey,
+          displayName: 'Blocked Cached',
+          rawData: const {},
+          createdAt: DateTime(2026),
+          eventId: 'blocked-cached-event',
+        );
+        final allowed = UserProfile(
+          pubkey: testPubkey2,
+          displayName: 'Allowed Cached',
+          rawData: const {},
+          createdAt: DateTime(2026),
+          eventId: 'allowed-cached-event',
+        );
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys([
+            testPubkey,
+            testPubkey2,
+          ]),
+        ).thenAnswer((_) async => [blocked, allowed]);
+
+        final repoWithBlockFilter = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          blockFilter: (pubkey) => pubkey == testPubkey,
+        );
+
+        final result = await repoWithBlockFilter.fetchBatchProfiles(
+          pubkeys: [testPubkey, testPubkey2],
+        );
+
+        expect(result.containsKey(testPubkey), isFalse);
+        expect(result[testPubkey2]?.displayName, equals('Allowed Cached'));
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
+
       test('fetches uncached from Funnelcake API', () async {
         when(
           () => mockUserProfilesDao.getProfilesByPubkeys(any()),

@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:dm_repository/dm_repository.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 // `auth_service` exports an unrelated `UserProfile`; hide it so the models
@@ -14,6 +15,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Represents a user that can receive shared videos
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+@immutable
 class ShareableUser {
   const ShareableUser({
     required this.pubkey,
@@ -80,6 +82,23 @@ class ShareableUser {
   /// secondary line at all rather than falling back to an npub.
   final String? handle;
   final String? picture;
+
+  /// Whether the share row has enough user-visible data for a recipient tile.
+  bool get hasVisibleIdentity =>
+      displayName != null || handle != null || picture != null;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ShareableUser &&
+          runtimeType == other.runtimeType &&
+          pubkey == other.pubkey &&
+          displayName == other.displayName &&
+          handle == other.handle &&
+          picture == other.picture;
+
+  @override
+  int get hashCode => Object.hash(pubkey, displayName, handle, picture);
 }
 
 /// Structured share metadata for the platform share sheet.

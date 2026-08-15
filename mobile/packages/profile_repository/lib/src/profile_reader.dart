@@ -39,6 +39,18 @@ abstract interface class ProfileReader {
   /// Returns `null` if no cached profile exists for the given pubkey.
   Future<UserProfile?> getCachedProfile({required String pubkey});
 
+  /// Returns the cached profiles for [pubkeys] in a single Drift query.
+  ///
+  /// The batch counterpart to [getCachedProfile]: same local-storage-only
+  /// semantics — one `WHERE pubkey IN (...)` read, no relay, no REST — so it
+  /// satisfies the signer-free, relay-optional invariant this interface
+  /// guards. Pubkeys without a cached profile, or profiles filtered by the
+  /// repository's block policy, are absent from the result, which is not
+  /// order-aligned with [pubkeys].
+  Future<List<UserProfile>> getCachedProfiles({
+    required List<String> pubkeys,
+  });
+
   /// Watches the cached profile for [pubkey], emitting on every cache write.
   Stream<UserProfile?> watchProfile({required String pubkey});
 

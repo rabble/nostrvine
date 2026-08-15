@@ -123,6 +123,11 @@ void main() {
           pubkeys: any(named: 'pubkeys'),
         ),
       ).thenAnswer((_) async => <String, UserProfile>{});
+      when(
+        () => mockProfileRepository.getCachedProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => <UserProfile>[]);
     });
 
     ShareSheetBloc createBloc({
@@ -199,6 +204,14 @@ void main() {
                 'first contact pubkey',
                 testRecipient.pubkey,
               ),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 1)
+              .having(
+                (s) => s.contacts.first.pubkey,
+                'first contact pubkey',
+                testRecipient.pubkey,
+              ),
         ],
       );
 
@@ -236,6 +249,472 @@ void main() {
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
+        'renders cached profiles immediately, then re-emits after hydration',
+        setUp: () {
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([profiledFollow, unprofiledFollow]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              UserProfile(
+                pubkey: profiledFollow,
+                createdAt: DateTime.now(),
+                eventId: 'event-$profiledFollow',
+                rawData: const {},
+                name: 'CachedAlice',
+              ),
+            ],
+          );
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => {
+              unprofiledFollow: UserProfile(
+                pubkey: unprofiledFollow,
+                createdAt: DateTime.now(),
+                eventId: 'event-$unprofiledFollow',
+                rawData: const {},
+                name: 'HydratedBob',
+              ),
+            },
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          // Cache-first render: the Drift-cached name shows now; the uncached
+          // follow is present as a pending, non-interactive skeleton row rather
+          // than blocking the whole row.
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 2)
+              .having(
+                (s) => s.contacts[0].displayName,
+                'first contact name',
+                'CachedAlice',
+              )
+              .having(
+                (s) => s.contacts[1].displayName,
+                'second contact name',
+                isNull,
+              ),
+          // Hydration re-emit: misses filled in from the network batch.
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having(
+                (s) => s.contacts[0].displayName,
+                'first contact name',
+                'CachedAlice',
+              )
+              .having(
+                (s) => s.contacts[1].displayName,
+                'second contact name',
+                'HydratedBob',
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: [profiledFollow, unprofiledFollow],
+            ),
+          ).called(1);
+          verify(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: [unprofiledFollow],
+            ),
+          ).called(1);
+        },
+      );
+
+      late Completer<List<UserProfile>> cacheRead;
+      late Completer<Map<String, UserProfile>> hydration;
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'preserves a find-people recipient picked during the cache read',
+        setUp: () {
+          cacheRead = Completer<List<UserProfile>>();
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([profiledFollow]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) => cacheRead.future);
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) async => <String, UserProfile>{});
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ShareSheetContactsLoadRequested());
+          await pumpEventQueue();
+          bloc.add(
+            const ShareSheetRecipientToggled(
+              ShareableUser(
+                pubkey:
+                    'zzzz56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+                displayName: 'Picked Stranger',
+              ),
+            ),
+          );
+          await pumpEventQueue();
+          cacheRead.complete([
+            UserProfile(
+              pubkey: profiledFollow,
+              createdAt: DateTime.now(),
+              eventId: 'event-$profiledFollow',
+              rawData: const {},
+              name: 'CachedAlice',
+            ),
+          ]);
+          await pumpEventQueue();
+        },
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.loading)
+              .having(
+                (s) => s.contacts.first.displayName,
+                'picked first while loading',
+                'Picked Stranger',
+              )
+              .having((s) => s.selectedRecipients.length, 'selected', 1),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having(
+                (s) => s.contacts.map((c) => c.displayName).toList(),
+                'row contents',
+                ['Picked Stranger', 'CachedAlice'],
+              )
+              .having((s) => s.selectedRecipients.length, 'selected', 1),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'preserves a find-people-added recipient through the hydration re-emit',
+        setUp: () {
+          hydration = Completer<Map<String, UserProfile>>();
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([profiledFollow]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) async => <UserProfile>[]);
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) => hydration.future);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ShareSheetContactsLoadRequested());
+          await pumpEventQueue();
+          bloc.add(
+            const ShareSheetRecipientToggled(
+              ShareableUser(
+                pubkey:
+                    'zzzz56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+                displayName: 'Picked Stranger',
+              ),
+            ),
+          );
+          await pumpEventQueue();
+          hydration.complete({
+            profiledFollow: UserProfile(
+              pubkey: profiledFollow,
+              createdAt: DateTime.now(),
+              eventId: 'event-$profiledFollow',
+              rawData: const {},
+              name: 'HydratedAlice',
+            ),
+          });
+        },
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          isA<ShareSheetState>().having(
+            (s) => s.status,
+            'status',
+            ShareSheetStatus.ready,
+          ),
+          // The toggle prepends the picked stranger.
+          isA<ShareSheetState>()
+              .having(
+                (s) => s.contacts.first.displayName,
+                'picked first',
+                'Picked Stranger',
+              )
+              .having((s) => s.selectedRecipients.length, 'selected', 1),
+          // Hydration re-emit must not drop them from the row or the selection.
+          isA<ShareSheetState>()
+              .having(
+                (s) => s.contacts.first.displayName,
+                'picked still first',
+                'Picked Stranger',
+              )
+              .having((s) => s.selectedRecipients.length, 'selected', 1)
+              .having(
+                (s) => s.contacts.map((c) => c.displayName).toList(),
+                'row contents',
+                ['Picked Stranger', 'HydratedAlice'],
+              ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'keeps a deselected find-people recipient visible through hydration',
+        setUp: () {
+          hydration = Completer<Map<String, UserProfile>>();
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([profiledFollow]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) async => <UserProfile>[]);
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) => hydration.future);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          const picked = ShareableUser(
+            pubkey:
+                'zzzz56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            displayName: 'Picked Stranger',
+          );
+          bloc.add(const ShareSheetContactsLoadRequested());
+          await pumpEventQueue();
+          bloc.add(const ShareSheetRecipientToggled(picked));
+          await pumpEventQueue();
+          bloc.add(const ShareSheetRecipientToggled(picked));
+          await pumpEventQueue();
+          hydration.complete({
+            profiledFollow: UserProfile(
+              pubkey: profiledFollow,
+              createdAt: DateTime.now(),
+              eventId: 'event-$profiledFollow',
+              rawData: const {},
+              name: 'HydratedAlice',
+            ),
+          });
+        },
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          isA<ShareSheetState>().having(
+            (s) => s.status,
+            'status',
+            ShareSheetStatus.ready,
+          ),
+          isA<ShareSheetState>()
+              .having(
+                (s) => s.contacts.first.displayName,
+                'picked first',
+                'Picked Stranger',
+              )
+              .having((s) => s.selectedRecipients.length, 'selected', 1),
+          isA<ShareSheetState>()
+              .having(
+                (s) => s.contacts.first.displayName,
+                'picked remains visible',
+                'Picked Stranger',
+              )
+              .having((s) => s.selectedRecipients, 'selected', isEmpty),
+          isA<ShareSheetState>()
+              .having((s) => s.selectedRecipients, 'selected', isEmpty)
+              .having(
+                (s) => s.contacts.map((c) => c.displayName).toList(),
+                'row contents',
+                ['Picked Stranger', 'HydratedAlice'],
+              ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'preserves find-people row order through hydration',
+        setUp: () {
+          hydration = Completer<Map<String, UserProfile>>();
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([profiledFollow]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) async => <UserProfile>[]);
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) => hydration.future);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          const firstPicked = ShareableUser(
+            pubkey:
+                'yyyy56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            displayName: 'Picked First',
+          );
+          const secondPicked = ShareableUser(
+            pubkey:
+                'zzzz56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            displayName: 'Picked Second',
+          );
+          bloc.add(const ShareSheetContactsLoadRequested());
+          await pumpEventQueue();
+          bloc.add(const ShareSheetRecipientToggled(firstPicked));
+          await pumpEventQueue();
+          bloc.add(const ShareSheetRecipientToggled(secondPicked));
+          await pumpEventQueue();
+          hydration.complete({
+            profiledFollow: UserProfile(
+              pubkey: profiledFollow,
+              createdAt: DateTime.now(),
+              eventId: 'event-$profiledFollow',
+              rawData: const {},
+              name: 'HydratedAlice',
+            ),
+          });
+        },
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          isA<ShareSheetState>().having(
+            (s) => s.status,
+            'status',
+            ShareSheetStatus.ready,
+          ),
+          isA<ShareSheetState>().having(
+            (s) => s.contacts.map((c) => c.displayName).toList(),
+            'row contents',
+            ['Picked First', null],
+          ),
+          isA<ShareSheetState>().having(
+            (s) => s.contacts.map((c) => c.displayName).toList(),
+            'row contents',
+            ['Picked Second', 'Picked First', null],
+          ),
+          isA<ShareSheetState>().having(
+            (s) => s.contacts.map((c) => c.displayName).toList(),
+            'row contents',
+            ['Picked Second', 'Picked First', 'HydratedAlice'],
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'keeps the cache-first render when background hydration fails',
+        setUp: () {
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([profiledFollow, unprofiledFollow]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              UserProfile(
+                pubkey: profiledFollow,
+                createdAt: DateTime.now(),
+                eventId: 'event-$profiledFollow',
+                rawData: const {},
+                name: 'CachedAlice',
+              ),
+            ],
+          );
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenThrow(Exception('relay storm down'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          // The failure must not erase what was already on screen.
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 2)
+              .having(
+                (s) => s.contacts[0].displayName,
+                'first contact name',
+                'CachedAlice',
+              )
+              .having(
+                (s) => s.contacts[1].displayName,
+                'second contact name',
+                isNull,
+              ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'drops unresolved cache misses after hydration returns no profile',
+        setUp: () {
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([unprofiledFollow]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) async => <UserProfile>[]);
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) async => <String, UserProfile>{});
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 1)
+              .having(
+                (s) => s.contacts[0].displayName,
+                'contact name',
+                isNull,
+              ),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts, 'contacts', isEmpty),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: [unprofiledFollow],
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
         'loads follow profiles via one fetchBatchProfiles call, no per-pubkey '
         'storm',
         setUp: () {
@@ -253,7 +732,8 @@ void main() {
                 pubkey: profiledFollow,
                 createdAt: DateTime.now(),
                 eventId: 'event-$profiledFollow',
-                rawData: const {'name': 'Bob'},
+                rawData: const {},
+                name: 'Bob',
               ),
             },
           );
@@ -265,9 +745,14 @@ void main() {
           isA<ShareSheetState>()
               .having((s) => s.status, 'status', ShareSheetStatus.ready)
               .having((s) => s.contacts.length, 'contacts.length', 2),
+          // The hydration re-emit lands when it changes what is on screen.
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 1)
+              .having((s) => s.contacts[0].displayName, 'hydrated name', 'Bob'),
         ],
         verify: (_) {
-          // Exactly one batched read covering both follows, in order — the
+          // Exactly one network batch covering both follows, in order — the
           // per-pubkey getCachedProfile/fetchFreshProfile storm is gone.
           final captured = verify(
             () => mockProfileRepository.fetchBatchProfiles(
@@ -315,6 +800,20 @@ void main() {
           isA<ShareSheetState>()
               .having((s) => s.status, 'status', ShareSheetStatus.ready)
               .having((s) => s.contacts.length, 'contacts.length', 2)
+              .having(
+                (s) => s.contacts.first.displayName,
+                'first is from recents',
+                'Alice (recent)',
+              )
+              .having(
+                (s) =>
+                    s.contacts.where((c) => c.pubkey == duplicatePubkey).length,
+                'no duplicate pubkey',
+                1,
+              ),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 1)
               .having(
                 (s) => s.contacts.first.displayName,
                 'first is from recents',
@@ -1542,10 +2041,8 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetBookmarkStatusRequested()),
         expect: () => <ShareSheetState>[],
-        verify: (bloc) => expect(
-          bloc.state.bookmarkStatus,
-          ShareSheetBookmarkStatus.unknown,
-        ),
+        verify: (bloc) =>
+            expect(bloc.state.bookmarkStatus, ShareSheetBookmarkStatus.unknown),
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(

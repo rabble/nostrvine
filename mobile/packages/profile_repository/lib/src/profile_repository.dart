@@ -394,14 +394,18 @@ class ProfileRepository implements ProfileReader {
   /// pubkey. Callers resolving a whole list (follow lists, pickers) should use
   /// this — the per-pubkey variant costs a Drift round trip each.
   ///
-  /// Pubkeys without a cached profile are absent from the result, so the
-  /// returned list may be shorter than [pubkeys] and is not order-aligned
-  /// with it.
+  /// Pubkeys without a cached profile, or profiles filtered by this
+  /// repository's block policy, are absent from the result. The returned list
+  /// may be shorter than [pubkeys] and is not order-aligned with it.
+  @override
   Future<List<UserProfile>> getCachedProfiles({
     required List<String> pubkeys,
   }) async {
     if (pubkeys.isEmpty) return const [];
-    return _userProfilesDao.getProfilesByPubkeys(pubkeys);
+    final profiles = await _userProfilesDao.getProfilesByPubkeys(pubkeys);
+    final blockFilter = _blockFilter;
+    if (blockFilter == null) return profiles;
+    return profiles.where((p) => !blockFilter(p.pubkey)).toList();
   }
 
   /// Persists a profile to local storage (SQLite).
@@ -2429,6 +2433,14 @@ class ProfileRepository implements ProfileReader {
     final results = <String, UserProfile>{};
     final remaining = Set<String>.of(pubkeys);
 
+    Map<String, UserProfile> filteredResults() {
+      final blockFilter = _blockFilter;
+      if (blockFilter != null) {
+        results.removeWhere((pubkey, _) => blockFilter(pubkey));
+      }
+      return results;
+    }
+
     // Step 1: Batch-read Drift cache
     final cached = await _userProfilesDao.getProfilesByPubkeys(pubkeys);
     for (final profile in cached) {
@@ -2443,7 +2455,7 @@ class ProfileRepository implements ProfileReader {
       revalidateVanishOnce(pubkey);
       return true;
     });
-    if (remaining.isEmpty) return results;
+    if (remaining.isEmpty) return filteredResults();
 
     Log.debug(
       'Batch fetch: ${cached.length} cached, ${remaining.length} uncached',
@@ -2590,10 +2602,7 @@ class ProfileRepository implements ProfileReader {
       _confirmedMissing.addAll(remaining);
     }
 
-    final blockFilter = _blockFilter;
-    if (blockFilter != null) {
-      results.removeWhere((pubkey, _) => blockFilter(pubkey));
-    }
+    filteredResults();
 
     Log.debug(
       'Batch complete: ${results.length}/${pubkeys.length} resolved, '
