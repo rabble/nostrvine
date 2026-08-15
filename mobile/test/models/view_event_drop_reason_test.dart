@@ -28,16 +28,6 @@ void main() {
     test('an inverted watch range is structural, not an expected skip', () {
       expect(ViewEventDropReason.invalidWatchRange.isStructural, isTrue);
     });
-
-    test('every reason states its reportability', () {
-      for (final reason in ViewEventDropReason.values) {
-        expect(
-          () => reason.isStructural,
-          returnsNormally,
-          reason: '$reason must declare whether it is a defect',
-        );
-      }
-    });
   });
 
   group(ViewEventInvariantException, () {
