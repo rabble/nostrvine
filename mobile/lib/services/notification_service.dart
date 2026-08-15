@@ -154,6 +154,13 @@ class NotificationService {
 
   /// Initialize notification service
   ///
+  /// Resolves the current platform permission state *without prompting*, so
+  /// [sendLocal] starts from a real answer instead of the uninitialized
+  /// [_NotificationPermissionState.unknown]. Showing the permission dialog
+  /// stays with the sign-in-gated push registration flow in
+  /// `PushNotificationSessionCoordinator`, which is the only place the app is
+  /// allowed to interrupt the user for it.
+  ///
   /// Call this from main.dart after runApp() to set up notifications:
   /// ```dart
   /// void main() async {
@@ -172,11 +179,11 @@ class NotificationService {
     );
 
     try {
-      // Request notification permissions
-      await _requestPermissions();
+      await refreshPermissionState();
 
       Log.info(
-        'NotificationService initialized',
+        'NotificationService initialized '
+        '(permissionState: ${_permissionState.name})',
         name: 'NotificationService',
         category: LogCategory.system,
       );
@@ -224,15 +231,32 @@ class NotificationService {
       _notifications.where((n) => n.type == type).toList();
 
   /// Ensure notification permissions are granted
-  /// Public method to request permissions explicitly
-  Future<void> ensurePermission() async {
+  ///
+  /// Prompts the user when the platform has not decided yet. Production code
+  /// should prefer [refreshPermissionState] and leave prompting to the
+  /// sign-in-gated push registration flow.
+  Future<void> ensurePermission() => _runPermissionOperation(_ensurePermission);
+
+  /// Re-read the platform permission state without ever prompting.
+  ///
+  /// Resolves [_NotificationPermissionState.unknown] at startup, and re-checks
+  /// a stale `denied` so notifications enabled from system settings take
+  /// effect without an app restart.
+  Future<void> refreshPermissionState() =>
+      _runPermissionOperation(_refreshPermissionState);
+
+  /// Serializes permission work so concurrent callers share one platform
+  /// round-trip instead of racing to overwrite [_permissionState].
+  Future<void> _runPermissionOperation(
+    Future<void> Function() operation,
+  ) async {
     final activeRequest = _permissionRequest;
     if (activeRequest != null) {
       await activeRequest;
       return;
     }
 
-    final request = _ensurePermission();
+    final request = operation();
     _permissionRequest = request;
     try {
       await request;
@@ -240,6 +264,75 @@ class NotificationService {
       if (identical(_permissionRequest, request)) {
         _permissionRequest = null;
       }
+    }
+  }
+
+  Future<void> _refreshPermissionState() async {
+    // Screenshot capture runs must never touch the permission surface — see
+    // [_ensurePermission] for why the iOS dialog deadlocks captures.
+    if (ScreenshotMode.enabled) return;
+
+    if (kIsWeb) {
+      _permissionState =
+          _NotificationPermissionState.granted; // Allow in-app notifications
+      return;
+    }
+
+    try {
+      if (!_pluginInitialized) {
+        await _initializePlugin();
+      }
+
+      final bool? enabled;
+      if (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) {
+        enabled =
+            (await _flutterLocalNotificationsPlugin
+                    .resolvePlatformSpecificImplementation<
+                      IOSFlutterLocalNotificationsPlugin
+                    >()
+                    ?.checkPermissions())
+                ?.isEnabled;
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        enabled = await _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.areNotificationsEnabled();
+      } else {
+        // Other platforms (Linux, Windows) don't require runtime permissions
+        _permissionState = _NotificationPermissionState.granted;
+        return;
+      }
+
+      if (enabled == null) {
+        // No platform implementation answered (test environment, or a host
+        // without native support). Leave the state unresolved rather than
+        // guessing a grant we cannot back up.
+        Log.debug(
+          'Notification permission state unresolved by platform',
+          name: 'NotificationService',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      _permissionState = enabled
+          ? _NotificationPermissionState.granted
+          : _NotificationPermissionState.denied;
+      Log.info(
+        'Notification permissions ${enabled ? "enabled" : "disabled"}',
+        name: 'NotificationService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      // Leave the state unresolved so a later attempt can retry, and so the
+      // skip log distinguishes "could not read" from a real denial.
+      Log.error(
+        'Failed to read notification permission state: $e',
+        name: 'NotificationService',
+        category: LogCategory.system,
+      );
     }
   }
 
@@ -639,12 +732,6 @@ class NotificationService {
         category: LogCategory.system,
       );
     }
-  }
-
-  /// Request notification permissions from platform
-  Future<void> _requestPermissions() async {
-    // Delegate to public ensurePermission method
-    await ensurePermission();
   }
 
   /// Add notification to internal list

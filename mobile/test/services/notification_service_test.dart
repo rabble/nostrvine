@@ -13,6 +13,9 @@ import 'package:openvine/services/notification_service.dart';
 class _MockFlutterLocalNotificationsPlugin extends Mock
     implements FlutterLocalNotificationsPlugin {}
 
+class _MockAndroidFlutterLocalNotificationsPlugin extends Mock
+    implements AndroidFlutterLocalNotificationsPlugin {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(
@@ -232,6 +235,68 @@ void main() {
       expect(notificationService.notifications[1].title, equals('Second'));
       expect(notificationService.notifications[2].title, equals('First'));
     });
+  });
+
+  group('NotificationService.initialize', () {
+    late NotificationService service;
+    late _MockFlutterLocalNotificationsPlugin plugin;
+    late _MockAndroidFlutterLocalNotificationsPlugin androidPlugin;
+
+    setUp(() {
+      service = NotificationService();
+      plugin = _MockFlutterLocalNotificationsPlugin();
+      androidPlugin = _MockAndroidFlutterLocalNotificationsPlugin();
+      when(
+        () => plugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >(),
+      ).thenReturn(androidPlugin);
+      service.debugConfigurePlugin(plugin, permissionsGranted: null);
+    });
+
+    tearDown(() {
+      service.dispose();
+    });
+
+    test('resolves a granted permission state without prompting', () async {
+      when(
+        () => androidPlugin.areNotificationsEnabled(),
+      ).thenAnswer((_) async => true);
+
+      await service.initialize();
+
+      expect(service.hasPermissions, isTrue);
+      verify(() => androidPlugin.areNotificationsEnabled()).called(1);
+      verifyNever(() => androidPlugin.requestNotificationsPermission());
+    });
+
+    test('resolves a denied permission state without prompting', () async {
+      when(
+        () => androidPlugin.areNotificationsEnabled(),
+      ).thenAnswer((_) async => false);
+
+      await service.initialize();
+
+      // Denied, not unknown: the delivery decision now has a real answer.
+      expect(service.hasPermissions, isFalse);
+      verify(() => androidPlugin.areNotificationsEnabled()).called(1);
+      verifyNever(() => androidPlugin.requestNotificationsPermission());
+    });
+
+    test(
+      'leaves the state unresolved when the platform cannot answer',
+      () async {
+        when(
+          () => androidPlugin.areNotificationsEnabled(),
+        ).thenAnswer((_) async => null);
+
+        await service.initialize();
+
+        expect(service.hasPermissions, isFalse);
+        verifyNever(() => androidPlugin.requestNotificationsPermission());
+      },
+    );
   });
 
   group('NotificationService Web Platform Tests', () {
