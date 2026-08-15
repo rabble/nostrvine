@@ -52,6 +52,10 @@ const _publishSeedRelayTimeout = Duration(seconds: 4);
 const _nip50SearchTimeout = Duration(seconds: 5);
 const _nip50RelayQueryTimeout = Duration(milliseconds: 4500);
 
+/// Sort key for profile searches ordered by follower count.
+const String profileSearchSortFollowers =
+    FunnelcakeApiClient.profileSortFollowers;
+
 // TODO(search): Move ProfileSearchFilter to a shared package
 // (e.g., search_utils) when we need to reuse search logic across
 // multiple repositories.
@@ -1905,10 +1909,12 @@ class ProfileRepository implements ProfileReader {
   /// Searches for user profiles via the Funnelcake REST API only.
   ///
   /// This is for latency-sensitive typeahead surfaces that should not wait
-  /// for NIP-50 relay search. Results are returned in server order.
+  /// for NIP-50 relay search. Server-sorted results normally preserve server
+  /// order, except for known no-op sorts that need client fallback ranking.
   ///
   /// [offset] skips results for pagination.
-  /// [sortBy] requests server-side sorting (e.g., 'followers').
+  /// [sortBy] requests server-side sorting (e.g.,
+  /// [profileSearchSortFollowers]).
   /// [hasVideos] filters to only users who have published at least one video.
   /// Returns empty list if query is empty, Funnelcake is unavailable, or the
   /// REST request fails.
@@ -1934,7 +1940,8 @@ class ProfileRepository implements ProfileReader {
       final profiles = restResults
           .map((result) => result.toUserProfile())
           .where((p) => !(_blockFilter?.call(p.pubkey) ?? false));
-      return await _enrichFromCache(profiles.toList());
+      final enriched = await _enrichFromCache(profiles.toList());
+      return _rankServerSortedPage(enriched, sortBy);
     } on Exception catch (e) {
       Log.warning(
         'REST profile search failed: $e',
@@ -1954,8 +1961,10 @@ class ProfileRepository implements ProfileReader {
   ///
   /// [offset] skips results for pagination. When offset > 0, the NIP-50
   /// WebSocket fallback is skipped since it doesn't support offset.
-  /// [sortBy] requests server-side sorting (e.g., 'followers'). When set,
-  /// client-side re-sorting is skipped to preserve server order.
+  /// [sortBy] requests server-side sorting (e.g.,
+  /// [profileSearchSortFollowers]).
+  /// When set, most server order is preserved, with targeted fallback ranking
+  /// for known no-op sorts.
   /// [hasVideos] filters to only users who have published at least one video.
   ///
   /// Filters using [ProfileSearchFilter] if provided (only when no server-side
@@ -2041,9 +2050,10 @@ class ProfileRepository implements ProfileReader {
     // Enrich profiles from local SQLite cache (fill in missing pictures, etc.)
     final enrichedProfiles = await _enrichFromCache(profiles);
 
-    // When server-side sorting is active, trust server order
+    // When server-side sorting is active, trust server order — unless the
+    // requested sort had nothing to order by on this page.
     if (useServerSort) {
-      return enrichedProfiles;
+      return _rankServerSortedPage(enrichedProfiles, sortBy);
     }
 
     // Use custom search filter if provided, otherwise simple contains match
@@ -2112,6 +2122,7 @@ class ProfileRepository implements ProfileReader {
             resultMap.values.toList(),
             useServerSort,
             boostPubkeys,
+            sortBy: sortBy,
           );
       return ProgressiveSearchResult(
         profiles: profiles,
@@ -2242,6 +2253,7 @@ class ProfileRepository implements ProfileReader {
             enriched,
             useServerSort,
             boostPubkeys,
+            sortBy: sortBy,
           ),
         );
         return;
@@ -2255,7 +2267,13 @@ class ProfileRepository implements ProfileReader {
     final enriched = await _enrichFromCache(resultMap.values.toList());
     yield snapshot(
       isComplete: true,
-      enriched: _applyFilter(trimmed, enriched, useServerSort, boostPubkeys),
+      enriched: _applyFilter(
+        trimmed,
+        enriched,
+        useServerSort,
+        boostPubkeys,
+        sortBy: sortBy,
+      ),
     );
   }
 
@@ -2266,11 +2284,12 @@ class ProfileRepository implements ProfileReader {
     String query,
     List<UserProfile> profiles,
     bool useServerSort,
-    Set<String>? boostPubkeys,
-  ) {
+    Set<String>? boostPubkeys, {
+    String? sortBy,
+  }) {
     List<UserProfile> filtered;
     if (useServerSort) {
-      filtered = profiles;
+      filtered = _rankServerSortedPage(profiles, sortBy);
     } else if (_profileSearchFilter != null) {
       filtered = _profileSearchFilter(query, profiles);
     } else {
@@ -2286,6 +2305,42 @@ class ProfileRepository implements ProfileReader {
     }
 
     return _boostProfiles(filtered, boostPubkeys);
+  }
+
+  /// Orders a server-sorted result page, falling back when the requested
+  /// sort is a no-op on the payload.
+  ///
+  /// A `followers` sort over profiles with no REST follower count is a no-op
+  /// for that part of the page — the server had nothing to order by. Keep real
+  /// REST follower counts first, then rank the no-signal remainder by the REST
+  /// video count, descending. Kind 0 Vine archive metrics are intentionally not
+  /// used here because they are different quantities.
+  static List<UserProfile> _rankServerSortedPage(
+    List<UserProfile> profiles,
+    String? sortBy,
+  ) {
+    if (sortBy != profileSearchSortFollowers || profiles.isEmpty) {
+      return profiles;
+    }
+
+    final indexed =
+        <(int, UserProfile)>[
+          for (var i = 0; i < profiles.length; i++) (i, profiles[i]),
+        ]..sort((a, b) {
+          final aFollowers = a.$2.restFollowerCount ?? 0;
+          final bFollowers = b.$2.restFollowerCount ?? 0;
+          final hasFollowerSignal = aFollowers > 0 || bFollowers > 0;
+          if (hasFollowerSignal) {
+            final byFollowers = bFollowers.compareTo(aFollowers);
+            return byFollowers != 0 ? byFollowers : a.$1.compareTo(b.$1);
+          }
+
+          final byVideos = (b.$2.restVideoCount ?? 0).compareTo(
+            a.$2.restVideoCount ?? 0,
+          );
+          return byVideos != 0 ? byVideos : a.$1.compareTo(b.$1);
+        });
+    return [for (final entry in indexed) entry.$2];
   }
 
   /// Moves profiles whose pubkey is in [boostPubkeys] to the front of

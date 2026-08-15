@@ -7524,5 +7524,17 @@
     }
   },
   "changeEmailSentExpiry": "The links stop working after 24 hours.",
-  "changeEmailSentDone": "Got it"
+  "changeEmailSentDone": "Got it",
+    "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} videos}}",
+    "@searchUserVideoCount": {
+        "description": "Secondary line on a people-search result row: how many videos this user has published.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "formattedCount": {
+                "type": "String"
+            }
+        }
+    }
 }

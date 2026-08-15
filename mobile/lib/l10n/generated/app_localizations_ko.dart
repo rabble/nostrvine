@@ -11560,4 +11560,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get changeEmailSentDone => '알겠어요';
+
+  @override
+  String searchUserVideoCount(int count, String formattedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$formattedCount videos',
+      one: '$formattedCount video',
+    );
+    return '$_temp0';
+  }
 }

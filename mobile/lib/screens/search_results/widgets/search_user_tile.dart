@@ -1,3 +1,4 @@
+import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,16 +10,15 @@ import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.da
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Reusable tile widget for displaying a user profile in search results.
 ///
-/// Shows avatar, display name, and a secondary line with verified NIP-05 or
-/// truncated npub. Uses [ConsumerWidget] (Riverpod) because
-/// [nip05VerificationProvider] is a legacy Riverpod provider that has not yet
-/// been migrated to BLoC.
+/// Shows avatar, display name, and a secondary line that disambiguates users:
+/// REST video count when known, otherwise a verified NIP-05 handle or npub
+/// fallback. Uses [ConsumerWidget] (Riverpod) for the providers that gate the
+/// add-to-list action and legacy NIP-05 verification.
 class SearchUserTile extends ConsumerWidget {
   const SearchUserTile({required this.profile, this.onTap, super.key});
 
@@ -27,18 +27,27 @@ class SearchUserTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final videoCount = profile.restVideoCount;
     final claimedNip05 = profile.shortDisplayNip05;
-    final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
+    final shouldCheckNip05 =
+        (videoCount == null || videoCount <= 0) &&
+        claimedNip05 != null &&
+        claimedNip05.isNotEmpty;
+    final verificationStatus = shouldCheckNip05
         ? ref
               .watch(nip05VerificationProvider(profile.pubkey))
               .whenOrNull(data: (status) => status)
         : null;
-    final showVerifiedNip05 =
-        verificationStatus == Nip05VerificationStatus.verified;
-
-    final secondaryText = showVerifiedNip05 && claimedNip05 != null
+    final verifiedNip05 = verificationStatus?.name == 'verified'
         ? claimedNip05
-        : profile.truncatedNpub;
+        : null;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final secondaryText = videoCount != null && videoCount > 0
+        ? context.l10n.searchUserVideoCount(
+            videoCount,
+            CountFormatter.formatCompact(videoCount, locale: locale),
+          )
+        : verifiedNip05 ?? profile.truncatedNpub;
 
     final profileListFeaturesEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileListFeatures),
