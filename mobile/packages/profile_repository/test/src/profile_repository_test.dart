@@ -4103,8 +4103,8 @@ void main() {
         expect(pubkeys, [pk18Videos, pk4Videos, pk1Video]);
       });
 
-      test('searchUsersProgressive preserves server order when follower counts '
-          'are real', () async {
+      test('searchUsersProgressive breaks a real follower-count tie by '
+          'video count', () async {
         stubRestResults(resultsInServerOrder(followerCount: 100));
 
         final emissions = await repoWithFunnelcake
@@ -4112,7 +4112,7 @@ void main() {
             .toList();
 
         final pubkeys = emissions.last.profiles.map((p) => p.pubkey).toList();
-        expect(pubkeys, [pk1Video, pk18Videos, pk4Videos]);
+        expect(pubkeys, [pk18Videos, pk4Videos, pk1Video]);
       });
 
       test('searchUsersProgressive ignores Kind 0 Vine metrics when ranking a '

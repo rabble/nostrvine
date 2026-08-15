@@ -2311,14 +2311,16 @@ class ProfileRepository implements ProfileReader {
     return _boostProfiles(filtered, boostPubkeys);
   }
 
-  /// Orders a server-sorted result page, falling back when the requested
-  /// sort is a no-op on the payload.
+  /// Orders a server-sorted result page by the signals the REST payload
+  /// actually carries.
   ///
-  /// A `followers` sort over profiles with no REST follower count is a no-op
-  /// for that part of the page — the server had nothing to order by. Keep real
-  /// REST follower counts first, then rank the no-signal remainder by the REST
-  /// video count, descending. Kind 0 Vine archive metrics are intentionally not
-  /// used here because they are different quantities.
+  /// For a `followers` sort, ranks by REST `follower_count` descending, then
+  /// REST `video_count` descending, then server index. The video tie-breaker
+  /// is what orders archive-imported profiles, which all carry
+  /// `follower_count: 0`, and it also separates equally followed profiles.
+  /// Profiles the viewer follows are promoted ahead of this ordering by the
+  /// outer `_boostProfiles` step. Kind 0 Vine archive metrics are
+  /// intentionally not used here because they are different quantities.
   static List<UserProfile> _rankServerSortedPage(
     List<UserProfile> profiles,
     String? sortBy,
@@ -2333,11 +2335,8 @@ class ProfileRepository implements ProfileReader {
         ]..sort((a, b) {
           final aFollowers = a.$2.restFollowerCount ?? 0;
           final bFollowers = b.$2.restFollowerCount ?? 0;
-          final hasFollowerSignal = aFollowers > 0 || bFollowers > 0;
-          if (hasFollowerSignal) {
-            final byFollowers = bFollowers.compareTo(aFollowers);
-            return byFollowers != 0 ? byFollowers : a.$1.compareTo(b.$1);
-          }
+          final byFollowers = bFollowers.compareTo(aFollowers);
+          if (byFollowers != 0) return byFollowers;
 
           final byVideos = (b.$2.restVideoCount ?? 0).compareTo(
             a.$2.restVideoCount ?? 0,
