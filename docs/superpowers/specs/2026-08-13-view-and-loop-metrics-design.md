@@ -302,37 +302,57 @@ Treat every figure here as the least the number should move, not the most.
 
 ### The display floor, and why most cards show a date
 
-`publicLoopCountFloor` is 1000. Measured against the catalogue:
+`publicLoopCountFloor` is 1000, applied by
+`video_card_meta.dart:79` to `video.isOriginalVine ? video.originalLoops ?? 0
+: video.totalLoops` — the archival `loops` tag for classic Vines (98% of the
+catalogue), `originalLoops + views` for native ones. Measured against that
+quantity:
 
-| Threshold | Videos at or above | Share of 2,201,983 |
+| Threshold | Videos at or above | Share of 2,203,822 |
 |---|---|---|
-| 1000 (today's floor) | 961 | **0.04%** |
-| 333 (floor reached at ×3) | 2,441 | 0.11% |
-| 100 (floor reached at ×10) | 12,571 | 0.57% |
+| 1000 (today's floor) | 1,152,593 | **52.30%** |
+| 333 (floor reached at ×3) | 1,375,711 | 62.42% |
+| 100 (floor reached at ×10) | 1,621,923 | 73.60% |
 
-So the public count is effectively never shown — 9,996 videos in 10,000 render
-a date instead. Correcting the metrics does not change that: an
-order-of-magnitude improvement moves it from 0.04% to 0.57%.
+Median public count: 1,417. So a public count renders on **about half** the
+catalogue, and correcting the metrics moves it from 52% toward 74%.
 
-**This is intended, and it is not a defect.** Two reasons it holds:
+**The floor is intended, and it is not a defect** — but for one reason, not
+the two this document previously gave:
 
-- **Creator retention does not run through the public count.** The video-card
-  spec's `isOwnVideo` case shows a creator their own number *always, however
-  small*. The retention effect it cites — crossing ~100 views roughly doubling
-  the chance a new creator keeps posting — operates on the creator's own view,
-  which has no floor. The public floor never gated it.
-- **A date is the better default for this catalogue.** With ~2.2M archived
-  vines from 2013–16, "Apr 22, 2014" reframes a clip as an artifact in a way a
-  view count does not. Suppression is not a fallback here; it is often the
-  stronger presentation.
+- **A wall of small numbers suppresses posting.** The constant's own doc
+  comment is the argument: a number below the floor "tells a viewer not to
+  bother", and seeing other people's videos sitting at 50 loops discourages
+  a visitor from posting at all. Above the floor the number does useful work.
+  On the real distribution the floor does that job — a visitor sees a count
+  on ~52% of videos, every one of them ≥1000, and a date on the rest.
+- **Creators are never gated.** `_resolveLoopCount` returns
+  `video.totalLoops` unconditionally when `isOwnVideo`, and `totalLoops` is
+  additive (`originalLoops + views`), so a creator always sees their own
+  number and sees the larger of the two figures.
 
-Two earlier drafts of this document got this wrong in opposite directions:
-first claiming the correction would lift "a large share of the catalogue" above
-the floor, then claiming the floor was mis-set by two orders of magnitude and
-was starving creators of encouragement. Neither holds. The floor governs public
-display only, the constant is deliberately one line, and re-tuning it is a
-product call to make on its own evidence rather than a consequence of this
-work.
+Three earlier drafts of this document got this wrong in three different
+directions: first claiming the correction would lift "a large share of the
+catalogue" above the floor; then claiming the floor was mis-set by two orders
+of magnitude and was starving creators of encouragement; then — the version
+this replaces — claiming the public count is "effectively never shown", that
+"9,996 videos in 10,000 render a date", and justifying the floor on the
+grounds that a date is the better default for an archival catalogue.
+
+That third version measured `video_total_views_data.total_views`, a column the
+floor is never applied to, and was wrong by three orders of magnitude. The
+archival-artifact argument was built on top of it and does not survive: dates
+are not what most cards show. Re-tuning the floor remains a product call, and
+it should be made against the ~52% census above rather than against any of
+these drafts.
+
+One unreconciled discrepancy, stated rather than smoothed over: the constant's
+doc comment reports "roughly 64% of the archive" hidden with "p50 is 298
+loops", measured against a 1,000-Vine sample. The full-catalogue census gives
+47.7% hidden at p50 1,417. Both contradict the 0.04% figure, but the sample
+and the census disagree by more than sampling noise should allow, so prefer
+the census. The re-runnable query is in the
+[baseline doc](2026-08-13-view-and-loop-metrics-baseline.md) appendix §5.
 
 ## Testing
 
