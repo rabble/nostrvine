@@ -6120,7 +6120,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmReelReplyFailed => 'Tidak dapat mengirim';
 
   @override
-  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+  String get dmReelReplyUnverified => 'Tidak dapat memastikan terkirim';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

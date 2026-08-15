@@ -6235,7 +6235,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmReelReplyFailed => 'Hindi maipadala';
 
   @override
-  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+  String get dmReelReplyUnverified => 'Hindi makumpirma ang pagpapadala';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

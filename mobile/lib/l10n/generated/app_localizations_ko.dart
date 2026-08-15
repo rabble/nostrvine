@@ -5896,7 +5896,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmReelReplyFailed => '보내지 못했습니다';
 
   @override
-  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+  String get dmReelReplyUnverified => '전송을 확인하지 못했습니다';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

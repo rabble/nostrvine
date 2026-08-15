@@ -5875,7 +5875,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmReelReplyFailed => '送信できませんでした';
 
   @override
-  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+  String get dmReelReplyUnverified => '送信を確認できませんでした';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

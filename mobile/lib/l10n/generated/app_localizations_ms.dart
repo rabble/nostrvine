@@ -6203,7 +6203,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get dmReelReplyFailed => 'Tidak dapat menghantar';
 
   @override
-  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+  String get dmReelReplyUnverified => 'Tidak dapat mengesahkan penghantaran';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

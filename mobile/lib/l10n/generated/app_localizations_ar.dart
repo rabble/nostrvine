@@ -6105,7 +6105,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmReelReplyFailed => 'تعذّر الإرسال';
 
   @override
-  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+  String get dmReelReplyUnverified => 'تعذّر تأكيد الإرسال';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

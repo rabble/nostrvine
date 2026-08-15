@@ -6313,7 +6313,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmReelReplyFailed => 'Trimiterea a eșuat';
 
   @override
-  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+  String get dmReelReplyUnverified => 'Trimiterea nu a putut fi confirmată';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

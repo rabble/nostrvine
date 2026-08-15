@@ -6023,7 +6023,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmReelReplyFailed => 'መላክ አልተቻለም';
 
   @override
-  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+  String get dmReelReplyUnverified => 'መላኩን ማረጋገጥ አልተቻለም';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {
