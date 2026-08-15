@@ -227,14 +227,24 @@ class _DivineVideoMetricsTrackerState
     _hasStartedPlayback = true;
     _sessionToken = const Uuid().v4();
 
-    _analyticsService.trackDetailedVideoViewWithUser(
-      widget.video,
-      userId: _authService.currentPublicKeyHex,
-      source: 'mobile',
-      eventType: 'view_start',
-      sessionToken: _sessionToken,
-      trafficSource: widget.trafficSource,
-      sourceDetail: widget.sourceDetail,
+    unawaited(
+      _analyticsService
+          .trackDetailedVideoViewWithUser(
+            widget.video,
+            userId: _authService.currentPublicKeyHex,
+            source: 'mobile',
+            eventType: 'view_start',
+            sessionToken: _sessionToken,
+            trafficSource: widget.trafficSource,
+            sourceDetail: widget.sourceDetail,
+          )
+          .catchError((Object e) {
+            Log.warning(
+              'Failed to send video start event: $e',
+              name: 'DivineVideoMetricsTracker',
+              category: LogCategory.video,
+            );
+          }),
     );
   }
 

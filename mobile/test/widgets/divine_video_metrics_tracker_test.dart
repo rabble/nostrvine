@@ -57,6 +57,40 @@ class _RecordingAnalyticsService extends AnalyticsService {
   }
 }
 
+/// Fails every publish, so an unguarded fire-and-forget call surfaces as an
+/// unhandled zone error and fails the test.
+class _ThrowingAnalyticsService extends _RecordingAnalyticsService {
+  @override
+  Future<void> trackDetailedVideoViewWithUser(
+    VideoEvent video, {
+    required String? userId,
+    required String source,
+    required String eventType,
+    String? sessionToken,
+    Duration? watchDuration,
+    Duration? totalDuration,
+    double? loopCount,
+    bool? completedVideo,
+    ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
+    String? sourceDetail,
+  }) async {
+    await super.trackDetailedVideoViewWithUser(
+      video,
+      userId: userId,
+      source: source,
+      eventType: eventType,
+      sessionToken: sessionToken,
+      watchDuration: watchDuration,
+      totalDuration: totalDuration,
+      loopCount: loopCount,
+      completedVideo: completedVideo,
+      trafficSource: trafficSource,
+      sourceDetail: sourceDetail,
+    );
+    throw StateError('publish failed');
+  }
+}
+
 class _RecordingSeenVideosService extends SeenVideosService {
   final records = <_SeenVideoRecord>[];
 
@@ -160,6 +194,35 @@ void main() {
       expect(
         analyticsService.events.map((event) => event.eventType),
         contains('view_start'),
+      );
+
+      await controller.close();
+    });
+
+    testWidgets('a failing publish does not escape either phase', (
+      tester,
+    ) async {
+      final failingAnalytics = _ThrowingAnalyticsService();
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTracker(
+          authService: authService,
+          analyticsService: failingAnalytics,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          isActive: true,
+          clock: () => now,
+        ),
+      );
+
+      // Dispose flushes an end segment, so both phases attempt a publish.
+      now = now.add(const Duration(seconds: 2));
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(
+        failingAnalytics.events.map((event) => event.eventType),
+        containsAll(<String>['view_start', 'view_end']),
       );
 
       await controller.close();
