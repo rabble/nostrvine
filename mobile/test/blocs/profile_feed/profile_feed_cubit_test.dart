@@ -256,33 +256,19 @@ void main() {
         expect(persisted!.videos.map((v) => v.id), ['v1']);
       });
 
-      test(
-        'does not overwrite a persisted snapshot with an empty one',
-        () async {
-          await seedSnapshot(
-            ProfileVideoOffsetSnapshot(
-              videos: [_video('v1', createdAt: 5000)],
-              nextOffset: 50,
-              totalVideoCount: 10,
-              hasMoreContent: true,
-            ),
-          );
-          when(
-            () => h.ves.authorVideos(any()),
-          ).thenReturn(const <VideoEvent>[]);
-          h.stubAuthorFeedThrows(const FunnelcakeException('offline'));
+      test('does not persist a cold open that has nothing to show', () async {
+        when(() => h.ves.authorVideos(any())).thenReturn(const <VideoEvent>[]);
+        h.stubAuthorFeedThrows(const FunnelcakeException('offline'));
 
-          final cubit = h.build();
-          addTearDown(cubit.close);
-          await pumpEventQueue();
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue();
 
-          // Losing the last good window to a failed load is worse than serving
-          // it stale.
-          final persisted = await readSnapshot();
-          expect(persisted, isNotNull);
-          expect(persisted!.videos.map((v) => v.id), ['v1']);
-        },
-      );
+        // Persisting an empty window would make the next cold start restore
+        // nothing and skip straight past the stale-while-revalidate path it
+        // exists for.
+        expect(await readSnapshot(), isNull);
+      });
     });
 
     group('CacheSync stale-while-revalidate', () {

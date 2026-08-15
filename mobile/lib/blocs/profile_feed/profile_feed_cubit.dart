@@ -397,11 +397,6 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
           isFetchingTotalCount: false,
         ),
       );
-      // Keep the last window we could show. Only guard the empty case: a
-      // successful load returning zero videos still needs to be able to clear
-      // the snapshot, or a fully-deleted profile would serve its old videos
-      // forever.
-      if (_unfilteredVideos.isNotEmpty) _persistSnapshot();
       return null;
     }
   }
