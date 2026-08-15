@@ -215,7 +215,7 @@ void main() {
           currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
-        '/followers/$targetNpub',
+        '/followers/$targetHex',
       );
     });
 
@@ -226,7 +226,7 @@ void main() {
           currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
-        '/following/$targetNpub',
+        '/following/$targetHex',
       );
     });
 
@@ -248,7 +248,7 @@ void main() {
           currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
-        '/followers/$targetNpub',
+        '/followers/$targetHex',
       );
     });
 
@@ -259,7 +259,7 @@ void main() {
           currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
-        '/following/$targetNpub',
+        '/following/$targetHex',
       );
     });
 
@@ -314,7 +314,7 @@ void main() {
           currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
-        '/followers/$targetNpub/page/2?sort=recent#top',
+        '/followers/$targetHex/page/2?sort=recent#top',
       );
     });
 

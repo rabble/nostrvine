@@ -100,9 +100,13 @@ String? accountSwitchInitialLocation({
   }
 
   final routeType = segments.first;
-  final targetNpub = NostrKeyUtils.encodePubKey(targetPubkeyHex);
+  // Followers/following compare this segment directly with the client's hex
+  // key. Profile routes normalize the identifier and conventionally use npub.
+  final targetIdentifier = routeType == 'followers' || routeType == 'following'
+      ? targetPubkeyHex
+      : NostrKeyUtils.encodePubKey(targetPubkeyHex);
   final targetPath =
-      '/$routeType/$targetNpub${segments.length >= 3 ? '/${segments.skip(2).join('/')}' : ''}';
+      '/$routeType/$targetIdentifier${segments.length >= 3 ? '/${segments.skip(2).join('/')}' : ''}';
   return uri.replace(path: targetPath).toString();
 }
 
