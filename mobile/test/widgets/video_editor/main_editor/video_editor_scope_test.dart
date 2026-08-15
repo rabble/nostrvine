@@ -40,14 +40,14 @@ void main() {
       expect(scale, equals(1));
     });
 
-    test('calculateFittedBoxScale covers contained vertical target area', () {
+    test('calculateFittedBoxScale returns 1.0 for same aspect ratio', () {
       final scale = VideoEditorScope.calculateFittedBoxScale(
         const Size(400, 800),
         9 / 16,
         targetAspectRatio: 9 / 16,
       );
 
-      expect(scale, closeTo(16 / 9, 0.001));
+      expect(scale, equals(1.0));
     });
 
     test('calculateFittedBoxScale covers target area on wide body', () {

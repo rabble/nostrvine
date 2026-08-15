@@ -110,6 +110,16 @@ class VideoEditorScope extends InheritedWidget {
     targetAspectRatio: targetClipAspectRatio,
   );
 
+  /// Calculates the size of the original clip when fitted to [bodySize] using
+  /// a "contain" fit (preserving aspect ratio, fitting within bounds).
+  static Size calculateRenderSize(Size bodySize, double aspectRatio) {
+    if (bodySize == Size.zero) return Size.zero;
+    if (bodySize.aspectRatio > aspectRatio) {
+      return Size(bodySize.height * aspectRatio, bodySize.height);
+    }
+    return Size(bodySize.width, bodySize.width / aspectRatio);
+  }
+
   /// Calculates the visible target area fitted inside [bodySize].
   static Size calculateTargetSize(Size bodySize, double targetAspectRatio) {
     if (bodySize == Size.zero) return Size.zero;
@@ -120,6 +130,18 @@ class VideoEditorScope extends InheritedWidget {
   }
 
   /// Calculates the FittedBox scale factor for a given body size and aspect ratio.
+  ///
+  /// The scale represents how much the original clip (at its native aspect ratio)
+  /// must be scaled to fill the target area (which may have a different aspect
+  /// ratio due to cropping). This is used for text layer compensation: text layers
+  /// are scaled by `1 / fittedBoxScale` to account for the FittedBox's scaling.
+  ///
+  /// The calculation:
+  /// 1. Compute renderSize: original clip fitted to bodySize with contain fit
+  /// 2. Compute targetSize: target aspect ratio fitted to bodySize with contain fit
+  /// 3. Scale = max(targetWidth/renderWidth, targetHeight/renderHeight)
+  ///    This represents the scale used by FittedBox(fit: BoxFit.cover) to fit
+  ///    renderSize into targetSize.
   static double calculateFittedBoxScale(
     Size bodySize,
     double aspectRatio, {
@@ -127,8 +149,7 @@ class VideoEditorScope extends InheritedWidget {
   }) {
     if (bodySize == Size.zero) return 1.0;
     final targetRatio = targetAspectRatio ?? aspectRatio;
-    final height = bodySize.shortestSide;
-    final renderSize = Size(height * aspectRatio, height);
+    final renderSize = calculateRenderSize(bodySize, aspectRatio);
     final targetSize = calculateTargetSize(bodySize, targetRatio);
 
     return max(
