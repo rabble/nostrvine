@@ -285,7 +285,9 @@ class _ExploreViewState extends ConsumerState<ExploreView>
       // tab rather than on first build.
       final shouldConsumePendingFeaturedSlug =
           _pendingFeaturedSlug != null && featuredTab != null;
-      final resolvedFeaturedSlug = _resolvePendingFeaturedSlug(featuredTab);
+      final resolvedFeaturedSlug = shouldConsumePendingFeaturedSlug
+          ? _resolvePendingFeaturedSlug(featuredTab)
+          : null;
       syncTabController(
         index: _indexForTabName(
           previousTabName: resolvedFeaturedSlug ?? previousTabName,

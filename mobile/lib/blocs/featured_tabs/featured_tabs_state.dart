@@ -37,11 +37,12 @@ class FeaturedTabsState extends Equatable {
   FeaturedTabsState copyWith({
     FeaturedTabsStatus? status,
     FeaturedTabConfig? tab,
+    bool clearTab = false,
     Duration? pollInterval,
   }) {
     return FeaturedTabsState(
       status: status ?? this.status,
-      tab: tab ?? this.tab,
+      tab: clearTab ? null : (tab ?? this.tab),
       pollInterval: pollInterval ?? this.pollInterval,
     );
   }

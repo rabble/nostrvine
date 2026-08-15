@@ -142,7 +142,8 @@ class FeaturedTabsRepository {
     );
   }
 
-  /// Drops any cached config, so the next [refresh] must reach the network.
+  /// Clears the cached config when it has expired, forcing a network refresh
+  /// on the next [refresh] call.
   void clearCache() {
     _cached = null;
     _cachedAt = null;
