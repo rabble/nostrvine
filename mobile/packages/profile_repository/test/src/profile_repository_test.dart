@@ -4103,8 +4103,8 @@ void main() {
         expect(pubkeys, [pk18Videos, pk4Videos, pk1Video]);
       });
 
-      test('searchUsersProgressive ranks by followers then video when follower '
-          'counts tie', () async {
+      test('searchUsersProgressive breaks a real follower-count tie by '
+          'video count', () async {
         stubRestResults(resultsInServerOrder(followerCount: 100));
 
         final emissions = await repoWithFunnelcake
