@@ -502,11 +502,8 @@ class C2paSigningService {
 
   /// Creates a signer for C2PA operations.
   ///
-  /// TODO(#3730): Replace with proper key management:
-  /// - Use HardwareSigner for Secure Enclave (iOS) / StrongBox (Android)x
-  /// - Generate per-user keys during onboarding
-  /// - Store certificates securely
-  /// - Support user-provided certificates via enrollment API
+  /// Always a [RemoteSigner]: #2161 deleted the local `HardwareSigner`
+  /// branch in favour of the authenticated ProofSign server.
   Future<C2paSigner> _createSigner() async {
     var args = '?platform=';
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
