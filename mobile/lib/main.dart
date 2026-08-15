@@ -56,6 +56,7 @@ import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
+import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
@@ -96,6 +97,7 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/app_engagement_store.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/services/build_provenance_service.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
@@ -146,6 +148,7 @@ import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     show LayerRasterizerHost;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -1425,12 +1428,23 @@ Future<void> _startOpenVineApp() async {
   // Tag every crash report with the running build so per-error triage doesn't
   // have to cross-reference the release dashboard. Set once, not per-error.
   // See #3758.
-  unawaited(
-    CrashReportingService.instance.setCustomKey(
-      'build_tag',
-      '${packageInfo.version}+${packageInfo.buildNumber}',
-    ),
-  );
+  final buildTag = '${packageInfo.version}+${packageInfo.buildNumber}';
+  unawaited(CrashReportingService.instance.setCustomKey('build_tag', buildTag));
+
+  // Provenance is diagnostic, so it waits for the first frame. Constructing a
+  // ShorebirdUpdater probes the Rust updater over FFI on the calling thread,
+  // which upstream flags as a hang risk while the auto-update thread holds the
+  // config lock — not something to run before runApp.
+  final environment = container.read(currentEnvironmentProvider).environment;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(
+      _recordBuildProvenance(
+        packageInfo: packageInfo,
+        installSource: installSource,
+        environment: environment,
+      ),
+    );
+  });
 
   runApp(
     ContainerSwapHost(
@@ -1442,6 +1456,83 @@ Future<void> _startOpenVineApp() async {
       ),
     ),
   );
+}
+
+Future<void> _recordBuildProvenance({
+  required PackageInfo packageInfo,
+  required InstallSource installSource,
+  required AppEnvironment environment,
+}) async {
+  try {
+    final shorebirdUpdater = ShorebirdUpdater();
+    final provenance = await BuildProvenanceService(
+      packageInfo: packageInfo,
+      installSource: installSource,
+      environment: environment,
+      platform: _startupPlatformName(),
+      shorebirdAvailable: shorebirdUpdater.isAvailable,
+      buildMode: BuildMode.current,
+      readPatchNumber: () async =>
+          (await shorebirdUpdater.readCurrentPatch())?.number,
+    ).resolve();
+    Log.info(provenance.summary, name: 'Main', category: LogCategory.system);
+    CrashReportingService.instance.log(provenance.summary);
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'environment',
+        provenance.environment.name,
+      ),
+    );
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'build_mode',
+        provenance.buildMode.name,
+      ),
+    );
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'install_source',
+        provenance.installSource.name,
+      ),
+    );
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'shorebird_available',
+        provenance.shorebirdAvailable,
+      ),
+    );
+    unawaited(
+      CrashReportingService.instance.setCustomKey(
+        'shorebird_patch',
+        provenance.patchLabel,
+      ),
+    );
+  } catch (error, stack) {
+    Log.warning(
+      'Build provenance logging failed: $error',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+    unawaited(
+      CrashReportingService.instance.recordError(
+        error,
+        stack,
+        reason: 'Build provenance logging failed',
+      ),
+    );
+  }
+}
+
+String _startupPlatformName() {
+  if (kIsWeb) return 'web';
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android => 'android',
+    TargetPlatform.iOS => 'ios',
+    TargetPlatform.macOS => 'macos',
+    TargetPlatform.windows => 'windows',
+    TargetPlatform.linux => 'linux',
+    TargetPlatform.fuchsia => 'fuchsia',
+  };
 }
 
 /// Initialize core identity services after the first frame.
