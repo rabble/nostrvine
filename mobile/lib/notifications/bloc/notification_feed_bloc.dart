@@ -144,7 +144,7 @@ class NotificationFeedBloc
   /// the initial spinner and error states.
   ///
   /// After a successful refresh, sends the server mark-all write via
-  /// [_markSeenOnOpen] so opening the notifications surface clears the unread
+  /// [_markSeen] so opening the notifications surface clears the unread
   /// badge and the badge thereafter reflects "new since last seen" rather than
   /// the accumulated untapped total (#4708). `_onStarted` fires once per open
   /// (it is dispatched from the keyed `BlocProvider.create` on every mount of
@@ -165,6 +165,10 @@ class NotificationFeedBloc
 
     try {
       await _notificationRepository.refreshFeed(_filter);
+      var markSucceeded = false;
+      if (_filter == null) {
+        markSucceeded = await _markSeenOnOpen();
+      }
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
@@ -172,11 +176,8 @@ class NotificationFeedBloc
         ),
       );
       _flushPendingEmptyPageContinuation();
-      if (_filter == null) {
-        final markSucceeded = await _markSeenOnOpen();
-        if (markSucceeded) {
-          unawaited(_clearAppBadge());
-        }
+      if (markSucceeded) {
+        unawaited(_clearAppBadge());
       }
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
@@ -236,7 +237,7 @@ class NotificationFeedBloc
   /// Going through the repository (not a widget lifecycle hook) is what keeps
   /// the badge convergent; the previous `MarkAllReadOnDispose` widget that
   /// marked-on-*leave* fought the snapshot and was removed in #4758. This marks
-  /// on *open* instead.
+  /// while the notifications surface is deliberately open instead.
   ///
   /// A seen-advance failure must never blacken the feed, so every error is
   /// caught here and never rethrown — the repository has already restored the
@@ -333,6 +334,9 @@ class NotificationFeedBloc
     emit(state.copyWith(isRefreshing: true));
     try {
       await _notificationRepository.refreshFeed(_filter);
+      if (_filter == null) {
+        await _markSeenOnOpen();
+      }
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
@@ -340,9 +344,6 @@ class NotificationFeedBloc
         ),
       );
       _flushPendingEmptyPageContinuation();
-      if (_filter == null) {
-        await _markSeenOnOpen();
-      }
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout). Per

@@ -109,8 +109,9 @@ void main() {
         // Leaving the inbox (toggling to the Messages segment so the
         // notifications KeyedSubtree is swapped out, or leaving the inbox tab
         // so the ShellRoute unmounts the subtree) must NOT mark read again on
-        // *leave* — the seen advance is on open only. #4758 removed the old
-        // mark-on-dispose; #4708 added mark-on-open.
+        // *leave* — #4758 removed the old mark-on-dispose. #4708 added
+        // mark-on-open, and pull-to-refresh can also mark while the
+        // notifications surface is deliberately open.
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
 
@@ -148,8 +149,8 @@ void main() {
           ).called(1);
         }
 
-        // The seen watermark advances on open only, and only for the
-        // unfiltered feed (#4708) — never once per filter tab.
+        // The seen watermark advances for the unfiltered feed (#4708) —
+        // never once per filter tab.
         verify(() => mockNotificationRepo.markAllAsRead()).called(1);
       },
     );

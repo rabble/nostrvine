@@ -686,6 +686,43 @@ void main() {
         },
       );
 
+      test('keeps refresh visible while mark seen is pending', () async {
+        final markCompleter = Completer<void>();
+        when(
+          () => mockNotificationRepo.markAllAsRead(),
+        ).thenAnswer((_) => markCompleter.future);
+
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+        final states = <NotificationFeedState>[];
+        final subscription = bloc.stream.listen(states.add);
+        addTearDown(subscription.cancel);
+
+        bloc.add(NotificationFeedRefreshed());
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          states,
+          [NotificationFeedState(isRefreshing: true)],
+        );
+
+        bloc.add(NotificationFeedRefreshed());
+        await Future<void>.delayed(Duration.zero);
+        verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
+
+        markCompleter.complete();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          states,
+          [
+            NotificationFeedState(isRefreshing: true),
+            NotificationFeedState(status: NotificationFeedStatus.loaded),
+          ],
+        );
+        verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+      });
+
       blocTest<NotificationFeedBloc, NotificationFeedState>(
         'does not mark seen after filtered refresh',
         build: createFollowBloc,
