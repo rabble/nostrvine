@@ -86,7 +86,7 @@ class SeenVideoMetrics {
 class SeenVideosService {
   SeenVideosService({
     @visibleForTesting Duration? saveDebounceDuration,
-    @visibleForTesting AppDatabase? database,
+    AppDatabase? database,
     @visibleForTesting SharedPreferences? prefsOverride,
   }) : _saveDebounceDuration =
            saveDebounceDuration ?? const Duration(milliseconds: 100),

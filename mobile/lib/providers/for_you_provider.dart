@@ -10,9 +10,6 @@ import 'package:openvine/providers/feed_viewer_preference_hints.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
-// ignore: directives_ordering
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -31,7 +28,7 @@ class ForYouFeed extends _$ForYouFeed {
   static const int _pageSize = 50;
 
   String? _nextCursor;
-  String _sessionSeed = generateRecommendationSessionSeed();
+  int _feedGeneration = 0;
 
   @override
   Future<VideoFeedState> build() async {
@@ -104,84 +101,43 @@ class ForYouFeed extends _$ForYouFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
-    return _fetchRecommendations(
-      sessionSeed: generateRecommendationSessionSeed(),
-    );
+    return _fetchRecommendations();
   }
 
   Future<VideoFeedState> _fetchRecommendations({
     bool preserveExistingOnError = false,
-    String? sessionSeed,
+    bool skipCache = false,
   }) async {
+    _feedGeneration += 1;
     try {
-      final requestSeed = sessionSeed ?? _sessionSeed;
       final authService = ref.read(authServiceProvider);
       final currentUserPubkey = authService.currentPublicKeyHex;
       if (currentUserPubkey == null) {
         return const VideoFeedState(videos: [], hasMoreContent: false);
       }
 
-      final client = ref.read(funnelcakeApiClientProvider);
       final hints = await readFeedViewerPreferenceHints(ref.read);
-      final response = await client.getRecommendations(
-        pubkey: currentUserPubkey,
-        limit: _pageSize,
-        seed: requestSeed,
-        preferredLanguages: hints.preferredLanguages,
-        viewerCountry: hints.viewerCountry,
-      );
-      final resultVideos = response.videos.toVideoEvents();
+      final result = await ref
+          .read(videosRepositoryProvider)
+          .getRecommendedVideos(
+            userPubkey: currentUserPubkey,
+            limit: _pageSize,
+            skipCache: skipCache,
+            preferredLanguages: hints.preferredLanguages,
+            viewerCountry: hints.viewerCountry,
+          );
 
       Log.info(
-        '✅ ForYouFeed: Got ${resultVideos.length} recommendations, source: ${response.source}',
+        '✅ ForYouFeed: Got ${result.videos.length} recommendations',
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
 
-      // Filter for platform compatibility, content preferences, blocked
-      // users, and dedupe by addressable identity (the recommendation cursor
-      // dedupes by event id, so a republished coordinate arrives twice).
-      final videoEventService = ref.read(videoEventServiceProvider);
-      final filteredVideos = dedupeByFeedKey(
-        videoEventService.filterVideoList(
-          resultVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
-        ),
-      );
-      final seenVideosService = ref.read(seenVideosServiceProvider);
-      await seenVideosService.initialize();
       if (!ref.mounted) {
         return const VideoFeedState(videos: [], hasMoreContent: false);
       }
 
-      final clientSeenFilteringEnabled = (() {
-        try {
-          return ref
-              .read(featureFlagServiceProvider)
-              .isEnabled(FeatureFlag.clientSeenFiltering);
-        } catch (_) {
-          return true;
-        }
-      })();
-
-      final freshOrderedVideos = clientSeenFilteringEnabled
-          ? prioritizeNotRecentlySeenVideos(
-              filteredVideos,
-              seenVideoLookup: SeenVideoLookup(
-                wasSeenRecently: seenVideosService.wasSeenRecently,
-                initialize: seenVideosService.initialize,
-              ),
-            )
-          : filteredVideos;
-
-      _sessionSeed = requestSeed;
-      _nextCursor = response.nextCursor;
-      final hasMore = response.hasMore && _nextCursor != null;
-
-      return VideoFeedState(
-        videos: freshOrderedVideos,
-        hasMoreContent: hasMore,
-        lastUpdated: DateTime.now(),
-      );
+      return _stateFromResult(result);
     } catch (e) {
       Log.error(
         '🎯 ForYouFeed: Error fetching recommendations: $e',
@@ -222,9 +178,8 @@ class ForYouFeed extends _$ForYouFeed {
         return;
       }
 
-      final client = ref.read(funnelcakeApiClientProvider);
       final cursor = _nextCursor;
-      final seed = _sessionSeed;
+      final generation = _feedGeneration;
       if (cursor == null) {
         state = AsyncData(
           currentState.copyWith(isLoadingMore: false, hasMoreContent: false),
@@ -232,49 +187,23 @@ class ForYouFeed extends _$ForYouFeed {
         return;
       }
       final hints = await readFeedViewerPreferenceHints(ref.read);
-      final response = await client.getRecommendations(
-        pubkey: currentUserPubkey,
-        limit: _pageSize,
-        cursor: cursor,
-        seed: seed,
-        preferredLanguages: hints.preferredLanguages,
-        viewerCountry: hints.viewerCountry,
-      );
-      final resultVideos = response.videos.toVideoEvents();
+      final result = await ref
+          .read(videosRepositoryProvider)
+          .getRecommendedVideos(
+            userPubkey: currentUserPubkey,
+            limit: _pageSize,
+            cursor: cursor,
+            preferredLanguages: hints.preferredLanguages,
+            viewerCountry: hints.viewerCountry,
+          );
 
       if (!ref.mounted) return;
-      if (_sessionSeed != seed) {
+      if (_feedGeneration != generation || _nextCursor != cursor) {
         return;
       }
 
-      final videoEventService = ref.read(videoEventServiceProvider);
-      final filteredVideos = videoEventService.filterVideoList(
-        resultVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
-      );
-      final seenVideosService = ref.read(seenVideosServiceProvider);
-      await seenVideosService.initialize();
-      if (!ref.mounted) return;
-
-      final clientSeenFilteringEnabledLoadMore = (() {
-        try {
-          return ref
-              .read(featureFlagServiceProvider)
-              .isEnabled(FeatureFlag.clientSeenFiltering);
-        } catch (_) {
-          return true;
-        }
-      })();
-
       final newVideos = dedupeByFeedKey(
-        clientSeenFilteringEnabledLoadMore
-            ? prioritizeNotRecentlySeenVideos(
-                filteredVideos,
-                seenVideoLookup: SeenVideoLookup(
-                  wasSeenRecently: seenVideosService.wasSeenRecently,
-                  initialize: seenVideosService.initialize,
-                ),
-              )
-            : filteredVideos,
+        _filterVideos(result.videos),
         alreadySeen: currentState.videos.map((video) => video.feedDedupKey),
       );
       final mergedVideos = [...currentState.videos, ...newVideos];
@@ -286,12 +215,12 @@ class ForYouFeed extends _$ForYouFeed {
         category: LogCategory.video,
       );
 
-      _nextCursor = response.nextCursor;
+      _nextCursor = _paginationCursor(result);
 
       state = AsyncData(
         VideoFeedState(
           videos: mergedVideos,
-          hasMoreContent: response.hasMore && _nextCursor != null,
+          hasMoreContent: result.hasMore == true && _nextCursor != null,
           lastUpdated: DateTime.now(),
         ),
       );
@@ -321,12 +250,22 @@ class ForYouFeed extends _$ForYouFeed {
       getCurrentState: () => state,
       isMounted: () => ref.mounted,
       setState: (s) => state = s,
-      fetchFresh: () => _fetchRecommendations(
-        preserveExistingOnError: true,
-        sessionSeed: generateRecommendationSessionSeed(),
-      ),
+      fetchFresh: () =>
+          _fetchRecommendations(preserveExistingOnError: true, skipCache: true),
     );
   }
+
+  VideoFeedState _stateFromResult(HomeFeedResult result) {
+    _nextCursor = _paginationCursor(result);
+    return VideoFeedState(
+      videos: dedupeByFeedKey(_filterVideos(result.videos)),
+      hasMoreContent: result.hasMore == true && _nextCursor != null,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  String? _paginationCursor(HomeFeedResult result) =>
+      result.paginationCursor ?? result.nextCursor?.toString();
 
   List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
     final videoEventService = ref.read(videoEventServiceProvider);

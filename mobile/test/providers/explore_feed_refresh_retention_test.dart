@@ -285,9 +285,7 @@ void main() {
         final nativeState = await container.read(
           popularVideosFeedProvider.future,
         );
-        expect(nativeState.videos.map((video) => video.id), [
-          'popular-native',
-        ]);
+        expect(nativeState.videos.map((video) => video.id), ['popular-native']);
         expect(
           container.read(popularVideosLoadedVariantProvider),
           PopularVideosVariant.native,
@@ -508,31 +506,24 @@ void main() {
     test(
       'for you keeps existing videos visible while refresh is in flight',
       () async {
-        final refreshCompleter = Completer<RecommendationsResponse>();
-        final requestedSeeds = <String?>[];
+        final refreshCompleter = Completer<HomeFeedResult>();
+        final skipCacheRequests = <bool?>[];
         var requestCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getRecommendations(
-            pubkey: any(named: 'pubkey'),
+          () => mockVideosRepository.getRecommendedVideos(
+            userPubkey: any(named: 'userPubkey'),
             limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
             cursor: any(named: 'cursor'),
-            seed: any(named: 'seed'),
+            skipCache: any(named: 'skipCache'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) {
-          requestedSeeds.add(invocation.namedArguments[#seed] as String?);
+          skipCacheRequests.add(invocation.namedArguments[#skipCache] as bool?);
           requestCount += 1;
           if (requestCount == 1) {
-            return Future.value(
-              RecommendationsResponse(
-                videos: [_videoStats('for-you-initial')],
-                source: 'popular',
-              ),
-            );
+            return Future.value(_recommendedResult(['for-you-initial']));
           }
           return refreshCompleter.future;
         });
@@ -545,9 +536,7 @@ void main() {
             contentBlocklistRepositoryProvider.overrideWithValue(
               mockBlocklistRepository,
             ),
-            funnelcakeApiClientProvider.overrideWithValue(
-              mockFunnelcakeApiClient,
-            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             authServiceProvider.overrideWithValue(mockAuthService),
             funnelcakeAvailableProvider.overrideWith(
               _AlwaysAvailableFunnelcake.new,
@@ -577,12 +566,7 @@ void main() {
         ]);
         expect(refreshingState.isRefreshing, isTrue);
 
-        refreshCompleter.complete(
-          RecommendationsResponse(
-            videos: [_videoStats('for-you-refreshed')],
-            source: 'personalized',
-          ),
-        );
+        refreshCompleter.complete(_recommendedResult(['for-you-refreshed']));
         await refreshFuture;
 
         final finalState = container.read(forYouFeedProvider).value;
@@ -591,45 +575,38 @@ void main() {
           'for-you-refreshed',
         ]);
         expect(finalState.isRefreshing, isFalse);
-        expect(requestedSeeds, hasLength(2));
-        expect(requestedSeeds.first, isNotNull);
-        expect(requestedSeeds.first, isNotEmpty);
-        expect(requestedSeeds.last, isNot(requestedSeeds.first));
+        expect(skipCacheRequests, [false, true]);
       },
     );
 
     test('for you preserves existing pagination when refresh fails', () async {
       var requestCount = 0;
       final requestedCursors = <String?>[];
-      final requestedSeeds = <String?>[];
+      final skipCacheRequests = <bool?>[];
 
       when(
-        () => mockFunnelcakeApiClient.getRecommendations(
-          pubkey: any(named: 'pubkey'),
+        () => mockVideosRepository.getRecommendedVideos(
+          userPubkey: any(named: 'userPubkey'),
           limit: any(named: 'limit'),
-          fallback: any(named: 'fallback'),
-          category: any(named: 'category'),
           cursor: any(named: 'cursor'),
-          seed: any(named: 'seed'),
+          skipCache: any(named: 'skipCache'),
           preferredLanguages: any(named: 'preferredLanguages'),
           viewerCountry: any(named: 'viewerCountry'),
         ),
       ).thenAnswer((invocation) {
         requestedCursors.add(invocation.namedArguments[#cursor] as String?);
-        requestedSeeds.add(invocation.namedArguments[#seed] as String?);
+        skipCacheRequests.add(invocation.namedArguments[#skipCache] as bool?);
         requestCount += 1;
         if (requestCount == 1) {
           return Future.value(
-            _recommendationsResponse([
-              'for-you-initial',
-            ], nextCursor: 'cursor-2'),
+            _recommendedResult(['for-you-initial'], nextCursor: 'cursor-2'),
           );
         }
         if (requestCount == 2) {
           throw StateError('recommendations refresh failed');
         }
         return Future.value(
-          _recommendationsResponse(['for-you-page-2'], nextCursor: 'cursor-3'),
+          _recommendedResult(['for-you-page-2'], nextCursor: 'cursor-3'),
         );
       });
 
@@ -641,9 +618,7 @@ void main() {
           contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistRepository,
           ),
-          funnelcakeApiClientProvider.overrideWithValue(
-            mockFunnelcakeApiClient,
-          ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
           authServiceProvider.overrideWithValue(mockAuthService),
           funnelcakeAvailableProvider.overrideWith(
             _AlwaysAvailableFunnelcake.new,
@@ -681,45 +656,37 @@ void main() {
       ]);
       expect(loadedState.hasMoreContent, isTrue);
       expect(requestedCursors, [null, null, 'cursor-2']);
-      expect(requestedSeeds, hasLength(3));
-      expect(requestedSeeds[0], isNotNull);
-      expect(requestedSeeds[0], isNotEmpty);
-      expect(requestedSeeds[1], isNot(requestedSeeds[0]));
-      expect(requestedSeeds[2], requestedSeeds[0]);
+      expect(skipCacheRequests, [false, true, false]);
     });
 
     test(
       'for you load more uses recommendation cursor and appends unseen videos',
       () async {
         final requestedCursors = <String?>[];
-        final requestedSeeds = <String?>[];
         var recommendationsCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getRecommendations(
-            pubkey: any(named: 'pubkey'),
+          () => mockVideosRepository.getRecommendedVideos(
+            userPubkey: any(named: 'userPubkey'),
             limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
             cursor: any(named: 'cursor'),
-            seed: any(named: 'seed'),
+            skipCache: any(named: 'skipCache'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) {
           requestedCursors.add(invocation.namedArguments[#cursor] as String?);
-          requestedSeeds.add(invocation.namedArguments[#seed] as String?);
           recommendationsCallCount += 1;
           if (recommendationsCallCount == 1) {
             return Future.value(
-              _recommendationsResponse([
+              _recommendedResult([
                 'for-you-a',
                 'for-you-b',
               ], nextCursor: 'cursor-2'),
             );
           }
           return Future.value(
-            _recommendationsResponse([
+            _recommendedResult([
               'for-you-b',
               'for-you-c',
             ], nextCursor: 'cursor-3'),
@@ -734,9 +701,7 @@ void main() {
             contentBlocklistRepositoryProvider.overrideWithValue(
               mockBlocklistRepository,
             ),
-            funnelcakeApiClientProvider.overrideWithValue(
-              mockFunnelcakeApiClient,
-            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             authServiceProvider.overrideWithValue(mockAuthService),
             funnelcakeAvailableProvider.overrideWith(
               _AlwaysAvailableFunnelcake.new,
@@ -767,10 +732,6 @@ void main() {
         ]);
         expect(loadedState.hasMoreContent, isTrue);
         expect(requestedCursors, [null, 'cursor-2']);
-        expect(requestedSeeds, hasLength(2));
-        expect(requestedSeeds.first, isNotNull);
-        expect(requestedSeeds.first, isNotEmpty);
-        expect(requestedSeeds.last, requestedSeeds.first);
       },
     );
 
@@ -778,33 +739,29 @@ void main() {
       'for you collapses a republished coordinate returned twice in one page',
       () async {
         when(
-          () => mockFunnelcakeApiClient.getRecommendations(
-            pubkey: any(named: 'pubkey'),
+          () => mockVideosRepository.getRecommendedVideos(
+            userPubkey: any(named: 'userPubkey'),
             limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
             cursor: any(named: 'cursor'),
-            seed: any(named: 'seed'),
+            skipCache: any(named: 'skipCache'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer(
           (_) => Future.value(
-            RecommendationsResponse(
+            HomeFeedResult(
               videos: [
-                _videoStats(
+                _video(
                   'for-you-a',
                   pubkey: 'author-shared',
                   dTag: 'shared-d-tag',
                 ),
-                _videoStats(
+                _video(
                   'for-you-b',
                   pubkey: 'author-shared',
                   dTag: 'shared-d-tag',
                 ),
               ],
-              source: 'personalized',
-              nextCursor: 'cursor-2',
             ),
           ),
         );
@@ -817,9 +774,7 @@ void main() {
             contentBlocklistRepositoryProvider.overrideWithValue(
               mockBlocklistRepository,
             ),
-            funnelcakeApiClientProvider.overrideWithValue(
-              mockFunnelcakeApiClient,
-            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             authServiceProvider.overrideWithValue(mockAuthService),
             funnelcakeAvailableProvider.overrideWith(
               _AlwaysAvailableFunnelcake.new,
@@ -838,33 +793,42 @@ void main() {
     );
 
     test(
-      'for you load more keeps cursor and seed paired across rebuilds',
+      'for you uses repository deep-fetch when the first page is all seen',
       () async {
-        final geoCompleter = Completer<GeoBlockResponse>();
-        final requests = <({String? cursor, String? seed})>[];
-
+        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+        when(() => mockNostrClient.publicKey).thenReturn('');
         when(
           () => mockFunnelcakeApiClient.getRecommendations(
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
-            cursor: any(named: 'cursor'),
             seed: any(named: 'seed'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
-        ).thenAnswer((invocation) {
-          final cursor = invocation.namedArguments[#cursor] as String?;
-          final seed = invocation.namedArguments[#seed] as String?;
-          requests.add((cursor: cursor, seed: seed));
-          return Future.value(
-            _recommendationsResponse(
-              cursor == null ? ['for-you-rebuilt'] : ['for-you-page-2'],
-              nextCursor: cursor == null ? 'cursor-2' : 'cursor-3',
-            ),
-          );
-        });
+        ).thenAnswer(
+          (_) async => _recommendationsResponse([
+            'for-you-seen',
+          ], nextCursor: 'cursor-2'),
+        );
+        when(
+          () => mockFunnelcakeApiClient.getRecommendations(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            cursor: 'cursor-2',
+            seed: any(named: 'seed'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer((_) async => _recommendationsResponse(['for-you-fresh']));
+
+        final repository = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeApiClient,
+          seenVideoLookup: SeenVideoLookup(
+            wasSeenRecently: (id, {within = const Duration(hours: 24)}) =>
+                id == 'for-you-seen',
+          ),
+        );
 
         final container = ProviderContainer(
           overrides: [
@@ -874,15 +838,10 @@ void main() {
             contentBlocklistRepositoryProvider.overrideWithValue(
               mockBlocklistRepository,
             ),
-            funnelcakeApiClientProvider.overrideWithValue(
-              mockFunnelcakeApiClient,
-            ),
+            videosRepositoryProvider.overrideWithValue(repository),
             authServiceProvider.overrideWithValue(mockAuthService),
             funnelcakeAvailableProvider.overrideWith(
               _AlwaysAvailableFunnelcake.new,
-            ),
-            geoBlockingServiceProvider.overrideWithValue(
-              _DelayedSecondGeoBlockingService(geoCompleter),
             ),
           ],
         );
@@ -892,79 +851,123 @@ void main() {
         final subscription = container.listen(forYouFeedProvider, (_, _) {});
         addTearDown(subscription.close);
 
-        final initialState = await container.read(forYouFeedProvider.future);
-        expect(initialState.hasMoreContent, isTrue);
-        expect(requests, hasLength(1));
-        final firstPageSeed = requests.single.seed;
-        expect(firstPageSeed, isNotNull);
-        expect(firstPageSeed, isNotEmpty);
-
-        final loadMoreFuture = container
-            .read(forYouFeedProvider.notifier)
-            .loadMore();
-        await pumpEventQueue();
-
-        container.read(blocklistVersionProvider.notifier).increment();
-        await pumpEventQueue();
-
-        geoCompleter.complete(_geoResponse());
-        await loadMoreFuture;
-        await pumpEventQueue();
-
-        final rebuiltFirstPageSeed = requests
-            .lastWhere(
-              (request) => request.cursor == null,
-            )
-            .seed;
-        expect(rebuiltFirstPageSeed, isNot(firstPageSeed));
-
-        final staleCursorPageRequest = requests.singleWhere(
-          (request) => request.cursor == 'cursor-2',
-        );
-        expect(staleCursorPageRequest.seed, firstPageSeed);
-
-        await container.read(forYouFeedProvider.notifier).loadMore();
-
-        final cursorPageRequests = requests
-            .where((request) => request.cursor == 'cursor-2')
-            .toList();
-        expect(cursorPageRequests, hasLength(2));
-        expect(cursorPageRequests.last.seed, rebuiltFirstPageSeed);
-
-        final loadedState = container.read(forYouFeedProvider).value;
-        expect(loadedState, isNotNull);
-        expect(loadedState!.videos.map((video) => video.id), [
-          'for-you-rebuilt',
-          'for-you-page-2',
+        final state = await container.read(forYouFeedProvider.future);
+        expect(state.videos.map((video) => video.id), [
+          'for-you-fresh',
+          'for-you-seen',
         ]);
+        verify(
+          () => mockFunnelcakeApiClient.getRecommendations(
+            pubkey: 'viewer-pubkey',
+            limit: 50,
+            cursor: 'cursor-2',
+            seed: any(named: 'seed'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).called(1);
       },
     );
+
+    test('for you discards stale cursor pages across rebuilds', () async {
+      final geoCompleter = Completer<GeoBlockResponse>();
+      final requests = <String?>[];
+
+      when(
+        () => mockVideosRepository.getRecommendedVideos(
+          userPubkey: any(named: 'userPubkey'),
+          limit: any(named: 'limit'),
+          cursor: any(named: 'cursor'),
+          skipCache: any(named: 'skipCache'),
+          preferredLanguages: any(named: 'preferredLanguages'),
+          viewerCountry: any(named: 'viewerCountry'),
+        ),
+      ).thenAnswer((invocation) {
+        final cursor = invocation.namedArguments[#cursor] as String?;
+        requests.add(cursor);
+        return Future.value(
+          _recommendedResult(
+            cursor == null ? ['for-you-rebuilt'] : ['for-you-page-2'],
+            nextCursor: cursor == null ? 'cursor-2' : 'cursor-3',
+          ),
+        );
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          appReadyProvider.overrideWithValue(true),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
+          ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          funnelcakeAvailableProvider.overrideWith(
+            _AlwaysAvailableFunnelcake.new,
+          ),
+          geoBlockingServiceProvider.overrideWithValue(
+            _DelayedSecondGeoBlockingService(geoCompleter),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(funnelcakeAvailableProvider.future);
+      final subscription = container.listen(forYouFeedProvider, (_, _) {});
+      addTearDown(subscription.close);
+
+      final initialState = await container.read(forYouFeedProvider.future);
+      expect(initialState.hasMoreContent, isTrue);
+      expect(requests, [null]);
+
+      final loadMoreFuture = container
+          .read(forYouFeedProvider.notifier)
+          .loadMore();
+      await pumpEventQueue();
+
+      container.read(blocklistVersionProvider.notifier).increment();
+      await pumpEventQueue();
+
+      geoCompleter.complete(_geoResponse());
+      await loadMoreFuture;
+      await pumpEventQueue();
+
+      expect(requests, [null, null, 'cursor-2']);
+
+      await container.read(forYouFeedProvider.notifier).loadMore();
+
+      expect(requests, [null, null, 'cursor-2', 'cursor-2']);
+
+      final loadedState = container.read(forYouFeedProvider).value;
+      expect(loadedState, isNotNull);
+      expect(loadedState!.videos.map((video) => video.id), [
+        'for-you-rebuilt',
+        'for-you-page-2',
+      ]);
+    });
 
     test(
       'for you keeps loading when a cursor page adds no visible videos',
       () async {
         final requestedCursors = <String?>[];
-        final requestedSeeds = <String?>[];
         var recommendationsCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getRecommendations(
-            pubkey: any(named: 'pubkey'),
+          () => mockVideosRepository.getRecommendedVideos(
+            userPubkey: any(named: 'userPubkey'),
             limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
             cursor: any(named: 'cursor'),
-            seed: any(named: 'seed'),
+            skipCache: any(named: 'skipCache'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) {
           requestedCursors.add(invocation.namedArguments[#cursor] as String?);
-          requestedSeeds.add(invocation.namedArguments[#seed] as String?);
           recommendationsCallCount += 1;
           if (recommendationsCallCount == 1) {
             return Future.value(
-              _recommendationsResponse([
+              _recommendedResult([
                 'for-you-a',
                 'for-you-b',
               ], nextCursor: 'cursor-2'),
@@ -972,14 +975,14 @@ void main() {
           }
           if (recommendationsCallCount == 2) {
             return Future.value(
-              _recommendationsResponse([
+              _recommendedResult([
                 'FOR-YOU-A',
                 'for-you-b',
               ], nextCursor: 'cursor-3'),
             );
           }
           return Future.value(
-            _recommendationsResponse(
+            _recommendedResult(
               ['for-you-c'],
               nextCursor: 'cursor-4',
               hasMore: false,
@@ -995,9 +998,7 @@ void main() {
             contentBlocklistRepositoryProvider.overrideWithValue(
               mockBlocklistRepository,
             ),
-            funnelcakeApiClientProvider.overrideWithValue(
-              mockFunnelcakeApiClient,
-            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             authServiceProvider.overrideWithValue(mockAuthService),
             funnelcakeAvailableProvider.overrideWith(
               _AlwaysAvailableFunnelcake.new,
@@ -1038,9 +1039,6 @@ void main() {
         ]);
         expect(nextPageState.hasMoreContent, isFalse);
         expect(requestedCursors, [null, 'cursor-2', 'cursor-3']);
-        expect(requestedSeeds, hasLength(3));
-        expect(requestedSeeds.toSet(), hasLength(1));
-        expect(requestedSeeds.first, isNotEmpty);
       },
     );
 
@@ -1050,19 +1048,17 @@ void main() {
         var recommendationsCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getRecommendations(
-            pubkey: any(named: 'pubkey'),
+          () => mockVideosRepository.getRecommendedVideos(
+            userPubkey: any(named: 'userPubkey'),
             limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
             cursor: any(named: 'cursor'),
-            seed: any(named: 'seed'),
+            skipCache: any(named: 'skipCache'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((_) {
           recommendationsCallCount += 1;
-          return Future.value(_recommendationsResponse(['for-you-legacy']));
+          return Future.value(_recommendedResult(['for-you-legacy']));
         });
 
         final container = ProviderContainer(
@@ -1073,9 +1069,7 @@ void main() {
             contentBlocklistRepositoryProvider.overrideWithValue(
               mockBlocklistRepository,
             ),
-            funnelcakeApiClientProvider.overrideWithValue(
-              mockFunnelcakeApiClient,
-            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             authServiceProvider.overrideWithValue(mockAuthService),
             funnelcakeAvailableProvider.overrideWith(
               _AlwaysAvailableFunnelcake.new,
@@ -1121,6 +1115,18 @@ RecommendationsResponse _recommendationsResponse(
   );
 }
 
+HomeFeedResult _recommendedResult(
+  List<String> ids, {
+  String? nextCursor,
+  bool hasMore = true,
+}) {
+  return HomeFeedResult(
+    videos: ids.map(_video).toList(),
+    paginationCursor: nextCursor,
+    hasMore: hasMore,
+  );
+}
+
 GeoBlockResponse _geoResponse() {
   return GeoBlockResponse(
     blocked: false,
@@ -1144,6 +1150,8 @@ PopularVideosPage _popularPage(
 
 VideoEvent _video(
   String id, {
+  String? pubkey,
+  String? dTag,
   int createdAt = 1_742_169_600,
   Map<String, String> rawTags = const {
     'd': 'seed',
@@ -1154,13 +1162,14 @@ VideoEvent _video(
 }) {
   return VideoEvent(
     id: id,
-    pubkey: 'author-$id',
+    pubkey: pubkey ?? 'author-$id',
     createdAt: createdAt,
     content: 'video $id',
     timestamp: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
     videoUrl: 'https://example.com/$id.mp4',
     thumbnailUrl: 'https://example.com/$id.jpg',
-    rawTags: rawTags,
+    rawTags: dTag == null ? rawTags : {...rawTags, 'd': dTag},
+    addressableDTag: dTag,
     originalLoops: AppConstants.paginationBatchSize,
   );
 }
