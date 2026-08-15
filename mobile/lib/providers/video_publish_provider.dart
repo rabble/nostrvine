@@ -195,6 +195,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       ref.read(videoReplyContextProvider.notifier).clear();
       reset();
 
+      // Keep the autosave through the parallel phase: both branches used to
+      // delete it concurrently, so the same id was torn down up to three times
+      // at once. The deletion is hoisted out here and runs exactly once, after
+      // both resets have settled.
       await Future.wait([
         ref.read(clipManagerProvider.notifier).clearSessionClips(),
         ref.read(videoEditorProvider.notifier).reset(keepAutosavedDraft: true),

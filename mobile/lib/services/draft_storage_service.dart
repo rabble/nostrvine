@@ -377,7 +377,11 @@ class DraftStorageService {
       ownerPubkey: scopedToOwner ? ownerPubkey : null,
     );
     if (row == null) {
-      Log.debug('📝 Draft not found: $id', category: LogCategory.video);
+      Log.debug(
+        '📝 Draft not found: $id',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
+      );
       return null;
     }
 
