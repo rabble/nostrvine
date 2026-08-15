@@ -10552,6 +10552,93 @@ void main() {
         expect(result!.id, equals(fallbackEventId));
       });
 
+      test(
+        'still tries fallback route IDs when the primary lookup was '
+        'unreachable',
+        () async {
+          // The unreachable-lookup rethrow must not pre-empt the fallbacks.
+          // A DM-shared video passes the bare stable ID as the primary route
+          // and the author-scoped addressable as a fallback, which is a
+          // relay-only query that resolves fine while Funnelcake is down.
+          const fallbackEventId =
+              'e46ff7d0d71d6c8114b58728afa43f08'
+              'd6286fd9a704683af799fd8f855586c2';
+          const author =
+              '076c979382b90f5d3a2b21f95e1ee86b'
+              '6033f14c92e79b7fad3fe1f1073f4886';
+          const missingAddressableId = '34236:$author:missing-stable-id';
+          final fallbackEvent = _createVideoEvent(
+            id: fallbackEventId,
+            pubkey: author,
+            videoUrl: 'https://example.com/fallback.mp4',
+            createdAt: 1777868006,
+          );
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getVideoEvent(any()),
+          ).thenThrow(const FunnelcakeTimeoutException('https://example.com'));
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.single as List<Filter>;
+            final filter = filters.single;
+            if (filter.ids?.contains(fallbackEventId) ?? false) {
+              return [fallbackEvent];
+            }
+            return <Event>[];
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(
+            missingAddressableId,
+            fallbackRouteIds: const [fallbackEventId],
+          );
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(fallbackEventId));
+        },
+      );
+
+      test(
+        'rethrows once every fallback route ID has also come up empty',
+        () async {
+          const fallbackEventId =
+              'e46ff7d0d71d6c8114b58728afa43f08'
+              'd6286fd9a704683af799fd8f855586c2';
+          const author =
+              '076c979382b90f5d3a2b21f95e1ee86b'
+              '6033f14c92e79b7fad3fe1f1073f4886';
+          const missingAddressableId = '34236:$author:missing-stable-id';
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getVideoEvent(any()),
+          ).thenThrow(const FunnelcakeTimeoutException('https://example.com'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => const <Event>[]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await expectLater(
+            repo.fetchVideoWithStatsForRouteId(
+              missingAddressableId,
+              fallbackRouteIds: const [fallbackEventId],
+            ),
+            throwsA(isA<FunnelcakeException>()),
+          );
+        },
+      );
+
       test('returns null without blocking when relay queries hang past the '
           'route timeout', () async {
         const stableId =

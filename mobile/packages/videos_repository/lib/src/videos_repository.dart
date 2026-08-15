@@ -2626,28 +2626,40 @@ class VideosRepository {
   /// not wrap the helpers themselves — a successful relay result followed by
   /// slow stats enrichment must not be killed as if the relay had hung.
   ///
-  /// Returns `null` only when a source positively answered that the video is
-  /// absent — callers may render "not found" on `null`.
+  /// Returns `null` when every candidate came back empty without an error —
+  /// a confirmed absence, an unparseable route ID, or relay-only lookups that
+  /// returned nothing. Callers may render "not found" on `null`.
   ///
   /// Throws:
   ///
-  /// * [FunnelcakeException] when the API could not be reached and no relay
-  ///   answered either. Absence was never established, so callers must offer a
-  ///   retry rather than claim the video is missing.
+  /// * [FunnelcakeException] when a lookup could not reach the API and neither
+  ///   the relay fallbacks nor any [fallbackRouteIds] produced a video.
+  ///   Absence was never established, so callers must offer a retry rather
+  ///   than claim the video is missing.
   Future<VideoEvent?> fetchVideoWithStatsForRouteId(
     String routeId, {
     List<String> fallbackRouteIds = const [],
   }) async {
-    final primary = await _fetchVideoWithStatsForSingleRouteId(routeId);
-    if (primary != null) return primary;
+    FunnelcakeException? apiFailure;
+    final attempted = <String>{};
 
-    for (final fallbackRouteId in fallbackRouteIds) {
-      if (fallbackRouteId == routeId) continue;
-      final fallback = await _fetchVideoWithStatsForSingleRouteId(
-        fallbackRouteId,
-      );
-      if (fallback != null) return fallback;
+    for (final candidateRouteId in [routeId, ...fallbackRouteIds]) {
+      if (!attempted.add(candidateRouteId)) continue;
+      try {
+        final video = await _fetchVideoWithStatsForSingleRouteId(
+          candidateRouteId,
+        );
+        if (video != null) return video;
+      } on FunnelcakeException catch (e) {
+        // Keep going: a fallback route is a different query shape (an
+        // author-scoped addressable resolves against relays alone) and can
+        // still answer while the API is unreachable.
+        apiFailure ??= e;
+      }
     }
+
+    final failure = apiFailure;
+    if (failure != null) throw failure;
 
     return null;
   }
