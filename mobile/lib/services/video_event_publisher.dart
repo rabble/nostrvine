@@ -1047,13 +1047,14 @@ class VideoEventPublisher {
     void Function()? onEventSigned,
     void Function()? onAudioReuseDegraded,
   }) async {
-    // Validate that at least one video URL is a proper HTTP/HTTPS URL
-    // This prevents local file paths from being published to Nostr
+    // Validate that at least one video URL is publishable.
+    // This prevents local file paths and known dead media hosts from being
+    // published to Nostr.
     final hasValidVideoUrl =
-        _isHttpUrl(upload.streamingMp4Url) ||
-        _isHttpUrl(upload.fallbackUrl) ||
-        _isHttpUrl(upload.streamingHlsUrl) ||
-        _isHttpUrl(upload.cdnUrl);
+        _isPublishableMediaUrl(upload.streamingMp4Url) ||
+        _isPublishableMediaUrl(upload.fallbackUrl) ||
+        _isPublishableMediaUrl(upload.streamingHlsUrl) ||
+        _isPublishableMediaUrl(upload.cdnUrl);
     if (!hasValidVideoUrl) {
       Log.error(
         '❌ Cannot publish - no valid HTTP video URLs found. '
@@ -1109,77 +1110,57 @@ class VideoEventPublisher {
       // Build imeta tag components
       final imetaComponents = <String>[];
 
-      // Add all video URLs from Blossom upload stored in PendingUpload
-      // Priority order (based on _scoreVideoUrl in video_event.dart):
-      // 1. streamingMp4Url (BunnyStream MP4 - scores 110) - ONLY if valid
-      // 2. fallbackUrl (R2 MP4 - scores 100)
-      // 3. streamingHlsUrl (HLS - scores 90)
-
       final urlsAdded = <String>[];
 
-      // Validate BunnyStream MP4 URL - must have quality suffix (e.g., play_360p.mp4)
-      // Invalid: .../play.mp4 (returns 404)
-      // Valid: .../play_360p.mp4, .../play_480p.mp4, etc.
-      if (_isHttpUrl(upload.streamingMp4Url)) {
-        final isValidBunnyMp4 =
-            !upload.streamingMp4Url!.contains('stream.divine.video') ||
-            upload.streamingMp4Url!.contains(
-              RegExp(r'play_\d+p\.mp4'),
-            ); // Non-BunnyStream URLs are assumed valid
-
-        if (isValidBunnyMp4) {
-          imetaComponents.add('url ${upload.streamingMp4Url}');
-          urlsAdded.add('MP4(streaming): ${upload.streamingMp4Url}');
-        } else {
-          Log.warning(
-            '⚠️ Skipping invalid BunnyStream MP4 URL (missing quality suffix): ${upload.streamingMp4Url}',
+      void addPublishableUrl({
+        required String? url,
+        required String fieldName,
+        required String label,
+      }) {
+        if (url == null || url.isEmpty) return;
+        if (!_isHttpUrl(url)) {
+          Log.error(
+            '⚠️ Skipping non-HTTP $fieldName (possible local path): $url',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
+          return;
         }
-      } else if (upload.streamingMp4Url != null &&
-          upload.streamingMp4Url!.isNotEmpty) {
-        Log.error(
-          '⚠️ Skipping non-HTTP streamingMp4Url (possible local path): ${upload.streamingMp4Url}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
+        if (VideoUrlResolver.isKnownDeadMediaUrl(url)) {
+          Log.warning(
+            '⚠️ Skipping known dead media URL in $fieldName: $url',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          return;
+        }
+
+        imetaComponents.add('url $url');
+        urlsAdded.add('$label: $url');
       }
 
-      if (_isHttpUrl(upload.fallbackUrl)) {
-        imetaComponents.add('url ${upload.fallbackUrl}');
-        urlsAdded.add('MP4(R2 fallback): ${upload.fallbackUrl}');
-      } else if (upload.fallbackUrl != null && upload.fallbackUrl!.isNotEmpty) {
-        Log.error(
-          '⚠️ Skipping non-HTTP fallbackUrl (possible local path): ${upload.fallbackUrl}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-      }
-
-      if (_isHttpUrl(upload.streamingHlsUrl)) {
-        imetaComponents.add('url ${upload.streamingHlsUrl}');
-        urlsAdded.add('HLS: ${upload.streamingHlsUrl}');
-      } else if (upload.streamingHlsUrl != null &&
-          upload.streamingHlsUrl!.isNotEmpty) {
-        Log.error(
-          '⚠️ Skipping non-HTTP streamingHlsUrl (possible local path): ${upload.streamingHlsUrl}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-      }
+      addPublishableUrl(
+        url: upload.streamingMp4Url,
+        fieldName: 'streamingMp4Url',
+        label: 'MP4(streaming)',
+      );
+      addPublishableUrl(
+        url: upload.fallbackUrl,
+        fieldName: 'fallbackUrl',
+        label: 'MP4(R2 fallback)',
+      );
+      addPublishableUrl(
+        url: upload.streamingHlsUrl,
+        fieldName: 'streamingHlsUrl',
+        label: 'HLS',
+      );
 
       // Fallback to legacy cdnUrl if no Blossom-specific URLs
-      if (urlsAdded.isEmpty && _isHttpUrl(upload.cdnUrl)) {
-        imetaComponents.add('url ${upload.cdnUrl}');
-        urlsAdded.add('Legacy CDN: ${upload.cdnUrl}');
-      } else if (urlsAdded.isEmpty &&
-          upload.cdnUrl != null &&
-          upload.cdnUrl!.isNotEmpty) {
-        Log.error(
-          '⚠️ Skipping non-HTTP cdnUrl (possible local path): ${upload.cdnUrl}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
+      if (urlsAdded.isEmpty) {
+        addPublishableUrl(
+          url: upload.cdnUrl,
+          fieldName: 'cdnUrl',
+          label: 'Legacy CDN',
         );
       }
 
@@ -2167,6 +2148,10 @@ class VideoEventPublisher {
   static bool _isHttpUrl(String? url) {
     if (url == null || url.isEmpty) return false;
     return url.startsWith('http://') || url.startsWith('https://');
+  }
+
+  static bool _isPublishableMediaUrl(String? url) {
+    return _isHttpUrl(url) && !VideoUrlResolver.isKnownDeadMediaUrl(url!);
   }
 
   /// Returns [proof] carrying the device attestation this publish should

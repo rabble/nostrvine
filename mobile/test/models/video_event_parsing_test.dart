@@ -222,12 +222,7 @@ void main() {
         // Assert
         expect(videoEvent.blurhash, equals('L9AAEz-o?^TK4.%gVs-o009F9E9F'));
         expect(videoEvent.dimensions, equals('720x720'));
-        expect(
-          videoEvent.thumbnailUrl,
-          equals(
-            'https://stream.divine.video/fa4a90a3-6a30-4dc6-9b9d-3f78551c9053/thumbnail.jpg',
-          ),
-        );
+        expect(videoEvent.thumbnailUrl, isNull);
         expect(
           videoEvent.videoUrl,
           equals(

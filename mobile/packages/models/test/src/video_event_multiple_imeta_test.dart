@@ -1,9 +1,10 @@
 // ABOUTME: Test multiple imeta tag parsing and URL selection following Postel's Law
 // ABOUTME: Ensures best video URL is selected from events with multiple imeta tags
+// ignore_for_file: lines_longer_than_80_chars
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:test/test.dart';
 
 void main() {
   group("VideoEvent Multiple Imeta Parsing (Postel's Law)", () {
@@ -62,7 +63,7 @@ void main() {
       expect(videoEvent.videoUrl, isNot(contains('/manifest/')));
     });
 
-    test('extracts hls URL from imeta as fallback candidate', () {
+    test('deprioritizes dead stream.divine.video HLS candidates', () {
       // Event with only HLS URLs, no MP4
       final event = Event.fromJson({
         'id': 'test123',
@@ -76,19 +77,20 @@ void main() {
           [
             'imeta',
             'url',
-            'https://cdn.divine.video/broken/manifest/video.m3u8', // Broken
-            'm', 'application/vnd.apple.mpegurl',
+            'https://cdn.divine.video/broken/manifest/video.m3u8',
+            'm',
+            'application/vnd.apple.mpegurl',
             'hls',
-            'https://stream.divine.video/working/playlist.m3u8', // Working
+            'https://stream.divine.video/dead/playlist.m3u8',
           ],
         ],
       });
 
       final videoEvent = VideoEvent.fromNostrEvent(event);
 
-      // Should prefer stream.divine.video HLS (score 105) over cdn.divine.video manifest (score 5)
       expect(videoEvent.videoUrl, isNotNull);
-      expect(videoEvent.videoUrl, contains('stream.divine.video'));
+      expect(videoEvent.videoUrl, contains('cdn.divine.video'));
+      expect(videoEvent.videoUrl, isNot(contains('stream.divine.video')));
     });
 
     test('handles old space-separated imeta format with hls', () {

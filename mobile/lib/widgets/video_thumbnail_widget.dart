@@ -63,7 +63,9 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
 
   void _loadThumbnail() {
     final url = widget.video.thumbnailUrl;
-    if (url != null && url.isNotEmpty) {
+    if (url != null &&
+        url.isNotEmpty &&
+        !VideoUrlResolver.isKnownDeadMediaUrl(url)) {
       _thumbnailUrl = url;
     } else {
       _thumbnailUrl = null;

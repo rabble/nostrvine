@@ -12,6 +12,14 @@ import 'package:models/src/video_url_resolver.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
 
+String? _usableThumbnailUrl(Object? value) {
+  final url = value?.toString();
+  if (url == null || url.isEmpty) return null;
+  if (!VideoUrlResolver.isValidVideoUrl(url)) return null;
+  if (VideoUrlResolver.isKnownDeadMediaUrl(url)) return null;
+  return url;
+}
+
 /// Compact backend-computed ProofMode verification result for feed/list rows.
 @immutable
 class ProofVerificationSummary {
@@ -274,7 +282,7 @@ class VideoEvent {
           : DateTime.fromMillisecondsSinceEpoch(createdAt * 1000, isUtc: true),
       title: json['title'] as String?,
       videoUrl: json['videoUrl'] as String?,
-      thumbnailUrl: json['thumbnailUrl'] as String?,
+      thumbnailUrl: _usableThumbnailUrl(json['thumbnailUrl']),
       duration: optInt(json['duration']),
       dimensions: json['dimensions'] as String?,
       mimeType: json['mimeType'] as String?,
@@ -458,16 +466,15 @@ class VideoEvent {
               case 'dim':
                 dimensions ??= value;
               case 'thumb':
-                // Thumbnail URL
-                if (value.isNotEmpty &&
-                    VideoUrlResolver.isValidVideoUrl(value)) {
-                  thumbnailUrl ??= value;
+                final thumbnail = _usableThumbnailUrl(value);
+                if (thumbnail != null) {
+                  thumbnailUrl ??= thumbnail;
                 }
               case 'image':
                 // NIP-92 uses 'image' for thumbnail in imeta
-                if (value.isNotEmpty &&
-                    VideoUrlResolver.isValidVideoUrl(value)) {
-                  thumbnailUrl ??= value;
+                final thumbnail = _usableThumbnailUrl(value);
+                if (thumbnail != null) {
+                  thumbnailUrl ??= thumbnail;
                 }
               case 'blurhash':
                 // Blurhash for progressive loading
@@ -495,9 +502,9 @@ class VideoEvent {
           fileSize = int.tryParse(tagValue);
         case 'thumb':
           // Thumbnail URL - prefer static thumbnails for grid display
-          if (tagValue.isNotEmpty &&
-              VideoUrlResolver.isValidVideoUrl(tagValue)) {
-            thumbnailUrl = tagValue;
+          final thumbnail = _usableThumbnailUrl(tagValue);
+          if (thumbnail != null) {
+            thumbnailUrl = thumbnail;
           }
         case 'preview':
           // Animated GIF preview - store separately, don't use as main
@@ -509,9 +516,9 @@ class VideoEvent {
           }
         case 'image':
           // Alternative to 'thumb' tag - some clients use 'image' instead
-          if (tagValue.isNotEmpty &&
-              VideoUrlResolver.isValidVideoUrl(tagValue)) {
-            thumbnailUrl ??= tagValue;
+          final thumbnail = _usableThumbnailUrl(tagValue);
+          if (thumbnail != null) {
+            thumbnailUrl ??= thumbnail;
           }
         case 'd':
           // Replaceable event ID - original vine ID
@@ -563,8 +570,7 @@ class VideoEvent {
                 VideoUrlResolver.isValidVideoUrl(url)) {
               videoUrl ??= url;
             } else if (type == 'thumbnail' &&
-                url.isNotEmpty &&
-                VideoUrlResolver.isValidVideoUrl(url) &&
+                _usableThumbnailUrl(url) != null &&
                 !url.contains('picsum.photos')) {
               thumbnailUrl ??= url;
             }
