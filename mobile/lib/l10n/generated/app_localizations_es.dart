@@ -2338,6 +2338,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Incluí una etiqueta de cliente Divine en los eventos que publicás para que otras apps de Nostr puedan atribuirlos correctamente. Sin eso, los reportes que enviás pesan menos cuando nuestros moderadores los revisan.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Mover tu cuenta';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Descarga tu archivo y mueve tus publicaciones y videos a otro relay o servidor de medios.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Quitar claves del dispositivo';
 
   @override

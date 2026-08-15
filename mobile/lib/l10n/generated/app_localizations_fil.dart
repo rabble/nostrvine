@@ -2351,6 +2351,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'Maglagay ng Divine client tag sa mga event na pina-publish mo para maituro ito nang tama ng ibang Nostr apps. Kung wala ito, mas magaan ang timbang ng mga report mong pinapadala kapag sinusuri ng mga moderator namin.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Ilipat ang account mo';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'I-download ang archive mo at ilipat ang mga post at video mo sa ibang relay o media server.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Alisin ang mga Key sa Device';
 
   @override

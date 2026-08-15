@@ -55,6 +55,19 @@ void main() {
       expect(find.byType(AlertDialog), findsNothing);
     });
 
+    testWidgets('opens Divine Exit without confirmation', (tester) async {
+      await tester.pumpWidget(
+        const _Harness(link: 'https://divine.video/exit'),
+      );
+
+      await tester.tap(find.byKey(_Harness.openButtonKey));
+      await tester.pump();
+
+      expect(launcher.launched.single.url, 'https://divine.video/exit');
+      expect(launcher.launched.single.useExternalApplication, isTrue);
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
     testWidgets('normalizes bare email addresses to mailto', (tester) async {
       await tester.pumpWidget(const _Harness(link: 'creator@example.com'));
 

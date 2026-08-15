@@ -1477,6 +1477,11 @@
   "@nostrSettingsClientAttributionSubtitle": {
     "description": "Subtitle for the Nostr settings client-attribution switch. The second sentence states the consequence of turning it off: a report with no client tag is still reviewed, but cannot count toward automatic moderation action."
   },
+  "nostrSettingsMoveAccount": "Move your account",
+  "nostrSettingsMoveAccountSubtitle": "Download your archive and move your posts and videos to another relay or media server.",
+  "@nostrSettingsMoveAccountSubtitle": {
+    "description": "Subtitle for the Nostr settings account-portability row. The web flow lets users download an archive and move their Nostr posts/videos to other infrastructure."
+  },
   "nostrSettingsRemoveKeys": "Remove this account from this device",
   "nostrSettingsRemoveKeysSubtitle": "Remove this account's local login from this device. Your local drafts and clips stay saved for this account.",
   "nostrSettingsCouldNotRemoveKeys": "Could not remove this account from this device. Please try again.",

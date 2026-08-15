@@ -2280,6 +2280,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yayınladığın etkinliklere Divine istemci etiketini ekle, böylece diğer Nostr uygulamaları bunları doğru şekilde atfedebilir. O olmadan gönderdiğin bildirimler, moderatörlerimiz incelerken daha az ağırlık taşır.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Hesabını taşı';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Arşivini indir ve gönderilerini ve videolarını başka bir relay\'e veya medya sunucusuna taşı.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Anahtarları Cihazdan Kaldır';
 
   @override

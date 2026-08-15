@@ -2268,6 +2268,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'በሚያትሟቸው ክስተቶች ላይ የDivine ደንበኛ መለያ ያክሉ፣ ሌሎች የNostr መተግበሪያዎች በትክክል እንዲጠቅሷቸው። ያለሱ፣ የሚልኳቸው ሪፖርቶች አወያዮቻችን ሲገመግሟቸው ያነሰ ክብደት ይኖራቸዋል።';
 
   @override
+  String get nostrSettingsMoveAccount => 'መለያዎን ያንቀሳቅሱ';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'ማህደርዎን ያውርዱ እና ልጥፎችዎን እና ቪዲዮዎችዎን ወደ ሌላ relay ወይም የሚዲያ አገልጋይ ያንቀሳቅሱ።';
+
+  @override
   String get nostrSettingsRemoveKeys => 'ቁልፎችን ከመሣሪያው አስወግድ';
 
   @override

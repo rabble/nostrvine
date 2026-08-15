@@ -3650,6 +3650,8 @@
     "nostrSettingsKeyManagementSubtitle": "Ekspor, backup, dan pulihkan kunci Nostr-mu",
     "nostrSettingsClientAttribution": "Atribusi klien",
     "nostrSettingsClientAttributionSubtitle": "Tambahkan tag klien Divine ke event yang kamu publikasikan agar aplikasi Nostr lain bisa mengatribusikannya dengan benar. Tanpa itu, laporan yang kamu kirim punya bobot lebih kecil saat ditinjau moderator kami.",
+    "nostrSettingsMoveAccount": "Pindahkan akunmu",
+    "nostrSettingsMoveAccountSubtitle": "Unduh arsipmu dan pindahkan postingan serta videomu ke relay atau server media lain.",
     "nostrSettingsRemoveKeys": "Hapus Kunci dari Perangkat",
     "nostrSettingsRemoveKeysSubtitle": "Hapus kunci privatmu hanya dari perangkat ini. Kontenmu tetap di relay, tapi kamu butuh backup nsec untuk masuk lagi.",
     "nostrSettingsCouldNotRemoveKeys": "Gagal menghapus kunci dari perangkat ini. Coba lagi.",

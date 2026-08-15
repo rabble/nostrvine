@@ -1291,6 +1291,8 @@
   "nostrSettingsKeyManagementSubtitle": "导出、备份和恢复你的 Nostr 密钥",
   "nostrSettingsClientAttribution": "客户端署名",
   "nostrSettingsClientAttributionSubtitle": "在你发布的事件上附带 Divine 客户端标记，方便其他 Nostr 应用正确识别来源。没有它，你提交的举报在我们审核时的权重会更低。",
+  "nostrSettingsMoveAccount": "迁移你的账号",
+  "nostrSettingsMoveAccountSubtitle": "下载你的归档，并将帖子和视频迁移到另一个中继或媒体服务器。",
   "nostrSettingsRemoveKeys": "从此设备移除此账号",
   "nostrSettingsRemoveKeysSubtitle": "从此设备移除此账号的本地登录。此账号的本地草稿和片段仍会保留。",
   "nostrSettingsCouldNotRemoveKeys": "无法从此设备移除此账号，请重试。",

@@ -2200,6 +2200,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '在你发布的事件上附带 Divine 客户端标记，方便其他 Nostr 应用正确识别来源。没有它，你提交的举报在我们审核时的权重会更低。';
 
   @override
+  String get nostrSettingsMoveAccount => '迁移你的账号';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      '下载你的归档，并将帖子和视频迁移到另一个中继或媒体服务器。';
+
+  @override
   String get nostrSettingsRemoveKeys => '从此设备移除此账号';
 
   @override

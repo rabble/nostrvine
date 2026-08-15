@@ -109,6 +109,7 @@ abstract class SemanticIds {
   /// Settings rows on the path to signing the device out. removeKeys is the
   /// teardown of every E2E flow, so this route has to stay addressable.
   static const String settingsNostrRow = 'nostr_settings_tile';
+  static const String settingsMoveAccountRow = 'move_account_tile';
   static const String settingsRemoveKeysRow = 'remove_keys_tile';
 
   /// Search. The results screen has no tabs and its rows are keyed by

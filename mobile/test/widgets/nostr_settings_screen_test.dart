@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -20,6 +21,9 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+import '../helpers/url_launcher_test_double.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -45,7 +49,10 @@ void main() {
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
     });
 
-    Widget buildSubject({bool advancedRelaySettingsEnabled = false}) {
+    Widget buildSubject({
+      bool advancedRelaySettingsEnabled = false,
+      AuthState authState = AuthState.authenticated,
+    }) {
       final router = GoRouter(
         initialLocation: NostrSettingsScreen.path,
         routes: [
@@ -65,9 +72,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           authServiceProvider.overrideWithValue(mockAuthService),
-          currentAuthStateProvider.overrideWith(
-            (ref) => AuthState.authenticated,
-          ),
+          currentAuthStateProvider.overrideWith((ref) => authState),
           isFeatureEnabledProvider(
             FeatureFlag.advancedRelaySettings,
           ).overrideWith((ref) => advancedRelaySettingsEnabled),
@@ -83,12 +88,14 @@ void main() {
     Future<void> pumpSubject(
       WidgetTester tester, {
       bool advancedRelaySettingsEnabled = false,
+      AuthState authState = AuthState.authenticated,
     }) async {
       await tester.binding.setSurfaceSize(const Size(900, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
         buildSubject(
           advancedRelaySettingsEnabled: advancedRelaySettingsEnabled,
+          authState: authState,
         ),
       );
       await tester.pumpAndSettle();
@@ -115,6 +122,42 @@ void main() {
 
       expect(find.text(l10n.nostrSettingsNip05Address), findsOneWidget);
       expect(find.text(l10n.nostrSettingsNip05AddressSubtitle), findsOneWidget);
+    });
+
+    testWidgets('shows account portability tile when authenticated', (
+      tester,
+    ) async {
+      await pumpSubject(tester);
+
+      expect(find.text(l10n.nostrSettingsMoveAccount), findsOneWidget);
+      expect(find.text(l10n.nostrSettingsMoveAccountSubtitle), findsOneWidget);
+    });
+
+    testWidgets('hides account portability tile when signed out', (
+      tester,
+    ) async {
+      await pumpSubject(tester, authState: AuthState.unauthenticated);
+
+      expect(find.text(l10n.nostrSettingsMoveAccount), findsNothing);
+      expect(find.text(l10n.nostrSettingsMoveAccountSubtitle), findsNothing);
+    });
+
+    testWidgets('opens account portability flow in external browser', (
+      tester,
+    ) async {
+      final originalPlatform = UrlLauncherPlatform.instance;
+      final launcher = UrlLauncherTestDouble();
+      UrlLauncherPlatform.instance = launcher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+      await pumpSubject(tester);
+
+      await tester.tap(find.text(l10n.nostrSettingsMoveAccount));
+      await tester.pump();
+
+      expect(launcher.launched.single.url, AppConstants.accountPortabilityUrl);
+      expect(launcher.launched.single.useExternalApplication, isTrue);
+      expect(find.byType(AlertDialog), findsNothing);
     });
 
     // #6592: the toggle used to describe only the upside. Turning attribution

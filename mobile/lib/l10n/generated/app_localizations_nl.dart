@@ -2322,6 +2322,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voeg een Divine-clienttag toe aan events die je publiceert, zodat andere Nostr-apps ze correct kunnen toeschrijven. Zonder die tag wegen je meldingen minder zwaar als onze moderators ze bekijken.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Verplaats je account';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Download je archief en verplaats je berichten en video\'s naar een andere relay of mediaserver.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Sleutels van apparaat verwijderen';
 
   @override

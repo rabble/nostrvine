@@ -1291,6 +1291,8 @@
   "nostrSettingsKeyManagementSubtitle": "Eksport, sandar dan pulihkan kunci Nostr anda",
   "nostrSettingsClientAttribution": "Atribusi Klien",
   "nostrSettingsClientAttributionSubtitle": "Sertakan tag klien Divine pada acara yang anda terbitkan supaya apl Nostr lain dapat mengatribusikannya dengan betul. Tanpanya, laporan yang anda hantar kurang berat semasa moderator kami menyemaknya.",
+  "nostrSettingsMoveAccount": "Alihkan akaun anda",
+  "nostrSettingsMoveAccountSubtitle": "Muat turun arkib anda dan alihkan siaran serta video anda ke relay atau pelayan media lain.",
   "nostrSettingsRemoveKeys": "Alih keluar akaun ini daripada peranti ini",
   "nostrSettingsRemoveKeysSubtitle": "Alih keluar log masuk setempat akaun ini daripada peranti ini. Draf dan klip setempat anda kekal disimpan untuk akaun ini.",
   "nostrSettingsCouldNotRemoveKeys": "Tidak dapat mengalih keluar akaun ini daripada peranti ini. Sila cuba lagi.",

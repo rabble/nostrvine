@@ -2318,6 +2318,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gắn thẻ ứng dụng Divine lên các sự kiện bạn xuất bản để các ứng dụng Nostr khác ghi nhận đúng nguồn. Không có nó, các báo cáo bạn gửi sẽ có ít trọng lượng hơn khi người kiểm duyệt của chúng tôi xem xét.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Di chuyển tài khoản của bạn';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Tải xuống kho lưu trữ của bạn và chuyển bài đăng cùng video sang relay hoặc máy chủ media khác.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Xóa tài khoản này khỏi thiết bị này';
 
   @override

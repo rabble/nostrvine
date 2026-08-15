@@ -3650,6 +3650,8 @@
     "nostrSettingsKeyManagementSubtitle": "Exporte, faça backup e restaure suas chaves Nostr",
     "nostrSettingsClientAttribution": "Atribuição do cliente",
     "nostrSettingsClientAttributionSubtitle": "Inclua uma tag de cliente Divine nos eventos que você publica para que outros apps Nostr possam atribuí-los corretamente. Sem ela, as denúncias que você envia têm menos peso quando nossos moderadores as analisam.",
+    "nostrSettingsMoveAccount": "Mover sua conta",
+    "nostrSettingsMoveAccountSubtitle": "Baixe seu arquivo e mova suas publicações e vídeos para outro relay ou servidor de mídia.",
     "nostrSettingsRemoveKeys": "Remover chaves do dispositivo",
     "nostrSettingsRemoveKeysSubtitle": "Apague sua chave privada apenas deste dispositivo. Seu conteúdo continua nos relays, mas você vai precisar do backup da nsec para acessar sua conta de novo.",
     "nostrSettingsCouldNotRemoveKeys": "Não foi possível remover as chaves deste dispositivo. Tente novamente.",

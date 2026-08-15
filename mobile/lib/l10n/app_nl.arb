@@ -3650,6 +3650,8 @@
     "nostrSettingsKeyManagementSubtitle": "Exporteer, back-up en herstel je Nostr-sleutels",
     "nostrSettingsClientAttribution": "Clienttoeschrijving",
     "nostrSettingsClientAttributionSubtitle": "Voeg een Divine-clienttag toe aan events die je publiceert, zodat andere Nostr-apps ze correct kunnen toeschrijven. Zonder die tag wegen je meldingen minder zwaar als onze moderators ze bekijken.",
+    "nostrSettingsMoveAccount": "Verplaats je account",
+    "nostrSettingsMoveAccountSubtitle": "Download je archief en verplaats je berichten en video's naar een andere relay of mediaserver.",
     "nostrSettingsRemoveKeys": "Sleutels van apparaat verwijderen",
     "nostrSettingsRemoveKeysSubtitle": "Verwijder je privésleutel alleen van dit apparaat. Je inhoud blijft op relays staan, maar je hebt je nsec-back-up nodig om weer bij je account te komen.",
     "nostrSettingsCouldNotRemoveKeys": "Sleutels konden niet van dit apparaat verwijderd worden. Probeer het opnieuw.",

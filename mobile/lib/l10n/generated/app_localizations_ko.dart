@@ -2190,6 +2190,13 @@ class AppLocalizationsKo extends AppLocalizations {
       '게시하는 이벤트에 Divine 클라이언트 태그를 포함해 다른 Nostr 앱이 올바르게 표시할 수 있게 해요. 이게 없으면 보낸 신고는 모더레이터가 검토할 때 비중이 낮아져요.';
 
   @override
+  String get nostrSettingsMoveAccount => '계정 옮기기';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      '아카이브를 다운로드하고 게시물과 동영상을 다른 릴레이나 미디어 서버로 옮기세요.';
+
+  @override
   String get nostrSettingsRemoveKeys => '기기에서 키 제거';
 
   @override

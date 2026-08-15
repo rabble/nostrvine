@@ -2293,6 +2293,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'أضِف وسم عميل Divine إلى الأحداث التي تنشرها حتى تتمكن تطبيقات Nostr الأخرى من إسنادها بشكل صحيح. بدونه، تحمل البلاغات التي ترسلها وزنًا أقل عند مراجعتها من مشرفينا.';
 
   @override
+  String get nostrSettingsMoveAccount => 'نقل حسابك';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'نزّل أرشيفك وانقل منشوراتك ومقاطع الفيديو الخاصة بك إلى مرحّل أو خادم وسائط آخر.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'إزالة المفاتيح من الجهاز';
 
   @override

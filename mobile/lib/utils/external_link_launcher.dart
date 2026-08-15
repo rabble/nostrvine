@@ -12,11 +12,6 @@ final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
 const _trustedDomains = {
   'divine.video',
-  'invite.divine.video',
-  'login.divine.video',
-  'media.divine.video',
-  'relay.divine.video',
-  'cdn.divine.video',
 };
 
 bool isTrustedExternalLinkHost(String host) {

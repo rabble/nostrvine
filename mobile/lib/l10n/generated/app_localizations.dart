@@ -4021,6 +4021,18 @@ abstract class AppLocalizations {
   /// **'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly. Without it, reports you send carry less weight when our moderators review them.'**
   String get nostrSettingsClientAttributionSubtitle;
 
+  /// No description provided for @nostrSettingsMoveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Move your account'**
+  String get nostrSettingsMoveAccount;
+
+  /// Subtitle for the Nostr settings account-portability row. The web flow lets users download an archive and move their Nostr posts/videos to other infrastructure.
+  ///
+  /// In en, this message translates to:
+  /// **'Download your archive and move your posts and videos to another relay or media server.'**
+  String get nostrSettingsMoveAccountSubtitle;
+
   /// No description provided for @nostrSettingsRemoveKeys.
   ///
   /// In en, this message translates to:

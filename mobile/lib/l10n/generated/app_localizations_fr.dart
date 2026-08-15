@@ -2351,6 +2351,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajoute un tag client Divine aux événements que tu publies pour que les autres apps Nostr puissent les attribuer correctement. Sans lui, les signalements que tu envoies pèsent moins lourd quand nos modérateurs les examinent.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Déplacer ton compte';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Télécharge ton archive et déplace tes publications et vidéos vers un autre relais ou serveur média.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Retirer les clés de l\'appareil';
 
   @override

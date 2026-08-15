@@ -1128,6 +1128,8 @@
     "nostrSettingsKeyManagementSubtitle": "የNostr ቁልፎችዎን ወደ ውጭ ይላኩ፣ ምትኬ ያስቀምጡ እና ይመልሱ",
     "nostrSettingsClientAttribution": "የደንበኛ መለያ",
     "nostrSettingsClientAttributionSubtitle": "በሚያትሟቸው ክስተቶች ላይ የDivine ደንበኛ መለያ ያክሉ፣ ሌሎች የNostr መተግበሪያዎች በትክክል እንዲጠቅሷቸው። ያለሱ፣ የሚልኳቸው ሪፖርቶች አወያዮቻችን ሲገመግሟቸው ያነሰ ክብደት ይኖራቸዋል።",
+    "nostrSettingsMoveAccount": "መለያዎን ያንቀሳቅሱ",
+    "nostrSettingsMoveAccountSubtitle": "ማህደርዎን ያውርዱ እና ልጥፎችዎን እና ቪዲዮዎችዎን ወደ ሌላ relay ወይም የሚዲያ አገልጋይ ያንቀሳቅሱ።",
     "nostrSettingsRemoveKeys": "ቁልፎችን ከመሣሪያው አስወግድ",
     "nostrSettingsRemoveKeysSubtitle": "የግል ቁልፍዎን ከዚህ መሣሪያ ብቻ ይሰርዙ። ይዘትዎ በቅብብሎሾች ላይ ይቆያል፣ ግን መለያዎን እንደገና ለመጠቀም የnsec ምትኬዎን ያስፈልግዎታል።",
     "nostrSettingsCouldNotRemoveKeys": "ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
