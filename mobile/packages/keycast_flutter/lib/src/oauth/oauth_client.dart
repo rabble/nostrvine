@@ -152,6 +152,9 @@ class KeycastOAuth {
   /// rotated it). On network error or timeout an [OAuthNetworkException] is
   /// thrown and the token is preserved since the server may not have consumed
   /// it.
+  /// When the network is unavailable (timeout or socket error),
+  /// OAuthNetworkException is thrown; when the server responds with HTTP
+  /// error, the method returns null.
   Future<KeycastSession?> refreshSession({String? userPubkey}) async {
     final refreshEpoch = _storageEpoch;
     final refreshToken = await _storage.read(_storageKeyRefreshToken);
