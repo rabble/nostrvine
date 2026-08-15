@@ -21,6 +21,10 @@ import 'package:unified_logger/unified_logger.dart';
 
 enum UnsealItemTagsStatus { notSealed, unsealed, failed }
 
+// Keeps the read alive past nostr_sdk's 8s subscription silence probe and 10s
+// teardown repair floor so a repaired relay can still answer this request.
+const Duration kPublicCuratedListsRelayReadTimeout = Duration(seconds: 12);
+
 final class UnsealedItemTags {
   const UnsealedItemTags._(this.status, [this.tags]);
 
@@ -123,8 +127,11 @@ class CuratedListRelayGateway {
     return utf8.encode(_privateItemPlaintext(list)).length <= 65535;
   }
 
-  /// Stream public curated lists from Nostr relays for discovery
-  /// Yields lists immediately as they arrive - no waiting for EOSE
+  /// Stream public curated lists from Nostr relays for discovery.
+  ///
+  /// Yields lists immediately as they arrive, completes on EOSE, and times out
+  /// after [timeout] so a silent subscription can trigger relay repair before
+  /// the caller gives up.
   /// Handles deduplication by 'd' tag (keeps newest version)
   /// Use [until] to paginate backwards (set to oldest createdAt from previous batch)
   /// Use [limit] to control how many events to request (default: 500)
@@ -133,7 +140,8 @@ class CuratedListRelayGateway {
     DateTime? until,
     int limit = 500,
     Set<String>? excludeIds,
-  }) async* {
+    Duration timeout = kPublicCuratedListsRelayReadTimeout,
+  }) {
     Log.info(
       '📋 Streaming public curated lists from relays (limit: $limit)${until != null ? ' (until: $until)' : ''}'
       '${excludeIds != null ? ' (excluding ${excludeIds.length} known)' : ''}...',
@@ -162,9 +170,37 @@ class CuratedListRelayGateway {
       category: LogCategory.system,
     );
 
-    final subscription = _nostrService.subscribe([filter]);
+    late final StreamController<List<CuratedList>> controller;
+    // The subscription is cancelled by finish(), which is wired to timeout,
+    // EOSE, source close/error, and caller cancellation.
+    // ignore: cancel_subscriptions
+    StreamSubscription<Event>? relaySubscription;
+    Timer? timeoutTimer;
+    var finished = false;
 
-    await for (final event in subscription) {
+    Future<void> finish({Object? error}) async {
+      if (finished) return;
+      finished = true;
+      timeoutTimer?.cancel();
+      timeoutTimer = null;
+
+      if (error != null && !controller.isClosed) {
+        controller.addError(error);
+      }
+
+      final subscription = relaySubscription;
+      relaySubscription = null;
+      await subscription?.cancel();
+
+      if (controller.isClosed) return;
+      await controller.close();
+    }
+
+    void finishFromCallback({Object? error}) {
+      unawaited(finish(error: error));
+    }
+
+    void handleEvent(Event event) {
       totalEventsReceived++;
       // Log progress every 100 events (reduced spam)
       if (totalEventsReceived % 100 == 0) {
@@ -188,7 +224,7 @@ class CuratedListRelayGateway {
 
         // Skip lists we already know about (for pagination)
         if (skipIds.contains(dTag)) {
-          continue;
+          return;
         }
 
         final existing = listsByDTag[dTag];
@@ -204,18 +240,95 @@ class CuratedListRelayGateway {
               (a, b) =>
                   b.videoEventIds.length.compareTo(a.videoEventIds.length),
             );
-          yield sortedLists;
+          controller.add(sortedLists);
         }
       }
     }
 
-    // Log final stats when stream completes
-    Log.info(
-      '📋 Stream complete: received $totalEventsReceived events, '
-      '$listsWithVideos had videos, ${listsByDTag.length} unique lists',
-      name: 'CuratedListRelayGateway',
-      category: LogCategory.system,
+    controller = StreamController<List<CuratedList>>(
+      onListen: () {
+        timeoutTimer = Timer(timeout, () {
+          final message =
+              'Public curated lists relay read timed out after '
+              '${timeout.inSeconds}s';
+          Log.warning(
+            '📋 $message: received $totalEventsReceived events, '
+            '$listsWithVideos had videos, ${listsByDTag.length} unique lists',
+            name: 'CuratedListRelayGateway',
+            category: LogCategory.system,
+          );
+          finishFromCallback(error: TimeoutException(message, timeout));
+        });
+
+        try {
+          final subscription = _nostrService.subscribe(
+            [filter],
+            onEose: () {
+              Log.info(
+                '📋 EOSE received for public curated lists: '
+                '$totalEventsReceived events, $listsWithVideos had videos, '
+                '${listsByDTag.length} unique lists',
+                name: 'CuratedListRelayGateway',
+                category: LogCategory.system,
+              );
+              finishFromCallback();
+            },
+          );
+
+          relaySubscription = subscription.listen(
+            handleEvent,
+            onError: (Object error, StackTrace stackTrace) {
+              Log.error(
+                '📋 Public curated lists relay stream failed: $error',
+                name: 'CuratedListRelayGateway',
+                category: LogCategory.system,
+              );
+              if (!controller.isClosed) {
+                controller.addError(error, stackTrace);
+              }
+              finishFromCallback();
+            },
+            onDone: () {
+              Log.info(
+                '📋 Public curated lists relay stream closed: '
+                '$totalEventsReceived events, $listsWithVideos had videos, '
+                '${listsByDTag.length} unique lists',
+                name: 'CuratedListRelayGateway',
+                category: LogCategory.system,
+              );
+              finishFromCallback();
+            },
+          );
+        } catch (error, stackTrace) {
+          finished = true;
+          timeoutTimer?.cancel();
+          timeoutTimer = null;
+          Log.error(
+            '📋 Public curated lists relay subscription setup failed: $error',
+            name: 'CuratedListRelayGateway',
+            category: LogCategory.system,
+          );
+          if (!controller.isClosed) {
+            controller.addError(error, stackTrace);
+          }
+          unawaited(controller.close());
+        }
+      },
+      onCancel: () {
+        if (!finished) {
+          Log.info(
+            '📋 Public curated lists relay read cancelled: '
+            '$totalEventsReceived events, $listsWithVideos had videos, '
+            '${listsByDTag.length} unique lists',
+            name: 'CuratedListRelayGateway',
+            category: LogCategory.system,
+          );
+        }
+        return finish();
+      },
     );
+
+    return controller.stream;
   }
 
   /// Fetches a single public curated list (kind 30005) by author + d-tag.
@@ -263,14 +376,16 @@ class CuratedListRelayGateway {
         0;
   }
 
-  /// Fetch public curated lists from Nostr relays for discovery (legacy)
-  /// Prefer streamPublicListsFromRelays for immediate results
-  /// WARNING: This waits forever since Nostr streams don't close - use stream version
+  /// Fetch public curated lists from Nostr relays for discovery.
+  ///
+  /// Prefer [streamPublicListsFromRelays] when the caller can render
+  /// progressive updates.
   Future<List<CuratedList>> fetchPublicListsFromRelays({
     List<String>? searchTags,
+    Duration timeout = kPublicCuratedListsRelayReadTimeout,
   }) async {
     final lists = <CuratedList>[];
-    await for (final update in streamPublicListsFromRelays()) {
+    await for (final update in streamPublicListsFromRelays(timeout: timeout)) {
       lists
         ..clear()
         ..addAll(update);

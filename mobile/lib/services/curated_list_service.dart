@@ -1737,10 +1737,12 @@ class CuratedListService extends ChangeNotifier {
     DateTime? until,
     int limit = 500,
     Set<String>? excludeIds,
+    Duration timeout = kPublicCuratedListsRelayReadTimeout,
   }) => _relayGateway.streamPublicListsFromRelays(
     until: until,
     limit: limit,
     excludeIds: excludeIds,
+    timeout: timeout,
   );
 
   /// See [CuratedListRelayGateway.fetchPublicList].
@@ -1753,7 +1755,11 @@ class CuratedListService extends ChangeNotifier {
   /// See [CuratedListRelayGateway.fetchPublicListsFromRelays].
   Future<List<CuratedList>> fetchPublicListsFromRelays({
     List<String>? searchTags,
-  }) => _relayGateway.fetchPublicListsFromRelays(searchTags: searchTags);
+    Duration timeout = kPublicCuratedListsRelayReadTimeout,
+  }) => _relayGateway.fetchPublicListsFromRelays(
+    searchTags: searchTags,
+    timeout: timeout,
+  );
 
   /// See [CuratedListRelayGateway.fetchPublicListsContainingVideo].
   Future<List<CuratedList>> fetchPublicListsContainingVideo(

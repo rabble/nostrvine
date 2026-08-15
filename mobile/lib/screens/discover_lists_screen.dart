@@ -39,7 +39,6 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
   String? _errorMessage;
   StreamSubscription<List<CuratedList>>? _subscription;
   final _scrollController = ScrollController();
-  Timer? _streamTimeoutTimer;
 
   // Debounce timer for batching rapid stream updates
   Timer? _updateDebounceTimer;
@@ -52,7 +51,6 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
   int _autoPaginationAttempts = 0;
   static const int _maxAutoPaginationAttempts = 5;
   static const int _minListsBeforeAutoPaginate = 10;
-  static const Duration _streamTimeout = Duration(seconds: 8);
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -80,7 +78,6 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
 
   @override
   void dispose() {
-    _streamTimeoutTimer?.cancel();
     _updateDebounceTimer?.cancel();
     _subscription?.cancel();
     disposePagination();
@@ -124,28 +121,10 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
 
       // Stream results - UI updates with debouncing to handle rapid events
       await _subscription?.cancel();
-      _streamTimeoutTimer?.cancel();
       var hasReceivedStreamUpdate = false;
-      // Only guard the empty screen. The error view replaces the list
-      // entirely, so arming this during a refresh would wipe lists the user
-      // is already reading whenever a relay answers slowly.
-      _streamTimeoutTimer = Timer(_streamTimeout, () {
-        if (!mounted || hasReceivedStreamUpdate) return;
-
-        unawaited(_subscription?.cancel());
-        _subscription = null;
-        provider.setLoading(false);
-        setState(() {
-          _isRefreshing = false;
-          if (!hadExistingLists) {
-            _errorMessage = context.l10n.discoverListsRelayTimeout;
-          }
-        });
-      });
       _subscription = service.streamPublicListsFromRelays().listen(
         (lists) {
           hasReceivedStreamUpdate = true;
-          _streamTimeoutTimer?.cancel();
           if (mounted) {
             // Track oldest timestamp for pagination
             for (final list in lists) {
@@ -219,19 +198,19 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
           }
         },
         onError: (error) {
-          _streamTimeoutTimer?.cancel();
           if (mounted) {
             provider.setLoading(false);
             setState(() {
               _isRefreshing = false;
-              _errorMessage = context.l10n.discoverListsFailedToLoadWithError(
-                '$error',
-              );
+              if (!hadExistingLists || error is! TimeoutException) {
+                _errorMessage = error is TimeoutException
+                    ? context.l10n.discoverListsRelayTimeout
+                    : context.l10n.discoverListsFailedToLoadWithError('$error');
+              }
             });
           }
         },
         onDone: () {
-          _streamTimeoutTimer?.cancel();
           if (mounted && !hasReceivedStreamUpdate) {
             provider.setLoading(false);
             setState(() {
@@ -241,7 +220,6 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         },
       );
     } catch (e) {
-      _streamTimeoutTimer?.cancel();
       if (mounted) {
         ref.read(discoveredListsProvider.notifier).setLoading(false);
         setState(() {
@@ -268,9 +246,8 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       _isLoadingMore = true;
     });
 
-    StreamSubscription<List<CuratedList>>? subscription;
-    Timer? timeoutTimer;
     var foundNewLists = false;
+    var timedOut = false;
 
     try {
       final service = ref.read(curatedListsStateProvider.notifier).service;
@@ -287,66 +264,45 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         category: LogCategory.ui,
       );
 
-      final completer = Completer<void>();
-
-      // Stop after 3 seconds
-      timeoutTimer = Timer(const Duration(seconds: 3), () {
-        Log.info(
-          '📋 Pagination timeout - found ${existingIds.length - initialCount} new lists',
-          category: LogCategory.ui,
-        );
-        subscription?.cancel();
-        subscription = null; // Prevent double-cancel in finally
-        if (!completer.isCompleted) completer.complete();
-      });
-
       final stream = service.streamPublicListsFromRelays(
         until: providerState.oldestTimestamp,
         excludeIds: existingIds,
       );
 
-      subscription = stream.listen(
-        (lists) {
-          if (!mounted) return;
+      await for (final lists in stream) {
+        if (!mounted) continue;
 
-          // Add new lists that we don't already have
-          final newLists = lists
-              .where((l) => !existingIds.contains(l.id))
-              .toList();
+        // Add new lists that we don't already have
+        final newLists = lists
+            .where((l) => !existingIds.contains(l.id))
+            .toList();
 
-          if (newLists.isNotEmpty) {
-            foundNewLists = true;
-            for (final list in newLists) {
-              existingIds.add(list.id);
-              // Update oldest timestamp in provider
-              provider.updateOldestTimestamp(list.createdAt);
-            }
-
-            // Add to provider (handles deduplication and sorting)
-            provider.addLists(newLists);
+        if (newLists.isNotEmpty) {
+          foundNewLists = true;
+          for (final list in newLists) {
+            existingIds.add(list.id);
+            // Update oldest timestamp in provider
+            provider.updateOldestTimestamp(list.createdAt);
           }
-        },
-        onError: (error) {
-          Log.error('Pagination error: $error', category: LogCategory.ui);
-          if (!completer.isCompleted) completer.complete();
-        },
-        onDone: () {
-          if (!completer.isCompleted) completer.complete();
-        },
-      );
 
-      await completer.future;
+          // Add to provider (handles deduplication and sorting)
+          provider.addLists(newLists);
+        }
+      }
 
       final finalState = ref.read(discoveredListsProvider);
       Log.info(
         'Pagination done: ${finalState.lists.length} total lists',
         category: LogCategory.ui,
       );
+    } on TimeoutException catch (error) {
+      timedOut = true;
+      Log.warning('Pagination timeout: $error', category: LogCategory.ui);
+    } catch (error) {
+      Log.error('Pagination error: $error', category: LogCategory.ui);
     } finally {
-      timeoutTimer?.cancel();
-      await subscription?.cancel();
       if (mounted) {
-        if (!foundNewLists) {
+        if (!foundNewLists && !timedOut) {
           _hasReachedEnd = true;
         }
 
@@ -357,6 +313,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         // Continue auto-paginating if we still have few results
         final finalState = ref.read(discoveredListsProvider);
         if (!_hasReachedEnd &&
+            !timedOut &&
             finalState.lists.length < _minListsBeforeAutoPaginate &&
             finalState.oldestTimestamp != null &&
             _autoPaginationAttempts < _maxAutoPaginationAttempts) {

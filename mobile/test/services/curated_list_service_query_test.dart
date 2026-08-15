@@ -558,7 +558,7 @@ void main() {
 
         // Mock subscribe to return events as a stream
         when(
-          () => mockNostr.subscribe(any()),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) => Stream.fromIterable([event1, event2]));
 
         // Act: Collect streamed results
@@ -617,7 +617,7 @@ void main() {
 
         // Send older first, then newer
         when(
-          () => mockNostr.subscribe(any()),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) => Stream.fromIterable([olderEvent, newerEvent]));
 
         List<CuratedList>? finalLists;
@@ -671,7 +671,7 @@ void main() {
         });
 
         when(
-          () => mockNostr.subscribe(any()),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) => Stream.fromIterable([emptyList, nonEmptyList]));
 
         List<CuratedList>? finalLists;
@@ -701,7 +701,7 @@ void main() {
         });
 
         when(
-          () => mockNostr.subscribe(any()),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) => Stream.value(malformedList));
 
         final updates = await service.streamPublicListsFromRelays().toList();
@@ -729,7 +729,7 @@ void main() {
         });
 
         when(
-          () => mockNostr.subscribe(any()),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) => Stream.fromIterable([oldEvent]));
 
         // Act: Request with until date
@@ -743,7 +743,9 @@ void main() {
         }
 
         // Verify subscribe was called (filter construction is internal)
-        verify(() => mockNostr.subscribe(any())).called(1);
+        verify(
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+        ).called(1);
         expect(results?.isNotEmpty, true);
       });
     });
