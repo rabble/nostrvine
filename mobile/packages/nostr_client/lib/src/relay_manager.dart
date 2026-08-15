@@ -175,6 +175,17 @@ class RelayManager {
   /// Whether the manager has been initialized
   bool get isInitialized => _initialized;
 
+  /// Ensure the user-removal intent ledger has been loaded from storage.
+  ///
+  /// This is idempotent and thread-safe. Designed for eager loading before
+  /// initialize() to ensure that pre-init addRelay() calls can properly
+  /// suppress user-removed relays.
+  ///
+  /// Call this before any relay operations that need to respect user-removal
+  /// intent.
+  Future<void> ensureUserRemovedRelaysLoaded() =>
+      _ensureUserRemovedRelaysLoaded();
+
   // ---------------------------------------------------------------------------
   // Initialization
   // ---------------------------------------------------------------------------

@@ -540,6 +540,14 @@ class NostrClient {
   /// Returns true if the relay manager is initialized
   bool get isInitialized => _relayManager.isInitialized;
 
+  /// Ensure the user-removal intent ledger has been loaded from storage.
+  ///
+  /// This delegates to the relay manager's ledger loading. Designed for
+  /// eager loading before initialize() to ensure that pre-init addRelay()
+  /// calls can properly suppress user-removed relays.
+  Future<void> ensureUserRemovedRelaysLoaded() =>
+      _relayManager.ensureUserRemovedRelaysLoaded();
+
   /// Whether the client has been disposed
   ///
   /// After disposal, the client should not be used
@@ -926,10 +934,7 @@ class NostrClient {
       // their having nothing. A display read is content to fall back on cache;
       // a full-settlement caller is about to replace what it read, so it gets
       // the same inconclusive answer a relay that never settled would give.
-      websocketResult = (
-        events: <Event>[],
-        timedOut: requireAllRelaysSettled,
-      );
+      websocketResult = (events: <Event>[], timedOut: requireAllRelaysSettled);
     } else {
       websocketResult = useQueryPool
           ? await _queryPool.withResource(runWebSocketQuery)

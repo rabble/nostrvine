@@ -405,6 +405,8 @@ class NostrService extends _$NostrService {
     try {
       await (() async {
         if (userRelayUrls.isNotEmpty) {
+          // Ensure user-removal ledger is loaded before adding relays
+          await client.ensureUserRemovedRelaysLoaded();
           final addedRelayCount = await client.addRelays(userRelayUrls);
           Log.info(
             '[NostrService] Initialization stage completed: source=$source, '
