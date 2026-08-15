@@ -528,6 +528,35 @@ void main() {
         ).called(1);
       });
 
+      test('still forwards quoted corruption text in bound user data', () {
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+        isCorrupted = true;
+        final ordinaryFailure = SqliteException(
+          extendedResultCode: 19,
+          message: 'UNIQUE constraint failed: event.id',
+          explanation: 'UNIQUE constraint failed: event.id (code 19)',
+          operation: 'inserting a row',
+          causingStatement: 'INSERT INTO event (content) VALUES (?)',
+          parametersToStatement: const <Object?>[
+            'SqliteException(11): database disk image is malformed',
+          ],
+        );
+
+        reportedBy(
+          cubit,
+          Reportable(ordinaryFailure, context: '_publishLike'),
+        );
+
+        verify(
+          () => mockCrash.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ).called(1);
+      });
+
       test('keeps the suppressed failure in the unified log', () async {
         // Suppression is a Crashlytics decision only: the bug-report capture
         // flow still has to show what went wrong on the device.

@@ -139,13 +139,16 @@ class DivineBlocObserver extends BlocObserver {
   /// already reported and scheduled recovery for.
   ///
   /// Both halves are required. The session flag alone would drop unrelated
-  /// defects that happen to fire after the flag flips; the text match alone
+  /// defects that happen to fire after the flag flips; classification alone
   /// would drop the very first corrupt statement, which is the report worth
   /// keeping. Ordered flag-first because it is a field read, and it is false
-  /// for every healthy session — the text scan only runs on a database that is
-  /// already known to be broken.
+  /// for every healthy session — classification only runs on a database that
+  /// is already known to be broken.
   bool _echoesHandledCorruption(Object error) =>
-      _isDatabaseCorrupted() && mentionsDatabaseCorruption(error);
+      _isDatabaseCorrupted() &&
+      mentionsDatabaseCorruption(
+        error is Reportable<Object> ? error.unwrap() : error,
+      );
 
   ReportableError? _asReportable(Object error) {
     if (error is ReportableError) return error;

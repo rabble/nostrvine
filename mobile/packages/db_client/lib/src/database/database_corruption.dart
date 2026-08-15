@@ -35,8 +35,8 @@ bool indicatesDatabaseCorruption(Object error) {
   return _isCorruptionResultCode(extendedCode);
 }
 
-/// Whether [error] mentions on-disk corruption **anywhere** in its text,
-/// including inside a wrapper that prints its cause below its own first line.
+/// Whether [error] represents on-disk corruption, including when drift wraps
+/// the corrupt cause after a failed transaction rollback.
 ///
 /// Deliberately looser than [indicatesDatabaseCorruption], which reads the
 /// header line only. Most wrappers a downstream caller sees keep the SQLite
@@ -48,11 +48,9 @@ bool indicatesDatabaseCorruption(Object error) {
 ///
 /// `CouldNotRollBackException` is the shape that defeats it: it prints the
 /// failure raised by the `ROLLBACK` itself first, and the error that triggered
-/// the rollback on the line below. A transaction aborted by corruption whose
-/// rollback then fails for some other reason therefore carries the SQLite
-/// header on line 2, where only this classifier can see it. drift transactions
-/// are used in `event_router.dart` and the DM/conversation DAOs, so the shape
-/// is reachable rather than hypothetical.
+/// the rollback on the line below. This classifier follows that typed cause
+/// instead of scanning all rendered lines, because later lines can contain
+/// bound user data that merely quotes a corruption result code.
 ///
 /// The stricter classifier is not merely stricter, it protects a different
 /// decision. It gates the salvage/wipe of a database, where a false positive
@@ -60,18 +58,12 @@ bool indicatesDatabaseCorruption(Object error) {
 /// content: a Nostr event quoting SQLite's corruption message must never
 /// convince the app to recover. **Never use this function for that decision.**
 ///
-/// Use it only where a false positive is harmless — specifically, to drop a
-/// duplicate report about a database some other code has already classified as
-/// corrupt via [indicatesDatabaseCorruption]. The looseness is bounded by that
-/// precondition, not by the text match.
+/// Use it only to drop a duplicate report about a database some other code has
+/// already classified as corrupt via [indicatesDatabaseCorruption].
 bool mentionsDatabaseCorruption(Object error) {
-  return _sqliteExceptionHeader
-      .allMatches(error.toString())
-      .map((match) => int.tryParse(match.group(1)!))
-      .any(
-        (extendedCode) =>
-            extendedCode != null && _isCorruptionResultCode(extendedCode),
-      );
+  if (indicatesDatabaseCorruption(error)) return true;
+  return error is CouldNotRollBackException &&
+      mentionsDatabaseCorruption(error.cause);
 }
 
 /// Every extended code carries its primary code in the low byte, so 779

@@ -253,6 +253,21 @@ void main() {
       );
     });
 
+    test('ignores a result code quoted inside bound parameters', () {
+      final ordinaryFailure = SqliteException(
+        extendedResultCode: 19,
+        message: 'UNIQUE constraint failed: event.id',
+        explanation: 'UNIQUE constraint failed: event.id (code 19)',
+        operation: 'inserting a row',
+        causingStatement: 'INSERT INTO event (content) VALUES (?)',
+        parametersToStatement: const <Object?>[
+          'SqliteException(11): database disk image is malformed',
+        ],
+      );
+
+      expect(mentionsDatabaseCorruption(ordinaryFailure), isFalse);
+    });
+
     test('does not fire on an error carrying no SQLite result code', () {
       expect(
         mentionsDatabaseCorruption(
