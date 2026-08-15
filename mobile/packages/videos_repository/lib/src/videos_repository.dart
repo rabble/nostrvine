@@ -2625,6 +2625,15 @@ class VideosRepository {
   /// rather than restalling the spinner). The orchestrator deliberately does
   /// not wrap the helpers themselves — a successful relay result followed by
   /// slow stats enrichment must not be killed as if the relay had hung.
+  ///
+  /// Returns `null` only when a source positively answered that the video is
+  /// absent — callers may render "not found" on `null`.
+  ///
+  /// Throws:
+  ///
+  /// * [FunnelcakeException] when the API could not be reached and no relay
+  ///   answered either. Absence was never established, so callers must offer a
+  ///   retry rather than claim the video is missing.
   Future<VideoEvent?> fetchVideoWithStatsForRouteId(
     String routeId, {
     List<String> fallbackRouteIds = const [],
