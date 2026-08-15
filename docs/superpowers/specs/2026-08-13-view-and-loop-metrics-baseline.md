@@ -218,7 +218,7 @@ Caveats, stated so the number is not over-read:
 ## 5. The display floor, restated on current numbers
 
 **This section corrects the design doc, which measures the wrong column.**
-`mobile/lib/widgets/video_feed_item/video_card_meta.dart:79` defines the gated
+`mobile/lib/widgets/video_feed_item/video_card_meta.dart:70` defines the gated
 quantity as `video.isOriginalVine ? video.originalLoops ?? 0 :
 video.totalLoops` — i.e. the archival `loops` tag for classic Vines (about 98%
 of the `nostr.videos` catalogue; derived by the appendix query), and
@@ -246,19 +246,23 @@ originally gated the rule as a kill switch, but it defaulted off and nothing
 ever set `FF_VIDEO_CARD_POST_DATE`, so it never reached a normal build. #7452
 (merged 2026-08-15 04:31 UTC) deleted the dead flag; `_resolveLoopCount` now
 applies the floor unconditionally to any viewer who is not the video's owner.
-An earlier revision of this paragraph said production was unchanged while the
-flag stayed off — that was written hours before #7452 landed and is no longer
-true.
+An earlier revision of this paragraph introduced the stale
+"production unchanged while the flag stayed off" framing after #7452 had
+already removed that flag.
+
+Scope: this is the Flutter-client card rule. Divine Web currently diverges: its
+card renders any positive playback count and `formatLoopCount` applies only K/M
+abbreviation, not a display floor.
 
 **The floor decision survives the correction; only its stated rationale
 changes.** The design doc argued the floor was harmless because almost
 nobody ever sees a count. The real argument is the one on the constant
 itself (`mobile/lib/widgets/video_feed_item/video_card_meta.dart:9`): a number
 below the floor "tells a viewer not to bother", and a wall of small counts on
-*other people's* videos discourages posting. On the real distribution, once the
-feature is enabled, the floor would show visitors a count on ~52% of videos,
-every one of them ≥1000, and a date on the rest instead of a discouraging 47.
-Creators are never gated in that code path: `_resolveLoopCount` returns
+*other people's* videos discourages posting. On the real distribution, the
+floor shows visitors a count on ~52% of videos, every one of them ≥1000, and a
+date on the rest instead of a discouraging 47. Creators are never gated:
+`_resolveLoopCount` returns
 `video.totalLoops` unconditionally when `isOwnVideo`, and `totalLoops` is
 additive (`mobile/packages/models/lib/src/video_event.dart:1181-1183`), so a
 creator sees the larger number.

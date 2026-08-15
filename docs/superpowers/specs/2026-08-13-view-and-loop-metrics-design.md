@@ -325,6 +325,10 @@ floor unconditionally for anyone who is not the video's owner. Earlier drafts
 of this section — including the one this replaces — describe the floor as
 feature-gated; that stopped being true before those words merged.
 
+This is Flutter-client behavior. Divine Web currently diverges: its card
+renders any positive playback count and `formatLoopCount` applies only K/M
+abbreviation, not a display floor.
+
 The floor still matters after the metric correction, but the reason is not
 that the count is effectively never shown; it is that the counts which do
 appear are all large enough to read as social proof rather than a warning.

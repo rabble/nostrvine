@@ -260,7 +260,8 @@ Recorded because each was stated confidently and may have been repeated.
    have loops below views.
 4. **"The display floor is mis-set and starves creators"** — wrong. Creators
    always see their own count (`isOwnVideo`), so the floor never gated the
-   retention effect. Only 0.04% of videos reach 1000; that is deliberate.
+   retention effect. The corrected public-count census shows 52.30% of videos
+   reach 1000; that public display threshold is still deliberate.
 5. **"Loops are lost behind the comment sheet"** — wrong. The video pauses on
    route push. The real defect is the opposite (§3.4).
 6. **Persistent bias toward conservatism.** Framing the view-definition
