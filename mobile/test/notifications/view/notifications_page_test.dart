@@ -109,7 +109,8 @@ void main() {
           // Leaving the notifications route (e.g. switching bottom-nav tabs;
           // the ShellRoute is not stateful, so the page unmounts) must NOT
           // mark read again on *leave* — #4758 removed mark-on-dispose;
-          // #4708 added mark-on-open only.
+          // #4708 added mark-on-open, and pull-to-refresh can also mark
+          // while the notifications surface is deliberately open.
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pumpAndSettle();
 
