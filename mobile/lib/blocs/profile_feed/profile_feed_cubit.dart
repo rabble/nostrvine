@@ -213,6 +213,11 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       ),
     );
 
+    // Persist before the network is consulted. Waiting for a successful REST
+    // load means a user whose loads keep failing never accumulates a snapshot,
+    // so the cache is empty for exactly the connections that need it most.
+    if (relaySeed.isNotEmpty) _persistSnapshot();
+
     final result = await _loadFromRest(
       emit,
       relaySeed: relaySeed,
@@ -392,6 +397,11 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
           isFetchingTotalCount: false,
         ),
       );
+      // Keep the last window we could show. Only guard the empty case: a
+      // successful load returning zero videos still needs to be able to clear
+      // the snapshot, or a fully-deleted profile would serve its old videos
+      // forever.
+      if (_unfilteredVideos.isNotEmpty) _persistSnapshot();
       return null;
     }
   }

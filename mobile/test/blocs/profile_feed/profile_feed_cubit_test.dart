@@ -8,6 +8,7 @@ import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
@@ -234,6 +235,54 @@ void main() {
       await cubit.close();
 
       verify(() => h.ves.unsubscribeFromUserVideos(_author)).called(1);
+    });
+
+    group('CacheSync fills on bad networks', () {
+      test('persists the relay seed when the REST load fails', () async {
+        // A cache that only fills after a successful round-trip is empty for
+        // exactly the users who need it: every cold start on a bad connection
+        // re-fails and still persists nothing.
+        when(
+          () => h.ves.authorVideos(any()),
+        ).thenReturn([_video('v1', createdAt: 5000)]);
+        h.stubAuthorFeedThrows(const FunnelcakeException('offline'));
+
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue();
+
+        final persisted = await readSnapshot();
+        expect(persisted, isNotNull);
+        expect(persisted!.videos.map((v) => v.id), ['v1']);
+      });
+
+      test(
+        'does not overwrite a persisted snapshot with an empty one',
+        () async {
+          await seedSnapshot(
+            ProfileVideoOffsetSnapshot(
+              videos: [_video('v1', createdAt: 5000)],
+              nextOffset: 50,
+              totalVideoCount: 10,
+              hasMoreContent: true,
+            ),
+          );
+          when(
+            () => h.ves.authorVideos(any()),
+          ).thenReturn(const <VideoEvent>[]);
+          h.stubAuthorFeedThrows(const FunnelcakeException('offline'));
+
+          final cubit = h.build();
+          addTearDown(cubit.close);
+          await pumpEventQueue();
+
+          // Losing the last good window to a failed load is worse than serving
+          // it stale.
+          final persisted = await readSnapshot();
+          expect(persisted, isNotNull);
+          expect(persisted!.videos.map((v) => v.id), ['v1']);
+        },
+      );
     });
 
     group('CacheSync stale-while-revalidate', () {
