@@ -33,10 +33,12 @@ final _pluginEntryPoint = RegExp(r'\bSharePlus\b');
 /// Package `test/` and `example/` trees are excluded: they may exercise the
 /// plugin directly, and they never run on a user's iPad.
 List<File> _shippedDartFiles() {
+  final packages = Directory('packages');
   final roots = <Directory>[
     Directory('lib'),
-    for (final entity in Directory('packages').listSync())
-      if (entity is Directory) Directory('${entity.path}/lib'),
+    if (packages.existsSync())
+      for (final entity in packages.listSync())
+        if (entity is Directory) Directory('${entity.path}/lib'),
   ];
 
   return [
