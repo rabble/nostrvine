@@ -3236,7 +3236,7 @@ bool _showPublishSuccess(
     unawaited(
       PostPublishConfirmationSheet.show(
         context: navContext,
-        thumbnailPath: video!.thumbnailPath,
+        thumbnailBytes: video!.thumbnailBytes,
         onView: () => _onConfirmationView(container, offer, stableId),
         onShare: () =>
             _onConfirmationShare(navContext, container, offer, stableId),

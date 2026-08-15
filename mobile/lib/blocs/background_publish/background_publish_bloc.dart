@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,6 +78,11 @@ class BackgroundPublishBloc
             .where((upload) => upload.draft.id != event.draft.id)
             .toList();
 
+        // Read before the emit: _deletePublishedDrafts below reclaims the
+        // cover file, so a path handed to the confirmation would dangle by
+        // the time the sheet decoded it.
+        final thumbnailBytes = await _readCoverThumbnail(event.draft);
+
         emit(
           state.copyWith(
             uploads: updatedUploads,
@@ -82,7 +90,7 @@ class BackgroundPublishBloc
               PublishedVideo(
                 draftId: event.draft.id,
                 stableId: result.stableId,
-                thumbnailPath: event.draft.coverThumbnailPath,
+                thumbnailBytes: thumbnailBytes,
               ),
             ],
           ),
@@ -337,6 +345,29 @@ class BackgroundPublishBloc
       progress: 0,
     );
     emit(state.copyWith(uploads: [...state.uploads, failedUpload]));
+  }
+
+  /// Reads the draft's cover frame so the post-publish confirmation can
+  /// outlive the draft's files.
+  ///
+  /// Null when the draft carried no cover, the file is already gone, or it
+  /// cannot be read — the confirmation renders its placeholder, which is
+  /// strictly better than failing the publish over a preview image.
+  Future<Uint8List?> _readCoverThumbnail(DivineVideoDraft draft) async {
+    final path = draft.coverThumbnailPath;
+    if (path == null || path.isEmpty) return null;
+    try {
+      final file = File(path);
+      if (!file.existsSync()) return null;
+      return await file.readAsBytes();
+    } catch (error) {
+      Log.warning(
+        'Failed to read cover thumbnail for ${draft.id}: $error',
+        name: 'BackgroundPublishBloc',
+        category: LogCategory.video,
+      );
+      return null;
+    }
   }
 
   /// Reclaims a published draft: the publish copy, plus the draft it was

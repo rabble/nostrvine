@@ -4,6 +4,7 @@
 // ABOUTME: BackgroundPublishBloc state coverage, and the sheet-vs-snackbar branch.
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -179,13 +180,13 @@ BackgroundPublishState _succeededState(
   String id, {
   String? secondId,
   String? stableId = _publishedStableId,
-  String? thumbnailPath,
+  Uint8List? thumbnailBytes,
 }) => BackgroundPublishState(
   recentlyPublished: [
     PublishedVideo(
       draftId: id,
       stableId: stableId,
-      thumbnailPath: thumbnailPath,
+      thumbnailBytes: thumbnailBytes,
     ),
     if (secondId != null)
       PublishedVideo(draftId: secondId, stableId: 'second-$secondId'),

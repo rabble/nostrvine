@@ -1,21 +1,26 @@
 // ABOUTME: Widget tests for the post-publish confirmation sheet's actions,
 // ABOUTME: dismissal, and thumbnail fallback.
 
+import 'dart:typed_data';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/post_publish/view/post_publish_confirmation_sheet.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
+
+/// Stand-in for a cover frame. Never decoded — the assertions below read the
+/// widget's [MemoryImage], so the bytes only need to be identifiable.
+final _coverFrame = Uint8List.fromList([1, 2, 3, 4, 5]);
 
 /// Pumps a host screen with a button that opens the confirmation sheet.
 Future<void> _pumpSheetHost(
   WidgetTester tester, {
   required VoidCallback onView,
   required VoidCallback onShare,
-  String? thumbnailPath,
+  Uint8List? thumbnailBytes,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -31,7 +36,7 @@ Future<void> _pumpSheetHost(
                 context: context,
                 onView: onView,
                 onShare: onShare,
-                thumbnailPath: thumbnailPath,
+                thumbnailBytes: thumbnailBytes,
               ),
             ),
           ),
@@ -118,30 +123,35 @@ void main() {
       expect(shared, isZero);
     });
 
-    testWidgets('renders a thumbnail when the draft had a cover frame', (
-      tester,
-    ) async {
+    testWidgets('previews the cover frame it was handed', (tester) async {
+      // Bytes, not a path: publishing deletes the draft and reclaims its
+      // cover file, so a path would be dangling by the time this decoded.
       await _pumpSheetHost(
         tester,
         onView: () {},
         onShare: () {},
-        thumbnailPath: '/local/cover.jpg',
+        thumbnailBytes: _coverFrame,
       );
 
-      final image = tester.widget<ClipThumbnailImage>(
-        find.byType(ClipThumbnailImage),
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(
+        image.image,
+        isA<MemoryImage>().having(
+          (provider) => provider.bytes,
+          'bytes',
+          equals(_coverFrame),
+        ),
       );
-      expect(image.path, equals('/local/cover.jpg'));
     });
 
-    testWidgets('still opens when the draft carried no thumbnail', (
+    testWidgets('still opens when the draft carried no cover frame', (
       tester,
     ) async {
       // A draft with no cover frame must not cost the creator the whole
       // confirmation.
       await _pumpSheetHost(tester, onView: () {}, onShare: () {});
 
-      expect(find.byType(ClipThumbnailImage), findsNothing);
+      expect(find.byType(Image), findsNothing);
       expect(find.text(_l10n.postPublishConfirmationView), findsOneWidget);
     });
 
@@ -151,7 +161,7 @@ void main() {
         tester,
         onView: () {},
         onShare: () {},
-        thumbnailPath: '/local/cover.jpg',
+        thumbnailBytes: _coverFrame,
       );
 
       expect(

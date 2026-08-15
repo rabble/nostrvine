@@ -34,21 +34,28 @@ class BackgroundUpload extends Equatable {
 /// builds the share URL without waiting for the event to propagate to a
 /// relay. Null for an upload that carried no `videoId`.
 ///
-/// [thumbnailPath] is a local file path taken from the draft, so the
-/// confirmation can show the video immediately with no network fetch.
+/// [thumbnailBytes] is the draft's cover frame, decoded from disk *before*
+/// this state is emitted, so the confirmation can show the video with no
+/// network fetch. Bytes rather than a path because publishing a draft
+/// deletes it, and `deleteDraft` reclaims the cover file along with every
+/// other clip file the draft owned — the path would be dangling by the time
+/// the sheet decoded it.
 class PublishedVideo extends Equatable {
   const PublishedVideo({
     required this.draftId,
     this.stableId,
-    this.thumbnailPath,
+    this.thumbnailBytes,
   });
 
   final String draftId;
   final String? stableId;
-  final String? thumbnailPath;
+  final Uint8List? thumbnailBytes;
 
+  /// [thumbnailBytes] is deliberately absent: it is read from the draft
+  /// identified by [draftId], so it cannot vary independently, and comparing
+  /// it would mean an element-wise walk of a JPEG on every state comparison.
   @override
-  List<Object?> get props => [draftId, stableId, thumbnailPath];
+  List<Object?> get props => [draftId, stableId];
 }
 
 class BackgroundPublishState extends Equatable {

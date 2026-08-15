@@ -1,10 +1,11 @@
 // ABOUTME: Bottom sheet shown when a video finishes publishing, offering to
 // ABOUTME: view or share it rather than only to record another one.
 
+import 'dart:typed_data';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 /// The payoff moment after a publish: a preview of what just went live, and
 /// the two things a creator actually wants next.
@@ -15,14 +16,17 @@ class PostPublishConfirmationSheet extends StatelessWidget {
   const PostPublishConfirmationSheet({
     required this.onView,
     required this.onShare,
-    this.thumbnailPath,
+    this.thumbnailBytes,
     super.key,
   });
 
-  /// Local file path of the published video's cover frame, or null when the
-  /// draft carried none. Never a network URL — this renders immediately,
+  /// The published video's cover frame, already decoded from disk, or null
+  /// when the draft carried none.
+  ///
+  /// Bytes rather than a path because publishing deletes the draft and
+  /// reclaims its cover file; and never a network URL, since this renders
   /// before the event has propagated anywhere.
-  final String? thumbnailPath;
+  final Uint8List? thumbnailBytes;
 
   final VoidCallback onView;
   final VoidCallback onShare;
@@ -35,7 +39,7 @@ class PostPublishConfirmationSheet extends StatelessWidget {
     required BuildContext context,
     required VoidCallback onView,
     required VoidCallback onShare,
-    String? thumbnailPath,
+    Uint8List? thumbnailBytes,
   }) {
     return VineBottomSheet.show<void>(
       context: context,
@@ -55,7 +59,7 @@ class PostPublishConfirmationSheet extends StatelessWidget {
         onPressed: () => Navigator.of(context).pop(),
       ),
       body: PostPublishConfirmationSheet(
-        thumbnailPath: thumbnailPath,
+        thumbnailBytes: thumbnailBytes,
         onView: () {
           Navigator.of(context).pop();
           onView();
@@ -78,7 +82,7 @@ class PostPublishConfirmationSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 24,
         children: [
-          _Preview(thumbnailPath: thumbnailPath),
+          _Preview(thumbnailBytes: thumbnailBytes),
           Text(
             l10n.postPublishConfirmationTitle,
             textAlign: TextAlign.center,
@@ -114,15 +118,15 @@ class PostPublishConfirmationSheet extends StatelessWidget {
 
 /// The published video's cover frame, letterboxed in a portrait tile.
 class _Preview extends StatelessWidget {
-  const _Preview({this.thumbnailPath});
+  const _Preview({this.thumbnailBytes});
 
-  final String? thumbnailPath;
+  final Uint8List? thumbnailBytes;
 
   static const _width = 132.0;
 
   @override
   Widget build(BuildContext context) {
-    final path = thumbnailPath;
+    final bytes = thumbnailBytes;
 
     return SizedBox(
       width: _width,
@@ -135,16 +139,17 @@ class _Preview extends StatelessWidget {
           // cast in either appearance.
           child: ColoredBox(
             color: context.vineColors.mediaCard,
-            child: path == null
+            child: bytes == null
                 ? const _NoPreview()
                 : Semantics(
                     label: context.l10n.postPublishConfirmationThumbnailLabel,
                     image: true,
-                    child: ClipThumbnailImage(
-                      path: path,
+                    child: Image.memory(
+                      bytes,
                       fit: BoxFit.cover,
                       excludeFromSemantics: true,
-                      placeholder: const _NoPreview(),
+                      // Undecodable bytes cost the preview, not the sheet.
+                      errorBuilder: (_, _, _) => const _NoPreview(),
                     ),
                   ),
           ),

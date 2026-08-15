@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +12,7 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:path/path.dart' as p;
 
 class _MockVineDraft extends Mock implements DivineVideoDraft {}
 
@@ -180,18 +183,25 @@ void main() {
         // stubs persist for the mock's lifetime, so stubbing a thumbnail on
         // the shared instance would leak into every later test in the group.
         late _MockVineDraft thumbedDraft;
+        late Directory thumbDir;
+        late File thumbFile;
+        final thumbBytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
         blocTest<BackgroundPublishBloc, BackgroundPublishState>(
-          'carries the published d tag and local thumbnail so the '
+          'carries the published d tag and the cover frame so the '
           'confirmation can link to and preview the video',
           setUp: () {
+            thumbDir = Directory.systemTemp.createTempSync('publish_thumb');
+            thumbFile = File(p.join(thumbDir.path, 'thumb.jpg'))
+              ..writeAsBytesSync(thumbBytes);
             thumbedDraft = _MockVineDraft();
             when(() => thumbedDraft.id).thenReturn(draftId);
             when(() => thumbedDraft.sourceDraftId).thenReturn(null);
             when(
               () => thumbedDraft.coverThumbnailPath,
-            ).thenReturn('/local/thumb.jpg');
+            ).thenReturn(thumbFile.path);
           },
+          tearDown: () => thumbDir.deleteSync(recursive: true),
           build: () => BackgroundPublishBloc(
             videoPublishServiceFactory: defaultVieoPublishServiceFactory,
             draftStorageService: mockDraftStorageService,
@@ -208,14 +218,59 @@ void main() {
           expect: () => [
             const BackgroundPublishState(
               recentlyPublished: [
-                PublishedVideo(
-                  draftId: draftId,
-                  stableId: 'published-d-tag',
-                  thumbnailPath: '/local/thumb.jpg',
-                ),
+                PublishedVideo(draftId: draftId, stableId: 'published-d-tag'),
               ],
             ),
           ],
+          // thumbnailBytes is outside props (it cannot vary independently of
+          // draftId), so assert it here rather than through state equality.
+          verify: (bloc) {
+            expect(
+              bloc.state.recentlyPublished.single.thumbnailBytes,
+              equals(thumbBytes),
+            );
+          },
+        );
+
+        blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+          'reads the cover frame before the draft cleanup reclaims it',
+          setUp: () {
+            thumbDir = Directory.systemTemp.createTempSync('publish_thumb');
+            thumbFile = File(p.join(thumbDir.path, 'thumb.jpg'))
+              ..writeAsBytesSync(thumbBytes);
+            thumbedDraft = _MockVineDraft();
+            when(() => thumbedDraft.id).thenReturn(draftId);
+            when(() => thumbedDraft.sourceDraftId).thenReturn(null);
+            when(
+              () => thumbedDraft.coverThumbnailPath,
+            ).thenReturn(thumbFile.path);
+            // deleteDraft reclaims every file the draft owned, the cover
+            // frame included. A path handed to the confirmation would be
+            // dangling by the time the sheet decoded it.
+            when(() => mockDraftStorageService.deleteDraft(draftId)).thenAnswer(
+              (_) async => thumbFile.deleteSync(),
+            );
+          },
+          tearDown: () => thumbDir.deleteSync(recursive: true),
+          build: () => BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
+          ),
+          act: (bloc) => bloc.add(
+            BackgroundPublishRequested(
+              draft: thumbedDraft,
+              publishmentProcess: Future.value(
+                const PublishSuccess(stableId: 'published-d-tag'),
+              ),
+            ),
+          ),
+          verify: (bloc) {
+            expect(thumbFile.existsSync(), isFalse);
+            expect(
+              bloc.state.recentlyPublished.single.thumbnailBytes,
+              equals(thumbBytes),
+            );
+          },
         );
 
         test('emits success before the draft cleanup completes', () async {
