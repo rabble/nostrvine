@@ -3,6 +3,9 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
@@ -37,3 +40,24 @@ final communityContentLabelServiceProvider =
         contentFilterService: ref.watch(contentFilterServiceProvider),
       );
     });
+
+/// Whether the "Help classify this" action can be offered right now: the
+/// kill-switch is on and both the signer-backed repository and the viewer's
+/// pubkey are ready.
+///
+/// The action column watches this to decide whether to insert the slot at
+/// all. Returning a zero-size widget from the button is not enough — the
+/// child still consumes a `Column(spacing: 20)` gap, leaving a hole between
+/// Report and More (#7475).
+final helpClassifyActionAvailableProvider = Provider<bool>((ref) {
+  final flagEnabled = ref.watch(
+    isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+  );
+  if (!flagEnabled) return false;
+  if (ref.watch(communityContentLabelRepositoryProvider) == null) return false;
+  // The AuthService instance is stable, so watching it alone would never
+  // re-evaluate; the auth state is what moves on sign-in / account switch.
+  ref.watch(currentAuthStateProvider);
+  final myPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+  return myPubkey != null && myPubkey.isNotEmpty;
+});
