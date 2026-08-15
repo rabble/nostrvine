@@ -4783,7 +4783,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get uploadPublishedMessage => 'Videoclip publicat pe profilul tău';
 
   @override
-  String get postPublishConfirmationTitle => 'Published to your profile';
+  String get postPublishConfirmationTitle => 'Publicat pe profilul tău';
 
   @override
   String get postPublishConfirmationView => 'Vezi';
@@ -4793,7 +4793,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get postPublishConfirmationThumbnailLabel =>
-      'Thumbnail of the video you just published';
+      'Miniatura videoclipului pe care tocmai l-ai publicat';
 
   @override
   String get uploadFailedMessage => 'Încărcarea a eșuat - încearcă din nou';

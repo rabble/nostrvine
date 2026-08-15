@@ -4613,7 +4613,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get uploadPublishedMessage => 'Video dipublikasikan ke profilmu';
 
   @override
-  String get postPublishConfirmationTitle => 'Published to your profile';
+  String get postPublishConfirmationTitle => 'Dipublikasikan ke profilmu';
 
   @override
   String get postPublishConfirmationView => 'Lihat';
@@ -4623,7 +4623,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get postPublishConfirmationThumbnailLabel =>
-      'Thumbnail of the video you just published';
+      'Thumbnail video yang baru saja kamu publikasikan';
 
   @override
   String get uploadFailedMessage => 'Unggah gagal - silakan coba lagi';

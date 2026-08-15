@@ -420,12 +420,6 @@ void main() {
 const _knownUntranslatedDebt = <String>{
   // People-search video-count copy still needs a translation pass outside en.
   'searchUserVideoCount',
-  // Post-publish confirmation: the View and Share buttons are translated in
-  // every locale (seeded from contentWarningView / authShare, the same words
-  // in the same role). These two are novel sentences rather than reused
-  // button verbs, so they wait for a real translation pass.
-  'postPublishConfirmationTitle',
-  'postPublishConfirmationThumbnailLabel',
 };
 
 const _profileBadgeSheetKeys = <String>{

@@ -4646,7 +4646,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get uploadPublishedMessage => 'Videon publicerad till din profil';
 
   @override
-  String get postPublishConfirmationTitle => 'Published to your profile';
+  String get postPublishConfirmationTitle => 'Publicerad till din profil';
 
   @override
   String get postPublishConfirmationView => 'Visa';
@@ -4656,7 +4656,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get postPublishConfirmationThumbnailLabel =>
-      'Thumbnail of the video you just published';
+      'Miniatyr av videon du precis publicerade';
 
   @override
   String get uploadFailedMessage => 'Uppladdning misslyckades – försök igen';

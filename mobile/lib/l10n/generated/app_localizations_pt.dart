@@ -4679,7 +4679,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get uploadPublishedMessage => 'Vídeo publicado no seu perfil';
 
   @override
-  String get postPublishConfirmationTitle => 'Published to your profile';
+  String get postPublishConfirmationTitle => 'Publicado no seu perfil';
 
   @override
   String get postPublishConfirmationView => 'Ver';
@@ -4689,7 +4689,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get postPublishConfirmationThumbnailLabel =>
-      'Thumbnail of the video you just published';
+      'Miniatura do vídeo que você acabou de publicar';
 
   @override
   String get uploadFailedMessage => 'Falha no envio - tente novamente';

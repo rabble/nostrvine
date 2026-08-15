@@ -4612,7 +4612,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get uploadPublishedMessage => 'تم نشر الفيديو في ملفك الشخصي';
 
   @override
-  String get postPublishConfirmationTitle => 'Published to your profile';
+  String get postPublishConfirmationTitle => 'تم النشر في ملفك الشخصي';
 
   @override
   String get postPublishConfirmationView => 'عرض';
@@ -4622,7 +4622,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get postPublishConfirmationThumbnailLabel =>
-      'Thumbnail of the video you just published';
+      'صورة مصغرة للفيديو الذي نشرته للتو';
 
   @override
   String get uploadFailedMessage => 'فشل الرفع - يُرجى المحاولة مرة أخرى';

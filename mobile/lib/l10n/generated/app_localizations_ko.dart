@@ -4431,7 +4431,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get uploadPublishedMessage => '프로필에 영상을 게시했어요';
 
   @override
-  String get postPublishConfirmationTitle => 'Published to your profile';
+  String get postPublishConfirmationTitle => '프로필에 게시했어요';
 
   @override
   String get postPublishConfirmationView => '보기';
@@ -4440,8 +4440,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get postPublishConfirmationShare => '공유';
 
   @override
-  String get postPublishConfirmationThumbnailLabel =>
-      'Thumbnail of the video you just published';
+  String get postPublishConfirmationThumbnailLabel => '방금 게시한 영상의 썸네일';
 
   @override
   String get uploadFailedMessage => '업로드에 실패했어요 - 다시 시도해 주세요';
