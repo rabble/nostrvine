@@ -346,6 +346,10 @@ void main() {
         verify: (_) {
           verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
           verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          // The seen watermark did not advance, so the OS badge must stay put
+          // — clearing it here would hide notifications the server still
+          // considers unread.
+          verifyNever(() => mockAppBadgeClearer.clear());
         },
       );
 
@@ -375,6 +379,10 @@ void main() {
         verify: (_) {
           verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
           verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          // The seen watermark did not advance, so the OS badge must stay put
+          // — clearing it here would hide notifications the server still
+          // considers unread.
+          verifyNever(() => mockAppBadgeClearer.clear());
         },
       );
 
