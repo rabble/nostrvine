@@ -4,7 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/providers/deep_link_listeners.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/email_verification_listener.dart';
 

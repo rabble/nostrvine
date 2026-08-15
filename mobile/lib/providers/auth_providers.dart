@@ -24,10 +24,8 @@ import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/cawg_verifier_client.dart';
-import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
-import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/secure_storage_options.dart';
 import 'package:openvine/services/web_auth_service.dart';
@@ -101,20 +99,6 @@ KeycastOAuth oauthClient(Ref ref) {
   ref.onDispose(oauth.close);
 
   return oauth;
-}
-
-@Riverpod(keepAlive: true)
-PasswordResetListener passwordResetListener(Ref ref) {
-  final listener = PasswordResetListener(ref);
-  ref.onDispose(listener.dispose);
-  return listener;
-}
-
-@Riverpod(keepAlive: true)
-EmailVerificationListener emailVerificationListener(Ref ref) {
-  final listener = EmailVerificationListener(ref);
-  ref.onDispose(listener.dispose);
-  return listener;
 }
 
 /// Web authentication service (for web platform only)
