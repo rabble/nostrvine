@@ -7,6 +7,15 @@ void main() {
   const messages = AuthValidationMessages.englishDefaults;
 
   group(Validators, () {
+    group('normalizeAuthEmail', () {
+      test('trims and lowercases email before auth submission', () {
+        expect(
+          Validators.normalizeAuthEmail(' Person@Example.com '),
+          equals('person@example.com'),
+        );
+      });
+    });
+
     group('validateEmail', () {
       test('rejects malformed domains with consecutive dots', () {
         expect(

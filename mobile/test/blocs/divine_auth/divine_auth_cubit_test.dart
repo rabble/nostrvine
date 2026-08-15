@@ -385,6 +385,51 @@ void main() {
           },
         );
 
+        blocTest<DivineAuthCubit, DivineAuthState>(
+          'normalizes email before sign in',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessLogin(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessLoginResult(success: true, code: testCode),
+                testVerifier,
+              ),
+            );
+            when(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            ).thenAnswer(
+              (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
+            );
+            when(
+              () => mockAuthService.signInWithDivineOAuth(any()),
+            ).thenAnswer((_) async {});
+          },
+          build: buildCubit,
+          seed: () => const DivineAuthFormState(
+            email: ' Test@Example.com ',
+            password: testPassword,
+            isSignIn: true,
+          ),
+          act: (cubit) => cubit.submit(),
+          verify: (_) {
+            verify(
+              () => mockOAuth.headlessLogin(
+                email: testEmail,
+                password: testPassword,
+                scope: 'policy:full',
+              ),
+            ).called(1);
+          },
+        );
+
         test(
           'closing mid-sign-in reports no error to the bloc observer',
           () async {
@@ -1046,6 +1091,61 @@ void main() {
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(
+          'normalizes email before sign up and pending verification',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessRegister(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessRegisterResult(
+                  success: true,
+                  pubkey: 'test-pubkey',
+                  verificationRequired: true,
+                  deviceCode: testDeviceCode,
+                  email: testEmail,
+                ),
+                testVerifier,
+              ),
+            );
+            when(
+              () => mockPendingVerification.save(
+                deviceCode: any(named: 'deviceCode'),
+                verifier: any(named: 'verifier'),
+                email: any(named: 'email'),
+                inviteCode: any(named: 'inviteCode'),
+              ),
+            ).thenAnswer((_) async {});
+          },
+          build: buildCubit,
+          seed: () => const DivineAuthFormState(
+            email: ' Test@Example.com ',
+            password: testPassword,
+          ),
+          act: (cubit) => cubit.submit(),
+          verify: (_) {
+            verify(
+              () => mockOAuth.headlessRegister(
+                email: testEmail,
+                password: testPassword,
+                scope: 'policy:full',
+              ),
+            ).called(1);
+            verify(
+              () => mockPendingVerification.save(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+                inviteCode: any(named: 'inviteCode'),
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<DivineAuthCubit, DivineAuthState>(
           'persists invite code with pending verification data',
           setUp: () {
             when(
@@ -1627,6 +1727,21 @@ void main() {
         },
         build: buildCubit,
         act: (cubit) => cubit.sendPasswordResetEmail(testEmail),
+        expect: () => <DivineAuthState>[],
+        verify: (_) {
+          verify(() => mockOAuth.sendPasswordResetEmail(testEmail)).called(1);
+        },
+      );
+
+      blocTest<DivineAuthCubit, DivineAuthState>(
+        'normalizes email before password reset',
+        setUp: () {
+          when(
+            () => mockOAuth.sendPasswordResetEmail(any()),
+          ).thenAnswer((_) async => ForgotPasswordResult(success: true));
+        },
+        build: buildCubit,
+        act: (cubit) => cubit.sendPasswordResetEmail(' Test@Example.com '),
         expect: () => <DivineAuthState>[],
         verify: (_) {
           verify(() => mockOAuth.sendPasswordResetEmail(testEmail)).called(1);

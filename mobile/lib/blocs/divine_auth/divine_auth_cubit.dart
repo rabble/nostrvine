@@ -183,10 +183,11 @@ class DivineAuthCubit extends Cubit<DivineAuthState>
     );
 
     try {
+      final email = Validators.normalizeAuthEmail(current.email);
       if (current.isSignIn) {
-        await _handleSignIn(current.email, current.password);
+        await _handleSignIn(email, current.password);
       } else {
-        await _handleSignUp(current.email, current.password);
+        await _handleSignUp(email, current.password);
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -431,14 +432,15 @@ class DivineAuthCubit extends Cubit<DivineAuthState>
 
   /// Send password reset email
   Future<void> sendPasswordResetEmail(String email) async {
+    final normalizedEmail = Validators.normalizeAuthEmail(email);
     Log.info(
-      'Sending password reset email to ${redactEmailForLogs(email)}',
+      'Sending password reset email to ${redactEmailForLogs(normalizedEmail)}',
       name: 'DivineAuthCubit',
       category: LogCategory.auth,
     );
 
     try {
-      final result = await _oauthClient.sendPasswordResetEmail(email);
+      final result = await _oauthClient.sendPasswordResetEmail(normalizedEmail);
 
       if (!result.success) {
         Log.warning(

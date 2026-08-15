@@ -61,6 +61,8 @@ enum PasswordValidationError { missing, tooShort }
 enum ConfirmPasswordValidationError { missing, mismatch }
 
 class Validators {
+  static String normalizeAuthEmail(String value) => value.trim().toLowerCase();
+
   static String? validateEmail(
     String? value, {
     required AuthValidationMessages messages,
