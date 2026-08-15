@@ -13,7 +13,18 @@ import 'package:openvine/services/notification_service.dart';
 class _MockFlutterLocalNotificationsPlugin extends Mock
     implements FlutterLocalNotificationsPlugin {}
 
+class _MockAndroidFlutterLocalNotificationsPlugin extends Mock
+    implements AndroidFlutterLocalNotificationsPlugin {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      ),
+    );
+  });
+
   group('NotificationService Permission Tests', () {
     late NotificationService notificationService;
 
@@ -84,23 +95,197 @@ void main() {
       );
     });
 
-    test('sendLocal without permissions only adds to internal list', () async {
-      // Do NOT call ensurePermission - no permissions granted
-      expect(notificationService.hasPermissions, isFalse);
+    test(
+      'sendLocal adds to internal list while resolving permissions',
+      () async {
+        // Do NOT call ensurePermission first: sendLocal should resolve the
+        // unknown permission state itself before deciding on platform delivery.
+        expect(notificationService.hasPermissions, isFalse);
 
-      // Send notification without permissions
-      await notificationService.sendLocal(
-        title: 'No Permission Test',
-        body: 'Should only show in-app',
-      );
+        await notificationService.sendLocal(
+          title: 'Unknown Permission Test',
+          body: 'Should always show in-app',
+        );
 
-      // Should still add to internal list for in-app display
-      expect(notificationService.notifications.length, equals(1));
-      expect(
-        notificationService.notifications.first.title,
-        equals('No Permission Test'),
-      );
-    });
+        expect(notificationService.notifications.length, equals(1));
+        expect(
+          notificationService.notifications.first.title,
+          equals('Unknown Permission Test'),
+        );
+      },
+    );
+
+    test(
+      'sendLocal resolves unknown permission state before platform delivery',
+      () async {
+        final plugin = _MockFlutterLocalNotificationsPlugin();
+        when(
+          () => plugin.initialize(
+            settings: any(named: 'settings'),
+            onDidReceiveNotificationResponse: any(
+              named: 'onDidReceiveNotificationResponse',
+            ),
+            onDidReceiveBackgroundNotificationResponse: any(
+              named: 'onDidReceiveBackgroundNotificationResponse',
+            ),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final androidPlugin = _MockAndroidFlutterLocalNotificationsPlugin();
+        when(
+          () => plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >(),
+        ).thenReturn(androidPlugin);
+        when(
+          androidPlugin.areNotificationsEnabled,
+        ).thenAnswer((_) async => true);
+
+        notificationService.debugConfigurePlugin(
+          plugin,
+          permissionsGranted: null,
+          pluginInitialized: false,
+        );
+
+        await notificationService.sendLocal(
+          title: 'Unknown Permission',
+          body: 'Should initialize before deciding',
+        );
+
+        verify(
+          () => plugin.initialize(
+            settings: any(named: 'settings'),
+            onDidReceiveNotificationResponse: any(
+              named: 'onDidReceiveNotificationResponse',
+            ),
+            onDidReceiveBackgroundNotificationResponse: any(
+              named: 'onDidReceiveBackgroundNotificationResponse',
+            ),
+          ),
+        ).called(1);
+        verify(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: 'Unknown Permission',
+            body: 'Should initialize before deciding',
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        ).called(1);
+        expect(notificationService.hasPermissions, isTrue);
+        verifyNever(androidPlugin.requestNotificationsPermission);
+      },
+    );
+
+    test(
+      'sendLocal with denied permissions does not call platform show',
+      () async {
+        final plugin = _MockFlutterLocalNotificationsPlugin();
+        final androidPlugin = _MockAndroidFlutterLocalNotificationsPlugin();
+        when(
+          () => plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >(),
+        ).thenReturn(androidPlugin);
+        when(
+          androidPlugin.areNotificationsEnabled,
+        ).thenAnswer((_) async => false);
+
+        notificationService.debugConfigurePlugin(
+          plugin,
+          permissionsGranted: false,
+        );
+
+        await notificationService.sendLocal(
+          title: 'Denied Permission',
+          body: 'Should stay in-app only',
+        );
+
+        verifyNever(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        );
+        expect(notificationService.notifications, hasLength(1));
+        expect(notificationService.hasPermissions, isFalse);
+        verifyNever(androidPlugin.requestNotificationsPermission);
+      },
+    );
+
+    test(
+      'sendLocal picks up a permission granted from system settings',
+      () async {
+        final plugin = _MockFlutterLocalNotificationsPlugin();
+        final androidPlugin = _MockAndroidFlutterLocalNotificationsPlugin();
+        when(
+          () => plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >(),
+        ).thenReturn(androidPlugin);
+        when(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          androidPlugin.areNotificationsEnabled,
+        ).thenAnswer((_) async => false);
+
+        notificationService.debugConfigurePlugin(
+          plugin,
+          permissionsGranted: false,
+        );
+
+        await notificationService.sendLocal(
+          title: 'Still Denied',
+          body: 'Stays in-app',
+        );
+        expect(notificationService.hasPermissions, isFalse);
+
+        // The user enables notifications in system settings. Without a
+        // re-check, `denied` would stick until the process restarts.
+        when(
+          androidPlugin.areNotificationsEnabled,
+        ).thenAnswer((_) async => true);
+
+        await notificationService.sendLocal(
+          title: 'Now Allowed',
+          body: 'Reaches the platform',
+        );
+
+        expect(notificationService.hasPermissions, isTrue);
+        verify(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: 'Now Allowed',
+            body: 'Reaches the platform',
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        ).called(1);
+        verifyNever(androidPlugin.requestNotificationsPermission);
+      },
+    );
 
     test('sendLocal handles empty title and body', () async {
       await notificationService.ensurePermission();
@@ -134,6 +319,68 @@ void main() {
       expect(notificationService.notifications[1].title, equals('Second'));
       expect(notificationService.notifications[2].title, equals('First'));
     });
+  });
+
+  group('NotificationService.initialize', () {
+    late NotificationService service;
+    late _MockFlutterLocalNotificationsPlugin plugin;
+    late _MockAndroidFlutterLocalNotificationsPlugin androidPlugin;
+
+    setUp(() {
+      service = NotificationService();
+      plugin = _MockFlutterLocalNotificationsPlugin();
+      androidPlugin = _MockAndroidFlutterLocalNotificationsPlugin();
+      when(
+        () => plugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >(),
+      ).thenReturn(androidPlugin);
+      service.debugConfigurePlugin(plugin, permissionsGranted: null);
+    });
+
+    tearDown(() {
+      service.dispose();
+    });
+
+    test('resolves a granted permission state without prompting', () async {
+      when(
+        () => androidPlugin.areNotificationsEnabled(),
+      ).thenAnswer((_) async => true);
+
+      await service.initialize();
+
+      expect(service.hasPermissions, isTrue);
+      verify(() => androidPlugin.areNotificationsEnabled()).called(1);
+      verifyNever(() => androidPlugin.requestNotificationsPermission());
+    });
+
+    test('resolves a denied permission state without prompting', () async {
+      when(
+        () => androidPlugin.areNotificationsEnabled(),
+      ).thenAnswer((_) async => false);
+
+      await service.initialize();
+
+      // Denied, not unknown: the delivery decision now has a real answer.
+      expect(service.hasPermissions, isFalse);
+      verify(() => androidPlugin.areNotificationsEnabled()).called(1);
+      verifyNever(() => androidPlugin.requestNotificationsPermission());
+    });
+
+    test(
+      'leaves the state unresolved when the platform cannot answer',
+      () async {
+        when(
+          () => androidPlugin.areNotificationsEnabled(),
+        ).thenAnswer((_) async => null);
+
+        await service.initialize();
+
+        expect(service.hasPermissions, isFalse);
+        verifyNever(androidPlugin.requestNotificationsPermission);
+      },
+    );
   });
 
   group('NotificationService Web Platform Tests', () {
