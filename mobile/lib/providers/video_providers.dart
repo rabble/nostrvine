@@ -131,7 +131,6 @@ SeenVideosService seenVideosService(Ref ref) {
   } catch (_) {
     db = null;
   }
-  // ignore: invalid_use_of_visible_for_testing_member
   final service = SeenVideosService(database: db);
   unawaited(service.initialize());
   ref.onDispose(() => unawaited(service.dispose()));
