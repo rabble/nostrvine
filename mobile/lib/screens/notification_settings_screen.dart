@@ -14,6 +14,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 
 /// Page: bridges Riverpod-provided dependencies into [NotificationSettingsCubit].
 class NotificationSettingsScreen extends ConsumerWidget {
@@ -23,7 +24,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
   static const routeName = 'notification-settings';
 
   /// Path for this route.
-  static const path = '/notification-settings';
+  static const String path = RoutePaths.notificationSettings;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

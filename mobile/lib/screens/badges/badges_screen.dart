@@ -12,6 +12,7 @@ import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
 import 'package:openvine/screens/badges/widgets/badge_recipient_row.dart';
@@ -25,7 +26,7 @@ class BadgesScreen extends ConsumerWidget {
   static const routeName = 'badges';
 
   /// Route path used by GoRouter.
-  static const path = '/badges';
+  static const String path = RoutePaths.badges;
 
   /// Creates the badges screen.
   const BadgesScreen({super.key});

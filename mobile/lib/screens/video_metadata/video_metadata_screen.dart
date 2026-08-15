@@ -13,6 +13,7 @@ import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_stack.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_stack.dart';
 
@@ -29,7 +30,7 @@ class VideoMetadataScreen extends ConsumerStatefulWidget {
   static const routeName = 'video-metadata';
 
   /// Path for this route.
-  static const path = '/video-metadata';
+  static const String path = RoutePaths.videoMetadata;
 
   /// Query parameter carrying the composition mode from the draft editor.
   static const draftModeQueryParameter = 'mode';

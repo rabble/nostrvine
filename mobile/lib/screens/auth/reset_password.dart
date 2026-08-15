@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -20,7 +21,7 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
   static const String routeName = 'reset-password';
 
   /// Path for navigation
-  static const String path = '/reset-password';
+  static const String path = RoutePaths.resetPassword;
 
   const ResetPasswordScreen({required this.token, this.email, super.key});
 

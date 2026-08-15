@@ -2,7 +2,7 @@
 // ABOUTME: Ensures subscriptions only start when Nostr is initialized and app is foregrounded
 
 import 'package:openvine/providers/app_foreground_provider.dart';
-import 'package:openvine/router/router.dart';
+import 'package:openvine/router/providers/page_context_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 

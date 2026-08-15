@@ -151,6 +151,14 @@ jobs:
         # Compares the baseline against origin/main (fetched once at job start);
         # the guard fails closed when the base baseline cannot be loaded.
         run: bash scripts/check_ui_service_boundary.sh
+      - name: 🚧 Verify lower layers do not import the UI (layer-direction ratchet)
+        run: |
+          # Mirror image of the guard above: providers/services/repositories/state
+          # must not import screens, widgets, or the router, and route providers
+          # must not import screens. Those upward edges drag the whole screen
+          # graph — and through it app_providers.dart — into non-UI code. Route
+          # locations come from the RoutePaths leaf instead. #7383 (wave #4506).
+          bash scripts/check_layer_direction.sh
       - name: 🧪 Verify skipped-test count does not increase (skip-ceiling ratchet)
         # Skip-debt epic: #4337 (WS-1). Guard fails closed if the baseline can't load.
         run: bash scripts/check_skip_ceiling.sh

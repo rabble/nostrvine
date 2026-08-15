@@ -17,6 +17,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
@@ -32,7 +33,7 @@ import 'package:openvine/widgets/modal_progress_overlay.dart';
 
 class NostrSettingsScreen extends ConsumerWidget {
   static const routeName = 'nostr-settings';
-  static const path = '/nostr-settings';
+  static const String path = RoutePaths.nostrSettings;
 
   const NostrSettingsScreen({super.key});
 

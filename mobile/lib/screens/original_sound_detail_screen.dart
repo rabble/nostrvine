@@ -8,6 +8,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -20,13 +21,14 @@ class OriginalSoundDetailScreen extends ConsumerWidget {
   static const routeName = 'originalSound';
 
   /// Base path for original sound routes.
-  static const basePath = '/original-sound';
+  static const String basePath = RoutePaths.originalSoundDetailBase;
 
   /// Path pattern for this route.
   static const path = '/original-sound/:pubkey';
 
   /// Build path for a specific creator pubkey.
-  static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
+  static String pathForPubkey(String pubkey) =>
+      RoutePaths.originalSoundDetailForPubkey(pubkey);
 
   /// Creates an OriginalSoundDetailScreen.
   const OriginalSoundDetailScreen({

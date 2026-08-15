@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/providers/deep_link_listeners.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:patrol/patrol.dart';
 

@@ -13,12 +13,13 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/atproto_provisioning_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/bluesky_crosspost_repository.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 class BlueskySettingsScreen extends ConsumerWidget {
   static const routeName = 'bluesky-settings';
-  static const path = '/bluesky-settings';
+  static const String path = RoutePaths.blueskySettings;
 
   const BlueskySettingsScreen({super.key});
 

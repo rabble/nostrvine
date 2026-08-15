@@ -22,6 +22,7 @@ import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -35,7 +36,7 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
   static const String routeName = 'verify-email';
 
   /// Path for navigation
-  static const String path = '/verify-email';
+  static const String path = RoutePaths.emailVerification;
 
   const EmailVerificationScreen({
     super.key,

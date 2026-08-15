@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/routes/router_guards.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
@@ -20,7 +21,7 @@ class SecureAccountScreen extends ConsumerStatefulWidget {
   static const routeName = 'secure-account';
 
   /// Path for this route.
-  static const path = '/secure-account';
+  static const String path = RoutePaths.secureAccount;
 
   const SecureAccountScreen({super.key});
 

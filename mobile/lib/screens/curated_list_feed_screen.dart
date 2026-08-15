@@ -14,6 +14,7 @@ import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -45,16 +46,14 @@ class CuratedListFeedScreen extends ConsumerStatefulWidget {
   static const routeName = 'list';
 
   /// Base path for list routes.
-  static const basePath = '/list';
+  static const String basePath = RoutePaths.curatedListFeedBase;
 
   /// Path for this route.
   static const path = '/list/:listId';
 
   /// Build path for a specific list.
-  static String pathForId(String listId) {
-    final encodedId = Uri.encodeComponent(listId);
-    return '$basePath/$encodedId';
-  }
+  static String pathForId(String listId) =>
+      RoutePaths.curatedListFeedForId(listId);
 
   const CuratedListFeedScreen({
     required this.listId,

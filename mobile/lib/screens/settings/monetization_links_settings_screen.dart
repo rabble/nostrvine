@@ -16,12 +16,13 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 
 class MonetizationLinksSettingsScreen extends ConsumerWidget {
   static const routeName = 'monetization-links-settings';
-  static const subpath = 'monetization-links';
-  static const path = '/settings/monetization-links';
+  static const String subpath = RoutePaths.monetizationLinksSettingsSubpath;
+  static const String path = RoutePaths.monetizationLinksSettings;
 
   const MonetizationLinksSettingsScreen({super.key});
 

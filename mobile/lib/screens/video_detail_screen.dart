@@ -17,6 +17,7 @@ import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -46,7 +47,7 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
   static const routeName = 'video';
 
   /// Base path for video routes.
-  static const basePath = '/video';
+  static const String basePath = RoutePaths.videoDetailBase;
 
   /// Path pattern for this route.
   static const path = '/video/:id';
@@ -55,7 +56,7 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
   ///
   /// The route segment may be a raw event ID, a stable ID / d-tag, or
   /// a NIP-19 reference such as `note1...`, `nevent1...`, or `naddr1...`.
-  static String pathForId(String id) => '$basePath/$id';
+  static String pathForId(String id) => RoutePaths.videoDetailForId(id);
 
   const VideoDetailScreen({
     required this.videoId,

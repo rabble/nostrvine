@@ -13,6 +13,7 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
@@ -20,8 +21,8 @@ const _divineVideoDomainSuffix = '.divine.video';
 
 class Nip05SettingsScreen extends ConsumerWidget {
   static const routeName = 'nip05-settings';
-  static const subpath = 'nip05';
-  static const path = '/nostr-settings/$subpath';
+  static const String subpath = RoutePaths.nip05SettingsSubpath;
+  static const String path = RoutePaths.nip05Settings;
 
   const Nip05SettingsScreen({super.key});
 

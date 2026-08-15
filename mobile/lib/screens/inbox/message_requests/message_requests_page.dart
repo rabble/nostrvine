@@ -10,6 +10,7 @@ import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_view.dart';
 
 /// Message Requests inbox page.
@@ -20,7 +21,7 @@ class MessageRequestsPage extends ConsumerWidget {
   const MessageRequestsPage({super.key});
 
   static const routeName = 'messageRequests';
-  static const path = '/inbox/message-requests';
+  static const String path = RoutePaths.messageRequests;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

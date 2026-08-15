@@ -9,6 +9,7 @@ import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 
 /// Top-level page for the notifications tab.
 ///
@@ -26,14 +27,14 @@ class NotificationsPage extends ConsumerWidget {
   static const routeName = 'notifications';
 
   /// Path for this route.
-  static const path = '/notifications';
+  static const String path = RoutePaths.notifications;
 
   /// Path for this route with index.
   static const pathWithIndex = '/notifications/:index';
 
   /// Build path for a specific index.
   static String pathForIndex([int? index]) =>
-      index == null ? path : '$path/$index';
+      RoutePaths.notificationsForIndex(index);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

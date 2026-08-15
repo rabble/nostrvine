@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -72,7 +72,7 @@ final ProviderFamily<String?, String> checkEmptyFollowingRedirectProvider =
       // Only redirect to explore when coming from WelcomeScreen if user follows
       // nobody. After that, let users navigate to home freely (they'll see a
       // message to follow people)
-      if (!location.startsWith(WelcomeScreen.path)) return null;
+      if (!location.startsWith(RoutePaths.welcome)) return null;
 
       final hasFollowing = ref.watch(hasFollowingInCacheProvider);
 

@@ -2,62 +2,8 @@
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
-import 'package:openvine/notifications/view/notifications_page.dart';
-import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/apps/app_detail_screen.dart';
-import 'package:openvine/screens/apps/apps_directory_screen.dart';
-import 'package:openvine/screens/auth/secure_account_screen.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:openvine/screens/badges/badges_screen.dart';
-import 'package:openvine/screens/blossom_settings_screen.dart';
-import 'package:openvine/screens/category_gallery_screen.dart';
-import 'package:openvine/screens/content_filters_screen.dart';
-import 'package:openvine/screens/creator_analytics_screen.dart';
-import 'package:openvine/screens/curated_list_by_author_screen.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:openvine/screens/developer_options_screen.dart';
-import 'package:openvine/screens/discover_lists_screen.dart';
-import 'package:openvine/screens/explore/explore_screen.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
-import 'package:openvine/screens/inbox/inbox_page.dart';
-import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
-import 'package:openvine/screens/key_import_screen.dart';
-import 'package:openvine/screens/key_management_screen.dart';
-import 'package:openvine/screens/library_screen.dart';
-import 'package:openvine/screens/liked_videos_screen_router.dart';
-import 'package:openvine/screens/notification_settings_screen.dart';
-import 'package:openvine/screens/original_sound_detail_screen.dart';
-import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/profile_setup/profile_setup.dart';
-import 'package:openvine/screens/relay_diagnostic_screen.dart';
-import 'package:openvine/screens/relay_settings_screen.dart';
-import 'package:openvine/screens/safety_settings_screen.dart';
-import 'package:openvine/screens/settings/app_language_screen.dart';
-import 'package:openvine/screens/settings/appearance_settings_screen.dart';
-import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
-import 'package:openvine/screens/settings/content_preferences_screen.dart';
-import 'package:openvine/screens/settings/crossposting_settings_screen.dart';
-import 'package:openvine/screens/settings/general_settings_screen.dart';
-import 'package:openvine/screens/settings/invites_screen.dart';
-import 'package:openvine/screens/settings/legal_screen.dart';
-import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
-import 'package:openvine/screens/settings/nip05_settings_screen.dart';
-import 'package:openvine/screens/settings/nostr_settings_screen.dart';
-import 'package:openvine/screens/settings/settings_screen.dart';
-import 'package:openvine/screens/settings/storage/storage_management_page.dart';
-import 'package:openvine/screens/settings/support_center_screen.dart';
-import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
-import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor/video_editor_screen.dart';
-import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
-import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/router/providers/router_location_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Route types supported by the app
@@ -204,7 +150,7 @@ bool _isKnownRouteShape(List<String> segments) {
     case 'settings':
       return length == 1 ||
           (length == 2 &&
-              segments[1] == MonetizationLinksSettingsScreen.subpath);
+              segments[1] == RoutePaths.monetizationLinksSettingsSubpath);
     case 'apps':
       return length == 1 || length == 2;
     case 'following':
@@ -219,7 +165,7 @@ bool _isKnownRouteShape(List<String> segments) {
       return length == 2 || (length == 3 && segments[2] == 'add-people');
     case 'nostr-settings':
       return length == 1 ||
-          (length == 2 && segments[1] == Nip05SettingsScreen.subpath);
+          (length == 2 && segments[1] == RoutePaths.nip05SettingsSubpath);
     case 'welcome':
       return length == 1 || (length == 2 && segments[1] == 'login-options');
     case 'video':
@@ -421,7 +367,7 @@ RouteContext? _parseRoute(String path, {required bool knownOnly}) {
 
     case 'settings':
       if (segments.length > 1 &&
-          segments[1] == MonetizationLinksSettingsScreen.subpath) {
+          segments[1] == RoutePaths.monetizationLinksSettingsSubpath) {
         return const RouteContext(type: RouteType.monetizationLinksSettings);
       }
       return const RouteContext(type: RouteType.settings);
@@ -487,7 +433,8 @@ RouteContext? _parseRoute(String path, {required bool knownOnly}) {
       return const RouteContext(type: RouteType.legal);
 
     case 'nostr-settings':
-      if (segments.length > 1 && segments[1] == Nip05SettingsScreen.subpath) {
+      if (segments.length > 1 &&
+          segments[1] == RoutePaths.nip05SettingsSubpath) {
         return const RouteContext(type: RouteType.nip05Settings);
       }
       return const RouteContext(type: RouteType.nostrSettings);
@@ -632,32 +579,32 @@ String buildRoute(RouteContext context) {
     case RouteType.home:
       final rawIndex = context.videoIndex ?? 0;
       final index = rawIndex < 0 ? 0 : rawIndex;
-      return VideoFeedPage.pathForIndex(index);
+      return RoutePaths.videoFeedForIndex(index);
 
     case RouteType.explore:
       if (context.videoIndex != null) {
         final rawIndex = context.videoIndex!;
         final index = rawIndex < 0 ? 0 : rawIndex;
-        return ExploreScreen.pathForIndex(index);
+        return RoutePaths.exploreForIndex(index);
       }
-      return ExploreScreen.path;
+      return RoutePaths.explore;
 
     case RouteType.notifications:
       if (context.videoIndex != null) {
         final rawIndex = context.videoIndex!;
         final index = rawIndex < 0 ? 0 : rawIndex;
-        return NotificationsPage.pathForIndex(index);
+        return RoutePaths.notificationsForIndex(index);
       }
-      return NotificationsPage.path;
+      return RoutePaths.notifications;
 
     case RouteType.conversation:
-      return ConversationPage.pathForId(context.conversationId ?? '');
+      return RoutePaths.conversationForId(context.conversationId ?? '');
 
     case RouteType.inbox:
-      return InboxPage.path;
+      return RoutePaths.inbox;
 
     case RouteType.messageRequests:
-      return MessageRequestsPage.path;
+      return RoutePaths.messageRequests;
 
     case RouteType.requestPreview:
       final id = Uri.encodeComponent(context.conversationId ?? '');
@@ -668,179 +615,179 @@ String buildRoute(RouteContext context) {
       if (context.videoIndex != null) {
         final rawIndex = context.videoIndex!;
         final index = rawIndex < 0 ? 0 : rawIndex;
-        return ProfileScreenRouter.pathForIndex(npub, index);
+        return RoutePaths.profileForIndex(npub, index);
       }
-      return ProfileScreenRouter.pathForNpub(npub);
+      return RoutePaths.profileForNpub(npub);
 
     case RouteType.likedVideos:
       if (context.videoIndex != null) {
         final rawIndex = context.videoIndex!;
         final index = rawIndex < 0 ? 0 : rawIndex;
-        return LikedVideosScreenRouter.pathForIndex(index);
+        return RoutePaths.likedVideosForIndex(index);
       }
-      return LikedVideosScreenRouter.path;
+      return RoutePaths.likedVideos;
 
     case RouteType.hashtag:
       final hashtag = context.hashtag ?? '';
-      return HashtagScreenRouter.pathForTag(hashtag);
+      return RoutePaths.hashtagForTag(hashtag);
 
     case RouteType.categoryGallery:
       final categoryName = context.categoryName;
       if (categoryName == null || categoryName.isEmpty) {
-        return ExploreScreen.path;
+        return RoutePaths.explore;
       }
-      return CategoryGalleryScreen.locationFor(categoryName);
+      return RoutePaths.categoryGalleryFor(categoryName);
 
     case RouteType.videoRecorder:
-      return VideoRecorderScreen.path;
+      return RoutePaths.videoRecorder;
 
     case RouteType.videoEditor:
       if (context.draftId != null) {
-        return '${VideoEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
+        return '${RoutePaths.videoEditor}/${Uri.encodeComponent(context.draftId!)}';
       }
-      return VideoEditorScreen.path;
+      return RoutePaths.videoEditor;
 
     case RouteType.videoMetadata:
-      return VideoMetadataScreen.path;
+      return RoutePaths.videoMetadata;
 
     case RouteType.videoEdit:
       if (context.videoId != null) {
-        return VideoMetadataEditScreen.pathFor(context.videoId!);
+        return RoutePaths.videoMetadataEditFor(context.videoId!);
       }
-      return VideoMetadataEditScreen.path;
+      return RoutePaths.videoMetadataEdit;
 
     case RouteType.subtitleEdit:
       if (context.videoId != null) {
-        return SubtitleEditorScreen.pathFor(context.videoId!);
+        return RoutePaths.subtitleEditorFor(context.videoId!);
       }
-      return SubtitleEditorScreen.path;
+      return RoutePaths.subtitleEditor;
 
     case RouteType.settings:
       if (context.appSlug != null) {
         if (context.appSlug!.isEmpty) {
-          return AppsDirectoryScreen.path;
+          return RoutePaths.appsDirectory;
         }
-        return AppDetailScreen.pathForSlug(
+        return RoutePaths.appDetailForSlug(
           Uri.encodeComponent(context.appSlug!),
         );
       }
-      return SettingsScreen.path;
+      return RoutePaths.settings;
 
     case RouteType.badges:
-      return BadgesScreen.path;
+      return RoutePaths.badges;
 
     case RouteType.relaySettings:
-      return RelaySettingsScreen.path;
+      return RoutePaths.relaySettings;
 
     case RouteType.relayDiagnostic:
-      return RelayDiagnosticScreen.path;
+      return RoutePaths.relayDiagnostic;
 
     case RouteType.blossomSettings:
-      return BlossomSettingsScreen.path;
+      return RoutePaths.blossomSettings;
 
     case RouteType.notificationSettings:
-      return NotificationSettingsScreen.path;
+      return RoutePaths.notificationSettings;
 
     case RouteType.keyManagement:
-      return KeyManagementScreen.path;
+      return RoutePaths.keyManagement;
 
     case RouteType.safetySettings:
-      return SafetySettingsScreen.path;
+      return RoutePaths.safetySettings;
 
     case RouteType.contentFilters:
-      return ContentFiltersScreen.path;
+      return RoutePaths.contentFilters;
 
     case RouteType.contentPreferences:
-      return ContentPreferencesScreen.path;
+      return RoutePaths.contentPreferences;
 
     case RouteType.generalSettings:
-      return GeneralSettingsScreen.path;
+      return RoutePaths.generalSettings;
 
     case RouteType.storageManagement:
-      return StorageManagementPage.path;
+      return RoutePaths.storageManagement;
 
     case RouteType.monetizationLinksSettings:
-      return MonetizationLinksSettingsScreen.path;
+      return RoutePaths.monetizationLinksSettings;
 
     case RouteType.invites:
-      return InvitesScreen.path;
+      return RoutePaths.invites;
 
     case RouteType.appLanguage:
-      return AppLanguageScreen.path;
+      return RoutePaths.appLanguage;
 
     case RouteType.appearanceSettings:
-      return AppearanceSettingsScreen.path;
+      return RoutePaths.appearanceSettings;
 
     case RouteType.supportCenter:
-      return SupportCenterScreen.path;
+      return RoutePaths.supportCenter;
 
     case RouteType.legal:
-      return LegalScreen.path;
+      return RoutePaths.legal;
 
     case RouteType.nostrSettings:
-      return NostrSettingsScreen.path;
+      return RoutePaths.nostrSettings;
 
     case RouteType.nip05Settings:
-      return Nip05SettingsScreen.path;
+      return RoutePaths.nip05Settings;
 
     case RouteType.blueskySettings:
-      return BlueskySettingsScreen.path;
+      return RoutePaths.blueskySettings;
 
     case RouteType.crosspostingSettings:
-      return CrosspostingSettingsScreen.path;
+      return RoutePaths.crosspostingSettings;
 
     case RouteType.editProfile:
-      return ProfileSetupScreen.editPath;
+      return RoutePaths.profileSetupEdit;
 
     case RouteType.importKey:
-      return KeyImportScreen.path;
+      return RoutePaths.keyImport;
 
     case RouteType.clips:
-      return LibraryScreen.clipsPath;
+      return RoutePaths.libraryClips;
 
     case RouteType.clipsOnly:
-      return LibraryScreen.clipsOnlyPath;
+      return RoutePaths.libraryClipsOnly;
 
     case RouteType.drafts:
-      return LibraryScreen.draftsPath;
+      return RoutePaths.libraryDrafts;
 
     case RouteType.welcome:
-      return WelcomeScreen.path;
+      return RoutePaths.welcome;
 
     case RouteType.developerOptions:
-      return DeveloperOptionsScreen.path;
+      return RoutePaths.developerOptions;
 
     case RouteType.loginOptions:
-      return WelcomeScreen.loginOptionsPath;
+      return RoutePaths.welcomeLoginOptions;
 
     case RouteType.following:
-      return FollowingScreenRouter.pathForPubkey(context.npub ?? '');
+      return RoutePaths.followingForPubkey(context.npub ?? '');
 
     case RouteType.followers:
-      return FollowersScreenRouter.pathForPubkey(context.npub ?? '');
+      return RoutePaths.followersForPubkey(context.npub ?? '');
 
     case RouteType.videoFeed:
-      return PooledFullscreenVideoFeedScreen.path;
+      return RoutePaths.pooledFullscreenVideoFeed;
 
     case RouteType.profileView:
       final npub = Uri.encodeComponent(context.npub ?? '');
-      return OtherProfileScreen.pathForNpub(npub);
+      return RoutePaths.otherProfileForNpub(npub);
 
     case RouteType.curatedList:
       final listAuthor = context.npub;
       if (listAuthor != null && listAuthor.isNotEmpty) {
-        return CuratedListByAuthorScreen.pathFor(
+        return RoutePaths.curatedListByAuthorFor(
           pubkey: listAuthor,
           listId: context.listId ?? '',
         );
       }
-      return CuratedListFeedScreen.pathForId(context.listId ?? '');
+      return RoutePaths.curatedListFeedForId(context.listId ?? '');
 
     case RouteType.discoverLists:
-      return DiscoverListsScreen.path;
+      return RoutePaths.discoverLists;
 
     case RouteType.peopleListCreate:
-      return CreatePeopleListPage.path;
+      return RoutePaths.createPeopleList;
 
     case RouteType.peopleListMembers:
       final listId = Uri.encodeComponent(context.listId ?? '');
@@ -851,22 +798,22 @@ String buildRoute(RouteContext context) {
       return '/people-lists/$listId/add-people';
 
     case RouteType.creatorAnalytics:
-      return CreatorAnalyticsScreen.path;
+      return RoutePaths.creatorAnalytics;
 
     case RouteType.sound:
-      return SoundDetailScreen.pathForId(context.soundId ?? '');
+      return RoutePaths.soundDetailForId(context.soundId ?? '');
 
     case RouteType.originalSound:
-      return OriginalSoundDetailScreen.pathForPubkey(context.npub ?? '');
+      return RoutePaths.originalSoundDetailForPubkey(context.npub ?? '');
 
     case RouteType.secureAccount:
-      return SecureAccountScreen.path;
+      return RoutePaths.secureAccount;
 
     case RouteType.pooledVideoFeed:
-      return PooledFullscreenVideoFeedScreen.path;
+      return RoutePaths.pooledFullscreenVideoFeed;
 
     case RouteType.videoDetail:
-      return VideoDetailScreen.pathForId(context.videoId ?? '');
+      return RoutePaths.videoDetailForId(context.videoId ?? '');
   }
 }
 

@@ -12,6 +12,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -27,7 +28,7 @@ class SafetySettingsScreen extends ConsumerWidget {
   static const routeName = 'safety-settings';
 
   /// Path for this route.
-  static const path = '/safety-settings';
+  static const String path = RoutePaths.safetySettings;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

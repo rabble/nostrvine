@@ -16,6 +16,7 @@ import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/startup_performance_service.dart';
@@ -31,10 +32,10 @@ class WelcomeScreen extends ConsumerWidget {
   static const routeName = 'welcome';
 
   /// Path for this route.
-  static const path = '/welcome';
+  static const String path = RoutePaths.welcome;
 
   /// Path for login options route.
-  static const loginOptionsPath = '/welcome/login-options';
+  static const String loginOptionsPath = RoutePaths.welcomeLoginOptions;
 
   /// Path for create account route.
   static const createAccountPath = '/welcome/create-account';
@@ -43,7 +44,7 @@ class WelcomeScreen extends ConsumerWidget {
   static const inviteGatePath = '/welcome/invite';
 
   /// Path for reset password route.
-  static const resetPasswordPath = '/welcome/login-options/reset-password';
+  static const String resetPasswordPath = RoutePaths.welcomeResetPassword;
 
   /// Query parameter key for pre-selecting an account on the welcome screen.
   static const selectedPubkeyParam = 'selectedPubkey';

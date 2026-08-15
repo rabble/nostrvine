@@ -10,6 +10,7 @@ import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/apps_directory/apps_directory_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/apps/nostr_app_launch_mode.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -21,7 +22,7 @@ class AppsDirectoryScreen extends ConsumerWidget {
   static const routeName = 'apps-directory';
 
   /// Route path used by GoRouter.
-  static const path = '/apps';
+  static const String path = RoutePaths.appsDirectory;
 
   /// Creates an [AppsDirectoryScreen].
   const AppsDirectoryScreen({super.key, this.embedded = false});

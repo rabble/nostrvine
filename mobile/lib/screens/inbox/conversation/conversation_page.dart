@@ -15,6 +15,7 @@ import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 
@@ -43,7 +44,7 @@ class ConversationPage extends ConsumerWidget {
   static const pathPattern = '/inbox/conversation/:id';
 
   /// Build a path for a specific conversation.
-  static String pathForId(String id) => '/inbox/conversation/$id';
+  static String pathForId(String id) => RoutePaths.conversationForId(id);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

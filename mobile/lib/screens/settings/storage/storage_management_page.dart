@@ -13,6 +13,7 @@ import 'package:openvine/blocs/storage/storage_cubit.dart';
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/storage_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 
 /// Settings screen for clearing caches and auditing the clip library.
 class StorageManagementPage extends ConsumerWidget {
@@ -29,7 +30,7 @@ class StorageManagementPage extends ConsumerWidget {
   /// `parseRoute`/`buildRoute`. A `/settings/…` path collapses to
   /// `RouteType.settings` and gets normalized straight back to the
   /// Settings screen.
-  static const String path = '/storage-management';
+  static const String path = RoutePaths.storageManagement;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

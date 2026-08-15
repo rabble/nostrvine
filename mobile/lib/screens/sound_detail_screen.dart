@@ -19,6 +19,7 @@ import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/saved_sound_context_builder.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
@@ -92,13 +93,13 @@ class SoundDetailScreen extends ConsumerStatefulWidget {
   static const routeName = 'sound';
 
   /// Base path for sound routes.
-  static const basePath = '/sound';
+  static const String basePath = RoutePaths.soundDetailBase;
 
   /// Path pattern for this route.
   static const path = '/sound/:id';
 
   /// Build path for a specific sound ID.
-  static String pathForId(String id) => '$basePath/$id';
+  static String pathForId(String id) => RoutePaths.soundDetailForId(id);
 
   /// Creates a SoundDetailScreen.
   ///

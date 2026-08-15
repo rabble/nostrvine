@@ -38,6 +38,7 @@ import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/repositories/sticker_repository.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
@@ -76,7 +77,7 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
   static const draftRouteName = '$routeName-draft';
 
   /// Path for this route.
-  static const path = '/video-editor';
+  static const String path = RoutePaths.videoEditor;
 
   static const draftPathWithId = '$path/:draftId';
 

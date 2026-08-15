@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/providers/deep_link_listeners.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:patrol/patrol.dart';
 

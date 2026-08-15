@@ -13,6 +13,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
@@ -21,7 +22,7 @@ class ContentFiltersScreen extends ConsumerWidget {
   const ContentFiltersScreen({super.key});
 
   static const routeName = 'content-filters';
-  static const path = '/content-filters';
+  static const String path = RoutePaths.contentFilters;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

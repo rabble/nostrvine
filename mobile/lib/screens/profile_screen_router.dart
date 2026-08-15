@@ -17,6 +17,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -36,7 +37,7 @@ class ProfileScreenRouter extends ConsumerStatefulWidget {
   static const routeName = 'profile';
 
   /// Base path for profile routes.
-  static const path = '/profile';
+  static const String path = RoutePaths.profile;
 
   /// Path for this route (grid mode).
   static const pathWithNpub = '/profile/:npub';
@@ -45,10 +46,11 @@ class ProfileScreenRouter extends ConsumerStatefulWidget {
   static const pathWithIndex = '/profile/:npub/:index';
 
   /// Build path for grid mode or specific npub.
-  static String pathForNpub(String npub) => '$path/$npub';
+  static String pathForNpub(String npub) => RoutePaths.profileForNpub(npub);
 
   /// Build path for feed mode with specific npub and index.
-  static String pathForIndex(String npub, int index) => '$path/$npub/$index';
+  static String pathForIndex(String npub, int index) =>
+      RoutePaths.profileForIndex(npub, index);
 
   const ProfileScreenRouter({super.key});
 

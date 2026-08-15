@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/profile_setup/view/profile_setup_view.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 
@@ -15,7 +16,7 @@ class ProfileSetupScreen extends ConsumerWidget {
   static const editRouteName = 'edit-profile';
 
   /// Path for editing existing profile.
-  static const editPath = '/edit-profile';
+  static const String editPath = RoutePaths.profileSetupEdit;
 
   /// Route name for setting up new profile.
   static const setupRouteName = 'setup-profile';

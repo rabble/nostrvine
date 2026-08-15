@@ -16,6 +16,7 @@ import 'package:nostr_sdk/filter.dart' as nostr;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -67,7 +68,7 @@ class RelayDiagnosticScreen extends ConsumerStatefulWidget {
   static const routeName = 'relay-diagnostic';
 
   /// Path for this route.
-  static const path = '/relay-diagnostic';
+  static const String path = RoutePaths.relayDiagnostic;
 
   const RelayDiagnosticScreen({super.key});
 

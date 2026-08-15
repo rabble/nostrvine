@@ -17,6 +17,7 @@ import 'package:openvine/notifications/providers/notification_repository_provide
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 
 /// Inbox page (DM conversation list + notifications).
@@ -32,7 +33,7 @@ class InboxPage extends ConsumerWidget {
   static const routeName = 'inbox';
 
   /// Path for this route.
-  static const path = '/inbox';
+  static const String path = RoutePaths.inbox;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

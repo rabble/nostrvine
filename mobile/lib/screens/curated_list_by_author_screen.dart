@@ -8,6 +8,7 @@ import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/router/route_error_screen.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -33,10 +34,8 @@ class CuratedListByAuthorScreen extends ConsumerWidget {
   static const path = '${CuratedListFeedScreen.basePath}/:pubkey/:listId';
 
   /// Build path for a list addressed by author + d-tag.
-  static String pathFor({required String pubkey, required String listId}) {
-    return '${CuratedListFeedScreen.basePath}/${Uri.encodeComponent(pubkey)}'
-        '/${Uri.encodeComponent(listId)}';
-  }
+  static String pathFor({required String pubkey, required String listId}) =>
+      RoutePaths.curatedListByAuthorFor(pubkey: pubkey, listId: listId);
 
   /// Author pubkey (lowercase hex).
   final String authorPubkey;

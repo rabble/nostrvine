@@ -18,6 +18,7 @@ import 'package:openvine/providers/subtitle_repository_provider.dart';
 import 'package:openvine/providers/subtitle_timeline_thumbnail_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/router/route_error_screen.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/captions/caption_cue_row.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_editor_stage.dart';
 
@@ -35,14 +36,14 @@ class SubtitleEditorScreen extends ConsumerStatefulWidget {
   });
 
   /// Base route path.
-  static const path = '/subtitle-edit';
+  static const String path = RoutePaths.subtitleEditor;
 
   /// GoRouter route name.
   static const routeName = 'subtitle-edit';
 
   /// Returns the full path for a given video id.
   static String pathFor(String videoId) =>
-      '$path/${Uri.encodeComponent(videoId)}';
+      RoutePaths.subtitleEditorFor(videoId);
 
   /// The event id of the video whose subtitles are being edited.
   final String videoId;

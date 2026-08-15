@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/following/my_following_screen.dart';
 import 'package:openvine/screens/following/others_following_screen.dart';
 
@@ -20,13 +21,14 @@ class FollowingScreenRouter extends ConsumerWidget {
   static const routeName = 'following';
 
   /// Base path for following routes.
-  static const basePath = '/following';
+  static const String basePath = RoutePaths.followingBase;
 
   /// Path pattern for following route.
   static const path = '/following/:pubkey';
 
   /// Build path for a specific user's following list.
-  static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
+  static String pathForPubkey(String pubkey) =>
+      RoutePaths.followingForPubkey(pubkey);
 
   final String pubkey;
   final String? displayName;

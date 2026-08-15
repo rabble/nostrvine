@@ -22,6 +22,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -117,7 +118,7 @@ class DeveloperOptionsScreen extends ConsumerStatefulWidget {
   static const routeName = 'developer-options';
 
   /// Path for this route.
-  static const path = '/developer-options';
+  static const String path = RoutePaths.developerOptions;
 
   const DeveloperOptionsScreen({super.key});
 

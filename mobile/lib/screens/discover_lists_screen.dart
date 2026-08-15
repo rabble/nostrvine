@@ -14,6 +14,7 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -22,7 +23,7 @@ import 'package:unified_logger/unified_logger.dart';
 class DiscoverListsScreen extends ConsumerStatefulWidget {
   const DiscoverListsScreen({super.key});
 
-  static const String path = '/discover-lists';
+  static const String path = RoutePaths.discoverLists;
 
   static const String routeName = 'discover-lists';
 

@@ -4,10 +4,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/auth/nostr_connect_screen.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/providers/page_context_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -22,10 +21,10 @@ bool shouldSkipRouteNormalization(String loc) {
   // Skip GoRouter-owned flows before canonicalization. Some entries also fail
   // closed in parseKnownRoute; keeping them here documents route families that
   // must stay unnormalized if the modeled parser grows later.
-  if (loc.startsWith(WelcomeScreen.path) ||
-      loc.startsWith(NostrConnectScreen.path) ||
-      loc == MinorAccountReviewScreen.path ||
-      loc.startsWith('${MinorAccountReviewScreen.path}/') ||
+  if (loc.startsWith(RoutePaths.welcome) ||
+      loc.startsWith(RoutePaths.nostrConnect) ||
+      loc == RoutePaths.minorAccountReview ||
+      loc.startsWith('${RoutePaths.minorAccountReview}/') ||
       RegExp(r'^/apps/[^/]+/sandbox$').hasMatch(loc) ||
       RegExp(r'^/video/[^/]+/(likers|reposters)$').hasMatch(loc)) {
     return true;
