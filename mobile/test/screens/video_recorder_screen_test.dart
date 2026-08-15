@@ -101,6 +101,7 @@ List<Override> _stubStorageOverrides() {
 Widget buildTestWidget({
   ProviderContainer? container,
   List<Override> overrides = const [],
+  Key? recorderKey,
 }) {
   final child = MultiBlocProvider(
     providers: [
@@ -109,10 +110,10 @@ Widget buildTestWidget({
         create: (_) => MockCameraPermissionBloc(),
       ),
     ],
-    child: const MaterialApp(
+    child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: VideoRecorderView(),
+      home: VideoRecorderView(key: recorderKey),
     ),
   );
 
@@ -358,10 +359,18 @@ void main() {
 
       testWidgets('sets page overlay while mounted and clears it after '
           'dispose', (tester) async {
+        final pageOpenChanges = <bool>[];
+        final subscription = container.listen(
+          overlayVisibilityProvider,
+          (_, next) => pageOpenChanges.add(next.isPageOpen),
+        );
+        addTearDown(subscription.close);
+
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pump();
 
         expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+        expect(pageOpenChanges, equals([true]));
 
         await tester.pumpWidget(
           const MaterialApp(
@@ -373,31 +382,39 @@ void main() {
         await tester.pump();
 
         expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+        expect(pageOpenChanges, equals([true, false]));
       });
 
-      testWidgets('keeps page overlay open after immediate recorder reopen', (
+      testWidgets('keeps page overlay open during same-frame recorder swap', (
         tester,
       ) async {
-        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpWidget(
+          buildTestWidget(
+            container: container,
+            recorderKey: const ValueKey('first'),
+          ),
+        );
         await tester.pump();
 
         expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
 
+        final pageOpenChanges = <bool>[];
+        final subscription = container.listen(
+          overlayVisibilityProvider,
+          (_, next) => pageOpenChanges.add(next.isPageOpen),
+        );
+        addTearDown(subscription.close);
+
         await tester.pumpWidget(
-          UncontrolledProviderScope(
+          buildTestWidget(
             container: container,
-            child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: Text('Other screen')),
-            ),
+            recorderKey: const ValueKey('second'),
           ),
         );
-        await tester.pumpWidget(buildTestWidget(container: container));
-        await tester.pump();
 
         expect(find.byType(VideoRecorderView), findsOneWidget);
         expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+        expect(pageOpenChanges, isNot(contains(false)));
       });
     });
 
