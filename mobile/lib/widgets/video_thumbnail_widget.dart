@@ -255,6 +255,14 @@ class PassiveAuthThumbnailImage extends StatefulWidget {
   static int get debugUnauthorizedCacheLength =>
       _unauthorizedWithoutPassiveAuth.length;
 
+  @visibleForTesting
+  static void debugExpireUnauthorizedCache() {
+    final expiredAt = DateTime.fromMillisecondsSinceEpoch(0);
+    for (final key in _unauthorizedWithoutPassiveAuth.keys) {
+      _unauthorizedWithoutPassiveAuth[key] = expiredAt;
+    }
+  }
+
   @override
   State<PassiveAuthThumbnailImage> createState() =>
       _PassiveAuthThumbnailImageState();
@@ -343,10 +351,7 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
 
   void _resetPassiveAuthStateInFrame() {
     if (!mounted) return;
-    setState(() {
-      PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.clear();
-      _resetPassiveAuthState();
-    });
+    setState(_resetPassiveAuthState);
   }
 
   Future<void> _maybeRetryWithPassiveAuth(Object error) async {
@@ -468,21 +473,24 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
 
         if (PassiveAuthThumbnailImage._shouldBypassCacheManager(resolvedUrl)) {
           final suppressionKey = _suppressionKey(resolvedUrl);
-          if (_authHeaders == null &&
-              suppressionKey != null &&
-              PassiveAuthThumbnailImage._isUnauthorized(suppressionKey)) {
-            final errorWidget = widget.errorWidget;
-            if (errorWidget != null) {
-              return errorWidget(
-                context,
-                resolvedUrl,
-                const PassiveAuthUnavailableThumbnailException(),
+          if (_authHeaders == null && suppressionKey != null) {
+            if (PassiveAuthThumbnailImage._isUnauthorized(suppressionKey)) {
+              final errorWidget = widget.errorWidget;
+              if (errorWidget != null) {
+                return errorWidget(
+                  context,
+                  resolvedUrl,
+                  const PassiveAuthUnavailableThumbnailException(),
+                );
+              }
+              return _TransparentImageBox(
+                width: widget.width,
+                height: widget.height,
               );
             }
-            return _TransparentImageBox(
-              width: widget.width,
-              height: widget.height,
-            );
+
+            // Without an active suppression entry, start a fresh retry window.
+            _authRetryAttempted = false;
           }
 
           final imageProvider = ResizeImage.resizeIfNeeded(

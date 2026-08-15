@@ -1013,6 +1013,119 @@ void main() {
       },
     );
 
+    testWidgets(
+      'keeps one container suppressed when another container changes filters',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const hash =
+            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+        const url = 'https://media.divine.video/$hash.jpg';
+        when(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => const ViewerAuthUnavailable());
+        final containerA = ProviderContainer(
+          overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+        );
+        final containerB = ProviderContainer(
+          overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+        );
+        addTearDown(containerA.dispose);
+        addTearDown(containerB.dispose);
+
+        Widget buildSubject(ProviderContainer container) =>
+            UncontrolledProviderScope(
+              container: container,
+              child: const MaterialApp(
+                home: PassiveAuthThumbnailImage(url: url),
+              ),
+            );
+
+        await tester.pumpWidget(buildSubject(containerB));
+        final image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(Image), findsNothing);
+
+        await tester.pumpWidget(buildSubject(containerA));
+        containerA.read(contentFilterVersionProvider.notifier).increment();
+        await tester.pump();
+        await tester.pumpWidget(buildSubject(containerB));
+
+        expect(find.byType(Image), findsNothing);
+        verify(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: hash,
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'retries and suppresses again after cache expiry while mounted',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const hash =
+            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+        const url = 'https://media.divine.video/$hash.jpg';
+        when(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => const ViewerAuthUnavailable());
+        final container = ProviderContainer(
+          overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+        );
+        addTearDown(container.dispose);
+
+        Widget buildSubject(double width) => UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: PassiveAuthThumbnailImage(url: url, width: width),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject(100));
+        var image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(Image), findsNothing);
+
+        PassiveAuthThumbnailImage.debugExpireUnauthorizedCache();
+        await tester.pumpWidget(buildSubject(101));
+        image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(Image), findsNothing);
+        verify(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: hash,
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(2);
+      },
+    );
+
     testWidgets('bounds the unavailable thumbnail cache', (tester) async {
       final mediaAuthInterceptor = _MockMediaAuthInterceptor();
       final container = ProviderContainer(
