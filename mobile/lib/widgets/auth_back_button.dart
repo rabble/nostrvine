@@ -38,9 +38,9 @@ class AuthBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return RoundedIconButton(
       onPressed: !enabled ? null : onPressed ?? () => _handleBackTap(context),
-      icon: const DivineIcon(
+      icon: DivineIcon(
         icon: DivineIconName.caretLeft,
-        color: VineTheme.vineGreenLight,
+        color: context.vineColors.onIconButton,
       ),
     );
   }

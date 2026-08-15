@@ -43,7 +43,7 @@ Generic Flutter and Dart standards live in `.claude/rules/`:
 
 ## UI And Product Constraints
 
-- Divine is dark-mode only.
+- Divine ships dark and light appearances, dark by default; users choose in Settings → General → Appearance. Adaptive surfaces read `context.vineColors.<token>`; static `VineTheme.*` colors are for brand and fixed media chrome only.
 - Use `VineTheme` and shared components from `mobile/packages/divine_ui` before adding one-off styling or raw `Colors.*`.
 - Prefer full-screen flows over introducing new dialogs or bottom sheets unless the task explicitly asks for one or the existing UX already uses that pattern.
 - For user-facing copy, follow `brand-guidelines/AGENT_QUICK_REFERENCE.md` and `brand-guidelines/TONE_OF_VOICE.md`.

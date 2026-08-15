@@ -23,14 +23,15 @@ class BadgeStatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pending = context.vineColors.accentChipYellow;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: accepted
             ? VineTheme.vineGreen.withValues(alpha: 0.14)
-            : VineTheme.accentYellowBackground,
+            : pending.container,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: accepted ? VineTheme.vineGreen : VineTheme.accentYellow,
+          color: accepted ? VineTheme.vineGreen : pending.onContainer,
         ),
       ),
       child: Padding(
@@ -38,7 +39,7 @@ class BadgeStatusPill extends StatelessWidget {
         child: Text(
           label,
           style: VineTheme.labelSmallFont(
-            color: accepted ? VineTheme.vineGreen : VineTheme.accentYellow,
+            color: accepted ? VineTheme.vineGreen : pending.onContainer,
           ),
         ),
       ),

@@ -115,7 +115,7 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 
 - Follow the existing `go_router` patterns in `mobile/lib/router/app_router.dart`.
 - Prefer full-screen flows over introducing new dialogs or bottom sheets unless the task explicitly calls for one or the existing UX already uses that pattern.
-- Divine is dark-mode only. Use `VineTheme` and existing components from `mobile/packages/divine_ui` instead of raw `Colors.*` values or one-off styling.
+- Divine ships dark and light appearances; dark is the default and users pick System / Light / Dark in Settings → General → Appearance. Never hardcode for one mode: read adaptive surfaces and content through `context.vineColors.<token>`, and reserve the static `VineTheme.*` color constants for brand colors and fixed media chrome (scrims, over-video controls, the camera and editor canvas). Use `VineTheme` and existing components from `mobile/packages/divine_ui` instead of raw `Colors.*` values or one-off styling.
 - Reuse shared components like `DivineButton`, `DivineIconButton`, `DivineAuthTextField`, and `VineBottomSheet` when they fit the job.
 - When changing user-facing copy, align with `brand-guidelines/AGENT_QUICK_REFERENCE.md` and `brand-guidelines/TONE_OF_VOICE.md`: direct, human, slightly playful, and never corporate.
 

@@ -183,6 +183,70 @@ ThemeData(
 
 ---
 
+## Appearance modes: which colors adapt
+
+Divine ships **two** appearances — `VineTheme.theme` (dark, the default) and
+`VineTheme.lightTheme`. Users choose System / Light / Dark in
+Settings → General → Appearance. There is no feature flag.
+
+Two color systems coexist, and picking the wrong one is the most common
+light-mode bug:
+
+| Use | For | Example |
+|---|---|---|
+| `context.vineColors.<token>` | Anything drawn on an **app surface** — page backgrounds, cards, sheets, list rows, body text, dividers, form fields | `context.vineColors.primaryText` |
+| `VineTheme.<const>` | **Brand** colors and **fixed media chrome** — anything whose ground is a video frame, a scrim, a gradient, or a saturated brand fill | `VineTheme.vineGreen`, `VineTheme.scrim50` |
+
+The test is **what is underneath**, not what the widget is. The same white
+text is correct over a video thumbnail and invisible on a warm off-white page.
+
+Fixed-by-design surfaces: fullscreen playback chrome, the camera and video
+editor canvas, scrims and gradients, ink on a filled brand button, and the
+database-failure screen (it runs before the appearance preference is
+readable).
+
+### Three traps
+
+1. **Equal dark values, different light values.** `iconButtonBackground`,
+   `surfaceContainer` and `skeletonBase` are all `#FF032017` in dark but map
+   to three different light colors. Choose the token by what the surface
+   *means*, never by matching the hex.
+2. **Name collisions that invert.** `VineTheme.primaryContainer` (pale mint)
+   is not `vineColors.primaryContainer` (dark green);
+   `VineTheme.onErrorContainer` (near-white) is not
+   `vineColors.onErrorContainer` (red). Never auto-map by name.
+3. **Alpha carriers and shadows are not colors.** A `whiteText` inside a
+   `ShaderMask` with `BlendMode.dstIn` is an alpha channel, and
+   `backgroundColor.withValues(alpha: 0.2)` used as a `BoxShadow` would
+   become a *white* shadow in light mode. Leave both static.
+
+### Verify dark did not change
+
+Any migration from a static constant to a token must leave dark mode
+pixel-identical. Prove it mechanically rather than by reading the diff:
+
+```bash
+cd mobile && dart run scripts/check_dark_value_parity.dart --base origin/main
+```
+
+It pairs each removed reference with its replacement per hunk and compares
+**dark** values. It cannot catch a wrong pick among tokens that share a dark
+value (trap 1) — that part still needs eyes, and a light-mode contrast check.
+
+### Adding a token
+
+If the semantically right token would change dark, do **not** accept the
+shift — add a token whose dark value is the constant you are replacing.
+`onIconButton` exists for exactly this: `vineGreenLight` is 15:1 on the dark
+container and 1.01:1 on the light one, so the token keeps the pale mint in
+dark and substitutes a darkened green in light. Every new token needs an
+entry in `VineThemeColors`' constructor, field, `copyWith`, `lerp`, `==`,
+`hashCode`, `darkColors`, and `lightColors` — plus the token maps in
+`packages/divine_ui/test/src/divine_ui_test.dart`, which fail the build if
+you miss one.
+
+---
+
 ## Icons
 
 ### Use DivineIcon

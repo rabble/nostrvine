@@ -2,6 +2,7 @@
 // ABOUTME: that combines notificationTypeIconSpec with NotificationTypeIcon
 // ABOUTME: for use in both row variants.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -16,6 +17,7 @@ Future<void> _pump(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      theme: VineTheme.theme,
       home: Scaffold(
         body: NotificationLeadingTypeIcon(type: type, isRead: isRead),
       ),
@@ -39,7 +41,10 @@ void main() {
         final widget = tester.widget<NotificationTypeIcon>(
           find.byType(NotificationTypeIcon),
         );
-        final spec = notificationTypeIconSpec(NotificationKind.follow);
+        final spec = notificationTypeIconSpec(
+          NotificationKind.follow,
+          colors: VineTheme.darkColors,
+        );
         expect(widget.icon, equals(spec.icon));
         expect(widget.backgroundColor, equals(spec.background));
         expect(widget.foregroundColor, equals(spec.foreground));

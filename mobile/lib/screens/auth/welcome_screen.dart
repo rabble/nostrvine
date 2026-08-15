@@ -425,28 +425,29 @@ class _CrossAccountRecoveryBannerState
   @override
   Widget build(BuildContext context) {
     final message = _message(context);
+    final chip = context.vineColors.accentChipYellow;
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: VineTheme.accentYellowBackground,
+          color: chip.container,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           spacing: 8,
           children: [
-            const ExcludeSemantics(
+            ExcludeSemantics(
               child: DivineIcon(
                 icon: DivineIconName.warningCircle,
                 size: 16,
-                color: VineTheme.accentYellow,
+                color: chip.onContainer,
               ),
             ),
             Expanded(
               child: Text(
                 message,
-                style: VineTheme.bodySmallFont(color: VineTheme.accentYellow),
+                style: VineTheme.bodySmallFont(color: chip.onContainer),
               ),
             ),
           ],

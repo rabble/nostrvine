@@ -3,6 +3,7 @@
 // ABOUTME: notificationTypeIconSpec and renders NotificationTypeIcon with
 // ABOUTME: the unread red dot driven by isRead.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart';
 import 'package:openvine/notifications/widgets/notification_type_icon_spec.dart';
@@ -38,6 +39,7 @@ class NotificationLeadingTypeIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final spec = notificationTypeIconSpec(
       type,
+      colors: context.vineColors,
       isVideoSourcedMention: isVideoSourcedMention,
     );
     return NotificationTypeIcon(

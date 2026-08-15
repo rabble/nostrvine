@@ -993,8 +993,8 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                         children: [
                           Text(
                             _ContentWarningBadge._humanize(context, label),
-                            style: const TextStyle(
-                              color: VineTheme.whiteText,
+                            style: TextStyle(
+                              color: context.vineColors.primaryText,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),

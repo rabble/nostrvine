@@ -25,8 +25,7 @@ void main() {
       // When the env vars are not set, these flags default to false
       expect(config.getDefault(FeatureFlag.accountSwitching), isFalse);
       expect(config.getDefault(FeatureFlag.enhancedAnalytics), isFalse);
-      expect(config.getDefault(FeatureFlag.lightMode), isFalse);
-      expect(config.getDefault(FeatureFlag.adaptiveMediaChrome), isFalse);
+      expect(config.getDefault(FeatureFlag.divineSupporters), isFalse);
     });
 
     test('should have debug tools enabled by default in debug builds', () {
@@ -82,12 +81,8 @@ void main() {
         equals('FF_VIDEO_REPLIES'),
       );
       expect(
-        config.getEnvironmentKey(FeatureFlag.lightMode),
-        equals('FF_LIGHT_MODE'),
-      );
-      expect(
-        config.getEnvironmentKey(FeatureFlag.adaptiveMediaChrome),
-        equals('FF_ADAPTIVE_MEDIA_CHROME'),
+        config.getEnvironmentKey(FeatureFlag.divineSupporters),
+        equals('FF_DIVINE_SUPPORTERS'),
       );
     });
 

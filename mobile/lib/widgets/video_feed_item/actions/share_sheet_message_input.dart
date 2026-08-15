@@ -28,8 +28,8 @@ class _MessageInput extends StatelessWidget {
               // Selection reveals the composer; pop the keyboard right away
               // so compose-and-send is a single uninterrupted gesture.
               autofocus: true,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 14,
               ),
               decoration: InputDecoration(

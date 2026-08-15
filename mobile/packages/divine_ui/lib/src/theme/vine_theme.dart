@@ -5,6 +5,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// A decorative accent chip: a tinted container and the content color drawn
+/// on it.
+///
+/// The two travel together because they are only ever legible as a pair —
+/// dark mode pairs a deep tint with a bright accent, light mode pairs a pale
+/// tint with a darkened one. Storing them as one value makes mismatching them
+/// impossible at the call site, which a pair of independent tokens does not.
+@immutable
+class VineAccentChip {
+  /// Creates an accent chip pairing.
+  const VineAccentChip({required this.container, required this.onContainer});
+
+  /// Chip background.
+  final Color container;
+
+  /// Icon or label color drawn on [container]. Clears 4.5:1 against it in
+  /// both appearance modes.
+  final Color onContainer;
+
+  /// Linearly interpolates both halves toward [other], so a theme cross-fade
+  /// never pairs a light container with a dark foreground mid-flight.
+  VineAccentChip lerpTo(VineAccentChip other, double t) => VineAccentChip(
+    container: Color.lerp(container, other.container, t)!,
+    onContainer: Color.lerp(onContainer, other.onContainer, t)!,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VineAccentChip &&
+          container == other.container &&
+          onContainer == other.onContainer;
+
+  @override
+  int get hashCode => Object.hash(container, onContainer);
+}
+
 /// Semantic palette used by widgets that support both appearance modes.
 @immutable
 class VineThemeColors extends ThemeExtension<VineThemeColors> {
@@ -22,6 +59,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     required this.onNav,
     required this.onNavMuted,
     required this.iconButton,
+    required this.onIconButton,
+    required this.ghostFill,
     required this.primaryText,
     required this.secondaryText,
     required this.mutedText,
@@ -37,6 +76,13 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     required this.onErrorContainer,
     required this.accentPositive,
     required this.accentWarning,
+    required this.accentChipOrange,
+    required this.accentChipYellow,
+    required this.accentChipBlue,
+    required this.accentChipLime,
+    required this.accentChipPink,
+    required this.accentChipViolet,
+    required this.accentChipGreen,
     required this.inverseSurface,
     required this.inverseOnSurface,
     required this.mediaChrome,
@@ -103,6 +149,24 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// Icon button background.
   final Color iconButton;
 
+  /// Content color on [iconButton] and other tinted circular affordances.
+  ///
+  /// Its dark value is [VineTheme.vineGreenLight], so dark mode is unchanged
+  /// at 15:1. That pale mint is 1.01:1 on the light containers these icons
+  /// sit on — invisible — so light substitutes the same darkened green
+  /// [accentPositive] uses, clearing 4.5:1 on both `iconButton` (5.78:1) and
+  /// `surfaceContainer` (5.61:1).
+  final Color onIconButton;
+
+  /// Fill behind a ghost button sitting on an app surface.
+  ///
+  /// Its dark value is [VineTheme.scrim65], so dark mode is unchanged. That
+  /// 65%-black wash reads as a near-black pill on the light canvas, so light
+  /// uses a much lighter wash of the same ink. Ghost buttons drawn *over
+  /// media* use the fixed scrim directly instead — their ground is a video
+  /// frame, not a palette surface.
+  final Color ghostFill;
+
   /// Primary text.
   final Color primaryText;
 
@@ -161,6 +225,38 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// [background] so the two accents carry the same weight side by side.
   final Color accentWarning;
 
+  /// Decorative accent chips, drawn on [background] or [card] — notification
+  /// type indicators, badge status pills, onboarding highlights.
+  ///
+  /// Dark keeps the deep tint / bright accent pairing these surfaces already
+  /// shipped, so dark mode is unchanged. Light substitutes a pale tint and a
+  /// darkened accent: the bright accents are 1.2–1.9:1 on the warm off-white
+  /// canvas, so reusing them there would erase the chip.
+  ///
+  /// These are decoration, not status — [accentPositive] and [accentWarning]
+  /// carry meaning and are held to text contrast; a chip only has to stay
+  /// visible and keep its glyph legible.
+  final VineAccentChip accentChipOrange;
+
+  /// Yellow decorative accent chip. See [accentChipOrange].
+  final VineAccentChip accentChipYellow;
+
+  /// Blue decorative accent chip. See [accentChipOrange].
+  final VineAccentChip accentChipBlue;
+
+  /// Lime decorative accent chip. See [accentChipOrange].
+  final VineAccentChip accentChipLime;
+
+  /// Pink decorative accent chip. See [accentChipOrange].
+  final VineAccentChip accentChipPink;
+
+  /// Violet decorative accent chip. See [accentChipOrange].
+  final VineAccentChip accentChipViolet;
+
+  /// Green decorative accent chip, carrying the brand mark — the system
+  /// notification glyph. See [accentChipOrange].
+  final VineAccentChip accentChipGreen;
+
   /// Surface that contrasts with [background], used by tertiary actions.
   final Color inverseSurface;
 
@@ -193,6 +289,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     Color? onNav,
     Color? onNavMuted,
     Color? iconButton,
+    Color? onIconButton,
+    Color? ghostFill,
     Color? primaryText,
     Color? secondaryText,
     Color? mutedText,
@@ -208,6 +306,13 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     Color? onErrorContainer,
     Color? accentPositive,
     Color? accentWarning,
+    VineAccentChip? accentChipOrange,
+    VineAccentChip? accentChipYellow,
+    VineAccentChip? accentChipBlue,
+    VineAccentChip? accentChipLime,
+    VineAccentChip? accentChipPink,
+    VineAccentChip? accentChipViolet,
+    VineAccentChip? accentChipGreen,
     Color? inverseSurface,
     Color? inverseOnSurface,
     Color? mediaChrome,
@@ -225,6 +330,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     onNav: onNav ?? this.onNav,
     onNavMuted: onNavMuted ?? this.onNavMuted,
     iconButton: iconButton ?? this.iconButton,
+    onIconButton: onIconButton ?? this.onIconButton,
+    ghostFill: ghostFill ?? this.ghostFill,
     primaryText: primaryText ?? this.primaryText,
     secondaryText: secondaryText ?? this.secondaryText,
     mutedText: mutedText ?? this.mutedText,
@@ -240,6 +347,13 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     onErrorContainer: onErrorContainer ?? this.onErrorContainer,
     accentPositive: accentPositive ?? this.accentPositive,
     accentWarning: accentWarning ?? this.accentWarning,
+    accentChipOrange: accentChipOrange ?? this.accentChipOrange,
+    accentChipYellow: accentChipYellow ?? this.accentChipYellow,
+    accentChipBlue: accentChipBlue ?? this.accentChipBlue,
+    accentChipLime: accentChipLime ?? this.accentChipLime,
+    accentChipPink: accentChipPink ?? this.accentChipPink,
+    accentChipViolet: accentChipViolet ?? this.accentChipViolet,
+    accentChipGreen: accentChipGreen ?? this.accentChipGreen,
     inverseSurface: inverseSurface ?? this.inverseSurface,
     inverseOnSurface: inverseOnSurface ?? this.inverseOnSurface,
     mediaChrome: mediaChrome ?? this.mediaChrome,
@@ -266,6 +380,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       onNav: Color.lerp(onNav, other.onNav, t),
       onNavMuted: Color.lerp(onNavMuted, other.onNavMuted, t),
       iconButton: Color.lerp(iconButton, other.iconButton, t),
+      onIconButton: Color.lerp(onIconButton, other.onIconButton, t),
+      ghostFill: Color.lerp(ghostFill, other.ghostFill, t),
       primaryText: Color.lerp(primaryText, other.primaryText, t),
       secondaryText: Color.lerp(secondaryText, other.secondaryText, t),
       mutedText: Color.lerp(mutedText, other.mutedText, t),
@@ -281,6 +397,13 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       onErrorContainer: Color.lerp(onErrorContainer, other.onErrorContainer, t),
       accentPositive: Color.lerp(accentPositive, other.accentPositive, t),
       accentWarning: Color.lerp(accentWarning, other.accentWarning, t),
+      accentChipOrange: accentChipOrange.lerpTo(other.accentChipOrange, t),
+      accentChipYellow: accentChipYellow.lerpTo(other.accentChipYellow, t),
+      accentChipBlue: accentChipBlue.lerpTo(other.accentChipBlue, t),
+      accentChipLime: accentChipLime.lerpTo(other.accentChipLime, t),
+      accentChipPink: accentChipPink.lerpTo(other.accentChipPink, t),
+      accentChipViolet: accentChipViolet.lerpTo(other.accentChipViolet, t),
+      accentChipGreen: accentChipGreen.lerpTo(other.accentChipGreen, t),
       inverseSurface: Color.lerp(inverseSurface, other.inverseSurface, t),
       inverseOnSurface: Color.lerp(inverseOnSurface, other.inverseOnSurface, t),
       mediaChrome: Color.lerp(mediaChrome, other.mediaChrome, t),
@@ -308,6 +431,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
           onNav == other.onNav &&
           onNavMuted == other.onNavMuted &&
           iconButton == other.iconButton &&
+          onIconButton == other.onIconButton &&
+          ghostFill == other.ghostFill &&
           primaryText == other.primaryText &&
           secondaryText == other.secondaryText &&
           mutedText == other.mutedText &&
@@ -323,6 +448,13 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
           onErrorContainer == other.onErrorContainer &&
           accentPositive == other.accentPositive &&
           accentWarning == other.accentWarning &&
+          accentChipOrange == other.accentChipOrange &&
+          accentChipYellow == other.accentChipYellow &&
+          accentChipBlue == other.accentChipBlue &&
+          accentChipLime == other.accentChipLime &&
+          accentChipPink == other.accentChipPink &&
+          accentChipViolet == other.accentChipViolet &&
+          accentChipGreen == other.accentChipGreen &&
           inverseSurface == other.inverseSurface &&
           inverseOnSurface == other.inverseOnSurface &&
           mediaChrome == other.mediaChrome &&
@@ -342,6 +474,8 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     onNav,
     onNavMuted,
     iconButton,
+    onIconButton,
+    ghostFill,
     primaryText,
     secondaryText,
     mutedText,
@@ -357,6 +491,13 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     onErrorContainer,
     accentPositive,
     accentWarning,
+    accentChipOrange,
+    accentChipYellow,
+    accentChipBlue,
+    accentChipLime,
+    accentChipPink,
+    accentChipViolet,
+    accentChipGreen,
     inverseSurface,
     inverseOnSurface,
     mediaChrome,
@@ -390,7 +531,10 @@ extension VineThemeColorsContext on BuildContext {
 
 /// Vine-inspired theme with characteristic green colors and clean design.
 ///
-/// This is a dark-mode only design system matching the classic Vine app
+/// Design system matching the classic Vine app. Ships two appearances:
+/// [theme] (dark, the default) and [lightTheme]. The static color constants
+/// below are brand and fixed-media values; anything that must adapt reads
+/// [VineThemeColors] through `context.vineColors`
 /// aesthetic with proper color scheme and typography.
 class VineTheme {
   // ==========================================================================
@@ -1013,6 +1157,8 @@ class VineTheme {
     onNav: whiteText,
     onNavMuted: onSurfaceDisabled,
     iconButton: iconButtonBackground,
+    onIconButton: vineGreenLight,
+    ghostFill: scrim65,
     primaryText: primaryText,
     secondaryText: secondaryText,
     mutedText: lightText,
@@ -1031,6 +1177,34 @@ class VineTheme {
     onErrorContainer: error,
     accentPositive: vineGreen,
     accentWarning: accentOrange,
+    accentChipOrange: VineAccentChip(
+      container: accentOrangeBackground,
+      onContainer: accentOrange,
+    ),
+    accentChipYellow: VineAccentChip(
+      container: accentYellowBackground,
+      onContainer: accentYellow,
+    ),
+    accentChipBlue: VineAccentChip(
+      container: accentBlueBackground,
+      onContainer: accentBlue,
+    ),
+    accentChipLime: VineAccentChip(
+      container: accentLimeBackground,
+      onContainer: accentLime,
+    ),
+    accentChipPink: VineAccentChip(
+      container: accentPinkBackground,
+      onContainer: accentPink,
+    ),
+    accentChipViolet: VineAccentChip(
+      container: accentVioletBackground,
+      onContainer: accentViolet,
+    ),
+    accentChipGreen: VineAccentChip(
+      container: onPrimaryButton,
+      onContainer: primary,
+    ),
     inverseSurface: inverseSurface,
     inverseOnSurface: inverseOnSurface,
     mediaChrome: scrim80,
@@ -1052,6 +1226,8 @@ class VineTheme {
     onNav: Color(0xFF07241B),
     onNavMuted: Color(0x6607241B),
     iconButton: Color(0xFFE7F5EE),
+    onIconButton: Color(0xFF226A4C),
+    ghostFill: Color(0x14000000),
     primaryText: Color(0xFF07241B),
     secondaryText: Color(0xFF385149),
     mutedText: Color(0xFF5F7069),
@@ -1067,6 +1243,37 @@ class VineTheme {
     onErrorContainer: Color(0xFF8C1D18),
     accentPositive: Color(0xFF226A4C),
     accentWarning: Color(0xFFAE3100),
+    // Pale tint / darkened accent. Each pair clears 4.5:1 foreground-on-
+    // container (6.30–7.51) and holds 1.18–1.30 container-on-background, which
+    // overlaps the dark palette's own low end (pink, 1.28).
+    accentChipOrange: VineAccentChip(
+      container: Color(0xFFFFD9C4),
+      onContainer: Color(0xFF8A3200),
+    ),
+    accentChipYellow: VineAccentChip(
+      container: Color(0xFFF2E7A0),
+      onContainer: Color(0xFF5C4D00),
+    ),
+    accentChipBlue: VineAccentChip(
+      container: Color(0xFFC4E4F7),
+      onContainer: Color(0xFF07485F),
+    ),
+    accentChipLime: VineAccentChip(
+      container: Color(0xFFDDECAB),
+      onContainer: Color(0xFF3E4D00),
+    ),
+    accentChipPink: VineAccentChip(
+      container: Color(0xFFFFCFE0),
+      onContainer: Color(0xFF8C1F4C),
+    ),
+    accentChipViolet: VineAccentChip(
+      container: Color(0xFFD6D8FF),
+      onContainer: Color(0xFF33368A),
+    ),
+    accentChipGreen: VineAccentChip(
+      container: Color(0xFFC2E9D6),
+      onContainer: Color(0xFF14563C),
+    ),
     inverseSurface: Color(0xFF07241B),
     inverseOnSurface: Color(0xFFFFFFFF),
     mediaChrome: Color(0xF2F9F7F6),

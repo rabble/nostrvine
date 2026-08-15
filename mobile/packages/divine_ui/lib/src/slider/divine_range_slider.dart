@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 /// Wraps a Material [RangeSlider] with the same themed track (pill-shaped,
 /// uniform height) and tall rectangular thumb indicators as `DivineSlider`.
 /// The active portion between the thumbs uses the primary color and the
-/// inactive portions use [VineTheme.onSurfaceDisabled].
+/// inactive portions follow the `disabled` color of the active appearance
+/// mode.
 class DivineRangeSlider extends StatelessWidget {
   /// Creates a [DivineRangeSlider].
   ///
@@ -22,8 +23,8 @@ class DivineRangeSlider extends StatelessWidget {
     this.thumbWidth = 4,
     this.thumbHeight = 32,
     this.activeColor = VineTheme.primary,
-    this.inactiveColor = VineTheme.onSurfaceDisabled,
-    this.thumbColor = VineTheme.onSurface,
+    this.inactiveColor,
+    this.thumbColor,
     this.labels,
     super.key,
   }) : assert(min <= max, 'min must be <= max'),
@@ -67,10 +68,16 @@ class DivineRangeSlider extends StatelessWidget {
   final Color activeColor;
 
   /// Color of the unfilled (inactive) track portions.
-  final Color inactiveColor;
+  ///
+  /// Defaults to the `disabled` color of the active appearance mode.
+  final Color? inactiveColor;
 
   /// Color of the thumb indicators.
-  final Color thumbColor;
+  ///
+  /// Defaults to the `onSurface` color of the active appearance mode. Pass
+  /// [VineTheme.onSurface] explicitly for sliders that sit on a scrim over
+  /// media, where the thumbs must stay light in both modes.
+  final Color? thumbColor;
 
   /// Optional accessibility labels for the two thumbs. Passed to
   /// [RangeSlider.labels] so screen readers announce them alongside the
@@ -80,14 +87,15 @@ class DivineRangeSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
     return SliderTheme(
       data: SliderThemeData(
         padding: EdgeInsets.zero,
         activeTrackColor: activeColor,
-        inactiveTrackColor: inactiveColor,
+        inactiveTrackColor: inactiveColor ?? colors.disabled,
         trackHeight: trackHeight,
         rangeTrackShape: DivineRangeSliderTrackShape(trackHeight: trackHeight),
-        thumbColor: thumbColor,
+        thumbColor: thumbColor ?? colors.onSurface,
         rangeThumbShape: DivineRangeSliderThumbShape(
           width: thumbWidth,
           height: thumbHeight,

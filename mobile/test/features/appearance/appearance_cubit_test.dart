@@ -66,41 +66,15 @@ void main() {
       expect: () => [AppearanceMode.light],
     );
 
-    test('resolves disabled Light Mode to dark', () {
-      expect(
-        resolveThemeMode(
-          mode: AppearanceMode.light,
-          lightModeEnabled: false,
-        ),
-        ThemeMode.dark,
-      );
-    });
-
     test('resolves System to the platform-reactive ThemeMode', () {
-      expect(
-        resolveThemeMode(
-          mode: AppearanceMode.system,
-          lightModeEnabled: true,
-        ),
-        ThemeMode.system,
-      );
+      expect(resolveThemeMode(mode: AppearanceMode.system), ThemeMode.system);
     });
 
-    test('resolves enabled explicit modes', () {
-      expect(
-        resolveThemeMode(
-          mode: AppearanceMode.light,
-          lightModeEnabled: true,
-        ),
-        ThemeMode.light,
-      );
-      expect(
-        resolveThemeMode(
-          mode: AppearanceMode.dark,
-          lightModeEnabled: true,
-        ),
-        ThemeMode.dark,
-      );
+    test('resolves explicit modes', () {
+      // Light is the case the removed gate used to force back to dark, so
+      // this also pins that a stored Light choice now survives.
+      expect(resolveThemeMode(mode: AppearanceMode.light), ThemeMode.light);
+      expect(resolveThemeMode(mode: AppearanceMode.dark), ThemeMode.dark);
     });
   });
 }

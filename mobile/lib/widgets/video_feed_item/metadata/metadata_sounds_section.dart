@@ -328,7 +328,7 @@ class _SoundListItem extends ConsumerWidget {
                       style: VineTheme.labelSmallFont(
                         color: reuseAllowed
                             ? VineTheme.vineGreen
-                            : VineTheme.onSurfaceVariant,
+                            : context.vineColors.onSurfaceVariant,
                       ),
                     ),
                   if (audio.licenseName case final license?)
@@ -337,7 +337,7 @@ class _SoundListItem extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.labelSmallFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                     ),
                   if (audio.source case final source?)
@@ -346,7 +346,7 @@ class _SoundListItem extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.labelSmallFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                     ),
                   if (audio.publicTags.isNotEmpty)
@@ -355,7 +355,7 @@ class _SoundListItem extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.labelSmallFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                     ),
                 ],

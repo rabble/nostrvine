@@ -67,22 +67,25 @@ void main() {
         'ignores persisted internal flag overrides when internal access is off',
         () async {
           when(
-            () => mockPrefs.getBool('ff_adaptiveMediaChrome'),
+            () => mockPrefs.getBool('ff_communityContentWarnings'),
           ).thenReturn(true);
           when(
-            () => mockPrefs.containsKey('ff_adaptiveMediaChrome'),
+            () => mockPrefs.containsKey('ff_communityContentWarnings'),
           ).thenReturn(true);
 
           await service.initialize();
 
-          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isFalse);
           expect(
-            service.hasUserOverride(FeatureFlag.adaptiveMediaChrome),
+            service.isEnabled(FeatureFlag.communityContentWarnings),
+            isFalse,
+          );
+          expect(
+            service.hasUserOverride(FeatureFlag.communityContentWarnings),
             isFalse,
           );
           // Ignored, not deleted — the choice is honoured again if the flag is
           // promoted back to a user audience or internal access is restored.
-          verifyNever(() => mockPrefs.remove('ff_adaptiveMediaChrome'));
+          verifyNever(() => mockPrefs.remove('ff_communityContentWarnings'));
         },
       );
 
@@ -95,20 +98,23 @@ void main() {
             canOverrideInternalFlags: () => true,
           );
           when(
-            () => mockPrefs.getBool('ff_adaptiveMediaChrome'),
+            () => mockPrefs.getBool('ff_communityContentWarnings'),
           ).thenReturn(true);
           when(
-            () => mockPrefs.containsKey('ff_adaptiveMediaChrome'),
+            () => mockPrefs.containsKey('ff_communityContentWarnings'),
           ).thenReturn(true);
 
           await service.initialize();
 
-          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isTrue);
           expect(
-            service.hasUserOverride(FeatureFlag.adaptiveMediaChrome),
+            service.isEnabled(FeatureFlag.communityContentWarnings),
             isTrue,
           );
-          verifyNever(() => mockPrefs.remove('ff_adaptiveMediaChrome'));
+          expect(
+            service.hasUserOverride(FeatureFlag.communityContentWarnings),
+            isTrue,
+          );
+          verifyNever(() => mockPrefs.remove('ff_communityContentWarnings'));
         },
       );
 
@@ -144,11 +150,16 @@ void main() {
       test(
         'should not persist internal flags when internal access is off',
         () async {
-          await service.setFlag(FeatureFlag.adaptiveMediaChrome, true);
+          await service.setFlag(FeatureFlag.communityContentWarnings, true);
 
-          verifyNever(() => mockPrefs.setBool('ff_adaptiveMediaChrome', true));
-          verifyNever(() => mockPrefs.remove('ff_adaptiveMediaChrome'));
-          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isFalse);
+          verifyNever(
+            () => mockPrefs.setBool('ff_communityContentWarnings', true),
+          );
+          verifyNever(() => mockPrefs.remove('ff_communityContentWarnings'));
+          expect(
+            service.isEnabled(FeatureFlag.communityContentWarnings),
+            isFalse,
+          );
         },
       );
 
@@ -161,12 +172,15 @@ void main() {
             canOverrideInternalFlags: () => true,
           );
 
-          await service.setFlag(FeatureFlag.adaptiveMediaChrome, true);
+          await service.setFlag(FeatureFlag.communityContentWarnings, true);
 
           verify(
-            () => mockPrefs.setBool('ff_adaptiveMediaChrome', true),
+            () => mockPrefs.setBool('ff_communityContentWarnings', true),
           ).called(1);
-          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isTrue);
+          expect(
+            service.isEnabled(FeatureFlag.communityContentWarnings),
+            isTrue,
+          );
         },
       );
 
@@ -215,19 +229,22 @@ void main() {
         'preserves internal flag overrides when resetting all without access',
         () async {
           when(
-            () => mockPrefs.getBool('ff_adaptiveMediaChrome'),
+            () => mockPrefs.getBool('ff_communityContentWarnings'),
           ).thenReturn(true);
           when(
-            () => mockPrefs.containsKey('ff_adaptiveMediaChrome'),
+            () => mockPrefs.containsKey('ff_communityContentWarnings'),
           ).thenReturn(true);
 
           await service.initialize();
           await service.resetAllFlags();
 
-          verifyNever(() => mockPrefs.remove('ff_adaptiveMediaChrome'));
-          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isFalse);
+          verifyNever(() => mockPrefs.remove('ff_communityContentWarnings'));
           expect(
-            service.hasUserOverride(FeatureFlag.adaptiveMediaChrome),
+            service.isEnabled(FeatureFlag.communityContentWarnings),
+            isFalse,
+          );
+          expect(
+            service.hasUserOverride(FeatureFlag.communityContentWarnings),
             isFalse,
           );
         },
@@ -235,16 +252,21 @@ void main() {
     });
 
     group('state queries', () {
-      test('exposes light mode and media chrome metadata', () {
-        final lightMode = service.getFlagMetadata(FeatureFlag.lightMode);
-        final adaptiveMedia = service.getFlagMetadata(
-          FeatureFlag.adaptiveMediaChrome,
+      test('exposes user and internal flag metadata', () {
+        final supporters = service.getFlagMetadata(
+          FeatureFlag.divineSupporters,
+        );
+        final contentWarnings = service.getFlagMetadata(
+          FeatureFlag.communityContentWarnings,
         );
 
-        expect(lightMode.flag.displayName, equals('Light Mode'));
-        expect(adaptiveMedia.flag.displayName, equals('Adaptive Media Chrome'));
-        expect(lightMode.isEnabled, isFalse);
-        expect(adaptiveMedia.isEnabled, isFalse);
+        expect(supporters.flag.displayName, equals('Divine Supporters'));
+        expect(
+          contentWarnings.flag.displayName,
+          equals('Community Content Warnings'),
+        );
+        expect(supporters.isEnabled, isFalse);
+        expect(contentWarnings.isEnabled, isFalse);
       });
 
       test('should identify user overrides', () async {

@@ -2,7 +2,8 @@
 # Hook: PreToolUse (Edit|Write)
 # Block edits that use raw Colors.* instead of VineTheme
 #
-# Enforces: Always use VineTheme color constants for dark-mode-only app
+# Enforces: Always use VineTheme / context.vineColors instead of raw Colors.*
+#           (Divine ships both a dark and a light appearance)
 # Allowed: Colors.transparent (universal constant)
 # Input: JSON with tool_input (old_string, new_string for Edit; content for Write)
 # Output: JSON with permissionDecision: "deny" if violation found

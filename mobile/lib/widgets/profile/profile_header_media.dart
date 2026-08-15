@@ -565,13 +565,15 @@ class _ProfileActionLabel extends StatelessWidget {
       ),
     };
 
+    final chip = context.vineColors.accentChipYellow;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 16, 8),
           decoration: BoxDecoration(
-            color: VineTheme.accentYellowBackground,
+            color: chip.container,
             borderRadius: BorderRadius.circular(16),
             boxShadow: const [
               BoxShadow(
@@ -590,10 +592,10 @@ class _ProfileActionLabel extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 8,
             children: [
-              DivineIcon(icon: icon, size: 16, color: VineTheme.accentYellow),
+              DivineIcon(icon: icon, size: 16, color: chip.onContainer),
               Text(
                 label,
-                style: VineTheme.titleSmallFont(color: VineTheme.accentYellow),
+                style: VineTheme.titleSmallFont(color: chip.onContainer),
               ),
             ],
           ),

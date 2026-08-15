@@ -12,8 +12,6 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
@@ -24,21 +22,19 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 /// Auto-advance and audio mute are feed-wide controls. Captions are scoped to
 /// [videoId] when a feed surface has current-video context; otherwise the
 /// captions button falls back to the global Settings preference.
-class FeedPlaybackTogglesPill extends ConsumerWidget {
+class FeedPlaybackTogglesPill extends StatelessWidget {
   const FeedPlaybackTogglesPill({super.key, this.videoId});
 
   final String? videoId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colors = context.vineColors;
-    final adaptiveMediaChrome =
-        ref.watch(isFeatureEnabledProvider(FeatureFlag.adaptiveMediaChrome)) &&
-        Theme.of(context).brightness == Brightness.light;
-    final chromeBackground = adaptiveMediaChrome
-        ? colors.mediaChrome
-        : VineTheme.scrim30;
-    final chromeForeground = adaptiveMediaChrome
+    // The pill floats over video, so light mode gets the light chrome
+    // treatment; dark mode keeps the scrim-30 capsule unchanged.
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final chromeBackground = isLight ? colors.mediaChrome : VineTheme.scrim30;
+    final chromeForeground = isLight
         ? colors.mediaChromeForeground
         : VineTheme.onSurface;
     return ClipRRect(

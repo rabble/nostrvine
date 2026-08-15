@@ -256,7 +256,7 @@ For hero animations, video auto-play, and parallax effects — check `disableAni
 - **Large text (≥ 18pt or 14pt bold):** Minimum **3:1** contrast ratio
 - **Interactive elements:** Minimum **3:1** contrast ratio against adjacent colors
 
-Since Divine is dark-mode only, verify contrast against `VineTheme` dark backgrounds. Don't rely on Material defaults — custom overlays and gradients on video content need manual checking.
+Divine ships both appearances, so verify contrast against **both** `VineTheme.darkColors` and `VineTheme.lightColors`. A token pair can clear the bar in dark and fail in light — `vineGreenLight` was 15:1 on the dark container and 1.01:1 on the light one. Don't rely on Material defaults — custom overlays and gradients on video content need manual checking.
 
 ---
 

@@ -298,7 +298,6 @@ void main() {
     expect(find.text('Closed Captions'), findsOneWidget);
     expect(find.text('Square videos only'), findsOneWidget);
     expect(find.text('App Language'), findsOneWidget);
-    expect(find.text('Appearance'), findsNothing);
     await tester.scrollUntilVisible(
       find.text('Make my audio available for reuse'),
       120,
@@ -344,20 +343,12 @@ void main() {
     );
   });
 
-  testWidgets('General Settings shows Appearance when Light Mode is enabled', (
-    tester,
-  ) async {
+  testWidgets('General Settings always shows Appearance', (tester) async {
     await setStandardSurface(tester);
-    await tester.pumpWidget(
-      wrap(
-        const GeneralSettingsScreen(),
-        overrides: [
-          isFeatureEnabledProvider(
-            FeatureFlag.lightMode,
-          ).overrideWithValue(true),
-        ],
-      ),
-    );
+    // No override: the row used to be gated on FeatureFlag.lightMode. It is
+    // unconditional now, so pumping with the default provider set must still
+    // find it.
+    await tester.pumpWidget(wrap(const GeneralSettingsScreen()));
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(

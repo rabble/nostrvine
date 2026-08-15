@@ -57,8 +57,8 @@ class _ShareSheetHeader extends ConsumerWidget {
                 if (videoTitle.isNotEmpty)
                   Text(
                     videoTitle,
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
