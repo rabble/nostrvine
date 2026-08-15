@@ -38,8 +38,11 @@
 // the code after that block. A loop body counts as suspended throughout when it
 // awaits anywhere, since its tail runs before its head runs again.
 //
-// This is intraprocedural: it counts direct emit/add calls in the scanned
-// member, not helper methods that may emit after the caller awaits.
+// This is intraprocedural, with one exception: a member handed to a detached
+// sink as a tear-off (`listen(_onTick)`) is walked as detached, because it is
+// the same code as the inline closure and must not get the opposite verdict.
+// A helper reached by an ordinary call after the caller awaits is still only
+// counted on its own body.
 //
 // Classes and `mixin ... on Bloc/Cubit/BlocBase` bodies are both walked, since
 // a mixin reaches the same `emit`.
@@ -258,8 +261,38 @@ class _Scanner {
   /// the handler's `Emitter.call` rather than `BlocBase.emit`.
   bool emitterInScope = false;
 
-  void scan(CompilationUnitMember declaration) =>
-      _children(declaration, guarded: false);
+  /// Members handed to a detached sink as a tear-off, as in `listen(_onTick)`.
+  ///
+  /// Their bodies run detached exactly like the equivalent inline closure, so
+  /// they start suspended rather than clean. Without this, `listen(_onTick)`
+  /// and `listen((v) => ...)` — identical semantics — get opposite verdicts.
+  final Set<String> detachedTearOffs = {};
+
+  void scan(CompilationUnitMember declaration) {
+    _collectDetachedTearOffs(declaration);
+    _children(declaration, guarded: false);
+  }
+
+  void _collectDetachedTearOffs(AstNode node) {
+    final (ArgumentList? arguments, String name) = switch (node) {
+      MethodInvocation(:final argumentList, :final methodName) => (
+        argumentList,
+        methodName.name,
+      ),
+      InstanceCreationExpression(:final argumentList, :final constructorName) =>
+        (argumentList, constructorName.toSource()),
+      _ => (null, ''),
+    };
+    if (arguments != null && _detachedSinks.any(name.contains)) {
+      for (final argument in arguments.arguments) {
+        final value = argument is NamedExpression
+            ? argument.expression
+            : argument;
+        if (value is SimpleIdentifier) detachedTearOffs.add(value.name);
+      }
+    }
+    node.childEntities.whereType<AstNode>().forEach(_collectDetachedTearOffs);
+  }
 
   void _children(AstNode node, {required bool guarded}) {
     for (final child in node.childEntities.whereType<AstNode>()) {
@@ -355,7 +388,7 @@ class _Scanner {
     };
     if (name != null) {
       member = name;
-      suspended = false;
+      suspended = detachedTearOffs.contains(name);
       emitterInScope =
           params?.parameters.any((p) => p.name?.lexeme == 'emit') ?? false;
       _children(node, guarded: guarded);

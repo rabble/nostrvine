@@ -22,7 +22,7 @@ lib/blocs/dm/conversation_list/conversation_list_bloc.dart	1
 lib/blocs/dm/reactions/conversation_reactions_cubit.dart	1
 lib/blocs/dm/restore_status/dm_restore_status_cubit.dart	1
 lib/blocs/dm/unread_count/dm_unread_count_cubit.dart	1
-lib/blocs/email_verification/email_verification_cubit.dart	13
+lib/blocs/email_verification/email_verification_cubit.dart	14
 lib/blocs/inline_comment_composer/inline_comment_composer_cubit.dart	2
 lib/blocs/locale/locale_cubit.dart	2
 lib/blocs/notification_settings/notification_settings_cubit.dart	1
@@ -32,8 +32,10 @@ lib/blocs/saved_sounds/saved_sounds_bloc.dart	1
 lib/blocs/signature_verification_policy/signature_verification_policy_cubit.dart	1
 lib/blocs/storage/storage_cubit.dart	12
 lib/blocs/video_editor/audio_timing/audio_timing_cubit.dart	5
+lib/blocs/video_editor/voice_over/voice_over_cubit.dart	1
 lib/blocs/video_recorder/video_recorder_bloc.dart	1
-lib/features/people_lists/bloc/add_people_to_list_cubit.dart	4
+lib/blocs/video_volume/video_volume_cubit.dart	2
+lib/features/people_lists/bloc/add_people_to_list_cubit.dart	6
 lib/features/people_lists/bloc/people_lists_bloc.dart	5
 lib/notifications/bloc/notification_feed_bloc.dart	1
 lib/widgets/profile/pending_collaborator_invite_banner_cubit.dart	1

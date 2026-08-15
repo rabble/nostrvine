@@ -258,6 +258,45 @@ class FooBloc extends Bloc<FooEvent, int> {
       expect(sites.single.call, 'Bloc.add');
     });
 
+    test('counts a handler handed to a stream as a tear-off', () {
+      // Same code as the inline closure above, so it must not get the
+      // opposite verdict just because it was named first.
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  FooCubit(this._stream) : super(0) {
+    _subscription = _stream.listen(_onValue);
+  }
+
+  void _onValue(int value) {
+    emit(value);
+  }
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.member, '_onValue');
+      expect(sites.single.call, 'Cubit.emit');
+    });
+
+    test('does not count a plain call to a helper that emits', () {
+      // The one call hop that is followed is the detached tear-off; an
+      // ordinary call is still judged on the helper's own body.
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> load() async {
+    await _read();
+    _apply(1);
+  }
+
+  void _apply(int value) {
+    emit(value);
+  }
+}
+''');
+
+      expect(sites, isEmpty);
+    });
+
     test('does not count a cascade add on a collection', () {
       final sites = scan('''
 class FooBloc extends Bloc<FooEvent, int> {
