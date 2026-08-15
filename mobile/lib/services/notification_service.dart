@@ -557,14 +557,14 @@ class NotificationService {
       // Define iOS notification details
       const iosDetails = DarwinNotificationDetails(
         presentAlert: true,
-        presentBadge: true,
+        presentBadge: false,
         presentSound: true,
       );
 
       // Define macOS notification details
       const macosDetails = DarwinNotificationDetails(
         presentAlert: true,
-        presentBadge: true,
+        presentBadge: false,
         presentSound: true,
       );
 

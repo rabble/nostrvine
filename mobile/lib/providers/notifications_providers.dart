@@ -11,6 +11,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
+import 'package:openvine/services/app_badge_service.dart';
 import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
@@ -34,6 +35,10 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
   ref.onDispose(service.dispose);
   return service;
 });
+
+final appBadgeServiceProvider = Provider<AppBadgeClearer>(
+  (ref) => const AppBadgeService(),
+);
 
 final notificationPreferencesStoreProvider =
     Provider<NotificationPreferencesStore>((ref) {

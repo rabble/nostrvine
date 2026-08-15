@@ -50,6 +50,7 @@ class NotificationsPage extends ConsumerWidget {
     }
 
     final followRepository = ref.watch(followRepositoryProvider);
+    final appBadgeClearer = ref.watch(appBadgeServiceProvider);
 
     // Key on the watched dependency identities so the bloc rebuilds when
     // either repository swaps (account switch, sign-out → sign-in, or
@@ -62,6 +63,7 @@ class NotificationsPage extends ConsumerWidget {
       create: (_) => NotificationFeedBloc(
         notificationRepository: notificationRepository,
         followRepository: followRepository,
+        appBadgeClearer: appBadgeClearer,
       )..add(const NotificationFeedStarted()),
       child: const NotificationsView(),
     );
