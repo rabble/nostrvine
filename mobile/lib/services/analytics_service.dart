@@ -269,6 +269,15 @@ class AnalyticsService implements BackgroundAwareService {
   ///
   /// [sessionToken] scopes the view_start dedupe to one tracker mount, so a
   /// remount re-watch reports its own start instead of being suppressed.
+  ///
+  /// This guard is **process-local and in-memory only**. The token is never
+  /// queued, published, or sent to the relay, and `view_handler.rs` does no
+  /// per-video dedup — `ViewPhase::Start` returns `view_count: 1`
+  /// unconditionally. So it collapses rapid-fire duplicates within one mount
+  /// and nothing more. A start row that publishes successfully but then fails
+  /// its `deleteById` is re-swept and counted a second time; closing that
+  /// window needs an idempotency key the relay can actually see, which no
+  /// merged relay work provides.
   Future<void> trackDetailedVideoViewWithUser(
     VideoEvent video, {
     required String? userId,

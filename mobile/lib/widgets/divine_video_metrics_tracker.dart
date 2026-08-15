@@ -222,6 +222,11 @@ class _DivineVideoMetricsTrackerState
 
   /// The view is counted here: one start-phase event, fired at the first
   /// real playback of the session and never again for this mount.
+  ///
+  /// The session token guards only against rapid-fire duplicates inside this
+  /// mount — it is in-memory, never transmitted, and the relay does not dedup.
+  /// See `AnalyticsService.trackDetailedVideoViewWithUser` for the crash
+  /// window this leaves open.
   void _onPlaybackStarted() {
     if (_hasStartedPlayback) return;
     _hasStartedPlayback = true;
