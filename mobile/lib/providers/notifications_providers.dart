@@ -32,6 +32,7 @@ final firebaseOnMessageProvider = Provider<Stream<RemoteMessage>>(
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   final service = NotificationService();
+  unawaited(service.initialize());
   ref.onDispose(service.dispose);
   return service;
 });

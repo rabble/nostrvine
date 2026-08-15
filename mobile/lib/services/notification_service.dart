@@ -19,6 +19,8 @@ enum NotificationType {
   processingStarted,
 }
 
+enum _NotificationPermissionState { unknown, granted, denied }
+
 /// Normalized notification-tap payload emitted by [NotificationService].
 @immutable
 class NotificationTapEvent {
@@ -107,7 +109,9 @@ class NotificationService {
   }
 
   final List<AppNotification> _notifications = [];
-  bool _permissionsGranted = false;
+  _NotificationPermissionState _permissionState =
+      _NotificationPermissionState.unknown;
+  Future<void>? _permissionRequest;
   bool _disposed = false;
 
   // Flutter local notifications plugin instance
@@ -120,7 +124,10 @@ class NotificationService {
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
 
   /// Check if notification permissions are granted
-  bool get hasPermissions => _permissionsGranted;
+  bool get hasPermissions =>
+      _permissionState == _NotificationPermissionState.granted;
+
+  bool get _permissionsGranted => hasPermissions;
 
   /// Stream of local-notification taps emitted after payload parsing.
   Stream<NotificationTapEvent> get notificationTapStream =>
@@ -128,17 +135,21 @@ class NotificationService {
               StreamController<NotificationTapEvent>.broadcast())
           .stream;
 
-  /// Test seam: swap in a mock [plugin] and mark the service ready so
-  /// [sendLocal] and [takeLaunchNotificationTap] exercise the plugin directly
-  /// without touching real platform channels.
+  /// Test seam: swap in a mock [plugin] and configure the plugin/permission
+  /// state so notification flows can run without real platform channels.
   @visibleForTesting
   void debugConfigurePlugin(
     FlutterLocalNotificationsPlugin plugin, {
-    bool permissionsGranted = true,
+    bool? permissionsGranted = true,
+    bool pluginInitialized = true,
   }) {
     _flutterLocalNotificationsPlugin = plugin;
-    _pluginInitialized = true;
-    _permissionsGranted = permissionsGranted;
+    _pluginInitialized = pluginInitialized;
+    _permissionState = switch (permissionsGranted) {
+      true => _NotificationPermissionState.granted,
+      false => _NotificationPermissionState.denied,
+      null => _NotificationPermissionState.unknown,
+    };
   }
 
   /// Initialize notification service
@@ -215,6 +226,24 @@ class NotificationService {
   /// Ensure notification permissions are granted
   /// Public method to request permissions explicitly
   Future<void> ensurePermission() async {
+    final activeRequest = _permissionRequest;
+    if (activeRequest != null) {
+      await activeRequest;
+      return;
+    }
+
+    final request = _ensurePermission();
+    _permissionRequest = request;
+    try {
+      await request;
+    } finally {
+      if (identical(_permissionRequest, request)) {
+        _permissionRequest = null;
+      }
+    }
+  }
+
+  Future<void> _ensurePermission() async {
     // Screenshot capture runs must never surface the iOS permission
     // dialog — XCUITest interruption monitors don't fire on bare
     // waitForExistence, so the alert would deadlock every capture.
@@ -228,7 +257,7 @@ class NotificationService {
     }
 
     // Skip if already granted
-    if (_permissionsGranted) {
+    if (_permissionState == _NotificationPermissionState.granted) {
       Log.debug(
         'Notification permissions already granted',
         name: 'NotificationService',
@@ -244,7 +273,8 @@ class NotificationService {
         name: 'NotificationService',
         category: LogCategory.system,
       );
-      _permissionsGranted = true; // Allow in-app notifications
+      _permissionState =
+          _NotificationPermissionState.granted; // Allow in-app notifications
       return;
     }
 
@@ -269,7 +299,7 @@ class NotificationService {
 
       if (isTestEnvironment) {
         // In test mode, auto-grant permissions for testing
-        _permissionsGranted = true;
+        _permissionState = _NotificationPermissionState.granted;
         Log.debug(
           'Test environment: auto-granting notification permissions',
           name: 'NotificationService',
@@ -289,7 +319,9 @@ class NotificationService {
                 ?.requestPermissions(alert: true, badge: true, sound: true) ??
             false;
 
-        _permissionsGranted = granted;
+        _permissionState = granted
+            ? _NotificationPermissionState.granted
+            : _NotificationPermissionState.denied;
         Log.info(
           'iOS notification permissions ${granted ? "granted" : "denied"}',
           name: 'NotificationService',
@@ -306,7 +338,9 @@ class NotificationService {
                 ?.requestNotificationsPermission() ??
             true; // Pre-Android 13 doesn't need runtime permission
 
-        _permissionsGranted = granted;
+        _permissionState = granted
+            ? _NotificationPermissionState.granted
+            : _NotificationPermissionState.denied;
         Log.info(
           'Android notification permissions ${granted ? "granted" : "denied"}',
           name: 'NotificationService',
@@ -314,7 +348,7 @@ class NotificationService {
         );
       } else {
         // Other platforms (Linux, Windows) don't require runtime permissions
-        _permissionsGranted = true;
+        _permissionState = _NotificationPermissionState.granted;
         Log.info(
           'Platform notification permissions auto-granted',
           name: 'NotificationService',
@@ -324,7 +358,7 @@ class NotificationService {
     } catch (e) {
       // In case of any error (including test environment), grant permissions
       // to allow in-app notifications to work
-      _permissionsGranted = true;
+      _permissionState = _NotificationPermissionState.granted;
       Log.error(
         'Failed to request notification permissions: $e',
         name: 'NotificationService',
@@ -524,10 +558,14 @@ class NotificationService {
     // Add to internal list
     _addNotification(notification);
 
+    if (_permissionState == _NotificationPermissionState.unknown) {
+      await ensurePermission();
+    }
+
     // Skip platform notification on web or without permissions
     if (kIsWeb || !_permissionsGranted) {
       Log.debug(
-        'Skipping platform notification (web: $kIsWeb, permissions: $_permissionsGranted)',
+        'Skipping platform notification (web: $kIsWeb, permissionState: ${_permissionState.name})',
         name: 'NotificationService',
         category: LogCategory.system,
       );

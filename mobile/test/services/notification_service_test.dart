@@ -14,6 +14,14 @@ class _MockFlutterLocalNotificationsPlugin extends Mock
     implements FlutterLocalNotificationsPlugin {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      ),
+    );
+  });
+
   group('NotificationService Permission Tests', () {
     late NotificationService notificationService;
 
@@ -84,23 +92,113 @@ void main() {
       );
     });
 
-    test('sendLocal without permissions only adds to internal list', () async {
-      // Do NOT call ensurePermission - no permissions granted
-      expect(notificationService.hasPermissions, isFalse);
+    test(
+      'sendLocal adds to internal list while resolving permissions',
+      () async {
+        // Do NOT call ensurePermission first: sendLocal should resolve the
+        // unknown permission state itself before deciding on platform delivery.
+        expect(notificationService.hasPermissions, isFalse);
 
-      // Send notification without permissions
-      await notificationService.sendLocal(
-        title: 'No Permission Test',
-        body: 'Should only show in-app',
-      );
+        await notificationService.sendLocal(
+          title: 'Unknown Permission Test',
+          body: 'Should always show in-app',
+        );
 
-      // Should still add to internal list for in-app display
-      expect(notificationService.notifications.length, equals(1));
-      expect(
-        notificationService.notifications.first.title,
-        equals('No Permission Test'),
-      );
-    });
+        expect(notificationService.notifications.length, equals(1));
+        expect(
+          notificationService.notifications.first.title,
+          equals('Unknown Permission Test'),
+        );
+      },
+    );
+
+    test(
+      'sendLocal resolves unknown permission state before platform delivery',
+      () async {
+        final plugin = _MockFlutterLocalNotificationsPlugin();
+        when(
+          () => plugin.initialize(
+            settings: any(named: 'settings'),
+            onDidReceiveNotificationResponse: any(
+              named: 'onDidReceiveNotificationResponse',
+            ),
+            onDidReceiveBackgroundNotificationResponse: any(
+              named: 'onDidReceiveBackgroundNotificationResponse',
+            ),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async {});
+
+        notificationService.debugConfigurePlugin(
+          plugin,
+          permissionsGranted: null,
+          pluginInitialized: false,
+        );
+
+        await notificationService.sendLocal(
+          title: 'Unknown Permission',
+          body: 'Should initialize before deciding',
+        );
+
+        verify(
+          () => plugin.initialize(
+            settings: any(named: 'settings'),
+            onDidReceiveNotificationResponse: any(
+              named: 'onDidReceiveNotificationResponse',
+            ),
+            onDidReceiveBackgroundNotificationResponse: any(
+              named: 'onDidReceiveBackgroundNotificationResponse',
+            ),
+          ),
+        ).called(1);
+        verify(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: 'Unknown Permission',
+            body: 'Should initialize before deciding',
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        ).called(1);
+        expect(notificationService.hasPermissions, isTrue);
+      },
+    );
+
+    test(
+      'sendLocal with denied permissions does not call platform show',
+      () async {
+        final plugin = _MockFlutterLocalNotificationsPlugin();
+        notificationService.debugConfigurePlugin(
+          plugin,
+          permissionsGranted: false,
+        );
+
+        await notificationService.sendLocal(
+          title: 'Denied Permission',
+          body: 'Should stay in-app only',
+        );
+
+        verifyNever(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        );
+        expect(notificationService.notifications, hasLength(1));
+        expect(notificationService.hasPermissions, isFalse);
+      },
+    );
 
     test('sendLocal handles empty title and body', () async {
       await notificationService.ensurePermission();
