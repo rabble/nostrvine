@@ -27,7 +27,7 @@ not the one the object naming suggests.
 The kind-22236 outage (#7210) exposed this. When mobile view reporting stopped,
 `views`, `unique_viewers` and `loops` all fell ~60–69% in six days, which moved
 Trending, Popular and the creator Leaderboard while Divine had no way to notice.
-Detection is being added separately (divine-funnelcake#917).
+Detection is being added separately (divinevideo/divine-funnelcake#917).
 
 Underneath the outage sits a permanent undercount, and it is measurable
 directly rather than by inference.
@@ -300,19 +300,27 @@ sampled video above 400 against a displayed 108, which is a larger correction
 than this table accounts for, and it counts only viewers who interacted.
 Treat every figure here as the least the number should move, not the most.
 
-### The display floor, and why most cards show a date
+### The display floor under the post-date feature
 
-`publicLoopCountFloor` is 1000. Measured against the catalogue:
+`publicLoopCountFloor` is 1000. The pre-change baseline corrected this section:
+the floor is applied only when `FeatureFlag.videoCardPostDate` is enabled, and
+then only to
+`mobile/lib/widgets/video_feed_item/video_card_meta.dart`'s public count
+(`loops` for classic Vines, `originalLoops + views` otherwise), not to
+`video_total_views_data.total_views`. Measured against the gated quantity:
 
-| Threshold | Videos at or above | Share of 2,201,983 |
+| Threshold | Videos at or above | Share of 2,203,822 |
 |---|---|---|
-| 1000 (today's floor) | 961 | **0.04%** |
-| 333 (floor reached at ×3) | 2,441 | 0.11% |
-| 100 (floor reached at ×10) | 12,571 | 0.57% |
+| 1000 (today's floor) | 1,152,593 | **52.30%** |
+| 333 (floor reached at ×3) | 1,375,711 | 62.42% |
+| 100 (floor reached at ×10) | 1,621,923 | 73.60% |
 
-So the public count is effectively never shown — 9,996 videos in 10,000 render
-a date instead. Correcting the metrics does not change that: an
-order-of-magnitude improvement moves it from 0.04% to 0.57%.
+When that feature is enabled, the public count renders on about half the
+catalogue, not on 0.04% of it. Production remains unchanged while the flag is
+off: cards keep showing the raw count and no date. The floor still matters
+after the metric correction, but the reason is not that the count is
+effectively never shown; it is that the visible counts in the feature-gated
+path are all large enough to read as social proof rather than a warning.
 
 **This is intended, and it is not a defect.** Two reasons it holds:
 
@@ -326,12 +334,13 @@ order-of-magnitude improvement moves it from 0.04% to 0.57%.
   view count does not. Suppression is not a fallback here; it is often the
   stronger presentation.
 
-Two earlier drafts of this document got this wrong in opposite directions:
-first claiming the correction would lift "a large share of the catalogue" above
-the floor, then claiming the floor was mis-set by two orders of magnitude and
-was starving creators of encouragement. Neither holds. The floor governs public
-display only, the constant is deliberately one line, and re-tuning it is a
-product call to make on its own evidence rather than a consequence of this
+Earlier drafts of this document got the measurement wrong in opposite
+directions: first claiming the correction would lift "a large share of the
+catalogue" above the floor, then claiming the floor was mis-set by two orders of
+magnitude and was starving creators of encouragement. The corrected census says
+the public floor governs a real slice of the catalogue, but it still governs
+public display only, the constant is deliberately one line, and re-tuning it is
+a product call to make on its own evidence rather than a consequence of this
 work.
 
 ## Testing
@@ -348,7 +357,7 @@ work.
   loops must not outrank many distinct viewers.
 - Parity test between the signed and anonymous paths, so the two cannot drift to
   different definitions of the same word.
-- The divine-funnelcake#917 detector already covers per-client reporting
+- The divinevideo/divine-funnelcake#917 detector already covers per-client reporting
   collapse and should stay green through the rollout.
 
 ## Out of scope
