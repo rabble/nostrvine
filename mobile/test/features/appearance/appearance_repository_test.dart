@@ -18,12 +18,12 @@ void main() {
       repository = AppearanceRepository(prefs);
     });
 
-    test('loads System when no preference is stored', () {
+    test('loads the default mode when no preference is stored', () {
       when(
         () => prefs.getString('appearance_mode_preference'),
       ).thenReturn(null);
 
-      expect(repository.load(), completion(equals(AppearanceMode.system)));
+      expect(repository.load(), completion(equals(defaultAppearanceMode)));
     });
 
     test('loads a stored Light preference', () {
@@ -34,12 +34,20 @@ void main() {
       expect(repository.load(), completion(equals(AppearanceMode.light)));
     });
 
-    test('invalid stored values fall back to System', () {
+    test('loads a stored System preference', () {
+      when(
+        () => prefs.getString('appearance_mode_preference'),
+      ).thenReturn('system');
+
+      expect(repository.load(), completion(equals(AppearanceMode.system)));
+    });
+
+    test('invalid stored values fall back to the default mode', () {
       when(
         () => prefs.getString('appearance_mode_preference'),
       ).thenReturn('sepia');
 
-      expect(repository.load(), completion(equals(AppearanceMode.system)));
+      expect(repository.load(), completion(equals(defaultAppearanceMode)));
     });
 
     test('saves the enum name', () async {

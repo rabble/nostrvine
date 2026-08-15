@@ -18,6 +18,13 @@ void main() {
       repository = _MockAppearanceRepository();
     });
 
+    test('starts with the default mode before loading preferences', () {
+      final cubit = AppearanceCubit(repository);
+      addTearDown(cubit.close);
+
+      expect(cubit.state, defaultAppearanceMode);
+    });
+
     blocTest<AppearanceCubit, AppearanceMode>(
       'loads the persisted mode',
       setUp: () {
@@ -30,7 +37,7 @@ void main() {
     );
 
     blocTest<AppearanceCubit, AppearanceMode>(
-      'keeps System mode when load fails',
+      'keeps the default mode when load fails',
       setUp: () {
         when(repository.load).thenThrow(StateError('read failed'));
       },

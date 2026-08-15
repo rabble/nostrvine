@@ -13,7 +13,7 @@ class AppearanceRepository {
     final storedValue = _preferences.getString(_preferenceKey);
     return AppearanceMode.values.firstWhere(
       (mode) => mode.name == storedValue,
-      orElse: () => AppearanceMode.system,
+      orElse: () => defaultAppearanceMode,
     );
   }
 
