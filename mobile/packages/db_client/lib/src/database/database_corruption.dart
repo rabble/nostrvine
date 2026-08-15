@@ -32,8 +32,43 @@ bool indicatesDatabaseCorruption(Object error) {
     _sqliteExceptionHeader.firstMatch(header)?.group(1) ?? '',
   );
   if (extendedCode == null) return false;
-  // Every extended code carries its primary code in the low byte, so 779
-  // (SQLITE_CORRUPT_INDEX) and 11 (SQLITE_CORRUPT) both reduce to 11.
+  return _isCorruptionResultCode(extendedCode);
+}
+
+/// Whether [error] represents on-disk corruption, including when drift wraps
+/// the corrupt cause after a failed transaction rollback.
+///
+/// Deliberately looser than [indicatesDatabaseCorruption], which reads the
+/// header line only. Most wrappers a downstream caller sees keep the SQLite
+/// header on line 1, so the strict classifier already covers them:
+/// `DriftRemoteException` forwards `remoteCause.toString()` verbatim,
+/// `DriftWrappedException` opens with `'$cause at …'`, and `ParallelWaitError`
+/// prints only its *default* error — the first leg to fail — never its
+/// `values` or `errors` records.
+///
+/// `CouldNotRollBackException` is the shape that defeats it: it prints the
+/// failure raised by the `ROLLBACK` itself first, and the error that triggered
+/// the rollback on the line below. This classifier follows that typed cause
+/// instead of scanning all rendered lines, because later lines can contain
+/// bound user data that merely quotes a corruption result code.
+///
+/// The stricter classifier is not merely stricter, it protects a different
+/// decision. It gates the salvage/wipe of a database, where a false positive
+/// destroys a healthy one, and bound parameters below the header carry user
+/// content: a Nostr event quoting SQLite's corruption message must never
+/// convince the app to recover. **Never use this function for that decision.**
+///
+/// Use it only to drop a duplicate report about a database some other code has
+/// already classified as corrupt via [indicatesDatabaseCorruption].
+bool mentionsDatabaseCorruption(Object error) {
+  if (indicatesDatabaseCorruption(error)) return true;
+  return error is CouldNotRollBackException &&
+      mentionsDatabaseCorruption(error.cause);
+}
+
+/// Every extended code carries its primary code in the low byte, so 779
+/// (SQLITE_CORRUPT_INDEX) and 11 (SQLITE_CORRUPT) both reduce to 11.
+bool _isCorruptionResultCode(int extendedCode) {
   final primaryCode = extendedCode & 0xFF;
   return primaryCode == _sqliteCorrupt || primaryCode == _sqliteNotADb;
 }

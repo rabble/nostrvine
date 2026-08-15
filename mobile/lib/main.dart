@@ -1422,7 +1422,13 @@ Future<void> _startOpenVineApp() async {
   // Forward Bloc/Cubit errors (addError, uncaught handler throws, emit
   // failures) to Crashlytics + UnifiedLogger. Surfaced during the #3503
   // investigation as a missing observability hook. See #3526.
-  Bloc.observer = DivineBlocObserver();
+  Bloc.observer = DivineBlocObserver(
+    // Once the database has reported corruption, the service above has already
+    // recorded the incident and scheduled the next-launch salvage, so the
+    // Drift failures every downstream bloc then hits are echoes of a handled
+    // event rather than five separate defects. See #7507.
+    isDatabaseCorrupted: () => databaseCorruptionService.isCorrupted.value,
+  );
 
   // Tag every crash report with the running build so per-error triage doesn't
   // have to cross-reference the release dashboard. Set once, not per-error.

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqlite3/common.dart';
 
 /// A query executor whose statements all fail with [error].
 ///
@@ -59,6 +62,21 @@ class _FailingExecutor extends QueryExecutor {
 const _corruptionError =
     'SqliteException(11): while selecting from statement, database disk image '
     'is malformed, database disk image is malformed (code 11)';
+
+/// The same failure as [_corruptionError], as the real `sqlite3` type.
+///
+/// Used wherever a test asserts what a *wrapper* does to the SQLite header, so
+/// the assertion tracks `SqliteException.toString()` instead of a hand-written
+/// copy of it. Carries a bound parameter because that is what pushes content
+/// below the header line in the first place.
+final _realCorruptionException = SqliteException(
+  extendedResultCode: 11,
+  message: 'database disk image is malformed',
+  explanation: 'database disk image is malformed (code 11)',
+  operation: 'selecting from statement',
+  causingStatement: 'SELECT * FROM event WHERE id = ?',
+  parametersToStatement: <Object?>['abc123'],
+);
 
 void main() {
   group('indicatesDatabaseCorruption', () {
@@ -149,6 +167,117 @@ void main() {
     });
   });
 
+  group('mentionsDatabaseCorruption', () {
+    test('recognises the signature on the header line', () {
+      expect(mentionsDatabaseCorruption(Exception(_corruptionError)), isTrue);
+    });
+
+    test('sees a signature the header-only classifier cannot', () {
+      // The one wrapper drift can raise that pushes the SQLite header off
+      // line 1: `CouldNotRollBackException` prints the failure raised by the
+      // ROLLBACK first and the error that triggered it on the line below. A
+      // transaction aborted by corruption whose rollback then fails for an
+      // unrelated reason lands exactly here.
+      //
+      // Built from the real drift type rather than a hand-written string, so
+      // the test tracks what drift actually prints.
+      final wrapped = CouldNotRollBackException(
+        _realCorruptionException,
+        StackTrace.empty,
+        StateError('connection closed'),
+      );
+
+      expect(mentionsDatabaseCorruption(wrapped), isTrue);
+      expect(
+        indicatesDatabaseCorruption(wrapped),
+        isFalse,
+        reason: 'the two classifiers must stay genuinely different',
+      );
+    });
+
+    test('a real ParallelWaitError keeps the header on line 1', () async {
+      // `NotificationFeedBloc._onRefreshed` reports a
+      // `Reportable<ParallelWaitError<...>>`, and #7507 assumed that wrapper
+      // buries the SQLite header. It does not: `ParallelWaitError.toString()`
+      // prints only its default error — the first leg to fail — and never its
+      // `values`/`errors` records, so the strict classifier already sees it.
+      //
+      // Pinned because the looser classifier's justification rests on which
+      // wrappers the strict one can and cannot read. If a future SDK release
+      // starts printing the whole record, this fails and the reasoning above
+      // has to be revisited rather than silently rotting.
+      Object? raised;
+      try {
+        await (
+          Future<int>.error(_realCorruptionException),
+          Future<String>.value('ok'),
+        ).wait;
+      } on Object catch (error) {
+        raised = error;
+      }
+
+      expect(raised, isA<ParallelWaitError<dynamic, dynamic>>());
+      expect(indicatesDatabaseCorruption(raised!), isTrue);
+      expect(mentionsDatabaseCorruption(raised), isTrue);
+    });
+
+    test('a ParallelWaitError whose first failure is unrelated hides it', () {
+      // The converse, and the honest limit of both classifiers: the corrupt
+      // leg's text is absent from the string entirely, so scanning the whole
+      // string buys nothing. Such a report still reaches Crashlytics.
+      expect(
+        mentionsDatabaseCorruption(
+          ParallelWaitError<Object?, Object?>(
+            null,
+            null,
+            errorCount: 2,
+            defaultError: AsyncError(
+              StateError('unrelated first failure'),
+              StackTrace.empty,
+            ),
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('does not fire on an ordinary multi-line query failure', () {
+      expect(
+        mentionsDatabaseCorruption(
+          Exception(
+            'SqliteException(1): no such table: event\n'
+            '  Causing statement: SELECT * FROM event',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('ignores a result code quoted inside bound parameters', () {
+      final ordinaryFailure = SqliteException(
+        extendedResultCode: 19,
+        message: 'UNIQUE constraint failed: event.id',
+        explanation: 'UNIQUE constraint failed: event.id (code 19)',
+        operation: 'inserting a row',
+        causingStatement: 'INSERT INTO event (content) VALUES (?)',
+        parametersToStatement: const <Object?>[
+          'SqliteException(11): database disk image is malformed',
+        ],
+      );
+
+      expect(mentionsDatabaseCorruption(ordinaryFailure), isFalse);
+    });
+
+    test('does not fire on an error carrying no SQLite result code', () {
+      expect(
+        mentionsDatabaseCorruption(
+          Exception('database disk image is malformed'),
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group(DatabaseCorruptionInterceptor, () {
     test('reports corruption surfacing on a select', () async {
       final reported = <Object>[];
@@ -219,10 +348,7 @@ void main() {
         (e) => e.runDelete('DELETE FROM event', const []),
       );
       await expectReports('custom', (e) => e.runCustom('PRAGMA foo'));
-      await expectReports(
-        'ensureOpen',
-        (e) => e.ensureOpen(_NoopUser()),
-      );
+      await expectReports('ensureOpen', (e) => e.ensureOpen(_NoopUser()));
       // Bulk ingestion goes through batch(), so a corrupt page first reached by
       // a batched write must report too. Without the override drift's default
       // forwards it silently and the next launch never salvages.
