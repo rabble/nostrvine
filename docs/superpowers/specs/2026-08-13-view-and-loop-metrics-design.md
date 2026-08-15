@@ -300,11 +300,10 @@ sampled video above 400 against a displayed 108, which is a larger correction
 than this table accounts for, and it counts only viewers who interacted.
 Treat every figure here as the least the number should move, not the most.
 
-### The display floor under the post-date feature
+### The display floor
 
 `publicLoopCountFloor` is 1000. The pre-change baseline corrected this section:
-the floor is applied only when `FeatureFlag.videoCardPostDate` is enabled, and
-then only to
+the floor applies to
 `mobile/lib/widgets/video_feed_item/video_card_meta.dart`'s public count
 (`loops` for classic Vines, `originalLoops + views` otherwise), not to
 `video_total_views_data.total_views`. Measured against the gated quantity:
@@ -315,12 +314,24 @@ then only to
 | 333 (floor reached at ×3) | 1,375,711 | 62.42% |
 | 100 (floor reached at ×10) | 1,621,923 | 73.60% |
 
-When that feature is enabled, the public count renders on about half the
-catalogue, not on 0.04% of it. Production remains unchanged while the flag is
-off: cards keep showing the raw count and no date. The floor still matters
-after the metric correction, but the reason is not that the count is
-effectively never shown; it is that the visible counts in the feature-gated
-path are all large enough to read as social proof rather than a warning.
+Median public count: 1,417. A public count renders on about half the
+catalogue, not on 0.04% of it.
+
+**This is live for everyone.** `FeatureFlag.videoCardPostDate` originally
+gated the rule as a kill switch, but it defaulted off and nothing ever set
+`FF_VIDEO_CARD_POST_DATE`, so it never reached a normal build. #7452 (merged
+2026-08-15) deleted the dead flag, and `_resolveLoopCount` now applies the
+floor unconditionally for anyone who is not the video's owner. Earlier drafts
+of this section — including the one this replaces — describe the floor as
+feature-gated; that stopped being true before those words merged.
+
+This is Flutter-client behavior. Divine Web currently diverges: its card
+renders any positive playback count and `formatLoopCount` applies only K/M
+abbreviation, not a display floor.
+
+The floor still matters after the metric correction, but the reason is not
+that the count is effectively never shown; it is that the counts which do
+appear are all large enough to read as social proof rather than a warning.
 
 **This is intended, and it is not a defect.** Two reasons it holds:
 
