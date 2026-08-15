@@ -18,7 +18,7 @@ Divine is a decentralized short-form video app that revives Vine's 6-second loop
 
 Most application code lives under `mobile/`. The Flutter entry points are `mobile/lib/main.dart` and `mobile/lib/router/app_router.dart` (routing uses `go_router`). App screens and feature wiring sit in `mobile/lib/`; the repo is a Melos workspace whose shared logic lives in packages under `mobile/packages/`.
 
-New feature work follows the layered flow `UI -> BLoC/Cubit -> Repository -> Client`. State management is mid-migration: `flutter_bloc` (BLoC/Cubit) is the target for new UI state, while `flutter_riverpod` remains as legacy compatibility glue. See `docs/STATE_MANAGEMENT.md` and `docs/BLOC_UI_MIGRATION_PRD.md`. Divine is dark-mode only; shared components and theme primitives come from `mobile/packages/divine_ui`.
+New feature work follows the layered flow `UI -> BLoC/Cubit -> Repository -> Client`. State management is mid-migration: `flutter_bloc` (BLoC/Cubit) is the target for new UI state, while `flutter_riverpod` remains as legacy compatibility glue. See `docs/STATE_MANAGEMENT.md` and `docs/BLOC_UI_MIGRATION_PRD.md`. Divine ships dark and light appearances (dark by default, user-selectable in Settings); shared components and theme primitives come from `mobile/packages/divine_ui`.
 
 The workspace is organized into around 75 packages, grouped roughly as:
 

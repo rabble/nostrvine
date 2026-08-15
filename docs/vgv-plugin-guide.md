@@ -41,7 +41,7 @@ The plugin hooks complement our existing pre-commit hooks (format, analyze, code
 | `/vgv-testing` | VGV test naming, `pumpApp`, golden test patterns | 685+ tests with mocktail, bloc_test, Patrol |
 | `/vgv-navigation` | Type-safe GoRouter patterns, redirect strategies | GoRouter with `@TypedGoRoute` already in use |
 | `/vgv-layered-architecture` | Validates 4-layer package structure | 21 packages already follow Data → Repo → BLoC → UI |
-| `/vgv-material-theming` | Material 3 theming patterns and spacing system | Aligned with architecture — just note divine is **dark-mode only** |
+| `/vgv-material-theming` | Material 3 theming patterns and spacing system | Aligned with architecture — divine ships **both** appearances via `VineTheme.theme` / `VineTheme.lightTheme` |
 | `/vgv-create-project` | Scaffolds from VGV templates | Useful for new packages — adapt to existing monorepo workspace |
 
 ---
@@ -161,7 +161,7 @@ await Future.delayed(AppConstants.defaultRetryDelay);
 
 VGV's `material-theming` skill generates light + dark theme variants.
 
-**Divine is dark-mode only.** When the skill suggests `AppTheme.light` and `AppTheme.dark`, only use the dark variant. Reference `VineTheme` and `divine_ui` components before adding custom styling.
+**Divine ships dark and light appearances.** The equivalents are `VineTheme.theme` (dark, the default) and `VineTheme.lightTheme`; per-widget colors come from `context.vineColors`. Reference `VineTheme` and `divine_ui` components before adding custom styling.
 
 **Source:** `.claude/rules/ui_theming.md`
 
@@ -236,7 +236,7 @@ When adding a new domain to the data layer:
 | Accept VGV `errorMessage` in BLoC state | Violates state_management rules | Use `addError()` + status enum |
 | Use `extra:` in GoRouter | Breaks deep linking and web support | Pass resource IDs via path parameters |
 | Let VGV generate Riverpod providers | Riverpod is legacy-only | Insist on BLoC/Cubit for all new code |
-| Accept light theme from material-theming | Divine is dark-mode only | Only use dark theme variant |
+| Accept light theme from material-theming | Divine has its own light palette | Use `VineTheme.lightTheme` / `context.vineColors`, not a generated one |
 | Use `Widget _buildX()` methods | Violates code_style rules | Extract to separate widget classes |
 | Accept hardcoded URLs or magic numbers | Violates code_style constants rule | Extract to `Constants`/`Config` class |
 | Run `/vgv-create-project` without updating workspace | New package won't be found | Add to `pubspec.yaml` workspace section |
