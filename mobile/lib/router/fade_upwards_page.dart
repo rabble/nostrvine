@@ -3,6 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/router/go_router_page_name.dart';
 
 /// Wraps [child] in a page that fades in while sliding up the last
 /// quarter — the classic pre-Pie Android transition.
@@ -17,7 +18,7 @@ CustomTransitionPage<void> fadeUpwardsPage({
 }) {
   return CustomTransitionPage<void>(
     key: state.pageKey,
-    name: state.name ?? state.path,
+    name: goRouterPageName(state),
     arguments: <String, String>{
       ...state.pathParameters,
       ...state.uri.queryParameters,

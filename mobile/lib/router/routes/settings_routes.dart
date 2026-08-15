@@ -11,6 +11,7 @@ import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
+import 'package:openvine/router/go_router_page_name.dart';
 import 'package:openvine/router/invite_availability_redirects.dart';
 import 'package:openvine/screens/badges/badge_award_screen.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
@@ -244,8 +245,14 @@ List<RouteBase> settingsRoutes(Ref ref) {
     GoRoute(
       path: DeveloperOptionsScreen.path,
       name: DeveloperOptionsScreen.routeName,
-      pageBuilder: (context, state) => CustomTransitionPage(
+      pageBuilder: (_, state) => CustomTransitionPage(
         key: state.pageKey,
+        name: goRouterPageName(state),
+        arguments: <String, String>{
+          ...state.pathParameters,
+          ...state.uri.queryParameters,
+        },
+        restorationId: state.pageKey.value,
         child: const DeveloperOptionsScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
