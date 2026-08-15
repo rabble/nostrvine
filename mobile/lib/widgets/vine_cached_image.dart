@@ -103,6 +103,13 @@ class _VineCachedImageState extends State<VineCachedImage> {
   }
 
   void _resolveImageStream() {
+    if (isKnownDeadImageHost(widget.imageUrl)) {
+      _removeImageListener();
+      _error = null;
+      _hasImage = false;
+      return;
+    }
+
     final newStream = _imageProvider.resolve(
       createLocalImageConfiguration(context),
     );

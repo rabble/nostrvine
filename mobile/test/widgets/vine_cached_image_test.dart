@@ -42,6 +42,9 @@ void main() {
       'renders the error widget without resolving a known-dead host',
       (tester) async {
         const deadUrl = 'http://v.cdn.vine.co/v/avatars/dead.jpg';
+        final cache = _FakeImageCache();
+        debugImageCacheOverride = cache;
+        addTearDown(() => debugImageCacheOverride = null);
 
         await tester.pumpWidget(
           const Directionality(
@@ -53,14 +56,21 @@ void main() {
           ),
         );
 
-        // No MediaCacheImageProvider may be created for a URL whose origin
-        // is verified dead — the error path renders instead.
         expect(find.text('dead-render'), findsOneWidget);
         expect(
           find.byWidgetPredicate(
             (w) => w is Image && w.image is MediaCacheImageProvider,
           ),
           findsNothing,
+        );
+        verifyNever(() => cache.getFileFromCache(any()));
+        verifyNever(
+          () => cache.cacheFileCancellable(
+            any(),
+            key: any(named: 'key'),
+            aliasKey: any(named: 'aliasKey'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
         );
       },
     );
