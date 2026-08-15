@@ -290,6 +290,7 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
   ProviderSubscription<int>? _adultMediaAccessSubscription;
   Map<String, String>? _authHeaders;
   bool _authRetryAttempted = false;
+  bool _passiveAuthSuppressed = false;
   Future<void>? _authRetryInFlight;
   int _imageGeneration = 0;
 
@@ -422,6 +423,7 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     final suppressionKey = _suppressionKey(url);
     if (suppressionKey == null) return;
     PassiveAuthThumbnailImage._rememberUnauthorized(suppressionKey);
+    _passiveAuthSuppressed = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted &&
           widget.url == url &&
@@ -448,6 +450,7 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
   void _resetPassiveAuthState() {
     _authHeaders = null;
     _authRetryAttempted = false;
+    _passiveAuthSuppressed = false;
     _authRetryInFlight = null;
     _imageGeneration++;
   }
@@ -489,8 +492,11 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
               );
             }
 
-            // Without an active suppression entry, start a fresh retry window.
-            _authRetryAttempted = false;
+            if (_passiveAuthSuppressed) {
+              // An expired or evicted suppression starts a fresh retry window.
+              _passiveAuthSuppressed = false;
+              _authRetryAttempted = false;
+            }
           }
 
           final imageProvider = ResizeImage.resizeIfNeeded(

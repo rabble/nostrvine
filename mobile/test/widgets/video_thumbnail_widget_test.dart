@@ -970,6 +970,60 @@ void main() {
     );
 
     testWidgets(
+      'does not retry a signer timeout on a retained-state rebuild',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const hash =
+            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+        const url = 'https://media.divine.video/$hash.jpg';
+        when(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => const ViewerAuthSignerUnreachable());
+        final container = ProviderContainer(
+          overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+        );
+        addTearDown(container.dispose);
+
+        Widget buildSubject(double width) => UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: PassiveAuthThumbnailImage(url: url, width: width),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject(100));
+        var image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        await tester.pumpWidget(buildSubject(101));
+        image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        verify(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: hash,
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
       'retries a suppressed thumbnail after filters change while unmounted',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
