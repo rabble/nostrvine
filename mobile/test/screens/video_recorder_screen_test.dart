@@ -647,6 +647,14 @@ void main() {
           routeContainer.read(overlayVisibilityProvider).isPageOpen,
           isTrue,
         );
+
+        Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
+        await tester.pumpAndSettle();
+
+        expect(
+          routeContainer.read(overlayVisibilityProvider).isPageOpen,
+          isFalse,
+        );
       });
 
       testWidgets('clears video publish state when standalone route pops', (

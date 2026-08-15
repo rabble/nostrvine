@@ -50,25 +50,34 @@ class OverlayVisibility extends _$OverlayVisibility {
   bool _pageOpenWithoutOwner = false;
 
   @override
-  OverlayVisibilityState build() => const OverlayVisibilityState();
+  OverlayVisibilityState build() => OverlayVisibilityState(
+    isPageOpen: _pageOpenWithoutOwner || _pageOpenOwners.isNotEmpty,
+  );
 
   /// Whether this notifier can still accept writes.
   bool get isMounted => ref.mounted;
 
-  /// Set page overlay state (full-screen overlays like settings).
-  /// When a page is open, all video players will be released.
+  /// Sets page visibility for callers without an independent owner token.
+  /// Owner-held pages remain open when this is set to false.
   void setPageOpen(bool isOpen) {
     _pageOpenWithoutOwner = isOpen;
     _updatePageOpen();
   }
 
-  /// Set page overlay state for one independently mounted owner.
+  /// Sets page visibility for one independently mounted owner.
   void setPageOpenForOwner(Object owner, {required bool isOpen}) {
     if (isOpen) {
       _pageOpenOwners.add(owner);
     } else {
       _pageOpenOwners.remove(owner);
     }
+    _updatePageOpen();
+  }
+
+  /// Clears every page-open source after navigation proves none remain.
+  void clearPageOpen() {
+    _pageOpenWithoutOwner = false;
+    _pageOpenOwners.clear();
     _updatePageOpen();
   }
 

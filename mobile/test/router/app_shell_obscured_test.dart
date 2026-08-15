@@ -286,6 +286,12 @@ void main() {
       expect(container.read(shellObscuredProvider), isTrue);
       expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
 
+      // Model a recorder hold whose ordinary release was skipped. Uncovering
+      // the shell is the final recovery path and must clear every owner.
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setPageOpenForOwner(Object(), isOpen: true);
+
       // A go()-style back removes the pushed route declaratively, so
       // pushWithVideoPause's future never completes. AppShell must still notice
       // that the shell is uncovered and clear the stranded page flag.

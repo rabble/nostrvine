@@ -115,7 +115,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
         // `pushWithVideoPause`'s own clear, which a `go()`-style back skips
         // entirely — see its doc comment. Without this the home feed could stay
         // permanently unable to autoplay on scroll (#6239).
-        ref.read(overlayVisibilityProvider.notifier).setPageOpen(false);
+        ref.read(overlayVisibilityProvider.notifier).clearPageOpen();
       }
     });
   }

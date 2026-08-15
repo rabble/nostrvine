@@ -104,6 +104,18 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
     });
 
+    test('clearPageOpen resets explicit and owner-held page overlays', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+
+      notifier.setPageOpen(true);
+      notifier.setPageOpenForOwner(Object(), isOpen: true);
+      notifier.clearPageOpen();
+
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
     test('isMounted returns false after container disposal', () {
       final container = ProviderContainer();
       final notifier = container.read(overlayVisibilityProvider.notifier);
