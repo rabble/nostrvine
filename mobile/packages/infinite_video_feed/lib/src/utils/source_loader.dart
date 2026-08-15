@@ -48,6 +48,7 @@ Future<(String, int)> setSourceWithFallbacks({
   Duration? maxPlaybackDuration,
   SourceLoadDelay delay = Future<void>.delayed,
   void Function(String source)? onFailoverSourceFailure,
+  void Function(String source)? onSourceLoadFailure,
 }) async {
   Object? lastError;
   StackTrace? lastStackTrace;
@@ -78,6 +79,7 @@ Future<(String, int)> setSourceWithFallbacks({
       abortIfStale(source);
       lastError = error;
       lastStackTrace = stackTrace;
+      onSourceLoadFailure?.call(source);
       final nativeErrorCode = nativePlayerErrorCodeFromError(error);
       if (nativeErrorCode == NativePlayerErrorCode.authRequired) {
         log(

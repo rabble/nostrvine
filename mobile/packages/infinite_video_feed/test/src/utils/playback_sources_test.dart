@@ -94,24 +94,21 @@ void main() {
       const variantUrl = 'https://media.divine.video/$_hash/720p.mp4';
 
       test(
-        'returns [variantUrl, rawUrl, hlsUrl, originalUrl] deduplicated',
+        'returns [variantUrl, hlsUrl, originalUrl] without raw fallback',
         () {
           final video = _makeVideo(videoUrl: variantUrl);
-          expect(
-            resolvePlaybackSources(video),
-            equals([variantUrl, _rawUrl, _hlsUrl]),
-          );
+          expect(resolvePlaybackSources(video), equals([variantUrl, _hlsUrl]));
         },
       );
 
-      test('leads with HLS while the derivative has a fresh failure', () {
+      test('leads with HLS without raw fallback after a fresh failure', () {
         final video = _makeVideo(videoUrl: variantUrl);
         final cache = DerivativeFailureCache()
           ..recordFailureForSource(variantUrl);
 
         expect(
           resolvePlaybackSources(video, derivativeFailureCache: cache),
-          equals([_hlsUrl, _rawUrl, variantUrl]),
+          equals([_hlsUrl, variantUrl]),
         );
       });
 
@@ -127,7 +124,7 @@ void main() {
 
         expect(
           resolvePlaybackSources(video, derivativeFailureCache: cache),
-          equals([variantUrl, _rawUrl, _hlsUrl]),
+          equals([variantUrl, _hlsUrl]),
         );
       });
     });

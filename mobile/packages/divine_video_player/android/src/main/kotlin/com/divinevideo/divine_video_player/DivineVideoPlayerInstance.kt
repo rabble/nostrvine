@@ -1468,8 +1468,10 @@ internal class DivineVideoPlayerInstance(
         }
 
         override fun onPlayerError(error: PlaybackException) {
+            val currentUri = player?.currentMediaItem?.localConfiguration?.uri
             DivineVideoPlayerLog.error(
                 "Player $playerId playback error [${error.errorCodeName}]: " +
+                    "source=${currentUri ?: "unknown"} " +
                     (error.message ?: "unknown"),
                 name = "DivineVideoPlayer.Playback",
             )
