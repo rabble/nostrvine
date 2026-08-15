@@ -202,6 +202,69 @@ void main() {
         ],
         errors: () => [isA<Exception>()],
       );
+
+      // The failure state's "Try again" calls straight back into load(). Going
+      // back through `loading` is what makes that observable: without it the
+      // second failure emits an `error` equal to the one already showing,
+      // Cubit suppresses it, and the retry renders no spinner and no fresh
+      // signal that it failed again.
+      blocTest<RequestPreviewCubit, RequestPreviewState>(
+        'a retry after a failure re-emits loading, then fails again visibly',
+        setUp: () {
+          when(
+            () => mockDmRepository.getConversation(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDmRepository.countMessagesInConversation(any()),
+          ).thenThrow(Exception('db error'));
+        },
+        build: buildCubit,
+        act: (cubit) async {
+          await cubit.load();
+          await cubit.load();
+        },
+        expect: () => [
+          const RequestPreviewState(status: RequestPreviewStatus.error),
+          const RequestPreviewState(),
+          const RequestPreviewState(status: RequestPreviewStatus.error),
+        ],
+        errors: () => [isA<Exception>(), isA<Exception>()],
+      );
+
+      // A retry from the participant-less `loaded` branch is the same story:
+      // the read succeeds but still resolves nobody, so only the trip through
+      // `loading` tells the user the tap did anything.
+      blocTest<RequestPreviewCubit, RequestPreviewState>(
+        'a retry from a participant-less load re-emits loading',
+        setUp: () {
+          when(
+            () => mockDmRepository.countMessagesInConversation(any()),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockDmRepository.getConversation(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () =>
+                mockDmRepository.getMessages(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => const []);
+        },
+        build: buildCubit,
+        act: (cubit) async {
+          await cubit.load();
+          await cubit.load();
+        },
+        expect: () => [
+          const RequestPreviewState(
+            status: RequestPreviewStatus.loaded,
+            messageCount: 1,
+          ),
+          const RequestPreviewState(messageCount: 1),
+          const RequestPreviewState(
+            status: RequestPreviewStatus.loaded,
+            messageCount: 1,
+          ),
+        ],
+      );
     });
 
     group('protected-minor gate (#176)', () {
