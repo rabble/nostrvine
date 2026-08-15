@@ -31,20 +31,30 @@
 # Deliberately not registered in the team settings.json: anyone already running
 # it at user scope would get the warning twice.
 #
-# Detection: each live session owns /tmp/cc-socks/<pid>.sock. For every other
-# live session, resolve its cwd and compare worktree roots. If that directory
-# does not exist on your setup, the hook is a silent no-op.
+# Detection: each live session owns a /tmp/cc-socks*/<pid>.sock socket. For
+# every other live Claude process with a matching socket, resolve its cwd and
+# compare canonical worktree roots. If no socket directory exists on your setup,
+# the hook is a silent no-op. Set CC_SOCK_DIR to test or override the socket dir.
 #
 # Always exits 0. This warns; it never blocks a session.
 
 set -uo pipefail
 
-SOCK_DIR="/tmp/cc-socks"
+SOCK_DIRS=()
+if [ -n "${CC_SOCK_DIR:-}" ]; then
+  SOCK_DIRS=("$CC_SOCK_DIR")
+else
+  for dir in /tmp/cc-socks*; do
+    [ -d "$dir" ] || continue
+    SOCK_DIRS+=("$dir")
+  done
+fi
 
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
 mine=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -n "$mine" ] || exit 0
-[ -d "$SOCK_DIR" ] || exit 0
+mine=$(cd "$mine" 2>/dev/null && pwd -P) || exit 0
+[ "${#SOCK_DIRS[@]}" -gt 0 ] || exit 0
 
 # Walk up the process tree to find this session's own claude pid, so the
 # guard never reports itself.
@@ -53,68 +63,70 @@ p=$$
 for _ in 1 2 3 4 5 6 7 8; do
   { [ -n "$p" ] && [ "$p" != "0" ] && [ "$p" != "1" ]; } || break
   cm=$(ps -o comm= -p "$p" 2>/dev/null)
-  case "$cm" in */claude) self="$p"; break ;; esac
+  [ "${cm##*/}" = "claude" ] && { self="$p"; break; }
   p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
 done
 
 others=""
 count=0
-for sock in "$SOCK_DIR"/*.sock; do
-  [ -S "$sock" ] || continue
-  pid="${sock##*/}"
-  pid="${pid%.sock}"
+while read -r pid cm; do
   case "$pid" in '' | *[!0-9]*) continue ;; esac
   [ "$pid" = "$self" ] && continue
+  [ "${cm##*/}" = "claude" ] || continue
 
-  # Stale socket from a crashed session.
-  ps -p "$pid" -o comm= >/dev/null 2>&1 || continue
+  has_socket=false
+  for dir in "${SOCK_DIRS[@]}"; do
+    [ -S "$dir/$pid.sock" ] || continue
+    has_socket=true
+    break
+  done
+  [ "$has_socket" = true ] || continue
 
   cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)
   [ -n "$cwd" ] || continue
 
   their=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || continue
+  their=$(cd "$their" 2>/dev/null && pwd -P) || continue
   # Different worktrees of the same repo are the pattern agent_workflow.md
   # asks for, not a collision. Only an identical working tree matters.
   [ "$their" = "$mine" ] || continue
 
   count=$((count + 1))
   others="${others}  - pid ${pid} (cwd ${cwd})"$'\n'
-done
+done < <(ps -eo pid=,comm= 2>/dev/null)
 
 [ "$count" -gt 0 ] || exit 0
 
-python3 - "$mine" "$count" "$others" <<'PY'
-import json, sys
+command -v jq >/dev/null 2>&1 || exit 0
 
-worktree, count, others = sys.argv[1], int(sys.argv[2]), sys.argv[3].rstrip("\n")
-plural = "session" if count == 1 else "sessions"
+plural="session"
+verb="has"
+if [ "$count" -ne 1 ]; then
+  plural="sessions"
+  verb="have"
+fi
 
-human = (
-    f"⚠️  {count} other Claude {plural} already has this worktree open:\n"
-    f"{others}\n"
-    f"  worktree: {worktree}\n\n"
-    "Reading together is fine. If both sessions will EDIT code or run git "
-    "state commands (reset/checkout/stash), give this task its own worktree:\n"
-    "  git worktree add .worktrees/<task> -b <branch> origin/main"
-)
+human="⚠️  ${count} other Claude ${plural} already ${verb} this worktree open:
+${others}
+  worktree: ${mine}
 
-agent = (
-    f"CONCURRENCY WARNING: {count} other live Claude Code {plural} "
-    f"currently has this same git worktree open ({worktree}).\n{others}\n"
-    "Consequences to respect this session:\n"
-    "- Your git snapshot may go stale at any moment; re-check `git status` "
-    "before reasoning about working-tree state, and never assume an "
-    "unexpected change was an accident.\n"
-    "- Do not run destructive git commands (reset --hard, checkout --, "
-    "stash, clean) without confirming with the user first.\n"
-    "- Prefer a separate worktree for any code edits."
-)
+Reading together is fine. If both sessions will EDIT code or run git state commands (reset/checkout/stash), give this task its own worktree:
+  git worktree add .worktrees/<task> -b <branch> origin/main"
 
-print(json.dumps({
-    "systemMessage": human,
-    "hookSpecificOutput": {
-        "hookEventName": "SessionStart",
-        "additionalContext": agent,
-    },
-}))
-PY
+agent="CONCURRENCY WARNING: ${count} other live Claude Code ${plural} currently ${verb} this same git worktree open (${mine}).
+${others}
+Consequences to respect this session:
+- Your git snapshot may go stale at any moment; re-check \`git status\` before reasoning about working-tree state, and never assume an unexpected change was an accident.
+- Do not run destructive git commands (reset --hard, checkout --, stash, clean) without confirming with the user first.
+- Prefer a separate worktree for any code edits."
+
+jq -n \
+  --arg human "$human" \
+  --arg agent "$agent" \
+  '{
+    systemMessage: $human,
+    hookSpecificOutput: {
+      hookEventName: "SessionStart",
+      additionalContext: $agent
+    }
+  }' || exit 0
