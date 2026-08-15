@@ -41,9 +41,18 @@ sealed class PublishResult extends Equatable {
 
 class PublishSuccess extends PublishResult {
   const PublishSuccess({
+    this.stableId,
     this.inviteWarnings = const [],
     this.audioReuseDegraded = false,
   });
+
+  /// The published video's `d` tag, which is also its [VideoEvent.stableId].
+  ///
+  /// Identifies the video without a relay round-trip, so the post-publish
+  /// confirmation can link to `/video/<stableId>` and build a share URL
+  /// while the event is still propagating. Null for an upload that carries
+  /// no `videoId`.
+  final String? stableId;
 
   final List<CollaboratorInviteWarning> inviteWarnings;
 
@@ -55,7 +64,7 @@ class PublishSuccess extends PublishResult {
   bool get hasInviteWarnings => inviteWarnings.isNotEmpty;
 
   @override
-  List<Object?> get props => [inviteWarnings, audioReuseDegraded];
+  List<Object?> get props => [stableId, inviteWarnings, audioReuseDegraded];
 }
 
 /// A failed publish, classified by [kind] so the UI can localize it.
@@ -451,6 +460,7 @@ class VideoPublishService {
 
       Log.info('📝 Published successfully', category: .video);
       return PublishSuccess(
+        stableId: pendingUpload.videoId,
         inviteWarnings: inviteWarnings,
         audioReuseDegraded: audioReuseDegraded,
       );

@@ -78,7 +78,13 @@ class BackgroundPublishBloc
         emit(
           state.copyWith(
             uploads: updatedUploads,
-            recentlySucceededIds: {event.draft.id},
+            recentlyPublished: [
+              PublishedVideo(
+                draftId: event.draft.id,
+                stableId: result.stableId,
+                thumbnailPath: event.draft.coverThumbnailPath,
+              ),
+            ],
           ),
         );
 

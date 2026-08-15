@@ -238,6 +238,33 @@ void main() {
         },
       );
 
+      test('reports the published video d tag on success', () async {
+        // The post-publish confirmation links to /video/<stableId> and
+        // builds its share URL from this. Without it the success result
+        // says a video exists but not which one.
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+          readyUpload: _createPendingUpload(
+            status: UploadStatus.readyToPublish,
+            videoId: 'published-d-tag',
+          ),
+        );
+
+        final result = await service.publishVideo(draft: _createTestDraft());
+
+        expect(
+          result,
+          isA<PublishSuccess>().having(
+            (r) => r.stableId,
+            'stableId',
+            equals('published-d-tag'),
+          ),
+        );
+      });
+
       test('holds the bar below 100% until the event lands', () async {
         // Arrange
         _setupSuccessfulPublish(
@@ -2361,6 +2388,7 @@ PendingUpload _createPendingUpload({
   required UploadStatus status,
   String? errorMessage,
   Object? thumbnailPath = _defaultThumbnailPath,
+  String videoId = 'test_video_id',
 }) {
   return PendingUpload(
     id: 'test_upload_id',
@@ -2370,7 +2398,7 @@ PendingUpload _createPendingUpload({
     createdAt: DateTime.now(),
     errorMessage: errorMessage,
     uploadProgress: status == UploadStatus.readyToPublish ? 1.0 : 0.5,
-    videoId: 'test_video_id',
+    videoId: videoId,
     cdnUrl: 'https://test.cdn/video.mp4',
     thumbnailPath: thumbnailPath as String?,
   );

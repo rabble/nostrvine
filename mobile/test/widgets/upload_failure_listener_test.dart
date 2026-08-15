@@ -155,8 +155,24 @@ BackgroundUpload _inProgress(String id) =>
 
 /// A [BackgroundPublishState] that carries success signals, with no remaining
 /// uploads — mirrors what the bloc emits on [PublishSuccess].
-BackgroundPublishState _succeededState(String id, [String? secondId]) =>
-    BackgroundPublishState(recentlySucceededIds: {id, ?secondId});
+BackgroundPublishState _succeededState(
+  String id, {
+  String? secondId,
+  String? stableId = _publishedStableId,
+  String? thumbnailPath,
+}) => BackgroundPublishState(
+  recentlyPublished: [
+    PublishedVideo(
+      draftId: id,
+      stableId: stableId,
+      thumbnailPath: thumbnailPath,
+    ),
+    if (secondId != null)
+      PublishedVideo(draftId: secondId, stableId: 'second-$secondId'),
+  ],
+);
+
+const _publishedStableId = 'published-d-tag';
 
 /// A [BackgroundPublishState] where upload [id] disappeared without a success
 /// signal — mirrors what the bloc emits on [BackgroundPublishVanished].
@@ -219,7 +235,7 @@ void main() {
         _buildHarness(publishBloc: publishBloc, authService: authService),
       );
 
-      publishStream.add(_succeededState('draft-1', 'draft-2'));
+      publishStream.add(_succeededState('draft-1', secondId: 'draft-2'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 

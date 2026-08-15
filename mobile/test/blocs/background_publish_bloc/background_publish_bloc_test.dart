@@ -165,13 +165,49 @@ void main() {
               ],
             ),
             // Success: upload removed and recentlySucceededIds populated.
-            const BackgroundPublishState(recentlySucceededIds: {draftId}),
+            const BackgroundPublishState(
+              recentlyPublished: [PublishedVideo(draftId: draftId)],
+            ),
           ],
           verify: (_) {
             verify(
               () => mockDraftStorageService.deleteDraft(draftId),
             ).called(1);
           },
+        );
+
+        blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+          'carries the published d tag and local thumbnail so the '
+          'confirmation can link to and preview the video',
+          setUp: () {
+            when(
+              () => draft.coverThumbnailPath,
+            ).thenReturn('/local/thumb.jpg');
+          },
+          build: () => BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
+          ),
+          act: (bloc) => bloc.add(
+            BackgroundPublishRequested(
+              draft: draft,
+              publishmentProcess: Future.value(
+                const PublishSuccess(stableId: 'published-d-tag'),
+              ),
+            ),
+          ),
+          skip: 1,
+          expect: () => [
+            const BackgroundPublishState(
+              recentlyPublished: [
+                PublishedVideo(
+                  draftId: draftId,
+                  stableId: 'published-d-tag',
+                  thumbnailPath: '/local/thumb.jpg',
+                ),
+              ],
+            ),
+          ],
         );
 
         test('emits success before the draft cleanup completes', () async {
@@ -304,7 +340,7 @@ void main() {
               ],
             ),
             const BackgroundPublishState(
-              recentlySucceededIds: {publishDraftId},
+              recentlyPublished: [PublishedVideo(draftId: publishDraftId)],
             ),
           ],
           verify: (_) {
@@ -345,7 +381,7 @@ void main() {
               ],
             ),
             const BackgroundPublishState(
-              recentlySucceededIds: {publishDraftId},
+              recentlyPublished: [PublishedVideo(draftId: publishDraftId)],
             ),
           ],
           verify: (_) {
@@ -419,7 +455,9 @@ void main() {
             // Only emits the final state after success, no duplicate added.
             // recentlySucceededIds is populated so UploadFailureListener can
             // distinguish a true success from BackgroundPublishVanished.
-            const BackgroundPublishState(recentlySucceededIds: {draftId}),
+            const BackgroundPublishState(
+              recentlyPublished: [PublishedVideo(draftId: draftId)],
+            ),
           ],
         );
       });
@@ -1054,7 +1092,9 @@ void main() {
               BackgroundUpload(draft: draft, result: null, progress: 0),
             ],
           ),
-          const BackgroundPublishState(recentlySucceededIds: {draftId}),
+          const BackgroundPublishState(
+            recentlyPublished: [PublishedVideo(draftId: draftId)],
+          ),
         ],
       );
     });
@@ -1108,7 +1148,9 @@ void main() {
           ),
           // Finally: successful retry removes the upload, recentlySucceededIds
           // is populated so UploadFailureListener shows a success snackbar.
-          const BackgroundPublishState(recentlySucceededIds: {draftId}),
+          const BackgroundPublishState(
+            recentlyPublished: [PublishedVideo(draftId: draftId)],
+          ),
         ],
         verify: (_) {
           verify(() => mockPublishService.publishVideo(draft: draft)).called(1);
