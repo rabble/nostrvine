@@ -29,14 +29,6 @@
 # 9 - Android publishing reads the service account from environment variable
 #     group "google_play_credentials":
 #   - GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-# 10 - Create environment variable group "maestro_e2e_credentials" for the two
-#      E2E workflows, marking every value Secure:
-#   - MAESTRO_USER_EMAIL
-#   - MAESTRO_USER_PWD
-#   - MAESTRO_SEARCH_USER
-#      Use a dedicated STAGING test account, not a staff account: the smoke
-#      suite's teardown (tests/removeKeys.yaml) deletes the account's keys from
-#      the device on every run.
 #
 # Every group named under a workflow's `groups:` key must appear in this
 # checklist. Codemagic validates this whole file before it provisions a machine,
