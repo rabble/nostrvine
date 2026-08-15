@@ -474,8 +474,23 @@ void main() {
         },
       );
 
-      // Decline navigates away on the loaded path too, and a cold deep link
-      // has nothing to pop (#6112).
+      // The loaded state is deep-linkable too: `loading` is only the first
+      // frame of that same cold entry, so both of its navigating affordances
+      // meet the one-entry stack that plain `pop()` throws on (#6112).
+      testWidgets('back from a cold loaded entry lands on the inbox', (
+        tester,
+      ) async {
+        when(mockGoRouter.canPop).thenReturn(false);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Back'));
+        await tester.pump();
+
+        verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+
       testWidgets('decline from a cold loaded entry lands on the inbox', (
         tester,
       ) async {

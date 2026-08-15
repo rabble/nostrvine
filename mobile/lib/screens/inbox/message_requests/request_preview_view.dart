@@ -108,7 +108,10 @@ class RequestPreviewView extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: displayName,
         showBackButton: true,
-        onBackPressed: context.pop,
+        // Same one-entry-stack exposure as the unresolved states below:
+        // `loading` is only the first frame of a cold deep-link entry, and
+        // resolving to `loaded` does not put an entry behind it (#6112).
+        onBackPressed: () => context.safePop(fallback: InboxPage.path),
       ),
       body: _PreviewBackdrop(
         child: Column(

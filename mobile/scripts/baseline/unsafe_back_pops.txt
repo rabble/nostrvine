@@ -24,7 +24,6 @@ lib/screens/followers/others_followers_screen.dart	1
 lib/screens/following/my_following_screen.dart	1
 lib/screens/following/others_following_screen.dart	1
 lib/screens/inbox/message_requests/message_requests_view.dart	1
-lib/screens/inbox/message_requests/request_preview_view.dart	1
 lib/screens/notification_settings_screen.dart	1
 lib/screens/relay_diagnostic_screen.dart	1
 lib/screens/relay_settings_screen.dart	1
