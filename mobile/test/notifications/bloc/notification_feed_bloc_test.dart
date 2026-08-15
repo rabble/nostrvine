@@ -293,6 +293,36 @@ void main() {
           NotificationFeedState(isRefreshing: true),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
+        errors: () => [isA<Exception>()],
+        verify: (_) {
+          verify(() => mockAppBadgeClearer.clear()).called(1);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from the app badge clear as Reportable '
+        'without blackening the feed',
+        setUp: () {
+          when(
+            () => mockAppBadgeClearer.clear(),
+          ).thenThrow(StateError('badge invariant'));
+        },
+        build: () => createBloc(appBadgeClearer: mockAppBadgeClearer),
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        wait: const Duration(milliseconds: 1),
+        expect: () => [
+          NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>()
+              .having(
+                (r) => r.context,
+                'context',
+                NotificationFeedBlocReportableSites.clearAppBadge,
+              )
+              .having((r) => r.unwrap(), 'unwrap', isA<StateError>()),
+        ],
         verify: (_) {
           verify(() => mockAppBadgeClearer.clear()).called(1);
         },

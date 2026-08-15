@@ -13,7 +13,6 @@ import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/app_badge_service.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 part 'notification_feed_event.dart';
 part 'notification_feed_state.dart';
@@ -264,14 +263,29 @@ class NotificationFeedBloc
     }
   }
 
+  /// Clears the platform app-icon badge once the seen watermark has advanced.
+  ///
+  /// Best-effort: a badge failure must never affect feed state, so nothing here
+  /// is rethrown. [AppBadgeService] already absorbs `PlatformException` and
+  /// `MissingPluginException` itself, so anything reaching these arms is
+  /// unexpected and worth surfacing through the observer rather than a log
+  /// line.
   Future<void> _clearAppBadge() async {
     try {
       await _appBadgeClearer.clear();
-    } catch (e, st) {
-      Log.warning(
-        'App badge clear failed after notification feed open: $e\n$st',
-        name: 'NotificationFeedBloc',
-        category: LogCategory.system,
+    } on Exception catch (e, s) {
+      // Platform/plugin failures the service did not already absorb. Per
+      // .claude/rules/error_handling.md these are expected domain failures,
+      // NOT Reportable.
+      addError(e, s);
+    } catch (e, s) {
+      // Errors (StateError, TypeError) — matrix-YES invariant violation.
+      addError(
+        Reportable(
+          e,
+          context: NotificationFeedBlocReportableSites.clearAppBadge,
+        ),
+        s,
       );
     }
   }
