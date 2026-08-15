@@ -50,7 +50,7 @@ void main() {
       container.read(activeBranchIndexProvider.notifier).state = 0;
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(true);
+          .setBottomSheetOpenForOwner(Object(), isOpen: true);
 
       expect(container.read(uploadBackpressureActiveProvider), isFalse);
     });

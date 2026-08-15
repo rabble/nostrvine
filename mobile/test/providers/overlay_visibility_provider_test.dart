@@ -159,9 +159,10 @@ void main() {
       expect(notifier.isMounted, isFalse);
     });
 
-    test('setBottomSheetOpen updates state', () {
+    test('setBottomSheetOpenForOwner updates state', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      final owner = Object();
 
       expect(
         container.read(overlayVisibilityProvider).isBottomSheetOpen,
@@ -170,11 +171,71 @@ void main() {
 
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(true);
+          .setBottomSheetOpenForOwner(owner, isOpen: true);
       expect(
         container.read(overlayVisibilityProvider).isBottomSheetOpen,
         isTrue,
       );
+    });
+
+    test('bottom sheet stays open until every owner releases it', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final firstOwner = Object();
+      final secondOwner = Object();
+
+      notifier.setBottomSheetOpenForOwner(firstOwner, isOpen: true);
+      notifier.setBottomSheetOpenForOwner(secondOwner, isOpen: true);
+      notifier.setBottomSheetOpenForOwner(firstOwner, isOpen: false);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+      );
+
+      notifier.setBottomSheetOpenForOwner(secondOwner, isOpen: false);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isFalse,
+      );
+    });
+
+    test('provider rebuild preserves owner-held bottom sheet overlays', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final owner = Object();
+
+      notifier.setBottomSheetOpenForOwner(owner, isOpen: true);
+      container.invalidate(overlayVisibilityProvider);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+      );
+
+      notifier.setBottomSheetOpenForOwner(owner, isOpen: false);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isFalse,
+      );
+    });
+
+    test('clearOverlays resets page and bottom sheet overlay owners', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+
+      notifier.setPageOpenForOwner(Object(), isOpen: true);
+      notifier.setBottomSheetOpenForOwner(Object(), isOpen: true);
+      notifier.clearOverlays();
+
+      final state = container.read(overlayVisibilityProvider);
+      expect(state.isPageOpen, isFalse);
+      expect(state.isBottomSheetOpen, isFalse);
     });
   });
 
@@ -202,7 +263,7 @@ void main() {
 
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(true);
+          .setBottomSheetOpenForOwner(Object(), isOpen: true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
     });
 
@@ -227,17 +288,18 @@ void main() {
     test('bottom sheet open/close cycle returns to false', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      final owner = Object();
 
       expect(container.read(hasVisibleOverlayProvider), isFalse);
 
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(true);
+          .setBottomSheetOpenForOwner(owner, isOpen: true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
 
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(false);
+          .setBottomSheetOpenForOwner(owner, isOpen: false);
       expect(container.read(hasVisibleOverlayProvider), isFalse);
     });
   });
@@ -327,7 +389,7 @@ void main() {
 
         container
             .read(overlayVisibilityProvider.notifier)
-            .setBottomSheetOpen(true);
+            .setBottomSheetOpenForOwner(Object(), isOpen: true);
         expect(container.read(activeVideoIdProvider), isNull);
       },
     );

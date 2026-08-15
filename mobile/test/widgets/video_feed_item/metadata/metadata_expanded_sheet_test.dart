@@ -18,6 +18,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -1888,6 +1889,53 @@ void main() {
         expect(urlLauncher.launched, isNotEmpty);
         expect(urlLauncher.launched.last.url, equals(proofmodeLearnMoreUrl));
         expect(urlLauncher.launched.last.useExternalApplication, isTrue);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'dismissing nested explainer preserves parent metadata sheet hold',
+      (tester) async {
+        final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+        await tester.pumpWidget(
+          buildSubject(child: MetadataVerificationSection(video: video)),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(MetadataVerificationSection)),
+          listen: false,
+        );
+        final parentOwner = Object();
+        container
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpenForOwner(parentOwner, isOpen: true);
+
+        final l10n = _l10n(tester);
+        await tester.tap(find.text(l10n.metadataVerificationLabel));
+        await tester.pumpAndSettle();
+        expect(find.byType(MetadataVerificationInfoSheet), findsOneWidget);
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        Navigator.of(
+          tester.element(find.byType(MetadataVerificationInfoSheet)),
+          rootNavigator: true,
+        ).pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(MetadataVerificationInfoSheet), findsNothing);
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        container
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpenForOwner(parentOwner, isOpen: false);
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
       },
     );
 

@@ -105,7 +105,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
 
   void _setShellObscured({
     required bool obscured,
-    bool clearPageOwners = false,
+    bool clearOverlayOwners = false,
   }) {
     // RouteAware callbacks can fire mid-frame; defer the provider write so it
     // never lands during this shell's own build.
@@ -114,15 +114,15 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       ref.read(shellObscuredProvider.notifier).setObscured(obscured: obscured);
       if (!obscured) {
         final overlayVisibility = ref.read(overlayVisibilityProvider.notifier);
-        if (clearPageOwners) {
-          // Popping the route directly above the shell proves no page owner
-          // remains. Force-clear because a `go()`-style back can skip the
-          // pushed route's own completion callback (#6239).
-          overlayVisibility.clearPageOpen();
+        if (clearOverlayOwners) {
+          // Popping the route directly above the shell proves no overlay owner
+          // remains. Force-clear because a `go()`-style back can skip an
+          // overlay route's own completion callback (#6239).
+          overlayVisibility.clearOverlays();
         } else if (ModalRoute.of(context)?.isCurrent ?? false) {
           // A freshly mounted shell can still sit below a live page owner.
           // Clear only when navigation proves the shell is the top route.
-          overlayVisibility.clearPageOpen();
+          overlayVisibility.clearOverlays();
         }
       }
     });
@@ -140,7 +140,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
 
   @override
   void didPopNext() =>
-      _setShellObscured(obscured: false, clearPageOwners: true);
+      _setShellObscured(obscured: false, clearOverlayOwners: true);
 
   String _titleFor(BuildContext context, WidgetRef ref, RouteContext? ctx) {
     final l10n = context.l10n;

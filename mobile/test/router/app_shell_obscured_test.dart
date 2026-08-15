@@ -346,6 +346,9 @@ void main() {
       container
           .read(overlayVisibilityProvider.notifier)
           .setPageOpenForOwner(Object(), isOpen: true);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpenForOwner(Object(), isOpen: true);
 
       // A go()-style back removes the pushed route declaratively, so
       // pushWithVideoPause's future never completes. AppShell must still notice
@@ -359,6 +362,11 @@ void main() {
         container.read(overlayVisibilityProvider).isPageOpen,
         isFalse,
         reason: 'a stranded page flag keeps the home feed from autoplaying',
+      );
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isFalse,
+        reason: 'a stranded bottom-sheet flag keeps the home feed paused',
       );
     },
   );

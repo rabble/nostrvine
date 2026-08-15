@@ -47,15 +47,19 @@ class OverlayVisibilityState {
 @Riverpod(keepAlive: true)
 class OverlayVisibility extends _$OverlayVisibility {
   final Set<Object> _pageOpenOwners = {};
+  final Set<Object> _bottomSheetOwners = {};
 
   @override
-  OverlayVisibilityState build() =>
-      OverlayVisibilityState(isPageOpen: _isPageOpen);
+  OverlayVisibilityState build() => OverlayVisibilityState(
+    isPageOpen: _isPageOpen,
+    isBottomSheetOpen: _isBottomSheetOpen,
+  );
 
   /// Whether this notifier can still accept writes.
   bool get isMounted => ref.mounted;
 
   bool get _isPageOpen => _pageOpenOwners.isNotEmpty;
+  bool get _isBottomSheetOpen => _bottomSheetOwners.isNotEmpty;
 
   /// Sets page visibility for one independently mounted owner.
   void setPageOpenForOwner(Object owner, {required bool isOpen}) {
@@ -73,6 +77,14 @@ class OverlayVisibility extends _$OverlayVisibility {
     _updatePageOpen();
   }
 
+  /// Clears every overlay-open source after navigation proves none remain.
+  void clearOverlays() {
+    _pageOpenOwners.clear();
+    _bottomSheetOwners.clear();
+    _updatePageOpen();
+    _updateBottomSheetOpen();
+  }
+
   void _updatePageOpen() {
     final isOpen = _isPageOpen;
     if (state.isPageOpen != isOpen) {
@@ -85,9 +97,19 @@ class OverlayVisibility extends _$OverlayVisibility {
     }
   }
 
-  /// Set bottom sheet overlay state.
+  /// Sets bottom sheet visibility for one independently mounted owner.
   /// When a bottom sheet is open, only the current player is paused.
-  void setBottomSheetOpen(bool isOpen) {
+  void setBottomSheetOpenForOwner(Object owner, {required bool isOpen}) {
+    if (isOpen) {
+      _bottomSheetOwners.add(owner);
+    } else {
+      _bottomSheetOwners.remove(owner);
+    }
+    _updateBottomSheetOpen();
+  }
+
+  void _updateBottomSheetOpen() {
+    final isOpen = _isBottomSheetOpen;
     if (state.isBottomSheetOpen != isOpen) {
       Log.info(
         'BottomSheet ${isOpen ? 'opened' : 'closed'}',

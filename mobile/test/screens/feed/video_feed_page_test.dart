@@ -1306,10 +1306,14 @@ void main() {
             index;
       }
 
-      void setBottomSheetOpen(WidgetTester tester, {required bool open}) {
-        containerOf(
-          tester,
-        ).read(overlayVisibilityProvider.notifier).setBottomSheetOpen(open);
+      void setBottomSheetOpen(
+        WidgetTester tester, {
+        required Object owner,
+        required bool open,
+      }) {
+        containerOf(tester)
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpenForOwner(owner, isOpen: open);
       }
 
       final pageOpenOwner = Object();
@@ -1388,6 +1392,7 @@ void main() {
         (tester) async {
           await pumpFeed(tester);
           await tester.pump();
+          final bottomSheetOwner = Object();
 
           // Active home feed releases neighbours when it backgrounds.
           expect(feedVideos(tester).isActive, isTrue);
@@ -1395,13 +1400,13 @@ void main() {
 
           // A bottom sheet (comments/share) pauses the current player but must
           // NOT tear down the off-screen neighbours or prefetch.
-          setBottomSheetOpen(tester, open: true);
+          setBottomSheetOpen(tester, owner: bottomSheetOwner, open: true);
           await tester.pump();
           expect(feedVideos(tester).isActive, isFalse);
           expect(feedVideos(tester).releaseNeighboursWhenInactive, isFalse);
 
           // Closing the sheet restores the release-on-background behaviour.
-          setBottomSheetOpen(tester, open: false);
+          setBottomSheetOpen(tester, owner: bottomSheetOwner, open: false);
           await tester.pump();
           expect(feedVideos(tester).isActive, isTrue);
           expect(feedVideos(tester).releaseNeighboursWhenInactive, isTrue);
@@ -1431,8 +1436,9 @@ void main() {
         (tester) async {
           await pumpFeed(tester);
           await tester.pump();
+          final bottomSheetOwner = Object();
 
-          setBottomSheetOpen(tester, open: true);
+          setBottomSheetOpen(tester, owner: bottomSheetOwner, open: true);
           await tester.pump();
           expect(feedVideos(tester).isActive, isFalse);
           expect(feedVideos(tester).releaseNeighboursWhenInactive, isFalse);
