@@ -17,7 +17,7 @@ abstract class NotificationFeedBlocReportableSites {
   /// `_fetchWithRetry` if the analyzer's loop invariant ever breaks.
   static const String onStarted = '_onStarted';
 
-  /// `_markSeen` generic-catch arm — `Error` types that escape
+  /// `_markSeenOnOpen` generic-catch arm — `Error` types that escape
   /// `NotificationRepository.markAllAsRead`'s rollback `catch (_)` rethrow
   /// when the notifications surface sends the server mark-all write.
   /// Realistically a Drift DAO `TypeError` from a row-shape mismatch.

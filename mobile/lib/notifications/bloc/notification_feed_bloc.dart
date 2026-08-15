@@ -143,7 +143,7 @@ class NotificationFeedBloc
   /// the initial spinner and error states.
   ///
   /// After a successful refresh, sends the server mark-all write via
-  /// [_markSeen] so opening the notifications surface clears the unread
+  /// [_markSeenOnOpen] so opening the notifications surface clears the unread
   /// badge and the badge thereafter reflects "new since last seen" rather than
   /// the accumulated untapped total (#4708). `_onStarted` fires once per open
   /// (it is dispatched from the keyed `BlocProvider.create` on every mount of
