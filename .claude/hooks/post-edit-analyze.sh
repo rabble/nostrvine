@@ -23,6 +23,13 @@ if [[ ! -f "$FILE_PATH" ]]; then
   exit 0
 fi
 
+# If the build-artifact purge removed package resolution state, analyzer output
+# is all missing-package noise until pub get runs again.
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
+if [[ -n "$REPO_ROOT" && "$FILE_PATH" == "$REPO_ROOT"/mobile/* && ! -f "$REPO_ROOT/mobile/.dart_tool/package_config.json" ]]; then
+  exit 0
+fi
+
 # Run analyzer on the specific file
 ANALYSIS_OUTPUT=$(dart analyze "$FILE_PATH" 2>&1 || true)
 

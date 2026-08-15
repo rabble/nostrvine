@@ -9,6 +9,8 @@ BUILD_HOOK="$REPO_ROOT/.codex/hooks/pre-commit-build-runner.sh"
 CODEX_GIT_HOOK="$REPO_ROOT/.codex/hooks/check-git-hooks.sh"
 CLAUDE_GIT_HOOK="$REPO_ROOT/.claude/hooks/check-git-hooks.sh"
 WORKTREE_GUARD_HOOK="$REPO_ROOT/.claude/hooks/session-start-worktree-guard.sh"
+CLAUDE_PURGE_HOOK="$REPO_ROOT/.claude/hooks/session-end-purge-build-artifacts.sh"
+CLAUDE_ANALYZE_HOOK="$REPO_ROOT/.claude/hooks/post-edit-analyze.sh"
 
 "$REPO_ROOT/.codex/scripts/sync-agent-skills.sh" --check
 
@@ -117,6 +119,7 @@ case "$1" in
 esac
 EOF
 chmod +x "$BIN_DIR/mise" "$BIN_DIR/test-dart"
+ln -sf "$BIN_DIR/test-dart" "$BIN_DIR/dart"
 
 POST_PAYLOAD=$(jq -n --arg command $'*** Begin Patch\n*** Update File: mobile/lib/warning file.dart\n*** End Patch' \
   '{tool_input: {command: $command}}')
@@ -333,6 +336,109 @@ if ! printf '%s\n' "$GUARD_OUTPUT" | jq -e '
 ' >/dev/null; then
   echo "Session worktree guard did not report only live Claude sessions in the same canonical worktree." >&2
   echo "Output was: $GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+CLAUDE_ANALYZE_PAYLOAD=$(jq -n --arg path "$TEST_REPO/mobile/lib/clean.dart" \
+  '{tool_input: {file_path: $path}}')
+: > "$CALL_LOG"
+CLAUDE_ANALYZE_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$BIN_DIR:/usr/bin:/bin" \
+    "$CLAUDE_ANALYZE_HOOK" <<< "$CLAUDE_ANALYZE_PAYLOAD")
+if [ -n "$CLAUDE_ANALYZE_OUTPUT" ]; then
+  echo "Claude post-edit analyze hook ran without package_config.json." >&2
+  exit 1
+fi
+if grep -q '^analyze ' "$CALL_LOG"; then
+  echo "Claude post-edit analyze hook invoked dart without package_config.json." >&2
+  exit 1
+fi
+
+NON_DIVINE_REPO="$SCRATCH_DIR/non-divine"
+mkdir -p "$NON_DIVINE_REPO"
+git -C "$NON_DIVINE_REPO" init -q
+NON_DIVINE_OUTPUT=$(cd "$NON_DIVINE_REPO" && \
+  env CLAUDE_PROJECT_DIR="$NON_DIVINE_REPO" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+if [ -n "$NON_DIVINE_OUTPUT" ]; then
+  echo "Purge hook ran outside a divine-mobile checkout." >&2
+  exit 1
+fi
+
+MAIN_PURGE_REPO="$SCRATCH_DIR/main-purge"
+mkdir -p "$MAIN_PURGE_REPO/mobile/build" "$MAIN_PURGE_REPO/mobile/.dart_tool"
+git -C "$MAIN_PURGE_REPO" init -q
+cat > "$MAIN_PURGE_REPO/mobile/pubspec.yaml" <<'EOF'
+name: main_purge_test
+EOF
+touch "$MAIN_PURGE_REPO/mobile/build/output.o"
+MAIN_PURGE_OUTPUT=$(cd "$MAIN_PURGE_REPO" && \
+  env CLAUDE_PROJECT_DIR="$MAIN_PURGE_REPO" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+if [ -n "$MAIN_PURGE_OUTPUT" ] || [ ! -d "$MAIN_PURGE_REPO/mobile/build" ]; then
+  echo "Purge hook did not skip the main checkout." >&2
+  exit 1
+fi
+
+WT_MAIN="$SCRATCH_DIR/purge-main"
+WT_LINK="$SCRATCH_DIR/purge-linked"
+mkdir -p "$WT_MAIN/mobile/packages/bar"
+git -C "$WT_MAIN" init -q
+cat > "$WT_MAIN/mobile/pubspec.yaml" <<'EOF'
+name: linked_purge_test
+EOF
+touch "$WT_MAIN/mobile/packages/bar/.keep"
+git -C "$WT_MAIN" add mobile/pubspec.yaml mobile/packages/bar/.keep
+git -C "$WT_MAIN" \
+  -c user.email=test@example.com \
+  -c user.name=Test \
+  commit -q -m init
+git -C "$WT_MAIN" worktree add -q "$WT_LINK"
+
+mkdir -p "$WT_LINK/mobile/build" \
+  "$WT_LINK/mobile/.dart_tool" \
+  "$WT_LINK/mobile/packages/bar/build"
+touch "$WT_LINK/mobile/build/output.o" \
+  "$WT_LINK/mobile/.dart_tool/package_config.json" \
+  "$WT_LINK/mobile/packages/bar/build/output.o"
+
+CLEAR_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"clear"}')
+RESUME_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"resume"}')
+if [ -n "$CLEAR_OUTPUT$RESUME_OUTPUT" ] || [ ! -d "$WT_LINK/mobile/build" ] || [ ! -d "$WT_LINK/mobile/.dart_tool" ]; then
+  echo "Purge hook did not skip clear/resume SessionEnd reasons." >&2
+  exit 1
+fi
+
+PURGE_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+printf '%s\n' "$PURGE_OUTPUT" | jq -e \
+  '.systemMessage == "Purged 3 build/.dart_tool dirs from purge-linked"' >/dev/null
+if [ -d "$WT_LINK/mobile/build" ] || [ -d "$WT_LINK/mobile/.dart_tool" ] || [ -d "$WT_LINK/mobile/packages/bar/build" ]; then
+  echo "Purge hook did not remove linked worktree build artifacts." >&2
+  exit 1
+fi
+if [ -e "$WT_LINK/.claude-purge" ]; then
+  echo "Purge hook staged artifacts inside the worktree." >&2
+  exit 1
+fi
+if [ -n "$(git -C "$WT_LINK" status --short)" ]; then
+  echo "Purge hook left the linked worktree dirty." >&2
+  exit 1
+fi
+
+gitdir=$(git -C "$WT_LINK" rev-parse --absolute-git-dir)
+mkdir -p "$gitdir/claude-purge/old"
+touch "$gitdir/claude-purge/old/artifact"
+NOOP_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+if [ -n "$NOOP_OUTPUT" ] || [ -d "$gitdir/claude-purge" ]; then
+  echo "Purge hook did not clean leftover staging on a no-op run." >&2
   exit 1
 fi
 

@@ -20,6 +20,16 @@ set -euo pipefail
 
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
 
+input=""
+if [ ! -t 0 ]; then
+  input="$(cat || true)"
+fi
+reason="$(printf '%s' "$input" | jq -r '.reason // empty' 2>/dev/null || true)"
+case "$reason" in
+  logout|prompt_input_exit|other|bypass_permissions_disabled) ;;
+  *) exit 0 ;;
+esac
+
 # Only meaningful in a divine-mobile checkout.
 [ -f "$root/mobile/pubspec.yaml" ] || exit 0
 
@@ -31,12 +41,17 @@ case "$gitdir" in
   *) exit 0 ;;
 esac
 
-# Stage removals under one directory, then delete detached. Renaming within a
-# filesystem is instant, so the session exits immediately instead of waiting
-# on tens of GB of unlink; a killed background rm just leaves the staging dir
-# for the next run to collect.
-trash="$root/.claude-purge"
-rm -rf "$trash" 2>/dev/null || true
+# Stage removals under the linked worktree gitdir, then delete detached.
+# Renaming within a filesystem is instant, so the session exits immediately
+# instead of waiting on tens of GB of unlink; a killed background rm just
+# leaves the staging dir for the next run to collect.
+trash="$gitdir/claude-purge"
+if [ -d "$trash" ]; then
+  leftover="$trash.$$"
+  if mv "$trash" "$leftover" 2>/dev/null; then
+    nohup rm -rf "$leftover" >/dev/null 2>&1 &
+  fi
+fi
 mkdir -p "$trash"
 
 n=0
