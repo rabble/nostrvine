@@ -9,6 +9,7 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -249,7 +250,8 @@ class _InviteCodeCard extends StatelessWidget {
               foregroundColor: VineTheme.vineGreen,
               showShadow: false,
               tooltip: context.l10n.invitesShareInvite,
-              onPressed: () => SharePlus.instance.share(
+              onPressed: () => showShareSheet(
+                context,
                 ShareParams(
                   text: _shareMessage(context),
                   subject: context.l10n.invitesShareSubject,

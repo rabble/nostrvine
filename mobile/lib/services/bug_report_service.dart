@@ -17,6 +17,7 @@ import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/browser_file_download.dart';
 import 'package:openvine/utils/device_memory_util.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -226,8 +227,15 @@ class BugReportService {
     return jsonString.length;
   }
 
-  /// Send bug report via email by creating a file attachment
-  Future<BugReportResult> sendBugReportViaEmail(BugReportData data) async {
+  /// Send bug report via email by creating a file attachment.
+  ///
+  /// [sharePositionOrigin] anchors the iOS share sheet popover and is
+  /// required on iPad idiom — see [exportLogsToFile] for the failure mode.
+  /// Resolve it with `shareAnchorForContext` at the widget layer.
+  Future<BugReportResult> sendBugReportViaEmail(
+    BugReportData data, {
+    ui.Rect? sharePositionOrigin,
+  }) async {
     try {
       Log.info(
         'Creating bug report file for email ${data.reportId}',
@@ -306,7 +314,12 @@ class BugReportService {
         return _sendBugReportWeb(content, fileName, data.reportId);
       } else {
         // Native: Share via system dialog (user can choose email)
-        return _sendBugReportNative(content, fileName, data.reportId);
+        return _sendBugReportNative(
+          content,
+          fileName,
+          data.reportId,
+          sharePositionOrigin: sharePositionOrigin,
+        );
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -393,8 +406,9 @@ class BugReportService {
   Future<BugReportResult> _sendBugReportNative(
     String content,
     String fileName,
-    String reportId,
-  ) async {
+    String reportId, {
+    ui.Rect? sharePositionOrigin,
+  }) async {
     try {
       // Get temporary directory
       final tempDir = await getTemporaryDirectory();
@@ -413,13 +427,14 @@ class BugReportService {
       );
 
       // Share the file with instructions
-      final result = await SharePlus.instance.share(
+      final result = await showShareSheetAtOrigin(
         ShareParams(
           files: [XFile(filePath)],
           subject: 'OpenVine Bug Report',
           text:
               'Please email this bug report to ${BugReportConfig.supportEmail}\n\nReport ID: $reportId',
         ),
+        sharePositionOrigin: sharePositionOrigin,
       );
 
       if (result.status == ShareResultStatus.success) {
@@ -880,13 +895,13 @@ class BugReportService {
       // Share the file
       // Note: text field is intentionally minimal to ensure the file is the primary content
       // When users select "Copy" in the share dialog, they should get the file, not metadata
-      final result = await SharePlus.instance.share(
+      final result = await showShareSheetAtOrigin(
         ShareParams(
           files: [XFile(filePath)],
           subject: 'OpenVine Full Logs',
           text: 'OpenVine Full Logs',
-          sharePositionOrigin: sharePositionOrigin,
         ),
+        sharePositionOrigin: sharePositionOrigin,
       );
 
       if (result.status == ShareResultStatus.success) {

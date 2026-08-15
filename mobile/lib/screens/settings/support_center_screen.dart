@@ -143,7 +143,7 @@ class SupportCenterScreen extends ConsumerWidget {
   ) async {
     // Resolve the popover anchor before any await — iPad idiom (including
     // iOS builds on Apple Silicon Macs) rejects the share sheet without it.
-    final sharePositionOrigin = sharePositionOriginForContext(context);
+    final sharePositionOrigin = shareAnchorForContext(context);
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(
         context.l10n.supportExportingLogs,

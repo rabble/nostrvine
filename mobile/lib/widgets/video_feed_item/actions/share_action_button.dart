@@ -29,6 +29,7 @@ import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/crosspost_sheet.dart';
@@ -348,7 +349,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         :final subject,
       ):
         final files = thumbnailPath != null ? [XFile(thumbnailPath)] : null;
-        SharePlus.instance.share(
+        showShareSheet(
+          context,
           ShareParams(
             text: shareUrl,
             files: files,

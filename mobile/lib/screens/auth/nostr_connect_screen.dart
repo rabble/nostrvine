@@ -13,6 +13,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -250,7 +251,8 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   Future<void> _shareUrl() async {
     if (_connectUrl == null) return;
 
-    await SharePlus.instance.share(
+    await showShareSheet(
+      context,
       ShareParams(text: _connectUrl, title: context.l10n.authConnectToDivine),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:ui' show Rect;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/support_email_composer.dart';
@@ -28,7 +30,7 @@ void main() {
         externalLaunchCalled = true;
         return true;
       },
-      shareTextLauncher: (text, {subject}) async {
+      shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
         shareCalled = true;
       },
     );
@@ -57,7 +59,7 @@ void main() {
         launchedUri = uri;
         return true;
       },
-      shareTextLauncher: (text, {subject}) async {
+      shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
         shareCalled = true;
       },
     );
@@ -80,21 +82,30 @@ void main() {
 
       String? sharedText;
       String? sharedSubject;
+      Rect? sharedOrigin;
 
       final composer = SupportEmailComposer(
         externalUriLauncher: (_) async => false,
-        shareTextLauncher: (text, {subject}) async {
+        shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
           sharedText = text;
           sharedSubject = subject;
+          sharedOrigin = sharePositionOrigin;
         },
       );
 
-      await composer.compose(toEmail: toEmail, subject: subject, body: body);
+      await composer.compose(
+        toEmail: toEmail,
+        subject: subject,
+        body: body,
+        sharePositionOrigin: const Rect.fromLTWH(8, 16, 32, 64),
+      );
 
       expect(sharedText, contains(toEmail));
       expect(sharedText, contains(subject));
       expect(sharedText, contains(body));
       expect(sharedSubject, subject);
+      // iPad refuses the fallback share without the popover anchor (#7506).
+      expect(sharedOrigin, const Rect.fromLTWH(8, 16, 32, 64));
     },
   );
 
@@ -107,7 +118,7 @@ void main() {
       androidChooserLauncher: (uri, title) {
         throw Exception('$title: $uri');
       },
-      shareTextLauncher: (text, {subject}) async {
+      shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
         sharedText = text;
       },
     );

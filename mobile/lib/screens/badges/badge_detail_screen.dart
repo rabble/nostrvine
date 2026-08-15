@@ -17,6 +17,7 @@ import 'package:openvine/screens/badges/badge_delete_confirmation_sheet.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/badges/widgets/badge_recipient_row.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -143,7 +144,7 @@ class BadgeDetailView extends StatelessWidget {
     final message = context.l10n.badgeDetailShareMessage(
       'https://badges.divine.video/b/${coordinate.toNaddr()}',
     );
-    await SharePlus.instance.share(ShareParams(text: message));
+    await showShareSheet(context, ShareParams(text: message));
   }
 
   static Future<void> _delete(BuildContext context) async {

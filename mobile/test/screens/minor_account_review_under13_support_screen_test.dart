@@ -83,6 +83,7 @@ void main() {
       String? sentToEmail;
       String? sentSubject;
       String? sentBody;
+      Rect? sentOrigin;
 
       await tester.pumpWidget(
         ProviderScope(
@@ -114,10 +115,12 @@ void main() {
                     required String toEmail,
                     required String subject,
                     required String body,
+                    Rect? sharePositionOrigin,
                   }) async {
                     sentToEmail = toEmail;
                     sentSubject = subject;
                     sentBody = body;
+                    sentOrigin = sharePositionOrigin;
                   },
             ),
           ),
@@ -133,6 +136,10 @@ void main() {
       expect(sentToEmail, 'support@divine.video');
       expect(sentSubject, 'Under-13 account review for case case-under13');
       expect(sentBody, contains('I am the parent or guardian'));
+      // The composer's share-sheet fallback is refused on iPad without an
+      // anchor, so the screen has to resolve one (#7506).
+      expect(sentOrigin, isNotNull);
+      expect(sentOrigin!.isEmpty, isFalse);
     });
   });
 }

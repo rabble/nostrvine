@@ -27,6 +27,7 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/share_position_origin.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
@@ -209,9 +210,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     final shareTextFn = l10n.profileShareText;
     final shareSubjectFn = l10n.profileShareSubject;
     final fallbackName = l10n.profileUserFallback;
-    final sharePositionOrigin = sharePositionOriginForContext(
-      shareButtonContext,
-    );
+    final sharePositionOrigin = shareAnchorForContext(shareButtonContext);
 
     try {
       final profile = await ref
@@ -221,12 +220,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
       final npub = NostrKeyUtils.encodePubKey(widget.pubkey);
       final shareText = shareTextFn(displayName, npub);
 
-      await SharePlus.instance.share(
-        ShareParams(
-          text: shareText,
-          subject: shareSubjectFn(displayName),
-          sharePositionOrigin: sharePositionOrigin,
-        ),
+      await showShareSheetAtOrigin(
+        ShareParams(text: shareText, subject: shareSubjectFn(displayName)),
+        sharePositionOrigin: sharePositionOrigin,
       );
     } catch (e) {
       Log.error(

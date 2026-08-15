@@ -1,6 +1,8 @@
 // ABOUTME: Minor-account review Riverpod providers for auth restriction gating
 // ABOUTME: Wires API-backed status, repository, and developer override service
 
+import 'dart:ui' show Rect;
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
@@ -17,6 +19,7 @@ typedef MinorAccountReviewComposeEmail =
       required String toEmail,
       required String subject,
       required String body,
+      Rect? sharePositionOrigin,
     });
 
 /// Support-email composer used by minor-account review screens.

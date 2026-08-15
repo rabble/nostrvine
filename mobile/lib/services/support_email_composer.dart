@@ -1,5 +1,8 @@
+import 'dart:ui' show Rect;
+
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/foundation.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,7 +10,11 @@ import 'package:url_launcher/url_launcher.dart';
 typedef ExternalUriLauncher = Future<bool> Function(Uri uri);
 typedef AndroidChooserLauncher = Future<void> Function(Uri uri, String title);
 typedef ShareTextLauncher =
-    Future<void> Function(String text, {String? subject});
+    Future<void> Function(
+      String text, {
+      String? subject,
+      Rect? sharePositionOrigin,
+    });
 
 String _buildFallbackShareText({
   required String toEmail,
@@ -29,7 +36,7 @@ class SupportEmailComposer {
   SupportEmailComposer({
     Future<bool> Function(Uri uri)? externalUriLauncher,
     Future<void> Function(Uri uri, String title)? androidChooserLauncher,
-    Future<void> Function(String text, {String? subject})? shareTextLauncher,
+    ShareTextLauncher? shareTextLauncher,
   }) : _externalUriLauncher =
            externalUriLauncher ??
            ((uri) => launchUrl(uri, mode: LaunchMode.externalApplication)),
@@ -44,9 +51,10 @@ class SupportEmailComposer {
            }),
        _shareTextLauncher =
            shareTextLauncher ??
-           ((text, {subject}) async {
-             await SharePlus.instance.share(
+           ((text, {subject, sharePositionOrigin}) async {
+             await showShareSheetAtOrigin(
                ShareParams(text: text, subject: subject),
+               sharePositionOrigin: sharePositionOrigin,
              );
            });
 
@@ -54,11 +62,16 @@ class SupportEmailComposer {
   final AndroidChooserLauncher _androidChooserLauncher;
   final ShareTextLauncher _shareTextLauncher;
 
+  /// [sharePositionOrigin] anchors the iOS share-sheet popover used as the
+  /// fallback when no mail client handles the `mailto:` URI. iPad idiom
+  /// rejects the share without it, so widget-layer callers resolve it with
+  /// `shareAnchorForContext` before calling.
   Future<void> compose({
     required String toEmail,
     required String subject,
     required String body,
     String chooserTitle = 'Choose email app',
+    Rect? sharePositionOrigin,
   }) async {
     final encodedSubject = Uri.encodeComponent(subject);
     final encodedBody = Uri.encodeComponent(body);
@@ -91,6 +104,7 @@ class SupportEmailComposer {
     await _shareTextLauncher(
       _buildFallbackShareText(toEmail: toEmail, subject: subject, body: body),
       subject: subject,
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 }

@@ -14,6 +14,7 @@ void main() {
       String? sentToEmail;
       String? sentSubject;
       String? sentBody;
+      Rect? sentOrigin;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -25,10 +26,12 @@ void main() {
                   required String toEmail,
                   required String subject,
                   required String body,
+                  Rect? sharePositionOrigin,
                 }) async {
                   sentToEmail = toEmail;
                   sentSubject = subject;
                   sentBody = body;
+                  sentOrigin = sharePositionOrigin;
                 },
           ),
         ),
@@ -49,6 +52,10 @@ void main() {
       expect(sentBody, l10n.minorAccountReviewParentConsentEmailBody);
       expect(sentSubject, contains('Divine Greenlight'));
       expect(sentBody, contains('Divine Greenlight'));
+      // The composer's share-sheet fallback is refused on iPad without an
+      // anchor, so the screen has to resolve one (#7506).
+      expect(sentOrigin, isNotNull);
+      expect(sentOrigin!.isEmpty, isFalse);
     });
   });
 }
