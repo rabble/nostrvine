@@ -7659,7 +7659,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Dit account staat op Divine\'s lijst met profielvinkjes. Dat staat los van NIP-05, geverifieerde accountlinks en de OG Viner-status.';
+      'Divine geeft dit vinkje aan teamaccounts en aan een klein aantal handmatig goedgekeurde profielen. Dat staat los van NIP-05, geverifieerde accountlinks en de OG Viner-status.';
 
   @override
   String shareVideoInListsCount(int count) {

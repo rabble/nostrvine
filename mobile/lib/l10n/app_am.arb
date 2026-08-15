@@ -5022,7 +5022,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "ይህ ሰው Divine በማህደር ውስጥ ያገኘውን ዋና Vine ለጥፏል። ይህ የመለያ ማረጋገጫ ባጅ አይደለም።",
     "profileBadgeCheckmarkTitle": "የመገለጫ ምልክት",
-    "profileBadgeCheckmarkBody": "ይህ መለያ በDivine የመገለጫ ምልክት ዝርዝር ውስጥ ነው። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።",
+    "profileBadgeCheckmarkBody": "Divine ይህን ምልክት ለቡድን መለያዎች እና በእጅ ለጸደቁ ጥቂት መገለጫዎች ይሰጣል። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።",
     "shareVideoInListsCount": "{count, plural, =1{በ{count} ዝርዝር ውስጥ} other{በ{count} ዝርዝሮች ውስጥ}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "አትከተል",

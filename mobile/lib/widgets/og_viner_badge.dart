@@ -6,9 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 class OgVinerBadge extends StatelessWidget {
-  const OgVinerBadge({super.key, this.size = 14});
+  const OgVinerBadge({super.key, this.size = 14, this.leadingGap = 4});
 
   final double size;
+  final double leadingGap;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +19,7 @@ class OgVinerBadge extends StatelessWidget {
       container: true,
       child: ExcludeSemantics(
         child: Container(
-          margin: const EdgeInsetsDirectional.only(start: 4),
+          margin: EdgeInsetsDirectional.only(start: leadingGap),
           width: dimension,
           height: dimension,
           alignment: Alignment.center,

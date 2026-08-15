@@ -7723,7 +7723,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Dieses Konto steht auf Divines Liste für Profil-Häkchen. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.';
+      'Divine vergibt dieses Häkchen an Team-Konten und an eine kleine Zahl manuell freigegebener Profile. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.';
 
   @override
   String shareVideoInListsCount(int count) {

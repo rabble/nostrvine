@@ -4,6 +4,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 
 void main() {
@@ -87,6 +88,48 @@ void main() {
     // de-duplicating.
     test('no retired key is also the current key', () {
       expect(kLegacyModerationPubkeys, isNot(contains(kModerationPubkeyHex)));
+    });
+
+    group('profile checkmark pubkeys', () {
+      // Lookups lowercase the profile's pubkey before testing membership, so
+      // an entry pasted in mixed case matches nobody — no crash, no analyzer
+      // complaint, just a team member who never gets the checkmark.
+      final checkmarkPubkeys = {
+        ...kDivineTeamPubkeys,
+        ...kLegacyProfileCheckmarkPubkeys,
+      };
+
+      test('every entry is a 64-character lowercase hex pubkey', () {
+        for (final pubkey in checkmarkPubkeys) {
+          expect(
+            pubkey,
+            matches(RegExp(r'^[0-9a-f]{64}$')),
+            reason: '$pubkey is not a lowercase hex pubkey',
+          );
+        }
+      });
+
+      test('the two sets do not overlap', () {
+        expect(
+          kDivineTeamPubkeys.intersection(kLegacyProfileCheckmarkPubkeys),
+          isEmpty,
+        );
+      });
+
+      // Sebastian and Rabble are spelled out in both this file and the
+      // curation constants, so a rotation or a typo can move one copy and
+      // leave the other behind.
+      //
+      // Pinned in one direction only, and deliberately: an account trusted to
+      // publish Divine's official kind-30005 lists is acting as Divine, so it
+      // should carry the badge too. The reverse is not required — the lists
+      // stay separate so that adding a team member never hands out curation
+      // authority, which is the direction that actually matters.
+      test('every curation pubkey is also a team pubkey', () {
+        for (final pubkey in AppConstants.divineTeamPubkeys) {
+          expect(kDivineTeamPubkeys, contains(pubkey));
+        }
+      });
     });
   });
 }

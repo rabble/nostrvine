@@ -7698,7 +7698,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Esta cuenta está en la lista de tildes de perfil de Divine. Es independiente de NIP-05, de los enlaces de cuenta verificados y del estado OG Viner.';
+      'Divine da esta tilde a las cuentas del equipo y a un pequeño grupo de perfiles aprobados manualmente. Es independiente de NIP-05, de los enlaces de cuenta verificados y del estado OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

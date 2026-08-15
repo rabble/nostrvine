@@ -1,45 +1,25 @@
-// ABOUTME: Hosts explicit exceptions for profile checkmark display.
-// ABOUTME: Keeps special-case badges separate from generic NIP-05 validation.
+// ABOUTME: Decides which profiles carry the Divine team checkmark.
+// ABOUTME: Keeps the team badge separate from generic NIP-05 validation.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 
-const _specialProfileHosts = {
-  'kirstenswasey.divine.video',
-  'rabble.divine.video',
-};
-
-const _specialProfilePubkeys = {
-  'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
-};
-
-bool shouldShowSpecialProfileCheckmark(UserProfile? profile) {
-  if (profile == null) return false;
-  return _specialProfilePubkeys.contains(profile.pubkey.toLowerCase()) ||
-      _matchesSpecialProfile(profile.nip05) ||
-      _matchesSpecialProfile(profile.displayNip05);
-}
-
-bool _matchesSpecialProfile(String? identifier) {
-  final host = _hostFromProfileIdentifier(identifier);
-  return _specialProfileHosts.contains(host);
-}
-
-String? _hostFromProfileIdentifier(String? identifier) {
-  if (identifier == null) return null;
-  final value = identifier.trim().toLowerCase();
-  if (value.isEmpty) return null;
-
-  final uri = Uri.tryParse(value);
-  if ((uri?.hasScheme ?? false) && uri!.host.isNotEmpty) {
-    return uri.host;
-  }
-
-  final atIndex = value.indexOf('@');
-  final hostLikeValue = atIndex == -1 ? value : value.substring(atIndex + 1);
-  return hostLikeValue.split('/').first;
+/// Whether [pubkeyHex] carries the Divine team checkmark.
+///
+/// Matches on pubkey alone. A NIP-05 identifier is not an input: the name
+/// server can reassign a handle, which would carry the checkmark to whoever
+/// claims it next.
+///
+/// Takes the pubkey rather than the profile so the badge does not wait on a
+/// kind-0 that cannot change the answer — a team member whose profile is slow
+/// or never resolves still gets their checkmark on first paint.
+bool shouldShowSpecialProfileCheckmark(String? pubkeyHex) {
+  if (pubkeyHex == null) return false;
+  final pubkey = pubkeyHex.toLowerCase();
+  return kDivineTeamPubkeys.contains(pubkey) ||
+      kLegacyProfileCheckmarkPubkeys.contains(pubkey);
 }
 
 class SpecialProfileCheckmark extends StatelessWidget {
@@ -47,10 +27,12 @@ class SpecialProfileCheckmark extends StatelessWidget {
     super.key,
     this.iconSize = 10,
     this.padding = 2,
+    this.leadingGap = 4,
   });
 
   final double iconSize;
   final double padding;
+  final double leadingGap;
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +41,9 @@ class SpecialProfileCheckmark extends StatelessWidget {
       container: true,
       child: ExcludeSemantics(
         child: Padding(
-          padding: const EdgeInsetsDirectional.only(start: 4),
+          padding: EdgeInsetsDirectional.only(start: leadingGap),
           child: Container(
-            padding: EdgeInsets.all(padding),
+            padding: EdgeInsets.all(DivineIcon.scaleSize(context, padding)),
             decoration: const BoxDecoration(
               color: VineTheme.info,
               shape: BoxShape.circle,

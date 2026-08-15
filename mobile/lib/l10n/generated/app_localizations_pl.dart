@@ -7799,7 +7799,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'To konto jest na liście znaczników profilu Divine. To coś innego niż NIP-05, zweryfikowane linki konta i status OG Viner.';
+      'Divine przyznaje ten znacznik kontom zespołu i niewielkiej grupie ręcznie zatwierdzonych profili. To coś innego niż NIP-05, zweryfikowane linki konta i status OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

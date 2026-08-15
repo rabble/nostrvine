@@ -4897,7 +4897,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "نشر هذا الشخص مقطع Vine أصليًا عثرت عليه Divine في الأرشيف. هذه ليست شارة توثيق حساب.",
     "profileBadgeCheckmarkTitle": "علامة الملف الشخصي",
-    "profileBadgeCheckmarkBody": "هذا الحساب مدرج في قائمة علامات الملف الشخصي لدى Divine. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.",
+    "profileBadgeCheckmarkBody": "تمنح Divine هذه العلامة لحسابات الفريق ولمجموعة صغيرة من الملفات الشخصية المعتمدة يدويًا. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.",
     "shareVideoInListsCount": "{count, plural, zero{في لا قوائم} one{في قائمة واحدة} two{في قائمتين} few{في {count} قوائم} many{في {count} قائمة} other{في {count} قائمة}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "إلغاء المتابعة",

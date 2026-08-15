@@ -7619,7 +7619,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Det här kontot finns på Divines lista över profilbockar. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.';
+      'Divine ger den här bocken till teamets konton och till ett litet antal manuellt godkända profiler. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.';
 
   @override
   String shareVideoInListsCount(int count) {

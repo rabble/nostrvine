@@ -7631,7 +7631,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Tài khoản này nằm trong danh sách dấu tích hồ sơ của Divine. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.';
+      'Divine trao dấu tích này cho các tài khoản của đội ngũ và một số ít hồ sơ được duyệt thủ công. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

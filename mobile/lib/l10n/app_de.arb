@@ -4897,7 +4897,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Diese Person hat ein Original-Vine gepostet, das Divine im Archiv gefunden hat. Das ist kein Verifizierungs-Badge fürs Konto.",
     "profileBadgeCheckmarkTitle": "Profil-Häkchen",
-    "profileBadgeCheckmarkBody": "Dieses Konto steht auf Divines Liste für Profil-Häkchen. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.",
+    "profileBadgeCheckmarkBody": "Divine vergibt dieses Häkchen an Team-Konten und an eine kleine Zahl manuell freigegebener Profile. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.",
     "shareVideoInListsCount": "{count, plural, =1{In 1 Liste} other{In {count} Listen}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Nicht mehr folgen",

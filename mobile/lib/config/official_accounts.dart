@@ -1,6 +1,7 @@
-// ABOUTME: Pinned set of official Divine accounts a protected minor (13-15) may
-// ABOUTME: DM (#176). The pin blocks attacker ADDITION (no key the app didn't ship
-// ABOUTME: can join); the NIP-05 leg is the revocation lever (see OfficialAccountsService).
+// ABOUTME: Shipped identities Divine treats as its own: the pinned accounts a
+// ABOUTME: protected minor (13-15) may DM (#176), and the team pubkeys that carry
+// ABOUTME: the profile checkmark. Pinned accounts keep NIP-05 as a revocation
+// ABOUTME: lever; checkmark-only entries are release-gated.
 
 /// One pinned official account. `pubkeyHex` is the shipped identity; `nip05` is
 /// the canonical identifier whose live resolution must still map back to
@@ -30,9 +31,18 @@ abstract class OfficialAccountRole {
   static const String moderation = 'moderation';
 }
 
+/// The Divine HQ pubkey — the pinned identity below and the HQ entry in
+/// [kDivineTeamPubkeys].
+///
+/// Single-sourced for the same reason as [kModerationPubkeyHex]: a second copy
+/// would let the checkmark and the protected-minor pin drift onto different
+/// keys.
+const String kHqPubkeyHex =
+    'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
+
 /// Divine HQ's pinned identity.
 const OfficialAccount kHqAccount = OfficialAccount(
-  pubkeyHex: 'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e',
+  pubkeyHex: kHqPubkeyHex,
   nip05: '_@divinehq.divine.video',
   role: OfficialAccountRole.hq,
   minorContactable: true,
@@ -68,6 +78,71 @@ const List<OfficialAccount> kPinnedOfficialAccounts = [
   kHqAccount,
   kModerationAccount,
 ];
+
+/// The Divine team and Divine's own accounts, by pubkey. Drives the profile
+/// checkmark.
+///
+/// Pubkey-keyed, never by NIP-05 handle: a handle is a name
+/// `divine-name-server` hands out and can reassign, so a handle rule moves the
+/// checkmark to whoever claims that name next.
+///
+/// Distinct from `AppConstants.divineTeamPubkeys`, which grants kind-30005
+/// curation authority. Being on the team and curating official lists are
+/// different permissions; folding them into one list would mean every new
+/// curator silently gained a checkmark.
+const Set<String> kDivineTeamPubkeys = {
+  // Rabble
+  'd95aa8fc0eff8e488952495b8064991d27fb96ed8652f12cdedc5a4e8b5ae540',
+  // Liz
+  '0edc2f474484769bc9bf6d471d180e4e280b0bcd719b6da791001beb730cff1b',
+  // Daniel
+  '89ef92b9ebe6dc1e4ea398f6477f227e95429627b0a33dc89b640e137b256be5',
+  // Alex
+  '04c106a7b7b1ac0a26f0e2ad22aaa2cfc3263bb7749a165545689282d1975c23',
+  // Sebastian
+  '295dbec79ee785496f703c9648f246665d46839c1d5f582c0342b4583da5ccb4',
+  // Meylis
+  '9be8bd90d818407bcf574d11b1c57f104fd53f40fa767abc4a631ee2694b43a3',
+  // Matt
+  '9cfa7d570af5dde1d79b476ac2c8b543b1970065d5488f4d86faf3c34c167e31',
+  // Martin
+  '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886',
+  // Susan
+  '1f0fa01371871502efbbb45f933ea07251265c940de279301dba3af4ccda085b',
+  // Charlie
+  'a7e9d5d90b17fad6e4526ce58f0af997b8c14826ecbdbc2c3955e6e258f4000c',
+  // Kate
+  'fb42392125a2c80acf3cd6ac30db8a2cdf9d44ef63865a95fded2f6a2186d44d',
+  // Alice
+  'fc7031a810ce4b02b6195a7e477cfe3d08c0386038bd45b4431f82d9b3f5ffb0',
+  // Lauren
+  '4e61fa221df35d3975d1c6abefa1dce1bd3beef3ce99b3b2883f5fe7467ca0ef',
+  // Aleysha
+  'ae35ec87e49f3ca2c92a0bbb40c507ae4a6a8e01de29eb9518bc941ed285f943',
+  // Divine HQ
+  kHqPubkeyHex,
+};
+
+/// Checkmarks that are not team membership.
+///
+/// Two are grandfathered: [kDivineTeamPubkeys] replaced a NIP-05-host rule, and
+/// dropping them would have stripped a badge someone already had. The third was
+/// granted here, so this is not purely a legacy set — it is every checkmark the
+/// team rule does not explain.
+///
+/// All of them render the same badge and the same explanation as the team, so
+/// each should either move into [kDivineTeamPubkeys] or go away once its status
+/// is settled.
+const Set<String> kLegacyProfileCheckmarkPubkeys = {
+  // Kirsten Swasey, granted in #3445 by NIP-05 host; resolved to her pubkey
+  // via kirstenswasey.divine.video/.well-known/nostr.json.
+  'cd4ce30f980c960757b46179608a4946fc06cad47f6dc8960f638e41312c1643',
+  // Added in #4537 as a bare npub with no owner named in the PR or its issue.
+  'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
+  // Improvising. Granted here, not grandfathered — it predates neither the
+  // team rule nor this set.
+  '5ab67f7d7fed4f781008c0ec0d26c8113f9fb46094a8346246c70c75e75db9fb',
+};
 
 /// Moderation pubkeys the account has rotated away from.
 ///

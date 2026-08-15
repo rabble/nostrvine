@@ -376,7 +376,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                       ),
                                     ),
                                     if (shouldShowSpecialProfileCheckmark(
-                                      profile,
+                                      authorPubkey,
                                     ))
                                       const SpecialProfileCheckmark(),
                                     if (isOgViner) const OgVinerBadge(),

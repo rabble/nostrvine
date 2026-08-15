@@ -7630,7 +7630,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'یہ اکاؤنٹ Divine کی پروفائل چیک مارک فہرست میں ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔';
+      'Divine یہ چیک مارک ٹیم کے اکاؤنٹس اور دستی طور پر منظور شدہ چند پروفائلز کو دیتا ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔';
 
   @override
   String shareVideoInListsCount(int count) {

@@ -7461,7 +7461,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'ይህ መለያ በDivine የመገለጫ ምልክት ዝርዝር ውስጥ ነው። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
+      'Divine ይህን ምልክት ለቡድን መለያዎች እና በእጅ ለጸደቁ ጥቂት መገለጫዎች ይሰጣል። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
 
   @override
   String shareVideoInListsCount(int count) {

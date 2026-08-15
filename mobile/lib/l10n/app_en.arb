@@ -4577,9 +4577,9 @@
   "@profileBadgeCheckmarkTitle": {
     "description": "Title for the dialog explaining the special profile checkmark badge."
   },
-  "profileBadgeCheckmarkBody": "This account is on Divine's profile checkmark list. It is separate from NIP-05, verified account links, and OG Viner status.",
+  "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
   "@profileBadgeCheckmarkBody": {
-    "description": "Body copy explaining that the special profile checkmark is a Divine-specific profile marker, not NIP-05, verified-account links, or OG Viner status."
+    "description": "Body copy explaining that the special profile checkmark marks Divine team accounts and manually approved profiles, not NIP-05, verified-account links, or OG Viner status."
   },
   "shareVideoInListsCount": "{count, plural, =1{In 1 list} other{In {count} lists}}",
   "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},

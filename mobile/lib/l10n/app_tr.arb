@@ -4897,7 +4897,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Bu kişi, Divine'ın arşivde bulduğu orijinal bir Vine paylaşmış. Bu bir hesap doğrulama rozeti değil.",
     "profileBadgeCheckmarkTitle": "Profil onay işareti",
-    "profileBadgeCheckmarkBody": "Bu hesap Divine'ın profil onay işareti listesinde. NIP-05'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.",
+    "profileBadgeCheckmarkBody": "Divine bu onay işaretini ekip hesaplarına ve elle onaylanmış az sayıda profile veriyor. NIP-05'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.",
     "shareVideoInListsCount": "{count, plural, =1{1 listede} other{{count} listede}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Takipten çık",

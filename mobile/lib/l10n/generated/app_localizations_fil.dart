@@ -7718,7 +7718,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Nasa listahan ng profile checkmark ng Divine ang account na ito. Hiwalay ito sa NIP-05, sa mga verified na link ng account, at sa OG Viner status.';
+      'Ibinibigay ng Divine ang tsek na ito sa mga account ng team at sa iilang profile na manu-manong inaprubahan. Hiwalay ito sa NIP-05, sa mga verified na link ng account, at sa OG Viner status.';
 
   @override
   String shareVideoInListsCount(int count) {

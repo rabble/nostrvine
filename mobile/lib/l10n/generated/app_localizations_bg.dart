@@ -7698,7 +7698,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Този профил е в списъка с отметки на профил на Divine. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.';
+      'Divine дава тази отметка на профилите на екипа и на малка група ръчно одобрени профили. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

@@ -7281,7 +7281,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'このアカウントは Divine のプロフィールチェックマークのリストに入ってる。NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。';
+      'Divine はこのチェックマークをチームのアカウントと、手動で承認したごく少数のプロフィールに付けてるよ。 NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。';
 
   @override
   String shareVideoInListsCount(int count) {

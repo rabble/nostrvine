@@ -20,6 +20,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -37,10 +38,12 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/og_viner_cache_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -277,9 +280,10 @@ void main() {
       Map<String, dynamic> rawData = const {},
       DateTime? createdAt,
       String eventId = 'test-event',
+      String pubkey = testUserHex,
     }) {
       return UserProfile(
-        pubkey: testUserHex,
+        pubkey: pubkey,
         rawData: {
           'display_name': ?displayName,
           'name': ?name,
@@ -340,6 +344,7 @@ void main() {
       bool monetizationLinksEnabled = false,
       ThemeData? theme,
       bool disableAnimations = false,
+      TextScaler? textScaler,
       bool renderHeader = true,
       MockAuthService? authService,
     }) {
@@ -464,9 +469,10 @@ void main() {
           theme: theme,
           home: Builder(
             builder: (context) => MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(disableAnimations: disableAnimations),
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: disableAnimations,
+                textScaler: textScaler ?? MediaQuery.textScalerOf(context),
+              ),
               child: Scaffold(body: SingleChildScrollView(child: header)),
             ),
           ),
@@ -570,14 +576,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final target = find.byTooltip(l10n.ogVinerBadgeLabel);
-      expect(target, findsOneWidget);
-      expect(find.text('V'), findsNothing);
-      final button = find.ancestor(
-        of: target,
-        matching: find.byType(DivineIconButton),
-      );
+      final button = find.byTooltip(l10n.ogVinerBadgeLabel);
       expect(button, findsOneWidget);
+      // The header shows the same badge as the feed, glyph and all.
+      expect(find.byType(OgVinerBadge), findsOneWidget);
       // The badge must stay a real tap target; the exact box is the design
       // system's to decide, so assert the 48dp floor rather than a number.
       final buttonSize = tester.getSize(button);
@@ -599,23 +601,25 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          userIdHex: testUserHex,
+          userIdHex: kDivineTeamPubkeys.first,
           isOwnProfile: false,
           suppliedProfile: createTestProfile(
             displayName: 'Checked User',
-            nip05: 'rabble.divine.video',
+            pubkey: kDivineTeamPubkeys.first,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final target = find.byTooltip(l10n.profileBadgeCheckmarkTitle);
-      expect(target, findsOneWidget);
-      final button = find.ancestor(
-        of: target,
-        matching: find.byType(DivineIconButton),
-      );
+      final button = find.byTooltip(l10n.profileBadgeCheckmarkTitle);
       expect(button, findsOneWidget);
+      // The header shows the same blue checkmark badge as the feed.
+      expect(find.byType(SpecialProfileCheckmark), findsOneWidget);
+      // The badge widget carries its own label; announcing the meaning once,
+      // as the tappable node, is the contract the header has to keep.
+      final semantics = tester.getSemantics(button);
+      expect(semantics.label, equals(l10n.profileBadgeCheckmarkTitle));
+      expect(semantics.value, equals(l10n.profileBadgeCheckmarkBody));
       // The badge must stay a real tap target; the exact box is the design
       // system's to decide, so assert the 48dp floor rather than a number.
       final buttonSize = tester.getSize(button);
@@ -628,6 +632,37 @@ void main() {
       expect(find.text(l10n.profileBadgeCheckmarkTitle), findsWidgets);
       expect(find.text(l10n.profileBadgeCheckmarkBody), findsOneWidget);
       expect(find.text(l10n.commonClose), findsOneWidget);
+    });
+
+    testWidgets('header badges keep matching diameters at capped text scale', (
+      tester,
+    ) async {
+      final teamPubkey = kDivineTeamPubkeys.first;
+      SharedPreferences.setMockInitialValues({
+        ogVinerPubkeysCacheKey: jsonEncode([teamPubkey]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: teamPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Checked OG User',
+            pubkey: teamPubkey,
+          ),
+          sharedPreferences: prefs,
+          textScaler: const TextScaler.linear(2),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SpecialProfileCheckmark), findsOneWidget);
+      expect(find.byType(OgVinerBadge), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(SpecialProfileCheckmark)),
+        equals(tester.getSize(find.byType(OgVinerBadge))),
+      );
     });
 
     testWidgets('badge detail sheet opens the in-app badge editor', (

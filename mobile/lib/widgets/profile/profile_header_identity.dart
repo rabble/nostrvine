@@ -141,7 +141,7 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
         (service) => service.isOgViner(userIdHex),
       ),
     );
-    final showCheckmark = shouldShowSpecialProfileCheckmark(profile);
+    final showCheckmark = shouldShowSpecialProfileCheckmark(userIdHex);
     final name = isVanished
         // Deliberately not a UserName: that widget re-resolves the profile
         // through its own provider and falls back to a generated handle, which
@@ -199,6 +199,18 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
   }
 }
 
+/// Diameter of a header badge. Sized off the 22px display name beside it,
+/// where the inline badges elsewhere sit beside much smaller name rows.
+const double _profileHeaderBadgeDiameter = 22;
+
+/// Padding between the checkmark glyph and the edge of its filled circle.
+const double _checkmarkRing = 4;
+
+/// A profile badge in the header name row, tappable for its explainer.
+///
+/// Renders the same badge the feed and inline name rows show, so a checkmark
+/// reads identically wherever it appears. The header is the one place with
+/// room for a real touch target, so only here it opens the explainer.
 class _ProfileHeaderBadgeExplanationButton extends StatelessWidget {
   const _ProfileHeaderBadgeExplanationButton({required this.type});
 
@@ -206,16 +218,28 @@ class _ProfileHeaderBadgeExplanationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return DivineIconButton(
-      icon: type.icon,
-      type: DivineIconButtonType.ghostSecondary,
-      size: DivineIconButtonSize.small,
-      showShadow: false,
-      tooltip: type.title(l10n),
-      semanticLabel: type.title(l10n),
-      semanticValue: type.body(l10n),
-      onPressed: () => showProfileBadgeExplanationSheet(context, type),
+    final title = type.title(context.l10n);
+    return Semantics(
+      label: title,
+      value: type.body(context.l10n),
+      button: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkResponse(
+          onTap: () => showProfileBadgeExplanationSheet(context, type),
+          child: Tooltip(
+            message: title,
+            // Same text as the label; announcing it twice adds nothing.
+            excludeFromSemantics: true,
+            child: SizedBox.square(
+              // The badge itself is smaller than the 48dp minimum, so the
+              // box around it — not the badge — carries the touch target.
+              dimension: DivineIcon.scaleSize(context, 48),
+              child: Center(child: ExcludeSemantics(child: type.badge)),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -237,10 +261,19 @@ extension on ProfileBadgeExplanationType {
     };
   }
 
-  DivineIconName get icon {
+  Widget get badge {
     return switch (this) {
-      ProfileBadgeExplanationType.ogViner => DivineIconName.videoCamera,
-      ProfileBadgeExplanationType.profileCheckmark => DivineIconName.check,
+      ProfileBadgeExplanationType.ogViner => const OgVinerBadge(
+        size: _profileHeaderBadgeDiameter,
+        leadingGap: 0,
+      ),
+      // The checkmark sizes from the inside out: glyph plus ring padding.
+      ProfileBadgeExplanationType.profileCheckmark =>
+        const SpecialProfileCheckmark(
+          iconSize: _profileHeaderBadgeDiameter - _checkmarkRing * 2,
+          padding: _checkmarkRing,
+          leadingGap: 0,
+        ),
     };
   }
 }
