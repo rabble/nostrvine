@@ -49,6 +49,27 @@ void main() {
       });
     });
 
+    test('defaults to the channel name the native side registers', () async {
+      await withPlatform(TargetPlatform.iOS, () async {
+        final calls = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(defaultChannel, (call) async {
+              calls.add(call);
+              return null;
+            });
+
+        // Exercises the production constructor rather than an injected
+        // channel, so renaming `_channelName` fails here instead of surfacing
+        // only on device as a swallowed MissingPluginException. Nothing in CI
+        // compiles the iOS half, so keep `channelName` above in step with
+        // `setupAppBadgeChannel` in ios/Runner/AppDelegate.swift.
+        await const AppBadgeService().clear();
+
+        expect(calls, hasLength(1));
+        expect(calls.single.method, 'clear');
+      });
+    });
+
     test('does not invoke the channel on non-iOS platforms', () async {
       await withPlatform(TargetPlatform.android, () async {
         var callCount = 0;
