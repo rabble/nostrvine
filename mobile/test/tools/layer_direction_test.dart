@@ -12,8 +12,9 @@ void main() {
     late Directory tmp;
     late String scriptPath;
     late String baselinePath;
+    late String mobileDir;
 
-    File libFile(String path) => File('${tmp.path}/lib/$path');
+    File libFile(String path) => File('$mobileDir/lib/$path');
 
     void write(String path, String contents) {
       libFile(path)
@@ -40,8 +41,9 @@ void main() {
         'bash',
         [scriptPath],
         environment: {
-          'LAYER_DIRECTION_LIB_DIR': '${tmp.path}/lib',
-          'LAYER_DIRECTION_PATH_PREFIX': tmp.path,
+          'LAYER_DIRECTION_MOBILE_DIR': mobileDir,
+          'LAYER_DIRECTION_LIB_DIR': '$mobileDir/lib',
+          'LAYER_DIRECTION_PATH_PREFIX': mobileDir,
           'LAYER_DIRECTION_BASELINE_FILE': baselinePath,
           // A ref that cannot resolve, so the growth check is exercised only
           // where a test opts into it below.
@@ -56,7 +58,9 @@ void main() {
     setUp(() {
       tmp = Directory.systemTemp.createTempSync('layer_direction_test');
       scriptPath = '${Directory.current.path}/scripts/check_layer_direction.sh';
-      baselinePath = '${tmp.path}/baseline.txt';
+      mobileDir = '${tmp.path}/mobile';
+      baselinePath = '$mobileDir/scripts/baseline/layer_direction_imports.txt';
+      Directory(File(baselinePath).parent.path).createSync(recursive: true);
       for (final dir in [
         'providers',
         'services',
@@ -64,7 +68,7 @@ void main() {
         'state',
         'router/providers',
       ]) {
-        Directory('${tmp.path}/lib/$dir').createSync(recursive: true);
+        Directory('$mobileDir/lib/$dir').createSync(recursive: true);
       }
       writeLeaf();
     });
@@ -78,7 +82,7 @@ void main() {
       final result = run();
 
       expect(result.exitCode, equals(0), reason: result.stdout.toString());
-      expect(result.stdout, contains('No new upward layer imports'));
+      expect(result.stdout, contains('no new entries'));
     });
 
     test('fails on a NEW provider -> screen import', () {
@@ -91,7 +95,7 @@ void main() {
       final result = run();
 
       expect(result.exitCode, equals(1));
-      expect(result.stdout, contains('NEW upward import'));
+      expect(result.stdout, contains('NEW entr(y/ies)'));
       expect(result.stdout, contains('lib/providers/bad_provider.dart'));
     });
 
@@ -139,7 +143,7 @@ void main() {
       final result = run();
 
       expect(result.exitCode, equals(1));
-      expect(result.stdout, contains('no longer import upward'));
+      expect(result.stdout, contains('no longer offending'));
       expect(result.stdout, contains('UPDATE_BASELINE=1'));
     });
 
@@ -185,6 +189,22 @@ void main() {
       );
     });
 
+    test('fails when a route provider imports the router barrel (Rule 2)', () {
+      write(
+        'router/providers/normalization_provider.dart',
+        "import 'package:openvine/router/router.dart';\n",
+      );
+      File(baselinePath).writeAsStringSync('');
+
+      final result = run();
+
+      expect(result.exitCode, equals(1));
+      expect(
+        result.stdout,
+        contains('lib/router/providers/normalization_provider.dart'),
+      );
+    });
+
     test('fails when route_paths.dart stops being a leaf (Rule 3)', () {
       writeLeaf(clean: false);
       File(baselinePath).writeAsStringSync('');
@@ -192,7 +212,21 @@ void main() {
       final result = run();
 
       expect(result.exitCode, equals(1));
-      expect(result.stdout, contains('must not import package:openvine'));
+      expect(result.stdout, contains('must not import anything'));
+    });
+
+    test('fails when route_paths.dart uses a relative import (Rule 3)', () {
+      write(
+        'router/route_paths.dart',
+        "import '../screens/settings_screen.dart';\n"
+            'abstract final class RoutePaths {}\n',
+      );
+      File(baselinePath).writeAsStringSync('');
+
+      final result = run();
+
+      expect(result.exitCode, equals(1));
+      expect(result.stdout, contains('must not import anything'));
     });
 
     test('fails when route_paths.dart is missing entirely', () {
@@ -212,9 +246,7 @@ void main() {
           'providers/bad_provider.dart',
           "import 'package:openvine/screens/settings_screen.dart';\n",
         );
-        File(
-          baselinePath,
-        ).writeAsStringSync(
+        File(baselinePath).writeAsStringSync(
           'lib/providers/bad_provider.dart # keeps this note\n',
         );
 
@@ -239,8 +271,9 @@ void main() {
         'bash',
         [scriptPath],
         environment: {
-          'LAYER_DIRECTION_LIB_DIR': '${tmp.path}/lib',
-          'LAYER_DIRECTION_PATH_PREFIX': tmp.path,
+          'LAYER_DIRECTION_MOBILE_DIR': mobileDir,
+          'LAYER_DIRECTION_LIB_DIR': '$mobileDir/lib',
+          'LAYER_DIRECTION_PATH_PREFIX': mobileDir,
           'LAYER_DIRECTION_BASELINE_FILE': baselinePath,
           'LAYER_DIRECTION_BASELINE_BASE_REF':
               'refs/heads/layer-direction-test-no-base-ref',
@@ -250,6 +283,66 @@ void main() {
 
       expect(result.exitCode, equals(1), reason: result.stdout.toString());
       expect(result.stdout, contains('failing closed'));
+    });
+
+    test('fails GROWTH when the in-branch baseline adds a violation', () {
+      write(
+        'providers/old_provider.dart',
+        "import 'package:openvine/screens/settings_screen.dart';\n",
+      );
+      write(
+        'providers/new_provider.dart',
+        "import 'package:openvine/screens/settings_screen.dart';\n",
+      );
+      File(baselinePath)
+        ..createSync(recursive: true)
+        ..writeAsStringSync('lib/providers/old_provider.dart # legacy\n');
+
+      final gitInit = Process.runSync('git', [
+        'init',
+      ], workingDirectory: tmp.path);
+      expect(gitInit.exitCode, equals(0), reason: gitInit.stderr.toString());
+      final gitAdd = Process.runSync('git', [
+        'add',
+        '.',
+      ], workingDirectory: tmp.path);
+      expect(gitAdd.exitCode, equals(0), reason: gitAdd.stderr.toString());
+      final gitCommit = Process.runSync('git', [
+        '-c',
+        'user.name=Layer Direction Test',
+        '-c',
+        'user.email=layer-direction-test@example.com',
+        'commit',
+        '-m',
+        'baseline',
+      ], workingDirectory: tmp.path);
+      expect(
+        gitCommit.exitCode,
+        equals(0),
+        reason: gitCommit.stderr.toString(),
+      );
+
+      File(baselinePath).writeAsStringSync(
+        'lib/providers/old_provider.dart # legacy\n'
+        'lib/providers/new_provider.dart # should fail growth\n',
+      );
+
+      final result = Process.runSync(
+        'bash',
+        [scriptPath],
+        environment: {
+          'LAYER_DIRECTION_MOBILE_DIR': mobileDir,
+          'LAYER_DIRECTION_LIB_DIR': '$mobileDir/lib',
+          'LAYER_DIRECTION_PATH_PREFIX': mobileDir,
+          'LAYER_DIRECTION_BASELINE_FILE': baselinePath,
+          'LAYER_DIRECTION_BASELINE_BASE_REF': 'HEAD',
+          'LAYER_DIRECTION_ALLOW_NO_BASE': '0',
+        },
+      );
+
+      expect(result.exitCode, equals(1), reason: result.stdout.toString());
+      expect(result.stdout, contains('baseline GREW'));
+      expect(result.stdout, contains('lib/providers/new_provider.dart'));
     });
   });
 }

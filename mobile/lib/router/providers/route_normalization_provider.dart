@@ -4,8 +4,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/providers/page_context_provider.dart';
 import 'package:openvine/router/route_paths.dart';
-import 'package:openvine/router/router.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 

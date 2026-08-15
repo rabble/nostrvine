@@ -75,12 +75,12 @@ abstract final class RoutePaths {
   static const welcomeLoginOptions = '/welcome/login-options';
   static const welcomeResetPassword = '$welcomeLoginOptions/reset-password';
 
-  static String appDetailForSlug(String slug) => '/apps/$slug';
+  static String appDetailForSlug(String slug) => '$appsDirectory/$slug';
   static String categoryGalleryFor(String categoryName) {
     return '/categories/${Uri.encodeComponent(categoryName)}';
   }
 
-  static String conversationForId(String id) => '/inbox/conversation/$id';
+  static String conversationForId(String id) => '$inbox/conversation/$id';
   static String curatedListByAuthorFor({
     required String pubkey,
     required String listId,
@@ -104,7 +104,7 @@ abstract final class RoutePaths {
   }
 
   static String likedVideosForIndex(int? index) =>
-      index == null ? likedVideos : '/liked-videos/$index';
+      index == null ? likedVideos : '$likedVideos/$index';
   static String notificationsForIndex([int? index]) =>
       index == null ? notifications : '$notifications/$index';
   static String originalSoundDetailForPubkey(String pubkey) =>
