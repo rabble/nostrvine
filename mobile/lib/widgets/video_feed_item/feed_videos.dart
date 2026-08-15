@@ -229,26 +229,13 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   /// early-returns because both its old/new predicates read the same live
   /// service, so an already-playing item keeps playing behind the overlay
   /// (#5720 M1). Pausing when the gate is closed is idempotent.
-  void _pauseCurrentIfCommunityWarned(CommunityContentLabelService service) {
+  void _pauseCurrentIfCommunityWarned() {
     final feedState = _feedKey.currentState;
     if (feedState == null) return;
     final index = feedState.currentIndex;
     if (index < 0 || index >= widget.videos.length) return;
-    // Use fresh service from the listener to avoid stale cache reads.
-    final warnLabels = <String>{
-      ...widget.videos[index].warnLabels,
-      if (ref.read(
-        isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
-      ))
-        ...service.warnLabelsFor(widget.videos[index]),
-    }.toList();
-    if (shouldShowContentWarningOverlay(
-          contentWarningLabels: widget.videos[index].contentWarningLabels,
-          warnLabels: warnLabels,
-        ) &&
-        !_revealedContentWarningVideoIds.contains(widget.videos[index].id)) {
-      feedState.pauseCurrentPlayback();
-    }
+    if (_canAutoPlayVideo(widget.videos[index])) return;
+    feedState.pauseCurrentPlayback();
   }
 
   /// Animates the underlying feed to [index].
@@ -368,8 +355,8 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     // Pause an already-playing current video whose community warning just
     // crossed the threshold. The package's gate-sync can't catch this because
     // both its old/new predicates read the same live service (#5720 M1).
-    ref.listen(communityContentLabelServiceProvider, (_, service) {
-      _pauseCurrentIfCommunityWarned(service);
+    ref.listen(communityContentLabelServiceProvider, (_, _) {
+      _pauseCurrentIfCommunityWarned();
     });
     // While a codec-heavy surface (camera, video editor, exporter) is open, a
     // backgrounded feed must release even its warm current player so the editor
