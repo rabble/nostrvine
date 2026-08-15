@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/app_badge_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,12 +26,15 @@ void main() {
   }
 
   group(AppBadgeService, () {
-    tearDown(() {
+    setUp(() => LogCaptureService().clearAllLogs());
+
+    tearDown(() async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(defaultChannel, null);
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(testChannel, null);
       debugDefaultTargetPlatformOverride = null;
+      await LogCaptureService().clearAllLogs();
     });
 
     test('invokes the clear method channel on iOS', () async {
@@ -85,17 +89,25 @@ void main() {
       });
     });
 
-    test('swallows PlatformException from the native badge clear', () async {
+    test('logs the native reason and swallows PlatformException', () async {
       await withPlatform(TargetPlatform.iOS, () async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(testChannel, (call) async {
-              throw PlatformException(code: 'BADGE_CLEAR_FAILED');
+              throw PlatformException(
+                code: 'BADGE_CLEAR_FAILED',
+                message: 'Notifications are unavailable',
+              );
             });
 
         await expectLater(
           const AppBadgeService(channel: testChannel).clear(),
           completes,
         );
+
+        final warning = LogCaptureService().getRecentLogs().singleWhere(
+          (log) => log.message.contains('App badge clear failed'),
+        );
+        expect(warning.message, contains('Notifications are unavailable'));
       });
     });
 

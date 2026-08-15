@@ -293,7 +293,9 @@ void main() {
           NotificationFeedState(isRefreshing: true),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
-        errors: () => [isA<Exception>()],
+        errors: () => [
+          allOf(isA<Exception>(), isNot(isA<ReportableError>())),
+        ],
         verify: (_) {
           verify(() => mockAppBadgeClearer.clear()).called(1);
         },
