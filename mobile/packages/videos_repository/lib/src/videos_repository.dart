@@ -2419,7 +2419,12 @@ class VideosRepository {
         }
         return result;
       } on FunnelcakeException {
-        // Fall through to the relay seed.
+        // The client already exhausted its retry budget, so this means the
+        // API was unreachable — not that the author has no videos. Serving an
+        // empty result here is indistinguishable from an empty account, and
+        // the profile renders "No videos yet" for a network failure. Fall
+        // through only when the relay seed can still show something.
+        if (relaySeed.isEmpty) rethrow;
       }
     }
 

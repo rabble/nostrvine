@@ -390,5 +390,27 @@ void main() {
 
       expect(result.videos.map((v) => v.id).toList(), equals(['a']));
     });
+
+    test(
+      'rethrows on FunnelcakeException when there is no relay seed to serve',
+      () async {
+        when(
+          () => funnelcake.getVideosByAuthor(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).thenThrow(const FunnelcakeException('boom'));
+
+        // An empty result here would be indistinguishable from an author who
+        // genuinely has no videos, and the profile would claim the account is
+        // empty because the network was unreachable.
+        await expectLater(
+          repository.getAuthorFeed(authorPubkey: _author),
+          throwsA(isA<FunnelcakeException>()),
+        );
+      },
+    );
   });
 }
