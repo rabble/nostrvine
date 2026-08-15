@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keycast_flutter/keycast_flutter.dart' show ForgotPasswordResult;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/validators.dart';
 
@@ -16,7 +15,7 @@ import 'package:openvine/utils/validators.dart';
 void showForgotPasswordDialog({
   required BuildContext context,
   required String initialEmail,
-  required Future<ForgotPasswordResult> Function(String email) onSendResetEmail,
+  required Future<bool> Function(String email) onSendResetEmail,
 }) {
   VineBottomSheet.show<void>(
     context: context,
@@ -37,7 +36,7 @@ class _ForgotPasswordSheetContent extends StatefulWidget {
   });
 
   final String initialEmail;
-  final Future<ForgotPasswordResult> Function(String email) onSendResetEmail;
+  final Future<bool> Function(String email) onSendResetEmail;
 
   @override
   State<_ForgotPasswordSheetContent> createState() =>
@@ -85,12 +84,12 @@ class _ForgotPasswordSheetContentState
     });
 
     try {
-      final result = await widget.onSendResetEmail(
+      final wasAccepted = await widget.onSendResetEmail(
         _emailController.text.trim(),
       );
       if (!mounted) return;
 
-      if (result.success) {
+      if (wasAccepted) {
         context.pop();
       } else {
         _showSendFailure();
@@ -147,7 +146,9 @@ class _ForgotPasswordSheetContentState
               const SizedBox(height: 16),
               Text(
                 context.l10n.authFailedToSendResetEmail,
-                style: VineTheme.bodyMediumFont(color: VineTheme.error),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.onErrorContainer,
+                ),
               ),
             ],
             const SizedBox(height: 24),

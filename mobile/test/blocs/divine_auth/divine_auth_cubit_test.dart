@@ -1718,19 +1718,21 @@ void main() {
     });
 
     group('sendPasswordResetEmail', () {
-      test('returns the OAuth client result', () async {
+      test('returns true when the OAuth client accepts the request', () async {
         final expected = ForgotPasswordResult(success: true);
         when(
           () => mockOAuth.sendPasswordResetEmail(any()),
         ).thenAnswer((_) async => expected);
 
-        final result = await buildCubit().sendPasswordResetEmail(testEmail);
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+        final result = await cubit.sendPasswordResetEmail(testEmail);
 
-        expect(result, same(expected));
+        expect(result, isTrue);
         verify(() => mockOAuth.sendPasswordResetEmail(testEmail)).called(1);
       });
 
-      test('returns a failed result from the OAuth client', () async {
+      test('returns false when the OAuth client rejects the request', () async {
         final expected = ForgotPasswordResult(
           success: false,
           error: 'Not found',
@@ -1739,9 +1741,11 @@ void main() {
           () => mockOAuth.sendPasswordResetEmail(any()),
         ).thenAnswer((_) async => expected);
 
-        final result = await buildCubit().sendPasswordResetEmail(testEmail);
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+        final result = await cubit.sendPasswordResetEmail(testEmail);
 
-        expect(result, same(expected));
+        expect(result, isFalse);
       });
 
       blocTest<DivineAuthCubit, DivineAuthState>(
@@ -1782,7 +1786,7 @@ void main() {
         build: buildCubit,
         act: (cubit) async {
           final result = await cubit.sendPasswordResetEmail(testEmail);
-          expect(result.success, isFalse);
+          expect(result, isFalse);
         },
         expect: () => <DivineAuthState>[],
         errors: () => [isA<Exception>()],

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keycast_flutter/keycast_flutter.dart' show ForgotPasswordResult;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/auth/forgot_password_dialog.dart';
 
@@ -20,7 +19,7 @@ void main() {
 
     Widget createTestWidget({
       String initialEmail = '',
-      Future<ForgotPasswordResult> Function(String email)? onSendResetEmail,
+      Future<bool> Function(String email)? onSendResetEmail,
     }) {
       return MaterialApp.router(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -40,7 +39,7 @@ void main() {
                           onSendResetEmail ??
                           (email) async {
                             resetEmails.add(email);
-                            return ForgotPasswordResult(success: true);
+                            return true;
                           },
                     ),
                     child: const Text('Show Dialog'),
@@ -199,10 +198,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             initialEmail: 'user@example.com',
-            onSendResetEmail: (_) async => ForgotPasswordResult(
-              success: false,
-              error: 'Server response must not be shown',
-            ),
+            onSendResetEmail: (_) async => false,
           ),
         );
         await tester.pumpAndSettle();
@@ -221,7 +217,6 @@ void main() {
           findsOneWidget,
         );
         expect(announcements, contains(l10n.authFailedToSendResetEmail));
-        expect(find.text('Server response must not be shown'), findsNothing);
       });
     });
   });
