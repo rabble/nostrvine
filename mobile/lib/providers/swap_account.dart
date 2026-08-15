@@ -60,18 +60,18 @@ String? _currentRouterLocation(AccountSwitchController controller) {
       .toString();
 }
 
-/// Retargets an own-profile route from the leaving account to the account that
+/// Retargets an own-account route from the leaving account to the account that
 /// is about to become active.
 ///
-/// Most routes are safe to preserve across an account-container swap. An own
-/// profile URL is identity-bearing, though: carrying `/profile/<old npub>` into
-/// the new container renders the leaving account's profile while the rest of
-/// the app already reflects the target account.
+/// Most routes are safe to preserve across an account-container swap. Own-
+/// account URLs are identity-bearing, though: carrying one into the new
+/// container renders data for the leaving account while the rest of the app
+/// already reflects the target account.
 ///
 /// The routed segment is matched with [routeIdentifiesUser] rather than
-/// compared raw, because the route accepts npub, nprofile and bare hex as well
-/// as the relative `me` — a raw compare leaves the hex and nprofile forms
-/// stranded on the leaving account.
+/// compared raw so equivalent npub, nprofile, hex, and relative `me` forms are
+/// recognized consistently.
+///
 /// Supported user-identifying routes that are retargeted:
 /// - `/profile/<identifier>`
 /// - `/followers/<identifier>`

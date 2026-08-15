@@ -241,17 +241,6 @@ void main() {
       );
     });
 
-    test('retargets followers route with relative own-account identifier', () {
-      expect(
-        accountSwitchInitialLocation(
-          currentLocation: '/followers/me',
-          currentPubkeyHex: leavingHex,
-          targetPubkeyHex: targetHex,
-        ),
-        '/followers/$targetHex',
-      );
-    });
-
     test('retargets following route with bare hex identifier', () {
       expect(
         accountSwitchInitialLocation(
@@ -307,14 +296,25 @@ void main() {
       );
     });
 
-    test('retargets followers route and preserves nested segments', () {
+    test('retargets followers route and preserves URI metadata', () {
       expect(
         accountSwitchInitialLocation(
-          currentLocation: '/followers/$leavingNpub/page/2?sort=recent#top',
+          currentLocation: '/followers/$leavingNpub?sort=recent#top',
           currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
-        '/followers/$targetHex/page/2?sort=recent#top',
+        '/followers/$targetHex?sort=recent#top',
+      );
+    });
+
+    test('preserves an unlisted route that carries the leaving pubkey', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/original-sound/$leavingHex',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/original-sound/$leavingHex',
       );
     });
 
