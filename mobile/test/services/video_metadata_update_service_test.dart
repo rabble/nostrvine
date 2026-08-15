@@ -202,6 +202,27 @@ void main() {
           expect(capturedCreatedAt, isNot(equals(stablePublishedAt + 1)));
         },
       );
+
+      test('keeps successive replacements strictly monotonic', () async {
+        const rawEventCreatedAt = 4102444800;
+        final firstResult = await service.updateVideo(
+          originalVideo: _testVideo(eventCreatedAt: rawEventCreatedAt),
+          editorState: VideoEditorProviderState(),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        final firstVideo = (firstResult as VideoUpdateSuccess).updatedEvent;
+        final firstReplacementCreatedAt = firstVideo.nostrCreatedAt;
+        final secondResult = await service.updateVideo(
+          originalVideo: firstVideo,
+          editorState: VideoEditorProviderState(),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(secondResult, isA<VideoUpdateSuccess>());
+        expect(firstReplacementCreatedAt, rawEventCreatedAt + 1);
+        expect(capturedCreatedAt, firstReplacementCreatedAt + 1);
+      });
     });
 
     group('engagement tag preservation', () {

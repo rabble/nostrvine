@@ -1449,6 +1449,32 @@ void main() {
         expect(video.nostrCreatedAt, 1700000100);
       });
 
+      test(
+        'does not treat an invalid created_at fallback as raw event time',
+        () {
+          final stats = VideoStats.fromJson(const {
+            'event': {
+              'id': 'test-id',
+              'pubkey': 'test-pubkey',
+              'created_at': 'not-a-date',
+              'kind': 34236,
+              'content': 'Test',
+              'tags': [
+                ['d', 'video-1'],
+                ['published_at', '1700000000'],
+                ['url', 'https://example.com/video.mp4'],
+              ],
+            },
+          });
+
+          final video = stats.toVideoEvent();
+
+          expect(video.createdAt, 1700000000);
+          expect(video.eventCreatedAt, isNull);
+          expect(video.nostrCreatedAt, 1700000000);
+        },
+      );
+
       test('carries the event kind through to the VideoEvent', () {
         final stats = VideoStats.fromJson(const {
           'event': {
