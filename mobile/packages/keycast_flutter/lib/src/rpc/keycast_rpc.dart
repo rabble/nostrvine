@@ -203,15 +203,13 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         timeout: timeout,
         classifyLocalTimeout: classifyLocalTimeout,
       );
-    } on http.ClientException catch (e, st) {
-      Log.warn(
-        "Socket error on Keycast RPC, retrying",
-        name: "KeycastRpc",
+    } on http.ClientException {
+      Log.warning(
+        '[Keycast RPC] Socket error during $method; retrying once',
+        name: 'KeycastRpc',
         category: LogCategory.auth,
-        body: "$method",
       );
-      _client = http.Client();
-      return await _sendRequest(
+      return _sendRequest(
         method,
         params,
         timeout: timeout,

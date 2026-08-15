@@ -105,6 +105,40 @@ void main() {
           '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
         );
       });
+
+      test('retries once when the first request has a socket error', () async {
+        var callCount = 0;
+        mockClient = MockClient((request) async {
+          callCount++;
+          if (callCount == 1) {
+            throw http.ClientException('Connection reset', request.url);
+          }
+
+          final body = jsonDecode(request.body);
+          expect(body['method'], 'get_public_key');
+          return http.Response(
+            jsonEncode({
+              'result':
+                  '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+            }),
+            200,
+          );
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+
+        final pubkey = await rpc.getPublicKey();
+
+        expect(
+          pubkey,
+          '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+        );
+        expect(callCount, equals(2));
+      });
     });
 
     group('signEvent', () {
