@@ -651,8 +651,11 @@ class NotificationService {
     // Add to internal list
     _addNotification(notification);
 
-    if (_permissionState == _NotificationPermissionState.unknown) {
-      await ensurePermission();
+    // Resolves the uninitialized state, and re-checks a stale `denied` so a
+    // permission granted from system settings takes effect without an app
+    // restart. Never prompts — see [refreshPermissionState].
+    if (!_permissionsGranted) {
+      await refreshPermissionState();
     }
 
     // Skip platform notification on web or without permissions

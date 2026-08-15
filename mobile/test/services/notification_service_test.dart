@@ -140,6 +140,17 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
+        final androidPlugin = _MockAndroidFlutterLocalNotificationsPlugin();
+        when(
+          () => plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >(),
+        ).thenReturn(androidPlugin);
+        when(
+          androidPlugin.areNotificationsEnabled,
+        ).thenAnswer((_) async => true);
+
         notificationService.debugConfigurePlugin(
           plugin,
           permissionsGranted: null,
@@ -172,6 +183,7 @@ void main() {
           ),
         ).called(1);
         expect(notificationService.hasPermissions, isTrue);
+        verifyNever(androidPlugin.requestNotificationsPermission);
       },
     );
 
@@ -179,6 +191,17 @@ void main() {
       'sendLocal with denied permissions does not call platform show',
       () async {
         final plugin = _MockFlutterLocalNotificationsPlugin();
+        final androidPlugin = _MockAndroidFlutterLocalNotificationsPlugin();
+        when(
+          () => plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >(),
+        ).thenReturn(androidPlugin);
+        when(
+          androidPlugin.areNotificationsEnabled,
+        ).thenAnswer((_) async => false);
+
         notificationService.debugConfigurePlugin(
           plugin,
           permissionsGranted: false,
@@ -200,6 +223,67 @@ void main() {
         );
         expect(notificationService.notifications, hasLength(1));
         expect(notificationService.hasPermissions, isFalse);
+        verifyNever(androidPlugin.requestNotificationsPermission);
+      },
+    );
+
+    test(
+      'sendLocal picks up a permission granted from system settings',
+      () async {
+        final plugin = _MockFlutterLocalNotificationsPlugin();
+        final androidPlugin = _MockAndroidFlutterLocalNotificationsPlugin();
+        when(
+          () => plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >(),
+        ).thenReturn(androidPlugin);
+        when(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          androidPlugin.areNotificationsEnabled,
+        ).thenAnswer((_) async => false);
+
+        notificationService.debugConfigurePlugin(
+          plugin,
+          permissionsGranted: false,
+        );
+
+        await notificationService.sendLocal(
+          title: 'Still Denied',
+          body: 'Stays in-app',
+        );
+        expect(notificationService.hasPermissions, isFalse);
+
+        // The user enables notifications in system settings. Without a
+        // re-check, `denied` would stick until the process restarts.
+        when(
+          androidPlugin.areNotificationsEnabled,
+        ).thenAnswer((_) async => true);
+
+        await notificationService.sendLocal(
+          title: 'Now Allowed',
+          body: 'Reaches the platform',
+        );
+
+        expect(notificationService.hasPermissions, isTrue);
+        verify(
+          () => plugin.show(
+            id: any(named: 'id'),
+            title: 'Now Allowed',
+            body: 'Reaches the platform',
+            notificationDetails: any(named: 'notificationDetails'),
+            payload: any(named: 'payload'),
+          ),
+        ).called(1);
+        verifyNever(androidPlugin.requestNotificationsPermission);
       },
     );
 
@@ -294,7 +378,7 @@ void main() {
         await service.initialize();
 
         expect(service.hasPermissions, isFalse);
-        verifyNever(() => androidPlugin.requestNotificationsPermission());
+        verifyNever(androidPlugin.requestNotificationsPermission);
       },
     );
   });
