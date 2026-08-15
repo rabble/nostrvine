@@ -28,7 +28,7 @@ jobs:
       # Fetch only the test-backed detector. The changed-file list itself still
       # comes from the REST API, avoiding a full-history checkout on the
       # workflow's critical path (every other job `needs: changes`).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: mobile/scripts/ci/detect_mobile_ci_scope.sh
           sparse-checkout-cone-mode: false
@@ -45,7 +45,7 @@ jobs:
     name: Codex Configuration
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify generated skills and lifecycle hooks
         run: bash .codex/scripts/test-config.sh
 
@@ -68,7 +68,7 @@ jobs:
     name: Codemagic Variable Groups
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 🔑 Verify every Codemagic variable group is documented
         # Static — no simulator, no build, no credentials — so fork PRs get it
         # too. Codemagic validates the whole config before provisioning, so an
@@ -85,7 +85,7 @@ jobs:
       run:
         working-directory: mobile/
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 🔀 Fetch origin/main for ratchet baselines
         # The ratchet scripts below compare against origin/main. Fetch it once
         # here so each script is order-independent; a fetch failure fails the
@@ -284,7 +284,7 @@ jobs:
       run:
         working-directory: mobile/
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -308,7 +308,7 @@ jobs:
       run:
         working-directory: mobile/
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -334,7 +334,7 @@ jobs:
       run:
         working-directory: mobile/
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -394,7 +394,7 @@ jobs:
       run:
         working-directory: mobile/
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 🏷️ Verify skip_very_good_optimization tag count does not increase
         # Guards #3137. The tag set drifts silently: a feature PR can add a
         # new `@Tags(['skip_very_good_optimization'])` opt-out without anyone
@@ -520,7 +520,7 @@ jobs:
             exit 1
           fi
       - name: Checkout timing budget inputs
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         if: ${{ needs.changes.outputs.app == 'true' }}
         with:
           sparse-checkout: |
