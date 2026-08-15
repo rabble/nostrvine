@@ -184,6 +184,8 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
   OverlayVisibility? _overlayVisibilityNotifier;
   late final CreationAnalyticsTracker _creationAnalyticsTracker;
   VideoRecorderMode? _lastRecorderMode;
+  final Object _overlayVisibilityOwner = Object();
+  bool _overlayVisibilityPageOpenAsserted = false;
 
   @override
   void initState() {
@@ -213,9 +215,9 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     );
 
     WidgetsBinding.instance.addObserver(this);
-    _pauseBackgroundPlayback();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      _pauseBackgroundPlayback();
       _initializeCamera();
       await _maybeShowWhySixSeconds();
       if (!mounted) return;
@@ -262,21 +264,35 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
 
   /// Force all background video playback to pause while camera is open.
   void _pauseBackgroundPlayback() {
-    try {
-      _overlayVisibilityNotifier = ref.read(overlayVisibilityProvider.notifier);
-      _overlayVisibilityNotifier!.setPageOpen(true);
-      Log.info(
-        '⏸️ Paused background playback for camera',
-        name: 'VideoRecorderScreen',
-        category: .video,
-      );
-    } catch (e) {
-      Log.warning(
-        '📹 Failed to pause background playback: $e',
-        name: 'VideoRecorderScreen',
-        category: .video,
-      );
+    if (_overlayVisibilityPageOpenAsserted) return;
+    _overlayVisibilityNotifier = ref.read(overlayVisibilityProvider.notifier);
+    _overlayVisibilityPageOpenAsserted = true;
+    _overlayVisibilityNotifier!.setPageOpenForOwner(
+      _overlayVisibilityOwner,
+      isOpen: true,
+    );
+    Log.info(
+      '⏸️ Paused background playback for camera',
+      name: 'VideoRecorderScreen',
+      category: .video,
+    );
+  }
+
+  void _releaseBackgroundPlaybackAfterDispose() {
+    final notifier = _overlayVisibilityNotifier;
+    if (!_overlayVisibilityPageOpenAsserted || notifier == null) {
+      return;
     }
+    _overlayVisibilityPageOpenAsserted = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!notifier.isMounted) return;
+      notifier.setPageOpenForOwner(_overlayVisibilityOwner, isOpen: false);
+      Log.info(
+        '▶️ Released camera background playback hold',
+        name: 'VideoRecorderScreen',
+        category: .video,
+      );
+    });
   }
 
   /// Listens to sound selection changes and extracts waveform data.
@@ -342,15 +358,7 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     if (!widget.fromEditor) {
       unawaited(_creationAnalyticsTracker.creationAbandoned());
     }
-    try {
-      _overlayVisibilityNotifier?.setPageOpen(false);
-    } catch (e) {
-      Log.warning(
-        '📹 Failed to clear overlay visibility on dispose: $e',
-        name: 'VideoRecorderScreen',
-        category: .video,
-      );
-    }
+    _releaseBackgroundPlaybackAfterDispose();
     _soundSubscription?.close();
 
     WidgetsBinding.instance.removeObserver(this);

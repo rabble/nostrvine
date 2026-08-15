@@ -103,19 +103,29 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     super.dispose();
   }
 
-  void _setShellObscured({required bool obscured}) {
+  void _setShellObscured({
+    required bool obscured,
+    bool clearPageOwners = false,
+  }) {
     // RouteAware callbacks can fire mid-frame; defer the provider write so it
     // never lands during this shell's own build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(shellObscuredProvider.notifier).setObscured(obscured: obscured);
       if (!obscured) {
-        // Every page overlay is backed by a route above the shell, so an
-        // uncovered shell proves none is open. Not redundant with
-        // `pushWithVideoPause`'s own clear, which a `go()`-style back skips
-        // entirely — see its doc comment. Without this the home feed could stay
-        // permanently unable to autoplay on scroll (#6239).
-        ref.read(overlayVisibilityProvider.notifier).setPageOpen(false);
+        final overlayVisibility = ref.read(
+          overlayVisibilityProvider.notifier,
+        );
+        if (clearPageOwners) {
+          // Popping the route directly above the shell proves no page owner
+          // remains. Force-clear because a `go()`-style back can skip the
+          // pushed route's own completion callback (#6239).
+          overlayVisibility.clearPageOpen();
+        } else {
+          // A freshly mounted shell can still sit below a live page owner.
+          // Clear only stale unowned state until a pop proves the stack empty.
+          overlayVisibility.setPageOpen(false);
+        }
       }
     });
   }
@@ -131,7 +141,8 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
   void didPushNext() => _setShellObscured(obscured: true);
 
   @override
-  void didPopNext() => _setShellObscured(obscured: false);
+  void didPopNext() =>
+      _setShellObscured(obscured: false, clearPageOwners: true);
 
   String _titleFor(BuildContext context, WidgetRef ref, RouteContext? ctx) {
     final l10n = context.l10n;
