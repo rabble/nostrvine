@@ -163,11 +163,24 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
   /// [InlineReelReplyStatus.unverifiable] if any row had already gone, and
   /// [InlineReelReplyStatus.success] only when every row was delivered.
   ///
+  /// [queuedRumorIds] is the set the *failing send this retry belongs to*
+  /// parked, captured by the caller when it offered the affordance — not read
+  /// back off the live state. A retry affordance can outlive its own send (a
+  /// snackbar queued behind another one is never dismissed by the success
+  /// path, which can only close a visible one), and by then the state has
+  /// moved on: a later successful send clears `queuedRumorIds` because *it*
+  /// left nothing parked. Reading the live value there would find it empty,
+  /// fall through to [submit], and mint a second rumor for a row the sweep is
+  /// still re-driving — this bug, through a different door.
+  ///
   /// [content] is used only for the fallback when nothing was parked — see
   /// [InlineReelReplyState.queuedRumorIds].
-  Future<void> retry(String content) async {
+  Future<void> retry({
+    required List<String> queuedRumorIds,
+    required String content,
+  }) async {
     if (state.status == InlineReelReplyStatus.sending) return;
-    final parked = state.queuedRumorIds;
+    final parked = queuedRumorIds;
     if (parked.isEmpty) return submit(content);
 
     emit(state.copyWith(status: InlineReelReplyStatus.sending));

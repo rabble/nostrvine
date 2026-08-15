@@ -627,7 +627,10 @@ void main() {
         expect(cubit.state.status, InlineReelReplyStatus.failure);
         expect(cubit.state.queuedRumorIds, ['row-1']);
 
-        await cubit.retry('hi');
+        await cubit.retry(
+          queuedRumorIds: cubit.state.queuedRumorIds,
+          content: 'hi',
+        );
 
         expect(cubit.state.status, InlineReelReplyStatus.success);
         expect(cubit.state.queuedRumorIds, isEmpty);
@@ -637,6 +640,58 @@ void main() {
         // The anti-duplication contract: the original send, and only it.
         verifySendMessageCalled(1);
       });
+
+      test(
+        're-drives the ids it was given, not whatever state holds now',
+        () async {
+          // A retry affordance can outlive its own send: a snackbar queued
+          // behind another is never dismissed by the success path, which can
+          // only close a visible one. By the time it is tapped, a later
+          // successful send has cleared `queuedRumorIds` — reading it live
+          // would find nothing parked and fall through to a fresh send,
+          // duplicating a row the sweep is still re-driving.
+          stubSendParks('row-1');
+          when(
+            () => repo.recoverFullSend(
+              rumorId: any(named: 'rumorId'),
+              resetRetryBudget: any(named: 'resetRetryBudget'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: 'row-1',
+              messageEventId: 'g',
+              recipientPubkey: _peer,
+            ),
+          );
+
+          final cubit = InlineReelReplyCubit(
+            dmRepository: repo,
+            replyContext: oneToOne(),
+          );
+          addTearDown(cubit.close);
+
+          await cubit.submit('hi');
+          // What the affordance for THAT send captured.
+          final captured = cubit.state.queuedRumorIds;
+          expect(captured, ['row-1']);
+
+          // A second, unrelated send succeeds and wipes the live handle.
+          stubSendSuccess();
+          await cubit.submit('and another');
+          expect(cubit.state.queuedRumorIds, isEmpty);
+
+          await cubit.retry(queuedRumorIds: captured, content: 'hi');
+
+          verify(
+            () => repo.recoverFullSend(
+              rumorId: 'row-1',
+              resetRetryBudget: true,
+            ),
+          ).called(1);
+          // Two submits, both deliberate. A third would be the duplicate.
+          verifySendMessageCalled(2);
+        },
+      );
 
       test('falls back to a fresh send when nothing was parked', () async {
         // A policy-blocked send returns before the enqueue, so there is no row
@@ -652,7 +707,10 @@ void main() {
         await cubit.submit('hi');
         expect(cubit.state.queuedRumorIds, isEmpty);
 
-        await cubit.retry('hi');
+        await cubit.retry(
+          queuedRumorIds: cubit.state.queuedRumorIds,
+          content: 'hi',
+        );
 
         verifySendMessageCalled(2);
         verifyNever(
@@ -679,7 +737,10 @@ void main() {
         addTearDown(cubit.close);
 
         await cubit.submit('hi');
-        await cubit.retry('hi');
+        await cubit.retry(
+          queuedRumorIds: cubit.state.queuedRumorIds,
+          content: 'hi',
+        );
 
         // The sweep may already have delivered it; we cannot prove otherwise,
         // so a replacement rumor is never minted...
@@ -721,7 +782,10 @@ void main() {
           addTearDown(cubit.close);
 
           await cubit.submit('hi');
-          await cubit.retry('hi');
+          await cubit.retry(
+            queuedRumorIds: cubit.state.queuedRumorIds,
+            content: 'hi',
+          );
 
           // Aborting at row-a would have left row-b's parked copy to the sweep
           // alone, with no user-facing handle on it.
@@ -764,7 +828,10 @@ void main() {
         addTearDown(cubit.close);
 
         await cubit.submit('hi');
-        await cubit.retry('hi');
+        await cubit.retry(
+          queuedRumorIds: cubit.state.queuedRumorIds,
+          content: 'hi',
+        );
 
         // Nothing is left to re-drive, but row-b was never confirmed, so the
         // group outcome is unverifiable rather than sent.
@@ -798,7 +865,10 @@ void main() {
         await cubit.submit('hi');
         expect(cubit.state.queuedRumorIds, ['row-a', 'row-b']);
 
-        await cubit.retry('hi');
+        await cubit.retry(
+          queuedRumorIds: cubit.state.queuedRumorIds,
+          content: 'hi',
+        );
 
         verify(
           () => repo.recoverFullSend(rumorId: 'row-a', resetRetryBudget: true),

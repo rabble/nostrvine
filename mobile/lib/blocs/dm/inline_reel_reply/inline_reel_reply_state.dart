@@ -43,11 +43,17 @@ class InlineReelReplyState extends Equatable {
   /// The `outgoing_dms` rows the last failed send left parked — one per
   /// recipient that came back carrying a `NIP17SendResult.queuedRumorId`.
   ///
-  /// [InlineReelReplyCubit.retry] re-drives exactly these rows. Empty when
-  /// there is nothing to re-drive: a policy-blocked send returns before the
-  /// enqueue, and an unwired queue DAO never creates a row at all. Retrying
-  /// on an empty list falls back to a fresh send, which is safe precisely
-  /// because no row exists that could deliver a second copy.
+  /// Empty when there is nothing to re-drive: a policy-blocked send returns
+  /// before the enqueue, and an unwired queue DAO never creates a row at all.
+  /// Retrying on an empty list falls back to a fresh send, which is safe
+  /// precisely because no row exists that could deliver a second copy.
+  ///
+  /// This is a *snapshot for the View to capture*, not a live handle for a
+  /// retry to read back. It describes the most recent send only, so a later
+  /// success clears it while an earlier failure's rows may still be parked.
+  /// Whoever offers a retry must capture this list at that moment and pass it
+  /// to [InlineReelReplyCubit.retry] — see that method for what reading the
+  /// live value instead would cost.
   final List<String> queuedRumorIds;
 
   /// Copy with an updated [status] and/or [queuedRumorIds].

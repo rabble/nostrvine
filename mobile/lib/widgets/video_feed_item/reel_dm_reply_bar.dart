@@ -349,7 +349,11 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
 
     switch (state.status) {
       case InlineReelReplyStatus.failure:
-        _showReplyFailed(draft, cubit);
+        // The parked rows are captured HERE, bound to the send that failed.
+        // This snackbar can outlive that send — queued behind another, it is
+        // never dismissed by a later success, which can only close a visible
+        // one — and by then `state.queuedRumorIds` describes some other send.
+        _showReplyFailed(draft, cubit, state.queuedRumorIds);
       case InlineReelReplyStatus.unverifiable:
         _showReplyUnverified();
       case InlineReelReplyStatus.success:
@@ -361,7 +365,11 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     cubit.acknowledge();
   }
 
-  void _showReplyFailed(String draft, InlineReelReplyCubit cubit) {
+  void _showReplyFailed(
+    String draft,
+    InlineReelReplyCubit cubit,
+    List<String> parkedRumorIds,
+  ) {
     // Restore the draft so the user can retry without retyping.
     if (draft.isNotEmpty && _controller.text.isEmpty) {
       _controller.text = draft;
@@ -384,7 +392,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
             // failed send parked, instead of minting a second rumor the
             // recipient renders as a second message (#7316). The draft is
             // only its fallback, for a send that parked no row at all.
-            cubit.retry(draft);
+            cubit.retry(queuedRumorIds: parkedRumorIds, content: draft);
             _controller.clear();
           },
         ),
