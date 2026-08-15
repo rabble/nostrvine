@@ -948,6 +948,111 @@ void main() {
     });
 
     test(
+      'for you ignores stale first page results after a newer rebuild',
+      () async {
+        final staleRefreshCompleter = Completer<HomeFeedResult>();
+        final requestedCursors = <String?>[];
+        var requestCount = 0;
+
+        when(
+          () => mockVideosRepository.getRecommendedVideos(
+            userPubkey: any(named: 'userPubkey'),
+            limit: any(named: 'limit'),
+            cursor: any(named: 'cursor'),
+            skipCache: any(named: 'skipCache'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer((invocation) {
+          final cursor = invocation.namedArguments[#cursor] as String?;
+          requestedCursors.add(cursor);
+          requestCount += 1;
+
+          if (cursor != null) {
+            return Future.value(
+              _recommendedResult(['for-you-page-2'], hasMore: false),
+            );
+          }
+          if (requestCount == 1) {
+            return Future.value(
+              _recommendedResult(['for-you-initial'], nextCursor: 'cursor-2'),
+            );
+          }
+          if (requestCount == 2) {
+            return staleRefreshCompleter.future;
+          }
+          return Future.value(
+            _recommendedResult(['for-you-rebuilt'], nextCursor: 'cursor-3'),
+          );
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            authServiceProvider.overrideWithValue(mockAuthService),
+            funnelcakeAvailableProvider.overrideWith(
+              _AlwaysAvailableFunnelcake.new,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final subscription = container.listen(forYouFeedProvider, (_, _) {});
+        addTearDown(subscription.close);
+
+        final initialState = await container.read(forYouFeedProvider.future);
+        expect(initialState.videos.map((video) => video.id), [
+          'for-you-initial',
+        ]);
+        expect(initialState.hasMoreContent, isTrue);
+
+        final refreshFuture = container
+            .read(forYouFeedProvider.notifier)
+            .refresh();
+        await pumpEventQueue();
+
+        container.read(blocklistVersionProvider.notifier).increment();
+        await pumpEventQueue();
+
+        final rebuiltState = await container.read(forYouFeedProvider.future);
+        expect(rebuiltState.videos.map((video) => video.id), [
+          'for-you-rebuilt',
+        ]);
+
+        staleRefreshCompleter.complete(
+          _recommendedResult([
+            'for-you-stale-refresh',
+          ], nextCursor: 'stale-cursor'),
+        );
+        await refreshFuture;
+        await pumpEventQueue();
+
+        final afterStaleRefresh = container.read(forYouFeedProvider).value;
+        expect(afterStaleRefresh, isNotNull);
+        expect(afterStaleRefresh!.videos.map((video) => video.id), [
+          'for-you-rebuilt',
+        ]);
+
+        await container.read(forYouFeedProvider.notifier).loadMore();
+
+        expect(requestedCursors, [null, null, null, 'cursor-3']);
+        final loadedState = container.read(forYouFeedProvider).value;
+        expect(loadedState, isNotNull);
+        expect(loadedState!.videos.map((video) => video.id), [
+          'for-you-rebuilt',
+          'for-you-page-2',
+        ]);
+      },
+    );
+
+    test(
       'for you keeps loading when a cursor page adds no visible videos',
       () async {
         final requestedCursors = <String?>[];

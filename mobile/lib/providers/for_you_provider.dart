@@ -108,7 +108,8 @@ class ForYouFeed extends _$ForYouFeed {
     bool preserveExistingOnError = false,
     bool skipCache = false,
   }) async {
-    _feedGeneration += 1;
+    final generation = _feedGeneration + 1;
+    _feedGeneration = generation;
     try {
       final authService = ref.read(authServiceProvider);
       final currentUserPubkey = authService.currentPublicKeyHex;
@@ -135,6 +136,10 @@ class ForYouFeed extends _$ForYouFeed {
 
       if (!ref.mounted) {
         return const VideoFeedState(videos: [], hasMoreContent: false);
+      }
+      if (_feedGeneration != generation) {
+        return state.asData?.value ??
+            const VideoFeedState(videos: [], hasMoreContent: false);
       }
 
       return _stateFromResult(result);
