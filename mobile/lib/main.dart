@@ -47,8 +47,6 @@ import 'package:openvine/features/app_review/app_review_coordinator.dart';
 import 'package:openvine/features/appearance/bloc/appearance_cubit.dart';
 import 'package:openvine/features/appearance/models/appearance_mode.dart';
 import 'package:openvine/features/appearance/providers/appearance_providers.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/curated_lists_gate.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
 import 'package:openvine/features/post_publish/post_publish_experiment.dart';
@@ -2740,13 +2738,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
       if (locale != null) {
         Intl.defaultLocale = locale.toLanguageTag();
       }
-      final lightModeEnabled = ref.watch(
-        isFeatureEnabledProvider(FeatureFlag.lightMode),
-      );
-      final themeMode = resolveThemeMode(
-        mode: appearanceMode,
-        lightModeEnabled: lightModeEnabled,
-      );
+      final themeMode = resolveThemeMode(mode: appearanceMode);
       final effectiveBrightness = themeMode == ThemeMode.system
           ? WidgetsBinding.instance.platformDispatcher.platformBrightness
           : themeMode == ThemeMode.light

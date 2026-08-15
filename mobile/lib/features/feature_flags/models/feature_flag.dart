@@ -57,16 +57,6 @@ enum FeatureFlag {
     'Profile Monetization Links',
     'Enable outbound tip and subscription links on profiles.',
   ),
-  lightMode(
-    'Light Mode',
-    'Enable the experimental System, Light, and Dark appearance settings. '
-        'Accent pills and category tiles still render dark on a light page.',
-  ),
-  adaptiveMediaChrome(
-    'Adaptive Media Chrome',
-    'Use light controls around fullscreen video when Light Mode is enabled.',
-    audience: FeatureFlagAudience.internal,
-  ),
   communityContentWarnings(
     'Community Content Warnings',
     'Suggest content-warning labels on videos and blur videos whose labels '

@@ -89,7 +89,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(FeatureFlag.adaptiveMediaChrome.displayName),
+        find.text(FeatureFlag.communityContentWarnings.displayName),
         findsNothing,
       );
       expect(
@@ -115,7 +115,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(FeatureFlag.adaptiveMediaChrome.displayName),
+        find.text(FeatureFlag.communityContentWarnings.displayName),
         findsOneWidget,
       );
       expect(

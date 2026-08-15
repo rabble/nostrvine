@@ -36,15 +36,10 @@ class AppearanceCubit extends Cubit<AppearanceMode> {
   }
 }
 
-ThemeMode resolveThemeMode({
-  required AppearanceMode mode,
-  required bool lightModeEnabled,
-}) {
-  if (!lightModeEnabled) return ThemeMode.dark;
-
-  return switch (mode) {
-    AppearanceMode.system => ThemeMode.system,
-    AppearanceMode.light => ThemeMode.light,
-    AppearanceMode.dark => ThemeMode.dark,
-  };
-}
+/// Maps the user's [AppearanceMode] choice onto the [ThemeMode] the root
+/// `MaterialApp` consumes.
+ThemeMode resolveThemeMode({required AppearanceMode mode}) => switch (mode) {
+  AppearanceMode.system => ThemeMode.system,
+  AppearanceMode.light => ThemeMode.light,
+  AppearanceMode.dark => ThemeMode.dark,
+};

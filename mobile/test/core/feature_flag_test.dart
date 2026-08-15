@@ -48,15 +48,19 @@ void main() {
       }
     });
 
-    test('exposes light mode to every user', () {
-      // Promoted out of staged rollout: the appearance picker is opt-in for
-      // everyone, gated only by its build default.
-      expect(FeatureFlag.lightMode.audience, FeatureFlagAudience.user);
+    test('no longer carries an appearance flag', () {
+      // Light mode graduated: appearance is a plain user setting now, so
+      // neither the picker nor media chrome is gated. A reintroduced flag
+      // here would mean the ungating regressed.
+      expect(
+        FeatureFlag.values.map((flag) => flag.name),
+        isNot(anyElement(anyOf('lightMode', 'adaptiveMediaChrome'))),
+      );
     });
 
     test('should classify staged rollout flags as internal', () {
       expect(
-        FeatureFlag.adaptiveMediaChrome.audience,
+        FeatureFlag.communityContentWarnings.audience,
         FeatureFlagAudience.internal,
       );
       expect(

@@ -145,7 +145,7 @@ void main() {
 
     test('gates internal flag overrides on developer mode', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{
-        'ff_adaptiveMediaChrome': true,
+        'ff_communityContentWarnings': true,
         'ff_enhancedAnalytics': true,
       });
       final prefs = await SharedPreferences.getInstance();
@@ -161,9 +161,9 @@ void main() {
       final service = container.read(featureFlagServiceProvider);
       await service.initialize();
 
-      expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isFalse);
+      expect(service.isEnabled(FeatureFlag.communityContentWarnings), isFalse);
       expect(service.isEnabled(FeatureFlag.enhancedAnalytics), isTrue);
-      expect(prefs.getBool('ff_adaptiveMediaChrome'), isTrue);
+      expect(prefs.getBool('ff_communityContentWarnings'), isTrue);
 
       await environment.enableDeveloperMode();
       await pumpEventQueue();
@@ -173,13 +173,13 @@ void main() {
         isTrue,
         reason: 'a new instance would strand every ref.read capture',
       );
-      expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isTrue);
+      expect(service.isEnabled(FeatureFlag.communityContentWarnings), isTrue);
 
       await environment.disableDeveloperMode();
       await pumpEventQueue();
 
-      expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isFalse);
-      expect(prefs.getBool('ff_adaptiveMediaChrome'), isTrue);
+      expect(service.isEnabled(FeatureFlag.communityContentWarnings), isFalse);
+      expect(prefs.getBool('ff_communityContentWarnings'), isTrue);
     });
   });
 }

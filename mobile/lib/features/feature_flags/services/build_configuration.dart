@@ -42,10 +42,6 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_FEED_TUNING');
       case FeatureFlag.profileMonetizationLinks:
         return const bool.fromEnvironment('FF_PROFILE_MONETIZATION_LINKS');
-      case FeatureFlag.lightMode:
-        return const bool.fromEnvironment('FF_LIGHT_MODE');
-      case FeatureFlag.adaptiveMediaChrome:
-        return const bool.fromEnvironment('FF_ADAPTIVE_MEDIA_CHROME');
       case FeatureFlag.communityContentWarnings:
         // Default OFF pending T&S sign-off on surfacing warnings from
         // unverified community votes (#4771).
@@ -100,10 +96,6 @@ class BuildConfiguration {
         return 'FF_FEED_TUNING';
       case FeatureFlag.profileMonetizationLinks:
         return 'FF_PROFILE_MONETIZATION_LINKS';
-      case FeatureFlag.lightMode:
-        return 'FF_LIGHT_MODE';
-      case FeatureFlag.adaptiveMediaChrome:
-        return 'FF_ADAPTIVE_MEDIA_CHROME';
       case FeatureFlag.communityContentWarnings:
         return 'FF_COMMUNITY_CONTENT_WARNINGS';
       case FeatureFlag.divineSupporters:

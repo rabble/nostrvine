@@ -6,8 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
@@ -42,7 +40,6 @@ void main() {
     Widget buildSubject({
       bool reducedMotion = false,
       bool provideAutoAdvance = true,
-      bool adaptiveMediaChrome = false,
       ThemeData? theme,
       String? videoId,
     }) {
@@ -64,12 +61,7 @@ void main() {
             );
 
       return ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(mockPrefs),
-          isFeatureEnabledProvider(
-            FeatureFlag.adaptiveMediaChrome,
-          ).overrideWithValue(adaptiveMediaChrome),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -113,11 +105,9 @@ void main() {
     });
 
     testWidgets(
-      'uses light media chrome when adaptive chrome flag is enabled',
+      'uses light media chrome under the light theme',
       (tester) async {
-        await tester.pumpWidget(
-          buildSubject(adaptiveMediaChrome: true, theme: VineTheme.lightTheme),
-        );
+        await tester.pumpWidget(buildSubject(theme: VineTheme.lightTheme));
 
         final chromeBox = tester
             .widgetList<DecoratedBox>(find.byType(DecoratedBox))
@@ -330,6 +320,29 @@ void main() {
         findsNothing,
       );
       expect(find.bySemanticsLabel(l10n.videoPlayerMute), findsOneWidget);
+    });
+
+    testWidgets('keeps the scrim-30 capsule under the dark theme', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(theme: VineTheme.theme));
+
+      expect(
+        tester
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+            .where(
+              (box) =>
+                  box.decoration is BoxDecoration &&
+                  (box.decoration as BoxDecoration).color == VineTheme.scrim30,
+            ),
+        isNotEmpty,
+      );
+      expect(
+        tester
+            .widgetList<DivineIcon>(find.byType(DivineIcon))
+            .map((i) => i.color),
+        everyElement(equals(VineTheme.onSurface)),
+      );
     });
   });
 }

@@ -66,41 +66,23 @@ void main() {
       expect: () => [AppearanceMode.light],
     );
 
-    test('resolves disabled Light Mode to dark', () {
-      expect(
-        resolveThemeMode(
-          mode: AppearanceMode.light,
-          lightModeEnabled: false,
-        ),
-        ThemeMode.dark,
-      );
-    });
-
     test('resolves System to the platform-reactive ThemeMode', () {
       expect(
-        resolveThemeMode(
-          mode: AppearanceMode.system,
-          lightModeEnabled: true,
-        ),
+        resolveThemeMode(mode: AppearanceMode.system),
         ThemeMode.system,
       );
     });
 
-    test('resolves enabled explicit modes', () {
-      expect(
-        resolveThemeMode(
-          mode: AppearanceMode.light,
-          lightModeEnabled: true,
-        ),
-        ThemeMode.light,
-      );
-      expect(
-        resolveThemeMode(
-          mode: AppearanceMode.dark,
-          lightModeEnabled: true,
-        ),
-        ThemeMode.dark,
-      );
+    test('resolves explicit modes', () {
+      expect(resolveThemeMode(mode: AppearanceMode.light), ThemeMode.light);
+      expect(resolveThemeMode(mode: AppearanceMode.dark), ThemeMode.dark);
+    });
+
+    test('honours a stored Light choice with no flag to gate it', () {
+      // The gate used to force ThemeMode.dark here regardless of the stored
+      // choice. Removing it is the whole point of ungating: a user who picked
+      // Light gets Light.
+      expect(resolveThemeMode(mode: AppearanceMode.light), ThemeMode.light);
     });
   });
 }
