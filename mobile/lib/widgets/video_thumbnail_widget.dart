@@ -222,12 +222,38 @@ class PassiveAuthThumbnailImage extends StatefulWidget {
     return host == 'divine.video' || host.endsWith('.divine.video');
   }
 
-  static final Set<String> _unauthorizedWithoutPassiveAuth = <String>{};
+  static const int _maxUnauthorizedCacheEntries = 128;
+  static const Duration _unauthorizedCacheTtl = Duration(minutes: 5);
+  static final Map<_PassiveAuthSuppressionKey, DateTime>
+  _unauthorizedWithoutPassiveAuth = <_PassiveAuthSuppressionKey, DateTime>{};
+
+  static void _rememberUnauthorized(_PassiveAuthSuppressionKey key) {
+    _unauthorizedWithoutPassiveAuth
+      ..remove(key)
+      ..[key] = DateTime.now().add(_unauthorizedCacheTtl);
+    while (_unauthorizedWithoutPassiveAuth.length >
+        _maxUnauthorizedCacheEntries) {
+      _unauthorizedWithoutPassiveAuth.remove(
+        _unauthorizedWithoutPassiveAuth.keys.first,
+      );
+    }
+  }
+
+  static bool _isUnauthorized(_PassiveAuthSuppressionKey key) {
+    final expiresAt = _unauthorizedWithoutPassiveAuth.remove(key);
+    if (expiresAt == null || !DateTime.now().isBefore(expiresAt)) return false;
+    _unauthorizedWithoutPassiveAuth[key] = expiresAt;
+    return true;
+  }
 
   @visibleForTesting
   static void debugClearUnauthorizedCache() {
     _unauthorizedWithoutPassiveAuth.clear();
   }
+
+  @visibleForTesting
+  static int get debugUnauthorizedCacheLength =>
+      _unauthorizedWithoutPassiveAuth.length;
 
   @override
   State<PassiveAuthThumbnailImage> createState() =>
@@ -240,6 +266,14 @@ class PassiveAuthUnavailableThumbnailException implements Exception {
   @override
   String toString() => 'Passive thumbnail auth unavailable';
 }
+
+typedef _PassiveAuthSuppressionKey = ({
+  String url,
+  ProviderContainer container,
+  Object? authState,
+  int contentFilterVersion,
+  int adultMediaAccessVersion,
+});
 
 class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
   ProviderContainer? _providerContainer;
@@ -361,13 +395,17 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     _authRetryAttempted = true;
     switch (authResult) {
       case ViewerAuthAuthorized(:final headers):
-        PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.remove(
-          retryUrl,
-        );
+        final suppressionKey = _suppressionKey(retryUrl);
+        if (suppressionKey != null) {
+          PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.remove(
+            suppressionKey,
+          );
+        }
         setState(() {
           _authHeaders = headers;
         });
       case ViewerAuthSignerUnreachable():
+        break;
       case ViewerAuthBlockedByPreference():
       case ViewerAuthUnavailable():
         _markPassiveAuthUnavailable(retryUrl);
@@ -376,16 +414,30 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
 
   void _markPassiveAuthUnavailable(String url) {
     _authRetryAttempted = true;
-    PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.add(url);
+    final suppressionKey = _suppressionKey(url);
+    if (suppressionKey == null) return;
+    PassiveAuthThumbnailImage._rememberUnauthorized(suppressionKey);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted &&
           widget.url == url &&
-          PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.contains(
-            url,
-          )) {
+          PassiveAuthThumbnailImage._isUnauthorized(suppressionKey)) {
         setState(() {});
       }
     });
+  }
+
+  _PassiveAuthSuppressionKey? _suppressionKey(String url) {
+    final container = _providerContainer;
+    if (container == null) return null;
+    return (
+      url: url,
+      container: container,
+      authState: container.read(currentAuthStateProvider),
+      contentFilterVersion: container.read(contentFilterVersionProvider),
+      adultMediaAccessVersion: container.read(
+        adultMediaAccessRevocationVersionProvider,
+      ),
+    );
   }
 
   void _resetPassiveAuthState() {
@@ -415,9 +467,10 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
         final resolvedUrl = widget.url;
 
         if (PassiveAuthThumbnailImage._shouldBypassCacheManager(resolvedUrl)) {
+          final suppressionKey = _suppressionKey(resolvedUrl);
           if (_authHeaders == null &&
-              PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth
-                  .contains(resolvedUrl)) {
+              suppressionKey != null &&
+              PassiveAuthThumbnailImage._isUnauthorized(suppressionKey)) {
             final errorWidget = widget.errorWidget;
             if (errorWidget != null) {
               return errorWidget(
