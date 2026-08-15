@@ -28,7 +28,6 @@ import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile

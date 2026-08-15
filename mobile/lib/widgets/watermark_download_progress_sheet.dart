@@ -14,7 +14,6 @@ import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/services/watermark_download_service.dart';
 import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/retry_after_settings_on_resume.dart';
-import 'package:share_plus/share_plus.dart';
 
 Future<void> showWatermarkDownloadSheet({
   required BuildContext context,

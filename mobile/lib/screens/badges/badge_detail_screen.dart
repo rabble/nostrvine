@@ -21,7 +21,6 @@ import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Shows one badge, its awardees, and the actions available on it.
 class BadgeDetailScreen extends ConsumerWidget {

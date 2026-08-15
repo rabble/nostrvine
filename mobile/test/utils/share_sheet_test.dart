@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/utils/share_sheet.dart';
-import 'package:share_plus/share_plus.dart';
 
 const _shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
 

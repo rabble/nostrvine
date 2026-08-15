@@ -20,7 +20,6 @@ import 'package:openvine/utils/device_memory_util.dart';
 import 'package:openvine/utils/share_sheet.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';

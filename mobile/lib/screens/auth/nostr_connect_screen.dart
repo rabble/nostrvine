@@ -16,7 +16,6 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 

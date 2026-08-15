@@ -5,6 +5,22 @@ import 'package:flutter/widgets.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:share_plus/share_plus.dart';
 
+/// The share_plus value types call sites need, re-exported so that nothing
+/// else has to import the plugin.
+///
+/// `SharePlus` and the deprecated `Share` are deliberately absent: they are
+/// the entry points that skip the anchor, and leaving them unreachable is
+/// what makes the omission in #7506 unrepresentable rather than merely
+/// discouraged. `test/tools/share_sheet_entry_point_test.dart` fails if any
+/// other file under `lib/` or `packages/*/lib/` imports share_plus directly.
+export 'package:share_plus/share_plus.dart'
+    show
+        CupertinoActivityType,
+        ShareParams,
+        ShareResult,
+        ShareResultStatus,
+        XFile;
+
 /// Presents the platform share sheet, anchored to [context].
 ///
 /// Use this instead of `SharePlus.instance.share`. On iPad idiom (real iPads

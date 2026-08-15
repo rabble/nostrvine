@@ -34,7 +34,6 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/new_people_list_sheet.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
