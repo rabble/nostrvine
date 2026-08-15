@@ -6,6 +6,10 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 
 class _FakeImageCache extends Mock implements MediaCacheManager {}
 
+Widget _deadErrorBuilder(BuildContext context, String url, Object error) {
+  return const Text('dead-render', textDirection: TextDirection.ltr);
+}
+
 void main() {
   group('openVineImageCache', () {
     test('is a $MediaCacheManager', () {
@@ -33,6 +37,33 @@ void main() {
 
   group(VineCachedImage, () {
     const testUrl = 'https://example.com/image.jpg';
+
+    testWidgets(
+      'renders the error widget without resolving a known-dead host',
+      (tester) async {
+        const deadUrl = 'http://v.cdn.vine.co/v/avatars/dead.jpg';
+
+        await tester.pumpWidget(
+          const Directionality(
+            textDirection: TextDirection.ltr,
+            child: VineCachedImage(
+              imageUrl: deadUrl,
+              errorWidget: _deadErrorBuilder,
+            ),
+          ),
+        );
+
+        // No MediaCacheImageProvider may be created for a URL whose origin
+        // is verified dead — the error path renders instead.
+        expect(find.text('dead-render'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is Image && w.image is MediaCacheImageProvider,
+          ),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('renders Image with a MediaCacheImageProvider', (tester) async {
       await tester.pumpWidget(

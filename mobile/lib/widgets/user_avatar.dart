@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/avatar_svg/avatar_svg_cubit.dart';
 import 'package:openvine/repositories/avatar_svg_repository.dart';
+import 'package:openvine/utils/dead_image_hosts.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -128,7 +129,10 @@ class UserAvatar extends StatelessWidget {
 
   double get _borderWidth => size >= 120 ? 3 : 1;
 
-  bool get _hasNetworkImage => imageUrl != null && imageUrl!.isNotEmpty;
+  bool get _hasNetworkImage =>
+      imageUrl != null &&
+      imageUrl!.isNotEmpty &&
+      !isKnownDeadImageHost(imageUrl!);
 
   bool get _isSvgImageUrl => isSvgImageUrl(imageUrl);
 

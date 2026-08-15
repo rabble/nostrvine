@@ -186,6 +186,45 @@ void main() {
         expect(_clipSize(tester), const Size.square(44));
       });
 
+      testWidgets(
+        'renders the placeholder without requesting a dead http vine.co URL',
+        (tester) async {
+          const deadUrl = 'http://v.cdn.vine.co/v/avatars/dead.jpg';
+
+          await tester.pumpWidget(
+            const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: UserAvatar(imageUrl: deadUrl)),
+            ),
+          );
+
+          // The origin is verified dead (403 on cleartext, expired cert on
+          // 443), so the request must never be attempted — the placeholder
+          // is the correct render.
+          expect(find.byType(VineCachedImage), findsNothing);
+          expect(_gradientFinder(), findsWidgets);
+        },
+      );
+
+      testWidgets(
+        'renders the placeholder without requesting a dead https vine.co URL',
+        (tester) async {
+          const deadUrl = 'https://v.cdn.vine.co/v/avatars/dead.jpg';
+
+          await tester.pumpWidget(
+            const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: UserAvatar(imageUrl: deadUrl)),
+            ),
+          );
+
+          expect(find.byType(VineCachedImage), findsNothing);
+          expect(_gradientFinder(), findsWidgets);
+        },
+      );
+
       testWidgets('shows generated placeholder when imageUrl is null', (
         tester,
       ) async {
