@@ -284,6 +284,42 @@ void main() {
         expect(bloc.state.isRefreshing, isFalse);
       });
 
+      test(
+        'drops refresh events while the initial mark-all is pending',
+        () async {
+          final markCompleter = Completer<void>();
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenAnswer((_) => markCompleter.future);
+
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          bloc.add(NotificationFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(NotificationFeedRefreshed());
+          await Future<void>.delayed(Duration.zero);
+
+          verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          expect(bloc.state.isRefreshing, isTrue);
+
+          markCompleter.complete();
+          await Future<void>.delayed(Duration.zero);
+
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenAnswer((_) async {});
+          bloc.add(NotificationFeedRefreshed());
+          await Future<void>.delayed(Duration.zero);
+
+          verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          expect(bloc.state.isRefreshing, isFalse);
+        },
+      );
+
       blocTest<NotificationFeedBloc, NotificationFeedState>(
         'clears the platform app badge after successful unfiltered open',
         build: () => createBloc(appBadgeClearer: mockAppBadgeClearer),

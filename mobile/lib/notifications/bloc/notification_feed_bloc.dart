@@ -348,6 +348,9 @@ class NotificationFeedBloc
     NotificationFeedRefreshed event,
     Emitter<NotificationFeedState> emit,
   ) async {
+    // Started and Refreshed have separate droppable transformers, so guard the
+    // shared busy state explicitly to prevent the two handlers overlapping.
+    if (state.isRefreshing) return;
     _emptyPageContinuations = 0;
     _loadMoreFailed = false;
     _emptyPageContinuationPending = false;
