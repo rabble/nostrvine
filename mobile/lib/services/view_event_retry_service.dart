@@ -107,15 +107,26 @@ class ViewEventRetryService {
 
         try {
           final video = _toVideoEvent(row);
-          // Derive fractional loops from watch/total already on the row
-          // instead of the rounded IntColumn, so 0.75 does not become 1.0
-          // and the queue vs direct paths agree.
+          // Pre-phase rows (phase IS NULL) are legacy end-of-session events
+          // and replay WITHOUT a phase tag: the relay counts views on start
+          // events only, so marking them 'end' would erase their view.
+          final phase = switch (row.phase) {
+            'start' => ViewEventPhase.start,
+            'end' => ViewEventPhase.end,
+            _ => null,
+          };
+
           double? fractionalLoops;
-          if (row.totalDurationMs != null && row.totalDurationMs! > 0) {
-            fractionalLoops =
-                row.watchDurationMs / row.totalDurationMs!.toDouble();
-          } else {
-            fractionalLoops = row.loopCount?.toDouble();
+          if (phase != ViewEventPhase.start) {
+            // Derive fractional loops from watch/total already on the row
+            // instead of the rounded IntColumn, so 0.75 does not become 1.0
+            // and the queue vs direct paths agree.
+            if (row.totalDurationMs != null && row.totalDurationMs! > 0) {
+              fractionalLoops =
+                  row.watchDurationMs / row.totalDurationMs!.toDouble();
+            } else {
+              fractionalLoops = row.loopCount?.toDouble();
+            }
           }
           final success = await _viewEventPublisher.publishViewEvent(
             video: video,
@@ -124,6 +135,7 @@ class ViewEventRetryService {
             source: viewTrafficSourceFromTag(row.trafficSource),
             sourceDetail: row.sourceDetail,
             loopCount: fractionalLoops,
+            phase: phase,
           );
           if (success) {
             await _dao.deleteById(row.id);

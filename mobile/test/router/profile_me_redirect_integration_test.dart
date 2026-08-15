@@ -299,6 +299,7 @@ class NoopAnalyticsService extends AnalyticsService {
     VideoEvent video, {
     required String source,
     required String eventType,
+    String? sessionToken,
     Duration? watchDuration,
     Duration? totalDuration,
     double? loopCount,
@@ -315,6 +316,7 @@ class NoopAnalyticsService extends AnalyticsService {
     required String? userId,
     required String source,
     required String eventType,
+    String? sessionToken,
     Duration? watchDuration,
     Duration? totalDuration,
     double? loopCount,

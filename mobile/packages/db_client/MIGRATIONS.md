@@ -4,7 +4,7 @@ This document describes how to manage database migrations for the `db_client` pa
 
 ## Current Schema Version
 
-**Version: 7** (see `app_database.dart`).
+**Version: 8** (see `app_database.dart`).
 
 Version 2 is the legacy-normalization baseline. Earlier releases kept Drift's
 user-version at 1 while startup repair SQL added tables, columns, indexes, and
@@ -41,6 +41,14 @@ is what makes that step reachable — a database already sitting at v6 runs no
 `onUpgrade` at all while `schemaVersion` stays 6, so folding index creation
 into the `from < 6` block would skip every install that had already reached
 v6.
+
+Version 8 adds `pending_view_events.phase`, so a queued view event records
+whether it is a `start` or `end` of a two-phase view session. Pre-existing
+rows stay NULL and replay as legacy single-shot events, which the relay
+continues to count as views. The `from < 8` step also re-runs the idempotent
+repair chain: `hadUpgrade` suppresses the `beforeOpen` repair on an upgrading
+open, so a damaged older database would otherwise keep its damage until some
+later launch that happens to perform no upgrade.
 
 Going forward, schema changes must be versioned Drift migrations. Do not add new
 tables, columns, indexes, or schema backfills to `beforeOpen`; that hook is only

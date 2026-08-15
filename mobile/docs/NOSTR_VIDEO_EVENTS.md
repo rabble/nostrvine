@@ -319,10 +319,14 @@ All tags are stored in `VideoEvent.rawTags` as a `Map<String, String>` for:
 
 Kind 22236 is an **ephemeral event** for tracking video views for analytics purposes.
 
-The schema below is the contract emitted by current Divine mobile. Funnelcake
-support for fractional `loops` and one-view-per-session counting is proposed in
-[divine-funnelcake#921](https://github.com/divinevideo/divine-funnelcake/pull/921)
-and remains pending until that pull request lands.
+The schema below is the contract emitted by current Divine mobile. Two-phase
+counting landed relay-side in
+[divine-funnelcake#922](https://github.com/divinevideo/divine-funnelcake/pull/922).
+Fractional `loops` from the client did not: #922 derives loops from the
+`viewed` seconds itself and never reads the `loops` tag. The earlier proposal
+to read it,
+[divine-funnelcake#921](https://github.com/divinevideo/divine-funnelcake/pull/921),
+was closed unmerged.
 
 ### Purpose
 
@@ -343,10 +347,19 @@ The `.content` field is optional and could contain a free-form note.
 |-----|--------|-------------|----------|
 | `a` | `["a", "<kind>:<pubkey>:<d-tag>", "<relay-url>"]` | Addressable reference to kind 34235 or 34236 video event | **Required** |
 | `e` | `["e", "<event-id>", "<relay-url>"]` | Event ID reference (specific version viewed) | **Required** |
-| `viewed` | `["viewed", "0", "<whole-seconds-watched>"]` | Elapsed whole playback seconds for this continuous mobile session | **Required** |
-| `loops` | `["loops", "<playthrough-fraction>"]` | Exact finite, non-negative playthrough count emitted by mobile, including partial loops; Funnelcake support is pending #921 | Optional |
+| `phase` | `["phase", "start"\|"end"]` | Two-phase session marker: `start` counts the view, `end` carries watch time and loops. Absent = legacy single-shot event | Optional |
+| `viewed` | `["viewed", "0", "<whole-seconds-watched>"]` | Elapsed whole playback seconds for this segment | **Required on `end` and legacy events; omitted on `start`** |
+| `loops` | `["loops", "<playthrough-fraction>"]` | Exact finite, non-negative playthrough count emitted by mobile, including partial loops. Funnelcake does not read this tag — it derives loops from `viewed` — so it is informational for other consumers | Optional |
 | `source` | `["source", "<source-type>"]` | Traffic source: `home`, `discovery`, `profile`, `share`, `search` | Optional |
 | `client` | `["client", "<name>", "31990:<app-pubkey>:<d-identifier>", "<relay-url>"]` | NIP-89 client attribution for Divine | Optional |
+
+### Two-phase sessions
+
+One viewing session publishes one `start` event at playback start and one or
+more `end` events (on feed interruption, video change, or dispose), each
+carrying only the watch/loop delta since the previous `end`. An end event
+with no new playback emits nothing. An app kill mid-session still leaves the
+`start` — and therefore the view — counted.
 
 ### Traffic Sources
 
@@ -384,7 +397,13 @@ The `.content` field is optional and could contain a free-form note.
 - **Both `a` and `e` tags are required** - `a` provides stable addressable reference, `e` tracks specific version viewed
 - The `viewed` tag carries elapsed playback seconds for the session, not positions within the video. Mobile always emits `["viewed", "0", "<whole seconds watched>"]`, so a 6s video looped twice reports `["viewed", "0", "12"]`, and a sub-second view truncates to `["viewed", "0", "0"]`
 - Analytics services should consume these events in real-time before relays discard them
-- Every session with positive playback time counts, including sub-second views
-- Mobile emits one event per continuous viewing session; returning after
-  inactivity starts a new session. Matching Funnelcake counting is pending
-  #921.
+- No minimum watch threshold: a playback start counts as a view even when the session ends before the first loop completes (a fractional loop is valid)
+- Mobile emits one `start` per viewing session plus one `end` segment per
+  interruption. A cover (comment sheet, route push, tab switch, backgrounding)
+  flushes an `end` segment but keeps the session, so watch time after the cover
+  lifts still belongs to it. Scrolling away ends the session, and scrolling back
+  starts a new one that reports its own `start`.
+- Funnelcake counts these phases as of divine-funnelcake#922: a `start` counts
+  the view and contributes zero loops, each `end` contributes
+  `viewed` seconds ÷ video duration as loops, and an event with no `phase` keeps
+  the legacy single-shot behaviour (`viewed` floored at one second)

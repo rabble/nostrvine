@@ -31,6 +31,7 @@ class _RecordingAnalyticsService extends AnalyticsService {
     required String? userId,
     required String source,
     required String eventType,
+    String? sessionToken,
     Duration? watchDuration,
     Duration? totalDuration,
     double? loopCount,
@@ -44,6 +45,7 @@ class _RecordingAnalyticsService extends AnalyticsService {
         userId: userId,
         source: source,
         eventType: eventType,
+        sessionToken: sessionToken,
         watchDuration: watchDuration,
         totalDuration: totalDuration,
         loopCount: loopCount,
@@ -52,6 +54,40 @@ class _RecordingAnalyticsService extends AnalyticsService {
         sourceDetail: sourceDetail,
       ),
     );
+  }
+}
+
+/// Fails every publish, so an unguarded fire-and-forget call surfaces as an
+/// unhandled zone error and fails the test.
+class _ThrowingAnalyticsService extends _RecordingAnalyticsService {
+  @override
+  Future<void> trackDetailedVideoViewWithUser(
+    VideoEvent video, {
+    required String? userId,
+    required String source,
+    required String eventType,
+    String? sessionToken,
+    Duration? watchDuration,
+    Duration? totalDuration,
+    double? loopCount,
+    bool? completedVideo,
+    ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
+    String? sourceDetail,
+  }) async {
+    await super.trackDetailedVideoViewWithUser(
+      video,
+      userId: userId,
+      source: source,
+      eventType: eventType,
+      sessionToken: sessionToken,
+      watchDuration: watchDuration,
+      totalDuration: totalDuration,
+      loopCount: loopCount,
+      completedVideo: completedVideo,
+      trafficSource: trafficSource,
+      sourceDetail: sourceDetail,
+    );
+    throw StateError('publish failed');
   }
 }
 
@@ -64,11 +100,20 @@ class _RecordingSeenVideosService extends SeenVideosService {
     int? loopCount,
     Duration? watchDuration,
   }) async {
+    // Mirrors SeenVideoMetrics.updateSession: one entry per video, and
+    // repeat calls accumulate onto it. Recording raw calls instead would
+    // make a per-segment flush look like a duplicate seen entry.
+    for (final record in records) {
+      if (record.videoId != videoId) continue;
+      record.loopCount += loopCount ?? 0;
+      record.watchDuration += watchDuration ?? Duration.zero;
+      return;
+    }
     records.add(
       _SeenVideoRecord(
         videoId: videoId,
-        loopCount: loopCount,
-        watchDuration: watchDuration,
+        loopCount: loopCount ?? 0,
+        watchDuration: watchDuration ?? Duration.zero,
       ),
     );
   }
@@ -80,6 +125,7 @@ class _TrackedAnalyticsEvent {
     required this.userId,
     required this.source,
     required this.eventType,
+    required this.sessionToken,
     required this.watchDuration,
     required this.totalDuration,
     required this.loopCount,
@@ -92,6 +138,7 @@ class _TrackedAnalyticsEvent {
   final String? userId;
   final String source;
   final String eventType;
+  final String? sessionToken;
   final Duration? watchDuration;
   final Duration? totalDuration;
   final double? loopCount;
@@ -101,15 +148,15 @@ class _TrackedAnalyticsEvent {
 }
 
 class _SeenVideoRecord {
-  const _SeenVideoRecord({
+  _SeenVideoRecord({
     required this.videoId,
     required this.loopCount,
     required this.watchDuration,
   });
 
   final String videoId;
-  final int? loopCount;
-  final Duration? watchDuration;
+  int loopCount;
+  Duration watchDuration;
 }
 
 void main() {
@@ -128,8 +175,10 @@ void main() {
       when(() => authService.currentPublicKeyHex).thenReturn('viewer_pubkey');
     });
 
-    testWidgets('active tracker sends view_start', (tester) async {
-      final controller = _stubController(isPlaying: false);
+    testWidgets('active tracker sends view_start once playback starts', (
+      tester,
+    ) async {
+      final controller = _stubController(isPlaying: true);
 
       await tester.pumpWidget(
         _buildTracker(
@@ -145,6 +194,35 @@ void main() {
       expect(
         analyticsService.events.map((event) => event.eventType),
         contains('view_start'),
+      );
+
+      await controller.close();
+    });
+
+    testWidgets('a failing publish does not escape either phase', (
+      tester,
+    ) async {
+      final failingAnalytics = _ThrowingAnalyticsService();
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTracker(
+          authService: authService,
+          analyticsService: failingAnalytics,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          isActive: true,
+          clock: () => now,
+        ),
+      );
+
+      // Dispose flushes an end segment, so both phases attempt a publish.
+      now = now.add(const Duration(seconds: 2));
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(
+        failingAnalytics.events.map((event) => event.eventType),
+        containsAll(<String>['view_start', 'view_end']),
       );
 
       await controller.close();
@@ -179,7 +257,7 @@ void main() {
       expect(viewEndEvents.single.userId, equals('viewer_pubkey'));
       expect(
         viewEndEvents.single.watchDuration,
-        const Duration(milliseconds: 1100),
+        const Duration(seconds: 1),
       );
       expect(viewEndEvents.single.totalDuration, const Duration(seconds: 5));
       expect(viewEndEvents.single.trafficSource, ViewTrafficSource.home);
@@ -340,10 +418,10 @@ void main() {
 
       final viewEndEvents = _viewEndEvents(analyticsService);
       expect(viewEndEvents, hasLength(1));
-      expect(
-        viewEndEvents.single.watchDuration,
-        const Duration(milliseconds: 1200),
-      );
+      // Whole seconds: the wire format carries seconds, so the tracker
+      // truncates once and keeps the 200ms remainder for the next segment
+      // rather than letting every segment drop its own tail.
+      expect(viewEndEvents.single.watchDuration, const Duration(seconds: 1));
       expect(seenVideosService.records, hasLength(1));
 
       await controller.close();
@@ -548,6 +626,238 @@ void main() {
       await controller.close();
     });
 
+    testWidgets(
+      'covering the feed (comment sheet) flushes one segment and keeps the '
+      'session — later loops still publish',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final isFeedVisible = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(isPlaying: true);
+
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            isFeedVisible: isFeedVisible,
+            clock: () => now,
+          ),
+        );
+
+        // 2s watched, then a sheet covers the feed. The item is still the
+        // current one — only the feed stopped being visible.
+        now = now.add(const Duration(seconds: 2));
+        isFeedVisible.value = false;
+        await tester.pump();
+
+        // Back from the sheet, 2s more, then dispose.
+        isFeedVisible.value = true;
+        await tester.pump();
+        now = now.add(const Duration(seconds: 2));
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        final starts = analyticsService.events
+            .where((event) => event.eventType == 'view_start')
+            .toList();
+        expect(starts, hasLength(1));
+        expect(starts.single.sessionToken, isNotNull);
+
+        final ends = _viewEndEvents(analyticsService);
+        expect(ends, hasLength(2));
+        expect(ends[0].watchDuration, const Duration(seconds: 2));
+        expect(ends[1].watchDuration, const Duration(seconds: 2));
+        // Fractional loops per segment: 2s of a 5s video = 0.4.
+        expect(ends[0].loopCount, 0.4);
+        expect(ends[1].loopCount, 0.4);
+        expect(seenVideosService.records, hasLength(1));
+
+        isActive.dispose();
+        isFeedVisible.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
+
+    testWidgets(
+      'scrolling away ends the session — returning counts a new view',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final isFeedVisible = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(isPlaying: true);
+
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            isFeedVisible: isFeedVisible,
+            clock: () => now,
+          ),
+        );
+
+        // 2s watched, then the viewer scrolls to another video. Unlike a
+        // cover, this ends the session outright.
+        now = now.add(const Duration(seconds: 2));
+        isActive.value = false;
+        await tester.pump();
+
+        // Scrolling back is a fresh watch and must report its own start.
+        isActive.value = true;
+        controller.setState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.playing,
+            duration: Duration(seconds: 5),
+            isFirstFrameRendered: true,
+          ),
+        );
+        await tester.pump();
+        now = now.add(const Duration(seconds: 2));
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        final starts = analyticsService.events
+            .where((event) => event.eventType == 'view_start')
+            .toList();
+        expect(starts, hasLength(2));
+        // A new session means a new token, or the dedupe would swallow it.
+        expect(starts[0].sessionToken, isNot(equals(starts[1].sessionToken)));
+
+        isActive.dispose();
+        isFeedVisible.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
+
+    testWidgets(
+      'an interrupted session reports the same loops as an uninterrupted one',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final isFeedVisible = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(
+          isPlaying: true,
+          duration: const Duration(seconds: 6),
+        );
+
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            isFeedVisible: isFeedVisible,
+            clock: () => now,
+          ),
+        );
+
+        Future<void> wrapOnce() async {
+          for (final position in const [
+            Duration(milliseconds: 5900),
+            Duration(milliseconds: 50),
+          ]) {
+            controller.setState(
+              DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                duration: const Duration(seconds: 6),
+                position: position,
+                isFirstFrameRendered: true,
+              ),
+            );
+            await tester.pump();
+          }
+        }
+
+        // 15s watched, two wrap-arounds seen.
+        now = now.add(const Duration(seconds: 15));
+        await wrapOnce();
+        await wrapOnce();
+
+        isFeedVisible.value = false;
+        await tester.pump();
+        isFeedVisible.value = true;
+        await tester.pump();
+
+        // 15s more, three further wrap-arounds.
+        now = now.add(const Duration(seconds: 15));
+        await wrapOnce();
+        await wrapOnce();
+        await wrapOnce();
+
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        final total = _viewEndEvents(
+          analyticsService,
+        ).fold<double>(0, (sum, event) => sum + (event.loopCount ?? 0));
+
+        // 30s of a 6s video is 5 loops however the session is split. Taking
+        // the larger of wraps and watch-ratio *per segment* instead of
+        // splitting the cumulative figure reports 2.5 + 3.0 = 5.5.
+        expect(total, closeTo(5, 0.001));
+
+        isActive.dispose();
+        isFeedVisible.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
+
+    testWidgets(
+      'sub-second remainders carry across flushes instead of being dropped',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final isFeedVisible = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(isPlaying: true);
+
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            isFeedVisible: isFeedVisible,
+            clock: () => now,
+          ),
+        );
+
+        // Four 1.5s stretches, each interrupted by a cover: 6s watched.
+        for (var i = 0; i < 4; i++) {
+          now = now.add(const Duration(milliseconds: 1500));
+          isFeedVisible.value = false;
+          await tester.pump();
+          isFeedVisible.value = true;
+          await tester.pump();
+        }
+
+        final reported = _viewEndEvents(analyticsService).fold<int>(
+          0,
+          (sum, event) => sum + (event.watchDuration?.inSeconds ?? 0),
+        );
+
+        // The wire carries whole seconds. Truncating each 1.5s segment on its
+        // own reports 1+1+1+1 = 4s of the 6s actually watched; carrying the
+        // remainder reports the full 6.
+        expect(reported, equals(6));
+
+        isActive.dispose();
+        isFeedVisible.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
+
     testWidgets('video id change finalizes old video and starts new one', (
       tester,
     ) async {
@@ -617,6 +927,9 @@ Widget _buildTracker({
   );
 }
 
+/// Shared always-visible feed signal for tests that only vary scroll position.
+final _alwaysFeedVisible = ValueNotifier<bool>(true);
+
 Widget _buildTrackerHarness({
   required AuthService authService,
   required AnalyticsService analyticsService,
@@ -625,6 +938,7 @@ Widget _buildTrackerHarness({
   required ValueListenable<VideoEvent> video,
   required ValueListenable<bool> isActive,
   required DateTime Function() clock,
+  ValueListenable<bool>? isFeedVisible,
 }) {
   return ProviderScope(
     overrides: [
@@ -638,13 +952,17 @@ Widget _buildTrackerHarness({
         valueListenable: video,
         builder: (context, currentVideo, _) => ValueListenableBuilder<bool>(
           valueListenable: isActive,
-          builder: (context, active, _) => DivineVideoMetricsTracker(
-            video: currentVideo,
-            controller: controller,
-            isActive: active,
-            trafficSource: ViewTrafficSource.home,
-            clock: clock,
-            child: const SizedBox.shrink(),
+          builder: (context, active, _) => ValueListenableBuilder<bool>(
+            valueListenable: isFeedVisible ?? _alwaysFeedVisible,
+            builder: (context, feedVisible, _) => DivineVideoMetricsTracker(
+              video: currentVideo,
+              controller: controller,
+              isActive: active,
+              isFeedVisible: feedVisible,
+              trafficSource: ViewTrafficSource.home,
+              clock: clock,
+              child: const SizedBox.shrink(),
+            ),
           ),
         ),
       ),

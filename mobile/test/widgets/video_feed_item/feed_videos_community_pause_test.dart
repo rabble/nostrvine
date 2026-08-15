@@ -89,6 +89,7 @@ class _NoopAnalyticsService extends AnalyticsService {
     required String? userId,
     required String source,
     required String eventType,
+    String? sessionToken,
     Duration? watchDuration,
     Duration? totalDuration,
     double? loopCount,

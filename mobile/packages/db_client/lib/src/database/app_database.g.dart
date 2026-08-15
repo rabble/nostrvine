@@ -13410,6 +13410,15 @@ class $PendingViewEventsTable extends PendingViewEvents
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _phaseMeta = const VerificationMeta('phase');
+  @override
+  late final GeneratedColumn<String> phase = GeneratedColumn<String>(
+    'phase',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _trafficSourceMeta = const VerificationMeta(
     'trafficSource',
   );
@@ -13499,6 +13508,7 @@ class $PendingViewEventsTable extends PendingViewEvents
     watchDurationMs,
     totalDurationMs,
     loopCount,
+    phase,
     trafficSource,
     sourceDetail,
     status,
@@ -13602,6 +13612,12 @@ class $PendingViewEventsTable extends PendingViewEvents
       context.handle(
         _loopCountMeta,
         loopCount.isAcceptableOrUnknown(data['loop_count']!, _loopCountMeta),
+      );
+    }
+    if (data.containsKey('phase')) {
+      context.handle(
+        _phaseMeta,
+        phase.isAcceptableOrUnknown(data['phase']!, _phaseMeta),
       );
     }
     if (data.containsKey('traffic_source')) {
@@ -13710,6 +13726,10 @@ class $PendingViewEventsTable extends PendingViewEvents
         DriftSqlType.int,
         data['${effectivePrefix}loop_count'],
       ),
+      phase: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phase'],
+      ),
       trafficSource: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}traffic_source'],
@@ -13768,6 +13788,14 @@ class PendingViewEventRow extends DataClass
   final int watchDurationMs;
   final int? totalDurationMs;
   final int? loopCount;
+
+  /// Two-phase reporting phase: `start` or `end`.
+  ///
+  /// NULL marks a pre-phase queued row: a legacy end-of-session event that
+  /// must replay WITHOUT a phase tag so the relay still counts its view.
+  /// A `start` row carries no watch time; an `end` row contributes loops
+  /// only — the relay counts the view on the matching `start` row.
+  final String? phase;
   final String trafficSource;
   final String? sourceDetail;
   final String status;
@@ -13786,6 +13814,7 @@ class PendingViewEventRow extends DataClass
     required this.watchDurationMs,
     this.totalDurationMs,
     this.loopCount,
+    this.phase,
     required this.trafficSource,
     this.sourceDetail,
     required this.status,
@@ -13816,6 +13845,9 @@ class PendingViewEventRow extends DataClass
     }
     if (!nullToAbsent || loopCount != null) {
       map['loop_count'] = Variable<int>(loopCount);
+    }
+    if (!nullToAbsent || phase != null) {
+      map['phase'] = Variable<String>(phase);
     }
     map['traffic_source'] = Variable<String>(trafficSource);
     if (!nullToAbsent || sourceDetail != null) {
@@ -13855,6 +13887,9 @@ class PendingViewEventRow extends DataClass
       loopCount: loopCount == null && nullToAbsent
           ? const Value.absent()
           : Value(loopCount),
+      phase: phase == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phase),
       trafficSource: Value(trafficSource),
       sourceDetail: sourceDetail == null && nullToAbsent
           ? const Value.absent()
@@ -13889,6 +13924,7 @@ class PendingViewEventRow extends DataClass
       watchDurationMs: serializer.fromJson<int>(json['watchDurationMs']),
       totalDurationMs: serializer.fromJson<int?>(json['totalDurationMs']),
       loopCount: serializer.fromJson<int?>(json['loopCount']),
+      phase: serializer.fromJson<String?>(json['phase']),
       trafficSource: serializer.fromJson<String>(json['trafficSource']),
       sourceDetail: serializer.fromJson<String?>(json['sourceDetail']),
       status: serializer.fromJson<String>(json['status']),
@@ -13912,6 +13948,7 @@ class PendingViewEventRow extends DataClass
       'watchDurationMs': serializer.toJson<int>(watchDurationMs),
       'totalDurationMs': serializer.toJson<int?>(totalDurationMs),
       'loopCount': serializer.toJson<int?>(loopCount),
+      'phase': serializer.toJson<String?>(phase),
       'trafficSource': serializer.toJson<String>(trafficSource),
       'sourceDetail': serializer.toJson<String?>(sourceDetail),
       'status': serializer.toJson<String>(status),
@@ -13933,6 +13970,7 @@ class PendingViewEventRow extends DataClass
     int? watchDurationMs,
     Value<int?> totalDurationMs = const Value.absent(),
     Value<int?> loopCount = const Value.absent(),
+    Value<String?> phase = const Value.absent(),
     String? trafficSource,
     Value<String?> sourceDetail = const Value.absent(),
     String? status,
@@ -13957,6 +13995,7 @@ class PendingViewEventRow extends DataClass
         ? totalDurationMs.value
         : this.totalDurationMs,
     loopCount: loopCount.present ? loopCount.value : this.loopCount,
+    phase: phase.present ? phase.value : this.phase,
     trafficSource: trafficSource ?? this.trafficSource,
     sourceDetail: sourceDetail.present ? sourceDetail.value : this.sourceDetail,
     status: status ?? this.status,
@@ -13993,6 +14032,7 @@ class PendingViewEventRow extends DataClass
           ? data.totalDurationMs.value
           : this.totalDurationMs,
       loopCount: data.loopCount.present ? data.loopCount.value : this.loopCount,
+      phase: data.phase.present ? data.phase.value : this.phase,
       trafficSource: data.trafficSource.present
           ? data.trafficSource.value
           : this.trafficSource,
@@ -14024,6 +14064,7 @@ class PendingViewEventRow extends DataClass
           ..write('watchDurationMs: $watchDurationMs, ')
           ..write('totalDurationMs: $totalDurationMs, ')
           ..write('loopCount: $loopCount, ')
+          ..write('phase: $phase, ')
           ..write('trafficSource: $trafficSource, ')
           ..write('sourceDetail: $sourceDetail, ')
           ..write('status: $status, ')
@@ -14047,6 +14088,7 @@ class PendingViewEventRow extends DataClass
     watchDurationMs,
     totalDurationMs,
     loopCount,
+    phase,
     trafficSource,
     sourceDetail,
     status,
@@ -14069,6 +14111,7 @@ class PendingViewEventRow extends DataClass
           other.watchDurationMs == this.watchDurationMs &&
           other.totalDurationMs == this.totalDurationMs &&
           other.loopCount == this.loopCount &&
+          other.phase == this.phase &&
           other.trafficSource == this.trafficSource &&
           other.sourceDetail == this.sourceDetail &&
           other.status == this.status &&
@@ -14089,6 +14132,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
   final Value<int> watchDurationMs;
   final Value<int?> totalDurationMs;
   final Value<int?> loopCount;
+  final Value<String?> phase;
   final Value<String> trafficSource;
   final Value<String?> sourceDetail;
   final Value<String> status;
@@ -14108,6 +14152,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     this.watchDurationMs = const Value.absent(),
     this.totalDurationMs = const Value.absent(),
     this.loopCount = const Value.absent(),
+    this.phase = const Value.absent(),
     this.trafficSource = const Value.absent(),
     this.sourceDetail = const Value.absent(),
     this.status = const Value.absent(),
@@ -14128,6 +14173,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     required int watchDurationMs,
     this.totalDurationMs = const Value.absent(),
     this.loopCount = const Value.absent(),
+    this.phase = const Value.absent(),
     required String trafficSource,
     this.sourceDetail = const Value.absent(),
     required String status,
@@ -14155,6 +14201,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     Expression<int>? watchDurationMs,
     Expression<int>? totalDurationMs,
     Expression<int>? loopCount,
+    Expression<String>? phase,
     Expression<String>? trafficSource,
     Expression<String>? sourceDetail,
     Expression<String>? status,
@@ -14176,6 +14223,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
       if (watchDurationMs != null) 'watch_duration_ms': watchDurationMs,
       if (totalDurationMs != null) 'total_duration_ms': totalDurationMs,
       if (loopCount != null) 'loop_count': loopCount,
+      if (phase != null) 'phase': phase,
       if (trafficSource != null) 'traffic_source': trafficSource,
       if (sourceDetail != null) 'source_detail': sourceDetail,
       if (status != null) 'status': status,
@@ -14198,6 +14246,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     Value<int>? watchDurationMs,
     Value<int?>? totalDurationMs,
     Value<int?>? loopCount,
+    Value<String?>? phase,
     Value<String>? trafficSource,
     Value<String?>? sourceDetail,
     Value<String>? status,
@@ -14218,6 +14267,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
       watchDurationMs: watchDurationMs ?? this.watchDurationMs,
       totalDurationMs: totalDurationMs ?? this.totalDurationMs,
       loopCount: loopCount ?? this.loopCount,
+      phase: phase ?? this.phase,
       trafficSource: trafficSource ?? this.trafficSource,
       sourceDetail: sourceDetail ?? this.sourceDetail,
       status: status ?? this.status,
@@ -14264,6 +14314,9 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
     if (loopCount.present) {
       map['loop_count'] = Variable<int>(loopCount.value);
     }
+    if (phase.present) {
+      map['phase'] = Variable<String>(phase.value);
+    }
     if (trafficSource.present) {
       map['traffic_source'] = Variable<String>(trafficSource.value);
     }
@@ -14304,6 +14357,7 @@ class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
           ..write('watchDurationMs: $watchDurationMs, ')
           ..write('totalDurationMs: $totalDurationMs, ')
           ..write('loopCount: $loopCount, ')
+          ..write('phase: $phase, ')
           ..write('trafficSource: $trafficSource, ')
           ..write('sourceDetail: $sourceDetail, ')
           ..write('status: $status, ')
@@ -23825,6 +23879,7 @@ typedef $$PendingViewEventsTableCreateCompanionBuilder =
       required int watchDurationMs,
       Value<int?> totalDurationMs,
       Value<int?> loopCount,
+      Value<String?> phase,
       required String trafficSource,
       Value<String?> sourceDetail,
       required String status,
@@ -23846,6 +23901,7 @@ typedef $$PendingViewEventsTableUpdateCompanionBuilder =
       Value<int> watchDurationMs,
       Value<int?> totalDurationMs,
       Value<int?> loopCount,
+      Value<String?> phase,
       Value<String> trafficSource,
       Value<String?> sourceDetail,
       Value<String> status,
@@ -23912,6 +23968,11 @@ class $$PendingViewEventsTableFilterComposer
 
   ColumnFilters<int> get loopCount => $composableBuilder(
     column: $table.loopCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phase => $composableBuilder(
+    column: $table.phase,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -24010,6 +24071,11 @@ class $$PendingViewEventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get phase => $composableBuilder(
+    column: $table.phase,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get trafficSource => $composableBuilder(
     column: $table.trafficSource,
     builder: (column) => ColumnOrderings(column),
@@ -24099,6 +24165,9 @@ class $$PendingViewEventsTableAnnotationComposer
   GeneratedColumn<int> get loopCount =>
       $composableBuilder(column: $table.loopCount, builder: (column) => column);
 
+  GeneratedColumn<String> get phase =>
+      $composableBuilder(column: $table.phase, builder: (column) => column);
+
   GeneratedColumn<String> get trafficSource => $composableBuilder(
     column: $table.trafficSource,
     builder: (column) => column,
@@ -24179,6 +24248,7 @@ class $$PendingViewEventsTableTableManager
                 Value<int> watchDurationMs = const Value.absent(),
                 Value<int?> totalDurationMs = const Value.absent(),
                 Value<int?> loopCount = const Value.absent(),
+                Value<String?> phase = const Value.absent(),
                 Value<String> trafficSource = const Value.absent(),
                 Value<String?> sourceDetail = const Value.absent(),
                 Value<String> status = const Value.absent(),
@@ -24198,6 +24268,7 @@ class $$PendingViewEventsTableTableManager
                 watchDurationMs: watchDurationMs,
                 totalDurationMs: totalDurationMs,
                 loopCount: loopCount,
+                phase: phase,
                 trafficSource: trafficSource,
                 sourceDetail: sourceDetail,
                 status: status,
@@ -24219,6 +24290,7 @@ class $$PendingViewEventsTableTableManager
                 required int watchDurationMs,
                 Value<int?> totalDurationMs = const Value.absent(),
                 Value<int?> loopCount = const Value.absent(),
+                Value<String?> phase = const Value.absent(),
                 required String trafficSource,
                 Value<String?> sourceDetail = const Value.absent(),
                 required String status,
@@ -24238,6 +24310,7 @@ class $$PendingViewEventsTableTableManager
                 watchDurationMs: watchDurationMs,
                 totalDurationMs: totalDurationMs,
                 loopCount: loopCount,
+                phase: phase,
                 trafficSource: trafficSource,
                 sourceDetail: sourceDetail,
                 status: status,
