@@ -153,10 +153,13 @@ class _PreviewBackdrop extends StatelessWidget {
 
 /// Chrome for the states that have no counterparty to name yet (#7335).
 ///
-/// Deliberately offers no accept or decline action: both need a participant
-/// list, and the whole point of this branch is that there isn't one. The app
-/// bar falls back to the section title for the same reason — the loaded
-/// header's name would be a generated placeholder here.
+/// Offers no accept action — that one hands the participant list to the
+/// conversation route, and the whole point of this branch is that there isn't
+/// one. Decline stays, because `declineRequest` keys off the conversation ID
+/// alone: a preview read that fails is no reason to make an unwanted request
+/// undismissable, leaving the inbox-wide "Remove all requests" as the only way
+/// out. The app bar falls back to the section title, since the loaded header's
+/// name would be a generated placeholder here.
 class _UnresolvedRequestScaffold extends StatelessWidget {
   const _UnresolvedRequestScaffold({required this.child});
 
@@ -174,7 +177,14 @@ class _UnresolvedRequestScaffold extends StatelessWidget {
         // one-entry stack that plain `pop()` throws on (#6112).
         onBackPressed: () => context.safePop(fallback: InboxPage.path),
       ),
-      body: _PreviewBackdrop(child: Center(child: child)),
+      body: _PreviewBackdrop(
+        child: Column(
+          children: [
+            Expanded(child: Center(child: child)),
+            const _ActionBar(children: [_DeclineAndRemoveButton()]),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -402,6 +412,29 @@ class _MessageCountDescription extends StatelessWidget {
   }
 }
 
+/// The bottom action strip, in the same place on every state of this screen so
+/// decline does not move when the load resolves.
+class _ActionBar extends StatelessWidget {
+  const _ActionBar({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 16,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
 class _ActionButtons extends StatelessWidget {
   const _ActionButtons({required this.participantPubkeys});
 
@@ -411,36 +444,43 @@ class _ActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final conversationId = context.read<RequestPreviewCubit>().conversationId;
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 16,
-          children: [
-            _PrimaryActionButton(
-              label: context.l10n.messageRequestViewMessagesButton,
-              onTap: () {
-                context.pushReplacementNamed(
-                  ConversationPage.routeName,
-                  pathParameters: {'id': conversationId},
-                  extra: participantPubkeys,
-                );
-              },
-            ),
-            _SecondaryActionButton(
-              label: context.l10n.messageRequestDeclineAndRemoveButton,
-              onTap: () async {
-                await context.read<MessageRequestActionsCubit>().declineRequest(
-                  conversationId,
-                );
-                if (context.mounted) context.pop();
-              },
-            ),
-          ],
+    return _ActionBar(
+      children: [
+        _PrimaryActionButton(
+          label: context.l10n.messageRequestViewMessagesButton,
+          onTap: () {
+            context.pushReplacementNamed(
+              ConversationPage.routeName,
+              pathParameters: {'id': conversationId},
+              extra: participantPubkeys,
+            );
+          },
         ),
-      ),
+        const _DeclineAndRemoveButton(),
+      ],
+    );
+  }
+}
+
+/// The one action that survives an unresolved counterparty: `declineRequest`
+/// takes the conversation ID, not the participants.
+class _DeclineAndRemoveButton extends StatelessWidget {
+  const _DeclineAndRemoveButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final conversationId = context.read<RequestPreviewCubit>().conversationId;
+
+    return _SecondaryActionButton(
+      label: context.l10n.messageRequestDeclineAndRemoveButton,
+      onTap: () async {
+        await context.read<MessageRequestActionsCubit>().declineRequest(
+          conversationId,
+        );
+        // safePop for the same reason as the app-bar back button above: this
+        // route is deep-linkable, and a cold entry has nothing to pop (#6112).
+        if (context.mounted) context.safePop(fallback: InboxPage.path);
+      },
     );
   }
 }

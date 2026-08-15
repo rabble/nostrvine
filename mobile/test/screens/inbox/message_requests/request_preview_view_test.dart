@@ -457,6 +457,7 @@ void main() {
             () => mockActionsCubit.declineRequest(any()),
           ).thenAnswer((_) async {});
 
+          when(mockGoRouter.canPop).thenReturn(true);
           when(() => mockGoRouter.pop()).thenAnswer((_) async {});
 
           await tester.pumpWidget(buildSubject());
@@ -472,6 +473,25 @@ void main() {
           verify(() => mockGoRouter.pop()).called(1);
         },
       );
+
+      // Decline navigates away on the loaded path too, and a cold deep link
+      // has nothing to pop (#6112).
+      testWidgets('decline from a cold loaded entry lands on the inbox', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async {});
+        when(mockGoRouter.canPop).thenReturn(false);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Decline and remove'));
+        await tester.pumpAndSettle();
+
+        verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
     });
 
     // #7335. `build` branched on `denied` only, so `loading` and `error` fell
@@ -565,7 +585,7 @@ void main() {
         verify(() => mockGoRouter.go(InboxPage.path)).called(1);
       });
 
-      testWidgets('loading offers no accept or decline action', (tester) async {
+      testWidgets('loading offers no accept action', (tester) async {
         await pumpTwice(
           tester,
           buildStatusSubject(const RequestPreviewState()),
@@ -573,15 +593,9 @@ void main() {
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
         expect(find.text(l10n.messageRequestViewMessagesButton), findsNothing);
-        expect(
-          find.text(l10n.messageRequestDeclineAndRemoveButton),
-          findsNothing,
-        );
       });
 
-      testWidgets('error offers a retry instead of accept or decline', (
-        tester,
-      ) async {
+      testWidgets('error offers a retry instead of accept', (tester) async {
         await pumpTwice(
           tester,
           buildStatusSubject(
@@ -591,15 +605,68 @@ void main() {
 
         expect(find.text(l10n.messageRequestLoadFailed), findsOneWidget);
         expect(find.text(l10n.messageRequestViewMessagesButton), findsNothing);
-        expect(
-          find.text(l10n.messageRequestDeclineAndRemoveButton),
-          findsNothing,
-        );
 
         await tester.tap(find.text(l10n.commonRetry));
         await tester.pump();
 
         verify(() => mockPreviewCubit.load()).called(1);
+      });
+
+      // The unresolved-counterparty gate must not take decline down with the
+      // accept action: `declineRequest` keys off the conversation ID alone, and
+      // stripping it leaves an unwanted request dismissable only by the
+      // inbox-wide "Remove all requests".
+      for (final entry in const {
+        'loading': RequestPreviewState(),
+        'error': RequestPreviewState(status: RequestPreviewStatus.error),
+        'participant-less loaded': RequestPreviewState(
+          status: RequestPreviewStatus.loaded,
+        ),
+      }.entries) {
+        testWidgets('${entry.key} can still decline the request', (
+          tester,
+        ) async {
+          when(
+            () => mockActionsCubit.declineRequest(any()),
+          ).thenAnswer((_) async {});
+          when(mockGoRouter.canPop).thenReturn(true);
+          when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+          await pumpTwice(tester, buildStatusSubject(entry.value));
+
+          await tester.tap(
+            find.text(l10n.messageRequestDeclineAndRemoveButton),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockActionsCubit.declineRequest(conversationId),
+          ).called(1);
+          verify(() => mockGoRouter.pop()).called(1);
+        });
+      }
+
+      // Same one-entry-stack exposure as the back button: decline navigates
+      // away too, and a cold deep link has nothing to pop (#6112).
+      testWidgets('decline from a cold entry lands on the inbox', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async {});
+        when(mockGoRouter.canPop).thenReturn(false);
+
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        verify(() => mockGoRouter.go(InboxPage.path)).called(1);
       });
 
       testWidgets('error does not name the sender or count its messages', (
