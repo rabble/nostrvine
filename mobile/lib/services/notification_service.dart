@@ -127,8 +127,6 @@ class NotificationService {
   bool get hasPermissions =>
       _permissionState == _NotificationPermissionState.granted;
 
-  bool get _permissionsGranted => hasPermissions;
-
   /// Stream of local-notification taps emitted after payload parsing.
   Stream<NotificationTapEvent> get notificationTapStream =>
       (_notificationTapController ??=
@@ -654,12 +652,12 @@ class NotificationService {
     // Resolves the uninitialized state, and re-checks a stale `denied` so a
     // permission granted from system settings takes effect without an app
     // restart. Never prompts — see [refreshPermissionState].
-    if (!_permissionsGranted) {
+    if (!hasPermissions) {
       await refreshPermissionState();
     }
 
     // Skip platform notification on web or without permissions
-    if (kIsWeb || !_permissionsGranted) {
+    if (kIsWeb || !hasPermissions) {
       Log.debug(
         'Skipping platform notification (web: $kIsWeb, permissionState: ${_permissionState.name})',
         name: 'NotificationService',
