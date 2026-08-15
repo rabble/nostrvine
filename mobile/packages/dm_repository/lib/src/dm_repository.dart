@@ -3206,11 +3206,13 @@ class DmRepository {
   /// durable row, and the sweep then delivers one copy while the retry
   /// delivers another.
   ///
-  /// Only ever called from the branches that finalize a surviving row — the
-  /// soft-unconfirmed and hard-failure arms of both [sendMessage] and
-  /// [sendGroupMessage]. The blocked branch deletes its row, a cancelled
-  /// group sibling never had one, and the success branch consumes it (except
-  /// on partial delivery — see [NIP17SendResult.queuedRumorId]).
+  /// Only ever called for a row that survives the call — the soft-unconfirmed
+  /// and hard-failure arms of both [sendMessage] and [sendGroupMessage], plus
+  /// a [sendGroupMessage] sibling whose enqueue-failure unwind could not
+  /// delete it. The blocked branch deletes its row, a cancelled group sibling
+  /// never had one, an unwound sibling no longer has one, and the success
+  /// branch consumes it (except on partial delivery — see
+  /// [NIP17SendResult.queuedRumorId]).
   NIP17SendResult _stampQueuedRow(NIP17SendResult result, String rumorId) =>
       switch (result) {
         NIP17SendSuccess() => result,
@@ -4574,6 +4576,19 @@ class DmRepository {
               );
               unwindResults[j] = _stampQueuedRow(failure, parkedRumorId);
             }
+          }
+          // A row that survived the unwind still holds the user's message, so
+          // a brand-new group thread must be visible for them to reach that
+          // bubble and retry or delete it — the same reason the publish-failure
+          // path below surfaces one. A fully unwound batch leaves no row and
+          // must not resurrect a thread.
+          if (unwindResults.any((r) => r.queuedRumorId != null)) {
+            await _ensureConversationVisibleAfterSendFailure(
+              conversationId: conversationId,
+              participants: participants,
+              isGroup: true,
+              content: content,
+            );
           }
           return unwindResults;
         }

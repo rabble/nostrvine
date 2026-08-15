@@ -15823,6 +15823,24 @@ void main() {
               sendBatchId: any(named: 'sendBatchId'),
             ),
           );
+          // Nothing survived the unwind, so there is no bubble to reach and
+          // the thread the user was composing into must not be resurrected.
+          verifyNever(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          );
           expect(
             reporterCalls.map((c) => c.site),
             contains(
@@ -15899,6 +15917,25 @@ void main() {
               DmRepositoryReportableSites.sendGroupMessageUnwindQueuedSibling,
             ),
           );
+          // The surviving row still holds the user's message, so a brand-new
+          // group thread has to exist for them to reach that bubble and retry
+          // or delete it.
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: true,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'one sibling cannot be parked or unwound',
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: _validPubkeyA,
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
         },
       );
 
