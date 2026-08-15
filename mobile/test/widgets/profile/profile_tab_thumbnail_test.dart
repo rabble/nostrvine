@@ -128,6 +128,30 @@ void main() {
       const validBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
 
       testWidgets(
+        'uses the blurhash when passive thumbnail auth is unavailable',
+        (
+          tester,
+        ) async {
+          const url = 'https://media.divine.video/not-a-hash.jpg';
+          await tester.pumpWidget(
+            buildSubject(thumbnailUrl: url, blurhash: validBlurhash),
+          );
+          final image = tester.widget<PassiveAuthThumbnailImage>(
+            find.byType(PassiveAuthThumbnailImage),
+          );
+
+          final fallback = image.errorWidget!(
+            tester.element(find.byType(PassiveAuthThumbnailImage)),
+            url,
+            const PassiveAuthUnavailableThumbnailException(),
+          );
+          await tester.pumpWidget(MaterialApp(home: fallback));
+
+          expect(find.byType(BlurhashDisplay), findsOneWidget);
+        },
+      );
+
+      testWidgets(
         '$BlurhashDisplay when thumbnailUrl is null and blurhash is provided',
         (tester) async {
           await tester.pumpWidget(buildSubject(blurhash: validBlurhash));

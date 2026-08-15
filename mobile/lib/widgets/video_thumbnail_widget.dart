@@ -222,10 +222,66 @@ class PassiveAuthThumbnailImage extends StatefulWidget {
     return host == 'divine.video' || host.endsWith('.divine.video');
   }
 
+  static const int _maxUnauthorizedCacheEntries = 128;
+  static const Duration _unauthorizedCacheTtl = Duration(minutes: 5);
+  static final Map<_PassiveAuthSuppressionKey, DateTime>
+  _unauthorizedWithoutPassiveAuth = <_PassiveAuthSuppressionKey, DateTime>{};
+
+  static void _rememberUnauthorized(_PassiveAuthSuppressionKey key) {
+    _unauthorizedWithoutPassiveAuth
+      ..remove(key)
+      ..[key] = DateTime.now().add(_unauthorizedCacheTtl);
+    while (_unauthorizedWithoutPassiveAuth.length >
+        _maxUnauthorizedCacheEntries) {
+      _unauthorizedWithoutPassiveAuth.remove(
+        _unauthorizedWithoutPassiveAuth.keys.first,
+      );
+    }
+  }
+
+  static bool _isUnauthorized(_PassiveAuthSuppressionKey key) {
+    final expiresAt = _unauthorizedWithoutPassiveAuth.remove(key);
+    if (expiresAt == null || !DateTime.now().isBefore(expiresAt)) return false;
+    _unauthorizedWithoutPassiveAuth[key] = expiresAt;
+    return true;
+  }
+
+  @visibleForTesting
+  static void debugClearUnauthorizedCache() {
+    _unauthorizedWithoutPassiveAuth.clear();
+  }
+
+  @visibleForTesting
+  static int get debugUnauthorizedCacheLength =>
+      _unauthorizedWithoutPassiveAuth.length;
+
+  @visibleForTesting
+  static void debugExpireUnauthorizedCache() {
+    final expiredAt = DateTime.fromMillisecondsSinceEpoch(0);
+    for (final key in _unauthorizedWithoutPassiveAuth.keys) {
+      _unauthorizedWithoutPassiveAuth[key] = expiredAt;
+    }
+  }
+
   @override
   State<PassiveAuthThumbnailImage> createState() =>
       _PassiveAuthThumbnailImageState();
 }
+
+class PassiveAuthUnavailableThumbnailException implements Exception {
+  const PassiveAuthUnavailableThumbnailException();
+
+  @override
+  String toString() => 'Passive thumbnail auth unavailable';
+}
+
+typedef _PassiveAuthSuppressionKey = ({
+  String url,
+  ProviderContainer container,
+  Object? authState,
+  int contentFilterVersion,
+  int adultMediaAccessVersion,
+});
 
 class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
   ProviderContainer? _providerContainer;
@@ -234,6 +290,7 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
   ProviderSubscription<int>? _adultMediaAccessSubscription;
   Map<String, String>? _authHeaders;
   bool _authRetryAttempted = false;
+  bool _passiveAuthSuppressed = false;
   Future<void>? _authRetryInFlight;
   int _imageGeneration = 0;
 
@@ -319,13 +376,13 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     final retryGeneration = _imageGeneration;
     final sha256Hash = extractSha256FromBlossomUrl(retryUrl);
     if (sha256Hash == null) {
-      _authRetryAttempted = true;
+      _markPassiveAuthUnavailable(retryUrl);
       return;
     }
 
     final container = _providerContainer;
     if (container == null) {
-      _authRetryAttempted = true;
+      _markPassiveAuthUnavailable(retryUrl);
       return;
     }
 
@@ -344,19 +401,56 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     _authRetryAttempted = true;
     switch (authResult) {
       case ViewerAuthAuthorized(:final headers):
+        final suppressionKey = _suppressionKey(retryUrl);
+        if (suppressionKey != null) {
+          PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.remove(
+            suppressionKey,
+          );
+        }
         setState(() {
           _authHeaders = headers;
         });
       case ViewerAuthSignerUnreachable():
+        break;
       case ViewerAuthBlockedByPreference():
       case ViewerAuthUnavailable():
-        break;
+        _markPassiveAuthUnavailable(retryUrl);
     }
+  }
+
+  void _markPassiveAuthUnavailable(String url) {
+    _authRetryAttempted = true;
+    final suppressionKey = _suppressionKey(url);
+    if (suppressionKey == null) return;
+    PassiveAuthThumbnailImage._rememberUnauthorized(suppressionKey);
+    _passiveAuthSuppressed = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          widget.url == url &&
+          PassiveAuthThumbnailImage._isUnauthorized(suppressionKey)) {
+        setState(() {});
+      }
+    });
+  }
+
+  _PassiveAuthSuppressionKey? _suppressionKey(String url) {
+    final container = _providerContainer;
+    if (container == null) return null;
+    return (
+      url: url,
+      container: container,
+      authState: container.read(currentAuthStateProvider),
+      contentFilterVersion: container.read(contentFilterVersionProvider),
+      adultMediaAccessVersion: container.read(
+        adultMediaAccessRevocationVersionProvider,
+      ),
+    );
   }
 
   void _resetPassiveAuthState() {
     _authHeaders = null;
     _authRetryAttempted = false;
+    _passiveAuthSuppressed = false;
     _authRetryInFlight = null;
     _imageGeneration++;
   }
@@ -381,6 +475,30 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
         final resolvedUrl = widget.url;
 
         if (PassiveAuthThumbnailImage._shouldBypassCacheManager(resolvedUrl)) {
+          final suppressionKey = _suppressionKey(resolvedUrl);
+          if (_authHeaders == null && suppressionKey != null) {
+            if (PassiveAuthThumbnailImage._isUnauthorized(suppressionKey)) {
+              final errorWidget = widget.errorWidget;
+              if (errorWidget != null) {
+                return errorWidget(
+                  context,
+                  resolvedUrl,
+                  const PassiveAuthUnavailableThumbnailException(),
+                );
+              }
+              return _TransparentImageBox(
+                width: widget.width,
+                height: widget.height,
+              );
+            }
+
+            if (_passiveAuthSuppressed) {
+              // An expired or evicted suppression starts a fresh retry window.
+              _passiveAuthSuppressed = false;
+              _authRetryAttempted = false;
+            }
+          }
+
           final imageProvider = ResizeImage.resizeIfNeeded(
             widget.memCacheWidth ?? cacheWidth,
             null,
