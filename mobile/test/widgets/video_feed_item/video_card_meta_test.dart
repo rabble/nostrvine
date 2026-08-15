@@ -50,36 +50,11 @@ VideoEvent _classicVine({int? originalLoops = 2100000, int liveViews = 0}) {
 
 void main() {
   group('resolveVideoCardMeta', () {
-    group('with the flag off', () {
-      test('returns the combined loop count and no date', () {
-        final meta = resolveVideoCardMeta(
-          video: _video(originalLoops: 12, rawTags: {'views': '5'}),
-          isOwnVideo: false,
-          showPostDate: false,
-        );
-
-        expect(meta.loopCount, equals(17));
-        expect(meta.timestamp, isNull);
-      });
-
-      test('reports zero rather than nothing for a null video', () {
-        final meta = resolveVideoCardMeta(
-          video: null,
-          isOwnVideo: false,
-          showPostDate: false,
-        );
-
-        expect(meta.loopCount, equals(0));
-        expect(meta.isEmpty, isFalse);
-      });
-    });
-
-    group('with the flag on, for a stranger', () {
+    group('for a stranger', () {
       test('hides a small count on a new diVine post', () {
         final meta = resolveVideoCardMeta(
           video: _video(rawTags: {'views': '7'}),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.timestamp, equals(_divineEraCreatedAt));
@@ -92,7 +67,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _classicVine(originalLoops: 47),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, isNull);
@@ -103,7 +77,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _classicVine(),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, equals(2100000));
@@ -116,7 +89,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _video(rawTags: {'views': '50000'}),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, equals(50000));
@@ -126,7 +98,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _classicVine(liveViews: 340),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, equals(2100000));
@@ -136,7 +107,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _classicVine(originalLoops: null, liveViews: 340),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, isNull);
@@ -146,7 +116,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _video(rawTags: {'views': '$publicLoopCountFloor'}),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, equals(publicLoopCountFloor));
@@ -156,19 +125,17 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _video(rawTags: {'views': '${publicLoopCountFloor - 1}'}),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, isNull);
       });
     });
 
-    group('with the flag on, for your own video', () {
+    group('for your own video', () {
       test('surfaces both the date and the combined count', () {
         final meta = resolveVideoCardMeta(
           video: _video(originalLoops: 3, rawTags: {'views': '9'}),
           isOwnVideo: true,
-          showPostDate: true,
         );
 
         expect(meta.timestamp, equals(_divineEraCreatedAt));
@@ -179,7 +146,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _video(rawTags: {'views': '7'}),
           isOwnVideo: true,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, equals(7));
@@ -189,7 +155,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _video(rawTags: {'views': '0'}),
           isOwnVideo: true,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, equals(0));
@@ -201,14 +166,13 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _classicVine(liveViews: 340),
           isOwnVideo: true,
-          showPostDate: true,
         );
 
         expect(meta.loopCount, equals(2100340));
       });
     });
 
-    group('with the flag on, for edge cases', () {
+    group('for edge cases', () {
       test('omits the date when the original date is unrecoverable', () {
         // No published_at tag and a createdAt after Vine shut down: the
         // import could not recover when this was actually posted.
@@ -225,7 +189,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: video,
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.timestamp, isNull);
@@ -236,7 +199,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: null,
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.isEmpty, isTrue);
@@ -246,7 +208,6 @@ void main() {
         final meta = resolveVideoCardMeta(
           video: _video(publishedAt: '$_vineEraCreatedAt'),
           isOwnVideo: false,
-          showPostDate: true,
         );
 
         expect(meta.timestamp, equals(_vineEraCreatedAt));

@@ -161,7 +161,6 @@ class VideoCardMeta {
 VideoCardMeta resolveVideoCardMeta({
   required VideoEvent? video,
   required bool isOwnVideo,
-  required bool showPostDate,
 });
 ```
 
@@ -196,13 +195,13 @@ doc comment already notes that Vine archives need their year visible.
 
 ### 3. Feature flag
 
-`FeatureFlag.videoCardPostDate`, `audience: user`, **default off**. Adding the
-enum case forces both exhaustive switches in
-`mobile/lib/features/feature_flags/services/build_configuration.dart` to be
-updated; the compiler catches an omission.
+None. The rule ships on for everyone.
 
-This is a kill switch and an internal preview toggle. It does not randomize and
-does not fetch remotely.
+`FeatureFlag.videoCardPostDate` originally gated this as a kill switch. It
+defaulted off and nothing ever set `FF_VIDEO_CARD_POST_DATE`, so the rule was
+dark in every build from the day it merged. The flag was removed rather than
+defaulted on: there is no bucketing or impression event behind it to justify a
+toggle, and the behaviour reverts in a single commit.
 
 ### 4. Widget changes
 

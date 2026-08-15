@@ -1,6 +1,8 @@
 // ABOUTME: Regression test for tapping descriptions in VideoOverlayActions.
 // ABOUTME: Verifies the inline description opens the metadata sheet.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +14,8 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/auth_service.dart'
+    show AuthService, AuthState;
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -30,6 +34,8 @@ class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
@@ -106,10 +112,24 @@ void main() {
   ) async {
     testVideo = testVideo.copyWith(originalLoops: 1);
 
+    // A count of 1 is far below the public floor, so only the creator is ever
+    // shown it — the singular form is unreachable for anyone else.
+    final authStateController = StreamController<AuthState>.broadcast();
+    addTearDown(authStateController.close);
+    final mockAuthService = _MockAuthService();
+    when(
+      () => mockAuthService.currentPublicKeyHex,
+    ).thenReturn(testVideo.pubkey);
+    when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+    when(
+      () => mockAuthService.authStateStream,
+    ).thenAnswer((_) => authStateController.stream);
+
     await tester.pumpWidget(
       testProviderScope(
         additionalOverrides: [
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
+          authServiceProvider.overrideWithValue(mockAuthService),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -131,8 +151,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final l10n = _l10n(tester);
+    // The creator's line now carries the post date too, so match within it.
     expect(
-      find.text(
+      find.textContaining(
         l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(1), 1),
       ),
       findsOneWidget,

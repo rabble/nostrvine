@@ -1,5 +1,5 @@
 // ABOUTME: Widget tests for the video card's date-and-count meta line.
-// ABOUTME: Pins that small public counts stay hidden behind the post-date flag.
+// ABOUTME: Pins that small public counts stay hidden from strangers.
 
 import 'dart:async';
 
@@ -9,8 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -91,7 +89,6 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     required VideoEvent video,
-    required bool postDateEnabled,
     bool viewerIsAuthor = false,
   }) async {
     when(() => mockAuthService.currentPublicKeyHex).thenReturn(
@@ -103,9 +100,6 @@ void main() {
         additionalOverrides: [
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           authServiceProvider.overrideWithValue(mockAuthService),
-          featureFlagStateProvider.overrideWithValue({
-            FeatureFlag.videoCardPostDate: postDateEnabled,
-          }),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -131,37 +125,23 @@ void main() {
   ).videoFeedLoopCountLine(StringUtils.formatCompactNumber(count), count);
 
   group('video card meta line', () {
-    testWidgets('shows the raw loop count when the flag is off', (
+    testWidgets('hides a small count from a stranger', (
       tester,
     ) async {
       await pump(
         tester,
         video: _video(rawTags: {'views': '7'}),
-        postDateEnabled: false,
-      );
-
-      expect(find.text(loopLine(tester, 7)), findsOneWidget);
-    });
-
-    testWidgets('hides a small count from a stranger when the flag is on', (
-      tester,
-    ) async {
-      await pump(
-        tester,
-        video: _video(rawTags: {'views': '7'}),
-        postDateEnabled: true,
       );
 
       expect(find.text(loopLine(tester, 7)), findsNothing);
     });
 
-    testWidgets('shows a large count to a stranger when the flag is on', (
+    testWidgets('shows a large count to a stranger', (
       tester,
     ) async {
       await pump(
         tester,
         video: _video(rawTags: {'views': '50000'}),
-        postDateEnabled: true,
       );
 
       expect(find.textContaining(loopLine(tester, 50000)), findsOneWidget);
@@ -171,7 +151,6 @@ void main() {
       await pump(
         tester,
         video: _video(rawTags: {'views': '7'}),
-        postDateEnabled: true,
         viewerIsAuthor: true,
       );
 
@@ -192,7 +171,6 @@ void main() {
             'views': '340',
           },
         ),
-        postDateEnabled: true,
       );
 
       // Archival figure only: live diVine views must not inflate it.
@@ -217,7 +195,6 @@ void main() {
       await pump(
         tester,
         video: _video(rawTags: {'views': '7'}),
-        postDateEnabled: true,
       );
 
       expect(find.textContaining(loopLine(tester, 7)), findsNothing);
@@ -234,7 +211,6 @@ void main() {
       await pump(
         tester,
         video: _video(rawTags: {'views': '7'}),
-        postDateEnabled: true,
       );
 
       expect(find.textContaining(_l10n(tester).timeVerboseNow), findsOneWidget);

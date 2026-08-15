@@ -37,22 +37,13 @@ class VideoCardMeta {
 
 /// Resolves the meta line for [video].
 ///
-/// With [showPostDate] false this returns today's behaviour unchanged — the
-/// combined loop count and no date — so the feature flag is a true no-op when
-/// off.
-///
 /// Creators always see their own number, however small: it is their
 /// performance data rather than a public signal, and correcting a creator's
 /// underestimate of their audience is what keeps them posting.
 VideoCardMeta resolveVideoCardMeta({
   required VideoEvent? video,
   required bool isOwnVideo,
-  required bool showPostDate,
 }) {
-  if (!showPostDate) {
-    return VideoCardMeta(loopCount: video?.totalLoops ?? 0);
-  }
-
   if (video == null) return const VideoCardMeta();
 
   final timestamp = video.hasUnknownOriginalDate

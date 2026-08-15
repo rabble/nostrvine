@@ -147,9 +147,6 @@ class VideoOverlayActions extends ConsumerWidget {
     final video = this.video;
     final previewData = this.previewData;
     final authorPubkey = previewData?.pubkey ?? video!.pubkey;
-    final showPostDate = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.videoCardPostDate),
-    );
     // Watched purely for its invalidation. AuthService is not a ChangeNotifier
     // and authServiceProvider hands back a stable singleton, so watching it
     // (with or without select) never rebuilds on sign-in or account switch —
@@ -410,7 +407,6 @@ class VideoOverlayActions extends ConsumerWidget {
                                     meta: resolveVideoCardMeta(
                                       video: video,
                                       isOwnVideo: isOwnVideo,
-                                      showPostDate: showPostDate,
                                     ),
                                   ),
                                 ],

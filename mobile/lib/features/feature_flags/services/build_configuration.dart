@@ -64,10 +64,6 @@ class BuildConfiguration {
           'FF_CLIENT_SEEN_FILTERING',
           defaultValue: true,
         );
-      case FeatureFlag.videoCardPostDate:
-        // Default OFF so the count-hiding rule can be previewed internally
-        // and killed remotely before it reaches the pre-campaign release.
-        return const bool.fromEnvironment('FF_VIDEO_CARD_POST_DATE');
     }
   }
 
@@ -116,8 +112,6 @@ class BuildConfiguration {
         return 'FF_NEW_POST_NOTIFICATIONS';
       case FeatureFlag.clientSeenFiltering:
         return 'FF_CLIENT_SEEN_FILTERING';
-      case FeatureFlag.videoCardPostDate:
-        return 'FF_VIDEO_CARD_POST_DATE';
     }
   }
 }
