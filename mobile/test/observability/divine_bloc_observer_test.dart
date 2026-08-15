@@ -374,5 +374,153 @@ void main() {
         expect(captured.single, isNot(contains(npub)));
       },
     );
+
+    group('once the local database has reported corruption (#7507)', () {
+      late bool isCorrupted;
+
+      /// The error every downstream bloc sees while the database is broken:
+      /// a Drift failure forwarded from the background isolate, wrapped at the
+      /// `addError` call site. `_publishLike` is the real reporting site behind
+      /// one of the duplicate Crashlytics groups.
+      Reportable<Object> driftCorruptionFailure() => Reportable(
+        Exception(
+          'SqliteException(26): file is not a database, '
+          'file is not a database (code 26)',
+        ),
+        context: '_publishLike',
+      );
+
+      setUp(() {
+        isCorrupted = false;
+        observer = DivineBlocObserver(
+          crashReporting: mockCrash,
+          isDatabaseCorrupted: () => isCorrupted,
+        );
+      });
+
+      void reportedBy(BlocBase<dynamic> bloc, Object error) =>
+          observer.onError(bloc, error, StackTrace.current);
+
+      test('forwards a database failure while the database looks healthy', () {
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+
+        reportedBy(cubit, driftCorruptionFailure());
+
+        verify(
+          () => mockCrash.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ).called(1);
+      });
+
+      test('stops forwarding the same failure once corruption is known', () {
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+        isCorrupted = true;
+
+        reportedBy(cubit, driftCorruptionFailure());
+
+        verifyNever(
+          () => mockCrash.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        );
+      });
+
+      test('suppresses a corruption buried in an aggregate error', () {
+        // NotificationFeedBloc._onRefreshed reports this shape: the corrupt
+        // statement is one leg of a Future.wait, so the SQLite header is not
+        // the first thing the error prints.
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+        isCorrupted = true;
+
+        reportedBy(
+          cubit,
+          Reportable(
+            Exception(
+              'ParallelWaitError(([NotificationItem(id: abc,\n'
+              '  body: hi)], []), (null, AsyncError: SqliteException(26): '
+              'file is not a database))',
+            ),
+            context: '_onRefreshed',
+          ),
+        );
+
+        verifyNever(
+          () => mockCrash.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        );
+      });
+
+      test('still forwards an unrelated defect while corruption is known', () {
+        // The gate must narrow to the handled failure. A programming-invariant
+        // error that happens to fire after the flag flips is still a defect.
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+        isCorrupted = true;
+
+        reportedBy(cubit, Reportable(StateError('boom'), context: 'unrelated'));
+
+        verify(
+          () => mockCrash.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ).called(1);
+      });
+
+      test('keeps the suppressed failure in the unified log', () async {
+        // Suppression is a Crashlytics decision only: the bug-report capture
+        // flow still has to show what went wrong on the device.
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+        isCorrupted = true;
+
+        reportedBy(cubit, driftCorruptionFailure());
+        await Future<void>.delayed(Duration.zero);
+
+        // Matched anywhere in the shared ring buffer, for the reason spelled
+        // out on the sibling log assertion above.
+        final logs = LogCaptureService().getRecentLogs();
+        expect(
+          logs.map((entry) => entry.message),
+          contains(
+            allOf(
+              contains('Bloc error: _CountCubit'),
+              contains('SqliteException(26)'),
+            ),
+          ),
+        );
+      });
+
+      test('defaults to forwarding when no corruption gate is wired', () {
+        // Containers built without the corruption service (tests, web) must
+        // keep the pre-#7507 behaviour rather than silently drop reports.
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+
+        DivineBlocObserver(
+          crashReporting: mockCrash,
+        ).onError(cubit, driftCorruptionFailure(), StackTrace.current);
+
+        verify(
+          () => mockCrash.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ).called(1);
+      });
+    });
   });
 }

@@ -149,6 +149,53 @@ void main() {
     });
   });
 
+  group('mentionsDatabaseCorruption', () {
+    test('recognises the signature on the header line', () {
+      expect(mentionsDatabaseCorruption(Exception(_corruptionError)), isTrue);
+    });
+
+    test('sees a signature the header-only classifier cannot', () {
+      // The shape reported from NotificationFeedBloc._onRefreshed: the corrupt
+      // statement is one leg of a `Future.wait`, so `ParallelWaitError` prints
+      // its values before its errors. A value that stringifies over more than
+      // one line pushes the SQLite header off the header line entirely, and
+      // the strict classifier stops at that line by design.
+      final wrapped = Exception(
+        'ParallelWaitError(([NotificationItem(id: abc,\n'
+        '  body: hi)], []), (null, AsyncError: SqliteException(26): file is '
+        'not a database))',
+      );
+
+      expect(mentionsDatabaseCorruption(wrapped), isTrue);
+      expect(
+        indicatesDatabaseCorruption(wrapped),
+        isFalse,
+        reason: 'the two classifiers must stay genuinely different',
+      );
+    });
+
+    test('does not fire on an ordinary multi-line query failure', () {
+      expect(
+        mentionsDatabaseCorruption(
+          Exception(
+            'SqliteException(1): no such table: event\n'
+            '  Causing statement: SELECT * FROM event',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('does not fire on an error carrying no SQLite result code', () {
+      expect(
+        mentionsDatabaseCorruption(
+          Exception('database disk image is malformed'),
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group(DatabaseCorruptionInterceptor, () {
     test('reports corruption surfacing on a select', () async {
       final reported = <Object>[];
@@ -219,10 +266,7 @@ void main() {
         (e) => e.runDelete('DELETE FROM event', const []),
       );
       await expectReports('custom', (e) => e.runCustom('PRAGMA foo'));
-      await expectReports(
-        'ensureOpen',
-        (e) => e.ensureOpen(_NoopUser()),
-      );
+      await expectReports('ensureOpen', (e) => e.ensureOpen(_NoopUser()));
       // Bulk ingestion goes through batch(), so a corrupt page first reached by
       // a batched write must report too. Without the override drift's default
       // forwards it silently and the next launch never salvages.

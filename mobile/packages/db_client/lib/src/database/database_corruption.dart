@@ -32,8 +32,41 @@ bool indicatesDatabaseCorruption(Object error) {
     _sqliteExceptionHeader.firstMatch(header)?.group(1) ?? '',
   );
   if (extendedCode == null) return false;
-  // Every extended code carries its primary code in the low byte, so 779
-  // (SQLITE_CORRUPT_INDEX) and 11 (SQLITE_CORRUPT) both reduce to 11.
+  return _isCorruptionResultCode(extendedCode);
+}
+
+/// Whether [error] mentions on-disk corruption **anywhere** in its text,
+/// including inside a wrapper that embeds a cause's `toString()`.
+///
+/// Deliberately looser than [indicatesDatabaseCorruption], which reads the
+/// header line only. Aggregate and wrapper errors bury the SQLite header
+/// arbitrarily deep — a `ParallelWaitError` stringifies its whole failed
+/// record, so the corrupt statement can land on any line — and those wrappers
+/// are exactly what downstream callers see.
+///
+/// The stricter classifier is not merely stricter, it protects a different
+/// decision. It gates the salvage/wipe of a database, where a false positive
+/// destroys a healthy one, and bound parameters below the header carry user
+/// content: a Nostr event quoting SQLite's corruption message must never
+/// convince the app to recover. **Never use this function for that decision.**
+///
+/// Use it only where a false positive is harmless — specifically, to drop a
+/// duplicate report about a database some other code has already classified as
+/// corrupt via [indicatesDatabaseCorruption]. The looseness is bounded by that
+/// precondition, not by the text match.
+bool mentionsDatabaseCorruption(Object error) {
+  return _sqliteExceptionHeader
+      .allMatches(error.toString())
+      .map((match) => int.tryParse(match.group(1)!))
+      .any(
+        (extendedCode) =>
+            extendedCode != null && _isCorruptionResultCode(extendedCode),
+      );
+}
+
+/// Every extended code carries its primary code in the low byte, so 779
+/// (SQLITE_CORRUPT_INDEX) and 11 (SQLITE_CORRUPT) both reduce to 11.
+bool _isCorruptionResultCode(int extendedCode) {
   final primaryCode = extendedCode & 0xFF;
   return primaryCode == _sqliteCorrupt || primaryCode == _sqliteNotADb;
 }
