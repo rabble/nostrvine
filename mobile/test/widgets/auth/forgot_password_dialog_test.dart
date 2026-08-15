@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ForgotPasswordDialog (showForgotPasswordDialog)
 // ABOUTME: Verifies dialog rendering, email validation, and reset callback
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +22,7 @@ void main() {
     Widget createTestWidget({
       String initialEmail = '',
       Future<bool> Function(String email)? onSendResetEmail,
+      VoidCallback? onResetAccepted,
     }) {
       return MaterialApp.router(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -41,6 +44,7 @@ void main() {
                             resetEmails.add(email);
                             return true;
                           },
+                      onResetAccepted: onResetAccepted,
                     ),
                     child: const Text('Show Dialog'),
                   ),
@@ -172,6 +176,90 @@ void main() {
         expect(find.text('Reset Password'), findsNothing);
       });
 
+      testWidgets('notifies after an accepted reset closes the sheet', (
+        tester,
+      ) async {
+        var acceptedCount = 0;
+        await tester.pumpWidget(
+          createTestWidget(
+            initialEmail: 'user@example.com',
+            onResetAccepted: () => acceptedCount += 1,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await openDialog(tester);
+
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Reset Password'), findsNothing);
+        expect(acceptedCount, 1);
+      });
+
+      testWidgets('shows busy state and blocks duplicate sends or dismissal', (
+        tester,
+      ) async {
+        final sendCompleter = Completer<bool>();
+        var sendCount = 0;
+        await tester.pumpWidget(
+          createTestWidget(
+            initialEmail: 'user@example.com',
+            onSendResetEmail: (_) {
+              sendCount += 1;
+              return sendCompleter.future;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+        await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
+        );
+        await tester.pump();
+
+        expect(
+          find.widgetWithText(ElevatedButton, l10n.authSending),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<ElevatedButton>(
+                find.widgetWithText(ElevatedButton, l10n.authSending),
+              )
+              .onPressed,
+          isNull,
+        );
+        expect(
+          tester
+              .widget<TextButton>(
+                find.widgetWithText(TextButton, l10n.forgotPasswordCancel),
+              )
+              .onPressed,
+          isNull,
+        );
+        expect(sendCount, 1);
+
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, l10n.authSending),
+          warnIfMissed: false,
+        );
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pump();
+
+        expect(sendCount, 1);
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
+
+        sendCompleter.complete(false);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
+        expect(find.text(l10n.authFailedToSendResetEmail), findsOneWidget);
+      });
+
       testWidgets('keeps dialog open and shows retry copy when sending fails', (
         tester,
       ) async {
@@ -217,6 +305,59 @@ void main() {
           findsOneWidget,
         );
         expect(announcements, contains(l10n.authFailedToSendResetEmail));
+      });
+
+      testWidgets('shows retry copy when the reset callback throws', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            initialEmail: 'user@example.com',
+            onSendResetEmail: (_) async => throw StateError('boom'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await openDialog(tester);
+
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
+        expect(find.text(l10n.authFailedToSendResetEmail), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, l10n.authTryAgain),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('clears retry copy when the email changes', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            initialEmail: 'user@example.com',
+            onSendResetEmail: (_) async => false,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await openDialog(tester);
+
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+        );
+        await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.authFailedToSendResetEmail), findsOneWidget);
+
+        await tester.enterText(find.byType(TextFormField), 'other@example.com');
+        await tester.pump();
+
+        expect(find.text(l10n.authFailedToSendResetEmail), findsNothing);
+        expect(
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
+          findsOneWidget,
+        );
       });
     });
   });

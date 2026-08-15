@@ -1,12 +1,15 @@
 // ABOUTME: Shared forgot password dialog for authentication screens
 // ABOUTME: StatefulWidget that owns and disposes its TextEditingController
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/validators.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Shows a forgot password dialog that sends a reset email.
 ///
@@ -16,15 +19,24 @@ void showForgotPasswordDialog({
   required BuildContext context,
   required String initialEmail,
   required Future<bool> Function(String email) onSendResetEmail,
+  VoidCallback? onResetAccepted,
 }) {
-  VineBottomSheet.show<void>(
-    context: context,
-    scrollable: false,
-    title: Text(context.l10n.forgotPasswordTitle),
-    body: _ForgotPasswordSheetContent(
-      initialEmail: initialEmail,
-      onSendResetEmail: onSendResetEmail,
-    ),
+  unawaited(
+    VineBottomSheet.show<bool>(
+      context: context,
+      scrollable: false,
+      isDismissible: false,
+      enableDrag: false,
+      title: Text(context.l10n.forgotPasswordTitle),
+      body: _ForgotPasswordSheetContent(
+        initialEmail: initialEmail,
+        onSendResetEmail: onSendResetEmail,
+      ),
+    ).then((wasAccepted) {
+      if (wasAccepted ?? false) {
+        onResetAccepted?.call();
+      }
+    }),
   );
 }
 
@@ -90,11 +102,17 @@ class _ForgotPasswordSheetContentState
       if (!mounted) return;
 
       if (wasAccepted) {
-        context.pop();
+        context.pop(true);
       } else {
         _showSendFailure();
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      Log.error(
+        'Forgot password reset callback failed: $error',
+        name: 'ForgotPasswordDialog',
+        category: LogCategory.auth,
+        stackTrace: stackTrace,
+      );
       if (mounted) _showSendFailure();
     }
   }
@@ -102,84 +120,96 @@ class _ForgotPasswordSheetContentState
   @override
   Widget build(BuildContext context) {
     final validationMessages = AuthValidationMessages.fromL10n(context.l10n);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.l10n.forgotPasswordDescription,
-              style: TextStyle(
-                color: context.vineColors.secondaryText,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              style: TextStyle(color: context.vineColors.primaryText),
-              decoration: InputDecoration(
-                labelText: context.l10n.forgotPasswordEmailLabel,
-                labelStyle: TextStyle(color: context.vineColors.mutedText),
-                prefixIcon: const Icon(Icons.email_outlined),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: context.vineColors.outline),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: VineTheme.vineGreen,
-                    width: 2,
-                  ),
-                ),
-              ),
-              validator: (value) =>
-                  Validators.validateEmail(value, messages: validationMessages),
-            ),
-            if (_sendFailed) ...[
-              const SizedBox(height: 16),
+    return PopScope(
+      canPop: !_isSubmitting,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                context.l10n.authFailedToSendResetEmail,
-                style: VineTheme.bodyMediumFont(
-                  color: context.vineColors.onErrorContainer,
+                context.l10n.forgotPasswordDescription,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
+                  fontSize: 14,
                 ),
               ),
-            ],
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: _isSubmitting ? null : () => context.pop(),
-                  child: Text(
-                    context.l10n.forgotPasswordCancel,
-                    style: TextStyle(color: context.vineColors.onSurfaceMuted),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                onChanged: (_) {
+                  if (_sendFailed) {
+                    setState(() => _sendFailed = false);
+                  }
+                },
+                style: TextStyle(color: context.vineColors.primaryText),
+                decoration: InputDecoration(
+                  labelText: context.l10n.forgotPasswordEmailLabel,
+                  labelStyle: TextStyle(color: context.vineColors.mutedText),
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: context.vineColors.outline),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: VineTheme.vineGreen,
+                      width: 2,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: context.vineColors.background,
-                  ),
-                  onPressed: _isSubmitting ? null : _submit,
-                  child: Text(
-                    _isSubmitting
-                        ? context.l10n.authSending
-                        : _sendFailed
-                        ? context.l10n.authTryAgain
-                        : context.l10n.forgotPasswordSendLink,
+                validator: (value) => Validators.validateEmail(
+                  value,
+                  messages: validationMessages,
+                ),
+              ),
+              if (_sendFailed) ...[
+                const SizedBox(height: 16),
+                Text(
+                  context.l10n.authFailedToSendResetEmail,
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.onErrorContainer,
                   ),
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _isSubmitting ? null : () => context.pop(),
+                    child: Text(
+                      context.l10n.forgotPasswordCancel,
+                      style: TextStyle(
+                        color: context.vineColors.onSurfaceMuted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: VineTheme.vineGreen,
+                      foregroundColor: context.vineColors.background,
+                    ),
+                    onPressed: _isSubmitting ? null : _submit,
+                    child: Text(
+                      _isSubmitting
+                          ? context.l10n.authSending
+                          : _sendFailed
+                          ? context.l10n.authTryAgain
+                          : context.l10n.forgotPasswordSendLink,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
