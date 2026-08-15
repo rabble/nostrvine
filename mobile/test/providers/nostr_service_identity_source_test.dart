@@ -87,6 +87,9 @@ class _RecordingFactory {
       initializePubkeys.add(pubkey);
       return initializeCompleter?.future ?? Future<void>.value();
     });
+    when(client.ensureUserRemovedRelaysLoaded).thenAnswer(
+      (_) => Future<void>.value(),
+    );
     when(() => client.addRelays(any())).thenAnswer((_) async {
       addRelaysPubkeys.add(pubkey);
       await addRelaysCompleter?.future;
