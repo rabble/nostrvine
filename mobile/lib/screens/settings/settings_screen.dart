@@ -28,6 +28,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
@@ -55,7 +56,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   static const routeName = 'settings';
-  static const path = '/settings';
+  static const String path = RoutePaths.settings;
 
   const SettingsScreen({super.key});
 

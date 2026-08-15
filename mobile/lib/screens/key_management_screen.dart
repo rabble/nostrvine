@@ -11,6 +11,7 @@ import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/key_management/keycast_key_export_card.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
@@ -18,7 +19,7 @@ class KeyManagementScreen extends ConsumerStatefulWidget {
   static const routeName = 'key-management';
 
   /// Path for this route.
-  static const path = '/key-management';
+  static const String path = RoutePaths.keyManagement;
 
   const KeyManagementScreen({super.key});
 

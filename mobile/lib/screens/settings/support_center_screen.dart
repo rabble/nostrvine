@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -18,7 +19,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class SupportCenterScreen extends ConsumerWidget {
   static const routeName = 'support-center';
-  static const path = '/support-center';
+  static const String path = RoutePaths.supportCenter;
 
   const SupportCenterScreen({super.key});
 

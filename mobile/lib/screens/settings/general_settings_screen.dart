@@ -16,6 +16,7 @@ import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/crossposting_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/settings/account/change_email_screen.dart';
 import 'package:openvine/screens/settings/account/change_password_screen.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
@@ -29,7 +30,7 @@ import 'package:openvine/services/locale_preference_service.dart';
 
 class GeneralSettingsScreen extends ConsumerWidget {
   static const routeName = 'general-settings';
-  static const path = '/general-settings';
+  static const String path = RoutePaths.generalSettings;
 
   const GeneralSettingsScreen({super.key});
 

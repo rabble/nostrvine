@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_models.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:share_plus/share_plus.dart';
@@ -16,7 +17,7 @@ class InvitesScreen extends StatefulWidget {
   const InvitesScreen({super.key});
 
   static const routeName = 'invites';
-  static const path = '/invites';
+  static const String path = RoutePaths.invites;
 
   @override
   State<InvitesScreen> createState() => _InvitesScreenState();

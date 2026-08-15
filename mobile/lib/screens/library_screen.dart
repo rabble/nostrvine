@@ -20,6 +20,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
@@ -44,19 +45,19 @@ class LibraryScreen extends ConsumerWidget {
   static const draftsRouteName = 'drafts';
 
   /// Path for drafts route.
-  static const draftsPath = '/drafts';
+  static const String draftsPath = RoutePaths.libraryDrafts;
 
   /// Route name for clips path.
   static const clipsRouteName = 'clips';
 
   /// Path for clips route.
-  static const clipsPath = '/clips';
+  static const String clipsPath = RoutePaths.libraryClips;
 
   /// Route name for the recorder's library (drafts + clips, no sounds).
   static const clipsOnlyRouteName = 'clipsOnly';
 
   /// Path for the recorder's library (drafts + clips, no sounds).
-  static const clipsOnlyPath = '/clips-only';
+  static const String clipsOnlyPath = RoutePaths.libraryClipsOnly;
 
   /// Route name for sounds path.
   static const soundsRouteName = 'sounds';

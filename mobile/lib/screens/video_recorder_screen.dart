@@ -24,6 +24,7 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_stop_motion_budget.dart';
@@ -110,7 +111,7 @@ class VideoRecorderScreen extends ConsumerWidget {
   static const routeName = 'video-recorder';
 
   /// Path for this route.
-  static const path = '/video-recorder';
+  static const String path = RoutePaths.videoRecorder;
 
   static String pathForEntryPoint(String entryPoint) =>
       Uri(path: path, queryParameters: {'entry_point': entryPoint}).toString();

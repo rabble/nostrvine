@@ -22,6 +22,7 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
@@ -48,7 +49,7 @@ class VideoFeedPage extends ConsumerWidget {
   static const pathWithIndex = '/home/:index';
 
   /// Build path for a specific index.
-  static String pathForIndex(int index) => '/home/$index';
+  static String pathForIndex(int index) => RoutePaths.videoFeedForIndex(index);
 
   const VideoFeedPage({
     this.initialMode = FeedMode.forYou,

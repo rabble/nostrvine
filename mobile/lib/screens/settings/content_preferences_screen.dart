@@ -13,13 +13,14 @@ import 'package:openvine/blocs/audio_sharing/audio_sharing_cubit.dart';
 import 'package:openvine/blocs/language_setting/language_setting_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
 import 'package:openvine/services/language_preference_service.dart';
 
 class ContentPreferencesScreen extends ConsumerWidget {
   static const routeName = 'content-preferences';
-  static const path = '/content-preferences';
+  static const String path = RoutePaths.contentPreferences;
 
   const ContentPreferencesScreen({super.key});
 

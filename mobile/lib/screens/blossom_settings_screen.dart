@@ -10,6 +10,7 @@ import 'package:openvine/blocs/blossom_settings/blossom_settings_cubit.dart';
 import 'package:openvine/blocs/blossom_settings/blossom_settings_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Page: bridges `BlossomUploadService` into [BlossomSettingsCubit].
@@ -20,7 +21,7 @@ class BlossomSettingsScreen extends ConsumerWidget {
   static const routeName = 'blossom-settings';
 
   /// Path for this route.
-  static const path = '/blossom-settings';
+  static const String path = RoutePaths.blossomSettings;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

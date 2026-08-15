@@ -13,6 +13,7 @@ import 'package:openvine/features/oauth/app_oauth_callback.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/crossposting_providers.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Wires authenticated dependencies for the crossposting settings view.
@@ -24,7 +25,7 @@ class CrosspostingSettingsScreen extends ConsumerWidget {
   });
 
   static const routeName = 'crossposting-settings';
-  static const path = '/crossposting-settings';
+  static const String path = RoutePaths.crosspostingSettings;
 
   final CrosspostingOAuthLauncher launchOAuth;
   final CrosspostingNonceGenerator nonceGenerator;

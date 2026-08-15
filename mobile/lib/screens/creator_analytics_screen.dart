@@ -15,6 +15,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_analytics_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -24,7 +25,7 @@ class CreatorAnalyticsScreen extends ConsumerStatefulWidget {
   const CreatorAnalyticsScreen({super.key});
 
   static const routeName = 'creator-analytics';
-  static const path = '/creator-analytics';
+  static const String path = RoutePaths.creatorAnalytics;
 
   @override
   ConsumerState<CreatorAnalyticsScreen> createState() =>

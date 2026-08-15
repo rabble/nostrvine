@@ -11,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
@@ -37,7 +38,7 @@ void refreshMinorAccountState(WidgetRef ref) {
 
 class MinorAccountReviewScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review';
-  static const path = '/account-review';
+  static const String path = RoutePaths.minorAccountReview;
   static const welcomePath = '/account-review/welcome';
 
   static String pathFor({

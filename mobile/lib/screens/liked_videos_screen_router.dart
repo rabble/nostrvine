@@ -13,6 +13,7 @@ import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -27,14 +28,14 @@ class LikedVideosScreenRouter extends ConsumerStatefulWidget {
   static const routeName = 'liked-videos';
 
   /// Path for this route.
-  static const path = '/liked-videos';
+  static const String path = RoutePaths.likedVideos;
 
   /// Path for this route with index.
   static const pathWithIndex = '/liked-videos/:index';
 
   /// Build path for grid mode or specific index.
   static String pathForIndex(int? index) =>
-      index == null ? path : '/liked-videos/$index';
+      RoutePaths.likedVideosForIndex(index);
 
   const LikedVideosScreenRouter({super.key});
 

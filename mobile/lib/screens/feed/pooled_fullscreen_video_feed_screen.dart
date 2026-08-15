@@ -26,6 +26,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
@@ -153,7 +154,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   static const routeName = 'pooled-video-feed';
 
   /// Path for this route.
-  static const path = '/pooled-video-feed';
+  static const String path = RoutePaths.pooledFullscreenVideoFeed;
 
   /// Query parameter carrying the selected video's durable identity.
   static const videoQueryParameter = 'video';

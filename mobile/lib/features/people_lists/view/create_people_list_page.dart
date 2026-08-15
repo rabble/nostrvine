@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/router/route_paths.dart';
 
 /// Full-screen page that creates a new NIP-51 kind 30000 people list.
 ///
@@ -26,7 +27,7 @@ class CreatePeopleListPage extends StatefulWidget {
   static const routeName = 'people-list-create';
 
   /// GoRouter path template for this route.
-  static const path = '/people-lists/new';
+  static const String path = RoutePaths.createPeopleList;
 
   /// Builds the path + query string that opens this page and seeds the
   /// new list with [pubkey] on submit.

@@ -5,10 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/features/appearance/bloc/appearance_cubit.dart';
 import 'package:openvine/features/appearance/models/appearance_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/router/route_paths.dart';
 
 class AppearanceSettingsScreen extends StatelessWidget {
   static const routeName = 'appearance-settings';
-  static const path = '/appearance-settings';
+  static const String path = RoutePaths.appearanceSettings;
 
   const AppearanceSettingsScreen({super.key});
 

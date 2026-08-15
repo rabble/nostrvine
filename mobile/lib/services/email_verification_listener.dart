@@ -6,8 +6,8 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service to listen for email verification redirects (deeplinks)
@@ -44,7 +44,7 @@ class EmailVerificationListener {
     );
 
     if (uri.host != 'login.divine.video' ||
-        !uri.path.startsWith(EmailVerificationScreen.path)) {
+        !uri.path.startsWith(RoutePaths.emailVerification)) {
       return;
     }
 
@@ -66,7 +66,7 @@ class EmailVerificationListener {
       // If the screen is freshly opened (standalone deep link), initState()
       // starts either auto-login or standard token verification.
       final router = ref.read(goRouterProvider);
-      router.go('${EmailVerificationScreen.path}?token=$token');
+      router.go('${RoutePaths.emailVerification}?token=$token');
     }
   }
 

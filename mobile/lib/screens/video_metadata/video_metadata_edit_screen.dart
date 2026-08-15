@@ -8,6 +8,7 @@ import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/router/route_error_screen.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_stack.dart';
 
 /// Screen entry-point for editing an already-published [VideoEvent].
@@ -26,11 +27,11 @@ import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_s
 /// ```
 class VideoMetadataEditScreen extends ConsumerStatefulWidget {
   static const routeName = 'video-edit';
-  static const path = '/video-edit';
+  static const String path = RoutePaths.videoMetadataEdit;
 
   /// Build a concrete `/video-edit/:videoId` path for [videoId].
   static String pathFor(String videoId) =>
-      '$path/${Uri.encodeComponent(videoId)}';
+      RoutePaths.videoMetadataEditFor(videoId);
 
   const VideoMetadataEditScreen({
     required this.videoId,

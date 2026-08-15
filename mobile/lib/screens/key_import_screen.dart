@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -19,7 +20,7 @@ class KeyImportScreen extends ConsumerStatefulWidget {
   static const routeName = 'import-key';
 
   /// Path for this route.
-  static const path = '/import-key';
+  static const String path = RoutePaths.keyImport;
 
   const KeyImportScreen({super.key});
 

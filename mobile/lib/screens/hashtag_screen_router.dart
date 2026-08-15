@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -15,16 +16,13 @@ class HashtagScreenRouter extends ConsumerWidget {
   static const routeName = 'hashtag';
 
   /// Base path for hashtag routes.
-  static const basePath = '/hashtag';
+  static const String basePath = RoutePaths.hashtagBase;
 
   /// Path for this route.
   static const path = '/hashtag/:tag';
 
   /// Build path for a specific hashtag.
-  static String pathForTag(String tag) {
-    final encodedTag = Uri.encodeComponent(tag);
-    return '$basePath/$encodedTag';
-  }
+  static String pathForTag(String tag) => RoutePaths.hashtagForTag(tag);
 
   const HashtagScreenRouter({super.key});
 

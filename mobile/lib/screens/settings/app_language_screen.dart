@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 
 /// Screen for selecting the app's display language.
@@ -18,7 +19,7 @@ import 'package:openvine/services/locale_preference_service.dart';
 /// and the app updates immediately.
 class AppLanguageScreen extends StatelessWidget {
   static const routeName = 'app-language';
-  static const path = '/app-language';
+  static const String path = RoutePaths.appLanguage;
 
   const AppLanguageScreen({super.key});
 

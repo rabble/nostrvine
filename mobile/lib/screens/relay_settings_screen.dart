@@ -13,6 +13,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_list_repository_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -26,7 +27,7 @@ class RelaySettingsScreen extends ConsumerWidget {
   static const routeName = 'relay-settings';
 
   /// Path for this route.
-  static const path = '/relay-settings';
+  static const String path = RoutePaths.relaySettings;
 
   const RelaySettingsScreen({super.key});
 

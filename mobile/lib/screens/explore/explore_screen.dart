@@ -9,6 +9,7 @@ import 'package:openvine/blocs/featured_tabs/featured_tabs_cubit.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/explore/explore_view.dart';
 
 /// Explore screen: a thin tabs Page over [ExploreTabsCubit] + [ExploreView].
@@ -30,7 +31,7 @@ class ExploreScreen extends ConsumerWidget {
   static const routeName = 'explore';
 
   /// Path for this route (grid mode).
-  static const path = '/explore';
+  static const String path = RoutePaths.explore;
 
   /// Path for this route with index (feed mode).
   static const pathWithIndex = '/explore/:index';
@@ -41,8 +42,7 @@ class ExploreScreen extends ConsumerWidget {
   static const pathTabSubpath = '/explore/tab/:name';
 
   /// Build path for grid mode or specific index.
-  static String pathForIndex(int? index) =>
-      index == null ? path : '$path/$index';
+  static String pathForIndex(int? index) => RoutePaths.exploreForIndex(index);
 
   /// Build path for selecting a specific tab by name.
   static String pathForTab(String name) =>

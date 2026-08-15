@@ -22,6 +22,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -46,13 +47,14 @@ class OtherProfileScreen extends ConsumerWidget {
   static const routeName = 'profile-view';
 
   /// Base path for profile view routes.
-  static const path = '/profile-view';
+  static const String path = RoutePaths.otherProfile;
 
   /// Path pattern for this route.
   static const pathWithNpub = '/profile-view/:npub';
 
   /// Build path for a specific npub.
-  static String pathForNpub(String npub) => '$path/$npub';
+  static String pathForNpub(String npub) =>
+      RoutePaths.otherProfileForNpub(npub);
 
   const OtherProfileScreen({
     required this.npub,
