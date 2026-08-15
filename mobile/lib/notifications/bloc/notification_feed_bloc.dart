@@ -143,7 +143,7 @@ class NotificationFeedBloc
   /// the initial spinner and error states.
   ///
   /// After a successful refresh, sends the server mark-all write via
-  /// [_markSeen] so opening the notifications surface clears the unread
+  /// [_markSeenOnOpen] so opening the notifications surface clears the unread
   /// badge and the badge thereafter reflects "new since last seen" rather than
   /// the accumulated untapped total (#4708). `_onStarted` fires once per open
   /// (it is dispatched from the keyed `BlocProvider.create` on every mount of
@@ -166,6 +166,13 @@ class NotificationFeedBloc
       await _notificationRepository.refreshFeed(_filter);
       var markSucceeded = false;
       if (_filter == null) {
+        // `loaded` is what dismisses the cold-start full-screen spinner, and
+        // it has to land with the data: holding it across the mark-all write
+        // blanks an empty inbox for the whole sign + POST (15s client
+        // timeout). `isRefreshing` stays up instead, because the revalidation
+        // bar has to span the droppable handler's drop window so a second
+        // pull is never dropped against an idle-looking UI.
+        emit(state.copyWith(status: NotificationFeedStatus.loaded));
         markSucceeded = await _markSeenOnOpen();
       }
       emit(
@@ -341,6 +348,9 @@ class NotificationFeedBloc
     NotificationFeedRefreshed event,
     Emitter<NotificationFeedState> emit,
   ) async {
+    // Started and Refreshed have separate droppable transformers, so guard the
+    // shared busy state explicitly to prevent the two handlers overlapping.
+    if (state.isRefreshing) return;
     _emptyPageContinuations = 0;
     _loadMoreFailed = false;
     _emptyPageContinuationPending = false;
@@ -348,6 +358,11 @@ class NotificationFeedBloc
     try {
       await _notificationRepository.refreshFeed(_filter);
       if (_filter == null) {
+        // Same split as `_onStarted`, and it also matters here: a retry
+        // dispatched from `_FailureBody` leaves `status: failure` until this
+        // emit, so holding it would keep the error screen up over a refresh
+        // that already succeeded.
+        emit(state.copyWith(status: NotificationFeedStatus.loaded));
         await _markSeenOnOpen();
       }
       emit(
