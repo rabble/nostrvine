@@ -112,6 +112,36 @@ void main() {
       expect(origin, Offset.zero & viewSize);
     });
 
+    testWidgets('falls back to the view when the anchor is fully off-screen', (
+      tester,
+    ) async {
+      final key = GlobalKey();
+      final viewSize = tester.view.physicalSize / tester.view.devicePixelRatio;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Align(
+            alignment: Alignment.topLeft,
+            child: Transform.translate(
+              offset: Offset(-viewSize.width, -viewSize.height),
+              child: SizedBox(key: key, width: 120, height: 48),
+            ),
+          ),
+        ),
+      );
+
+      await showShareSheet(
+        key.currentContext!,
+        ShareParams(text: 'divine.video'),
+      );
+
+      // Nothing of the anchor is left after clipping, and iPad refuses an
+      // empty rect exactly as firmly as a missing one — so the view has to
+      // stand in rather than the zero-area intersection being passed along.
+      final origin = originOf(shareCalls.single);
+      expect(origin.isEmpty, isFalse);
+      expect(origin, Offset.zero & viewSize);
+    });
+
     testWidgets('keeps an anchor the caller set explicitly', (tester) async {
       final key = GlobalKey();
       await tester.pumpWidget(
