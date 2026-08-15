@@ -485,6 +485,11 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       clearMergeOutputPath: true,
     );
 
+    // Guard against provider disposal during the async gap above: both
+    // branches below reach for providers through `ref` and would throw on a
+    // disposed notifier.
+    if (!ref.mounted) return true;
+
     // Force immediate autosave so draft references are updated before cleanup.
     // The last clip is different: an empty autosave is not recoverable, so clear
     // the session instead of writing a zero-clip draft that the reaper later
@@ -495,7 +500,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       await _forceAutosave();
     }
 
-    // Guard against provider disposal during the async gap above.
+    // Persisting above is another async gap.
     if (!ref.mounted) return true;
 
     // File cleanup is best-effort: the clip is already gone from state and
