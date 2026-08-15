@@ -175,6 +175,18 @@ class RelayManager {
   /// Whether the manager has been initialized
   bool get isInitialized => _initialized;
 
+  /// Ensure the user-removal intent ledger has been loaded from storage.
+  ///
+  /// Idempotent: concurrent callers share a single storage read, and later
+  /// calls return immediately once the ledger is loaded.
+  ///
+  /// [addRelay], [removeRelay], [isUserRemovedRelay] and [initialize] already
+  /// await this internally, so suppression is correct without it. Use it only
+  /// to warm the ledger ahead of those calls, or to surface a storage read
+  /// failure at a point the caller chooses.
+  Future<void> ensureUserRemovedRelaysLoaded() =>
+      _ensureUserRemovedRelaysLoaded();
+
   // ---------------------------------------------------------------------------
   // Initialization
   // ---------------------------------------------------------------------------

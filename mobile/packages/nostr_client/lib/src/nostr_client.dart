@@ -540,6 +540,14 @@ class NostrClient {
   /// Returns true if the relay manager is initialized
   bool get isInitialized => _relayManager.isInitialized;
 
+  /// Ensure the user-removal intent ledger has been loaded from storage.
+  ///
+  /// Delegates to [RelayManager.ensureUserRemovedRelaysLoaded]. See that
+  /// method for when a caller needs this: [addRelay], [addRelays] and
+  /// [initialize] already load the ledger themselves.
+  Future<void> ensureUserRemovedRelaysLoaded() =>
+      _relayManager.ensureUserRemovedRelaysLoaded();
+
   /// Whether the client has been disposed
   ///
   /// After disposal, the client should not be used

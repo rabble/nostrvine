@@ -405,6 +405,10 @@ class NostrService extends _$NostrService {
     try {
       await (() async {
         if (userRelayUrls.isNotEmpty) {
+          // Loads the user-removal ledger up front. addRelays() awaits the
+          // same idempotent load on its first relay, so this moves when the
+          // storage read happens, not whether removed relays are suppressed.
+          await client.ensureUserRemovedRelaysLoaded();
           final addedRelayCount = await client.addRelays(userRelayUrls);
           Log.info(
             '[NostrService] Initialization stage completed: source=$source, '
