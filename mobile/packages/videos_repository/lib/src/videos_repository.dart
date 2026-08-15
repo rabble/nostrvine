@@ -2639,20 +2639,41 @@ class VideosRepository {
   /// rather than restalling the spinner). The orchestrator deliberately does
   /// not wrap the helpers themselves — a successful relay result followed by
   /// slow stats enrichment must not be killed as if the relay had hung.
+  ///
+  /// Returns `null` when every candidate came back empty without an error —
+  /// a confirmed absence, an unparseable route ID, or relay-only lookups that
+  /// returned nothing. Callers may render "not found" on `null`.
+  ///
+  /// Throws:
+  ///
+  /// * [FunnelcakeException] when a lookup could not reach the API and neither
+  ///   the relay fallbacks nor any [fallbackRouteIds] produced a video.
+  ///   Absence was never established, so callers must offer a retry rather
+  ///   than claim the video is missing.
   Future<VideoEvent?> fetchVideoWithStatsForRouteId(
     String routeId, {
     List<String> fallbackRouteIds = const [],
   }) async {
-    final primary = await _fetchVideoWithStatsForSingleRouteId(routeId);
-    if (primary != null) return primary;
+    FunnelcakeException? apiFailure;
+    final attempted = <String>{};
 
-    for (final fallbackRouteId in fallbackRouteIds) {
-      if (fallbackRouteId == routeId) continue;
-      final fallback = await _fetchVideoWithStatsForSingleRouteId(
-        fallbackRouteId,
-      );
-      if (fallback != null) return fallback;
+    for (final candidateRouteId in [routeId, ...fallbackRouteIds]) {
+      if (!attempted.add(candidateRouteId)) continue;
+      try {
+        final video = await _fetchVideoWithStatsForSingleRouteId(
+          candidateRouteId,
+        );
+        if (video != null) return video;
+      } on FunnelcakeException catch (e) {
+        // Keep going: a fallback route is a different query shape (an
+        // author-scoped addressable resolves against relays alone) and can
+        // still answer while the API is unreachable.
+        apiFailure ??= e;
+      }
     }
+
+    final failure = apiFailure;
+    if (failure != null) throw failure;
 
     return null;
   }
@@ -2666,6 +2687,7 @@ class VideosRepository {
     final cached = await _fetchRouteVideoFromLocalCache(candidate);
     if (cached != null) return cached;
 
+    FunnelcakeException? apiFailure;
     final funnelcakeRouteId = candidate.stableId ?? candidate.eventId;
     if (funnelcakeRouteId != null) {
       try {
@@ -2683,6 +2705,7 @@ class VideosRepository {
           error: e,
           stackTrace: stackTrace,
         );
+        apiFailure = e;
       }
     }
 
@@ -2706,6 +2729,12 @@ class VideosRepository {
       );
       if (byStableId != null) return byStableId;
     }
+
+    // Nothing answered. When the API was unreachable we cannot claim the video
+    // is missing: null renders a permanent "could be gone, out of reach, or
+    // hidden by your settings" for a video the API serves fine once the
+    // connection recovers. A confirmed 404 still returns null below.
+    if (apiFailure != null) throw apiFailure;
 
     return null;
   }

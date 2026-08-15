@@ -35,7 +35,7 @@
     "dmReactionRetryAction": "Försök igen",
     "dmMessageBubbleVideoReplyHint": "Öppna den refererade videon",
     "commonSomethingWentWrong": "Något gick fel",
-    "profileFeedError": "Kunde inte läsa in videor.",
+    "profileFeedError": "Kan inte nå servern. Kontrollera din anslutning och försök igen.",
     "profileFeedLoadMoreError": "Kunde inte läsa in fler videor. Dra för att uppdatera.",
     "appTitle": "Divine",
     "@appTitle": {

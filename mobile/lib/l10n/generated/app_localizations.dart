@@ -7703,10 +7703,10 @@ abstract class AppLocalizations {
   /// **'Error: {error}'**
   String profileError(String error);
 
-  /// Full-screen message shown when an author's profile feed fails to load.
+  /// Full-screen message shown when an author's profile feed fails to load. This state is only reached when the API could not be reached at all — an author with genuinely no videos gets the empty state instead — so the copy names the connection rather than implying the profile is empty. Wording deliberately matches authSignInErrorNetwork.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t load videos.'**
+  /// **'Can\'t reach the server. Check your connection and try again.'**
   String get profileFeedError;
 
   /// Transient message shown when paginating an author's profile feed fails.

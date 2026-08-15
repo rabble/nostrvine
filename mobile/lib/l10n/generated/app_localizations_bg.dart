@@ -4485,7 +4485,8 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Видеата не можаха да се заредят.';
+  String get profileFeedError =>
+      'Сървърът е недостъпен. Провери връзката си и опитай отново.';
 
   @override
   String get profileFeedLoadMoreError =>

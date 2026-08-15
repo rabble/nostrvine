@@ -35,7 +35,7 @@
     "dmReactionRetryAction": "إعادة المحاولة",
     "dmMessageBubbleVideoReplyHint": "افتح الفيديو المُشار إليه",
     "commonSomethingWentWrong": "حدث خطأ ما",
-    "profileFeedError": "تعذّر تحميل الفيديوهات.",
+    "profileFeedError": "تعذّر الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى.",
     "profileFeedLoadMoreError": "تعذّر تحميل المزيد من الفيديوهات. اسحب للتحديث.",
     "appTitle": "Divine",
     "@appTitle": {
