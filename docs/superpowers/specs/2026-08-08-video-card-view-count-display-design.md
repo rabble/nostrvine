@@ -59,8 +59,10 @@ Other surfaces carrying the same line:
 - `mobile/lib/screens/inbox/conversation/widgets/message_bubble.dart:1161` — DM
   video previews. **Out of scope.**
 - `video_author_info_section.dart` and `actions/video_description_overlay.dart`
-  are dead code — instantiated only by their own tests, referenced in `lib`
-  only from two comments. **Left untouched.**
+  were dead code — instantiated only by their own tests, referenced in `lib`
+  only from comments or a barrel export. The flag-removal follow-up deleted
+  them so the old raw loop-count line cannot be reintroduced by wiring a stale
+  widget back in.
 
 ## Decisions
 
@@ -94,7 +96,6 @@ but it falls out of one threshold rather than two source-specific branches.
 
 | Case | Date | Count | Renders |
 |---|---|---|---|
-| Flag off | — | `totalLoops` | `12 loops` (today's behavior, unchanged) |
 | Own video | post date | `totalLoops`, always | `3h ago · 12 loops` |
 | Count at or above the floor | post date | public count | `Apr 22, 2014 · 2.1M loops` |
 | Count below the floor | post date | none | `3h ago` |
@@ -198,9 +199,10 @@ doc comment already notes that Vine archives need their year visible.
 None. The rule ships on for everyone.
 
 `FeatureFlag.videoCardPostDate` originally gated this as a kill switch. It
-defaulted off and nothing ever set `FF_VIDEO_CARD_POST_DATE`, so the rule was
-dark in every build from the day it merged. The flag was removed rather than
-defaulted on: there is no bucketing or impression event behind it to justify a
+defaulted off and nothing in CI, Codemagic, build scripts, or dart-defines ever
+set `FF_VIDEO_CARD_POST_DATE`, so the rule never reached normal builds from the
+day it merged. Developer-mode devices could preview the internal flag locally,
+but there is no bucketing or impression event behind it to justify keeping a
 toggle, and the behaviour reverts in a single commit.
 
 ### 4. Widget changes
@@ -218,6 +220,14 @@ ARB key. The separator is bidi-neutral, so RTL locales order the whole string
 correctly.
 
 **`metadata_stats_row.dart`** — move the Loops `_StatColumn` to last.
+
+The product line is surface-specific. Feed cards are first-impression
+recommendation surfaces, so they hide stranger-facing counts below
+`publicLoopCountFloor = 1000`; own-video cards always show the creator their
+count. Profile summaries keep their stronger `profileLoopsVisibilityFloor =
+10000` because they communicate account-level momentum, while detail surfaces
+such as the metadata sheet remain factual and keep exact counts visible after a
+viewer asks for more information.
 
 ### 5. Analytics wording
 
@@ -241,13 +251,13 @@ in either direction.
 
 | File | Covers | Tests |
 |---|---|---|
-| `test/widgets/video_feed_item/video_card_meta_test.dart` (new) | Every row of the truth table; the floor boundary either side; `originalLoops` vs `totalLoops` for classic Vines; `hasUnknownOriginalDate`; the empty case | 17 |
-| `test/widgets/video_feed_item/video_feed_item_meta_line_test.dart` (new) | Flag off renders today's string; flag on hides a small count from a stranger but shows a large one; creator sees their own small count; classic Vine shows archival count plus its date | 6 |
+| `test/widgets/video_feed_item/video_card_meta_test.dart` (new) | Every row of the truth table; the floor boundary either side; `originalLoops` vs `totalLoops` for classic Vines; `hasUnknownOriginalDate`; the empty case | 15 |
+| `test/widgets/video_feed_item/video_feed_item_meta_line_test.dart` (new) | Hides a small count from a stranger but shows a large one; creator sees their own small count; classic Vine shows archival count plus its date; auth changes reveal the creator count | 6 |
 | `test/widgets/video_feed_item/metadata/metadata_stats_row_test.dart` (new) | Loops trailing every interaction stat; the count still rendering; classic-Vine breakdown. This file had no test before. | 5 |
 | `test/l10n/localized_time_formatter_test.dart` (extend) | `formatPostAge` either side of the 7-day boundary under `withClock`; year retained on an archive date; German localization of both forms | 5 |
 
-The floor-boundary pair and the flag-off/flag-on pair over the same video are
-what make these able to fail: each asserts a behaviour its sibling contradicts.
+The floor-boundary pair is what makes these able to fail: each side asserts a
+behaviour its sibling contradicts.
 
 Widget tests need `AppLocalizations.localizationsDelegates` and
 `supportedLocales` on their `MaterialApp`, and must resolve expected strings
@@ -258,7 +268,6 @@ No goldens cover these widgets, so there is no golden churn.
 ## Out of scope
 
 - DM video previews (`message_bubble.dart:1161`) keep the old line.
-- The two dead widgets stay as-is.
 - `video_card_shown` impression event and variant bucketing — separate
   post-freeze work. Without them this change ships unmeasured.
 - Any further de-emphasis of the more-info sheet beyond column order.
