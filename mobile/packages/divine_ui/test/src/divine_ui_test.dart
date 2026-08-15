@@ -89,6 +89,8 @@ void main() {
         'onNav': (c) => c.onNav,
         'onNavMuted': (c) => c.onNavMuted,
         'iconButton': (c) => c.iconButton,
+        'onIconButton': (c) => c.onIconButton,
+        'ghostFill': (c) => c.ghostFill,
         'primaryText': (c) => c.primaryText,
         'secondaryText': (c) => c.secondaryText,
         'mutedText': (c) => c.mutedText,
@@ -110,6 +112,18 @@ void main() {
         'mediaChromeForeground': (c) => c.mediaChromeForeground,
       };
 
+      // Accent chips are pairs, not flat colors, so they cannot live in
+      // `tokens`. Same purpose: a new chip that skips copyWith/lerp/== fails
+      // here rather than silently staying dark on a light page.
+      final chipTokens = <String, VineAccentChip Function(VineThemeColors)>{
+        'accentChipOrange': (c) => c.accentChipOrange,
+        'accentChipYellow': (c) => c.accentChipYellow,
+        'accentChipBlue': (c) => c.accentChipBlue,
+        'accentChipLime': (c) => c.accentChipLime,
+        'accentChipPink': (c) => c.accentChipPink,
+        'accentChipViolet': (c) => c.accentChipViolet,
+      };
+
       VineThemeColors paint(Color color) => VineThemeColors(
         background: color,
         card: color,
@@ -123,6 +137,8 @@ void main() {
         onNav: color,
         onNavMuted: color,
         iconButton: color,
+        onIconButton: color,
+        ghostFill: color,
         primaryText: color,
         secondaryText: color,
         mutedText: color,
@@ -138,6 +154,12 @@ void main() {
         onErrorContainer: color,
         accentPositive: color,
         accentWarning: color,
+        accentChipOrange: VineAccentChip(container: color, onContainer: color),
+        accentChipYellow: VineAccentChip(container: color, onContainer: color),
+        accentChipBlue: VineAccentChip(container: color, onContainer: color),
+        accentChipLime: VineAccentChip(container: color, onContainer: color),
+        accentChipPink: VineAccentChip(container: color, onContainer: color),
+        accentChipViolet: VineAccentChip(container: color, onContainer: color),
         inverseSurface: color,
         inverseOnSurface: color,
         mediaChrome: color,
@@ -154,6 +176,8 @@ void main() {
           containerLow: const Color(0xFF000011),
           nav: const Color(0xFF000006),
           iconButton: const Color(0xFF000007),
+          onIconButton: const Color(0xFF00001C),
+          ghostFill: const Color(0xFF00001F),
           primaryText: const Color(0xFF000008),
           secondaryText: const Color(0xFF000009),
           mutedText: const Color(0xFF00000A),
@@ -169,6 +193,10 @@ void main() {
           onErrorContainer: const Color(0xFF000017),
           accentPositive: const Color(0xFF00001A),
           accentWarning: const Color(0xFF00001B),
+          accentChipOrange: const VineAccentChip(
+            container: Color(0xFF00001D),
+            onContainer: Color(0xFF00001E),
+          ),
           inverseSurface: const Color(0xFF000018),
           inverseOnSurface: const Color(0xFF000019),
           mediaChrome: const Color(0xFF00000F),
@@ -183,6 +211,8 @@ void main() {
         expect(copied.containerLow, const Color(0xFF000011));
         expect(copied.nav, const Color(0xFF000006));
         expect(copied.iconButton, const Color(0xFF000007));
+        expect(copied.onIconButton, const Color(0xFF00001C));
+        expect(copied.ghostFill, const Color(0xFF00001F));
         expect(copied.primaryText, const Color(0xFF000008));
         expect(copied.secondaryText, const Color(0xFF000009));
         expect(copied.mutedText, const Color(0xFF00000A));
@@ -198,6 +228,13 @@ void main() {
         expect(copied.onErrorContainer, const Color(0xFF000017));
         expect(copied.accentPositive, const Color(0xFF00001A));
         expect(copied.accentWarning, const Color(0xFF00001B));
+        expect(
+          copied.accentChipOrange,
+          const VineAccentChip(
+            container: Color(0xFF00001D),
+            onContainer: Color(0xFF00001E),
+          ),
+        );
         expect(copied.inverseSurface, const Color(0xFF000018));
         expect(copied.inverseOnSurface, const Color(0xFF000019));
         expect(copied.mediaChrome, const Color(0xFF00000F));
@@ -217,6 +254,10 @@ void main() {
 
         for (final token in tokens.entries) {
           expect(token.value(midpoint), expected, reason: token.key);
+        }
+        for (final chip in chipTokens.entries) {
+          expect(chip.value(midpoint).container, expected, reason: chip.key);
+          expect(chip.value(midpoint).onContainer, expected, reason: chip.key);
         }
       });
 
@@ -276,6 +317,8 @@ void main() {
             onNav: token == 'onNav' ? Colors.white : null,
             onNavMuted: token == 'onNavMuted' ? Colors.white : null,
             iconButton: token == 'iconButton' ? Colors.white : null,
+            onIconButton: token == 'onIconButton' ? Colors.white : null,
+            ghostFill: token == 'ghostFill' ? Colors.white : null,
             primaryText: token == 'primaryText' ? Colors.white : null,
             secondaryText: token == 'secondaryText' ? Colors.white : null,
             mutedText: token == 'mutedText' ? Colors.white : null,
@@ -300,6 +343,23 @@ void main() {
           );
 
           expect(changed, isNot(paint(Colors.black)), reason: token);
+        }
+
+        const white = VineAccentChip(
+          container: Colors.white,
+          onContainer: Colors.white,
+        );
+        for (final chip in chipTokens.keys) {
+          final changed = paint(Colors.black).copyWith(
+            accentChipOrange: chip == 'accentChipOrange' ? white : null,
+            accentChipYellow: chip == 'accentChipYellow' ? white : null,
+            accentChipBlue: chip == 'accentChipBlue' ? white : null,
+            accentChipLime: chip == 'accentChipLime' ? white : null,
+            accentChipPink: chip == 'accentChipPink' ? white : null,
+            accentChipViolet: chip == 'accentChipViolet' ? white : null,
+          );
+
+          expect(changed, isNot(paint(Colors.black)), reason: chip);
         }
       });
     });
