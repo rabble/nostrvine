@@ -14092,8 +14092,8 @@ class VanishedProfilesCompanion extends UpdateCompanion<VanishedProfilesData> {
   }
 }
 
-class DatabaseAtV6 extends GeneratedDatabase {
-  DatabaseAtV6(QueryExecutor e) : super(e);
+class DatabaseAtV7 extends GeneratedDatabase {
+  DatabaseAtV7(QueryExecutor e) : super(e);
   late final Event event = Event(this);
   late final UserProfiles userProfiles = UserProfiles(this);
   late final VideoMetrics videoMetrics = VideoMetrics(this);
@@ -14126,6 +14126,66 @@ class DatabaseAtV6 extends GeneratedDatabase {
       IdentityVerifications(this);
   late final SeenVideos seenVideos = SeenVideos(this);
   late final VanishedProfiles vanishedProfiles = VanishedProfiles(this);
+  late final Index idxMetricsLoopCount = Index(
+    'idx_metrics_loop_count',
+    'CREATE INDEX IF NOT EXISTS idx_metrics_loop_count ON video_metrics (loop_count)',
+  );
+  late final Index idxMetricsLikes = Index(
+    'idx_metrics_likes',
+    'CREATE INDEX IF NOT EXISTS idx_metrics_likes ON video_metrics (likes)',
+  );
+  late final Index idxMetricsViews = Index(
+    'idx_metrics_views',
+    'CREATE INDEX IF NOT EXISTS idx_metrics_views ON video_metrics (views)',
+  );
+  late final Index idxHashtagVideoCount = Index(
+    'idx_hashtag_video_count',
+    'CREATE INDEX IF NOT EXISTS idx_hashtag_video_count ON hashtag_stats (video_count DESC)',
+  );
+  late final Index idxNotificationTimestamp = Index(
+    'idx_notification_timestamp',
+    'CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notifications (timestamp DESC)',
+  );
+  late final Index idxNotificationIsRead = Index(
+    'idx_notification_is_read',
+    'CREATE INDEX IF NOT EXISTS idx_notification_is_read ON notifications (is_read)',
+  );
+  late final Index idxNotificationOwnerTimestamp = Index(
+    'idx_notification_owner_timestamp',
+    'CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp ON notifications (owner_pubkey, timestamp DESC)',
+  );
+  late final Index idxPendingUploadStatus = Index(
+    'idx_pending_upload_status',
+    'CREATE INDEX IF NOT EXISTS idx_pending_upload_status ON pending_uploads (status)',
+  );
+  late final Index idxPendingUploadCreated = Index(
+    'idx_pending_upload_created',
+    'CREATE INDEX IF NOT EXISTS idx_pending_upload_created ON pending_uploads (created_at DESC)',
+  );
+  late final Index idxPersonalReactionsUser = Index(
+    'idx_personal_reactions_user',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reactions_user ON personal_reactions (user_pubkey)',
+  );
+  late final Index idxPersonalReactionsReactionId = Index(
+    'idx_personal_reactions_reaction_id',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id ON personal_reactions (reaction_event_id)',
+  );
+  late final Index idxPersonalReactionsAddressableId = Index(
+    'idx_personal_reactions_addressable_id',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id ON personal_reactions (addressable_id)',
+  );
+  late final Index idxPersonalRepostsUser = Index(
+    'idx_personal_reposts_user',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user ON personal_reposts (user_pubkey)',
+  );
+  late final Index idxPersonalRepostsRepostId = Index(
+    'idx_personal_reposts_repost_id',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reposts_repost_id ON personal_reposts (repost_event_id)',
+  );
+  late final Index idxPersonalRepostsUserCreated = Index(
+    'idx_personal_reposts_user_created',
+    'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user_created ON personal_reposts (user_pubkey, created_at DESC)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -14158,6 +14218,21 @@ class DatabaseAtV6 extends GeneratedDatabase {
     identityVerifications,
     seenVideos,
     vanishedProfiles,
+    idxMetricsLoopCount,
+    idxMetricsLikes,
+    idxMetricsViews,
+    idxHashtagVideoCount,
+    idxNotificationTimestamp,
+    idxNotificationIsRead,
+    idxNotificationOwnerTimestamp,
+    idxPendingUploadStatus,
+    idxPendingUploadCreated,
+    idxPersonalReactionsUser,
+    idxPersonalReactionsReactionId,
+    idxPersonalReactionsAddressableId,
+    idxPersonalRepostsUser,
+    idxPersonalRepostsRepostId,
+    idxPersonalRepostsUserCreated,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -14177,5 +14252,5 @@ class DatabaseAtV6 extends GeneratedDatabase {
     ),
   ]);
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 }

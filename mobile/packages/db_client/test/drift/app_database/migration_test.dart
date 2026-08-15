@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
-import 'generated/schema_v6.dart' as v6;
+import 'generated/schema_v7.dart' as v7;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -19,42 +19,49 @@ void main() {
   });
 
   group('schema validation', () {
-    test('current schema version is 6', () {
-      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 6);
+    test('current schema version is 7', () {
+      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 7);
     });
 
-    test('v6 schema is valid and up to date', () async {
+    test('v7 schema is valid and up to date', () async {
+      final schema = await verifier.schemaAt(7);
+      final db = AppDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 7);
+      await db.close();
+    });
+
+    test('v6 schema migrates to v7', () async {
       final schema = await verifier.schemaAt(6);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 6);
+      await verifier.migrateAndValidate(db, 7);
       await db.close();
     });
 
-    test('v5 schema migrates to v6', () async {
+    test('v5 schema migrates to v7', () async {
       final schema = await verifier.schemaAt(5);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 6);
+      await verifier.migrateAndValidate(db, 7);
       await db.close();
     });
 
-    test('v3 schema migrates to v6', () async {
+    test('v3 schema migrates to v7', () async {
       final schema = await verifier.schemaAt(3);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 6);
+      await verifier.migrateAndValidate(db, 7);
       await db.close();
     });
 
-    test('v2 schema migrates to v6', () async {
+    test('v2 schema migrates to v7', () async {
       final schema = await verifier.schemaAt(2);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 6);
+      await verifier.migrateAndValidate(db, 7);
       await db.close();
     });
 
-    test('legacy v1 schema migrates to v6', () async {
+    test('legacy v1 schema migrates to v7', () async {
       final schema = await verifier.schemaAt(1);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 6);
+      await verifier.migrateAndValidate(db, 7);
       await db.close();
     });
 
@@ -82,7 +89,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 6);
+      await verifier.migrateAndValidate(db, 7);
 
       final rows = await db
           .customSelect(
@@ -105,9 +112,9 @@ void main() {
     test('v2 identity_events rows survive the upgrade unstamped', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 2,
-        newVersion: 6,
+        newVersion: 7,
         createOld: v2.DatabaseAtV2.new,
-        createNew: v6.DatabaseAtV6.new,
+        createNew: v7.DatabaseAtV7.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) => batch.insert(
           oldDb.identityEvents,
@@ -141,7 +148,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 6);
+        await verifier.migrateAndValidate(db, 7);
 
         final migrated = await db.clipsDao.getClipById('clip-1');
         expect(migrated?.id, 'clip-1');
@@ -162,7 +169,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 6);
+        await verifier.migrateAndValidate(db, 7);
 
         final migrated = await db.clipsDao.getClipById('clip-1');
         expect(migrated?.id, 'clip-1');
@@ -175,9 +182,9 @@ void main() {
     test('v5 copies a distinct pre-v5 vine id into the d-tag column', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 3,
-        newVersion: 6,
+        newVersion: 7,
         createOld: v3.DatabaseAtV3.new,
-        createNew: v6.DatabaseAtV6.new,
+        createNew: v7.DatabaseAtV7.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) {
           batch
@@ -247,7 +254,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 6);
+        await verifier.migrateAndValidate(db, 7);
 
         final row = await db
             .customSelect(
@@ -260,5 +267,39 @@ void main() {
         await db.close();
       },
     );
+
+    test('v7 backfills the consolidated indexes onto a v6 database', () async {
+      // The `List<Index>` getters these replace were never read by Drift, so
+      // a v6 database has none of them. Folding the backfill into an earlier
+      // `from <` block would silently skip every database already at v6.
+      const consolidated = <String>[
+        'idx_metrics_loop_count',
+        'idx_metrics_likes',
+        'idx_metrics_views',
+        'idx_hashtag_video_count',
+        'idx_notification_timestamp',
+        'idx_notification_is_read',
+        'idx_notification_owner_timestamp',
+        'idx_pending_upload_status',
+        'idx_pending_upload_created',
+        'idx_personal_reactions_user',
+        'idx_personal_reactions_reaction_id',
+        'idx_personal_reactions_addressable_id',
+        'idx_personal_reposts_user',
+        'idx_personal_reposts_repost_id',
+        'idx_personal_reposts_user_created',
+      ];
+
+      final schema = await verifier.schemaAt(6);
+      final db = AppDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 7);
+
+      final rows = await db
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")
+          .get();
+      final present = rows.map((row) => row.read<String>('name')).toSet();
+      expect(present, containsAll(consolidated));
+      await db.close();
+    });
   });
 }

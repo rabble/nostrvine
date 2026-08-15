@@ -127,7 +127,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -175,9 +175,8 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await _repairSchemaV6();
-        // v6: Consolidate explicit index declarations into Drift schema.
-        // Create all indexes that are now managed through @TableIndex.sql()
-        // annotations.
+      }
+      if (from < 7) {
         await _createConsolidatedIndexes();
       }
     },
@@ -191,6 +190,7 @@ class AppDatabase extends _$AppDatabase {
         await _repairSchemaV3();
         await _repairSchemaV5();
         await _repairSchemaV6();
+        await _createConsolidatedIndexes();
       }
 
       // Run cleanup of expired data on every app startup
@@ -297,8 +297,11 @@ class AppDatabase extends _$AppDatabase {
 
   /// Creates all indexes consolidated from explicit `List<Index>` getters.
   ///
-  /// v6 moves index definitions into @TableIndex.sql() annotations on table
-  /// definitions. This creates indexes for existing v5 databases.
+  /// The `List<Index> get indexes` getters these replace were never read by
+  /// Drift, so none of these indexes exist on any shipped database (#7040).
+  /// v7 moves the definitions into `@TableIndex.sql()` annotations, which
+  /// `createAll` honours; this backfills them for every database that already
+  /// exists.
   Future<void> _createConsolidatedIndexes() async {
     // VideoMetrics indices
     await customStatement(
