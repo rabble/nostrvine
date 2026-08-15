@@ -34,7 +34,7 @@ window, do not hold a change for one, and do not frame a fix as needing a
 "freeze exception". If you are told a freeze is in effect, treat that as stale
 and confirm before planning around it.
 
-`## 1. Freeze The Candidate` in [docs/RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
+`## 1. Pin The Release Candidate` in [docs/RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
 is unrelated — it means pin the target commit for a build, not stop merging.
 
 ## Current Release Path

@@ -5,7 +5,7 @@ Validated against: `mobile/pubspec.yaml`, `mobile/build_ios.sh`, `mobile/build_a
 
 Use this checklist for P1 release prep and store submission. This replaces older package-release and legacy deployment checklists.
 
-## 1. Freeze The Candidate
+## 1. Pin The Release Candidate
 
 "Freeze" here means pin the commit you are about to build. It is not a merge
 freeze — Divine does not run release freezes, including before launch. See
