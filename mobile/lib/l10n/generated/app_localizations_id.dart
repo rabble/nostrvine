@@ -7183,9 +7183,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get messageRequestLoadFailed => 'Permintaan ini gagal dimuat.';
 
   @override
-  String get messageRequestRetryButton => 'Coba lagi';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '$count Pengikut';
   }

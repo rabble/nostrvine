@@ -4114,7 +4114,6 @@
   "inboxRequestsRemoveAll": "تمام درخواستیں ہٹائیں",
   "messageRequestDeclineAndRemoveButton": "انکار کر کے ہٹائیں",
   "messageRequestLoadFailed": "یہ درخواست لوڈ نہیں ہو سکی۔",
-  "messageRequestRetryButton": "دوبارہ کوشش کریں",
   "messageRequestFollowersCount": "{count} فالوورز",
   "@messageRequestFollowersCount": {
     "placeholders": {

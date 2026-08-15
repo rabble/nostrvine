@@ -7255,9 +7255,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit berichtverzoek kon niet worden geladen.';
 
   @override
-  String get messageRequestRetryButton => 'Probeer opnieuw';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '$count volgers';
   }

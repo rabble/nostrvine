@@ -7227,9 +7227,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get messageRequestLoadFailed => 'Không tải được yêu cầu này.';
 
   @override
-  String get messageRequestRetryButton => 'Thử lại';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '$count người theo dõi';
   }

@@ -7216,9 +7216,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte läsa in den här förfrågan.';
 
   @override
-  String get messageRequestRetryButton => 'Försök igen';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '$count följare';
   }

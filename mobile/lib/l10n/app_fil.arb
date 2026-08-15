@@ -3374,7 +3374,6 @@
     "inboxRequestsRemoveAll": "Alisin lahat ng request",
     "messageRequestDeclineAndRemoveButton": "Tanggihan at alisin",
     "messageRequestLoadFailed": "Hindi na-load ang message request na ito.",
-    "messageRequestRetryButton": "Subukan ulit",
     "messageRequestFollowersCount": "{count} Follower",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} video",

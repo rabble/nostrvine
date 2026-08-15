@@ -4114,7 +4114,6 @@
   "inboxRequestsRemoveAll": "移除所有请求",
   "messageRequestDeclineAndRemoveButton": "拒绝并移除",
   "messageRequestLoadFailed": "无法加载此请求。",
-  "messageRequestRetryButton": "重试",
   "messageRequestFollowersCount": "{count} 位粉丝",
   "@messageRequestFollowersCount": {
     "placeholders": {

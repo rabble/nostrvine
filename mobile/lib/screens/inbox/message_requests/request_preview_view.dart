@@ -202,7 +202,7 @@ class _LoadFailedMessage extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           _OutlinedActionButton(
-            label: l10n.messageRequestRetryButton,
+            label: l10n.commonRetry,
             onTap: () => context.read<RequestPreviewCubit>().load(),
           ),
         ],

@@ -6919,9 +6919,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get messageRequestLoadFailed => '이 요청을 불러오지 못했어요.';
 
   @override
-  String get messageRequestRetryButton => '다시 시도';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '팔로워 $count명';
   }

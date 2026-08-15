@@ -7292,9 +7292,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get messageRequestLoadFailed => 'Заявката не можа да се зареди.';
 
   @override
-  String get messageRequestRetryButton => 'Опитай пак';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '$count последователи';
   }

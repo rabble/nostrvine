@@ -7222,9 +7222,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get messageRequestLoadFailed => 'یہ درخواست لوڈ نہیں ہو سکی۔';
 
   @override
-  String get messageRequestRetryButton => 'دوبارہ کوشش کریں';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '$count فالوورز';
   }

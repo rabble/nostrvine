@@ -7314,9 +7314,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Anfrage konnte nicht geladen werden.';
 
   @override
-  String get messageRequestRetryButton => 'Erneut versuchen';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '$count Follower';
   }

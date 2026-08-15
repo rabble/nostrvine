@@ -596,7 +596,7 @@ void main() {
           findsNothing,
         );
 
-        await tester.tap(find.text(l10n.messageRequestRetryButton));
+        await tester.tap(find.text(l10n.commonRetry));
         await tester.pump();
 
         verify(() => mockPreviewCubit.load()).called(1);

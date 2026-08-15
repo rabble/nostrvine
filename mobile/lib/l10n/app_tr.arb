@@ -4795,7 +4795,6 @@
     "inboxRequestsRemoveAll": "Tüm istekleri kaldır",
     "messageRequestDeclineAndRemoveButton": "Reddet ve kaldır",
     "messageRequestLoadFailed": "Bu istek yüklenemedi.",
-    "messageRequestRetryButton": "Tekrar dene",
     "messageRequestFollowersCount": "{count} Takipçi",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} video",

@@ -4920,7 +4920,6 @@
     "inboxRequestsRemoveAll": "ሁሉንም ጥያቄዎች አስወግድ",
     "messageRequestDeclineAndRemoveButton": "አትቀበል እና አስወግድ",
     "messageRequestLoadFailed": "ይህን ጥያቄ መጫን አልተቻለም።",
-    "messageRequestRetryButton": "እንደገና ሞክር",
     "messageRequestFollowersCount": "{count} ተከታዮች",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} ቪዲዮዎች",

@@ -12551,17 +12551,11 @@ abstract class AppLocalizations {
   /// **'Decline and remove'**
   String get messageRequestDeclineAndRemoveButton;
 
-  /// Shown in place of the request preview when its database read fails (#7335), next to a `messageRequestRetryButton`. The screen previously fell through to the loaded layout, so a failed read rendered a generated placeholder name, a count of 0, and live accept/decline buttons over an unknown sender.
+  /// Shown in place of the request preview when its database read fails (#7335), next to a `commonRetry` button. The screen previously fell through to the loaded layout, so a failed read rendered a generated placeholder name, a count of 0, and live accept/decline buttons over an unknown sender.
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t load this request.'**
   String get messageRequestLoadFailed;
-
-  /// Retry button on the request preview's failure state (#7335). Re-runs the same load.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get messageRequestRetryButton;
 
   /// No description provided for @messageRequestFollowersCount.
   ///

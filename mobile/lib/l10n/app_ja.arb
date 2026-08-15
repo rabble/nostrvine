@@ -4795,7 +4795,6 @@
     "inboxRequestsRemoveAll": "すべてのリクエストを削除",
     "messageRequestDeclineAndRemoveButton": "拒否して削除",
     "messageRequestLoadFailed": "このリクエストを読み込めませんでした。",
-    "messageRequestRetryButton": "もう一度試す",
     "messageRequestFollowersCount": "{count}人のフォロワー",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count}本の動画",

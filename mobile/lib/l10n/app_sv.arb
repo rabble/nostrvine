@@ -4795,7 +4795,6 @@
     "inboxRequestsRemoveAll": "Ta bort alla förfrågningar",
     "messageRequestDeclineAndRemoveButton": "Avböj och ta bort",
     "messageRequestLoadFailed": "Kunde inte läsa in den här förfrågan.",
-    "messageRequestRetryButton": "Försök igen",
     "messageRequestFollowersCount": "{count} följare",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} videor",

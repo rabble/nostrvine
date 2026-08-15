@@ -4795,7 +4795,6 @@
     "inboxRequestsRemoveAll": "Remover todas as solicitações",
     "messageRequestDeclineAndRemoveButton": "Recusar e remover",
     "messageRequestLoadFailed": "Não foi possível carregar esta solicitação.",
-    "messageRequestRetryButton": "Tentar de novo",
     "messageRequestFollowersCount": "{count} seguidores",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} vídeos",

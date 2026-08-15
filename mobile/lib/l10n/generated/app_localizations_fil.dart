@@ -7311,9 +7311,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi na-load ang message request na ito.';
 
   @override
-  String get messageRequestRetryButton => 'Subukan ulit';
-
-  @override
   String messageRequestFollowersCount(String count) {
     return '$count Follower';
   }

@@ -4795,7 +4795,6 @@
     "inboxRequestsRemoveAll": "Usuń wszystkie prośby",
     "messageRequestDeclineAndRemoveButton": "Odrzuć i usuń",
     "messageRequestLoadFailed": "Nie udało się wczytać tej prośby.",
-    "messageRequestRetryButton": "Spróbuj ponownie",
     "messageRequestFollowersCount": "{count} obserwujących",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} filmów",
