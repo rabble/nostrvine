@@ -21,6 +21,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -189,8 +190,15 @@ void main() {
         ),
       );
 
+      final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text('A title'), findsOneWidget);
       expect(find.textContaining('description with'), findsOneWidget);
+      expect(
+        find.textContaining(
+          l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(0), 0),
+        ),
+        findsNothing,
+      );
       expect(find.byType(VideoOverlayActions), findsOneWidget);
     });
 

@@ -71,8 +71,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showTopGradient = false,
     this.topOffset = 8.0,
     this.onInteracted,
-    this.omitAuthorBlock = false,
-    this.omitActionColumn = false,
   }) : previewData = null;
 
   const VideoOverlayActions.preview({
@@ -91,8 +89,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showTopGradient = false,
     this.topOffset = 8.0,
     this.onInteracted,
-    this.omitAuthorBlock = false,
-    this.omitActionColumn = false,
   }) : video = null;
 
   final Widget? subtitleLayer;
@@ -104,18 +100,6 @@ class VideoOverlayActions extends ConsumerWidget {
   final String? contextTitle;
   final bool isFullscreen;
   final double topOffset;
-
-  /// When true, suppresses the inline author / description Column at the
-  /// bottom-left so the caller can render its own metadata container
-  /// (e.g. the shared [VideoAuthorInfoSection]). The bottom gradient and
-  /// the action column on the right are still rendered.
-  final bool omitAuthorBlock;
-
-  /// When true, suppresses the right-side action column so the caller can
-  /// render it themselves alongside their own author info block (matches
-  /// the home feed pattern of placing both in a single shared Stack so
-  /// they cannot vertically drift apart).
-  final bool omitActionColumn;
 
   /// Displays the overlay in preview mode during video creation.
   /// When true, users can preview how their video will appear to other users
@@ -147,9 +131,6 @@ class VideoOverlayActions extends ConsumerWidget {
     final video = this.video;
     final previewData = this.previewData;
     final authorPubkey = previewData?.pubkey ?? video!.pubkey;
-    final showPostDate = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.videoCardPostDate),
-    );
     // Watched purely for its invalidation. AuthService is not a ChangeNotifier
     // and authServiceProvider hands back a stable singleton, so watching it
     // (with or without select) never rebuilds on sign-in or account switch —
@@ -281,322 +262,294 @@ class VideoOverlayActions extends ConsumerWidget {
             ),
           ),
         // Author info and video description overlay at bottom left.
-        // Suppressed when the caller renders its own metadata container
-        // (see [omitAuthorBlock]).
-        if (!omitAuthorBlock)
-          Positioned(
-            bottom: bottomOffset,
-            left: 16,
-            right: 80, // Leave space for action buttons
-            child: AnimatedOpacity(
-              opacity: isActive ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ?subtitleLayer,
+        Positioned(
+          bottom: bottomOffset,
+          left: 16,
+          right: 80, // Leave space for action buttons
+          child: AnimatedOpacity(
+            opacity: isActive ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ?subtitleLayer,
 
-                  // Repost banner (if video is a repost)
-                  if (video != null &&
-                      video.isRepost &&
-                      video.reposterPubkey != null) ...[
-                    VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
-                    const SizedBox(height: 8),
-                  ],
-                  // Author avatar and info row
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final profile = ref
-                          .watch(userProfileReactiveProvider(authorPubkey))
-                          .value;
-                      // Use embedded author data from REST API as fallback
-                      // This avoids WebSocket profile fetches for videos
-                      // that already have author_name/author_avatar embedded
-                      final avatarUrl = profile?.picture ?? video?.authorAvatar;
-                      final displayName =
-                          profile?.bestDisplayName ??
-                          video?.displayAuthorName ??
-                          UserProfile.generatedNameFor(authorPubkey);
-                      final isOgViner = ref.watch(
-                        ogVinerCacheServiceProvider.select(
-                          (service) => service.isOgViner(authorPubkey),
-                        ),
+                // Repost banner (if video is a repost)
+                if (video != null &&
+                    video.isRepost &&
+                    video.reposterPubkey != null) ...[
+                  VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
+                  const SizedBox(height: 8),
+                ],
+                // Author avatar and info row
+                Consumer(
+                  builder: (context, ref, _) {
+                    final profile = ref
+                        .watch(userProfileReactiveProvider(authorPubkey))
+                        .value;
+                    // Use embedded author data from REST API as fallback
+                    // This avoids WebSocket profile fetches for videos
+                    // that already have author_name/author_avatar embedded
+                    final avatarUrl = profile?.picture ?? video?.authorAvatar;
+                    final displayName =
+                        profile?.bestDisplayName ??
+                        video?.displayAuthorName ??
+                        UserProfile.generatedNameFor(authorPubkey);
+                    final isOgViner = ref.watch(
+                      ogVinerCacheServiceProvider.select(
+                        (service) => service.isOgViner(authorPubkey),
+                      ),
+                    );
+
+                    void navigateToProfile() {
+                      onInteracted?.call();
+                      Log.info(
+                        '👤 User tapped profile: videoId=${video?.id ?? "preview"}, authorPubkey=$authorPubkey',
+                        name: 'VideoFeedItem',
+                        category: LogCategory.ui,
                       );
-
-                      void navigateToProfile() {
-                        onInteracted?.call();
-                        Log.info(
-                          '👤 User tapped profile: videoId=${video?.id ?? "preview"}, authorPubkey=$authorPubkey',
-                          name: 'VideoFeedItem',
-                          category: LogCategory.ui,
-                        );
-                        final npub = normalizeToNpub(authorPubkey);
-                        if (npub != null) {
-                          context.push(OtherProfileScreen.pathForNpub(npub));
-                        }
+                      final npub = normalizeToNpub(authorPubkey);
+                      if (npub != null) {
+                        context.push(OtherProfileScreen.pathForNpub(npub));
                       }
+                    }
 
-                      return Row(
-                        children: [
-                          // Avatar with follow button overlay
-                          SizedBox(
-                            width:
-                                58, // 48 avatar + space for follow button overflow
-                            height: 58,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // Avatar (tappable to go to profile)
-                                UserAvatar(
-                                  imageUrl: avatarUrl,
-                                  name: displayName,
-                                  size: 48,
-                                  semanticLabel: context
-                                      .l10n
-                                      .videoAuthorAvatarSemanticLabel,
-                                  onTap: navigateToProfile,
-                                ),
-                                // Follow button positioned at bottom-right of avatar
-                                if (video != null)
-                                  PositionedDirectional(
-                                    start: 31,
-                                    top: 31,
-                                    child: VideoFollowButton(
-                                      pubkey: authorPubkey,
-                                    ),
+                    return Row(
+                      children: [
+                        // Avatar with follow button overlay
+                        SizedBox(
+                          width: 58, // 48 avatar + follow button overflow
+                          height: 58,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              // Avatar (tappable to go to profile)
+                              UserAvatar(
+                                imageUrl: avatarUrl,
+                                name: displayName,
+                                size: 48,
+                                semanticLabel:
+                                    context.l10n.videoAuthorAvatarSemanticLabel,
+                                onTap: navigateToProfile,
+                              ),
+                              // Follow button positioned at bottom-right of avatar
+                              if (video != null)
+                                PositionedDirectional(
+                                  start: 31,
+                                  top: 31,
+                                  child: VideoFollowButton(
+                                    pubkey: authorPubkey,
                                   ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        // User name and loop count (tappable to go to profile)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: navigateToProfile,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Semantics(
+                                        identifier: 'video_author_name',
+                                        container: true,
+                                        explicitChildNodes: true,
+                                        label: context.l10n
+                                            .videoAuthorSemanticLabel(
+                                              displayName,
+                                            ),
+                                        child: Text(
+                                          displayName,
+                                          style: VineTheme.titleSmallFont(
+                                            color: VineTheme.whiteText,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                    if (shouldShowSpecialProfileCheckmark(
+                                      profile,
+                                    ))
+                                      const SpecialProfileCheckmark(),
+                                    if (isOgViner) const OgVinerBadge(),
+                                  ],
+                                ),
+                                _VideoCardMetaLine(
+                                  meta: resolveVideoCardMeta(
+                                    video: video,
+                                    isOwnVideo: isOwnVideo,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          // User name and loop count (tappable to go to profile)
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: navigateToProfile,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Flexible(
-                                        child: Semantics(
-                                          identifier: 'video_author_name',
-                                          container: true,
-                                          explicitChildNodes: true,
-                                          label: context.l10n
-                                              .videoAuthorSemanticLabel(
-                                                displayName,
-                                              ),
-                                          child: Text(
-                                            displayName,
-                                            style: VineTheme.titleSmallFont(
-                                              color: VineTheme.whiteText,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ),
-                                      if (shouldShowSpecialProfileCheckmark(
-                                        profile,
-                                      ))
-                                        const SpecialProfileCheckmark(),
-                                      if (isOgViner) const OgVinerBadge(),
-                                    ],
-                                  ),
-                                  _VideoCardMetaLine(
-                                    meta: resolveVideoCardMeta(
-                                      video: video,
-                                      isOwnVideo: isOwnVideo,
-                                      showPostDate: showPostDate,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                // List attribution chip (shown when video is from subscribed curated list)
+                if (video != null &&
+                    showListAttribution &&
+                    listSources != null &&
+                    listSources!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final curatedListState = ref.watch(
+                        curatedListsStateProvider,
+                      );
+                      final curatedListService = curatedListState.whenOrNull(
+                        data: (_) => ref
+                            .read(curatedListsStateProvider.notifier)
+                            .service,
+                      );
+
+                      return ListAttributionChip(
+                        listIds: listSources!,
+                        listLookup: (listId) =>
+                            curatedListService?.getListById(listId),
+                        onListTap: (listId, listName) {
+                          final list = curatedListService?.getListById(listId);
+                          context.push(
+                            CuratedListFeedScreen.pathForId(listId),
+                            extra: CuratedListRouteExtra(
+                              listName: listName,
+                              videoIds: list?.videoEventIds,
+                              authorPubkey: list?.pubkey,
                             ),
-                          ),
-                        ],
+                          );
+                        },
                       );
                     },
                   ),
-                  // List attribution chip (shown when video is from subscribed curated list)
-                  if (video != null &&
-                      showListAttribution &&
-                      listSources != null &&
-                      listSources!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final curatedListState = ref.watch(
-                          curatedListsStateProvider,
-                        );
-                        final curatedListService = curatedListState.whenOrNull(
-                          data: (_) => ref
-                              .read(curatedListsStateProvider.notifier)
-                              .service,
-                        );
-
-                        return ListAttributionChip(
-                          listIds: listSources!,
-                          listLookup: (listId) =>
-                              curatedListService?.getListById(listId),
-                          onListTap: (listId, listName) {
-                            final list = curatedListService?.getListById(
-                              listId,
-                            );
-                            context.push(
-                              CuratedListFeedScreen.pathForId(listId),
-                              extra: CuratedListRouteExtra(
-                                listName: listName,
-                                videoIds: list?.videoEventIds,
-                                authorPubkey: list?.pubkey,
-                              ),
-                            );
-                          },
-                        );
-                      },
+                ],
+                // Video title and description (caption block).
+                // Title and description render independently when present.
+                if (hasTextContent) ...[
+                  const SizedBox(
+                    height: 2,
+                  ), // 2px + 10px from avatar container = 12px total
+                  // Title (when present)
+                  if (titleText != null)
+                    Semantics(
+                      identifier: SemanticIds.videoTitle,
+                      container: true,
+                      explicitChildNodes: true,
+                      button: true,
+                      label: context.l10n.videoOverlayOpenMetadataFromTitle,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: video == null
+                            ? null
+                            : () {
+                                onInteracted?.call();
+                                MetadataExpandedSheet.show(context, video);
+                              },
+                        child: Text(
+                          titleText,
+                          style: VineTheme.labelMediumFont(
+                            color: VineTheme.whiteText,
+                          ).copyWith(shadows: VineTheme.buttonShadows),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  // 4 px gap between title and description when both
+                  // are present (matches the Figma caption spacing).
+                  if (titleText != null && descriptionText.isNotEmpty)
+                    const SizedBox(height: 4),
+                  // Description (only when actual content exists — the
+                  // title has its own row above, so no fallback here).
+                  if (descriptionText.isNotEmpty)
+                    Semantics(
+                      identifier: 'video_description',
+                      container: true,
+                      explicitChildNodes: true,
+                      button: true,
+                      label:
+                          context.l10n.videoOverlayOpenMetadataFromDescription,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: video == null
+                            ? null
+                            : () {
+                                onInteracted?.call();
+                                MetadataExpandedSheet.show(context, video);
+                              },
+                        child: LinkifiedText(
+                          text: descriptionText,
+                          style: VineTheme.bodySmallFont(
+                            color: VineTheme.whiteText,
+                          ).copyWith(shadows: VineTheme.buttonShadows),
+                          linkStyle: VineTheme.bodySmallFont(
+                            color: VineTheme.whiteText,
+                          ).copyWith(shadows: VineTheme.buttonShadows),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  // Collaborator avatar row (if video has collaborators)
+                  if (video != null && video.hasCollaborators) ...[
+                    const SizedBox(height: 4),
+                    CollaboratorAvatarRow(video: video),
+                  ],
+                  if (video != null && video.isVideoReply) ...[
+                    const SizedBox(height: 4),
+                    VideoReplyParentLink(
+                      video: video,
+                      variant: VideoReplyParentLinkVariant.overlay,
+                      onInteracted: onInteracted,
                     ),
                   ],
-                  // Video title and description (caption block).
-                  // Title and description render independently — both are
-                  // shown when both are present, matching the new
-                  // [VideoAuthorInfoSection] used in fullscreen / overlay
-                  // surfaces (PR #4087).
-                  if (hasTextContent) ...[
-                    const SizedBox(
-                      height: 2,
-                    ), // 2px + 10px from avatar container = 12px total
-                    // Title (when present)
-                    if (titleText != null)
-                      Semantics(
-                        identifier: SemanticIds.videoTitle,
-                        container: true,
-                        explicitChildNodes: true,
-                        button: true,
-                        label: context.l10n.videoOverlayOpenMetadataFromTitle,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: video == null
-                              ? null
-                              : () {
-                                  onInteracted?.call();
-                                  MetadataExpandedSheet.show(context, video);
-                                },
-                          child: Text(
-                            titleText,
-                            style:
-                                VineTheme.labelMediumFont(
-                                  color: VineTheme.whiteText,
-                                ).copyWith(
-                                  shadows: VineTheme.buttonShadows,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    // 4 px gap between title and description when both
-                    // are present (matches the Figma caption spacing).
-                    if (titleText != null && descriptionText.isNotEmpty)
-                      const SizedBox(height: 4),
-                    // Description (only when actual content exists — the
-                    // title has its own row above, so no fallback here).
-                    if (descriptionText.isNotEmpty)
-                      Semantics(
-                        identifier: 'video_description',
-                        container: true,
-                        explicitChildNodes: true,
-                        button: true,
-                        label: context
-                            .l10n
-                            .videoOverlayOpenMetadataFromDescription,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: video == null
-                              ? null
-                              : () {
-                                  onInteracted?.call();
-                                  MetadataExpandedSheet.show(context, video);
-                                },
-                          child: LinkifiedText(
-                            text: descriptionText,
-                            style:
-                                VineTheme.bodySmallFont(
-                                  color: VineTheme.whiteText,
-                                ).copyWith(
-                                  shadows: VineTheme.buttonShadows,
-                                ),
-                            linkStyle:
-                                VineTheme.bodySmallFont(
-                                  color: VineTheme.whiteText,
-                                ).copyWith(
-                                  shadows: VineTheme.buttonShadows,
-                                ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    // Collaborator avatar row (if video has collaborators)
-                    if (video != null && video.hasCollaborators) ...[
-                      const SizedBox(height: 4),
-                      CollaboratorAvatarRow(video: video),
-                    ],
-                    if (video != null && video.isVideoReply) ...[
-                      const SizedBox(height: 4),
-                      VideoReplyParentLink(
-                        video: video,
-                        variant: VideoReplyParentLinkVariant.overlay,
-                        onInteracted: onInteracted,
-                      ),
-                    ],
-                    // Inspired-by attribution row (if video credits another creator)
-                    if (video != null && video.hasInspiredBy) ...[
-                      const SizedBox(height: 4),
-                      InspiredByAttributionRow(
-                        video: video,
-                        isActive: isActive,
-                      ),
-                    ],
+                  // Inspired-by attribution row (if video credits another creator)
+                  if (video != null && video.hasInspiredBy) ...[
+                    const SizedBox(height: 4),
+                    InspiredByAttributionRow(video: video, isActive: isActive),
                   ],
-                  // Audio attribution row (all videos)
-                  const SizedBox(height: 4),
-                  if (video != null) AudioAttributionRow(video: video),
-                  const SizedBox(height: 8),
                 ],
-              ),
+                // Audio attribution row (all videos)
+                const SizedBox(height: 4),
+                if (video != null) AudioAttributionRow(video: video),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
+        ),
         // Action buttons at bottom right.
         // In fullscreen mode the right inset tightens to 12 px to match
         // the trailing inset on the fullscreen app bar's More popover.
         // Other consumers (video metadata preview, video editor preview)
         // keep the legacy 16 px so their layouts are unaffected.
-        // Suppressed when [omitActionColumn] is true — the caller
-        // renders the column in their own Stack to keep it vertically
-        // aligned with their own author info block.
-        if (!omitActionColumn)
-          PositionedDirectional(
-            bottom: isFullscreen ? bottomOffset : bottomOffset - 6,
-            end: isFullscreen ? 12 : 16,
-            child: AnimatedOpacity(
-              opacity: isActive ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: IgnorePointer(
-                ignoring: false, // Action buttons SHOULD receive taps
-                child: video == null
-                    ? _PreviewOverlayActionColumn(onInteracted: onInteracted)
-                    : VideoOverlayActionColumn(
-                        video: video,
-                        isFullscreen: isFullscreen,
-                        isPreviewMode: isPreviewMode,
-                        onInteracted: onInteracted,
-                      ),
-              ),
+        PositionedDirectional(
+          bottom: isFullscreen ? bottomOffset : bottomOffset - 6,
+          end: isFullscreen ? 12 : 16,
+          child: AnimatedOpacity(
+            opacity: isActive ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: IgnorePointer(
+              ignoring: false, // Action buttons SHOULD receive taps
+              child: video == null
+                  ? _PreviewOverlayActionColumn(onInteracted: onInteracted)
+                  : VideoOverlayActionColumn(
+                      video: video,
+                      isFullscreen: isFullscreen,
+                      isPreviewMode: isPreviewMode,
+                      onInteracted: onInteracted,
+                    ),
             ),
           ),
+        ),
       ],
     );
   }
