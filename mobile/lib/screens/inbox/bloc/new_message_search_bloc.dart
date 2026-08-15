@@ -86,7 +86,7 @@ class NewMessageSearchBloc
       final networkResults = await _profileRepository.searchUsers(
         query: query,
         limit: 50,
-        sortBy: 'followers',
+        sortBy: profileSearchSortFollowers,
       );
 
       Log.debug(

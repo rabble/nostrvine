@@ -67,7 +67,7 @@ Future<List<MentionMatch>> mentionSearchRemote({
   final remoteResults = await profileRepository.searchUsersFromApi(
     query: lowercaseQuery,
     limit: 10,
-    sortBy: 'followers',
+    sortBy: profileSearchSortFollowers,
   );
 
   for (final profile in remoteResults) {

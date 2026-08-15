@@ -11778,12 +11778,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get changeEmailSentDone => 'ገባኝ';
 
   @override
-  String searchUserVideoCount(int count) {
+  String searchUserVideoCount(int count, String formattedCount) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos',
-      one: '$count video',
+      other: '$formattedCount videos',
+      one: '$formattedCount video',
     );
     return '$_temp0';
   }

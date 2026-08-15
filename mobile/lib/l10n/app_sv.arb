@@ -5221,6 +5221,5 @@
   "changeEmailSentTitle": "Två länkar är på väg",
   "changeEmailSentMessage": "Bekräfta från {email} och från adressen på ditt konto. E-posten byts när båda är klara.",
   "changeEmailSentExpiry": "Länkarna slutar fungera efter 24 timmar.",
-  "changeEmailSentDone": "Okej",
-    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
+  "changeEmailSentDone": "Okej"
 }

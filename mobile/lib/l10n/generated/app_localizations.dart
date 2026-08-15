@@ -20599,8 +20599,8 @@ abstract class AppLocalizations {
   /// Secondary line on a people-search result row: how many videos this user has published.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{{count} video} other{{count} videos}}'**
-  String searchUserVideoCount(int count);
+  /// **'{count, plural, =1{{formattedCount} video} other{{formattedCount} videos}}'**
+  String searchUserVideoCount(int count, String formattedCount);
 }
 
 class _AppLocalizationsDelegate

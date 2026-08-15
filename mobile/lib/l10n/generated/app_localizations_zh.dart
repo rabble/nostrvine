@@ -11416,12 +11416,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get changeEmailSentDone => '知道了';
 
   @override
-  String searchUserVideoCount(int count) {
+  String searchUserVideoCount(int count, String formattedCount) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos',
-      one: '$count video',
+      other: '$formattedCount videos',
+      one: '$formattedCount video',
     );
     return '$_temp0';
   }

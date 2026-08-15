@@ -12138,12 +12138,12 @@ class AppLocalizationsMs extends AppLocalizations {
   String get changeEmailSentDone => 'Faham';
 
   @override
-  String searchUserVideoCount(int count) {
+  String searchUserVideoCount(int count, String formattedCount) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos',
-      one: '$count video',
+      other: '$formattedCount videos',
+      one: '$formattedCount video',
     );
     return '$_temp0';
   }

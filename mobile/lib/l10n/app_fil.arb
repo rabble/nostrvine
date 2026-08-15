@@ -3800,6 +3800,5 @@
   "changeEmailSentTitle": "Papunta na ang dalawang link",
   "changeEmailSentMessage": "I-confirm mula sa {email} at mula sa address na nasa account mo. Magpapalit ang email mo kapag tapos na pareho.",
   "changeEmailSentExpiry": "Titigil gumana ang mga link pagkatapos ng 24 oras.",
-  "changeEmailSentDone": "Sige",
-    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
+  "changeEmailSentDone": "Sige"
 }

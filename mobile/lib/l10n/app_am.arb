@@ -5346,6 +5346,5 @@
   "changeEmailSentTitle": "ሁለት ማገናኛዎች በመንገድ ላይ ናቸው",
   "changeEmailSentMessage": "ከ{email} እና በመለያህ ላይ ካለው አድራሻ አረጋግጥ። ሁለቱም ሲጠናቀቁ ኢሜይልህ ይቀየራል።",
   "changeEmailSentExpiry": "ማገናኛዎቹ ከ24 ሰዓት በኋላ አይሠሩም።",
-  "changeEmailSentDone": "ገባኝ",
-    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
+  "changeEmailSentDone": "ገባኝ"
 }

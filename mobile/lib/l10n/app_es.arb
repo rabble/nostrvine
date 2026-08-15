@@ -5221,6 +5221,5 @@
   "changeEmailSentTitle": "Dos enlaces van en camino",
   "changeEmailSentMessage": "Confirma desde {email} y desde la dirección de tu cuenta. Tu correo cambia cuando hagas las dos.",
   "changeEmailSentExpiry": "Los enlaces caducan a las 24 horas.",
-  "changeEmailSentDone": "Entendido",
-    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
+  "changeEmailSentDone": "Entendido"
 }

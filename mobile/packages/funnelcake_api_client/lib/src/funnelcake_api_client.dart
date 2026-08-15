@@ -67,6 +67,9 @@ class FunnelcakeApiClient {
   /// Default moderation profile sent with video-bearing Funnelcake requests.
   static const String defaultModerationProfile = 'default';
 
+  /// Sort key for profile searches ordered by follower count.
+  static const String profileSortFollowers = 'followers';
+
   /// Server-side cap on the engagement-list endpoints, used as the default
   /// page size for [getVideoLikers] because the list renders in one screen.
   ///

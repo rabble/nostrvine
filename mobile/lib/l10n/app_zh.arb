@@ -7051,6 +7051,5 @@
   "changeEmailSentTitle": "两封确认邮件已在路上",
   "changeEmailSentMessage": "请在 {email} 和账号上的地址两边都确认。两边都完成后邮箱就会切换。",
   "changeEmailSentExpiry": "链接 24 小时后失效。",
-  "changeEmailSentDone": "知道了",
-    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
+  "changeEmailSentDone": "知道了"
 }

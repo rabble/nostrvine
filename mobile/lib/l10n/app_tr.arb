@@ -5221,6 +5221,5 @@
   "changeEmailSentTitle": "İki bağlantı yolda",
   "changeEmailSentMessage": "{email} adresinden ve hesabındaki adresten onayla. İkisi de bitince e-postan değişir.",
   "changeEmailSentExpiry": "Bağlantılar 24 saat sonra geçersiz olur.",
-  "changeEmailSentDone": "Anladım",
-    "searchUserVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}"
+  "changeEmailSentDone": "Anladım"
 }

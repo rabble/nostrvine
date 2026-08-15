@@ -52,6 +52,10 @@ const _publishSeedRelayTimeout = Duration(seconds: 4);
 const _nip50SearchTimeout = Duration(seconds: 5);
 const _nip50RelayQueryTimeout = Duration(milliseconds: 4500);
 
+/// Sort key for profile searches ordered by follower count.
+const String profileSearchSortFollowers =
+    FunnelcakeApiClient.profileSortFollowers;
+
 // TODO(search): Move ProfileSearchFilter to a shared package
 // (e.g., search_utils) when we need to reuse search logic across
 // multiple repositories.
@@ -1905,10 +1909,12 @@ class ProfileRepository implements ProfileReader {
   /// Searches for user profiles via the Funnelcake REST API only.
   ///
   /// This is for latency-sensitive typeahead surfaces that should not wait
-  /// for NIP-50 relay search. Results are returned in server order.
+  /// for NIP-50 relay search. Server-sorted results normally preserve server
+  /// order, except for known no-op sorts that need client fallback ranking.
   ///
   /// [offset] skips results for pagination.
-  /// [sortBy] requests server-side sorting (e.g., 'followers').
+  /// [sortBy] requests server-side sorting (e.g.,
+  /// [profileSearchSortFollowers]).
   /// [hasVideos] filters to only users who have published at least one video.
   /// Returns empty list if query is empty, Funnelcake is unavailable, or the
   /// REST request fails.
@@ -1955,8 +1961,10 @@ class ProfileRepository implements ProfileReader {
   ///
   /// [offset] skips results for pagination. When offset > 0, the NIP-50
   /// WebSocket fallback is skipped since it doesn't support offset.
-  /// [sortBy] requests server-side sorting (e.g., 'followers'). When set,
-  /// client-side re-sorting is skipped to preserve server order.
+  /// [sortBy] requests server-side sorting (e.g.,
+  /// [profileSearchSortFollowers]).
+  /// When set, most server order is preserved, with targeted fallback ranking
+  /// for known no-op sorts.
   /// [hasVideos] filters to only users who have published at least one video.
   ///
   /// Filters using [ProfileSearchFilter] if provided (only when no server-side
@@ -2311,7 +2319,9 @@ class ProfileRepository implements ProfileReader {
     List<UserProfile> profiles,
     String? sortBy,
   ) {
-    if (sortBy != 'followers' || profiles.isEmpty) return profiles;
+    if (sortBy != profileSearchSortFollowers || profiles.isEmpty) {
+      return profiles;
+    }
 
     final indexed =
         <(int, UserProfile)>[
