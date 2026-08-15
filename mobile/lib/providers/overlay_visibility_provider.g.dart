@@ -44,7 +44,7 @@ final class OverlayVisibilityProvider
   }
 }
 
-String _$overlayVisibilityHash() => r'50bbcaac3fc89727bec050b7dd15cffe25fb7dfd';
+String _$overlayVisibilityHash() => r'078a09e97c2941476d63ca46c3e91c8611028967';
 
 /// Notifier for managing overlay visibility state
 

@@ -115,6 +115,102 @@ void main() {
     );
 
     testWidgets(
+      'keeps isBottomSheetOpen true until nested sheets all dismiss',
+      (tester) async {
+        await setSheetTestSurface(tester);
+
+        late ProviderContainer container;
+        await tester.pumpWidget(
+          ProviderScope(
+            child: Consumer(
+              builder: (context, ref, _) {
+                container = ProviderScope.containerOf(context, listen: false);
+                return MaterialApp(
+                  home: Scaffold(
+                    body: Builder(
+                      builder: (innerContext) => ElevatedButton(
+                        onPressed: () {
+                          innerContext.showVideoPausingVineBottomSheet<void>(
+                            title: const Text('Sheet A'),
+                            children: [
+                              Builder(
+                                builder: (sheetContext) => ElevatedButton(
+                                  onPressed: () {
+                                    sheetContext
+                                        .showVideoPausingVineBottomSheet<void>(
+                                          title: const Text('Sheet B'),
+                                          children: [
+                                            const Text('Body B'),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.of(
+                                                sheetContext,
+                                                rootNavigator: true,
+                                              ).pop(),
+                                              child: const Text('Close B'),
+                                            ),
+                                          ],
+                                        );
+                                  },
+                                  child: const Text('Open nested'),
+                                ),
+                              ),
+                              Builder(
+                                builder: (sheetContext) => ElevatedButton(
+                                  onPressed: () => Navigator.of(
+                                    sheetContext,
+                                    rootNavigator: true,
+                                  ).pop(),
+                                  child: const Text('Close A'),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                        child: const Text('Open'),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        await tester.tap(find.text('Open nested'));
+        await tester.pumpAndSettle();
+        expect(find.text('Body B'), findsOneWidget);
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        await tester.tap(find.text('Close B'));
+        await tester.pumpAndSettle();
+        expect(find.text('Body B'), findsNothing);
+        expect(find.text('Sheet A'), findsOneWidget);
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        await tester.tap(find.text('Close A'));
+        await tester.pumpAndSettle();
+        expect(find.text('Sheet A'), findsNothing);
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets(
       'tapOutsideToDismiss: false keeps the sheet open on outside tap',
       (tester) async {
         await setSheetTestSurface(tester);

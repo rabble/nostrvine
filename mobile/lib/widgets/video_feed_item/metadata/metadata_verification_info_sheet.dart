@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/external_link_launcher.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/video_recorder/modes/upload/upload_explainer_constants.dart';
 
 /// Vertical slack around the learn-more link so its tap target clears the
@@ -25,23 +26,12 @@ class MetadataVerificationInfoSheet extends StatelessWidget {
   const MetadataVerificationInfoSheet({super.key});
 
   /// Opens the explainer over the metadata sheet.
-  ///
-  /// Deliberately uses [VineBottomSheet.show] rather than the pause-aware
-  /// `showVideoPausingVineBottomSheet`: the metadata sheet underneath has
-  /// already flipped `OverlayVisibility.setBottomSheetOpen(true)`, and that
-  /// flag is a plain bool rather than a counter — so a nested pause-aware
-  /// sheet would clear it on dismiss and resume playback behind the
-  /// still-open metadata sheet.
   static Future<void> show(BuildContext context) {
-    return VineBottomSheet.show<void>(
-      context: context,
+    return context.showVideoPausingVineBottomSheet<void>(
       contentTitle: context.l10n.metadataVerificationInfoTitle,
       scrollable: false,
       isScrollControlled: true,
-      useRootNavigator: true,
-      body: const SingleChildScrollView(
-        child: MetadataVerificationInfoSheet(),
-      ),
+      body: const SingleChildScrollView(child: MetadataVerificationInfoSheet()),
     );
   }
 
@@ -149,9 +139,7 @@ class _LearnMoreLink extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: _linkTapSlack),
           child: ExcludeSemantics(
             child: Text.rich(
-              TextSpan(
-                children: _spans(context, sentence, displayUrl),
-              ),
+              TextSpan(children: _spans(context, sentence, displayUrl)),
               style: VineTheme.bodyMediumFont(
                 color: context.vineColors.onSurfaceVariant,
               ),

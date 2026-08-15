@@ -1,6 +1,6 @@
 // ABOUTME: BuildContext extensions for showing modals/navigating that pause
 // ABOUTME: video playback. Uses owner-held page tokens for full-screen pages
-// ABOUTME: and dialogs, and setBottomSheetOpen for retained bottom sheets.
+// ABOUTME: and dialogs, and owner-held sheet tokens for retained bottom sheets.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -141,16 +141,21 @@ extension PauseAwareModals on BuildContext {
   }) {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
+    final bottomSheetOwner = Object();
 
     // Custom builder path: raw modal bottom sheet with video pause integration
-    // Uses setBottomSheetOpen to retain current player for instant resume.
+    // Uses an owner-backed sheet hold to retain current player for instant
+    // resume.
     //
     // The custom-builder path is an escape hatch for sheets that do not fit
     // the VineBottomSheet structure (e.g. Share's custom Material header).
     // New VineBottomSheet-specific parameters are intentionally NOT forwarded
     // here — the caller owns the full sheet layout in this mode.
     if (builder != null) {
-      overlayNotifier.setBottomSheetOpen(true);
+      overlayNotifier.setBottomSheetOpenForOwner(
+        bottomSheetOwner,
+        isOpen: true,
+      );
       return showModalBottomSheet<T>(
         context: this,
         builder: builder,
@@ -159,12 +164,17 @@ extension PauseAwareModals on BuildContext {
         useRootNavigator: useRootNavigator,
         backgroundColor: VineTheme.transparent,
       ).whenComplete(() {
-        overlayNotifier.setBottomSheetOpen(false);
+        if (!overlayNotifier.isMounted) return;
+        overlayNotifier.setBottomSheetOpenForOwner(
+          bottomSheetOwner,
+          isOpen: false,
+        );
       });
     }
 
     // Standard VineBottomSheet path
-    // Uses setBottomSheetOpen to retain current player for instant resume.
+    // Uses an owner-backed sheet hold to retain current player for instant
+    // resume.
     return VineBottomSheet.show<T>(
       context: this,
       children: children,
@@ -189,8 +199,17 @@ extension PauseAwareModals on BuildContext {
       tapOutsideToDismiss: tapOutsideToDismiss,
       contentWrapper: contentWrapper,
       draggableController: draggableController,
-      onShow: () => overlayNotifier.setBottomSheetOpen(true),
-      onDismiss: () => overlayNotifier.setBottomSheetOpen(false),
+      onShow: () => overlayNotifier.setBottomSheetOpenForOwner(
+        bottomSheetOwner,
+        isOpen: true,
+      ),
+      onDismiss: () {
+        if (!overlayNotifier.isMounted) return;
+        overlayNotifier.setBottomSheetOpenForOwner(
+          bottomSheetOwner,
+          isOpen: false,
+        );
+      },
     );
   }
 
@@ -199,7 +218,7 @@ extension PauseAwareModals on BuildContext {
   ///
   /// [VineBottomSheetSelectionMenu.show] does not expose
   /// `onShow`/`onDismiss`, so the overlay flag is toggled here around the
-  /// returned future. Uses `setBottomSheetOpen` — same semantics as
+  /// returned future. Uses the same owner-backed semantics as
   /// [showVideoPausingVineBottomSheet], so the current player is paused but
   /// retained for instant resume.
   Future<String?> showVideoPausingSelectionMenu({
@@ -212,8 +231,9 @@ extension PauseAwareModals on BuildContext {
   }) {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
+    final bottomSheetOwner = Object();
 
-    overlayNotifier.setBottomSheetOpen(true);
+    overlayNotifier.setBottomSheetOpenForOwner(bottomSheetOwner, isOpen: true);
 
     return VineBottomSheetSelectionMenu.show(
       context: this,
@@ -223,6 +243,12 @@ extension PauseAwareModals on BuildContext {
       headerPadding: headerPadding,
       headerLeadingAction: headerLeadingAction,
       headerTrailingAction: headerTrailingAction,
-    ).whenComplete(() => overlayNotifier.setBottomSheetOpen(false));
+    ).whenComplete(() {
+      if (!overlayNotifier.isMounted) return;
+      overlayNotifier.setBottomSheetOpenForOwner(
+        bottomSheetOwner,
+        isOpen: false,
+      );
+    });
   }
 }
