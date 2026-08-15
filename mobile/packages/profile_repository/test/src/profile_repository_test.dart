@@ -4030,6 +4030,8 @@ void main() {
           'a04b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b04';
       const pk1Video =
           'a01b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b01';
+      const pkCachedVine =
+          'a99b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b99';
 
       List<ProfileSearchResult> resultsInServerOrder({int followerCount = 0}) =>
           [
@@ -4089,35 +4091,104 @@ void main() {
         ).thenAnswer((_) async => results);
       }
 
-      test(
-        'searchUsersProgressive ranks by video count when a followers sort '
-        'is a no-op',
-        () async {
-          stubRestResults(resultsInServerOrder());
+      test('searchUsersProgressive ranks by video count when a followers sort '
+          'is a no-op', () async {
+        stubRestResults(resultsInServerOrder());
 
-          final emissions = await repoWithFunnelcake
-              .searchUsersProgressive(query: 'lauren', sortBy: 'followers')
-              .toList();
+        final emissions = await repoWithFunnelcake
+            .searchUsersProgressive(query: 'lauren', sortBy: 'followers')
+            .toList();
 
-          final pubkeys = emissions.last.profiles.map((p) => p.pubkey).toList();
-          expect(pubkeys, [pk18Videos, pk4Videos, pk1Video]);
-        },
-      );
+        final pubkeys = emissions.last.profiles.map((p) => p.pubkey).toList();
+        expect(pubkeys, [pk18Videos, pk4Videos, pk1Video]);
+      });
 
-      test(
-        'searchUsersProgressive preserves server order when follower counts '
-        'are real',
-        () async {
-          stubRestResults(resultsInServerOrder(followerCount: 100));
+      test('searchUsersProgressive preserves server order when follower counts '
+          'are real', () async {
+        stubRestResults(resultsInServerOrder(followerCount: 100));
 
-          final emissions = await repoWithFunnelcake
-              .searchUsersProgressive(query: 'lauren', sortBy: 'followers')
-              .toList();
+        final emissions = await repoWithFunnelcake
+            .searchUsersProgressive(query: 'lauren', sortBy: 'followers')
+            .toList();
 
-          final pubkeys = emissions.last.profiles.map((p) => p.pubkey).toList();
-          expect(pubkeys, [pk1Video, pk18Videos, pk4Videos]);
-        },
-      );
+        final pubkeys = emissions.last.profiles.map((p) => p.pubkey).toList();
+        expect(pubkeys, [pk1Video, pk18Videos, pk4Videos]);
+      });
+
+      test('searchUsersProgressive ignores Kind 0 Vine metrics when ranking a '
+          'mixed page', () async {
+        final cachedVineProfile = UserProfile(
+          pubkey: pkCachedVine,
+          displayName: 'Lauren Cached Vine',
+          rawData: const {'vine_followers': 999999, 'vine_loops': 5000000},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          eventId: 'kind0-$pkCachedVine',
+        );
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => [cachedVineProfile]);
+        stubRestResults([
+          ProfileSearchResult(
+            pubkey: pk1Video,
+            displayName: 'Lauren One',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+            followerCount: 0,
+            videoCount: 1,
+          ),
+          ProfileSearchResult(
+            pubkey: pk18Videos,
+            displayName: 'Lauren Eighteen',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+            followerCount: 0,
+            videoCount: 18,
+          ),
+        ]);
+
+        final emissions = await repoWithFunnelcake
+            .searchUsersProgressive(query: 'lauren', sortBy: 'followers')
+            .toList();
+
+        final pubkeys = emissions.last.profiles.map((p) => p.pubkey).toList();
+        expect(pubkeys, [pk18Videos, pk1Video, pkCachedVine]);
+      });
+
+      test('searchUsers ranks mixed follower-signal pages without leaving the '
+          'zero-follower remainder in server order', () async {
+        stubRestResults([
+          ProfileSearchResult(
+            pubkey: pk1Video,
+            displayName: 'Lauren One',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+            followerCount: 0,
+            videoCount: 1,
+          ),
+          ProfileSearchResult(
+            pubkey: pk4Videos,
+            displayName: 'Lauren Four',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+            followerCount: 25,
+            videoCount: 4,
+          ),
+          ProfileSearchResult(
+            pubkey: pk18Videos,
+            displayName: 'Lauren Eighteen',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+            followerCount: 0,
+            videoCount: 18,
+          ),
+        ]);
+
+        final result = await repoWithFunnelcake.searchUsers(
+          query: 'lauren',
+          sortBy: 'followers',
+        );
+
+        expect(result.map((p) => p.pubkey).toList(), [
+          pk4Videos,
+          pk18Videos,
+          pk1Video,
+        ]);
+      });
 
       test(
         'searchUsers ranks by video count when a followers sort is a no-op',
@@ -4137,24 +4208,21 @@ void main() {
         },
       );
 
-      test(
-        'searchUsersFromApi ranks by video count when a followers sort is a '
-        'no-op',
-        () async {
-          stubRestResults(resultsInServerOrder());
+      test('searchUsersFromApi ranks by video count when a followers sort is a '
+          'no-op', () async {
+        stubRestResults(resultsInServerOrder());
 
-          final result = await repoWithFunnelcake.searchUsersFromApi(
-            query: 'lauren',
-            sortBy: 'followers',
-          );
+        final result = await repoWithFunnelcake.searchUsersFromApi(
+          query: 'lauren',
+          sortBy: 'followers',
+        );
 
-          expect(result.map((p) => p.pubkey).toList(), [
-            pk18Videos,
-            pk4Videos,
-            pk1Video,
-          ]);
-        },
-      );
+        expect(result.map((p) => p.pubkey).toList(), [
+          pk18Videos,
+          pk4Videos,
+          pk1Video,
+        ]);
+      });
     });
 
     group('searchUsersProgressive', () {

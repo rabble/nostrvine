@@ -61,5 +61,17 @@ void main() {
       expect(find.textContaining('npub'), findsOneWidget);
       expect(find.textContaining('_@lauren'), findsNothing);
     });
+
+    testWidgets('does not render Vine loop count as a video count', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(profileWith(rawData: const {'vine_loops': 5000})),
+      );
+
+      expect(find.textContaining('npub'), findsOneWidget);
+      expect(find.textContaining('5000'), findsNothing);
+      expect(find.textContaining('videos'), findsNothing);
+    });
   });
 }

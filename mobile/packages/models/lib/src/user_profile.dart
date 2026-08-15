@@ -401,21 +401,19 @@ class UserProfile {
   ///
   /// Checks `follower_count` (REST) and `vine_followers` (Kind 0).
   /// Returns `null` when neither source provides a value.
-  int? get followerCount {
-    final raw = rawData['follower_count'] ?? rawData['vine_followers'];
-    if (raw == null) return null;
-    return raw is int ? raw : int.tryParse('$raw');
-  }
+  int? get followerCount => restFollowerCount ?? vineFollowers;
+
+  /// Follower count reported by Funnelcake REST responses only.
+  int? get restFollowerCount => _parseRawInt(rawData['follower_count']);
 
   /// Video count from either Funnelcake REST API or Nostr Kind 0 rawData.
   ///
   /// Checks `video_count` (REST) and `vine_loops` (Kind 0).
   /// Returns `null` when neither source provides a value.
-  int? get videoCount {
-    final raw = rawData['video_count'] ?? rawData['vine_loops'];
-    if (raw == null) return null;
-    return raw is int ? raw : int.tryParse('$raw');
-  }
+  int? get videoCount => restVideoCount ?? vineLoops;
+
+  /// Video count reported by Funnelcake REST responses only.
+  int? get restVideoCount => _parseRawInt(rawData['video_count']);
 
   /// Check if profile has basic information
   bool get hasBasicInfo =>
@@ -485,19 +483,9 @@ class UserProfile {
   /// Vine-specific metadata getters from rawData
   String? get vineUsername => rawData['vine_username'] as String?;
   bool get vineVerified => rawData['vine_verified'] == true;
-  int? get vineFollowers {
-    final value = rawData['vine_followers'];
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
+  int? get vineFollowers => _parseRawInt(rawData['vine_followers']);
 
-  int? get vineLoops {
-    final value = rawData['vine_loops'];
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
+  int? get vineLoops => _parseRawInt(rawData['vine_loops']);
 
   /// Check if this is an imported Vine user account
   bool get isVineImport => vineUsername != null;
@@ -568,4 +556,9 @@ class UserProfile {
   String toString() =>
       'UserProfile(pubkey: $shortPubkey, '
       'name: $displayName, hasAvatar: $hasAvatar)';
+
+  static int? _parseRawInt(Object? value) {
+    if (value == null) return null;
+    return value is int ? value : int.tryParse('$value');
+  }
 }

@@ -2302,27 +2302,31 @@ class ProfileRepository implements ProfileReader {
   /// Orders a server-sorted result page, falling back when the requested
   /// sort is a no-op on the payload.
   ///
-  /// A `followers` sort over a page whose follower counts are all missing
-  /// or zero is a no-op — the server had nothing to order by, and the page
-  /// comes back effectively unranked. Fall back to the one differentiator
-  /// the payload still carries: video count, descending. Index-decorated so
-  /// ties keep the server's relative order.
+  /// A `followers` sort over profiles with no REST follower count is a no-op
+  /// for that part of the page — the server had nothing to order by. Keep real
+  /// REST follower counts first, then rank the no-signal remainder by the REST
+  /// video count, descending. Kind 0 Vine archive metrics are intentionally not
+  /// used here because they are different quantities.
   static List<UserProfile> _rankServerSortedPage(
     List<UserProfile> profiles,
     String? sortBy,
   ) {
     if (sortBy != 'followers' || profiles.isEmpty) return profiles;
-    final hasFollowerSignal = profiles.any(
-      (p) => (p.followerCount ?? 0) > 0,
-    );
-    if (hasFollowerSignal) return profiles;
 
     final indexed =
         <(int, UserProfile)>[
           for (var i = 0; i < profiles.length; i++) (i, profiles[i]),
         ]..sort((a, b) {
-          final byVideos = (b.$2.videoCount ?? 0).compareTo(
-            a.$2.videoCount ?? 0,
+          final aFollowers = a.$2.restFollowerCount ?? 0;
+          final bFollowers = b.$2.restFollowerCount ?? 0;
+          final hasFollowerSignal = aFollowers > 0 || bFollowers > 0;
+          if (hasFollowerSignal) {
+            final byFollowers = bFollowers.compareTo(aFollowers);
+            return byFollowers != 0 ? byFollowers : a.$1.compareTo(b.$1);
+          }
+
+          final byVideos = (b.$2.restVideoCount ?? 0).compareTo(
+            a.$2.restVideoCount ?? 0,
           );
           return byVideos != 0 ? byVideos : a.$1.compareTo(b.$1);
         });

@@ -30,7 +30,7 @@ class SearchUserTile extends ConsumerWidget {
     // returns one identical verified handle for every same-named result (a
     // server-side archive-import data bug), and verifying it live costs one
     // HTTP fetch per row.
-    final videoCount = profile.videoCount;
+    final videoCount = profile.restVideoCount;
     final secondaryText = videoCount != null && videoCount > 0
         ? context.l10n.searchUserVideoCount(videoCount)
         : profile.truncatedNpub;
