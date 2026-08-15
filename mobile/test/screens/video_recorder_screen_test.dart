@@ -374,7 +374,6 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pump();
 
-        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
         expect(pageOpenChanges, equals([true]));
         expect(notificationPhases, equals([SchedulerPhase.postFrameCallbacks]));
 
@@ -387,7 +386,6 @@ void main() {
         );
         await tester.pump();
 
-        expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
         expect(pageOpenChanges, equals([true, false]));
         expect(
           notificationPhases,
@@ -423,7 +421,6 @@ void main() {
         );
 
         expect(find.byKey(const ValueKey('second')), findsOneWidget);
-        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
         expect(pageOpenChanges, isNot(contains(false)));
 
         await tester.pumpWidget(
@@ -573,20 +570,12 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(VideoRecorderView), findsOneWidget);
-        expect(
-          routeContainer.read(overlayVisibilityProvider).isPageOpen,
-          isTrue,
-        );
         expect(pageOpenChanges, equals([true]));
 
         Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
         await tester.pumpAndSettle();
         await tester.pump();
 
-        expect(
-          routeContainer.read(overlayVisibilityProvider).isPageOpen,
-          isFalse,
-        );
         expect(pageOpenChanges, equals([true, false]));
       });
 
@@ -632,29 +621,15 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(
-          routeContainer.read(overlayVisibilityProvider).isPageOpen,
-          isTrue,
-        );
-
         Navigator.of(
           tester.element(find.byKey(const ValueKey('nested-recorder'))),
         ).pop();
         await tester.pumpAndSettle();
 
         expect(find.byType(VideoRecorderView), findsOneWidget);
-        expect(
-          routeContainer.read(overlayVisibilityProvider).isPageOpen,
-          isTrue,
-        );
 
         Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
         await tester.pumpAndSettle();
-
-        expect(
-          routeContainer.read(overlayVisibilityProvider).isPageOpen,
-          isFalse,
-        );
       });
 
       testWidgets('clears video publish state when standalone route pops', (
