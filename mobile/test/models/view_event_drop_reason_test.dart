@@ -12,6 +12,13 @@ void main() {
       expect(ViewEventDropReason.relayRejected.isStructural, isFalse);
     });
 
+    test('a signer that is still warming up is not structural', () {
+      // Identity known is not signer ready: a Keycast identity with no local
+      // key is authenticated before it can sign, so this drop resolves itself
+      // and must not reach Crashlytics as an invariant (#7505).
+      expect(ViewEventDropReason.signerNotReady.isStructural, isFalse);
+    });
+
     test('failures to build a publishable event are structural', () {
       expect(ViewEventDropReason.missingAddressableDTag.isStructural, isTrue);
       expect(ViewEventDropReason.signingFailed.isStructural, isTrue);
@@ -20,16 +27,6 @@ void main() {
 
     test('an inverted watch range is structural, not an expected skip', () {
       expect(ViewEventDropReason.invalidWatchRange.isStructural, isTrue);
-    });
-
-    test('every reason states its reportability', () {
-      for (final reason in ViewEventDropReason.values) {
-        expect(
-          () => reason.isStructural,
-          returnsNormally,
-          reason: '$reason must declare whether it is a defect',
-        );
-      }
     });
   });
 

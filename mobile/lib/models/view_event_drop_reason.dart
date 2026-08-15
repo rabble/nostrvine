@@ -15,13 +15,20 @@ enum ViewEventDropReason {
   /// No signed-in identity, so nothing could sign the event.
   notAuthenticated,
 
+  /// An identity is signed in but cannot sign yet.
+  ///
+  /// A Keycast identity with no local key reaches `AuthState.authenticated`
+  /// before its signer is usable, so [notAuthenticated] never fires for the
+  /// cold-start window between the two.
+  signerNotReady,
+
   /// The video carried no addressable `d` tag, so no `a` tag could be built.
   missingAddressableDTag,
 
   /// The video kind is not addressable, so it cannot be cited by an `a` tag.
   nonAddressableVideoKind,
 
-  /// Signing returned no event.
+  /// Signing returned no event even though the signer reported it was ready.
   signingFailed,
 
   /// An unexpected exception interrupted event construction or publishing.
@@ -46,9 +53,14 @@ enum ViewEventDropReason {
   /// no minimum watch time left to fall below, so reaching it means the
   /// caller supplied a range that ends before it starts, or no segment it
   /// could use at all.
+  ///
+  /// [signerNotReady] is not structural: identity known is not signer ready
+  /// (see `.claude/rules/state_management.md`), and the gap resolves itself
+  /// once the signer warms up.
   bool get isStructural => switch (this) {
     ViewEventDropReason.invalidWatchRange => true,
     ViewEventDropReason.notAuthenticated => false,
+    ViewEventDropReason.signerNotReady => false,
     ViewEventDropReason.missingAddressableDTag => true,
     ViewEventDropReason.nonAddressableVideoKind => false,
     ViewEventDropReason.signingFailed => true,

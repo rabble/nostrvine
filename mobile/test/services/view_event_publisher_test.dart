@@ -40,6 +40,7 @@ void main() {
       mockAuth = _MockAuthService();
 
       when(() => mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.canPublishNostrWritesNow).thenReturn(true);
       when(() => mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
       when(() => mockNostr.connectedRelays).thenReturn([]);
 
@@ -359,6 +360,140 @@ void main() {
       });
 
       test(
+        'does not attempt to sign while an authenticated signer warms up',
+        () async {
+          final drops =
+              <({ViewEventDropReason reason, String videoId, String method})>[];
+          publisher = ViewEventPublisher(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            onDrop:
+                (reason, {required String videoId, required String method}) {
+                  drops.add((reason: reason, videoId: videoId, method: method));
+                },
+          );
+          // A Keycast identity with no local key: authenticated, not yet
+          // able to sign.
+          when(() => mockAuth.canPublishNostrWritesNow).thenReturn(false);
+
+          final result = await publisher.publishViewEvent(
+            video: createTestVideoEvent(
+              id: 'warming_up_video',
+              pubkey: creatorPubkey,
+              vineId: 'warming_up_d_tag',
+            ),
+            startSeconds: 0,
+            endSeconds: 5,
+          );
+
+          expect(result, isFalse);
+          expect(drops, [
+            (
+              reason: ViewEventDropReason.signerNotReady,
+              videoId: 'warming_up_video',
+              method: 'publishViewEvent',
+            ),
+          ]);
+          expect(drops.single.reason.isStructural, isFalse);
+          verifyNever(
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+          verifyNever(() => mockNostr.publishEvent(any()));
+        },
+      );
+
+      test(
+        'still reports a missing d tag while the signer warms up',
+        () async {
+          final drops =
+              <({ViewEventDropReason reason, String videoId, String method})>[];
+          publisher = ViewEventPublisher(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            onDrop:
+                (reason, {required String videoId, required String method}) {
+                  drops.add((reason: reason, videoId: videoId, method: method));
+                },
+          );
+          when(() => mockAuth.canPublishNostrWritesNow).thenReturn(false);
+
+          final result = await publisher.publishViewEvent(
+            video: createTestVideoEvent(
+              id: 'addressable_video_without_d',
+              pubkey: creatorPubkey,
+              clearAddressableDTag: true,
+              eventKind: NIP71VideoKinds.addressableShortVideo,
+            ),
+            startSeconds: 0,
+            endSeconds: 5,
+          );
+
+          // The readiness gate must not mask the permanent defect. A queued
+          // row with no d tag is deleted by ViewEventRetryService whatever the
+          // drop reason, and the first sweep runs on foreground — inside the
+          // cold-start warm-up window — so a readiness-first ordering would
+          // bin every such row without ever reporting the invariant.
+          expect(result, isFalse);
+          expect(drops, [
+            (
+              reason: ViewEventDropReason.missingAddressableDTag,
+              videoId: 'addressable_video_without_d',
+              method: 'publishViewEvent',
+            ),
+          ]);
+          expect(drops.single.reason.isStructural, isTrue);
+        },
+      );
+
+      test(
+        'still reports signingFailed when a ready signer returns null',
+        () async {
+          final drops =
+              <({ViewEventDropReason reason, String videoId, String method})>[];
+          publisher = ViewEventPublisher(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            onDrop:
+                (reason, {required String videoId, required String method}) {
+                  drops.add((reason: reason, videoId: videoId, method: method));
+                },
+          );
+          when(
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final result = await publisher.publishViewEvent(
+            video: createTestVideoEvent(
+              id: 'ready_signer_video',
+              pubkey: creatorPubkey,
+              vineId: 'ready_signer_d_tag',
+            ),
+            startSeconds: 0,
+            endSeconds: 5,
+          );
+
+          expect(result, isFalse);
+          expect(drops, [
+            (
+              reason: ViewEventDropReason.signingFailed,
+              videoId: 'ready_signer_video',
+              method: 'publishViewEvent',
+            ),
+          ]);
+          expect(drops.single.reason.isStructural, isTrue);
+          verifyNever(() => mockNostr.publishEvent(any()));
+        },
+      );
+
+      test(
         'reports thrown signing errors as unexpected structural drops',
         () async {
           final drops =
@@ -461,6 +596,7 @@ void main() {
           reset(mockNostr);
 
           when(() => mockAuth.isAuthenticated).thenReturn(true);
+          when(() => mockAuth.canPublishNostrWritesNow).thenReturn(true);
           when(() => mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
           when(() => mockNostr.connectedRelays).thenReturn([]);
           when(
