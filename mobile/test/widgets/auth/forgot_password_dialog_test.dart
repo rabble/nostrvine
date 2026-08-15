@@ -194,8 +194,9 @@ void main() {
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.text('Reset Password'), findsOneWidget);
+        expect(find.text(l10n.authFailedToSendResetEmail), findsOneWidget);
         expect(
-          find.text('${l10n.authFailedToSendResetEmail} ${l10n.authTryAgain}'),
+          find.widgetWithText(ElevatedButton, l10n.authTryAgain),
           findsOneWidget,
         );
         expect(find.text('Server response must not be shown'), findsNothing);

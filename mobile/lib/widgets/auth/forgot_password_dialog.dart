@@ -79,15 +79,17 @@ class _ForgotPasswordSheetContentState
       if (result.success) {
         context.pop();
       } else {
-        setState(() => _sendFailed = true);
+        setState(() {
+          _isSubmitting = false;
+          _sendFailed = true;
+        });
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _sendFailed = true);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _sendFailed = true;
+        });
       }
     }
   }
@@ -138,8 +140,7 @@ class _ForgotPasswordSheetContentState
             if (_sendFailed) ...[
               const SizedBox(height: 16),
               Text(
-                '${context.l10n.authFailedToSendResetEmail} '
-                '${context.l10n.authTryAgain}',
+                context.l10n.authFailedToSendResetEmail,
                 style: VineTheme.bodyMediumFont(color: VineTheme.error),
               ),
             ],
@@ -164,6 +165,8 @@ class _ForgotPasswordSheetContentState
                   child: Text(
                     _isSubmitting
                         ? context.l10n.authSending
+                        : _sendFailed
+                        ? context.l10n.authTryAgain
                         : context.l10n.forgotPasswordSendLink,
                   ),
                 ),
