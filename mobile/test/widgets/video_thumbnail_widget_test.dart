@@ -98,6 +98,7 @@ void main() {
 
     setUp(() {
       SharedPreferences.setMockInitialValues({});
+      PassiveAuthThumbnailImage.debugClearUnauthorizedCache();
       // Video with only thumbnail URL
       videoWithThumbnail = createTestVideoEvent(
         id: 'test1',
@@ -120,6 +121,8 @@ void main() {
       // Video with neither
       videoWithNeither = createTestVideoEvent(id: 'test4');
     });
+
+    tearDown(PassiveAuthThumbnailImage.debugClearUnauthorizedCache);
 
     // Stub the image cache (#5158 seam) so VineCachedImage does no real
     // path_provider / cache-manager work that could settle after the test and
@@ -794,6 +797,59 @@ void main() {
             serverUrl: any(named: 'serverUrl'),
           ),
         );
+      },
+    );
+
+    testWidgets(
+      'suppresses repeated unauthenticated Divine thumbnail requests after passive auth is unavailable',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const hash =
+            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+        const url = 'https://media.divine.video/$hash.jpg';
+        when(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => const ViewerAuthUnavailable());
+
+        Widget buildSubject() => ProviderScope(
+          overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+          child: MaterialApp(
+            home: PassiveAuthThumbnailImage(
+              url: url,
+              errorWidget: (_, _, error) => Text('fallback: $error'),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        final image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(Image), findsNothing);
+        expect(find.textContaining('fallback:'), findsOneWidget);
+        verify(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: hash,
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(buildSubject());
+
+        expect(find.byType(Image), findsNothing);
+        expect(find.textContaining('fallback:'), findsOneWidget);
+        verifyNoMoreInteractions(mediaAuthInterceptor);
       },
     );
 

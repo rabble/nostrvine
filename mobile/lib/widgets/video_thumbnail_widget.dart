@@ -222,9 +222,23 @@ class PassiveAuthThumbnailImage extends StatefulWidget {
     return host == 'divine.video' || host.endsWith('.divine.video');
   }
 
+  static final Set<String> _unauthorizedWithoutPassiveAuth = <String>{};
+
+  @visibleForTesting
+  static void debugClearUnauthorizedCache() {
+    _unauthorizedWithoutPassiveAuth.clear();
+  }
+
   @override
   State<PassiveAuthThumbnailImage> createState() =>
       _PassiveAuthThumbnailImageState();
+}
+
+class PassiveAuthUnavailableThumbnailException implements Exception {
+  const PassiveAuthUnavailableThumbnailException();
+
+  @override
+  String toString() => 'Passive thumbnail auth unavailable';
 }
 
 class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
@@ -295,7 +309,10 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
 
   void _resetPassiveAuthStateInFrame() {
     if (!mounted) return;
-    setState(_resetPassiveAuthState);
+    setState(() {
+      PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.clear();
+      _resetPassiveAuthState();
+    });
   }
 
   Future<void> _maybeRetryWithPassiveAuth(Object error) async {
@@ -319,13 +336,13 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     final retryGeneration = _imageGeneration;
     final sha256Hash = extractSha256FromBlossomUrl(retryUrl);
     if (sha256Hash == null) {
-      _authRetryAttempted = true;
+      _markPassiveAuthUnavailable(retryUrl);
       return;
     }
 
     final container = _providerContainer;
     if (container == null) {
-      _authRetryAttempted = true;
+      _markPassiveAuthUnavailable(retryUrl);
       return;
     }
 
@@ -344,14 +361,23 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     _authRetryAttempted = true;
     switch (authResult) {
       case ViewerAuthAuthorized(:final headers):
+        PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.remove(
+          retryUrl,
+        );
         setState(() {
           _authHeaders = headers;
         });
       case ViewerAuthSignerUnreachable():
       case ViewerAuthBlockedByPreference():
       case ViewerAuthUnavailable():
-        break;
+        _markPassiveAuthUnavailable(retryUrl);
     }
+  }
+
+  void _markPassiveAuthUnavailable(String url) {
+    _authRetryAttempted = true;
+    PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.add(url);
+    if (mounted) setState(() {});
   }
 
   void _resetPassiveAuthState() {
@@ -381,6 +407,23 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
         final resolvedUrl = widget.url;
 
         if (PassiveAuthThumbnailImage._shouldBypassCacheManager(resolvedUrl)) {
+          if (_authHeaders == null &&
+              PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth
+                  .contains(resolvedUrl)) {
+            final errorWidget = widget.errorWidget;
+            if (errorWidget != null) {
+              return errorWidget(
+                context,
+                resolvedUrl,
+                const PassiveAuthUnavailableThumbnailException(),
+              );
+            }
+            return _TransparentImageBox(
+              width: widget.width,
+              height: widget.height,
+            );
+          }
+
           final imageProvider = ResizeImage.resizeIfNeeded(
             widget.memCacheWidth ?? cacheWidth,
             null,
