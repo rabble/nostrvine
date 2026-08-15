@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart' show ForgotPasswordResult;
@@ -175,6 +176,26 @@ void main() {
       testWidgets('keeps dialog open and shows retry copy when sending fails', (
         tester,
       ) async {
+        final announcements = <String>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (message) async {
+                final data = message! as Map<Object?, Object?>;
+                if (data['type'] == 'announce') {
+                  final payload = data['data']! as Map<Object?, Object?>;
+                  announcements.add(payload['message']! as String);
+                }
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
         await tester.pumpWidget(
           createTestWidget(
             initialEmail: 'user@example.com',
@@ -199,6 +220,7 @@ void main() {
           find.widgetWithText(ElevatedButton, l10n.authTryAgain),
           findsOneWidget,
         );
+        expect(announcements, contains(l10n.authFailedToSendResetEmail));
         expect(find.text('Server response must not be shown'), findsNothing);
       });
     });

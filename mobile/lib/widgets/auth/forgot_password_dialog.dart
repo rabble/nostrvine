@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart' show ForgotPasswordResult;
 import 'package:openvine/l10n/l10n.dart';
@@ -62,6 +63,19 @@ class _ForgotPasswordSheetContentState
     super.dispose();
   }
 
+  void _showSendFailure() {
+    final message = context.l10n.authFailedToSendResetEmail;
+    setState(() {
+      _isSubmitting = false;
+      _sendFailed = true;
+    });
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -79,18 +93,10 @@ class _ForgotPasswordSheetContentState
       if (result.success) {
         context.pop();
       } else {
-        setState(() {
-          _isSubmitting = false;
-          _sendFailed = true;
-        });
+        _showSendFailure();
       }
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-          _sendFailed = true;
-        });
-      }
+      if (mounted) _showSendFailure();
     }
   }
 
