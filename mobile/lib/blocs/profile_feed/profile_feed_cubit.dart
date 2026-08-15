@@ -213,6 +213,11 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       ),
     );
 
+    // Persist before the network is consulted. Waiting for a successful REST
+    // load means a user whose loads keep failing never accumulates a snapshot,
+    // so the cache is empty for exactly the connections that need it most.
+    if (relaySeed.isNotEmpty) _persistSnapshot();
+
     final result = await _loadFromRest(
       emit,
       relaySeed: relaySeed,

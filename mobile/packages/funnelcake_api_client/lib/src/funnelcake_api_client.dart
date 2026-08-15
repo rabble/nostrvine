@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:funnelcake_api_client/src/exceptions.dart';
 import 'package:funnelcake_api_client/src/leaderboard_period.dart';
@@ -50,11 +51,16 @@ class FunnelcakeApiClient {
   /// [baseUrl] is the base URL for the Funnelcake API
   /// (e.g., 'https://api.example.com').
   /// [httpClient] is an optional HTTP client for making requests.
-  /// [timeout] is the request timeout duration (defaults to 15 seconds).
+  /// [timeout] bounds a whole call, not a single attempt: a GET spends it
+  /// across every retry and backoff wait, so retrying never multiplies a
+  /// caller's worst case (defaults to 15 seconds).
+  /// [retryBaseDelay] seeds the backoff between GET retries; pass
+  /// [Duration.zero] in tests to keep suites fast.
   FunnelcakeApiClient({
     required String baseUrl,
     http.Client? httpClient,
     Duration timeout = const Duration(seconds: 15),
+    Duration retryBaseDelay = const Duration(milliseconds: 300),
     String moderationProfile = defaultModerationProfile,
   }) : _baseUrl = baseUrl.endsWith('/')
            ? baseUrl.substring(0, baseUrl.length - 1)
@@ -62,7 +68,18 @@ class FunnelcakeApiClient {
        _httpClient = httpClient ?? http.Client(),
        _ownsHttpClient = httpClient == null,
        _timeout = timeout,
+       _retryBaseDelay = retryBaseDelay,
        _moderationProfile = moderationProfile;
+
+  /// Total attempts an idempotent GET makes before giving up.
+  ///
+  /// Reads retry because a flaky last mile is far more likely than the API
+  /// being down: the production host is CDN-replicated, so a GET that fails
+  /// once usually succeeds moments later on the same connection.
+  static const int maxGetAttempts = 3;
+
+  /// Upper bound on a single backoff wait, before jitter.
+  static const Duration _maxRetryDelay = Duration(seconds: 4);
 
   /// Default moderation profile sent with video-bearing Funnelcake requests.
   static const String defaultModerationProfile = 'default';
@@ -117,7 +134,9 @@ class FunnelcakeApiClient {
   final http.Client _httpClient;
   final bool _ownsHttpClient;
   final Duration _timeout;
+  final Duration _retryBaseDelay;
   final String _moderationProfile;
+  final math.Random _retryJitter = math.Random();
 
   /// Whether the API is available (has a non-empty base URL).
   bool get isAvailable => _baseUrl.isNotEmpty;
@@ -126,16 +145,81 @@ class FunnelcakeApiClient {
   @visibleForTesting
   String get baseUrl => _baseUrl;
 
-  Future<http.Response> _get(Uri uri) {
-    return _httpClient
-        .get(
-          uri,
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'OpenVine-Mobile/1.0',
-          },
-        )
-        .timeout(_timeout);
+  /// Performs an idempotent GET, retrying transient failures.
+  ///
+  /// Retries cover the two shapes a flaky connection produces: a thrown
+  /// transport error (timeout, dropped socket) and a retryable status
+  /// (429, 5xx). A definitive answer — including 404 — is returned on the
+  /// first attempt, because absence is information and must not be
+  /// confused with an unreachable server.
+  ///
+  /// [_timeout] bounds the whole call, not one attempt: every attempt and
+  /// backoff wait draws from the same budget. A caller's worst case is
+  /// therefore unchanged by retrying — which matters because callers await
+  /// this inline (the login pre-fetch blocks the post-auth redirect on it),
+  /// and a per-attempt bound would have multiplied that stall by
+  /// [maxGetAttempts]. The trade is that a request which burns the entire
+  /// budget in one attempt is not retried; the fast failures a flaky link
+  /// actually produces — reset sockets, refused connections, 5xx — leave
+  /// almost the whole budget intact and still get every attempt.
+  Future<http.Response> _get(Uri uri) async {
+    final elapsed = Stopwatch()..start();
+    Duration remaining() => _timeout - elapsed.elapsed;
+
+    var attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        final response = await _httpClient
+            .get(
+              uri,
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'OpenVine-Mobile/1.0',
+              },
+            )
+            .timeout(remaining());
+
+        if (_canRetry(attempt, remaining()) &&
+            _isRetryableStatus(response.statusCode)) {
+          await _awaitRetryDelay(attempt, remaining());
+          continue;
+        }
+        return response;
+      } on Object {
+        // Nothing above constructs a FunnelcakeException, so any throw here
+        // is transport-level and worth another attempt.
+        if (!_canRetry(attempt, remaining())) rethrow;
+        await _awaitRetryDelay(attempt, remaining());
+      }
+    }
+  }
+
+  /// Whether another GET attempt is allowed after [attempt] failed, with
+  /// [remaining] left of the call's timeout budget.
+  bool _canRetry(int attempt, Duration remaining) =>
+      attempt < maxGetAttempts && remaining > Duration.zero;
+
+  /// Whether [statusCode] represents a failure the server may recover from.
+  bool _isRetryableStatus(int statusCode) =>
+      statusCode == 429 || (statusCode >= 500 && statusCode < 600);
+
+  /// Waits out the backoff for [attempt], using full jitter so clients that
+  /// lost the same flaky link do not retry in lockstep when it returns.
+  ///
+  /// Never waits longer than [remaining], so backoff cannot overrun the
+  /// call's timeout budget on its own.
+  Future<void> _awaitRetryDelay(int attempt, Duration remaining) async {
+    if (_retryBaseDelay == Duration.zero) return;
+    final exponential = _retryBaseDelay.inMilliseconds * (1 << (attempt - 1));
+    final capped = math.min(
+      math.min(exponential, _maxRetryDelay.inMilliseconds),
+      remaining.inMilliseconds,
+    );
+    if (capped <= 0) return;
+    await Future<void>.delayed(
+      Duration(milliseconds: _retryJitter.nextInt(capped + 1)),
+    );
   }
 
   Future<http.Response> _post(Uri uri, {required Object body}) {

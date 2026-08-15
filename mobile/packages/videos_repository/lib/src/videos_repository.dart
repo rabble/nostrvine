@@ -2357,18 +2357,27 @@ class VideosRepository {
   ///    drops backend-leaked p-tagged collaborator events
   ///    (`v.pubkey != authorPubkey`); merges with [relaySeed] under the #3384
   ///    cross-source max policy; caches the initial page.
-  /// 3. When Funnelcake is unavailable (or throws [FunnelcakeException]),
-  ///    returns the [relaySeed] alone — the relay/realtime source is owned by
-  ///    the caller (the profile cubit, over `VideoEventService`); this package
-  ///    stays Flutter-free and does not query relays here.
+  /// 3. When Funnelcake is not configured, or throws [FunnelcakeException]
+  ///    while [relaySeed] is non-empty, returns the [relaySeed] alone — the
+  ///    relay/realtime source is owned by the caller (the profile cubit, over
+  ///    `VideoEventService`); this package stays Flutter-free and does not
+  ///    query relays here.
   ///
   /// [relaySeed] is the caller's current relay snapshot for the author, merged
   /// as the cross-source "primary" set. Pass `const []` for load-more pages
   /// (the caller accumulates new pages into its existing list via
   /// [mergeProfileFeedVideoLists]).
   ///
-  /// Returned videos are **unfiltered** (see [AuthorFeedResult]). Throws
-  /// non-[FunnelcakeException] errors to the caller.
+  /// Returned videos are **unfiltered** (see [AuthorFeedResult]).
+  ///
+  /// Throws:
+  ///
+  /// * [FunnelcakeException] when the API call fails and [relaySeed] is empty,
+  ///   so there is nothing to serve instead. An empty result here would be
+  ///   indistinguishable from an author who genuinely has no videos, and the
+  ///   profile would render "No videos yet" for a network failure. Load-more
+  ///   pages pass no seed, so they always surface the failure.
+  /// * any non-[FunnelcakeException] error, unchanged.
   Future<AuthorFeedResult> getAuthorFeed({
     required String authorPubkey,
     int? offset,
@@ -2419,7 +2428,12 @@ class VideosRepository {
         }
         return result;
       } on FunnelcakeException {
-        // Fall through to the relay seed.
+        // The client already exhausted its retry budget, so this means the
+        // API was unreachable — not that the author has no videos. Serving an
+        // empty result here is indistinguishable from an empty account, and
+        // the profile renders "No videos yet" for a network failure. Fall
+        // through only when the relay seed can still show something.
+        if (relaySeed.isEmpty) rethrow;
       }
     }
 
