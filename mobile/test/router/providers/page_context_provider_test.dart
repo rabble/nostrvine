@@ -28,7 +28,7 @@ void main() {
       );
     });
 
-    test('is false on someone else\'s profile', () {
+    test("is false on someone else's profile", () {
       expect(
         isOwnProfileLocation(RoutePaths.profileForNpub(_otherNpub), _npub),
         isFalse,

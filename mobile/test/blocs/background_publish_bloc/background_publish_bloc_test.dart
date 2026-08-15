@@ -176,12 +176,20 @@ void main() {
           },
         );
 
+        // Its own mock rather than the group's shared `draft`: mocktail
+        // stubs persist for the mock's lifetime, so stubbing a thumbnail on
+        // the shared instance would leak into every later test in the group.
+        late _MockVineDraft thumbedDraft;
+
         blocTest<BackgroundPublishBloc, BackgroundPublishState>(
           'carries the published d tag and local thumbnail so the '
           'confirmation can link to and preview the video',
           setUp: () {
+            thumbedDraft = _MockVineDraft();
+            when(() => thumbedDraft.id).thenReturn(draftId);
+            when(() => thumbedDraft.sourceDraftId).thenReturn(null);
             when(
-              () => draft.coverThumbnailPath,
+              () => thumbedDraft.coverThumbnailPath,
             ).thenReturn('/local/thumb.jpg');
           },
           build: () => BackgroundPublishBloc(
@@ -190,7 +198,7 @@ void main() {
           ),
           act: (bloc) => bloc.add(
             BackgroundPublishRequested(
-              draft: draft,
+              draft: thumbedDraft,
               publishmentProcess: Future.value(
                 const PublishSuccess(stableId: 'published-d-tag'),
               ),
