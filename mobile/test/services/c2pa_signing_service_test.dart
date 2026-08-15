@@ -180,28 +180,28 @@ void main() {
     });
 
     group('signVideo', () {
-      test('replaces the original file in place and removes the replacement '
-          'backup when signing succeeds', () async {
-        final video = writeFile('video.mp4', const [0, 1, 2, 3]);
-        final service = C2paSigningService(
-          c2pa: _WritingC2pa(const [7, 8, 9, 10, 11]),
-        );
+      test(
+        'replaces the original in place and leaves nothing else behind',
+        () async {
+          final video = writeFile('video.mp4', const [0, 1, 2, 3]);
+          final service = C2paSigningService(
+            c2pa: _WritingC2pa(const [7, 8, 9, 10, 11]),
+          );
 
-        final result = await service.signVideo(videoPath: video.path);
+          final result = await service.signVideo(videoPath: video.path);
 
-        expect(result.success, isTrue);
-        expect(result.signedFilePath, video.path);
-        expect(video.readAsBytesSync(), equals([7, 8, 9, 10, 11]));
-        expect(
-          tempDir.listSync().whereType<File>().map(
-            (file) => file.uri.pathSegments.last,
-          ),
-          allOf(
-            isNot(contains('video.mp4.old')),
-            isNot(contains(startsWith('video.mp4.c2pa-replace-'))),
-          ),
-        );
-      });
+          expect(result.success, isTrue);
+          expect(result.signedFilePath, video.path);
+          expect(video.readAsBytesSync(), equals([7, 8, 9, 10, 11]));
+          // No `.old` original, no orphaned `c2pa_signed_*` temp file.
+          expect(
+            tempDir.listSync().whereType<File>().map(
+              (file) => file.uri.pathSegments.last,
+            ),
+            equals(['video.mp4']),
+          );
+        },
+      );
     });
 
     group('resignDerived', () {
