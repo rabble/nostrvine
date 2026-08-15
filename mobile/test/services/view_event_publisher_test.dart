@@ -407,6 +407,49 @@ void main() {
       );
 
       test(
+        'still reports a missing d tag while the signer warms up',
+        () async {
+          final drops =
+              <({ViewEventDropReason reason, String videoId, String method})>[];
+          publisher = ViewEventPublisher(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            onDrop:
+                (reason, {required String videoId, required String method}) {
+                  drops.add((reason: reason, videoId: videoId, method: method));
+                },
+          );
+          when(() => mockAuth.canPublishNostrWritesNow).thenReturn(false);
+
+          final result = await publisher.publishViewEvent(
+            video: createTestVideoEvent(
+              id: 'addressable_video_without_d',
+              pubkey: creatorPubkey,
+              clearAddressableDTag: true,
+              eventKind: NIP71VideoKinds.addressableShortVideo,
+            ),
+            startSeconds: 0,
+            endSeconds: 5,
+          );
+
+          // The readiness gate must not mask the permanent defect. A queued
+          // row with no d tag is deleted by ViewEventRetryService whatever the
+          // drop reason, and the first sweep runs on foreground — inside the
+          // cold-start warm-up window — so a readiness-first ordering would
+          // bin every such row without ever reporting the invariant.
+          expect(result, isFalse);
+          expect(drops, [
+            (
+              reason: ViewEventDropReason.missingAddressableDTag,
+              videoId: 'addressable_video_without_d',
+              method: 'publishViewEvent',
+            ),
+          ]);
+          expect(drops.single.reason.isStructural, isTrue);
+        },
+      );
+
+      test(
         'still reports signingFailed when a ready signer returns null',
         () async {
           final drops =

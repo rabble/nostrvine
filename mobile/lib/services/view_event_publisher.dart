@@ -96,20 +96,25 @@ class ViewEventPublisher {
       return _drop(ViewEventDropReason.notAuthenticated, video.id, method);
     }
 
-    // Explicit publish-readiness gate. `isAuthenticated` only says the pubkey
-    // is known: a Keycast identity with no local key is authenticated well
-    // before its signer works, and signing in that window returns null, which
-    // used to be filed as a structural `signingFailed` invariant (#7505).
-    // Sampled at the moment of use, per `canPublishNostrWritesNow`'s contract.
-    if (!_authService.canPublishNostrWritesNow) {
-      return _drop(ViewEventDropReason.signerNotReady, video.id, method);
-    }
-
     try {
       // View events require an addressable video reference.
       final aTag = video.addressableId;
       if (aTag == null) {
         return _drop(_missingAddressableReason(video), video.id, method);
+      }
+
+      // Explicit publish-readiness gate. `isAuthenticated` only says the
+      // pubkey is known: a Keycast identity with no local key is authenticated
+      // well before its signer works, and signing in that window returns null,
+      // which used to be filed as a structural `signingFailed` invariant
+      // (#7505). Sampled at the moment of use, per the getter's contract.
+      //
+      // Deliberately below the addressable check: a missing `d` tag is a
+      // permanent defect, and `ViewEventRetryService` deletes those rows
+      // whatever the drop reason, so gating first would bin the evidence
+      // before it was ever reported.
+      if (!_authService.canPublishNostrWritesNow) {
+        return _drop(ViewEventDropReason.signerNotReady, video.id, method);
       }
 
       // Get relay hint
