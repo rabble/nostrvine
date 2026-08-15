@@ -634,7 +634,7 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                         style: VineTheme.labelSmallFont(
                           color: reuseAllowed
                               ? VineTheme.vineGreen
-                              : VineTheme.onSurfaceVariant,
+                              : context.vineColors.onSurfaceVariant,
                         ),
                       ),
                     if (sound.publicTags.isNotEmpty)
@@ -646,7 +646,7 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                             Text(
                               '#$tag',
                               style: VineTheme.labelSmallFont(
-                                color: VineTheme.onSurfaceVariant,
+                                color: context.vineColors.onSurfaceVariant,
                               ),
                             ),
                         ],

@@ -543,7 +543,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                           ),
                           child: const Icon(
                             Icons.grid_view,
-                            color: VineTheme.primaryText,
+                            color: VineTheme.whiteText,
                             size: 20,
                           ),
                         ),
@@ -563,8 +563,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                           children: [
                             Text(
                               userList.name,
-                              style: TextStyle(
-                                color: context.vineColors.primaryText,
+                              style: const TextStyle(
+                                color: VineTheme.whiteText,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -574,8 +574,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                             if (userList.description != null)
                               Text(
                                 userList.description!,
-                                style: TextStyle(
-                                  color: context.vineColors.secondaryText,
+                                style: const TextStyle(
+                                  color: VineTheme.secondaryText,
                                   fontSize: 12,
                                 ),
                                 maxLines: 1,
@@ -597,7 +597,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                         child: Text(
                           '${_activeVideoIndex! + 1}/${videos.length}',
                           style: const TextStyle(
-                            color: VineTheme.primaryText,
+                            color: VineTheme.whiteText,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),

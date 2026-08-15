@@ -631,9 +631,9 @@ class _CloseButton extends StatelessWidget {
             color: context.vineColors.surfaceContainer,
             shape: BoxShape.circle,
           ),
-          child: const DivineIcon(
+          child: DivineIcon(
             icon: DivineIconName.x,
-            color: VineTheme.vineGreenLight,
+            color: context.vineColors.onIconButton,
             size: 20,
           ),
         ),

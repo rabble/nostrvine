@@ -69,7 +69,7 @@ class SavedSoundCard extends StatelessWidget {
       container: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: VineTheme.cardBackground,
+          color: context.vineColors.card,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Material(
@@ -180,15 +180,15 @@ class _SavedSoundThumbnailFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox.square(
-      key: Key('saved_sound_thumbnail_fallback'),
+    return SizedBox.square(
+      key: const Key('saved_sound_thumbnail_fallback'),
       dimension: _thumbnailSize,
       child: ColoredBox(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         child: Center(
           child: DivineIcon(
             icon: DivineIconName.waveform,
-            color: VineTheme.onSurfaceVariant,
+            color: context.vineColors.onSurfaceVariant,
           ),
         ),
       ),
@@ -215,14 +215,16 @@ class _SavedSoundText extends StatelessWidget {
           displayTitle,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+          style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
         ),
         if (secondaryTitle != null && secondaryTitle != displayTitle)
           Text(
             secondaryTitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         if (source?.creatorName case final creator?)
           Text(
@@ -234,7 +236,9 @@ class _SavedSoundText extends StatelessWidget {
             description,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         if (source?.transcript case final transcript?) ...[
           const SizedBox(height: 4),
@@ -243,7 +247,9 @@ class _SavedSoundText extends StatelessWidget {
             key: const Key('saved_sound_transcript'),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ],
       ],
@@ -299,7 +305,7 @@ class _WaveformBars extends StatelessWidget {
           leftChannel: Float32List.fromList(sound.waveformSamples),
           progress: progress,
           activeColor: VineTheme.vineGreen,
-          inactiveColor: VineTheme.onSurfaceVariant,
+          inactiveColor: context.vineColors.onSurfaceVariant,
           audioDuration: duration,
           maxDuration: duration,
         ),
@@ -340,7 +346,7 @@ class _SavedSoundTag extends StatelessWidget {
       decoration: BoxDecoration(
         color: isPersonal
             ? VineTheme.vineGreen.withValues(alpha: 0.16)
-            : VineTheme.surfaceContainer,
+            : context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
@@ -350,7 +356,7 @@ class _SavedSoundTag extends StatelessWidget {
           style: VineTheme.labelSmallFont(
             color: isPersonal
                 ? VineTheme.vineGreen
-                : VineTheme.onSurfaceVariant,
+                : context.vineColors.onSurfaceVariant,
           ),
         ),
       ),

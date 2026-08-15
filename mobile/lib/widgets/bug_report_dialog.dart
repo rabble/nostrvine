@@ -191,7 +191,7 @@ class _BugReportView extends StatelessWidget {
               ),
             ),
           ),
-          const Divider(height: 2, color: VineTheme.outlineDisabled),
+          Divider(height: 2, color: context.vineColors.outlineDisabled),
           SafeArea(
             top: false,
             child: BugReportActions(

@@ -8,84 +8,142 @@ import 'package:openvine/notifications/widgets/notification_type_icon_spec.dart'
 
 void main() {
   group('notificationTypeIconSpec', () {
+    const dark = VineTheme.darkColors;
+
     test('like uses heart on accentPink', () {
-      final spec = notificationTypeIconSpec(NotificationKind.like);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.like,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.heart));
-      expect(spec.background, equals(VineTheme.accentPinkBackground));
-      expect(spec.foreground, equals(VineTheme.accentPink));
+      expect(spec.background, equals(dark.accentChipPink.container));
+      expect(spec.foreground, equals(dark.accentChipPink.onContainer));
     });
 
     test('likeComment shares the heart accent with like', () {
-      final spec = notificationTypeIconSpec(NotificationKind.likeComment);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.likeComment,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.heart));
-      expect(spec.background, equals(VineTheme.accentPinkBackground));
-      expect(spec.foreground, equals(VineTheme.accentPink));
+      expect(spec.background, equals(dark.accentChipPink.container));
+      expect(spec.foreground, equals(dark.accentChipPink.onContainer));
     });
 
     test('follow uses user on accentLime', () {
-      final spec = notificationTypeIconSpec(NotificationKind.follow);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.follow,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.user));
-      expect(spec.background, equals(VineTheme.accentLimeBackground));
-      expect(spec.foreground, equals(VineTheme.accentLime));
+      expect(spec.background, equals(dark.accentChipLime.container));
+      expect(spec.foreground, equals(dark.accentChipLime.onContainer));
     });
 
     test('comment uses chat on accentViolet', () {
-      final spec = notificationTypeIconSpec(NotificationKind.comment);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.comment,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.chat));
-      expect(spec.background, equals(VineTheme.accentVioletBackground));
-      expect(spec.foreground, equals(VineTheme.accentViolet));
+      expect(spec.background, equals(dark.accentChipViolet.container));
+      expect(spec.foreground, equals(dark.accentChipViolet.onContainer));
     });
 
     test('reply shares the chat accent with comment', () {
-      final spec = notificationTypeIconSpec(NotificationKind.reply);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.reply,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.chat));
-      expect(spec.background, equals(VineTheme.accentVioletBackground));
-      expect(spec.foreground, equals(VineTheme.accentViolet));
+      expect(spec.background, equals(dark.accentChipViolet.container));
+      expect(spec.foreground, equals(dark.accentChipViolet.onContainer));
     });
 
     test('mention shares the chat accent with comment', () {
-      final spec = notificationTypeIconSpec(NotificationKind.mention);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.mention,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.chat));
-      expect(spec.background, equals(VineTheme.accentVioletBackground));
-      expect(spec.foreground, equals(VineTheme.accentViolet));
+      expect(spec.background, equals(dark.accentChipViolet.container));
+      expect(spec.foreground, equals(dark.accentChipViolet.onContainer));
     });
 
     test('video-sourced mention uses video camera on mention accent', () {
       final spec = notificationTypeIconSpec(
         NotificationKind.mention,
+        colors: dark,
         isVideoSourcedMention: true,
       );
       expect(spec.icon, equals(DivineIconName.videoCamera));
-      expect(spec.background, equals(VineTheme.accentVioletBackground));
-      expect(spec.foreground, equals(VineTheme.accentViolet));
+      expect(spec.background, equals(dark.accentChipViolet.container));
+      expect(spec.foreground, equals(dark.accentChipViolet.onContainer));
     });
 
     test('repost uses repeat on accentYellow', () {
-      final spec = notificationTypeIconSpec(NotificationKind.repost);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.repost,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.repeat));
-      expect(spec.background, equals(VineTheme.accentYellowBackground));
-      expect(spec.foreground, equals(VineTheme.accentYellow));
+      expect(spec.background, equals(dark.accentChipYellow.container));
+      expect(spec.foreground, equals(dark.accentChipYellow.onContainer));
     });
 
     test('newPost uses bellSimple on accentBlue', () {
-      final spec = notificationTypeIconSpec(NotificationKind.newPost);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.newPost,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.bellSimple));
-      expect(spec.background, equals(VineTheme.accentBlueBackground));
-      expect(spec.foreground, equals(VineTheme.accentBlue));
+      expect(spec.background, equals(dark.accentChipBlue.container));
+      expect(spec.foreground, equals(dark.accentChipBlue.onContainer));
     });
 
     test('listAdd uses listPlus on accentYellow', () {
-      final spec = notificationTypeIconSpec(NotificationKind.listAdd);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.listAdd,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.listPlus));
-      expect(spec.background, equals(VineTheme.accentYellowBackground));
-      expect(spec.foreground, equals(VineTheme.accentYellow));
+      expect(spec.background, equals(dark.accentChipYellow.container));
+      expect(spec.foreground, equals(dark.accentChipYellow.onContainer));
     });
 
     test('system uses logo on the primary accent', () {
-      final spec = notificationTypeIconSpec(NotificationKind.system);
+      final spec = notificationTypeIconSpec(
+        NotificationKind.system,
+        colors: dark,
+      );
       expect(spec.icon, equals(DivineIconName.logo));
       expect(spec.background, equals(VineTheme.onPrimaryButton));
       expect(spec.foreground, equals(VineTheme.primary));
+    });
+
+    test('the dark palette keeps the pre-light-mode accent constants', () {
+      final spec = notificationTypeIconSpec(
+        NotificationKind.like,
+        colors: dark,
+      );
+      expect(spec.background, equals(VineTheme.accentPinkBackground));
+      expect(spec.foreground, equals(VineTheme.accentPink));
+    });
+
+    test('accent chips follow the light palette', () {
+      final spec = notificationTypeIconSpec(
+        NotificationKind.follow,
+        colors: VineTheme.lightColors,
+      );
+      expect(
+        spec.background,
+        equals(VineTheme.lightColors.accentChipLime.container),
+      );
+      expect(
+        spec.foreground,
+        equals(VineTheme.lightColors.accentChipLime.onContainer),
+      );
+      expect(spec.background, isNot(VineTheme.accentLimeBackground));
     });
 
     test('every NotificationKind is covered by the switch', () {
@@ -93,7 +151,10 @@ void main() {
         // Throws if any enum case were missing — the switch is exhaustive
         // by construction, but this ensures the contract still holds when
         // a future enum case is added without updating the helper.
-        expect(notificationTypeIconSpec(kind), isA<NotificationTypeIconSpec>());
+        expect(
+          notificationTypeIconSpec(kind, colors: dark),
+          isA<NotificationTypeIconSpec>(),
+        );
       }
     });
   });

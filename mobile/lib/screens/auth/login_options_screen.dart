@@ -357,9 +357,9 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                               context,
                               showNip07: isNip07Available,
                             ),
-                      icon: const DivineIcon(
+                      icon: DivineIcon(
                         icon: DivineIconName.info,
-                        color: VineTheme.vineGreenLight,
+                        color: context.vineColors.onIconButton,
                       ),
                     ),
                   ],

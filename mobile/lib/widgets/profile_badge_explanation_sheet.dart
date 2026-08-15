@@ -49,7 +49,7 @@ class _ProfileBadgeExplanationContent extends StatelessWidget {
                 child: Text(
                   type.body(l10n),
                   style: VineTheme.bodyMediumFont(
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                 ),
               ),

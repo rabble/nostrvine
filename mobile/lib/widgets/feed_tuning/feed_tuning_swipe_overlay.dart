@@ -320,7 +320,9 @@ class _TuningIndicator extends StatelessWidget {
             scale: 0.8 + 0.2 * progress,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: VineTheme.surfaceContainerHigh.withValues(alpha: 0.9),
+                color: context.vineColors.surfaceContainerHigh.withValues(
+                  alpha: 0.9,
+                ),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: color, width: 2),
               ),

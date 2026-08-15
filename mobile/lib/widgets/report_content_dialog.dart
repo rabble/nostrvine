@@ -769,7 +769,9 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
         if (_truncated)
           Text(
             context.l10n.supportFieldLimitReached,
-            style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.labelSmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
       ],
     );

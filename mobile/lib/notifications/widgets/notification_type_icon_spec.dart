@@ -24,50 +24,54 @@ class NotificationTypeIconSpec {
 }
 
 /// Returns the spec for [type] used by both row widgets.
+///
+/// [colors] is the resolved palette of the active appearance mode, so the
+/// accent chips follow light mode instead of staying on the dark tints.
 NotificationTypeIconSpec notificationTypeIconSpec(
   NotificationKind type, {
+  required VineThemeColors colors,
   bool isVideoSourcedMention = false,
 }) {
   if (type == NotificationKind.mention && isVideoSourcedMention) {
-    return const NotificationTypeIconSpec(
+    return NotificationTypeIconSpec(
       icon: DivineIconName.videoCamera,
-      background: VineTheme.accentVioletBackground,
-      foreground: VineTheme.accentViolet,
+      background: colors.accentChipViolet.container,
+      foreground: colors.accentChipViolet.onContainer,
     );
   }
   return switch (type) {
     NotificationKind.like ||
-    NotificationKind.likeComment => const NotificationTypeIconSpec(
+    NotificationKind.likeComment => NotificationTypeIconSpec(
       icon: DivineIconName.heart,
-      background: VineTheme.accentPinkBackground,
-      foreground: VineTheme.accentPink,
+      background: colors.accentChipPink.container,
+      foreground: colors.accentChipPink.onContainer,
     ),
-    NotificationKind.follow => const NotificationTypeIconSpec(
+    NotificationKind.follow => NotificationTypeIconSpec(
       icon: DivineIconName.user,
-      background: VineTheme.accentLimeBackground,
-      foreground: VineTheme.accentLime,
+      background: colors.accentChipLime.container,
+      foreground: colors.accentChipLime.onContainer,
     ),
     NotificationKind.comment ||
     NotificationKind.reply ||
-    NotificationKind.mention => const NotificationTypeIconSpec(
+    NotificationKind.mention => NotificationTypeIconSpec(
       icon: DivineIconName.chat,
-      background: VineTheme.accentVioletBackground,
-      foreground: VineTheme.accentViolet,
+      background: colors.accentChipViolet.container,
+      foreground: colors.accentChipViolet.onContainer,
     ),
-    NotificationKind.repost => const NotificationTypeIconSpec(
+    NotificationKind.repost => NotificationTypeIconSpec(
       icon: DivineIconName.repeat,
-      background: VineTheme.accentYellowBackground,
-      foreground: VineTheme.accentYellow,
+      background: colors.accentChipYellow.container,
+      foreground: colors.accentChipYellow.onContainer,
     ),
-    NotificationKind.newPost => const NotificationTypeIconSpec(
+    NotificationKind.newPost => NotificationTypeIconSpec(
       icon: DivineIconName.bellSimple,
-      background: VineTheme.accentBlueBackground,
-      foreground: VineTheme.accentBlue,
+      background: colors.accentChipBlue.container,
+      foreground: colors.accentChipBlue.onContainer,
     ),
-    NotificationKind.listAdd => const NotificationTypeIconSpec(
+    NotificationKind.listAdd => NotificationTypeIconSpec(
       icon: DivineIconName.listPlus,
-      background: VineTheme.accentYellowBackground,
-      foreground: VineTheme.accentYellow,
+      background: colors.accentChipYellow.container,
+      foreground: colors.accentChipYellow.onContainer,
     ),
     NotificationKind.system => const NotificationTypeIconSpec(
       icon: DivineIconName.logo,

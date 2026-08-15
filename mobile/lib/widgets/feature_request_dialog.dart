@@ -160,7 +160,7 @@ class _FeatureRequestView extends StatelessWidget {
               ),
             ),
           ),
-          const Divider(height: 2, color: VineTheme.outlineDisabled),
+          Divider(height: 2, color: context.vineColors.outlineDisabled),
           SafeArea(
             top: false,
             child: FeatureRequestActions(

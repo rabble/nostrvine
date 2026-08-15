@@ -450,11 +450,12 @@ class _MessageTextState extends ConsumerState<_MessageText> {
       decoration: TextDecoration.underline,
       decorationColor: linkColor,
     );
-    // Translucent white overlay reads on both bubble colors without
-    // needing a per-side palette swap.
-    final codeBackground = VineTheme.whiteText.withValues(
-      alpha: widget.isSent ? 0.18 : 0.10,
-    );
+    // The sent bubble keeps the fixed green, so a translucent white wash
+    // reads there; the received bubble follows the palette and takes an
+    // on-surface wash so the code chip stays visible in both modes.
+    final codeBackground = widget.isSent
+        ? VineTheme.whiteText.withValues(alpha: 0.18)
+        : context.vineColors.onSurface.withValues(alpha: 0.10);
     final codeStyle = VineTheme.codeFont(color: defaultStyle.color);
 
     final ast = const InlineMarkdownParser().parse(widget.message);
