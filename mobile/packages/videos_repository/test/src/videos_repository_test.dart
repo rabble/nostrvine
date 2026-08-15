@@ -1211,19 +1211,16 @@ void main() {
             ),
           ).thenAnswer((invocation) async {
             final limit = invocation.namedArguments[#limit] as int;
-            return _recentPage(
-              [
-                for (var i = 0; i < limit; i++)
-                  _createVideoStats(
-                    id: 'v$i',
-                    pubkey: 'p$i',
-                    dTag: 'd$i',
-                    videoUrl: 'https://example.com/v$i.mp4',
-                    createdAt: 1704060000 - i,
-                  ),
-              ],
-              hasMore: false,
-            );
+            return _recentPage([
+              for (var i = 0; i < limit; i++)
+                _createVideoStats(
+                  id: 'v$i',
+                  pubkey: 'p$i',
+                  dTag: 'd$i',
+                  videoUrl: 'https://example.com/v$i.mp4',
+                  createdAt: 1704060000 - i,
+                ),
+            ], hasMore: false);
           });
 
           final page = await repoWithCache.getNewVideos(limit: 3);
@@ -10085,6 +10082,63 @@ void main() {
         mockFunnelcakeClient = MockFunnelcakeApiClient();
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
       });
+
+      const unreachableRouteId =
+          'a695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+      const absentRouteId =
+          'b695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+
+      test(
+        'rethrows when Funnelcake was unreachable and no relay answered',
+        () async {
+          // Returning null here renders "Video not found - it could be gone,
+          // out of reach, or hidden by your settings" for a video that exists
+          // and that the API serves fine. A failed lookup must stay
+          // distinguishable from a confirmed absence.
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getVideoEvent(any()),
+          ).thenThrow(const FunnelcakeTimeoutException('https://example.com'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => const <Event>[]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await expectLater(
+            repo.fetchVideoWithStatsForRouteId(unreachableRouteId),
+            throwsA(isA<FunnelcakeException>()),
+          );
+        },
+      );
+
+      test(
+        'returns null when Funnelcake confirms absence and no relay answered',
+        () async {
+          // A 404 surfaces as null from getVideoEvent. That is a real answer,
+          // so "not found" is the honest result.
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getVideoEvent(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => const <Event>[]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          expect(
+            await repo.fetchVideoWithStatsForRouteId(absentRouteId),
+            isNull,
+          );
+        },
+      );
 
       test('resolves note1 route IDs via event ID lookup', () async {
         const eventId =

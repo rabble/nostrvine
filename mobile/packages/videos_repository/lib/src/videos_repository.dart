@@ -2652,6 +2652,7 @@ class VideosRepository {
     final cached = await _fetchRouteVideoFromLocalCache(candidate);
     if (cached != null) return cached;
 
+    FunnelcakeException? apiFailure;
     final funnelcakeRouteId = candidate.stableId ?? candidate.eventId;
     if (funnelcakeRouteId != null) {
       try {
@@ -2669,6 +2670,7 @@ class VideosRepository {
           error: e,
           stackTrace: stackTrace,
         );
+        apiFailure = e;
       }
     }
 
@@ -2692,6 +2694,12 @@ class VideosRepository {
       );
       if (byStableId != null) return byStableId;
     }
+
+    // Nothing answered. When the API was unreachable we cannot claim the video
+    // is missing: null renders a permanent "could be gone, out of reach, or
+    // hidden by your settings" for a video the API serves fine once the
+    // connection recovers. A confirmed 404 still returns null below.
+    if (apiFailure != null) throw apiFailure;
 
     return null;
   }
