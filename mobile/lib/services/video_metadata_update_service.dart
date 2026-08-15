@@ -16,6 +16,7 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_event_tag_source.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/inspired_by_tags.dart';
+import 'package:openvine/utils/nostr_replacement_timestamp.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Result returned by [VideoMetadataUpdateService.updateVideo].
@@ -407,13 +408,13 @@ class VideoMetadataUpdateService {
         content = content.isEmpty ? ibText.trim() : '$content$ibText';
       }
 
-      // Use original created_at + 1 so relays treat this as a replacement
-      // while preserving the video's chronological position in feeds.
+      // Use raw Nostr created_at, not the stable NIP-71 published_at value
+      // exposed through VideoEvent.createdAt, so relays accept replacements.
       final event = await _authService.createAndSignEvent(
         kind: NIP71VideoKinds.addressableShortVideo,
         content: content,
         tags: tags,
-        createdAt: originalVideo.createdAt + 1,
+        createdAt: nextReplacementCreatedAt(originalVideo),
       );
 
       if (event == null) {

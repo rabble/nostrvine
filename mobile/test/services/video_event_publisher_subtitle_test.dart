@@ -88,9 +88,11 @@ void main() {
       ['d', 'test-vine-id'],
       ['imeta', 'url https://cdn.example.com/video.mp4', 'm video/mp4'],
       ['title', 'Test Video'],
+      ['published_at', '1700000000'],
       ['t', 'test'],
       Nip89ClientTag.tag,
     ];
+    const rawEventCreatedAt = 4102444800;
 
     final existingEvent = VideoEvent(
       id: 'b' * 64,
@@ -101,6 +103,7 @@ void main() {
       title: 'Test Video',
       vineId: 'test-vine-id',
       nostrEventTags: existingTags,
+      eventCreatedAt: rawEventCreatedAt,
     );
 
     final textTrackRef = '34236:$testPubkey:subtitle-event-id';
@@ -163,7 +166,7 @@ void main() {
             kind: NIP71VideoKinds.getPreferredAddressableKind(),
             content: existingEvent.content,
             tags: any(named: 'tags'),
-            createdAt: existingEvent.createdAt + 1,
+            createdAt: rawEventCreatedAt + 1,
           ),
         ).called(1);
 
@@ -277,7 +280,7 @@ void main() {
           kind: 34236,
           content: any(named: 'content'),
           tags: any(named: 'tags'),
-          createdAt: existingEvent.createdAt + 1,
+          createdAt: rawEventCreatedAt + 1,
         ),
       ).called(1);
     });

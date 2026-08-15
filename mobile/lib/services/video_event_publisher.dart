@@ -40,6 +40,7 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/inspired_by_tags.dart';
 import 'package:openvine/utils/log_tag_sanitizer.dart';
+import 'package:openvine/utils/nostr_replacement_timestamp.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -2041,7 +2042,7 @@ class VideoEventPublisher {
       kind: NIP71VideoKinds.getPreferredAddressableKind(),
       content: existingEvent.content,
       tags: tags,
-      createdAt: existingEvent.createdAt + 1,
+      createdAt: nextReplacementCreatedAt(existingEvent),
     );
 
     if (event == null) {
