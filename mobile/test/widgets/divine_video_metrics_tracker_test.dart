@@ -66,11 +66,20 @@ class _RecordingSeenVideosService extends SeenVideosService {
     int? loopCount,
     Duration? watchDuration,
   }) async {
+    // Mirrors SeenVideoMetrics.updateSession: one entry per video, and
+    // repeat calls accumulate onto it. Recording raw calls instead would
+    // make a per-segment flush look like a duplicate seen entry.
+    for (final record in records) {
+      if (record.videoId != videoId) continue;
+      record.loopCount += loopCount ?? 0;
+      record.watchDuration += watchDuration ?? Duration.zero;
+      return;
+    }
     records.add(
       _SeenVideoRecord(
         videoId: videoId,
-        loopCount: loopCount,
-        watchDuration: watchDuration,
+        loopCount: loopCount ?? 0,
+        watchDuration: watchDuration ?? Duration.zero,
       ),
     );
   }
@@ -105,15 +114,15 @@ class _TrackedAnalyticsEvent {
 }
 
 class _SeenVideoRecord {
-  const _SeenVideoRecord({
+  _SeenVideoRecord({
     required this.videoId,
     required this.loopCount,
     required this.watchDuration,
   });
 
   final String videoId;
-  final int? loopCount;
-  final Duration? watchDuration;
+  int loopCount;
+  Duration watchDuration;
 }
 
 void main() {
@@ -656,6 +665,81 @@ void main() {
         expect(starts, hasLength(2));
         // A new session means a new token, or the dedupe would swallow it.
         expect(starts[0].sessionToken, isNot(equals(starts[1].sessionToken)));
+
+        isActive.dispose();
+        isFeedVisible.dispose();
+        video.dispose();
+        await controller.close();
+      },
+    );
+
+    testWidgets(
+      'an interrupted session reports the same loops as an uninterrupted one',
+      (tester) async {
+        final isActive = ValueNotifier(true);
+        final isFeedVisible = ValueNotifier(true);
+        final video = ValueNotifier(_video);
+        final controller = _stubController(
+          isPlaying: true,
+          duration: const Duration(seconds: 6),
+        );
+
+        await tester.pumpWidget(
+          _buildTrackerHarness(
+            authService: authService,
+            analyticsService: analyticsService,
+            seenVideosService: seenVideosService,
+            controller: controller.controller,
+            video: video,
+            isActive: isActive,
+            isFeedVisible: isFeedVisible,
+            clock: () => now,
+          ),
+        );
+
+        Future<void> wrapOnce() async {
+          for (final position in const [
+            Duration(milliseconds: 5900),
+            Duration(milliseconds: 50),
+          ]) {
+            controller.setState(
+              DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                duration: const Duration(seconds: 6),
+                position: position,
+                isFirstFrameRendered: true,
+              ),
+            );
+            await tester.pump();
+          }
+        }
+
+        // 15s watched, two wrap-arounds seen.
+        now = now.add(const Duration(seconds: 15));
+        await wrapOnce();
+        await wrapOnce();
+
+        isFeedVisible.value = false;
+        await tester.pump();
+        isFeedVisible.value = true;
+        await tester.pump();
+
+        // 15s more, three further wrap-arounds.
+        now = now.add(const Duration(seconds: 15));
+        await wrapOnce();
+        await wrapOnce();
+        await wrapOnce();
+
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        final total = _viewEndEvents(
+          analyticsService,
+        ).fold<double>(0, (sum, event) => sum + (event.loopCount ?? 0));
+
+        // 30s of a 6s video is 5 loops however the session is split. Taking
+        // the larger of wraps and watch-ratio *per segment* instead of
+        // splitting the cumulative figure reports 2.5 + 3.0 = 5.5.
+        expect(total, closeTo(5, 0.001));
 
         isActive.dispose();
         isFeedVisible.dispose();

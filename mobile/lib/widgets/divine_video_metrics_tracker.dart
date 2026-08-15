@@ -82,7 +82,13 @@ class _DivineVideoMetricsTrackerState
   Duration _watchTotal = Duration.zero;
   Duration _watchFlushed = Duration.zero;
   double _wrapsTotal = 0;
-  double _wrapsFlushed = 0;
+
+  /// Cumulative loops already reported in an end segment, and the rounded
+  /// loop total already handed to [SeenVideosService]. Both are cumulative
+  /// so a segment reports the delta and the two never double-credit.
+  double _loopsFlushed = 0;
+  int _seenLoopsRecorded = 0;
+  Duration _seenWatchRecorded = Duration.zero;
 
   Duration? _lastPosition;
 
@@ -242,13 +248,6 @@ class _DivineVideoMetricsTrackerState
   /// without double-counting.
   void _flushSegment(VideoEvent video) {
     _closePlayInterval(widget._clock());
-    _recordImpression(video);
-
-    if (!_hasStartedPlayback) return;
-
-    final deltaWatch = _watchTotal - _watchFlushed;
-    final deltaWraps = _wrapsTotal - _wrapsFlushed;
-    if (deltaWatch <= Duration.zero && deltaWraps <= 0) return;
 
     Duration? totalDuration = _lastKnownDuration;
     if (totalDuration == null) {
@@ -259,59 +258,92 @@ class _DivineVideoMetricsTrackerState
       }
     }
 
-    // Fractional loops for the segment: the larger of counted wrap-arounds
-    // and the watch-time ratio, so a wrap transition missed across a flush
-    // seam does not lose the pass.
-    var fractionalLoops = deltaWraps;
-    if (totalDuration != null &&
-        totalDuration > Duration.zero &&
-        deltaWatch > Duration.zero) {
-      final ratio = deltaWatch.inMilliseconds / totalDuration.inMilliseconds;
-      if (ratio > fractionalLoops) fractionalLoops = ratio;
-    }
+    _recordSeen(video, totalDuration);
 
-    try {
-      _analyticsService.trackDetailedVideoViewWithUser(
-        video,
-        userId: _authService.currentPublicKeyHex,
-        source: 'mobile',
-        eventType: 'view_end',
-        watchDuration: deltaWatch,
-        totalDuration: totalDuration,
-        loopCount: fractionalLoops,
-        completedVideo:
-            fractionalLoops >= 1 ||
-            (totalDuration != null &&
-                totalDuration > Duration.zero &&
-                deltaWatch.inMilliseconds >=
-                    totalDuration.inMilliseconds * 0.9),
-        trafficSource: widget.trafficSource,
-        sourceDetail: widget.sourceDetail,
-      );
+    if (!_hasStartedPlayback) return;
 
-      _watchFlushed = _watchTotal;
-      _wrapsFlushed = _wrapsTotal;
-    } catch (e) {
-      Log.warning(
-        'Failed to send video end event: $e',
-        name: 'DivineVideoMetricsTracker',
-        category: LogCategory.video,
-      );
-    }
+    final deltaWatch = _watchTotal - _watchFlushed;
+    // Loops are derived from the session totals and only then split into a
+    // delta. Taking the per-segment max instead would double-credit at every
+    // flush seam: 30s of a 6s video split at 15s reports 2.5 + 3.0 = 5.5.
+    final cumulativeLoops = _cumulativeLoops(totalDuration);
+    final fractionalLoops = cumulativeLoops - _loopsFlushed;
+    if (deltaWatch <= Duration.zero && fractionalLoops <= 0) return;
+
+    unawaited(
+      _analyticsService
+          .trackDetailedVideoViewWithUser(
+            video,
+            userId: _authService.currentPublicKeyHex,
+            source: 'mobile',
+            eventType: 'view_end',
+            watchDuration: deltaWatch,
+            totalDuration: totalDuration,
+            loopCount: fractionalLoops,
+            completedVideo:
+                fractionalLoops >= 1 ||
+                (totalDuration != null &&
+                    totalDuration > Duration.zero &&
+                    deltaWatch.inMilliseconds >=
+                        totalDuration.inMilliseconds * 0.9),
+            trafficSource: widget.trafficSource,
+            sourceDetail: widget.sourceDetail,
+          )
+          .catchError((Object e) {
+            Log.warning(
+              'Failed to send video end event: $e',
+              name: 'DivineVideoMetricsTracker',
+              category: LogCategory.video,
+            );
+          }),
+    );
+
+    _watchFlushed = _watchTotal;
+    _loopsFlushed = cumulativeLoops;
   }
 
-  void _recordImpression(VideoEvent video) {
-    if (_hasRecordedImpression) return;
+  /// Loops for the whole session so far: counted wrap-arounds, or the
+  /// watch-time ratio when that is larger, so a wrap missed across a flush
+  /// seam does not lose the pass.
+  double _cumulativeLoops(Duration? totalDuration) {
+    var loops = _wrapsTotal;
+    if (totalDuration != null && totalDuration > Duration.zero) {
+      final ratio = _watchTotal.inMilliseconds / totalDuration.inMilliseconds;
+      if (ratio > loops) loops = ratio;
+    }
+    return loops;
+  }
+
+  /// Records the seen impression and the watch/loop accrued since the last
+  /// record. [SeenVideosService.updateSession] accumulates, so every flush
+  /// must contribute its delta — recording only the first one would strand
+  /// everything watched after the first interruption.
+  void _recordSeen(VideoEvent video, Duration? totalDuration) {
     final mountedAt = _mountedAt;
     if (mountedAt == null) return;
     if (widget._clock().difference(mountedAt) <= Duration.zero) return;
 
+    final deltaWatch = _watchTotal - _seenWatchRecorded;
+    // Round the cumulative figure, not each delta, so repeated partial
+    // segments cannot each round down to zero and lose the pass.
+    final cumulativeSeenLoops = _cumulativeLoops(totalDuration).round();
+    final deltaLoops = cumulativeSeenLoops - _seenLoopsRecorded;
+
+    if (_hasRecordedImpression &&
+        deltaWatch <= Duration.zero &&
+        deltaLoops <= 0) {
+      return;
+    }
+
     _hasRecordedImpression = true;
+    _seenWatchRecorded = _watchTotal;
+    _seenLoopsRecorded = cumulativeSeenLoops;
+
     unawaited(
       _seenVideosService.recordVideoView(
         video.id,
-        loopCount: _wrapsTotal.round(),
-        watchDuration: _watchTotal,
+        loopCount: deltaLoops,
+        watchDuration: deltaWatch,
       ),
     );
   }
@@ -332,7 +364,9 @@ class _DivineVideoMetricsTrackerState
     _watchTotal = Duration.zero;
     _watchFlushed = Duration.zero;
     _wrapsTotal = 0;
-    _wrapsFlushed = 0;
+    _loopsFlushed = 0;
+    _seenLoopsRecorded = 0;
+    _seenWatchRecorded = Duration.zero;
     _lastPosition = null;
     _lastKnownDuration = null;
   }
