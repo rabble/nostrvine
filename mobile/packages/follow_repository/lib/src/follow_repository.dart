@@ -459,6 +459,7 @@ class FollowRepository {
       fetch: fetchMyFollowersSnapshot,
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
     );
   }
 
@@ -487,6 +488,7 @@ class FollowRepository {
       fetch: () => getOthersFollowing(_nostrClient.publicKey),
       fromJson: FollowingSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
     );
   }
 
