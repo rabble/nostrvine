@@ -2179,6 +2179,13 @@ class AppLocalizationsJa extends AppLocalizations {
       '公開するイベントに Divine のクライアントタグを含めて、他の Nostr アプリが正しく出典を示せるようにするよ。これがないと、送った報告はモデレーターが確認するときの重みが小さくなるよ。';
 
   @override
+  String get nostrSettingsMoveAccount => 'アカウントを移す';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'アーカイブをダウンロードして、投稿や動画を別のリレーまたはメディアサーバーへ移します。';
+
+  @override
   String get nostrSettingsRemoveKeys => 'このデバイスから鍵を削除';
 
   @override
@@ -9965,6 +9972,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => '審査ページを開く';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle => 'アカウントは持ち出せます';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Divine のアイデンティティは他のインフラでも引き続き使えます。アカウントを移すか、アーカイブをダウンロードしてください。';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'アカウントを移す';
 
   @override
   String get minorAccountReviewCheckAgain => 'もう一度確認';

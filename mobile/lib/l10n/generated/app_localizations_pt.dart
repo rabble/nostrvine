@@ -2332,6 +2332,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Inclua uma tag de cliente Divine nos eventos que você publica para que outros apps Nostr possam atribuí-los corretamente. Sem ela, as denúncias que você envia têm menos peso quando nossos moderadores as analisam.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Mover sua conta';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Baixe seu arquivo e mova suas publicações e vídeos para outro relay ou servidor de mídia.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Remover chaves do dispositivo';
 
   @override
@@ -10515,6 +10522,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'Abrir a página de análise';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Você pode levar sua conta com você';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Você ainda pode usar sua identidade Divine em outra infraestrutura. Mova sua conta ou baixe seu arquivo.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Mover sua conta';
 
   @override
   String get minorAccountReviewCheckAgain => 'Verificar de novo';

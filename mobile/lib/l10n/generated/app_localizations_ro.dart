@@ -2375,6 +2375,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Include o etichetă de client Divine în evenimentele pe care le publici, ca alte aplicații Nostr să le poată atribui corect. Fără ea, raportările pe care le trimiți cântăresc mai puțin când moderatorii noștri le analizează.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Mută-ți contul';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Descarcă-ți arhiva și mută postările și videoclipurile pe alt relay sau server media.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Elimină cheile de pe dispozitiv';
 
   @override
@@ -10664,6 +10671,17 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get minorAccountReviewOpenReviewPage =>
       'Deschide pagina de verificare';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Îți poți lua contul cu tine';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Îți poți folosi în continuare identitatea Divine pe altă infrastructură. Mută-ți contul sau descarcă-ți arhiva.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Mută-ți contul';
 
   @override
   String get minorAccountReviewCheckAgain => 'Verifică din nou';

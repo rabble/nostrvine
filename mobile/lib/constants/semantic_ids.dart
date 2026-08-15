@@ -111,6 +111,10 @@ abstract class SemanticIds {
   static const String settingsNostrRow = 'nostr_settings_tile';
   static const String settingsRemoveKeysRow = 'remove_keys_tile';
 
+  /// Account portability. The row leaves the app for the hosted Divine Exit
+  /// flow, so an E2E flow can only assert the handoff by addressing the row.
+  static const String settingsMoveAccountRow = 'move_account_tile';
+
   /// Search. The results screen has no tabs and its rows are keyed by
   /// pubkey, so E2E flows need an ordinal handle plus anchors for the
   /// chrome — otherwise they fall back to matching translated copy or

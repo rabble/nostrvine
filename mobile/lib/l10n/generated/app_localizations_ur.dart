@@ -2312,6 +2312,13 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ کے شائع کردہ ایونٹس پر Divine کلائنٹ ٹیگ شامل کریں تاکہ دیگر Nostr ایپس انہیں درست طریقے سے منسوب کر سکیں۔ اس کے بغیر، آپ کی بھیجی گئی رپورٹس ہمارے ماڈریٹرز کے جائزے میں کم وزن رکھتی ہیں۔';
 
   @override
+  String get nostrSettingsMoveAccount => 'اپنا اکاؤنٹ منتقل کریں';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'اپنا آرکائیو ڈاؤن لوڈ کریں اور اپنی پوسٹس اور ویڈیوز کو کسی اور ریلے یا میڈیا سرور پر منتقل کریں۔';
+
+  @override
   String get nostrSettingsRemoveKeys => 'اس اکاؤنٹ کو اس ڈیوائس سے ہٹائیں';
 
   @override
@@ -10438,6 +10445,17 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'جائزہ صفحہ کھولیں';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'آپ اپنا اکاؤنٹ ساتھ لے جا سکتے ہیں';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'آپ اپنی Divine شناخت دوسرے انفراسٹرکچر پر بھی استعمال کر سکتے ہیں۔ اپنا اکاؤنٹ منتقل کریں یا اپنا آرکائیو ڈاؤن لوڈ کریں۔';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'اپنا اکاؤنٹ منتقل کریں';
 
   @override
   String get minorAccountReviewCheckAgain => 'دوبارہ چیک کریں';

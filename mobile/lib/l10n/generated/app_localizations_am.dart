@@ -2268,6 +2268,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'በሚያትሟቸው ክስተቶች ላይ የDivine ደንበኛ መለያ ያክሉ፣ ሌሎች የNostr መተግበሪያዎች በትክክል እንዲጠቅሷቸው። ያለሱ፣ የሚልኳቸው ሪፖርቶች አወያዮቻችን ሲገመግሟቸው ያነሰ ክብደት ይኖራቸዋል።';
 
   @override
+  String get nostrSettingsMoveAccount => 'መለያዎን ያንቀሳቅሱ';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'ማህደርዎን ያውርዱ እና ልጥፎችዎን እና ቪዲዮዎችዎን ወደ ሌላ relay ወይም የሚዲያ አገልጋይ ያንቀሳቅሱ።';
+
+  @override
   String get nostrSettingsRemoveKeys => 'ቁልፎችን ከመሣሪያው አስወግድ';
 
   @override
@@ -10187,6 +10194,16 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'የግምገማ ገጹን ክፈት';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle => 'መለያዎን ይዘው መሄድ ይችላሉ';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'የDivine ማንነትዎን በሌላ መሠረተ ልማት ላይ መጠቀም ይችላሉ። መለያዎን ያንቀሳቅሱ ወይም ማህደርዎን ያውርዱ።';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'መለያዎን ያንቀሳቅሱ';
 
   @override
   String get minorAccountReviewCheckAgain => 'እንደገና ፈትሽ';

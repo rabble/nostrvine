@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -24,6 +25,7 @@ import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/signature_verification_policy_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/utils/external_link_launcher.dart';
 import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/widgets/modal_progress_overlay.dart';
@@ -121,6 +123,17 @@ class NostrSettingsScreen extends ConsumerWidget {
                   title: context.l10n.nostrSettingsNip05Address,
                   subtitle: context.l10n.nostrSettingsNip05AddressSubtitle,
                   onTap: () => context.pushNamed(Nip05SettingsScreen.routeName),
+                ),
+                DivineListTile(
+                  icon: DivineIconName.downloadSimple,
+                  iconColor: VineTheme.vineGreen,
+                  title: context.l10n.nostrSettingsMoveAccount,
+                  subtitle: context.l10n.nostrSettingsMoveAccountSubtitle,
+                  semanticIdentifier: SemanticIds.settingsMoveAccountRow,
+                  onTap: () => openExternalLink(
+                    context,
+                    AppConstants.accountPortabilityUrl,
+                  ),
                 ),
                 _RemoveKeysTile(ref: ref),
                 DivineSectionHeader(

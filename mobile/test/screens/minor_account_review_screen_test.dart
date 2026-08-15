@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/models/protected_minor_status.dart';
@@ -10,8 +11,10 @@ import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_screen.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../helpers/scroll.dart';
+import '../helpers/url_launcher_test_double.dart';
 
 void main() {
   group('MinorAccountReviewScreen', () {
@@ -324,6 +327,70 @@ void main() {
         expect(find.text('Open Support Center'), findsOneWidget);
       },
     );
+
+    // #7488: a restricted account still owns its identity, so the hard-gate
+    // screen has to offer the same portability flow the settings row does.
+    testWidgets('offers the account portability flow to a restricted account', (
+      tester,
+    ) async {
+      final originalPlatform = UrlLauncherPlatform.instance;
+      final launcher = UrlLauncherTestDouble();
+      UrlLauncherPlatform.instance = launcher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+              return const MinorAccountReviewStatus(
+                restrictionStatus:
+                    AccountRestrictionStatus.restrictedMinorReview,
+                currentCase: MinorReviewCase(
+                  id: 'case-reviewing',
+                  state: MinorReviewCaseState.submittedForReview,
+                  suspectedAgeBand: SuspectedAgeBand.age13To15,
+                  allowedResolution:
+                      MinorReviewResolutionType.parentVideoOrEmail,
+                  instructions: MinorReviewInstructions(
+                    title: 'Submission received',
+                    body: 'We are reviewing this case.',
+                  ),
+                  supportEmail: 'support@divine.video',
+                ),
+              );
+            }),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MinorAccountReviewScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(MinorAccountReviewScreen)),
+      );
+
+      await scrollUntilTappable(
+        tester,
+        find.text(l10n.minorAccountReviewMoveAccountCta),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(
+        find.text(l10n.minorAccountReviewMoveAccountTitle),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.minorAccountReviewMoveAccountBody), findsOneWidget);
+
+      await tester.tap(find.text(l10n.minorAccountReviewMoveAccountCta));
+      await tester.pump();
+
+      expect(launcher.launched.single.url, AppConstants.accountPortabilityUrl);
+      expect(launcher.launched.single.useExternalApplication, isTrue);
+    });
 
     testWidgets(
       'Check Again re-reads the protected-minor flag, not just the review '

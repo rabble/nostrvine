@@ -41,6 +41,9 @@ class AppConstants {
   /// Divine-hosted flagged-account review page for age-review cases.
   static const String ageReviewUrl = 'https://divine.video/age-review';
 
+  /// Divine-hosted account portability flow.
+  static const String accountPortabilityUrl = 'https://divine.video/exit';
+
   // ============================================================================
   // FEED CONFIGURATION
   // ============================================================================

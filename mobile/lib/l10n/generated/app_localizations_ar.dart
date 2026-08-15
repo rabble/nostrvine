@@ -2293,6 +2293,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'أضِف وسم عميل Divine إلى الأحداث التي تنشرها حتى تتمكن تطبيقات Nostr الأخرى من إسنادها بشكل صحيح. بدونه، تحمل البلاغات التي ترسلها وزنًا أقل عند مراجعتها من مشرفينا.';
 
   @override
+  String get nostrSettingsMoveAccount => 'نقل حسابك';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'نزّل أرشيفك وانقل منشوراتك ومقاطع الفيديو الخاصة بك إلى مرحّل أو خادم وسائط آخر.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'إزالة المفاتيح من الجهاز';
 
   @override
@@ -10364,6 +10371,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'فتح صفحة المراجعة';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle => 'يمكنك أخذ حسابك معك';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'لا يزال بإمكانك استخدام هوية Divine الخاصة بك على بنية تحتية أخرى. انقل حسابك أو نزّل أرشيفك.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'نقل حسابك';
 
   @override
   String get minorAccountReviewCheckAgain => 'تحقق مرة أخرى';

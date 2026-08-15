@@ -2273,6 +2273,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Tambahkan tag klien Divine ke event yang kamu publikasikan agar aplikasi Nostr lain bisa mengatribusikannya dengan benar. Tanpa itu, laporan yang kamu kirim punya bobot lebih kecil saat ditinjau moderator kami.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Pindahkan akunmu';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Unduh arsipmu dan pindahkan postingan serta videomu ke relay atau server media lain.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Hapus Kunci dari Perangkat';
 
   @override
@@ -10394,6 +10401,16 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'Buka halaman peninjauan';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle => 'Kamu bisa membawa akunmu';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Kamu tetap bisa memakai identitas Divine-mu di infrastruktur lain. Pindahkan akunmu atau unduh arsipmu.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Pindahkan akunmu';
 
   @override
   String get minorAccountReviewCheckAgain => 'Periksa lagi';

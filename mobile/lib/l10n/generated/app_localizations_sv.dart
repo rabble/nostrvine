@@ -2306,6 +2306,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lägg till en Divine-klienttagg på events du publicerar så att andra Nostr-appar kan attribuera dem korrekt. Utan den väger dina rapporter mindre när våra moderatorer granskar dem.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Flytta ditt konto';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Ladda ner ditt arkiv och flytta dina inlägg och videor till en annan relay eller medieserver.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Ta bort nycklar från enheten';
 
   @override
@@ -10441,6 +10448,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'Öppna granskningssidan';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Du kan ta med dig ditt konto';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Du kan fortsätta använda din Divine-identitet på annan infrastruktur. Flytta ditt konto eller ladda ner ditt arkiv.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Flytta ditt konto';
 
   @override
   String get minorAccountReviewCheckAgain => 'Kontrollera igen';

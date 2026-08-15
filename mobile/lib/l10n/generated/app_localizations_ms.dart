@@ -2328,6 +2328,13 @@ class AppLocalizationsMs extends AppLocalizations {
       'Sertakan tag klien Divine pada acara yang anda terbitkan supaya apl Nostr lain dapat mengatribusikannya dengan betul. Tanpanya, laporan yang anda hantar kurang berat semasa moderator kami menyemaknya.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Alihkan akaun anda';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Muat turun arkib anda dan alihkan siaran serta video anda ke relay atau pelayan media lain.';
+
+  @override
   String get nostrSettingsRemoveKeys =>
       'Alih keluar akaun ini daripada peranti ini';
 
@@ -10495,6 +10502,17 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'Buka halaman semakan';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Anda boleh bawa akaun anda bersama';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Anda masih boleh guna identiti Divine anda pada infrastruktur lain. Alihkan akaun anda atau muat turun arkib anda.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Alihkan akaun anda';
 
   @override
   String get minorAccountReviewCheckAgain => 'Semak Semula';

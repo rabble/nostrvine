@@ -2351,6 +2351,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Добавяй клиентски таг на Divine към събитията, които публикуваш, за да могат другите Nostr приложения да ги приписват правилно. Без него сигналите, които подаваш, тежат по-малко, когато модераторите ни ги преглеждат.';
 
   @override
+  String get nostrSettingsMoveAccount => 'Премести акаунта си';
+
+  @override
+  String get nostrSettingsMoveAccountSubtitle =>
+      'Изтегли архива си и премести публикациите и видеата си към друг relay или медиен сървър.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Махни ключовете от устройството';
 
   @override
@@ -10535,6 +10542,17 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'Отвори страницата за преглед';
+
+  @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Можеш да вземеш акаунта си със себе си';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Можеш да продължиш да използваш своята Divine самоличност на друга инфраструктура. Премести акаунта си или изтегли архива си.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Премести акаунта си';
 
   @override
   String get minorAccountReviewCheckAgain => 'Провери пак';
