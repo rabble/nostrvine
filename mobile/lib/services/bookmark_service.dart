@@ -512,9 +512,10 @@ class BookmarkService {
   /// a device whose cache is empty (fresh install, second device) cannot
   /// replace the user's list with a one-item one.
   ///
-  /// Pass [alreadyReconciled] when the caller has just run
+  /// Pass [alreadyReconciled] only when the caller has just run
   /// [syncGlobalBookmarks] with `requireAuthoritative: true` and the extra
-  /// round trip would be redundant.
+  /// round trip would be redundant. Callers that have not just completed that
+  /// authoritative sync must leave it false so this method reconciles first.
   Future<bool> addToGlobalBookmarks(
     BookmarkItem item, {
     bool alreadyReconciled = false,
@@ -579,6 +580,11 @@ class BookmarkService {
   /// Reconciles with the relay first for the same reason as
   /// [addToGlobalBookmarks] — the republished list must be the user's real
   /// one minus [item], not this device's cache minus [item].
+  ///
+  /// Pass [alreadyReconciled] only when the caller has just run
+  /// [syncGlobalBookmarks] with `requireAuthoritative: true` and the extra
+  /// round trip would be redundant. Callers that have not just completed that
+  /// authoritative sync must leave it false so this method reconciles first.
   Future<bool> removeFromGlobalBookmarks(
     BookmarkItem item, {
     bool alreadyReconciled = false,
