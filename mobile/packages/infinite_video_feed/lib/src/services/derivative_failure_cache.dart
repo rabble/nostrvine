@@ -46,9 +46,7 @@ String? derivativeHashForSource(String source) {
   final hash = extractCanonicalDivineBlobHash(source);
   if (hash == null) return null;
 
-  final rawUrl = canonicalDivineBlobRawUrl(hash);
-  final hlsUrl = canonicalDivineBlobHlsUrl(hash);
-  if (source == rawUrl || source == hlsUrl || source.contains('/hls/')) {
+  if (isDivineBlobRawUrl(source) || source.contains('/hls/')) {
     return null;
   }
 

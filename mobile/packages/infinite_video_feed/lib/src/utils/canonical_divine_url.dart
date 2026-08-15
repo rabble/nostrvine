@@ -20,6 +20,15 @@ String? extractCanonicalDivineBlobHash(String url) {
   }
 }
 
+/// Whether [url] points directly at a Divine blob rather than a derivative.
+bool isDivineBlobRawUrl(String url) {
+  if (extractCanonicalDivineBlobHash(url) == null) return false;
+
+  final uri = Uri.tryParse(url);
+  if (uri == null) return false;
+  return uri.pathSegments.where((segment) => segment.isNotEmpty).length == 1;
+}
+
 /// Builds the canonical HLS master URL for a Divine blob [hash].
 String canonicalDivineBlobHlsUrl(String hash) =>
     'https://media.divine.video/$hash/hls/master.m3u8';

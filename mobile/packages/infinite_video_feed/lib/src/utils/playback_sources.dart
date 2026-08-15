@@ -31,22 +31,27 @@ List<String> resolvePlaybackSources(
 
   final hash = extractCanonicalDivineBlobHash(resolvedSource);
   if (hash != null) {
-    final rawUrl = canonicalDivineBlobRawUrl(hash);
     final hlsUrl = canonicalDivineBlobHlsUrl(hash);
     final isAlreadyHls = resolvedSource.contains('/hls/');
     if (isAlreadyHls) {
-      final originalFallback = originalUrl == rawUrl ? null : originalUrl;
+      final originalFallback =
+          originalUrl != null && isDivineBlobRawUrl(originalUrl)
+          ? null
+          : originalUrl;
       return orderedUniqueSources([resolvedSource, originalFallback]);
     }
 
-    final isRawBlob = resolvedSource == rawUrl;
+    final isRawBlob = isDivineBlobRawUrl(resolvedSource);
     if (isRawBlob) {
       return orderedUniqueSources([resolvedSource, hlsUrl, originalUrl]);
     }
 
     // TODO(liz): Restore the bare blob fallback after divine-blossom#198
     // fixes Range support on bare blob URLs (#7184).
-    final originalFallback = originalUrl == rawUrl ? null : originalUrl;
+    final originalFallback =
+        originalUrl != null && isDivineBlobRawUrl(originalUrl)
+        ? null
+        : originalUrl;
     if (derivativeFailureCache?.hasFreshFailureForHash(hash) ?? false) {
       return orderedUniqueSources([hlsUrl, resolvedSource, originalFallback]);
     }

@@ -19,6 +19,8 @@ VideoEvent _makeVideo({String id = 'vid1', String? videoUrl}) => VideoEvent(
 const _hash =
     'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 const _rawUrl = 'https://media.divine.video/$_hash';
+const _cdnRawUrl = 'https://cdn.divine.video/$_hash';
+const _queryRawUrl = 'https://media.divine.video/$_hash?download=1';
 const _hlsUrl = 'https://media.divine.video/$_hash/hls/master.m3u8';
 
 void main() {
@@ -69,7 +71,7 @@ void main() {
       });
 
       test('drops a raw original when the resolver selects HLS', () {
-        final video = _makeVideo(videoUrl: _rawUrl);
+        final video = _makeVideo(videoUrl: _queryRawUrl);
         final result = resolvePlaybackSources(
           video,
           urlResolver: (_) => _hlsUrl,
@@ -95,6 +97,12 @@ void main() {
         );
         expect(result, equals([_rawUrl, _hlsUrl, otherOriginal]));
       });
+
+      test('keeps a query-bearing raw URL when it is selected', () {
+        final video = _makeVideo(videoUrl: _queryRawUrl);
+
+        expect(resolvePlaybackSources(video), equals([_queryRawUrl, _hlsUrl]));
+      });
     });
 
     group('when URL is a quality-specific Divine variant', () {
@@ -109,13 +117,27 @@ void main() {
       );
 
       test('drops a raw original when the resolver selects a variant', () {
-        final video = _makeVideo(videoUrl: _rawUrl);
+        final video = _makeVideo(videoUrl: _cdnRawUrl);
         final result = resolvePlaybackSources(
           video,
           urlResolver: (_) => variantUrl,
         );
 
         expect(result, equals([variantUrl, _hlsUrl]));
+      });
+
+      test('drops an alternate-host raw original after a fresh failure', () {
+        final video = _makeVideo(videoUrl: _cdnRawUrl);
+        final cache = DerivativeFailureCache()
+          ..recordFailureForSource(variantUrl);
+
+        final result = resolvePlaybackSources(
+          video,
+          urlResolver: (_) => variantUrl,
+          derivativeFailureCache: cache,
+        );
+
+        expect(result, equals([_hlsUrl, variantUrl]));
       });
 
       test('leads with HLS without raw fallback after a fresh failure', () {

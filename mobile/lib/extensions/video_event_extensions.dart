@@ -178,8 +178,9 @@ extension VideoEventAppExtensions on VideoEvent {
   ///   manifest overhead) — it is 3-8x smaller than the raw blob. This covers
   ///   raw-only uploads too: their `imeta` lists only the raw blob because it
   ///   is a publish-time snapshot taken before the derivatives transcode, but
-  ///   by playback time the 720p.mp4 almost always exists, and the runtime
-  ///   fallback chain tries HLS while the derivative finishes processing.
+  ///   by playback time the 720p.mp4 almost always exists. Until
+  ///   divine-blossom#198 is fixed, playback waits for transcoding if neither
+  ///   MP4 nor HLS is ready because the broken bare fallback is withheld.
   ///
   /// Non-Divine videos always use original (no transcoded variants exist).
   String? getOptimalVideoUrlForPlatform() {
@@ -214,8 +215,9 @@ extension VideoEventAppExtensions on VideoEvent {
 
     // Production default: progressive MP4 720p (faststart). Fastest startup
     // (1 request, moov at front), correct colors on all platforms, and 3-8x
-    // smaller than the raw blob. Raw-only uploads take this path too; the
-    // runtime fallback chain tries HLS if the 720p.mp4 is not transcoded yet.
+    // smaller than the raw blob. Raw-only uploads take this path too. Until
+    // divine-blossom#198 is fixed, playback waits for transcoding if neither
+    // MP4 nor HLS is ready because the broken bare fallback is withheld.
     //
     // Classic Vine originals take this path as well. They must never be sent
     // to the bare blob: every Range request to `/{hash}` comes back as a

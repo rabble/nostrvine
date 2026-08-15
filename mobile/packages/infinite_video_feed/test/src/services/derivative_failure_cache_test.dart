@@ -26,6 +26,7 @@ void main() {
     test('ignores raw and HLS sources', () {
       cache
         ..recordFailureForSource(_rawUrl)
+        ..recordFailureForSource('https://cdn.divine.video/$_hash?download=1')
         ..recordFailureForSource(_hlsUrl);
 
       expect(cache.hasFreshFailureForHash(_hash), isFalse);
@@ -46,6 +47,12 @@ void main() {
     test('returns a hash only for derivative sources', () {
       expect(derivativeHashForSource(_variantUrl), equals(_hash));
       expect(derivativeHashForSource(_rawUrl), isNull);
+      expect(
+        derivativeHashForSource(
+          'https://blossom.divine.video/$_hash?download=1',
+        ),
+        isNull,
+      );
       expect(derivativeHashForSource(_hlsUrl), isNull);
       expect(derivativeHashForSource('https://example.com/video.mp4'), isNull);
     });
