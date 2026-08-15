@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/config/app_config.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/repositories/invite_availability_repository.dart';
