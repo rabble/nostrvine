@@ -244,6 +244,10 @@ class _ComposerField extends StatelessWidget {
                     // convention.
                     onTapOutside: (_) =>
                         FocusManager.instance.primaryFocus?.unfocus(),
+                    // Raw TextFields leave spell check off unless a config is
+                    // passed; matches the comments-sheet composer.
+                    spellCheckConfiguration:
+                        DivineTextField.defaultSpellCheckConfiguration,
                     cursorColor: VineTheme.tabIndicatorGreen,
                     style: VineTheme.bodyLargeFont(
                       color: context.vineColors.primaryText,

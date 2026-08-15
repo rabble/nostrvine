@@ -392,6 +392,11 @@ class _CommentTextField extends StatelessWidget {
               : TextInputAction.send,
           onSubmitted: isComposingMultiline ? null : (_) => onSubmitted(),
           enableInteractiveSelection: true,
+          // The pill styling needs a raw TextField, which leaves spell check
+          // off unless a config is passed — DivineTextField applies this same
+          // one by default.
+          spellCheckConfiguration:
+              DivineTextField.defaultSpellCheckConfiguration,
           style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
           cursorColor: VineTheme.tabIndicatorGreen,
           decoration: InputDecoration(

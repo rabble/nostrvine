@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,6 +143,22 @@ void main() {
         expect(field.keyboardType, TextInputType.multiline);
       },
     );
+
+    testWidgets('enables spell check on the composer field', (tester) async {
+      await tester.pumpWidget(buildBar());
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.bySemanticsIdentifier('inline_comment_composer_field'),
+          matching: find.byType(TextField),
+        ),
+      );
+
+      expect(
+        field.spellCheckConfiguration,
+        DivineTextField.defaultSpellCheckConfiguration,
+      );
+    });
 
     testWidgets(
       'still hides the send button when the field only has whitespace',

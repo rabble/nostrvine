@@ -535,5 +535,26 @@ void main() {
       expect(selectedStart, 0);
       expect(selectedEnd, 8);
     });
+
+    testWidgets('enables spell check on the composer field', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              onSubmit: () {},
+            ),
+          ),
+        ),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(
+        textField.spellCheckConfiguration,
+        DivineTextField.defaultSpellCheckConfiguration,
+      );
+    });
   });
 }
