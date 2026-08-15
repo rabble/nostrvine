@@ -15747,7 +15747,9 @@ void main() {
           // OutgoingDmRetryService writes this table concurrently. Letting it
           // escape would hand the caller a throw and no handle on the sibling
           // already parked, whose only "retry" is then a fresh fan-out the
-          // receiver cannot collapse (#7316).
+          // receiver cannot collapse (#7316). Publishing the parked sibling
+          // while skipping the unqueued one would be visible as a partial
+          // success, which callers reduce to "sent" (#7448).
           final enqueued = <OutgoingDm>[];
           when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((
             invocation,
@@ -15773,33 +15775,129 @@ void main() {
 
           expect(enqueued, hasLength(1));
           expect(results, hasLength(2));
+          expect(results.every((r) => !r.success), isTrue);
           expect(
-            results.first.queuedRumorId,
-            equals(enqueued.single.id),
+            results.map((r) => r.queuedRumorId),
+            everyElement(isNull),
             reason:
-                'the sibling that did park must reach the caller with its row '
-                'handle, or a retry re-sends it as a second rumor',
+                'the parked sibling was unwound before any publish, so a user '
+                'retry can safely submit the whole group again',
           );
-          // No row parked for C, so nothing can re-drive or retract it: its
-          // publish must be skipped rather than put an untraceable copy on the
-          // wire.
-          expect(results.last.success, isFalse);
-          expect(results.last.queuedRumorId, isNull);
           verify(
+            () => mockOutgoingDmsDao.deleteById(enqueued.single.id),
+          ).called(1);
+          verifyNever(
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
               selfWrapOnSoftUnconfirmed: any(
                 named: 'selfWrapOnSoftUnconfirmed',
               ),
             ),
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+          // Nothing survived the unwind, so there is no bubble to reach and
+          // the thread the user was composing into must not be resurrected.
+          verifyNever(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          );
+          expect(
+            reporterCalls.map((c) => c.site),
+            contains(
+              DmRepositoryReportableSites.sendGroupMessageEnqueueSibling,
+            ),
+          );
+        },
+      );
+
+      test(
+        'a sibling enqueue write failure returns queued ids for parked '
+        'rows that cannot be unwound',
+        () async {
+          final enqueued = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((
+            invocation,
+          ) async {
+            final row = invocation.positionalArguments.first as OutgoingDm;
+            if (row.recipientPubkey == _validPubkeyC) {
+              throw StateError('database is locked');
+            }
+            enqueued.add(row);
+          });
+          when(() => mockOutgoingDmsDao.deleteById(any())).thenThrow(
+            StateError('database is still locked'),
+          );
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('all relays down'),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one sibling cannot be parked or unwound',
+          );
+
+          expect(enqueued, hasLength(1));
+          expect(results, hasLength(2));
+          expect(results.every((r) => !r.success), isTrue);
+          expect(
+            results.first.queuedRumorId,
+            equals(enqueued.single.id),
+            reason:
+                'the row that could not be unwound must remain retryable via '
+                'recoverFullSend, not a fresh group submit',
+          );
+          expect(results.last.queuedRumorId, isNull);
+          verify(
+            () => mockOutgoingDmsDao.deleteById(enqueued.single.id),
           ).called(1);
           verifyNever(
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
-              recipientPubkey: _validPubkeyC,
+              recipientPubkey: any(named: 'recipientPubkey'),
               targetRelays: any(named: 'targetRelays'),
               awaitRecipientOk: any(named: 'awaitRecipientOk'),
               selfWrapOnSoftUnconfirmed: any(
@@ -15813,6 +15911,31 @@ void main() {
               DmRepositoryReportableSites.sendGroupMessageEnqueueSibling,
             ),
           );
+          expect(
+            reporterCalls.map((c) => c.site),
+            contains(
+              DmRepositoryReportableSites.sendGroupMessageUnwindQueuedSibling,
+            ),
+          );
+          // The surviving row still holds the user's message, so a brand-new
+          // group thread has to exist for them to reach that bubble and retry
+          // or delete it.
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: true,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'one sibling cannot be parked or unwound',
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: _validPubkeyA,
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
         },
       );
 
