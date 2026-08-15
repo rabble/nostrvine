@@ -16,10 +16,14 @@ any figure can be re-derived or extended.
 **Reader's key for the client tag.** Mobile view reporters appear in
 `view_interactions.client` as `Divine`. A second stream, `divine-mobile/1.0`,
 carries 1–6 viewers/day and is a legacy or dev build, not the shipping app.
-The #917 detector's "mobile" series is the `Divine` bucket — its backtest
-figures (578 on 2026-08-05, 263 on 2026-08-12) match `Divine` exactly. Any
-change to what the shipping app sends as its client tag silently re-keys the
-detector; the two-phase start event must carry the same tag.
+The #917 detector's "mobile" series is the `Divine` bucket alone — its
+backtest figures (578 on 2026-08-05, 263 on 2026-08-12) match `Divine`
+exactly. **§1's Mobile columns are the union `client IN ('Divine',
+'divine-mobile/1.0')`, so they run 0–6 viewers/day above the detector's
+series** (2026-08-05: 582 union vs 578 `Divine`). Reconcile a #917 alert
+against `Divine` only. Any change to what the shipping app sends as its
+client tag silently re-keys the detector; the redefined playback-start
+event must carry the same tag.
 
 ## 1. The outage, as a series
 
@@ -52,8 +56,10 @@ current definition per event: `ceil(loops)` clamped to ≥1 (see §3).
 
 What to hold onto:
 
-- **Mobile reporters fell 680 → 263 (–61%) over twelve days; events fell
-  28.5k → 8.8k (–69%).** Matches the design doc's 60–69% decline claim.
+- **Mobile reporters fell 676 → 263 (–61%) over twelve days; events fell
+  28.5k → 8.8k (–69%).** Stated on the `Divine` bucket so it matches the
+  two merged specs and the #917 detector; the union column above reads
+  680 → 263 for the same span.
 - **Web was flat throughout** (36–56 viewers every day, no trend). The
   regression is mobile-only — the property the #917 detector keys on.
 - **The #7210 recovery is not yet visible at capture time.** 2026-08-13 is a
@@ -171,12 +177,13 @@ Ten most-reacted videos, 2026-08-09..13:
 | a5c0a43c8bc2b418d6863c15699d924b43bfca044c5b71756b73968fab4711b3 | 30 | 41 | 14 | 53.3% |
 | 63c1b5cab350f3ef9e353b0682d1e7302e4ce1037a46057c4558ff20b9cd0347 | 30 | 49 | 22 | 26.7% |
 
-**Weighted: 164 of 366 provable watchers registered a view — 55.2% are
-absent.** Median across videos 53.9%, range 26.7–73.8%. The design doc's
-single-video measurement (event a3092dfc… above, 10-of-37 at the time)
-reproduces at 11-of-42 — same video, more interactions accrued since, same
-direction. The 73% figure was the high end of a real distribution, not an
-outlier.
+**Weighted: 174 of 366 provable watchers registered a view — 52.5% are
+absent.** Median across videos 53.8%, range 26.7–73.8%. The design doc's
+single-video measurement (event
+a3092dfc8d36d15583d0866ae4312fd32b96a8eb59d79a7f23028c1ffc6d5503 above,
+10-of-37 at the time) reproduces at 11-of-42 — same video, more
+interactions accrued since, same direction. The 73% figure was the high end
+of a real distribution, not an outlier.
 
 Caveats, stated so the number is not over-read:
 
@@ -190,25 +197,62 @@ Caveats, stated so the number is not over-read:
 
 ## 5. The display floor, restated on current numbers
 
-`publicLoopCountFloor` = 1000, applied to public counts:
+**This section corrects the design doc, which measures the wrong column.**
+`video_card_meta.dart:79` defines the gated quantity as
+`video.isOriginalVine ? video.originalLoops ?? 0 : video.totalLoops` —
+i.e. the archival `loops` tag for classic Vines (98% of the catalogue),
+and `originalLoops + views` for native ones. The design doc's table
+measures `video_total_views_data.total_views`, which the floor is never
+applied to, and lands three orders of magnitude off.
 
-| Threshold | Videos at or above | Share of 2,201,986 |
+`publicLoopCountFloor` = 1000, measured against the quantity the code
+actually gates:
+
+| Threshold | Videos at or above | Share of 2,203,822 |
 |---|---|---|
-| 1000 (today's floor) | 961 | 0.044% |
-| 333 | 2,441 | 0.111% |
-| 100 | 12,573 | 0.571% |
+| 1000 (today's floor) | 1,152,593 | **52.30%** |
+| 333 | 1,375,711 | 62.42% |
+| 100 | 1,621,923 | 73.60% |
 
-Unchanged from the design doc to within a few videos. The public count is
-effectively never shown; the card's date-first presentation is doing the
-work the doc attributes to it.
+Median public count across the catalogue: **1,417**.
+
+So a public count renders on about **half** the catalogue, not on 0.044%
+of it. The design doc's conclusion — "the public count is effectively
+never shown; 9,996 videos in 10,000 render a date" — does not hold, and
+the same wrong table is live on `main` in
+[the design doc](2026-08-13-view-and-loop-metrics-design.md) §"The display
+floor, and why most cards show a date". It needs the same correction.
+
+**The floor decision survives the correction; only its stated rationale
+changes.** The design doc argued the floor was harmless because almost
+nobody ever sees a count. The real argument is the one on the constant
+itself (`video_card_meta.dart:9`): a number below the floor "tells a
+viewer not to bother", and a wall of small counts on *other people's*
+videos discourages posting. On the real distribution the floor is doing
+that job well — visitors see a count on ~52% of videos, every one of them
+≥1000, and a date on the rest instead of a discouraging 47. Creators are
+never gated: `_resolveLoopCount` returns `video.totalLoops` unconditionally
+when `isOwnVideo`, and `totalLoops` is additive
+(`originalLoops + views`), so a creator sees the larger number.
+
+One unreconciled discrepancy, stated rather than smoothed over: the
+constant's own doc comment reports "roughly 64% of the archive" hidden
+with "p50 is 298 loops", measured against a 1,000-Vine sample. The
+full-catalogue measurement above gives 47.7% hidden at p50 1,417. Both are
+the same order of magnitude and both contradict the design doc's 0.044%,
+but the sample and the census disagree by enough that the sample was
+probably not representative. Re-tuning the floor should use the census.
 
 ## 6. Context figures
 
-- `daily_active_users`: 7,679 on 2026-08-12 (7–10k across the window).
+- `daily_active_users`: 7,679 on 2026-08-12 **as read at 2026-08-13 09:15
+  UTC**. This table accrues after the day closes — the same row read on
+  2026-08-14 returns 8,043 — so treat 7,679 as a partial read, not a
+  settled daily figure, and the derived share below as approximate.
   Signed-in view reporters that day were 303 (263 mobile + 40 web) — ~4% of
-  DAU. The table has no auth split, so the "anonymous are roughly half of
-  daily users" claim cannot be checked here; the CDN channel (§2) is the
-  only anonymous evidence.
+  DAU on the partial read, ~3.8% on the settled one. The table has no auth
+  split, so the "anonymous are roughly half of daily users" claim cannot be
+  checked here; the CDN channel (§2) is the only anonymous evidence.
 - The API's trending surface reads `trending_videos_snapshot`
   (`crates/clickhouse/src/client.rs:3541`); a second, separate path queries
   `trending_videos` (`client.rs:7606`). Both are live code at capture time —
@@ -219,16 +263,34 @@ work the doc attributes to it.
 When each change from the design lands, re-run the appendix queries and
 compare against the matching section:
 
-| Change | Watch |
-|---|---|
-| #7210 client fix rollout | §1 mobile reporters returning toward ~600/day; expect a one-day backlog-replay spike at publish-time timestamps — recovered history, not growth |
-| View = playback start (two-phase 22236) | §1 events rising toward sessions; `views_today_def` decoupling from loops |
-| CDN-derived loops | §2's zero-loop gap closing; §3 aggregate loops/view rising past 1.0 for the first time |
-| Ranking unification | §6's duplicate trending paths reduced to one |
+| Change | Status at capture | Watch |
+|---|---|---|
+| #7210 client fix rollout | merged, not yet visible | §1 mobile reporters returning toward ~600/day; expect a one-day backlog-replay spike at publish-time timestamps — recovered history, not growth |
+| View = playback start | **landed — #7217, merged 2026-08-13 10:08 UTC** | §1 events rising toward sessions; `views_today_def` decoupling from loops |
+| Same-video session restart | **landed — #7231, merged 2026-08-14 04:20 UTC** | §1 events rising for re-watches without §1 viewers rising |
+| CDN-derived loops | not started | §2's zero-loop gap closing; §3 aggregate loops/view rising past 1.0 for the first time |
+| Ranking unification | not started | §6's duplicate trending paths reduced to one |
 
-Every figure here is a floor measured on a pipeline whose known errors all
-run downward. Compare like for like: same UTC day boundaries, same client
-buckets, same TTL windows.
+**Changes since capture.** #7217 and #7231 both merged between this
+snapshot and this document landing, so the first two rows are already
+"after" rather than "before". #7217 implements the design's single
+kind-22236 event per session — there is no two-phase start/end event in
+either merged spec, and #7231 documents one-event-per-session as the
+current mobile-emitted contract.
+
+**Most** figures here are floors measured on a pipeline whose known errors
+run downward — but not all of them, so do not apply that blanket:
+
+- **View counts are floors.** Every known error drops views.
+- **Loop figures are not.** The findings doc §3.4 records a `_handleState`
+  early-return defect that *inflates* watch time when a route is pushed,
+  and stored `loops` is `watched_seconds / duration`, so §1's loop sums and
+  §3's 0.733 loops/view ratio are inflated by it.
+- **§4's missing share is not.** Its own caveat admits the 90-day window
+  falsely counts a late-reacting interactor as missing.
+
+Compare like for like: same UTC day boundaries, same client buckets, same
+TTL windows.
 
 ## Appendix: exact queries
 
@@ -342,11 +404,39 @@ ORDER BY ia.interactors DESC;
 <details>
 <summary>§5 — display floor distribution</summary>
 
+Mirrors `_publicCount` in `video_card_meta.dart`: the archival `loops` tag
+for classic Vines, `originalLoops + views` otherwise. Do **not** measure
+this against `video_total_views_data.total_views` — the floor is never
+applied to that column, and doing so is the error this section corrects.
+
 ```sql
-SELECT countIf(total_views>=1000) AS ge_1000,
-       countIf(total_views>=333)  AS ge_333,
-       countIf(total_views>=100)  AS ge_100,
-       count() AS videos
-FROM nostr.video_total_views_data;
+WITH
+  arrayExists(t -> t[1] = 'platform' AND t[2] = 'vine', tags)  AS is_vine,
+  toUInt64OrZero(arrayFirst(t -> t[1] = 'views', tags)[2])     AS views_tag,
+  if(is_vine, loops, loops + views_tag)                        AS public_count
+SELECT count()                       AS catalogue,
+       countIf(public_count >= 1000) AS ge_1000,
+       countIf(public_count >= 333)  AS ge_333,
+       countIf(public_count >= 100)  AS ge_100,
+       median(public_count)          AS p50
+FROM nostr.videos;
+```
+
+`nostr.videos.loops` is the `loops` tag, verified over a 200,000-row Vine
+sample: 198,061 rows carry the tag and the column equals it in all 198,061,
+with zero mismatches.
+</details>
+
+<details>
+<summary>§6 — daily active users</summary>
+
+`daily_active_users` accrues after the day closes, so a same-day or
+next-morning read is partial. Record the read time alongside the value.
+
+```sql
+SELECT date, active_users
+FROM nostr.daily_active_users
+WHERE date >= toDate('2026-08-08')
+ORDER BY date;
 ```
 </details>
