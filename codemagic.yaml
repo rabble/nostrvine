@@ -26,6 +26,16 @@
 #   - Set to YES to upload artifacts to a GitHub Release (for Zapstore / direct distribution)
 #   - Defaults to NO
 #   - Requires GITHUB_TOKEN in "github_credentials" environment variable group
+# 9 - Android publishing reads the service account from environment variable
+#     group "google_play_credentials":
+#   - GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+#
+# Every group named under a workflow's `groups:` key must appear in this
+# checklist. Codemagic validates this whole file before it provisions a machine,
+# so naming a group that does not exist fails *every* workflow here — not only
+# the one that needs it — and no in-script guard can catch it, because no script
+# runs. That took the pipeline down for ~21 hours (#7203). The invariant is
+# enforced by mobile/scripts/check_codemagic_groups.sh.
 
 definitions:
   environment:

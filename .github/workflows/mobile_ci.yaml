@@ -49,6 +49,33 @@ jobs:
       - name: Verify generated skills and lifecycle hooks
         run: bash .codex/scripts/test-config.sh
 
+  codemagic-groups:
+    # Deliberately ungated — no `needs: changes`, no `if:`.
+    #
+    # The scope detector classifies `codemagic.yaml` as out-of-app-scope, so a
+    # PR touching only that file (#7191, the revert of the outage, is exactly
+    # that shape) resolves app=false and skips every gated job. Gating this
+    # check would therefore switch it off for the one change it exists to
+    # police. Adding codemagic.yaml to the detector instead would drag the full
+    # app test matrix along for a config edit.
+    #
+    # It costs a checkout plus a second of grep, so running it unconditionally
+    # is cheaper than reasoning about when it should run.
+    #
+    # The required check is the `Mobile CI` aggregator, not this job's name.
+    # `mobile-ci` therefore needs this job and fails unless it succeeds — even
+    # when app CI is skipped — or a yaml-only PR can merge with a red guard.
+    name: Codemagic Variable Groups
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🔑 Verify every Codemagic variable group is documented
+        # Static — no simulator, no build, no credentials — so fork PRs get it
+        # too. Codemagic validates the whole config before provisioning, so an
+        # undeclared group fails every workflow in the file and no in-script
+        # guard can catch it (#7203).
+        run: bash mobile/scripts/check_codemagic_groups.sh
+
   generated-files:
     name: Generated Files
     needs: changes
@@ -429,6 +456,7 @@ jobs:
     if: ${{ always() }}
     needs:
       - changes
+      - codemagic-groups
       - generated-files
       - format
       - analyze
@@ -438,6 +466,7 @@ jobs:
     steps:
       - name: Verify upstream jobs
         env:
+          CODEMAGIC_GROUPS_RESULT: ${{ needs.codemagic-groups.result }}
           GENERATED_FILES_RESULT: ${{ needs.generated-files.result }}
           FORMAT_RESULT: ${{ needs.format.result }}
           ANALYZE_RESULT: ${{ needs.analyze.result }}
@@ -446,11 +475,19 @@ jobs:
           APP_CI_REQUIRED: ${{ needs.changes.outputs.app }}
         run: |
           echo "app-ci-required: ${APP_CI_REQUIRED}"
+          echo "codemagic-groups: ${CODEMAGIC_GROUPS_RESULT}"
           echo "generated-files: ${GENERATED_FILES_RESULT}"
           echo "format: ${FORMAT_RESULT}"
           echo "analyze: ${ANALYZE_RESULT}"
           echo "tests: ${TESTS_RESULT}"
           echo "vgv-tag-gate: ${VGV_TAG_GATE_RESULT}"
+
+          # Always required. This job is ungated so yaml-only PRs still run it;
+          # skipped here would let those PRs merge without the guard.
+          if [ "${CODEMAGIC_GROUPS_RESULT}" != "success" ]; then
+            echo "Codemagic variable group check failed or did not run."
+            exit 1
+          fi
 
           results=(
             "${GENERATED_FILES_RESULT}"
