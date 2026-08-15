@@ -4124,6 +4124,8 @@
     "inboxRequestsMarkAllRead": "모든 요청을 읽음으로 표시",
     "inboxRequestsRemoveAll": "모든 요청 삭제",
     "messageRequestDeclineAndRemoveButton": "거절하고 삭제",
+    "messageRequestLoadFailed": "이 요청을 불러오지 못했어요.",
+    "messageRequestRetryButton": "다시 시도",
     "messageRequestFollowersCount": "팔로워 {count}명",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "영상 {count}개",

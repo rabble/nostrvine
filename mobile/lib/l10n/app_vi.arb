@@ -4112,6 +4112,8 @@
   "inboxRequestsMarkAllRead": "Đánh dấu tất cả yêu cầu là đã đọc",
   "inboxRequestsRemoveAll": "Xóa tất cả yêu cầu",
   "messageRequestDeclineAndRemoveButton": "Từ chối và xóa",
+  "messageRequestLoadFailed": "Không tải được yêu cầu này.",
+  "messageRequestRetryButton": "Thử lại",
   "messageRequestFollowersCount": "{count} người theo dõi",
   "@messageRequestFollowersCount": {
     "placeholders": {

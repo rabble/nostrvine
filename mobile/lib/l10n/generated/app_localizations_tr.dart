@@ -7175,6 +7175,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Reddet ve kaldır';
 
   @override
+  String get messageRequestLoadFailed => 'Bu istek yüklenemedi.';
+
+  @override
+  String get messageRequestRetryButton => 'Tekrar dene';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count Takipçi';
   }

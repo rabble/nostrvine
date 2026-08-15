@@ -4793,6 +4793,8 @@
     "inboxRequestsMarkAllRead": "وسم جميع الطلبات كمقروءة",
     "inboxRequestsRemoveAll": "إزالة جميع الطلبات",
     "messageRequestDeclineAndRemoveButton": "رفض وإزالة",
+    "messageRequestLoadFailed": "تعذّر تحميل هذا الطلب.",
+    "messageRequestRetryButton": "حاول مرة أخرى",
     "messageRequestFollowersCount": "{count} متابِع",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} فيديو",

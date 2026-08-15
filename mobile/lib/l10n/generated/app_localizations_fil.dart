@@ -7303,6 +7303,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Tanggihan at alisin';
 
   @override
+  String get messageRequestLoadFailed =>
+      'Hindi na-load ang message request na ito.';
+
+  @override
+  String get messageRequestRetryButton => 'Subukan ulit';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count Follower';
   }

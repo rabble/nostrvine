@@ -4793,6 +4793,8 @@
     "inboxRequestsMarkAllRead": "Alle verzoeken als gelezen markeren",
     "inboxRequestsRemoveAll": "Alle verzoeken verwijderen",
     "messageRequestDeclineAndRemoveButton": "Weigeren en verwijderen",
+    "messageRequestLoadFailed": "Dit berichtverzoek kon niet worden geladen.",
+    "messageRequestRetryButton": "Probeer opnieuw",
     "messageRequestFollowersCount": "{count} volgers",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} video's",

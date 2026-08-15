@@ -4793,6 +4793,8 @@
     "inboxRequestsMarkAllRead": "Marchează toate cererile ca citite",
     "inboxRequestsRemoveAll": "Elimină toate cererile",
     "messageRequestDeclineAndRemoveButton": "Refuză și elimină",
+    "messageRequestLoadFailed": "Nu am putut încărca această cerere.",
+    "messageRequestRetryButton": "Încearcă din nou",
     "messageRequestFollowersCount": "{count} urmăritori",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} videoclipuri",

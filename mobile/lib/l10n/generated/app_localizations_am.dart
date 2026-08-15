@@ -7058,6 +7058,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'አትቀበል እና አስወግድ';
 
   @override
+  String get messageRequestLoadFailed => 'ይህን ጥያቄ መጫን አልተቻለም።';
+
+  @override
+  String get messageRequestRetryButton => 'እንደገና ሞክር';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count ተከታዮች';
   }

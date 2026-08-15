@@ -7201,6 +7201,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Decline and remove';
 
   @override
+  String get messageRequestLoadFailed => 'Couldn\'t load this request.';
+
+  @override
+  String get messageRequestRetryButton => 'Try again';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count Followers';
   }

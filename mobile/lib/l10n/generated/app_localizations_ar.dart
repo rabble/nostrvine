@@ -7157,6 +7157,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'رفض وإزالة';
 
   @override
+  String get messageRequestLoadFailed => 'تعذّر تحميل هذا الطلب.';
+
+  @override
+  String get messageRequestRetryButton => 'حاول مرة أخرى';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count متابِع';
   }

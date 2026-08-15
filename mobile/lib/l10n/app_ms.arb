@@ -4112,6 +4112,8 @@
   "inboxRequestsMarkAllRead": "Tandakan semua permintaan sebagai dibaca",
   "inboxRequestsRemoveAll": "Alih keluar semua permintaan",
   "messageRequestDeclineAndRemoveButton": "Tolak dan alih keluar",
+  "messageRequestLoadFailed": "Permintaan ini tidak dapat dimuatkan.",
+  "messageRequestRetryButton": "Cuba lagi",
   "messageRequestFollowersCount": "{count} Pengikut",
   "@messageRequestFollowersCount": {
     "placeholders": {

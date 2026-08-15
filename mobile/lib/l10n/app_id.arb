@@ -4793,6 +4793,8 @@
     "inboxRequestsMarkAllRead": "Tandai semua permintaan sudah dibaca",
     "inboxRequestsRemoveAll": "Hapus semua permintaan",
     "messageRequestDeclineAndRemoveButton": "Tolak dan hapus",
+    "messageRequestLoadFailed": "Permintaan ini gagal dimuat.",
+    "messageRequestRetryButton": "Coba lagi",
     "messageRequestFollowersCount": "{count} Pengikut",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} video",

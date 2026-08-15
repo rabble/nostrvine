@@ -4793,6 +4793,8 @@
     "inboxRequestsMarkAllRead": "Marquer toutes les demandes comme lues",
     "inboxRequestsRemoveAll": "Supprimer toutes les demandes",
     "messageRequestDeclineAndRemoveButton": "Refuser et supprimer",
+    "messageRequestLoadFailed": "Impossible de charger cette demande.",
+    "messageRequestRetryButton": "Réessayer",
     "messageRequestFollowersCount": "{count} abonnés",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} vidéos",

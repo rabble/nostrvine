@@ -6860,6 +6860,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => '拒绝并移除';
 
   @override
+  String get messageRequestLoadFailed => '无法加载此请求。';
+
+  @override
+  String get messageRequestRetryButton => '重试';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count 位粉丝';
   }

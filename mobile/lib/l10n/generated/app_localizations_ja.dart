@@ -6885,6 +6885,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => '拒否して削除';
 
   @override
+  String get messageRequestLoadFailed => 'このリクエストを読み込めませんでした。';
+
+  @override
+  String get messageRequestRetryButton => 'もう一度試す';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count人のフォロワー';
   }

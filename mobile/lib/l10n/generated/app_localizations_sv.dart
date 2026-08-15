@@ -7208,6 +7208,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Avböj och ta bort';
 
   @override
+  String get messageRequestLoadFailed =>
+      'Kunde inte läsa in den här förfrågan.';
+
+  @override
+  String get messageRequestRetryButton => 'Försök igen';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count följare';
   }

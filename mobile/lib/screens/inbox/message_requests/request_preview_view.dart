@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -52,16 +53,44 @@ class RequestPreviewView extends ConsumerWidget {
     final participantPubkeys = context.select(
       (RequestPreviewCubit cubit) => cubit.state.participantPubkeys,
     );
+
+    final otherPubkey = participantPubkeys.isNotEmpty
+        ? participantPubkeys.first
+        : '';
+
+    // #7335 unresolved-counterparty gate. Everything past this point either
+    // identifies the sender or acts on them, and neither is possible until the
+    // load resolves a counterparty. Falling through was not cosmetic:
+    // `_ActionButtons` went live over an empty `participantPubkeys`, and its
+    // "View messages" opened a conversation whose composer cleared the text
+    // field and then threw before writing a queue row — no bubble, no toast,
+    // no error, so the message looked sent. The header meanwhile named the
+    // sender `UserProfile.defaultDisplayNameFor('')`, a generated "Adjective
+    // Animal N", above a message count of 0.
+    //
+    // Returning before the profile watch below also stops the fetch for `''`
+    // seen repeatedly in the August iOS release log, where the REST profile
+    // fallback rejects it with "Pubkey cannot be empty" and the relay fallback
+    // then goes looking for the empty string.
+    //
+    // `loaded` is gated on the pubkey rather than the status because
+    // `_resolveParticipants` returns `[]` for a conversation the local
+    // database does not have, reaching this same layout without ever failing.
+    if (status == RequestPreviewStatus.loading) {
+      return const _UnresolvedRequestScaffold(
+        child: CircularProgressIndicator(color: VineTheme.primary),
+      );
+    }
+    if (status == RequestPreviewStatus.error || otherPubkey.isEmpty) {
+      return const _UnresolvedRequestScaffold(child: _LoadFailedMessage());
+    }
+
     final messageCount = context.select(
       (RequestPreviewCubit cubit) => cubit.state.messageCount,
     );
     final messages = context.select(
       (RequestPreviewCubit cubit) => cubit.state.messages,
     );
-
-    final otherPubkey = participantPubkeys.isNotEmpty
-        ? participantPubkeys.first
-        : '';
     final currentPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
 
@@ -81,28 +110,102 @@ class RequestPreviewView extends ConsumerWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      body: ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(VineTheme.bottomSheetBorderRadius),
-        ),
-        child: ColoredBox(
-          color: context.vineColors.surfaceContainerHigh,
-          child: Column(
-            children: [
-              Expanded(
-                child: _ProfileContent(
-                  displayName: displayName,
-                  profile: profile,
-                  otherPubkey: otherPubkey,
-                  currentPubkey: currentPubkey,
-                  messageCount: messageCount,
-                  messages: messages,
-                ),
+      body: _PreviewBackdrop(
+        child: Column(
+          children: [
+            Expanded(
+              child: _ProfileContent(
+                displayName: displayName,
+                profile: profile,
+                otherPubkey: otherPubkey,
+                currentPubkey: currentPubkey,
+                messageCount: messageCount,
+                messages: messages,
               ),
-              _ActionButtons(participantPubkeys: participantPubkeys),
-            ],
-          ),
+            ),
+            _ActionButtons(participantPubkeys: participantPubkeys),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// The rounded panel every state of this screen sits on.
+class _PreviewBackdrop extends StatelessWidget {
+  const _PreviewBackdrop({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+      ),
+      child: ColoredBox(
+        color: context.vineColors.surfaceContainerHigh,
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Chrome for the states that have no counterparty to name yet (#7335).
+///
+/// Deliberately offers no accept or decline action: both need a participant
+/// list, and the whole point of this branch is that there isn't one. The app
+/// bar falls back to the section title for the same reason — the loaded
+/// header's name would be a generated placeholder here.
+class _UnresolvedRequestScaffold extends StatelessWidget {
+  const _UnresolvedRequestScaffold({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.vineColors.surface,
+      appBar: DiVineAppBar(
+        title: context.l10n.inboxMessageRequestsTitle,
+        showBackButton: true,
+        // safePop, not pop: `loading` is the first frame of *every* entry to
+        // this route, deep links included, and a cold deep link leaves a
+        // one-entry stack that plain `pop()` throws on (#6112).
+        onBackPressed: () => context.safePop(fallback: InboxPage.path),
+      ),
+      body: _PreviewBackdrop(child: Center(child: child)),
+    );
+  }
+}
+
+/// The read failed. Offers a retry rather than a dead end — the cubit's own
+/// `load()` is idempotent, and a Drift read failure is usually transient.
+class _LoadFailedMessage extends StatelessWidget {
+  const _LoadFailedMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 48),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 16,
+        children: [
+          Text(
+            l10n.messageRequestLoadFailed,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          _OutlinedActionButton(
+            label: l10n.messageRequestRetryButton,
+            onTap: () => context.read<RequestPreviewCubit>().load(),
+          ),
+        ],
       ),
     );
   }

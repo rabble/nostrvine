@@ -7385,6 +7385,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Refuză și elimină';
 
   @override
+  String get messageRequestLoadFailed => 'Nu am putut încărca această cerere.';
+
+  @override
+  String get messageRequestRetryButton => 'Încearcă din nou';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count urmăritori';
   }

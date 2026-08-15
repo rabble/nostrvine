@@ -7247,6 +7247,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Weigeren en verwijderen';
 
   @override
+  String get messageRequestLoadFailed =>
+      'Dit berichtverzoek kon niet worden geladen.';
+
+  @override
+  String get messageRequestRetryButton => 'Probeer opnieuw';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count volgers';
   }

@@ -7263,6 +7263,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Tolak dan alih keluar';
 
   @override
+  String get messageRequestLoadFailed =>
+      'Permintaan ini tidak dapat dimuatkan.';
+
+  @override
+  String get messageRequestRetryButton => 'Cuba lagi';
+
+  @override
   String messageRequestFollowersCount(String count) {
     return '$count Pengikut';
   }

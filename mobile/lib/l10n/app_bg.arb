@@ -4924,6 +4924,8 @@
     "inboxRequestsMarkAllRead": "Отбележи всички заявки като прочетени",
     "inboxRequestsRemoveAll": "Премахни всички заявки",
     "messageRequestDeclineAndRemoveButton": "Откажи и премахни",
+    "messageRequestLoadFailed": "Заявката не можа да се зареди.",
+    "messageRequestRetryButton": "Опитай пак",
     "messageRequestFollowersCount": "{count} последователи",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
     "messageRequestVideosCount": "{count} видеа",
