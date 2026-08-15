@@ -64,20 +64,25 @@ void main() {
 
     group('when URL is a canonical HLS URL', () {
       test(
-        'returns [hlsUrl, rawUrl] deduplicated when originalUrl equals hlsUrl',
+        'skips bare blob and returns [hlsUrl] '
+        '(divine-blossom#198)',
         () {
           final video = _makeVideo(videoUrl: _hlsUrl);
-          expect(resolvePlaybackSources(video), equals([_hlsUrl, _rawUrl]));
+          expect(resolvePlaybackSources(video), equals([_hlsUrl]));
         },
       );
     });
 
     group('when URL is the raw blob URL', () {
-      test('returns [rawUrl, hlsUrl, originalUrl] deduplicated', () {
-        final video = _makeVideo(videoUrl: _rawUrl);
-        // raw == original -> progressive raw first, HLS as fallback
-        expect(resolvePlaybackSources(video), equals([_rawUrl, _hlsUrl]));
-      });
+      test(
+        'skips raw blob and returns [hlsUrl, originalUrl] '
+        '(divine-blossom#198)',
+        () {
+          final video = _makeVideo(videoUrl: _rawUrl);
+          // Bare blob is removed from fallback chain per divine-blossom#198
+          expect(resolvePlaybackSources(video), equals([_hlsUrl]));
+        },
+      );
 
       test('includes originalUrl when it differs from rawUrl', () {
         const otherOriginal = 'https://example.com/original.mp4';
@@ -86,7 +91,7 @@ void main() {
           video,
           urlResolver: (_) => _rawUrl,
         );
-        expect(result, equals([_rawUrl, _hlsUrl, otherOriginal]));
+        expect(result, equals([_hlsUrl, otherOriginal]));
       });
     });
 
@@ -99,7 +104,7 @@ void main() {
           final video = _makeVideo(videoUrl: variantUrl);
           expect(
             resolvePlaybackSources(video),
-            equals([variantUrl, _rawUrl, _hlsUrl]),
+            equals([variantUrl, _hlsUrl]),
           );
         },
       );
@@ -111,7 +116,7 @@ void main() {
 
         expect(
           resolvePlaybackSources(video, derivativeFailureCache: cache),
-          equals([_hlsUrl, _rawUrl, variantUrl]),
+          equals([_hlsUrl, variantUrl]),
         );
       });
 
@@ -127,7 +132,7 @@ void main() {
 
         expect(
           resolvePlaybackSources(video, derivativeFailureCache: cache),
-          equals([variantUrl, _rawUrl, _hlsUrl]),
+          equals([variantUrl, _hlsUrl]),
         );
       });
     });

@@ -53,30 +53,30 @@ List<String> resolvePlaybackSources(
     final hlsUrl = canonicalDivineBlobHlsUrl(hash);
     final isAlreadyHls = resolvedSource.contains('/hls/');
     if (isAlreadyHls) {
-      return orderedUniqueSources([resolvedSource, rawUrl, originalUrl]);
+      return orderedUniqueSources([resolvedSource, originalUrl]);
     }
 
     final isRawBlob = resolvedSource == rawUrl;
-    // Progressive first, HLS last. For a quality variant (e.g. 720p.mp4) the
-    // guaranteed raw blob still comes before HLS so the fallback order
-    // preserves the existing "try another progressive source before paying HLS
-    // startup" behavior. The bare blob currently fails for range-requesting
-    // players until divine-blossom#198 is fixed, so HLS remains behind it as
-    // the final recovery source.
+    // KNOWN ISSUE: divine-blossom#198 — bare Divine blobs (unprocessed media)
+    // fail for HTTP Range-requesting clients when the CDN cache serves a stale
+    // S3 NoSuchKey error as a 206 response. This affects approximately 20% of
+    // recent uploads with large `free` boxes that trigger ExoPlayer's
+    // RELOAD_MINIMUM_SEEK_DISTANCE threshold. Bare blobs are removed from the
+    // fallback chain entirely until the CDN fix lands; HLS (transcoded) is the
+    // recovery source when progressive URL fails. See divine-blossom#198.
     if (isRawBlob) {
-      return orderedUniqueSources([resolvedSource, hlsUrl, originalUrl]);
-    }
-
-    if (derivativeFailureCache?.hasFreshFailureForHash(hash) ?? false) {
+      // Only include originalUrl if it differs from the raw blob being skipped
       return orderedUniqueSources([
         hlsUrl,
-        rawUrl,
-        resolvedSource,
-        originalUrl,
+        if (originalUrl != resolvedSource) originalUrl,
       ]);
     }
 
-    return orderedUniqueSources([resolvedSource, rawUrl, hlsUrl, originalUrl]);
+    if (derivativeFailureCache?.hasFreshFailureForHash(hash) ?? false) {
+      return orderedUniqueSources([hlsUrl, resolvedSource, originalUrl]);
+    }
+
+    return orderedUniqueSources([resolvedSource, hlsUrl, originalUrl]);
   }
 
   return orderedUniqueSources([resolvedSource, originalUrl]);
