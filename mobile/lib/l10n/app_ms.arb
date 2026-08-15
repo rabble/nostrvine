@@ -4404,7 +4404,7 @@
   "ogVinerBadgeLabel": "OG Viner",
   "profileBadgeOgVinerBody": "Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.",
   "profileBadgeCheckmarkTitle": "Tanda semak profil",
-  "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
+  "profileBadgeCheckmarkBody": "Divine memberikan tanda semak ini kepada akaun pasukan dan sebilangan kecil profil yang diluluskan secara manual. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.",
   "shareVideoInListsCount": "{count, plural, =1{Dalam 1 senarai} other{Dalam {count} senarai}}",
   "@shareVideoInListsCount": {
     "placeholders": {

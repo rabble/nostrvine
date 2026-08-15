@@ -4892,7 +4892,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "この人はオリジナルの Vine を投稿していて、Divine がアーカイブで見つけたよ。アカウントの認証バッジではないので注意。",
     "profileBadgeCheckmarkTitle": "プロフィールのチェックマーク",
-    "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
+    "profileBadgeCheckmarkBody": "Divine はこのチェックマークをチームのアカウントと、手動で承認したごく少数のプロフィールに付けてるよ。 NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。",
     "shareVideoInListsCount": "{count, plural, =1{1件のリストに含まれてるよ} other{{count}件のリストに含まれてるよ}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "フォロー解除",

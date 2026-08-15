@@ -7624,7 +7624,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.';
+      'Divine trao dấu tích này cho các tài khoản của đội ngũ và một số ít hồ sơ được duyệt thủ công. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

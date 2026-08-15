@@ -5023,7 +5023,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Този човек е публикувал оригинален Vine, който Divine намери в архива. Това не е значка за потвърден профил.",
     "profileBadgeCheckmarkTitle": "Отметка на профила",
-    "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
+    "profileBadgeCheckmarkBody": "Divine дава тази отметка на профилите на екипа и на малка група ръчно одобрени профили. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.",
     "shareVideoInListsCount": "{count, plural, =1{В 1 списък} other{В {count} списъка}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Спри да следваш",

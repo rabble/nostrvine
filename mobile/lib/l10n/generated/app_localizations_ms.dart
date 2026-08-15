@@ -7668,7 +7668,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.';
+      'Divine memberikan tanda semak ini kepada akaun pasukan dan sebilangan kecil profil yang diluluskan secara manual. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

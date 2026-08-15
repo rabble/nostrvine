@@ -4892,7 +4892,7 @@
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Deze persoon plaatste een originele Vine die Divine in het archief vond. Dit is geen verificatiebadge voor het account.",
     "profileBadgeCheckmarkTitle": "Profielvinkje",
-    "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
+    "profileBadgeCheckmarkBody": "Divine geeft dit vinkje aan teamaccounts en aan een klein aantal handmatig goedgekeurde profielen. Dat staat los van NIP-05, geverifieerde accountlinks en de OG Viner-status.",
     "shareVideoInListsCount": "{count, plural, =1{In 1 lijst} other{In {count} lijsten}}",
     "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Ontvolgen",
