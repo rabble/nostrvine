@@ -5221,5 +5221,6 @@
   "changeEmailSentTitle": "Dwa linki są w drodze",
   "changeEmailSentMessage": "Potwierdź z {email} i z adresu na twoim koncie. E-mail zmieni się, gdy zrobisz oba.",
   "changeEmailSentExpiry": "Linki przestają działać po 24 godzinach.",
-  "changeEmailSentDone": "Jasne"
+  "changeEmailSentDone": "Jasne",
+    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
 }

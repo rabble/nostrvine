@@ -4020,6 +4020,140 @@ void main() {
       });
     });
 
+    group('server-sort fallback ranking', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+      late ProfileRepository repoWithFunnelcake;
+
+      const pk18Videos =
+          'a18b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b18';
+      const pk4Videos =
+          'a04b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b04';
+      const pk1Video =
+          'a01b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b01';
+
+      List<ProfileSearchResult> resultsInServerOrder({int followerCount = 0}) =>
+          [
+            ProfileSearchResult(
+              pubkey: pk1Video,
+              displayName: 'Lauren One',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: followerCount,
+              videoCount: 1,
+            ),
+            ProfileSearchResult(
+              pubkey: pk18Videos,
+              displayName: 'Lauren Eighteen',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: followerCount,
+              videoCount: 18,
+            ),
+            ProfileSearchResult(
+              pubkey: pk4Videos,
+              displayName: 'Lauren Four',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: followerCount,
+              videoCount: 4,
+            ),
+          ];
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockNostrClient.queryUsers(
+            any(),
+            limit: any(named: 'limit'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => []);
+      });
+
+      void stubRestResults(List<ProfileSearchResult> results) {
+        when(
+          () => mockFunnelcakeClient.searchProfiles(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+          ),
+        ).thenAnswer((_) async => results);
+      }
+
+      test(
+        'searchUsersProgressive ranks by video count when a followers sort is a no-op',
+        () async {
+          stubRestResults(resultsInServerOrder());
+
+          final emissions = await repoWithFunnelcake
+              .searchUsersProgressive(query: 'lauren', sortBy: 'followers')
+              .toList();
+
+          final pubkeys = emissions.last.profiles.map((p) => p.pubkey).toList();
+          expect(pubkeys, [pk18Videos, pk4Videos, pk1Video]);
+        },
+      );
+
+      test(
+        'searchUsersProgressive preserves server order when follower counts are real',
+        () async {
+          stubRestResults(resultsInServerOrder(followerCount: 100));
+
+          final emissions = await repoWithFunnelcake
+              .searchUsersProgressive(query: 'lauren', sortBy: 'followers')
+              .toList();
+
+          final pubkeys = emissions.last.profiles.map((p) => p.pubkey).toList();
+          expect(pubkeys, [pk1Video, pk18Videos, pk4Videos]);
+        },
+      );
+
+      test(
+        'searchUsers ranks by video count when a followers sort is a no-op',
+        () async {
+          stubRestResults(resultsInServerOrder());
+
+          final result = await repoWithFunnelcake.searchUsers(
+            query: 'lauren',
+            sortBy: 'followers',
+          );
+
+          expect(result.map((p) => p.pubkey).toList(), [
+            pk18Videos,
+            pk4Videos,
+            pk1Video,
+          ]);
+        },
+      );
+
+      test(
+        'searchUsersFromApi ranks by video count when a followers sort is a no-op',
+        () async {
+          stubRestResults(resultsInServerOrder());
+
+          final result = await repoWithFunnelcake.searchUsersFromApi(
+            query: 'lauren',
+            sortBy: 'followers',
+          );
+
+          expect(result.map((p) => p.pubkey).toList(), [
+            pk18Videos,
+            pk4Videos,
+            pk1Video,
+          ]);
+        },
+      );
+    });
+
     group('searchUsersProgressive', () {
       test('returns empty stream for empty query', () async {
         final results = await profileRepository

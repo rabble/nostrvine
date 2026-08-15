@@ -12040,4 +12040,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get changeEmailSentDone => 'Got it';
+
+  @override
+  String searchUserVideoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '1 video',
+    );
+    return '$_temp0';
+  }
 }

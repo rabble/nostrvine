@@ -5221,5 +5221,6 @@
   "changeEmailSentTitle": "رابطان في الطريق",
   "changeEmailSentMessage": "أكّد من {email} ومن العنوان المسجّل في حسابك. يتبدّل بريدك بعد إتمام الاثنين.",
   "changeEmailSentExpiry": "تتوقف الروابط عن العمل بعد 24 ساعة.",
-  "changeEmailSentDone": "فهمت"
+  "changeEmailSentDone": "فهمت",
+    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
 }

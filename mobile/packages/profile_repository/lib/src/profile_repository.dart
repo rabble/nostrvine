@@ -1934,7 +1934,8 @@ class ProfileRepository implements ProfileReader {
       final profiles = restResults
           .map((result) => result.toUserProfile())
           .where((p) => !(_blockFilter?.call(p.pubkey) ?? false));
-      return await _enrichFromCache(profiles.toList());
+      final enriched = await _enrichFromCache(profiles.toList());
+      return _rankServerSortedPage(enriched, sortBy);
     } on Exception catch (e) {
       Log.warning(
         'REST profile search failed: $e',
@@ -2041,9 +2042,10 @@ class ProfileRepository implements ProfileReader {
     // Enrich profiles from local SQLite cache (fill in missing pictures, etc.)
     final enrichedProfiles = await _enrichFromCache(profiles);
 
-    // When server-side sorting is active, trust server order
+    // When server-side sorting is active, trust server order — unless the
+    // requested sort had nothing to order by on this page.
     if (useServerSort) {
-      return enrichedProfiles;
+      return _rankServerSortedPage(enrichedProfiles, sortBy);
     }
 
     // Use custom search filter if provided, otherwise simple contains match
@@ -2112,6 +2114,7 @@ class ProfileRepository implements ProfileReader {
             resultMap.values.toList(),
             useServerSort,
             boostPubkeys,
+            sortBy: sortBy,
           );
       return ProgressiveSearchResult(
         profiles: profiles,
@@ -2242,6 +2245,7 @@ class ProfileRepository implements ProfileReader {
             enriched,
             useServerSort,
             boostPubkeys,
+            sortBy: sortBy,
           ),
         );
         return;
@@ -2255,7 +2259,13 @@ class ProfileRepository implements ProfileReader {
     final enriched = await _enrichFromCache(resultMap.values.toList());
     yield snapshot(
       isComplete: true,
-      enriched: _applyFilter(trimmed, enriched, useServerSort, boostPubkeys),
+      enriched: _applyFilter(
+        trimmed,
+        enriched,
+        useServerSort,
+        boostPubkeys,
+        sortBy: sortBy,
+      ),
     );
   }
 
@@ -2266,11 +2276,12 @@ class ProfileRepository implements ProfileReader {
     String query,
     List<UserProfile> profiles,
     bool useServerSort,
-    Set<String>? boostPubkeys,
-  ) {
+    Set<String>? boostPubkeys, {
+    String? sortBy,
+  }) {
     List<UserProfile> filtered;
     if (useServerSort) {
-      filtered = profiles;
+      filtered = _rankServerSortedPage(profiles, sortBy);
     } else if (_profileSearchFilter != null) {
       filtered = _profileSearchFilter(query, profiles);
     } else {
@@ -2286,6 +2297,34 @@ class ProfileRepository implements ProfileReader {
     }
 
     return _boostProfiles(filtered, boostPubkeys);
+  }
+
+  /// Orders a server-sorted result page, falling back when the requested
+  /// sort is a no-op on the payload.
+  ///
+  /// A `followers` sort over a page whose follower counts are all missing
+  /// or zero is a no-op — the server had nothing to order by, and the page
+  /// comes back effectively unranked. Fall back to the one differentiator
+  /// the payload still carries: video count, descending. Index-decorated so
+  /// ties keep the server's relative order.
+  static List<UserProfile> _rankServerSortedPage(
+    List<UserProfile> profiles,
+    String? sortBy,
+  ) {
+    if (sortBy != 'followers' || profiles.isEmpty) return profiles;
+    final hasFollowerSignal = profiles.any(
+      (p) => (p.followerCount ?? 0) > 0,
+    );
+    if (hasFollowerSignal) return profiles;
+
+    final indexed = <(int, UserProfile)>[
+      for (var i = 0; i < profiles.length; i++) (i, profiles[i]),
+    ];
+    indexed.sort((a, b) {
+      final byVideos = (b.$2.videoCount ?? 0).compareTo(a.$2.videoCount ?? 0);
+      return byVideos != 0 ? byVideos : a.$1.compareTo(b.$1);
+    });
+    return [for (final entry in indexed) entry.$2];
   }
 
   /// Moves profiles whose pubkey is in [boostPubkeys] to the front of

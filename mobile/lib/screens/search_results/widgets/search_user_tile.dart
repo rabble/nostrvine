@@ -8,17 +8,15 @@ import 'package:openvine/features/people_lists/models/people_list_entry_point.da
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nip05_verification_provider.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Reusable tile widget for displaying a user profile in search results.
 ///
-/// Shows avatar, display name, and a secondary line with verified NIP-05 or
-/// truncated npub. Uses [ConsumerWidget] (Riverpod) because
-/// [nip05VerificationProvider] is a legacy Riverpod provider that has not yet
-/// been migrated to BLoC.
+/// Shows avatar, display name, and a secondary line that disambiguates
+/// same-named strangers: their video count when known, else the truncated
+/// npub. Uses [ConsumerWidget] (Riverpod) for the feature-flag and auth
+/// providers that gate the add-to-list action.
 class SearchUserTile extends ConsumerWidget {
   const SearchUserTile({required this.profile, this.onTap, super.key});
 
@@ -27,17 +25,14 @@ class SearchUserTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final claimedNip05 = profile.shortDisplayNip05;
-    final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
-        ? ref
-              .watch(nip05VerificationProvider(profile.pubkey))
-              .whenOrNull(data: (status) => status)
-        : null;
-    final showVerifiedNip05 =
-        verificationStatus == Nip05VerificationStatus.verified;
-
-    final secondaryText = showVerifiedNip05 && claimedNip05 != null
-        ? claimedNip05
+    // The secondary line carries information that actually distinguishes
+    // people. The claimed nip05 is unusable for that here: profile search
+    // returns one identical verified handle for every same-named result (a
+    // server-side archive-import data bug), and verifying it live costs one
+    // HTTP fetch per row.
+    final videoCount = profile.videoCount;
+    final secondaryText = videoCount != null && videoCount > 0
+        ? context.l10n.searchUserVideoCount(videoCount)
         : profile.truncatedNpub;
 
     final profileListFeaturesEnabled = ref.watch(

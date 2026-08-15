@@ -5221,5 +5221,6 @@
   "changeEmailSentTitle": "Dua tautan sedang dikirim",
   "changeEmailSentMessage": "Konfirmasi dari {email} dan dari alamat di akunmu. Emailmu berganti setelah keduanya selesai.",
   "changeEmailSentExpiry": "Tautan berhenti berlaku setelah 24 jam.",
-  "changeEmailSentDone": "Oke"
+  "changeEmailSentDone": "Oke",
+    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
 }

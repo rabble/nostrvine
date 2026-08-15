@@ -7051,5 +7051,6 @@
   "changeEmailSentTitle": "Dua pautan dalam perjalanan",
   "changeEmailSentMessage": "Sahkan dari {email} dan dari alamat dalam akaun anda. E-mel anda bertukar sebaik kedua-duanya selesai.",
   "changeEmailSentExpiry": "Pautan tamat selepas 24 jam.",
-  "changeEmailSentDone": "Faham"
+  "changeEmailSentDone": "Faham",
+    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
 }

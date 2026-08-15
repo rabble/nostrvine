@@ -20595,6 +20595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Got it'**
   String get changeEmailSentDone;
+
+  /// Secondary line on a people-search result row: how many videos this user has published.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 video} other{{count} videos}}'**
+  String searchUserVideoCount(int count);
 }
 
 class _AppLocalizationsDelegate

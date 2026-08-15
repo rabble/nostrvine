@@ -5221,5 +5221,6 @@
   "changeEmailSentTitle": "Er zijn twee links onderweg",
   "changeEmailSentMessage": "Bevestig vanaf {email} en vanaf het adres op je account. Je e-mail wisselt zodra beide gedaan zijn.",
   "changeEmailSentExpiry": "De links werken 24 uur.",
-  "changeEmailSentDone": "Duidelijk"
+  "changeEmailSentDone": "Duidelijk",
+    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
 }

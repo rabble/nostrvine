@@ -5221,5 +5221,6 @@
   "changeEmailSentTitle": "確認リンクを2通送りました",
   "changeEmailSentMessage": "{email} と、アカウントに登録中のアドレスの両方で確認してください。両方が終わるとメールアドレスが切り替わります。",
   "changeEmailSentExpiry": "リンクは24時間で使えなくなります。",
-  "changeEmailSentDone": "わかりました"
+  "changeEmailSentDone": "わかりました",
+    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
 }

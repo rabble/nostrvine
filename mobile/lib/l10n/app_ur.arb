@@ -7051,5 +7051,6 @@
   "changeEmailSentTitle": "دو لنک بھیج دیے گئے ہیں",
   "changeEmailSentMessage": "{email} سے اور اپنے اکاؤنٹ والے پتے سے تصدیق کریں۔ دونوں مکمل ہونے پر ای میل بدل جائے گی۔",
   "changeEmailSentExpiry": "لنک 24 گھنٹے بعد کام کرنا بند کر دیتے ہیں۔",
-  "changeEmailSentDone": "سمجھ گیا"
+  "changeEmailSentDone": "سمجھ گیا",
+    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
 }

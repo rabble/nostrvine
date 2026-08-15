@@ -5221,5 +5221,6 @@
   "changeEmailSentTitle": "Due link sono in arrivo",
   "changeEmailSentMessage": "Conferma da {email} e dall'indirizzo del tuo account. L'e-mail cambia quando hai fatto entrambi.",
   "changeEmailSentExpiry": "I link scadono dopo 24 ore.",
-  "changeEmailSentDone": "Ok, capito"
+  "changeEmailSentDone": "Ok, capito",
+    "searchUserVideoCount": "{count, plural, =1{1 video} other{{count} videos}}"
 }
