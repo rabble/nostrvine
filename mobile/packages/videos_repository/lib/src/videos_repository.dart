@@ -2766,16 +2766,13 @@ class VideosRepository {
     if (effectiveUserPubkey == null ||
         _funnelcakeApiClient == null ||
         !_funnelcakeApiClient.isAvailable) {
-      return HomeFeedResult(
-        videos: await _orderBySeenFreshness(
-          await getPopularVideos(
-            limit: limit,
-            until: until,
-            skipCache: skipCache,
-            preferredLanguages: preferredLanguages,
-            viewerCountry: viewerCountry,
-          ),
-        ),
+      return _popularVideosInsteadOfRecommendations(
+        reason: 'recommendations unavailable',
+        limit: limit,
+        until: until,
+        skipCache: skipCache,
+        preferredLanguages: preferredLanguages,
+        viewerCountry: viewerCountry,
       );
     }
 
@@ -2790,18 +2787,15 @@ class VideosRepository {
         preferredLanguages: preferredLanguages,
         viewerCountry: viewerCountry,
       );
-    } on FunnelcakeException {
+    } on FunnelcakeException catch (e) {
       if (recommendationCursor != null) rethrow;
-      return HomeFeedResult(
-        videos: await _orderBySeenFreshness(
-          await getPopularVideos(
-            limit: limit,
-            until: until,
-            skipCache: skipCache,
-            preferredLanguages: preferredLanguages,
-            viewerCountry: viewerCountry,
-          ),
-        ),
+      return _popularVideosInsteadOfRecommendations(
+        reason: 'first page failed: $e',
+        limit: limit,
+        until: until,
+        skipCache: skipCache,
+        preferredLanguages: preferredLanguages,
+        viewerCountry: viewerCountry,
       );
     }
 
@@ -2816,16 +2810,13 @@ class VideosRepository {
     );
 
     if (result.videos.isEmpty) {
-      return HomeFeedResult(
-        videos: await _orderBySeenFreshness(
-          await getPopularVideos(
-            limit: limit,
-            until: until,
-            skipCache: skipCache,
-            preferredLanguages: preferredLanguages,
-            viewerCountry: viewerCountry,
-          ),
-        ),
+      return _popularVideosInsteadOfRecommendations(
+        reason: 'no recommendations survived filtering',
+        limit: limit,
+        until: until,
+        skipCache: skipCache,
+        preferredLanguages: preferredLanguages,
+        viewerCountry: viewerCountry,
       );
     }
 
@@ -2836,6 +2827,37 @@ class VideosRepository {
       _inMemoryFeedCache?.set(cacheKey, result);
     }
     return result;
+  }
+
+  /// Serves popular videos when the For You feed cannot be personalized.
+  ///
+  /// The returned [HomeFeedResult] is indistinguishable from a recommendation
+  /// result at the call site, so the substitution is logged here — otherwise
+  /// nothing records that a viewer saw popular videos under the For You tab.
+  Future<HomeFeedResult> _popularVideosInsteadOfRecommendations({
+    required String reason,
+    required int limit,
+    required int? until,
+    required bool skipCache,
+    required List<String> preferredLanguages,
+    required String? viewerCountry,
+  }) async {
+    Log.warning(
+      'For You falling back to popular videos: $reason',
+      name: 'VideosRepository',
+      category: LogCategory.video,
+    );
+    return HomeFeedResult(
+      videos: await _orderBySeenFreshness(
+        await getPopularVideos(
+          limit: limit,
+          until: until,
+          skipCache: skipCache,
+          preferredLanguages: preferredLanguages,
+          viewerCountry: viewerCountry,
+        ),
+      ),
+    );
   }
 
   Future<RecommendationsResponse> _fetchRecommendationsPage({
