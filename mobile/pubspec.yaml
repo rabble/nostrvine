@@ -344,7 +344,7 @@ dependencies:
   # extra Flutter-specific native SQLite providers can make plain SQLite win.
   sqlite3: ^3.3.3
   audio_session: ^0.2.2
-  pro_video_editor: ^2.11.2
+  pro_video_editor: ^2.11.3
   pro_image_editor: ^13.3.1
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
