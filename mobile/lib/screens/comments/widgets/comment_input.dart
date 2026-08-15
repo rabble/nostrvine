@@ -392,6 +392,13 @@ class _CommentTextField extends StatelessWidget {
               : TextInputAction.send,
           onSubmitted: isComposingMultiline ? null : (_) => onSubmitted(),
           enableInteractiveSelection: true,
+          // A posted comment cannot be edited away from every relay that
+          // already has it, so catching the typo before send is the only
+          // real fix. This is the same region-aware config DivineTextField
+          // applies by default; the pill styling here needs a raw TextField,
+          // which opts out of spell check unless it is passed explicitly.
+          spellCheckConfiguration:
+              DivineTextField.defaultSpellCheckConfiguration,
           style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
           cursorColor: VineTheme.tabIndicatorGreen,
           decoration: InputDecoration(
