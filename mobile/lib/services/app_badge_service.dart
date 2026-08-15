@@ -29,8 +29,12 @@ class AppBadgeService implements AppBadgeClearer {
     try {
       await _channel.invokeMethod<void>('clear');
     } on PlatformException catch (e) {
+      // Log the whole exception, not just `e.code`: BADGE_CLEAR_FAILED is the
+      // only code the native handler emits, so the code alone says nothing.
+      // `message` carries the underlying `error.localizedDescription` set in
+      // `setupAppBadgeChannel` — that is the part worth having.
       Log.warning(
-        'App badge clear failed: ${e.code}',
+        'App badge clear failed: $e',
         name: 'AppBadgeService',
         category: LogCategory.system,
       );
