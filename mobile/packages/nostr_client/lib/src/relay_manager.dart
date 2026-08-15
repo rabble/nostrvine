@@ -177,12 +177,13 @@ class RelayManager {
 
   /// Ensure the user-removal intent ledger has been loaded from storage.
   ///
-  /// This is idempotent and thread-safe. Designed for eager loading before
-  /// initialize() to ensure that pre-init addRelay() calls can properly
-  /// suppress user-removed relays.
+  /// Idempotent: concurrent callers share a single storage read, and later
+  /// calls return immediately once the ledger is loaded.
   ///
-  /// Call this before any relay operations that need to respect user-removal
-  /// intent.
+  /// [addRelay], [removeRelay], [isUserRemovedRelay] and [initialize] already
+  /// await this internally, so suppression is correct without it. Use it only
+  /// to warm the ledger ahead of those calls, or to surface a storage read
+  /// failure at a point the caller chooses.
   Future<void> ensureUserRemovedRelaysLoaded() =>
       _ensureUserRemovedRelaysLoaded();
 

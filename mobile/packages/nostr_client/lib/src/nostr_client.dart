@@ -542,9 +542,9 @@ class NostrClient {
 
   /// Ensure the user-removal intent ledger has been loaded from storage.
   ///
-  /// This delegates to the relay manager's ledger loading. Designed for
-  /// eager loading before initialize() to ensure that pre-init addRelay()
-  /// calls can properly suppress user-removed relays.
+  /// Delegates to [RelayManager.ensureUserRemovedRelaysLoaded]. See that
+  /// method for when a caller needs this: [addRelay], [addRelays] and
+  /// [initialize] already load the ledger themselves.
   Future<void> ensureUserRemovedRelaysLoaded() =>
       _relayManager.ensureUserRemovedRelaysLoaded();
 
@@ -934,7 +934,10 @@ class NostrClient {
       // their having nothing. A display read is content to fall back on cache;
       // a full-settlement caller is about to replace what it read, so it gets
       // the same inconclusive answer a relay that never settled would give.
-      websocketResult = (events: <Event>[], timedOut: requireAllRelaysSettled);
+      websocketResult = (
+        events: <Event>[],
+        timedOut: requireAllRelaysSettled,
+      );
     } else {
       websocketResult = useQueryPool
           ? await _queryPool.withResource(runWebSocketQuery)
