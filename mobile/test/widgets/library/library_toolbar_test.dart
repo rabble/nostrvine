@@ -465,9 +465,10 @@ void main() {
         tester,
       ) async {
         // Every icon action is estimated as one 48px tap target, whatever its
-        // type: a destructive button pads by the border width a secondary one
-        // paints instead, so both land on the same outer bounds. If that stops
-        // holding, the estimate goes under and the row overflows.
+        // type: at `small` DivineIconButton centres its pill in an explicit
+        // 48px box, so the bordered secondary and the borderless destructive
+        // land on the same outer bounds however wide their pills draw. If
+        // that stops holding, the estimate goes under and the row overflows.
         await tester.pumpWidget(
           buildWidget(
             isLibrarySelectionMode: true,
