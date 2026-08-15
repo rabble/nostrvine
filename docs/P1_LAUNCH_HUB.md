@@ -22,6 +22,21 @@ P1 launch is the milestone for submitting Divine to the App Store for review and
 - [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](../mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md) - export compliance record
 - [mobile/docs/ANDROID_DEPLOYMENT.md](../mobile/docs/ANDROID_DEPLOYMENT.md) - Play Console upload flow
 
+## Release Policy: No Freezes
+
+Divine does not run a release freeze before launch. Fixes land through normal
+review and ship on the normal release path, including in the days immediately
+before a launch.
+
+A freeze blocks corrections for exactly the bugs that launch traffic is most
+likely to expose, which gets the risk backwards. Do not plan around a freeze
+window, do not hold a change for one, and do not frame a fix as needing a
+"freeze exception". If you are told a freeze is in effect, treat that as stale
+and confirm before planning around it.
+
+`## 1. Pin The Release Candidate` in [docs/RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
+is unrelated — it means pin the target commit for a build, not stop merging.
+
 ## Current Release Path
 
 From `mobile/`:

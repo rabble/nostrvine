@@ -156,7 +156,7 @@ does not make them queryable as dimensions retroactively.
 The GA4 reporting identity setting does not gate the BigQuery `user_id` field;
 use BigQuery as the campaign source of truth.
 
-## Pre-Freeze End-To-End Check
+## Pre-Release-Candidate End-To-End Check
 
 Publish from a test account and query the streaming export within minutes:
 
