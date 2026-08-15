@@ -4224,6 +4224,7 @@
     "dmReelReplySentAnnouncement": "Risposta inviata",
     "dmReelReactionSentAnnouncement": "Hai reagito {emoji}",
     "dmReelReplyFailed": "Invio non riuscito",
+    "dmReelReplyUnverified": "Invio non confermato",
     "emojiPickerSearchHint": "Cerca",
     "emojiCategoryRecent": "Recenti",
     "emojiCategorySmileys": "Faccine e persone",

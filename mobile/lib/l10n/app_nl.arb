@@ -4224,6 +4224,7 @@
     "dmReelReplySentAnnouncement": "Antwoord verzonden",
     "dmReelReactionSentAnnouncement": "Gereageerd met {emoji}",
     "dmReelReplyFailed": "Verzenden mislukt",
+    "dmReelReplyUnverified": "Verzenden niet bevestigd",
     "emojiPickerSearchHint": "Zoeken",
     "emojiCategoryRecent": "Recent",
     "emojiCategorySmileys": "Smileys en mensen",

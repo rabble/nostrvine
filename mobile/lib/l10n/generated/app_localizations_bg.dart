@@ -6210,6 +6210,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmReelReplyFailed => 'Изпращането е неуспешно';
 
   @override
+  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+
+  @override
   String dmReactionChipOwnA11yLabel(String emoji) {
     return 'Твоята реакция: $emoji';
   }

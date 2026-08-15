@@ -126,11 +126,13 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
         addError(error, stackTrace);
       }
       if (!isClosed) {
-        // No handle to offer: every throwing path in the repository's send
-        // prologue (uninitialized repo, invalid pubkey, empty content, the
-        // send-policy gate) runs *before* the queue enqueue, so a throw
-        // leaves no row behind and [retry]'s fresh-send fallback cannot
-        // duplicate anything.
+        // No handle to offer, and none is being dropped: the repository's
+        // throwing paths (uninitialized repo, invalid pubkey, empty content,
+        // the send-policy gate) all run *before* the enqueue, the 1:1 enqueue
+        // is a single write with nothing parked ahead of it, and the group
+        // enqueue loop catches per sibling rather than escaping with rows
+        // already parked. So a throw leaves no row behind and [retry]'s
+        // fresh-send fallback cannot duplicate anything.
         emit(
           state.copyWith(
             status: InlineReelReplyStatus.failure,
@@ -155,6 +157,12 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
   /// through `recoverFullSend` replays the *same* rumor, which the receiver
   /// does collapse. See #7316.
   ///
+  /// Every parked row is attempted, and the outcome is the worst one seen:
+  /// [InlineReelReplyStatus.failure] while any row is still outstanding (the
+  /// retry affordance stays up and narrows to those rows), otherwise
+  /// [InlineReelReplyStatus.unverifiable] if any row had already gone, and
+  /// [InlineReelReplyStatus.success] only when every row was delivered.
+  ///
   /// [content] is used only for the fallback when nothing was parked — see
   /// [InlineReelReplyState.queuedRumorIds].
   Future<void> retry(String content) async {
@@ -164,61 +172,77 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
 
     emit(state.copyWith(status: InlineReelReplyStatus.sending));
 
-    try {
-      final stillParked = <String>[];
-      for (final rumorId in parked) {
-        try {
-          // `resetRetryBudget` re-arms a row whose soft-unconfirmed attempts
-          // already spent the sweep's budget: an explicit user retry is the
-          // signal to hand it back, matching ConversationBloc's resend.
-          final result = await _dmRepository.recoverFullSend(
-            rumorId: rumorId,
-            resetRetryBudget: true,
-          );
-          if (!result.success) stillParked.add(rumorId);
-          // ignore: avoid_catching_errors
-        } on ArgumentError {
+    final stillParked = <String>[];
+    var unverifiable = 0;
+    Object? lastError;
+    StackTrace? lastStackTrace;
+
+    for (final rumorId in parked) {
+      try {
+        // `resetRetryBudget` re-arms a row whose soft-unconfirmed attempts
+        // already spent the sweep's budget: an explicit user retry is the
+        // signal to hand it back, matching ConversationBloc's resend.
+        final result = await _dmRepository.recoverFullSend(
+          rumorId: rumorId,
+          resetRetryBudget: true,
+        );
+        if (!result.success) stillParked.add(rumorId);
+      } on Object catch (error, stackTrace) {
+        if (error is ArgumentError) {
           // The row is gone — delivered by the sweep, cancelled by the user,
           // or owned by another account. Terminal for this id either way, and
           // deliberately NOT retried as a fresh send: we cannot prove the
           // original did not land, so minting a replacement risks the exact
-          // duplicate this method exists to prevent.
+          // duplicate this method exists to prevent. Nor is it a delivery we
+          // may claim, so it downgrades the whole retry to `unverifiable`.
+          unverifiable++;
+          continue;
         }
+        // Per-sibling, like ConversationBloc's recovery loop: one bad row
+        // must not skip the siblings after it, each of which owns a separate
+        // parked copy the sweep would otherwise be left to re-drive alone.
+        stillParked.add(rumorId);
+        lastError = error;
+        lastStackTrace = stackTrace;
       }
-      if (!isClosed) {
-        final ok = stillParked.length < parked.length;
-        emit(
-          state.copyWith(
-            status: ok
-                ? InlineReelReplyStatus.success
-                : InlineReelReplyStatus.failure,
-            // A further retry targets exactly the rows still outstanding.
-            queuedRumorIds: stillParked,
-          ),
-        );
-      }
-    } catch (error, stackTrace) {
+    }
+
+    if (lastError != null) {
       Log.error(
         'Reel reply retry failed',
         name: 'InlineReelReplyCubit',
         category: LogCategory.ui,
-        error: error,
-        stackTrace: stackTrace,
+        error: lastError,
+        stackTrace: lastStackTrace,
       );
       // Same split as submit: a StateError here means the queue DAO was never
       // wired into the repository, which is a programming invariant.
-      if (error is Error) {
+      if (lastError is Error) {
         addError(
-          Reportable(error, context: InlineReelReplyReportableSites.retry),
-          stackTrace,
+          Reportable(lastError, context: InlineReelReplyReportableSites.retry),
+          lastStackTrace,
         );
       } else {
-        addError(error, stackTrace);
-      }
-      if (!isClosed) {
-        emit(state.copyWith(status: InlineReelReplyStatus.failure));
+        addError(lastError, lastStackTrace);
       }
     }
+
+    if (isClosed) return;
+    emit(
+      state.copyWith(
+        // All-succeeded, matching ConversationBloc: any sibling still parked
+        // keeps the retry affordance up, and it targets exactly those rows.
+        // Reporting success off one lucky sibling would retire the affordance
+        // while the rest were still undelivered.
+        status: stillParked.isNotEmpty
+            ? InlineReelReplyStatus.failure
+            : unverifiable > 0
+            ? InlineReelReplyStatus.unverifiable
+            : InlineReelReplyStatus.success,
+        // A further retry targets exactly the rows still outstanding.
+        queuedRumorIds: stillParked,
+      ),
+    );
   }
 
   /// Reset to [InlineReelReplyStatus.initial] after the View shows the

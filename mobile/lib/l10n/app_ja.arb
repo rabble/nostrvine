@@ -4224,6 +4224,7 @@
     "dmReelReplySentAnnouncement": "返信を送信しました",
     "dmReelReactionSentAnnouncement": "{emoji}でリアクションしました",
     "dmReelReplyFailed": "送信できませんでした",
+    "dmReelReplyUnverified": "送信を確認できませんでした",
     "emojiPickerSearchHint": "検索",
     "emojiCategoryRecent": "最近使った絵文字",
     "emojiCategorySmileys": "スマイリーと人々",

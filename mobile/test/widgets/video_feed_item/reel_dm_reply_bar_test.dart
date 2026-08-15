@@ -574,6 +574,67 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('a retry whose row is gone reports unverified, not sent', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenAnswer(
+      (_) async => const NIP17SendResult.failure(
+        'no relay responded',
+        retryablePending: true,
+        queuedRumorId: 'parked-row',
+      ),
+    );
+    // The row is gone: possibly delivered by the sweep, possibly cancelled,
+    // possibly another account's. Delivery cannot be proven either way.
+    when(
+      () => dmRepo.recoverFullSend(
+        rumorId: any(named: 'rumorId'),
+        resetRetryBudget: any(named: 'resetRetryBudget'),
+      ),
+    ).thenThrow(ArgumentError.value('parked-row', 'rumorId', 'no queued row'));
+
+    await tester.pumpWidget(wrap(context()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(
+      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.dmReelReplyUnverified), findsOneWidget);
+    // Claiming "Sent" would assert a delivery nothing confirmed.
+    expect(find.text(l10n.shareSent), findsNothing);
+    // And no second Retry: there is no row left to re-drive, so tapping one
+    // would fall through to a fresh send — the duplicate #7316 closed. The
+    // send count pins that nothing re-sent behind the snackbar's back.
+    expect(
+      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+      findsNothing,
+    );
+    // (The "View chat" affordance this outcome offers instead needs a router
+    // in the tree; `wrap` has none, so the shared snackbar builder drops the
+    // action here. The success path covers that branch.)
+    verify(
+      () => dmRepo.sendMessage(
+        recipientPubkey: _peer,
+        content: 'hello',
+        replyToId: _reelId,
+      ),
+    ).called(1);
+  });
+
   testWidgets('leaves a queued retry snackbar for whatever is on screen', (
     tester,
   ) async {

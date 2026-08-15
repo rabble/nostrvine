@@ -6186,6 +6186,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmReelReplyFailed => 'Verzenden mislukt';
 
   @override
+  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+
+  @override
   String dmReactionChipOwnA11yLabel(String emoji) {
     return 'Jouw reactie: $emoji';
   }

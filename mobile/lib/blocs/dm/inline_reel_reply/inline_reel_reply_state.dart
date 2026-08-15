@@ -13,6 +13,18 @@ enum InlineReelReplyStatus {
 
   /// The most recent reply send failed (queued for retry).
   failure,
+
+  /// A retry found its parked row gone, and delivery can be neither confirmed
+  /// nor re-driven.
+  ///
+  /// `recoverFullSend` raises `ArgumentError` both when the row has been
+  /// consumed (the sweep may already have delivered it, or the user deleted
+  /// it) and when it belongs to another account, so the outcome is genuinely
+  /// unknown. Distinct from [success] because nothing proved delivery, and
+  /// from [failure] because there is no row left to retry — offering one
+  /// would fall through to a fresh send and mint the duplicate this flow
+  /// exists to prevent. Mirrors `ModerationDmOutcome.unverifiable`.
+  unverifiable,
 }
 
 /// State for [InlineReelReplyCubit] — the lifecycle status plus the durable

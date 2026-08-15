@@ -6158,6 +6158,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dmReelReplyFailed => 'Không gửi được';
 
   @override
+  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+
+  @override
   String dmReactionChipOwnA11yLabel(String emoji) {
     return 'Cảm xúc của bạn: $emoji';
   }

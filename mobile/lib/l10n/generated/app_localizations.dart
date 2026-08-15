@@ -10769,6 +10769,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t send'**
   String get dmReelReplyFailed;
 
+  /// Transient toast shown in the reel player when a retry could not determine whether the reply was delivered. Offers 'View chat' rather than another retry, because retrying could send a duplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t confirm that sent'**
+  String get dmReelReplyUnverified;
+
   /// Screen-reader label for a reaction chip created by the current account.
   ///
   /// In en, this message translates to:

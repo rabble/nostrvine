@@ -6023,6 +6023,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmReelReplyFailed => 'መላክ አልተቻለም';
 
   @override
+  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+
+  @override
   String dmReactionChipOwnA11yLabel(String emoji) {
     return 'የአንተ ምላሽ፦ $emoji';
   }

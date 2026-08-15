@@ -6313,6 +6313,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmReelReplyFailed => 'Trimiterea a eșuat';
 
   @override
+  String get dmReelReplyUnverified => 'Couldn\'t confirm that sent';
+
+  @override
   String dmReactionChipOwnA11yLabel(String emoji) {
     return 'Reacția ta: $emoji';
   }

@@ -4356,6 +4356,7 @@
     "dmReelReplySentAnnouncement": "መልስ ተልኳል",
     "dmReelReactionSentAnnouncement": "በ{emoji} ምላሽ ሰጥተዋል",
     "dmReelReplyFailed": "መላክ አልተቻለም",
+    "dmReelReplyUnverified": "መላኩን ማረጋገጥ አልተቻለም",
     "emojiPickerSearchHint": "ፍለጋ",
     "emojiCategoryRecent": "የቅርብ ጊዜ",
     "emojiCategorySmileys": "ፈገግታዎች እና ሰዎች",

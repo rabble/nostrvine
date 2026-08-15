@@ -3796,6 +3796,10 @@
   "@dmReelReplyFailed": {
     "description": "Transient toast shown in the reel player when a reply or reaction fails to send."
   },
+  "dmReelReplyUnverified": "Couldn't confirm that sent",
+  "@dmReelReplyUnverified": {
+    "description": "Transient toast shown in the reel player when a retry could not determine whether the reply was delivered. Offers 'View chat' rather than another retry, because retrying could send a duplicate."
+  },
   "dmReactionChipOwnA11yLabel": "Your reaction: {emoji}",
   "@dmReactionChipOwnA11yLabel": {
     "description": "Screen-reader label for a reaction chip created by the current account.",

@@ -4224,6 +4224,7 @@
     "dmReelReplySentAnnouncement": "Svar skickat",
     "dmReelReactionSentAnnouncement": "Reagerade {emoji}",
     "dmReelReplyFailed": "Det gick inte att skicka",
+    "dmReelReplyUnverified": "Det gick inte att bekräfta att det skickades",
     "emojiPickerSearchHint": "Sök",
     "emojiCategoryRecent": "Senaste",
     "emojiCategorySmileys": "Smileys och personer",
