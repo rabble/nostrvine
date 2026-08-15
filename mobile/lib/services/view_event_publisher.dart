@@ -96,6 +96,15 @@ class ViewEventPublisher {
       return _drop(ViewEventDropReason.notAuthenticated, video.id, method);
     }
 
+    // Explicit publish-readiness gate. `isAuthenticated` only says the pubkey
+    // is known: a Keycast identity with no local key is authenticated well
+    // before its signer works, and signing in that window returns null, which
+    // used to be filed as a structural `signingFailed` invariant (#7505).
+    // Sampled at the moment of use, per `canPublishNostrWritesNow`'s contract.
+    if (!_authService.canPublishNostrWritesNow) {
+      return _drop(ViewEventDropReason.signerNotReady, video.id, method);
+    }
+
     try {
       // View events require an addressable video reference.
       final aTag = video.addressableId;

@@ -53,6 +53,7 @@ void main() {
       mockAuth = _MockAuthService();
 
       when(() => mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.canPublishNostrWritesNow).thenReturn(true);
       when(() => mockNostr.connectedRelays).thenReturn([]);
       when(
         () => mockAuth.createAndSignEvent(
