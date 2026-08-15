@@ -120,6 +120,28 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
     });
 
+    test(
+      'provider rebuild preserves explicit and owner-held page overlays',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(overlayVisibilityProvider.notifier);
+        final owner = Object();
+
+        notifier.setPageOpen(true);
+        notifier.setPageOpenForOwner(owner, isOpen: true);
+        container.invalidate(overlayVisibilityProvider);
+
+        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+        notifier.setPageOpen(false);
+        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+        notifier.setPageOpenForOwner(owner, isOpen: false);
+        expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+      },
+    );
+
     test('clearPageOpen resets explicit and owner-held page overlays', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
