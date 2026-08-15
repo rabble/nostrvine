@@ -300,10 +300,11 @@ sampled video above 400 against a displayed 108, which is a larger correction
 than this table accounts for, and it counts only viewers who interacted.
 Treat every figure here as the least the number should move, not the most.
 
-### The display floor, and why most cards show a date
+### The display floor under the post-date feature
 
 `publicLoopCountFloor` is 1000. The pre-change baseline corrected this section:
-the floor is applied to
+the floor is applied only when `FeatureFlag.videoCardPostDate` is enabled, and
+then only to
 `mobile/lib/widgets/video_feed_item/video_card_meta.dart`'s public count
 (`loops` for classic Vines, `originalLoops + views` otherwise), not to
 `video_total_views_data.total_views`. Measured against the gated quantity:
@@ -314,10 +315,12 @@ the floor is applied to
 | 333 (floor reached at ×3) | 1,375,711 | 62.42% |
 | 100 (floor reached at ×10) | 1,621,923 | 73.60% |
 
-So the public count renders on about half the catalogue, not on 0.04% of it.
-The floor still matters after the metric correction, but the reason is not that
-the count is effectively never shown; it is that the visible counts are all
-large enough to read as social proof rather than a warning.
+When that feature is enabled, the public count renders on about half the
+catalogue, not on 0.04% of it. Production remains unchanged while the flag is
+off: cards keep showing the raw count and no date. The floor still matters
+after the metric correction, but the reason is not that the count is
+effectively never shown; it is that the visible counts in the feature-gated
+path are all large enough to read as social proof rather than a warning.
 
 **This is intended, and it is not a defect.** Two reasons it holds:
 

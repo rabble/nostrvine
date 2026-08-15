@@ -9,9 +9,8 @@
 The design's open risk section: the redefinition and the #7210 outage recovery
 land close together, and without a recorded pre-change state their effects
 become unattributable. This is that record. Every number here was measured
-read-only against production ClickHouse (`agent_readonly_user`, ClickHouse
-Cloud 26.4.1.2163) on the date above, with the exact SQL in the appendix so
-any figure can be re-derived or extended.
+read-only against production ClickHouse Cloud on the date above, with the exact
+SQL in the appendix so any figure can be re-derived or extended.
 
 **Reader's key for the client tag.** Mobile view reporters appear in
 `view_interactions.client` as `Divine`, emitted by
@@ -138,6 +137,9 @@ Totals across the catalogue (`video_total_views_data`, refreshed
 The design doc's identity holds exactly on all 2.2M rows. CDN-derived
 viewing is already 42% of reported views and contributes **zero** loops
 today — that gap is the single largest correction the design makes.
+This denominator comes from `video_total_views_data`, the aggregate table
+behind the CDN/auth split; §5 uses `nostr.videos`, which has a slightly larger
+catalogue row count because it is the source table for the public-count gate.
 
 ## 3. Today's definitional conflation, measured
 
@@ -180,28 +182,28 @@ the set of distinct pubkeys in `view_interactions` for that video (full
 `videos` — an earlier unrestricted pass returned kind-1 text notes from the
 wider relay network, which trivially have no view rows.
 
-Ten most-reacted videos, 2026-08-09..13:
+Ten most-reacted videos, 2026-08-09..13. Sample labels stand in for the real
+event ids so this public doc keeps the aggregate result without publishing
+content-level internal measurement rows.
 
-| Video event id | Interactors | Registered viewers | Interactors with a view | Missing |
+| Sample | Interactors | Registered viewers | Interactors with a view | Missing |
 |---|---|---|---|---|
-| dbd2c6f133ec35f41375c02353c4d4247efa96dccede953436a959af51dd4d34 | 46 | 55 | 17 | 63.0% |
-| 63cc7c3942a6d447d3a6fc8e3caaadfd34d23b5b69d8a8b7c5ce9d5a02087aef | 42 | 53 | 22 | 47.6% |
-| a3092dfc8d36d15583d0866ae4312fd32b96a8eb59d79a7f23028c1ffc6d5503 | 42 | 29 | 11 | 73.8% |
-| ae8b149c8a350a6b46b60fd52eac70643a48557cfad58122ab429e4ea17df40c | 39 | 77 | 27 | 30.8% |
-| a68e53502c5ac41bf36e2e89a0116171be69a52e4b7119eb959c9c3bc9081d2a | 38 | 52 | 20 | 47.4% |
-| 87d463ee481daa5c974a3cf77f326e9821cfeff596bf83d945b4ab336c84389b | 35 | 35 | 16 | 54.3% |
-| 5a269949a378ac87dd1e4ae646dd41b67da37068858cd03b3ec54d7f1a1822b0 | 33 | 55 | 14 | 57.6% |
-| 30af2b523e454672316cba2193beee835e20a0f04438244d1c7144ccde6e7019 | 31 | 41 | 11 | 64.5% |
-| a5c0a43c8bc2b418d6863c15699d924b43bfca044c5b71756b73968fab4711b3 | 30 | 41 | 14 | 53.3% |
-| 63c1b5cab350f3ef9e353b0682d1e7302e4ce1037a46057c4558ff20b9cd0347 | 30 | 49 | 22 | 26.7% |
+| sample_01 | 46 | 55 | 17 | 63.0% |
+| sample_02 | 42 | 53 | 22 | 47.6% |
+| sample_03 | 42 | 29 | 11 | 73.8% |
+| sample_04 | 39 | 77 | 27 | 30.8% |
+| sample_05 | 38 | 52 | 20 | 47.4% |
+| sample_06 | 35 | 35 | 16 | 54.3% |
+| sample_07 | 33 | 55 | 14 | 57.6% |
+| sample_08 | 31 | 41 | 11 | 64.5% |
+| sample_09 | 30 | 41 | 14 | 53.3% |
+| sample_10 | 30 | 49 | 22 | 26.7% |
 
 **Weighted: 174 of 366 provable watchers registered a view — 52.5% are
 absent.** Median across videos 53.8%, range 26.7–73.8%. The design doc's
-single-video measurement (event
-a3092dfc8d36d15583d0866ae4312fd32b96a8eb59d79a7f23028c1ffc6d5503 above,
-10-of-37 at the time) reproduces at 11-of-42 — same video, more
-interactions accrued since, same direction. The 73% figure was the high end
-of a real distribution, not an outlier.
+single-video measurement reproduces as `sample_03` at 11-of-42 — same video,
+more interactions accrued since, same direction. The 73% figure was the high
+end of a real distribution, not an outlier.
 
 Caveats, stated so the number is not over-read:
 
@@ -218,10 +220,11 @@ Caveats, stated so the number is not over-read:
 **This section corrects the design doc, which measures the wrong column.**
 `mobile/lib/widgets/video_feed_item/video_card_meta.dart:79` defines the gated
 quantity as `video.isOriginalVine ? video.originalLoops ?? 0 :
-video.totalLoops` — i.e. the archival `loops` tag for classic Vines (98% of the
-catalogue), and `originalLoops + views` for native ones. The design doc's table
-measures `video_total_views_data.total_views`, which the floor is never applied
-to, and lands three orders of magnitude off.
+video.totalLoops` — i.e. the archival `loops` tag for classic Vines (about 98%
+of the `nostr.videos` catalogue; derived by the appendix query), and
+`originalLoops + views` for native ones. The design doc's table measures
+`video_total_views_data.total_views`, which the floor is never applied to, and
+lands three orders of magnitude off.
 
 `publicLoopCountFloor` = 1000, measured against the quantity the code
 actually gates:
@@ -234,25 +237,26 @@ actually gates:
 
 Median public count across the catalogue: **1,417**.
 
-So a public count renders on about **half** the catalogue, not on 0.044%
-of it. The design doc's conclusion — "the public count is effectively
-never shown; 9,996 videos in 10,000 render a date" — does not hold, and
-the same wrong table is live on `main` in
-[the design doc](2026-08-13-view-and-loop-metrics-design.md) §"The display
-floor, and why most cards show a date". It needs the same correction.
+When the post-date/count-hiding feature is enabled, a public count renders on
+about **half** the catalogue, not on 0.044% of it. The design doc's prior
+conclusion — "the public count is effectively never shown; 9,996 videos in
+10,000 render a date" — does not hold under the feature-gated code path.
+Production remains unchanged while `FeatureFlag.videoCardPostDate` is off:
+`resolveVideoCardMeta` returns `video.totalLoops` directly, so every card keeps
+today's count-only behavior until the flag is enabled.
 
 **The floor decision survives the correction; only its stated rationale
 changes.** The design doc argued the floor was harmless because almost
 nobody ever sees a count. The real argument is the one on the constant
 itself (`mobile/lib/widgets/video_feed_item/video_card_meta.dart:9`): a number
 below the floor "tells a viewer not to bother", and a wall of small counts on
-*other people's* videos discourages posting. On the real distribution the floor
-is doing that job well — visitors see a count on ~52% of videos, every one of
-them ≥1000, and a date on the rest instead of a discouraging 47. Creators are
-never gated: `_resolveLoopCount` returns `video.totalLoops` unconditionally
-when `isOwnVideo`, and `totalLoops` is additive
-(`mobile/packages/models/lib/src/video_event.dart:1181-1183`), so a creator
-sees the larger number.
+*other people's* videos discourages posting. On the real distribution, once the
+feature is enabled, the floor would show visitors a count on ~52% of videos,
+every one of them ≥1000, and a date on the rest instead of a discouraging 47.
+Creators are never gated in that code path: `_resolveLoopCount` returns
+`video.totalLoops` unconditionally when `isOwnVideo`, and `totalLoops` is
+additive (`mobile/packages/models/lib/src/video_event.dart:1181-1183`), so a
+creator sees the larger number.
 
 One unreconciled discrepancy, stated rather than smoothed over: the
 constant's own doc comment reports "roughly 64% of the archive" hidden
@@ -264,14 +268,12 @@ probably not representative. Re-tuning the floor should use the census.
 
 ## 6. Context figures
 
-- `daily_active_users`: 7,679 on 2026-08-12 **as read at 2026-08-13 09:15
-  UTC**. This table accrues after the day closes — the same row read on
-  2026-08-14 returns 8,043 — so treat 7,679 as a partial read, not a
-  settled daily figure, and the derived share below as approximate.
-  Signed-in view reporters that day were 303 (263 mobile + 40 web) — ~4% of
-  DAU on the partial read, ~3.8% on the settled one. The table has no auth
-  split, so the "anonymous are roughly half of daily users" claim cannot be
-  checked here; the CDN channel (§2) is the only anonymous evidence.
+- `daily_active_users` was still accruing when this snapshot was taken, so the
+  same day read changed between 2026-08-13 and 2026-08-14. Signed-in view
+  reporters were only a low-single-digit percentage of that daily active user
+  row. Treat that as directional context, not a settled KPI. The table has no
+  auth split, so the "anonymous are roughly half of daily users" claim cannot
+  be checked here; the CDN channel (§2) is the only anonymous evidence.
 - The API's trending surface reads `trending_videos_snapshot`
   (`divinevideo/divine-funnelcake/crates/clickhouse/src/client.rs`); a second,
   separate path queries `trending_videos` in the same repo. Both are live code
@@ -449,6 +451,8 @@ WITH
   toUInt64OrZero(arrayFirst(t -> t[1] = 'views', tags)[2])    AS views_tag,
   if(is_vine, loops, loops + views_tag)                       AS public_count
 SELECT count()                       AS catalogue,
+       countIf(is_vine)              AS vine_catalogue,
+       round(countIf(is_vine) / count() * 100, 1) AS vine_catalogue_pct,
        countIf(public_count >= 1000) AS ge_1000,
        countIf(public_count >= 333)  AS ge_333,
        countIf(public_count >= 100)  AS ge_100,
