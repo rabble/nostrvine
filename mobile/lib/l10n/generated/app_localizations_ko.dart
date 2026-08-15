@@ -10001,6 +10001,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => '검토 페이지 열기';
 
   @override
+  String get minorAccountReviewMoveAccountTitle => '계정을 가지고 갈 수 있어요';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      '다른 인프라에서도 Divine 아이디를 계속 사용할 수 있어요. 계정을 옮기거나 아카이브를 다운로드하세요.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => '계정 옮기기';
+
+  @override
   String get minorAccountReviewCheckAgain => '다시 확인';
 
   @override

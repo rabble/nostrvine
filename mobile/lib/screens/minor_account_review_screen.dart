@@ -351,6 +351,22 @@ class _LoadedView extends ConsumerWidget {
           onPressed: () => refreshMinorAccountState(ref),
         ),
         const SizedBox(height: 24),
+        _InfoCard(
+          title: l10n.minorAccountReviewMoveAccountTitle,
+          body: l10n.minorAccountReviewMoveAccountBody,
+        ),
+        const SizedBox(height: 12),
+        DivineButton(
+          label: l10n.minorAccountReviewMoveAccountCta,
+          type: DivineButtonType.secondary,
+          expanded: true,
+          onPressed: () => _openExternalPage(
+            context,
+            AppConstants.accountPortabilityUrl,
+            'divine.video/exit',
+          ),
+        ),
+        const SizedBox(height: 24),
         TextButton(
           onPressed: () => ref.read(authServiceProvider).signOut(),
           child: Text(

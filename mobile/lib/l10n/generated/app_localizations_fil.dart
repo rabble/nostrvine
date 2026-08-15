@@ -10576,6 +10576,17 @@ class AppLocalizationsFil extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'Buksan ang review page';
 
   @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Puwede mong isama ang account mo';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Puwede mo pa ring gamitin ang Divine identity mo sa ibang infrastructure. Ilipat ang account mo o i-download ang archive mo.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Ilipat ang account mo';
+
+  @override
   String get minorAccountReviewCheckAgain => 'Suriin ulit';
 
   @override

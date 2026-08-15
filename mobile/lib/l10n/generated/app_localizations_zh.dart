@@ -9903,6 +9903,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => '打开审核页面';
 
   @override
+  String get minorAccountReviewMoveAccountTitle => '你可以带走你的账号';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      '你仍然可以在其他基础设施上使用你的 Divine 身份。迁移你的账号或下载你的归档。';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => '迁移你的账号';
+
+  @override
   String get minorAccountReviewCheckAgain => '再查一次';
 
   @override

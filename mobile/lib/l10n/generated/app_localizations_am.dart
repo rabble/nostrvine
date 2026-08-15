@@ -10196,6 +10196,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'የግምገማ ገጹን ክፈት';
 
   @override
+  String get minorAccountReviewMoveAccountTitle => 'መለያዎን ይዘው መሄድ ይችላሉ';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'የDivine ማንነትዎን በሌላ መሠረተ ልማት ላይ መጠቀም ይችላሉ። መለያዎን ያንቀሳቅሱ ወይም ማህደርዎን ያውርዱ።';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'መለያዎን ያንቀሳቅሱ';
+
+  @override
   String get minorAccountReviewCheckAgain => 'እንደገና ፈትሽ';
 
   @override

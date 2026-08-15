@@ -10544,6 +10544,17 @@ class AppLocalizationsBg extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'Отвори страницата за преглед';
 
   @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Можеш да вземеш акаунта си със себе си';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Можеш да продължиш да използваш своята Divine самоличност на друга инфраструктура. Премести акаунта си или изтегли архива си.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Премести акаунта си';
+
+  @override
   String get minorAccountReviewCheckAgain => 'Провери пак';
 
   @override

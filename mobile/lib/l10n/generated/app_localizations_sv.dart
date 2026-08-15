@@ -10450,6 +10450,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'Öppna granskningssidan';
 
   @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Du kan ta med dig ditt konto';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Du kan fortsätta använda din Divine-identitet på annan infrastruktur. Flytta ditt konto eller ladda ner ditt arkiv.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Flytta ditt konto';
+
+  @override
   String get minorAccountReviewCheckAgain => 'Kontrollera igen';
 
   @override

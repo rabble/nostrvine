@@ -10673,6 +10673,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Deschide pagina de verificare';
 
   @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Îți poți lua contul cu tine';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Îți poți folosi în continuare identitatea Divine pe altă infrastructură. Mută-ți contul sau descarcă-ți arhiva.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Mută-ți contul';
+
+  @override
   String get minorAccountReviewCheckAgain => 'Verifică din nou';
 
   @override

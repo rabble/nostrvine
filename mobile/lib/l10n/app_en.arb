@@ -6391,6 +6391,12 @@
   "minorAccountReviewOpenSupportCenter": "Open Support Center",
   "minorAccountReviewOpenModerationMessage": "Open Moderation Message",
   "minorAccountReviewOpenReviewPage": "Open review page",
+  "minorAccountReviewMoveAccountTitle": "You can take your account with you",
+  "@minorAccountReviewMoveAccountTitle": {
+    "description": "Card title on the restricted-account review screen introducing the account portability flow. Moving is not deletion and is available regardless of review state."
+  },
+  "minorAccountReviewMoveAccountBody": "You can still use your Divine identity on other infrastructure. Move your account or download your archive.",
+  "minorAccountReviewMoveAccountCta": "Move your account",
   "minorAccountReviewCheckAgain": "Check Again",
   "minorAccountReviewLogOut": "Log out",
   "minorAccountReviewNextStepTitle": "Next step",

@@ -10656,6 +10656,17 @@ class AppLocalizationsPl extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'Otwórz stronę weryfikacji';
 
   @override
+  String get minorAccountReviewMoveAccountTitle =>
+      'Możesz zabrać swoje konto ze sobą';
+
+  @override
+  String get minorAccountReviewMoveAccountBody =>
+      'Nadal możesz używać swojej tożsamości Divine na innej infrastrukturze. Przenieś swoje konto lub pobierz archiwum.';
+
+  @override
+  String get minorAccountReviewMoveAccountCta => 'Przenieś swoje konto';
+
+  @override
   String get minorAccountReviewCheckAgain => 'Sprawdź ponownie';
 
   @override
