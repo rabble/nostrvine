@@ -4,7 +4,7 @@ This document describes how to manage database migrations for the `db_client` pa
 
 ## Current Schema Version
 
-**Version: 5** (see `app_database.dart`).
+**Version: 7** (see `app_database.dart`).
 
 Version 2 is the legacy-normalization baseline. Earlier releases kept Drift's
 user-version at 1 while startup repair SQL added tables, columns, indexes, and
@@ -30,6 +30,18 @@ v4 -> v5 step also copies a pre-existing `video_vine_id` into the new column
 when it is not the event-id fallback, recovering the stuck backlog, and
 re-runs the v3 repair so original-v3 databases converge in the same upgrade.
 
+Version 6 adds `pending_view_events.video_event_kind` (#7399), so a queued
+view event keeps the kind it needs to classify its subject.
+
+Version 7 moves 15 index definitions out of `List<Index> get indexes` getters
+and into `@TableIndex.sql()` annotations (#7040). Drift never read those
+getters, so the indexes existed on no database at all; the v6 -> v7 step
+creates them for every database that already exists. Note that the bump to 7
+is what makes that step reachable — a database already sitting at v6 runs no
+`onUpgrade` at all while `schemaVersion` stays 6, so folding index creation
+into the `from < 6` block would skip every install that had already reached
+v6.
+
 Going forward, schema changes must be versioned Drift migrations. Do not add new
 tables, columns, indexes, or schema backfills to `beforeOpen`; that hook is only
 for startup cleanup and guarded recovery of damaged local databases.
@@ -49,7 +61,9 @@ db_client/
 │       ├── drift_schema_v2.json
 │       ├── drift_schema_v3.json
 │       ├── drift_schema_v4.json
-│       └── drift_schema_v5.json
+│       ├── drift_schema_v5.json
+│       ├── drift_schema_v6.json
+│       └── drift_schema_v7.json
 ├── test/drift/
 │   └── app_database/
 │       ├── migration_test.dart
@@ -59,7 +73,9 @@ db_client/
 │           ├── schema_v2.dart
 │           ├── schema_v3.dart
 │           ├── schema_v4.dart
-│           └── schema_v5.dart
+│           ├── schema_v5.dart
+│           ├── schema_v6.dart
+│           └── schema_v7.dart
 └── build.yaml                  # Drift build configuration
 ```
 
