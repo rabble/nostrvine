@@ -222,11 +222,53 @@ void main() {
             key: state.pageKey,
             child: Scaffold(
               body: Builder(
-                builder: (context) => TextButton(
-                  onPressed: () =>
-                      unawaited(context.pushWithVideoPause<void>('/hashtag')),
-                  child: const Text('Open'),
+                builder: (context) => Column(
+                  children: [
+                    TextButton(
+                      onPressed: () => unawaited(
+                        context.pushWithVideoPause<void>('/hashtag'),
+                      ),
+                      child: const Text('Open'),
+                    ),
+                    TextButton(
+                      onPressed: () => unawaited(
+                        context.pushWithVideoPause<void>('/profile'),
+                      ),
+                      child: const Text('Open profile'),
+                    ),
+                  ],
                 ),
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/profile',
+          pageBuilder: (_, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: Scaffold(
+              body: Column(
+                children: [
+                  Builder(
+                    builder: (context) => TextButton(
+                      onPressed: () => unawaited(
+                        context.pushWithVideoPause<void>('/hashtag'),
+                      ),
+                      child: const Text('Open nested route'),
+                    ),
+                  ),
+                  Builder(
+                    builder: (context) => TextButton(
+                      onPressed: () => unawaited(
+                        context.showVideoPausingDialog<void>(
+                          builder: (_) =>
+                              const AlertDialog(content: Text('Route dialog')),
+                        ),
+                      ),
+                      child: const Text('Open route dialog'),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -278,6 +320,50 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
     });
 
+    testWidgets('keeps page open while an outer pushed route remains', (
+      tester,
+    ) async {
+      final (router, container) = await pumpApp(tester);
+
+      await tester.tap(find.text('Open profile'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open nested route'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hashtag'), findsOneWidget);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Open nested route'), findsOneWidget);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
+    testWidgets('dialog release preserves an outer pushed route hold', (
+      tester,
+    ) async {
+      final (router, container) = await pumpApp(tester);
+
+      await tester.tap(find.text('Open profile'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open route dialog'));
+      await tester.pumpAndSettle();
+      expect(find.text('Route dialog'), findsOneWidget);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Open route dialog'), findsOneWidget);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
     testWidgets(
       'leaves isPageOpen set when a go() removes the pushed route — the '
       'go_router behaviour AppShell has to compensate for (#6239)',
@@ -306,5 +392,71 @@ void main() {
         );
       },
     );
+  });
+
+  group('showVideoPausingDialog', () {
+    testWidgets('nested dialog release preserves the outer dialog hold', (
+      tester,
+    ) async {
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context, listen: false);
+              return MaterialApp(
+                home: Scaffold(
+                  body: Builder(
+                    builder: (context) => TextButton(
+                      onPressed: () => unawaited(
+                        context.showVideoPausingDialog<void>(
+                          builder: (_) => AlertDialog(
+                            content: Builder(
+                              builder: (dialogContext) => TextButton(
+                                onPressed: () => unawaited(
+                                  dialogContext.showVideoPausingDialog<void>(
+                                    builder: (_) => const AlertDialog(
+                                      content: Text('Inner dialog'),
+                                    ),
+                                  ),
+                                ),
+                                child: const Text('Open inner dialog'),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      child: const Text('Open outer dialog'),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open outer dialog'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open inner dialog'));
+      await tester.pumpAndSettle();
+      expect(find.text('Inner dialog'), findsOneWidget);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      Navigator.of(
+        tester.element(find.text('Inner dialog')),
+        rootNavigator: true,
+      ).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Open inner dialog'), findsOneWidget);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      Navigator.of(
+        tester.element(find.text('Open inner dialog')),
+        rootNavigator: true,
+      ).pop();
+      await tester.pumpAndSettle();
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
   });
 }

@@ -59,13 +59,16 @@ void main() {
   });
 
   group('OverlayVisibility notifier', () {
-    test('setPageOpen updates state', () {
+    test('setPageOpenForOwner updates state', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      final owner = Object();
 
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
 
-      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setPageOpenForOwner(owner, isOpen: true);
       expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
     });
 
@@ -87,31 +90,14 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
     });
 
-    test('owner release preserves an explicitly opened page overlay', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final notifier = container.read(overlayVisibilityProvider.notifier);
-      final owner = Object();
-
-      notifier.setPageOpen(true);
-      notifier.setPageOpenForOwner(owner, isOpen: true);
-      notifier.setPageOpenForOwner(owner, isOpen: false);
-
-      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
-
-      notifier.setPageOpen(false);
-
-      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
-    });
-
-    test('explicit close preserves an owner-held page overlay', () {
+    test('releasing an unknown owner preserves active page overlays', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(overlayVisibilityProvider.notifier);
       final owner = Object();
 
       notifier.setPageOpenForOwner(owner, isOpen: true);
-      notifier.setPageOpen(false);
+      notifier.setPageOpenForOwner(Object(), isOpen: false);
 
       expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
 
@@ -120,34 +106,42 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
     });
 
-    test(
-      'provider rebuild preserves explicit and owner-held page overlays',
-      () {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-        final notifier = container.read(overlayVisibilityProvider.notifier);
-        final owner = Object();
+    test('duplicate open for the same owner is idempotent', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final owner = Object();
 
-        notifier.setPageOpen(true);
-        notifier.setPageOpenForOwner(owner, isOpen: true);
-        container.invalidate(overlayVisibilityProvider);
+      notifier.setPageOpenForOwner(owner, isOpen: true);
+      notifier.setPageOpenForOwner(owner, isOpen: true);
 
-        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
 
-        notifier.setPageOpen(false);
-        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+      notifier.setPageOpenForOwner(owner, isOpen: false);
 
-        notifier.setPageOpenForOwner(owner, isOpen: false);
-        expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
-      },
-    );
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
 
-    test('clearPageOpen resets explicit and owner-held page overlays', () {
+    test('provider rebuild preserves owner-held page overlays', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final owner = Object();
+
+      notifier.setPageOpenForOwner(owner, isOpen: true);
+      container.invalidate(overlayVisibilityProvider);
+
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      notifier.setPageOpenForOwner(owner, isOpen: false);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
+    test('clearPageOpen resets owner-held page overlays', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(overlayVisibilityProvider.notifier);
 
-      notifier.setPageOpen(true);
       notifier.setPageOpenForOwner(Object(), isOpen: true);
       notifier.clearPageOpen();
 
@@ -196,7 +190,9 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setPageOpenForOwner(Object(), isOpen: true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
     });
 
@@ -216,10 +212,15 @@ void main() {
 
       expect(container.read(hasVisibleOverlayProvider), isFalse);
 
-      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+      final owner = Object();
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setPageOpenForOwner(owner, isOpen: true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
 
-      container.read(overlayVisibilityProvider.notifier).setPageOpen(false);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setPageOpenForOwner(owner, isOpen: false);
       expect(container.read(hasVisibleOverlayProvider), isFalse);
     });
 
@@ -304,7 +305,9 @@ void main() {
 
       await pumpEventQueue();
 
-      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setPageOpenForOwner(Object(), isOpen: true);
       expect(container.read(activeVideoIdProvider), isNull);
     });
 
@@ -339,10 +342,15 @@ void main() {
 
       expect(container.read(activeVideoIdProvider), 'v0');
 
-      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+      final owner = Object();
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setPageOpenForOwner(owner, isOpen: true);
       expect(container.read(activeVideoIdProvider), isNull);
 
-      container.read(overlayVisibilityProvider.notifier).setPageOpen(false);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setPageOpenForOwner(owner, isOpen: false);
       expect(container.read(activeVideoIdProvider), 'v0');
     });
   });

@@ -113,18 +113,16 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       if (!mounted) return;
       ref.read(shellObscuredProvider.notifier).setObscured(obscured: obscured);
       if (!obscured) {
-        final overlayVisibility = ref.read(
-          overlayVisibilityProvider.notifier,
-        );
+        final overlayVisibility = ref.read(overlayVisibilityProvider.notifier);
         if (clearPageOwners) {
           // Popping the route directly above the shell proves no page owner
           // remains. Force-clear because a `go()`-style back can skip the
           // pushed route's own completion callback (#6239).
           overlayVisibility.clearPageOpen();
-        } else {
+        } else if (ModalRoute.of(context)?.isCurrent ?? false) {
           // A freshly mounted shell can still sit below a live page owner.
-          // Clear only stale unowned state until a pop proves the stack empty.
-          overlayVisibility.setPageOpen(false);
+          // Clear only when navigation proves the shell is the top route.
+          overlayVisibility.clearPageOpen();
         }
       }
     });

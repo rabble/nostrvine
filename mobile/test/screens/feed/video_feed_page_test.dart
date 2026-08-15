@@ -1312,10 +1312,11 @@ void main() {
         ).read(overlayVisibilityProvider.notifier).setBottomSheetOpen(open);
       }
 
+      final pageOpenOwner = Object();
       void setPageOpen(WidgetTester tester, {required bool open}) {
-        containerOf(
-          tester,
-        ).read(overlayVisibilityProvider.notifier).setPageOpen(open);
+        containerOf(tester)
+            .read(overlayVisibilityProvider.notifier)
+            .setPageOpenForOwner(pageOpenOwner, isOpen: open);
       }
 
       testWidgets(

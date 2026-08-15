@@ -80,11 +80,22 @@ Widget _wrapWithBlocs(Widget child) {
 
 // The shell subscribes to [routeObserver] to learn when a full-screen route
 // covers it, so the test app must register it on the navigator.
-Widget _appShellMaterialApp() => MaterialApp(
+Widget _appShellMaterialApp({bool shellCovered = false}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   navigatorObservers: [routeObserver],
-  home: const AppShell(currentIndex: 0, child: SizedBox.shrink()),
+  routes: {
+    '/': (_) => const AppShell(currentIndex: 0, child: SizedBox.shrink()),
+  },
+  onGenerateInitialRoutes: (_) => [
+    MaterialPageRoute<void>(
+      builder: (_) => const AppShell(currentIndex: 0, child: SizedBox.shrink()),
+    ),
+    if (shellCovered)
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('Covering route')),
+      ),
+  ],
 );
 
 Widget _buildSubject({
@@ -166,9 +177,10 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a freshly mounted shell clears a stale obscured flag from a removed shell',
-    (tester) async {
+  group('fresh shell mount page-owner recovery', () {
+    testWidgets('clears stale owners when the shell is current', (
+      tester,
+    ) async {
       final container = ProviderContainer(
         overrides: _overrides(
           mockAuthService: mockAuthService,
@@ -186,9 +198,7 @@ void main() {
       final overlayVisibility = container.read(
         overlayVisibilityProvider.notifier,
       );
-      final liveOwner = Object();
-      overlayVisibility.setPageOpen(true);
-      overlayVisibility.setPageOpenForOwner(liveOwner, isOpen: true);
+      overlayVisibility.setPageOpenForOwner(Object(), isOpen: true);
       expect(container.read(shellObscuredProvider), isTrue);
 
       await tester.pumpWidget(
@@ -202,16 +212,49 @@ void main() {
       await tester.pumpAndSettle();
 
       // didPush fires once as the fresh shell subscribes, clearing the stale
-      // obscured flag without dropping a live page owner.
+      // obscured flag and any owner left behind by the removed shell.
+      expect(container.read(shellObscuredProvider), isFalse);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
+    testWidgets('preserves live owners when the shell is not current', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: _overrides(
+          mockAuthService: mockAuthService,
+          sharedPreferences: sharedPreferences,
+        ),
+      );
+      addTearDown(container.dispose);
+
+      container
+          .read(shellObscuredProvider.notifier)
+          .setObscured(obscured: true);
+      final overlayVisibility = container.read(
+        overlayVisibilityProvider.notifier,
+      );
+      final liveOwner = Object();
+      overlayVisibility.setPageOpenForOwner(liveOwner, isOpen: true);
+
+      await tester.pumpWidget(
+        _wrapWithBlocs(
+          UncontrolledProviderScope(
+            container: container,
+            child: _appShellMaterialApp(shellCovered: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Covering route'), findsOneWidget);
       expect(container.read(shellObscuredProvider), isFalse);
       expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
 
-      // Fresh-shell recovery clears stale unowned state without destroying a
-      // live route owner's hold.
       overlayVisibility.setPageOpenForOwner(liveOwner, isOpen: false);
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
-    },
-  );
+    });
+  });
 
   testWidgets(
     'router.go() uncovering the shell clears a page overlay stranded by '
