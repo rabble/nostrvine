@@ -899,6 +899,40 @@ void main() {
         verify(() => mockStorage.saveRemovedRelays([])).called(1);
       });
 
+      test(
+        'ensureUserRemovedRelaysLoaded warms the ledger for later callers',
+        () async {
+          var removedRelaysLoadCount = 0;
+          when(() => mockStorage.loadRemovedRelays()).thenAnswer((_) async {
+            removedRelaysLoadCount++;
+            return [testCustomRelayUrl];
+          });
+          when(() => mockStorage.loadRelays()).thenAnswer((_) async => []);
+          when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
+          when(
+            () => mockStorage.saveRemovedRelays(any()),
+          ).thenAnswer((_) async {});
+
+          final managerWithStorage = RelayManager(
+            config: _createTestConfig(storage: mockStorage),
+            relayPool: mockRelayPool,
+          );
+
+          await managerWithStorage.ensureUserRemovedRelaysLoaded();
+          await managerWithStorage.ensureUserRemovedRelaysLoaded();
+
+          expect(removedRelaysLoadCount, equals(1));
+
+          // A later automatic add reuses the warmed ledger rather than
+          // re-reading storage, and is still suppressed by it.
+          expect(
+            await managerWithStorage.addRelay(testCustomRelayUrl),
+            isFalse,
+          );
+          expect(removedRelaysLoadCount, equals(1));
+        },
+      );
+
       test('automatic removal does not persist user removal intent', () async {
         final storage = InMemoryRelayStorage([testCustomRelayUrl]);
         final managerWithStorage = RelayManager(
