@@ -267,9 +267,8 @@ class NotificationFeedBloc
   ///
   /// Best-effort: a badge failure must never affect feed state, so nothing here
   /// is rethrown. [AppBadgeService] already absorbs `PlatformException` and
-  /// `MissingPluginException` itself, so anything reaching these arms is
-  /// unexpected and worth surfacing through the observer rather than a log
-  /// line.
+  /// `MissingPluginException` itself, so failures reaching these arms are
+  /// surfaced through the observer rather than a direct warning log.
   Future<void> _clearAppBadge() async {
     try {
       await _appBadgeClearer.clear();

@@ -280,7 +280,7 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'ignores platform app badge clear failures',
+        'surfaces platform app badge clear failures without affecting feed state',
         setUp: () {
           when(
             () => mockAppBadgeClearer.clear(),
@@ -293,9 +293,7 @@ void main() {
           NotificationFeedState(isRefreshing: true),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
-        errors: () => [
-          allOf(isA<Exception>(), isNot(isA<ReportableError>())),
-        ],
+        errors: () => [allOf(isA<Exception>(), isNot(isA<ReportableError>()))],
         verify: (_) {
           verify(() => mockAppBadgeClearer.clear()).called(1);
         },

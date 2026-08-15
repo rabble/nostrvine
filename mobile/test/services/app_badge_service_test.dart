@@ -1,6 +1,8 @@
 // ABOUTME: Tests for the platform app-icon badge clear service.
 // ABOUTME: Verifies iOS channel invocation and best-effort failure handling.
 
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -63,14 +65,17 @@ void main() {
             });
 
         // Exercises the production constructor rather than an injected
-        // channel, so renaming `_channelName` fails here instead of surfacing
-        // only on device as a swallowed MissingPluginException. Nothing in CI
-        // compiles the iOS half, so keep `channelName` above in step with
-        // `setupAppBadgeChannel` in ios/Runner/AppDelegate.swift.
+        // channel, and also checks the Swift registration string because CI
+        // does not compile ios/Runner/AppDelegate.swift.
         await const AppBadgeService().clear();
 
         expect(calls, hasLength(1));
         expect(calls.single.method, 'clear');
+
+        final appDelegate = File(
+          'ios/Runner/AppDelegate.swift',
+        ).readAsStringSync();
+        expect(appDelegate, contains('name: "$channelName"'));
       });
     });
 
