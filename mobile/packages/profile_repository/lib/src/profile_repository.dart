@@ -393,6 +393,7 @@ class ProfileRepository implements ProfileReader {
   /// Pubkeys without a cached profile are absent from the result, so the
   /// returned list may be shorter than [pubkeys] and is not order-aligned
   /// with it.
+  @override
   Future<List<UserProfile>> getCachedProfiles({
     required List<String> pubkeys,
   }) async {

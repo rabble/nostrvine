@@ -31,6 +31,13 @@ class _ExhaustiveReader implements ProfileReader {
   @override
   Future<UserProfile?> getCachedProfile({required String pubkey}) async => null;
 
+  // Widened consciously: this is a batch Drift read — signer-free and
+  // relay-optional, the same invariant as getCachedProfile.
+  @override
+  Future<List<UserProfile>> getCachedProfiles({
+    required List<String> pubkeys,
+  }) async => const [];
+
   @override
   Stream<UserProfile?> watchProfile({required String pubkey}) =>
       const Stream.empty();
@@ -97,6 +104,26 @@ void main() {
 
       expect(await reader.getCachedProfile(pubkey: _pubkey), cached);
     });
+
+    test(
+      'reads the Drift cache in batch through the interface handle',
+      () async {
+        final cached = UserProfile(
+          pubkey: _pubkey,
+          name: 'real-name',
+          rawData: const {},
+          createdAt: DateTime.utc(2026),
+          eventId: 'event-id',
+        );
+        when(
+          () => userProfilesDao.getProfilesByPubkeys([_pubkey]),
+        ).thenAnswer((_) async => [cached]);
+
+        final ProfileReader reader = repository;
+
+        expect(await reader.getCachedProfiles(pubkeys: [_pubkey]), [cached]);
+      },
+    );
 
     test('an implementation needs no signer and no relay client', () {
       // _ExhaustiveReader satisfies the contract with neither. If this stops

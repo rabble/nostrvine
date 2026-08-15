@@ -79,6 +79,22 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final BaseCacheManager? _cacheManager;
   final VideoClipImportService? _videoClipImportService;
 
+  /// Whether two contact rows render identically, compared over the fields
+  /// the row actually shows. Used to skip a hydration re-emit that would
+  /// only rebuild the row for zero new information.
+  static bool _sameContacts(List<ShareableUser> a, List<ShareableUser> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].pubkey != b[i].pubkey ||
+          a[i].displayName != b[i].displayName ||
+          a[i].handle != b[i].handle ||
+          a[i].picture != b[i].picture) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void _addUnexpectedError(
     Object error,
     StackTrace stackTrace,
@@ -108,34 +124,75 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           .where((pk) => !recentPubkeys.contains(pk))
           .toList();
 
-      // One batched read (cache + bulk REST + relays, in the repository)
-      // instead of a per-pubkey DB/network storm fired on sheet open. The
-      // repository owns the source-selection strategy. Recents already carry
-      // their display data snapshotted at last-send time, so only the
-      // remaining follows need profiles. Staleness is session-bounded:
-      // VideoSharingService._recentlySharedWith is in-memory only and resets
-      // to empty on app restart, so a stale avatar or name is visible at most
-      // within the same session until the user shares with that contact again.
-      // Skip the call entirely when there are no follows to fetch. See #5391.
-      final profiles = remainingFollows.isEmpty
-          ? const <String, UserProfile>{}
-          : await _profileRepository.fetchBatchProfiles(
-              pubkeys: remainingFollows,
-            );
-
-      final contacts = <ShareableUser>[
+      List<ShareableUser> buildContacts(Map<String, UserProfile> profiles) => [
         ...recentUsers,
         for (final pubkey in remainingFollows)
           ShareableUser.fromProfile(pubkey, profiles[pubkey]),
       ];
 
+      // Cache-first: one batched Drift read already covers what the visible
+      // row needs, so the sheet renders now instead of shimmering through
+      // the network batch. Recents already carry their display data
+      // snapshotted at last-send time. Staleness is session-bounded:
+      // VideoSharingService._recentlySharedWith is in-memory only and resets
+      // to empty on app restart, so a stale avatar or name is visible at most
+      // within the same session until the user shares with that contact
+      // again. See #5391.
+      final cached = remainingFollows.isEmpty
+          ? const <UserProfile>[]
+          : await _profileRepository.getCachedProfiles(
+              pubkeys: remainingFollows,
+            );
+      final cachedByPubkey = {for (final p in cached) p.pubkey: p};
+
       emit(
         state.copyWith(
           status: ShareSheetStatus.ready,
-          contacts: contacts,
+          contacts: buildContacts(cachedByPubkey),
           clearActionResult: true,
         ),
       );
+
+      if (remainingFollows.isEmpty) return;
+
+      // Hydrate the misses in the background and re-emit only when the row
+      // would actually change. A failure here must not erase the cache-first
+      // render already on screen.
+      try {
+        final profiles = await _profileRepository.fetchBatchProfiles(
+          pubkeys: remainingFollows,
+        );
+        if (isClosed) return;
+
+        final hydrated = buildContacts(profiles);
+        // A recipient picked via Find People mid-hydration was prepended to
+        // the row by the toggle handler; keep them visible through the swap.
+        final merged = [
+          for (final r in state.selectedRecipients)
+            if (!hydrated.any((c) => c.pubkey == r.pubkey)) r,
+          ...hydrated,
+        ];
+        if (_sameContacts(state.contacts, merged)) return;
+
+        emit(
+          state.copyWith(
+            status: ShareSheetStatus.ready,
+            contacts: merged,
+            clearActionResult: true,
+          ),
+        );
+      } catch (e, stackTrace) {
+        _addUnexpectedError(
+          e,
+          stackTrace,
+          ShareSheetBlocReportableSites.onContactsLoadRequested,
+        );
+        Log.warning(
+          'Background contact hydration failed: $e',
+          name: 'ShareSheetBloc',
+          category: LogCategory.ui,
+        );
+      }
     } catch (e, stackTrace) {
       _addUnexpectedError(
         e,
