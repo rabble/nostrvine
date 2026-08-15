@@ -405,10 +405,9 @@ class NostrService extends _$NostrService {
     try {
       await (() async {
         if (userRelayUrls.isNotEmpty) {
-          // Warm the user-removal ledger once, so the per-relay suppression
-          // checks below don't each race the same storage read. addRelays()
-          // awaits the same load internally, so this is ordering, not a
-          // correctness gate.
+          // Loads the user-removal ledger up front. addRelays() awaits the
+          // same idempotent load on its first relay, so this moves when the
+          // storage read happens, not whether removed relays are suppressed.
           await client.ensureUserRemovedRelaysLoaded();
           final addedRelayCount = await client.addRelays(userRelayUrls);
           Log.info(
