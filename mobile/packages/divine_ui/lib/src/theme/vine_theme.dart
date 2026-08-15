@@ -82,6 +82,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     required this.accentChipLime,
     required this.accentChipPink,
     required this.accentChipViolet,
+    required this.accentChipGreen,
     required this.inverseSurface,
     required this.inverseOnSurface,
     required this.mediaChrome,
@@ -252,6 +253,10 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// Violet decorative accent chip. See [accentChipOrange].
   final VineAccentChip accentChipViolet;
 
+  /// Green decorative accent chip, carrying the brand mark — the system
+  /// notification glyph. See [accentChipOrange].
+  final VineAccentChip accentChipGreen;
+
   /// Surface that contrasts with [background], used by tertiary actions.
   final Color inverseSurface;
 
@@ -307,6 +312,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     VineAccentChip? accentChipLime,
     VineAccentChip? accentChipPink,
     VineAccentChip? accentChipViolet,
+    VineAccentChip? accentChipGreen,
     Color? inverseSurface,
     Color? inverseOnSurface,
     Color? mediaChrome,
@@ -347,6 +353,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     accentChipLime: accentChipLime ?? this.accentChipLime,
     accentChipPink: accentChipPink ?? this.accentChipPink,
     accentChipViolet: accentChipViolet ?? this.accentChipViolet,
+    accentChipGreen: accentChipGreen ?? this.accentChipGreen,
     inverseSurface: inverseSurface ?? this.inverseSurface,
     inverseOnSurface: inverseOnSurface ?? this.inverseOnSurface,
     mediaChrome: mediaChrome ?? this.mediaChrome,
@@ -396,6 +403,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       accentChipLime: accentChipLime.lerpTo(other.accentChipLime, t),
       accentChipPink: accentChipPink.lerpTo(other.accentChipPink, t),
       accentChipViolet: accentChipViolet.lerpTo(other.accentChipViolet, t),
+      accentChipGreen: accentChipGreen.lerpTo(other.accentChipGreen, t),
       inverseSurface: Color.lerp(inverseSurface, other.inverseSurface, t),
       inverseOnSurface: Color.lerp(inverseOnSurface, other.inverseOnSurface, t),
       mediaChrome: Color.lerp(mediaChrome, other.mediaChrome, t),
@@ -446,6 +454,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
           accentChipLime == other.accentChipLime &&
           accentChipPink == other.accentChipPink &&
           accentChipViolet == other.accentChipViolet &&
+          accentChipGreen == other.accentChipGreen &&
           inverseSurface == other.inverseSurface &&
           inverseOnSurface == other.inverseOnSurface &&
           mediaChrome == other.mediaChrome &&
@@ -488,6 +497,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     accentChipLime,
     accentChipPink,
     accentChipViolet,
+    accentChipGreen,
     inverseSurface,
     inverseOnSurface,
     mediaChrome,
@@ -1191,6 +1201,10 @@ class VineTheme {
       container: accentVioletBackground,
       onContainer: accentViolet,
     ),
+    accentChipGreen: VineAccentChip(
+      container: onPrimaryButton,
+      onContainer: primary,
+    ),
     inverseSurface: inverseSurface,
     inverseOnSurface: inverseOnSurface,
     mediaChrome: scrim80,
@@ -1255,6 +1269,10 @@ class VineTheme {
     accentChipViolet: VineAccentChip(
       container: Color(0xFFD6D8FF),
       onContainer: Color(0xFF33368A),
+    ),
+    accentChipGreen: VineAccentChip(
+      container: Color(0xFFC2E9D6),
+      onContainer: Color(0xFF14563C),
     ),
     inverseSurface: Color(0xFF07241B),
     inverseOnSurface: Color(0xFFFFFFFF),

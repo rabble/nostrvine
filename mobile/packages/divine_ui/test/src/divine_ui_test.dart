@@ -122,6 +122,7 @@ void main() {
         'accentChipLime': (c) => c.accentChipLime,
         'accentChipPink': (c) => c.accentChipPink,
         'accentChipViolet': (c) => c.accentChipViolet,
+        'accentChipGreen': (c) => c.accentChipGreen,
       };
 
       VineThemeColors paint(Color color) => VineThemeColors(
@@ -160,6 +161,7 @@ void main() {
         accentChipLime: VineAccentChip(container: color, onContainer: color),
         accentChipPink: VineAccentChip(container: color, onContainer: color),
         accentChipViolet: VineAccentChip(container: color, onContainer: color),
+        accentChipGreen: VineAccentChip(container: color, onContainer: color),
         inverseSurface: color,
         inverseOnSurface: color,
         mediaChrome: color,
@@ -357,6 +359,7 @@ void main() {
             accentChipLime: chip == 'accentChipLime' ? white : null,
             accentChipPink: chip == 'accentChipPink' ? white : null,
             accentChipViolet: chip == 'accentChipViolet' ? white : null,
+            accentChipGreen: chip == 'accentChipGreen' ? white : null,
           );
 
           expect(changed, isNot(paint(Colors.black)), reason: chip);

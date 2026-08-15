@@ -117,8 +117,28 @@ void main() {
         colors: dark,
       );
       expect(spec.icon, equals(DivineIconName.logo));
+      expect(spec.background, equals(dark.accentChipGreen.container));
+      expect(spec.foreground, equals(dark.accentChipGreen.onContainer));
+      // Dark parity: the chip must still resolve to the constants the
+      // switch arm carried before it moved onto the palette.
       expect(spec.background, equals(VineTheme.onPrimaryButton));
       expect(spec.foreground, equals(VineTheme.primary));
+    });
+
+    test('the system chip follows the light palette', () {
+      // It used to be the one arm left on dark-only constants, so on a light
+      // notification row it rendered as a near-black blob while every other
+      // chip lightened.
+      final spec = notificationTypeIconSpec(
+        NotificationKind.system,
+        colors: VineTheme.lightColors,
+      );
+      expect(
+        spec.background,
+        equals(VineTheme.lightColors.accentChipGreen.container),
+      );
+      expect(spec.background, isNot(VineTheme.onPrimaryButton));
+      expect(spec.foreground, isNot(VineTheme.primary));
     });
 
     test('the dark palette keeps the pre-light-mode accent constants', () {

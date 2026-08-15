@@ -73,10 +73,10 @@ NotificationTypeIconSpec notificationTypeIconSpec(
       background: colors.accentChipYellow.container,
       foreground: colors.accentChipYellow.onContainer,
     ),
-    NotificationKind.system => const NotificationTypeIconSpec(
+    NotificationKind.system => NotificationTypeIconSpec(
       icon: DivineIconName.logo,
-      background: VineTheme.onPrimaryButton,
-      foreground: VineTheme.primary,
+      background: colors.accentChipGreen.container,
+      foreground: colors.accentChipGreen.onContainer,
     ),
   };
 }
