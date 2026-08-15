@@ -536,6 +536,12 @@ void main() {
           ],
         );
         addTearDown(routeContainer.dispose);
+        final pageOpenChanges = <bool>[];
+        final subscription = routeContainer.listen(
+          overlayVisibilityProvider,
+          (_, next) => pageOpenChanges.add(next.isPageOpen),
+        );
+        addTearDown(subscription.close);
 
         await tester.pumpWidget(
           buildNavigatorTestWidget(
@@ -553,6 +559,7 @@ void main() {
           routeContainer.read(overlayVisibilityProvider).isPageOpen,
           isTrue,
         );
+        expect(pageOpenChanges, equals([true]));
 
         Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
         await tester.pumpAndSettle();
@@ -562,6 +569,7 @@ void main() {
           routeContainer.read(overlayVisibilityProvider).isPageOpen,
           isFalse,
         );
+        expect(pageOpenChanges, equals([true, false]));
       });
 
       testWidgets('clears video publish state when standalone route pops', (

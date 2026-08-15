@@ -69,6 +69,17 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
     });
 
+    test('isMounted returns false after container disposal', () {
+      final container = ProviderContainer();
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+
+      expect(notifier.isMounted, isTrue);
+
+      container.dispose();
+
+      expect(notifier.isMounted, isFalse);
+    });
+
     test('setBottomSheetOpen updates state', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
