@@ -280,7 +280,7 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'ignores platform app badge clear failures',
+        'surfaces platform app badge clear failures without affecting feed state',
         setUp: () {
           when(
             () => mockAppBadgeClearer.clear(),
@@ -292,6 +292,36 @@ void main() {
         expect: () => [
           NotificationFeedState(isRefreshing: true),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        errors: () => [allOf(isA<Exception>(), isNot(isA<ReportableError>()))],
+        verify: (_) {
+          verify(() => mockAppBadgeClearer.clear()).called(1);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from the app badge clear as Reportable '
+        'without blackening the feed',
+        setUp: () {
+          when(
+            () => mockAppBadgeClearer.clear(),
+          ).thenThrow(StateError('badge invariant'));
+        },
+        build: () => createBloc(appBadgeClearer: mockAppBadgeClearer),
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        wait: const Duration(milliseconds: 1),
+        expect: () => [
+          NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>()
+              .having(
+                (r) => r.context,
+                'context',
+                NotificationFeedBlocReportableSites.clearAppBadge,
+              )
+              .having((r) => r.unwrap(), 'unwrap', isA<StateError>()),
         ],
         verify: (_) {
           verify(() => mockAppBadgeClearer.clear()).called(1);
@@ -316,6 +346,10 @@ void main() {
         verify: (_) {
           verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
           verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          // The seen watermark did not advance, so the OS badge must stay put
+          // — clearing it here would hide notifications the server still
+          // considers unread.
+          verifyNever(() => mockAppBadgeClearer.clear());
         },
       );
 
@@ -345,6 +379,10 @@ void main() {
         verify: (_) {
           verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
           verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          // The seen watermark did not advance, so the OS badge must stay put
+          // — clearing it here would hide notifications the server still
+          // considers unread.
+          verifyNever(() => mockAppBadgeClearer.clear());
         },
       );
 

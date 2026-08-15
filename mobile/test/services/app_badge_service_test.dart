@@ -1,10 +1,13 @@
 // ABOUTME: Tests for the platform app-icon badge clear service.
 // ABOUTME: Verifies iOS channel invocation and best-effort failure handling.
 
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/app_badge_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,12 +28,15 @@ void main() {
   }
 
   group(AppBadgeService, () {
-    tearDown(() {
+    setUp(() => LogCaptureService().clearAllLogs());
+
+    tearDown(() async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(defaultChannel, null);
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(testChannel, null);
       debugDefaultTargetPlatformOverride = null;
+      await LogCaptureService().clearAllLogs();
     });
 
     test('invokes the clear method channel on iOS', () async {
@@ -49,6 +55,30 @@ void main() {
       });
     });
 
+    test('defaults to the channel name the native side registers', () async {
+      await withPlatform(TargetPlatform.iOS, () async {
+        final calls = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(defaultChannel, (call) async {
+              calls.add(call);
+              return null;
+            });
+
+        // Exercises the production constructor rather than an injected
+        // channel, and also checks the Swift registration string because CI
+        // does not compile ios/Runner/AppDelegate.swift.
+        await const AppBadgeService().clear();
+
+        expect(calls, hasLength(1));
+        expect(calls.single.method, 'clear');
+
+        final appDelegate = File(
+          'ios/Runner/AppDelegate.swift',
+        ).readAsStringSync();
+        expect(appDelegate, contains('name: "$channelName"'));
+      });
+    });
+
     test('does not invoke the channel on non-iOS platforms', () async {
       await withPlatform(TargetPlatform.android, () async {
         var callCount = 0;
@@ -64,17 +94,25 @@ void main() {
       });
     });
 
-    test('swallows PlatformException from the native badge clear', () async {
+    test('logs the native reason and swallows PlatformException', () async {
       await withPlatform(TargetPlatform.iOS, () async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(testChannel, (call) async {
-              throw PlatformException(code: 'BADGE_CLEAR_FAILED');
+              throw PlatformException(
+                code: 'BADGE_CLEAR_FAILED',
+                message: 'Notifications are unavailable',
+              );
             });
 
         await expectLater(
           const AppBadgeService(channel: testChannel).clear(),
           completes,
         );
+
+        final warning = LogCaptureService().getRecentLogs().singleWhere(
+          (log) => log.message.contains('App badge clear failed'),
+        );
+        expect(warning.message, contains('Notifications are unavailable'));
       });
     });
 

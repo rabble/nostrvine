@@ -40,6 +40,12 @@ abstract class NotificationFeedBlocReportableSites {
   /// Realistically a Drift DAO `TypeError` from a row-shape mismatch.
   static const String onItemTapped = '_onItemTapped';
 
+  /// `_clearAppBadge` generic-catch arm — `Error` types thrown by an
+  /// `AppBadgeClearer` implementation. `AppBadgeService` already absorbs
+  /// `PlatformException` and `MissingPluginException` itself, so anything
+  /// reaching here is an invariant violation rather than a platform failure.
+  static const String clearAppBadge = '_clearAppBadge';
+
   /// `_onFollowBack` generic-catch arm — `Error` types that escape
   /// `FollowRepository.follow`'s Exception-only throws, plus a
   /// hypothetical `TypeError` from the post-await `_applyFollowState`
