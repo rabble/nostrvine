@@ -126,7 +126,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     Duration? timeout,
     bool classifyLocalTimeout = true,
   }) async {
-    var response = await _sendRequest(
+    var response = await _sendRequestWithRetry(
       method,
       params,
       timeout: timeout,
@@ -152,7 +152,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       }
       if (newToken != null) {
         _accessToken = newToken;
-        response = await _sendRequest(
+        response = await _sendRequestWithRetry(
           method,
           params,
           timeout: timeout,
@@ -188,6 +188,36 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     }
 
     return fromResult(json['result']);
+  }
+
+  Future<http.Response> _sendRequestWithRetry(
+    String method,
+    List<dynamic> params, {
+    Duration? timeout,
+    bool classifyLocalTimeout = true,
+  }) async {
+    try {
+      return await _sendRequest(
+        method,
+        params,
+        timeout: timeout,
+        classifyLocalTimeout: classifyLocalTimeout,
+      );
+    } on http.ClientException catch (e, st) {
+      Log.warn(
+        "Socket error on Keycast RPC, retrying",
+        name: "KeycastRpc",
+        category: LogCategory.auth,
+        body: "$method",
+      );
+      _client = http.Client();
+      return await _sendRequest(
+        method,
+        params,
+        timeout: timeout,
+        classifyLocalTimeout: classifyLocalTimeout,
+      );
+    }
   }
 
   Future<http.Response> _sendRequest(
@@ -428,7 +458,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       return value;
     }
 
-    var response = await _sendRequest(
+    var response = await _sendRequestWithRetry(
       method,
       params,
       timeout: remaining(),
@@ -449,7 +479,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       }
       if (newToken != null) {
         _accessToken = newToken;
-        response = await _sendRequest(
+        response = await _sendRequestWithRetry(
           method,
           params,
           timeout: remaining(),
