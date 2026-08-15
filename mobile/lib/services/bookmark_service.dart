@@ -577,9 +577,6 @@ class BookmarkService {
 
   /// Remove an item from global bookmarks.
   ///
-  /// **For tests only.** Production code should use
-  /// [toggleVideoInGlobalBookmarks] which handles reconciliation internally.
-  ///
   /// Reconciles with the relay first for the same reason as
   /// [addToGlobalBookmarks] — the republished list must be the user's real
   /// one minus [item], not this device's cache minus [item].
