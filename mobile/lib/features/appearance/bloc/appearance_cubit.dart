@@ -6,7 +6,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Owns the user's appearance selection and applies it for the current run.
 class AppearanceCubit extends Cubit<AppearanceMode> {
-  AppearanceCubit(this._repository) : super(AppearanceMode.system);
+  AppearanceCubit(this._repository) : super(defaultAppearanceMode);
 
   final AppearanceRepository _repository;
 
