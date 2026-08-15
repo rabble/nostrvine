@@ -14,16 +14,28 @@ Cloud 26.4.1.2163) on the date above, with the exact SQL in the appendix so
 any figure can be re-derived or extended.
 
 **Reader's key for the client tag.** Mobile view reporters appear in
-`view_interactions.client` as `Divine`. A second stream, `divine-mobile/1.0`,
-carries 1–6 viewers/day and is a legacy or dev build, not the shipping app.
-The #917 detector's "mobile" series is the `Divine` bucket alone — its
-backtest figures (578 on 2026-08-05, 263 on 2026-08-12) match `Divine`
-exactly. **§1's Mobile columns are the union `client IN ('Divine',
-'divine-mobile/1.0')`, so they run 0–6 viewers/day above the detector's
-series** (2026-08-05: 582 union vs 578 `Divine`). Reconcile a #917 alert
-against `Divine` only. Any change to what the shipping app sends as its
-client tag silently re-keys the detector; the redefined playback-start
-event must carry the same tag.
+`view_interactions.client` as `Divine`, emitted by
+`mobile/packages/nostr_client/lib/src/nip89_client_tag.dart:11`. A second
+stream, `divine-mobile/1.0`, carries 1-6 viewers/day and is a legacy or dev
+build, not the shipping app. The divinevideo/divine-funnelcake#917 detector's
+"mobile" series is the `Divine` bucket alone — its backtest figures (578 on
+2026-08-05, 263 on 2026-08-12) match `Divine` exactly. **§1's Mobile columns
+are the union `client IN ('Divine', 'divine-mobile/1.0')`, so they run 0-6
+viewers/day above the detector's series** (2026-08-05: 582 union vs 578
+`Divine`). Reconcile a divinevideo/divine-funnelcake#917 alert against
+`Divine` only.
+
+One caveat is load-bearing: the mobile client tag is user-disablable from
+Nostr settings (`mobile/lib/screens/settings/nostr_settings_screen.dart:241`),
+and `Nip89ClientTag.applyToEvent` returns without adding the tag when disabled
+(`mobile/packages/nostr_client/lib/src/nip89_client_tag.dart:75-82`). Kind
+22236 is not excluded from tagging, so a user who opts out still publishes view
+events, but they land with a null or non-Divine client. That means §1's mobile
+columns and divinevideo/divine-funnelcake#917's detector series are biased low
+by an unmeasured opt-out population; a large opt-out wave can present as a
+mobile reporting collapse. Any change to what the shipping app sends as its
+client tag silently re-keys the detector; the redefined playback-start event
+must keep the same tag when attribution is enabled.
 
 ## 1. The outage, as a series
 
@@ -58,10 +70,13 @@ What to hold onto:
 
 - **Mobile reporters fell 676 → 263 (–61%) over twelve days; events fell
   28.5k → 8.8k (–69%).** Stated on the `Divine` bucket so it matches the
-  two merged specs and the #917 detector; the union column above reads
-  680 → 263 for the same span.
+  two merged specs and the divinevideo/divine-funnelcake#917 detector; the
+  union column above reads 680 → 263 for the same span. Re-run the client
+  breakdown query in the appendix to derive the 676 detector peak; the platform
+  rollup query derives the table.
 - **Web was flat throughout** (36–56 viewers every day, no trend). The
-  regression is mobile-only — the property the #917 detector keys on.
+  regression is mobile-only — the property the divinevideo/divine-funnelcake#917
+  detector keys on.
 - **The #7210 recovery is not yet visible at capture time.** 2026-08-13 is a
   partial day but tracks below 2026-08-12's full day. The client fix
   (#7182, persist the addressable d tag on queued view events) is merged but
@@ -127,10 +142,11 @@ today — that gap is the single largest correction the design makes.
 ## 3. Today's definitional conflation, measured
 
 The server computes, per kind-22236 event
-(`crates/relay/src/view_handler.rs:74-83`):
+(`divinevideo/divine-funnelcake/crates/relay/src/view_handler.rs:62-82`):
 
 ```
-loops      = max(watched_seconds, 1) / video_duration_seconds   (Float)
+duration   = video_duration_seconds, else 6.3s when missing/non-finite/<=0
+loops      = max(watched_seconds, 1) / duration   (Float)
 view_count = ceil(loops) clamped to ≥ 1
 ```
 
@@ -138,7 +154,9 @@ So today's "views" are not playback starts and not sessions — they are
 **loops rounded up**. A 30-second watch of a 6-second video is 5 "views"
 from one session; a 0.75-pass watch is 1. The client-sent `loops` tag is
 never parsed (`ViewEventData`, same file) — every fractional loop in the
-database is server-derived. Aggregate state:
+database is server-derived. Unknown or invalid durations use the 6.3-second
+fallback, so the 0.733 aggregate ratio includes fallback-derived loops rather
+than treating those rows as undefined. Aggregate state:
 
 | Measure | Value |
 |---|---|
@@ -198,12 +216,12 @@ Caveats, stated so the number is not over-read:
 ## 5. The display floor, restated on current numbers
 
 **This section corrects the design doc, which measures the wrong column.**
-`video_card_meta.dart:79` defines the gated quantity as
-`video.isOriginalVine ? video.originalLoops ?? 0 : video.totalLoops` —
-i.e. the archival `loops` tag for classic Vines (98% of the catalogue),
-and `originalLoops + views` for native ones. The design doc's table
-measures `video_total_views_data.total_views`, which the floor is never
-applied to, and lands three orders of magnitude off.
+`mobile/lib/widgets/video_feed_item/video_card_meta.dart:79` defines the gated
+quantity as `video.isOriginalVine ? video.originalLoops ?? 0 :
+video.totalLoops` — i.e. the archival `loops` tag for classic Vines (98% of the
+catalogue), and `originalLoops + views` for native ones. The design doc's table
+measures `video_total_views_data.total_views`, which the floor is never applied
+to, and lands three orders of magnitude off.
 
 `publicLoopCountFloor` = 1000, measured against the quantity the code
 actually gates:
@@ -226,14 +244,15 @@ floor, and why most cards show a date". It needs the same correction.
 **The floor decision survives the correction; only its stated rationale
 changes.** The design doc argued the floor was harmless because almost
 nobody ever sees a count. The real argument is the one on the constant
-itself (`video_card_meta.dart:9`): a number below the floor "tells a
-viewer not to bother", and a wall of small counts on *other people's*
-videos discourages posting. On the real distribution the floor is doing
-that job well — visitors see a count on ~52% of videos, every one of them
-≥1000, and a date on the rest instead of a discouraging 47. Creators are
+itself (`mobile/lib/widgets/video_feed_item/video_card_meta.dart:9`): a number
+below the floor "tells a viewer not to bother", and a wall of small counts on
+*other people's* videos discourages posting. On the real distribution the floor
+is doing that job well — visitors see a count on ~52% of videos, every one of
+them ≥1000, and a date on the rest instead of a discouraging 47. Creators are
 never gated: `_resolveLoopCount` returns `video.totalLoops` unconditionally
 when `isOwnVideo`, and `totalLoops` is additive
-(`originalLoops + views`), so a creator sees the larger number.
+(`mobile/packages/models/lib/src/video_event.dart:1181-1183`), so a creator
+sees the larger number.
 
 One unreconciled discrepancy, stated rather than smoothed over: the
 constant's own doc comment reports "roughly 64% of the archive" hidden
@@ -254,9 +273,9 @@ probably not representative. Re-tuning the floor should use the census.
   split, so the "anonymous are roughly half of daily users" claim cannot be
   checked here; the CDN channel (§2) is the only anonymous evidence.
 - The API's trending surface reads `trending_videos_snapshot`
-  (`crates/clickhouse/src/client.rs:3541`); a second, separate path queries
-  `trending_videos` (`client.rs:7606`). Both are live code at capture time —
-  the duplicate-formula situation the design removes.
+  (`divinevideo/divine-funnelcake/crates/clickhouse/src/client.rs`); a second,
+  separate path queries `trending_videos` in the same repo. Both are live code
+  at capture time — the duplicate-formula situation the design removes.
 
 ## 7. How to use this document
 
@@ -316,6 +335,21 @@ ORDER BY day, platform;
 (The `view_interactions.` qualifier on `loops` is load-bearing: an unqualified
 `sum(loops) AS loops` alias shadows the column and ClickHouse 26 rejects the
 later `ceiling(loops)` as a nested aggregate.)
+
+Client breakdown for reconciling §1's `mobile` union with the
+divinevideo/divine-funnelcake#917 detector's `Divine` bucket:
+
+```sql
+SELECT toDate(created_at,'UTC') AS day,
+       client,
+       count() AS events,
+       uniqExact(viewer_pubkey) AS viewers
+FROM nostr.view_interactions
+WHERE created_at >= toDate('2026-07-24','UTC')
+  AND client IN ('Divine','divine-mobile/1.0','divine-web/1.0')
+GROUP BY day, client
+ORDER BY day, client;
+```
 </details>
 
 <details>
@@ -411,9 +445,9 @@ applied to that column, and doing so is the error this section corrects.
 
 ```sql
 WITH
-  arrayExists(t -> t[1] = 'platform' AND t[2] = 'vine', tags)  AS is_vine,
-  toUInt64OrZero(arrayFirst(t -> t[1] = 'views', tags)[2])     AS views_tag,
-  if(is_vine, loops, loops + views_tag)                        AS public_count
+  arrayExists(t -> t[1] = 'platform' AND t[2] = 'vine', tags) AS is_vine,
+  toUInt64OrZero(arrayFirst(t -> t[1] = 'views', tags)[2])    AS views_tag,
+  if(is_vine, loops, loops + views_tag)                       AS public_count
 SELECT count()                       AS catalogue,
        countIf(public_count >= 1000) AS ge_1000,
        countIf(public_count >= 333)  AS ge_333,
