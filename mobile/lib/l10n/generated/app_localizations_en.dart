@@ -4435,7 +4435,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Couldn\'t load videos.';
+  String get profileFeedError =>
+      'Can\'t reach the server. Check your connection and try again.';
 
   @override
   String get profileFeedLoadMoreError =>
