@@ -1,4 +1,4 @@
-// ABOUTME: Deterministically assigns the post-publish create-again experiment.
+// ABOUTME: Deterministically assigns the post-publish confirmation experiment.
 // ABOUTME: Assignment is local: sha256 over the pubkey, no remote input.
 
 import 'dart:convert';

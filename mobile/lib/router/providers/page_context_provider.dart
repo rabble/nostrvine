@@ -218,7 +218,8 @@ RouteContext parseRoute(String path) {
 /// Whether [location] is [npub]'s own profile, in either grid or feed mode.
 ///
 /// Takes the raw router location (query string and all) so callers can pass
-/// `routerDelegate.currentConfiguration.uri.path` straight through.
+/// `routeInformationProvider.value.uri` straight through, with or without
+/// its query.
 bool isOwnProfileLocation(String location, String npub) {
   final route = parseRoute(location);
   return route.type == RouteType.profile && route.npub == npub;

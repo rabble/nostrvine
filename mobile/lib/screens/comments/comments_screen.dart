@@ -626,7 +626,11 @@ class _VideoReplyPlaceholderBridgeState
       }
     }
 
-    for (final draftId in publishState.recentlySucceededIds) {
+    // Derived from recentlyPublished on every read, so hoist it rather than
+    // rebuilding the set once per candidate below.
+    final succeededIds = publishState.recentlySucceededIds;
+
+    for (final draftId in succeededIds) {
       if (!_inserted.contains(draftId)) continue;
       _awaitingRelayEcho.add(draftId);
       _relayEchoGraceTimers.putIfAbsent(
@@ -650,7 +654,7 @@ class _VideoReplyPlaceholderBridgeState
     // roll back immediately.
     for (final draftId in _inserted.difference(inFlightDraftIds)) {
       if (_awaitingRelayEcho.contains(draftId) ||
-          publishState.recentlySucceededIds.contains(draftId)) {
+          succeededIds.contains(draftId)) {
         continue;
       }
       _inserted.remove(draftId);
