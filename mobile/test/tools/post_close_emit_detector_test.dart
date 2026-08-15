@@ -5,7 +5,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-// ignore: avoid_relative_lib_imports
+// ignore: avoid_relative_lib_imports, scripts are outside lib/ and not importable through package:openvine.
 import '../../scripts/lib/post_close_emit_detector.dart';
 
 /// Pins the detector semantics behind `check_post_close_emit_ceiling.sh`
@@ -288,6 +288,68 @@ class FooCubit extends Cubit<int> {
       expect(sites, isEmpty);
     });
 
+    test('counts a catch emit after a guarded try body', () {
+      // The guard only covers the try body. The catch can still run after the
+      // awaited call fails, so its emit needs its own guard.
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> load() async {
+    try {
+      final value = await _read();
+      if (isClosed) return;
+      emit(value);
+    } catch (error) {
+      emit(0);
+    }
+  }
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.line, 8);
+    });
+
+    test('counts a finally emit after a guarded try body', () {
+      // A try-body guard does not cover finally; the finally block still runs
+      // after an awaited suspension and needs its own guard.
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> load() async {
+    try {
+      final value = await _read();
+      if (isClosed) return;
+      emit(value);
+    } finally {
+      emit(0);
+    }
+  }
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.line, 8);
+    });
+
+    test('an isClosed early return in a switch case clears that case', () {
+      final sites = scan('''
+class FooCubit extends Cubit<int> {
+  Future<void> load(int value) async {
+    await _read();
+    switch (value) {
+      case 1:
+        if (isClosed) return;
+        emit(1);
+      default:
+        emit(2);
+    }
+  }
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.line, 9);
+    });
+
     test('does not count emit( inside comments or string literals', () {
       final sites = scan('''
 class FooCubit extends Cubit<int> {
@@ -340,10 +402,11 @@ class ACubit extends Cubit<int> {
         pathPrefix: tmp.path,
       );
 
-      expect(
-        sites.map((s) => '${s.path}:${s.line}'),
-        ['lib/a_cubit.dart:4', 'lib/a_cubit.dart:5', 'lib/b_cubit.dart:4'],
-      );
+      expect(sites.map((s) => '${s.path}:${s.line}'), [
+        'lib/a_cubit.dart:4',
+        'lib/a_cubit.dart:5',
+        'lib/b_cubit.dart:4',
+      ]);
     });
   });
 

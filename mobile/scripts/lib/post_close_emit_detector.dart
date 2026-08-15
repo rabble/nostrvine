@@ -34,9 +34,12 @@
 // await cleanup(); return; }` form, since that await only runs on the path
 // that never reaches the call. The guard has to be this instance's:
 // `someController.isClosed` clears nothing. It also only covers the rest of
-// the block it sits in — an await above an enclosing block still suspends the
-// code after that block. A loop body counts as suspended throughout when it
+// the block/case it sits in — an await above an enclosing block still suspends
+// the code after that block. A loop body counts as suspended throughout when it
 // awaits anywhere, since its tail runs before its head runs again.
+//
+// This is intraprocedural: it counts direct emit/add calls in the scanned
+// member, not helper methods that may emit after the caller awaits.
 //
 // Classes and `mixin ... on Bloc/Cubit/BlocBase` bodies are both walked, since
 // a mixin reaches the same `emit`.
@@ -264,6 +267,24 @@ class _Scanner {
     }
   }
 
+  void _statements(
+    List<Statement> statements, {
+    required bool guarded,
+    required bool rejoinEntered,
+  }) {
+    final enteredSuspended = suspended;
+    for (final statement in statements) {
+      if (_isEarlyReturnGuard(statement)) {
+        suspended = false;
+        continue;
+      }
+      _node(statement, guarded: guarded);
+    }
+    if (rejoinEntered) {
+      suspended |= enteredSuspended;
+    }
+  }
+
   /// Whether [node] tests *this* instance's `isClosed`.
   ///
   /// `someController.isClosed` says nothing about whether this bloc is still
@@ -346,20 +367,53 @@ class _Scanner {
       // it is suspended if *either* path suspended: the one through the block,
       // or the one around it. Without the join, a guard inside a conditional
       // arm would silently clear every call after the arm closes.
-      final enteredSuspended = suspended;
-      for (final statement in node.statements) {
-        if (_isEarlyReturnGuard(statement)) {
-          suspended = false;
-          continue;
-        }
-        _node(statement, guarded: guarded);
-      }
-      suspended |= enteredSuspended;
+      _statements(node.statements, guarded: guarded, rejoinEntered: true);
       return;
     }
 
     if (node is IfStatement && _mentionsIsClosed(node.expression)) {
       _children(node, guarded: true);
+      return;
+    }
+
+    if (node is SwitchStatement) {
+      final enteredSuspended = suspended;
+      var exitsSuspended = enteredSuspended;
+      for (final member in node.members) {
+        suspended = enteredSuspended;
+        _statements(
+          member.statements,
+          guarded: guarded,
+          rejoinEntered: false,
+        );
+        exitsSuspended |= suspended;
+      }
+      suspended = exitsSuspended;
+      return;
+    }
+
+    if (node is TryStatement) {
+      final enteredSuspended = suspended;
+      final tryCanResume = enteredSuspended || _containsAwait(node.body);
+
+      suspended = enteredSuspended;
+      _node(node.body, guarded: guarded);
+      var exitsSuspended = suspended;
+
+      var catchCanResume = false;
+      for (final catchClause in node.catchClauses) {
+        suspended = tryCanResume;
+        _node(catchClause.body, guarded: guarded);
+        exitsSuspended |= suspended;
+        catchCanResume |= _containsAwait(catchClause.body);
+      }
+
+      if (node.finallyBlock case final finallyBlock?) {
+        suspended = tryCanResume || catchCanResume;
+        _node(finallyBlock, guarded: guarded);
+      } else {
+        suspended = exitsSuspended;
+      }
       return;
     }
 
