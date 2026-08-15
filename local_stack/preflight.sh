@@ -401,6 +401,7 @@ _stack_ghcr_image_age() {
     digest="$(python3 -c 'import sys,json; print((json.load(sys.stdin).get("config") or {}).get("digest",""))' <<<"$manifest" 2>/dev/null)" || return 1
     [[ -n "$digest" ]] || return 1
 
+    # Note: blob and tags requests could be parallelized for better performance
     created="$(curl -fsSL --max-time 10 -H "Authorization: Bearer ${token}" \
         "https://ghcr.io/v2/divinevideo/${package}/blobs/${digest}" 2>/dev/null |
         python3 -c 'import sys,json; print(json.load(sys.stdin).get("created",""))' 2>/dev/null)" || return 1

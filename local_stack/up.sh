@@ -130,7 +130,7 @@ if [[ "$TUNING_RC" -ne 0 ]]; then
 elif [[ "$SCHEMA_VERSION" =~ ^[0-9]+$ && "$SCHEMA_VERSION" -ge 143 ]]; then
   TUNING_APPLIED="$(sed -n 's/.*refresh-interval tuning: applied=\([0-9][0-9]*\) skipped=.*/\1/p' <<<"$TUNING_OUTPUT" | tail -n 1)"
   EXPECTED_TUNING_APPLIED=5
-  if [[ -z "$TUNING_APPLIED" || "$TUNING_APPLIED" -lt "$EXPECTED_TUNING_APPLIED" ]]; then
+  if [[ -z "$TUNING_APPLIED" || "$TUNING_APPLIED" -ne "$EXPECTED_TUNING_APPLIED" ]]; then
     echo "WARNING: refresh-interval tuning applied ${TUNING_APPLIED:-unknown}/${EXPECTED_TUNING_APPLIED} expected statements on schema ${SCHEMA_VERSION}; local API reads may lag production cadences." >&2
   fi
 fi
