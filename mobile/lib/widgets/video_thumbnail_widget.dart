@@ -401,6 +401,11 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
     _authRetryAttempted = true;
     switch (authResult) {
       case ViewerAuthAuthorized(:final headers):
+        Log.info(
+          '${widget.logPrefix}: Passive auth retry succeeded for $retryUrl',
+          name: widget.logName,
+          category: LogCategory.video,
+        );
         final suppressionKey = _suppressionKey(retryUrl);
         if (suppressionKey != null) {
           PassiveAuthThumbnailImage._unauthorizedWithoutPassiveAuth.remove(
@@ -411,9 +416,25 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
           _authHeaders = headers;
         });
       case ViewerAuthSignerUnreachable():
-        break;
+        Log.warning(
+          '${widget.logPrefix}: Passive auth retry failed; signer unreachable '
+          'for $retryUrl',
+          name: widget.logName,
+          category: LogCategory.video,
+        );
       case ViewerAuthBlockedByPreference():
+        Log.info(
+          '${widget.logPrefix}: Passive auth retry disabled by viewer '
+          'preference for $retryUrl',
+          name: widget.logName,
+          category: LogCategory.video,
+        );
       case ViewerAuthUnavailable():
+        Log.info(
+          '${widget.logPrefix}: Passive auth retry unavailable for $retryUrl',
+          name: widget.logName,
+          category: LogCategory.video,
+        );
         _markPassiveAuthUnavailable(retryUrl);
     }
   }
