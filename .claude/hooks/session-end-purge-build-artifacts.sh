@@ -26,7 +26,7 @@ if [ ! -t 0 ]; then
 fi
 reason="$(printf '%s' "$input" | jq -r '.reason // empty' 2>/dev/null || true)"
 case "$reason" in
-  logout|prompt_input_exit|other|bypass_permissions_disabled) ;;
+  logout|prompt_input_exit|bypass_permissions_disabled) ;;
   *) exit 0 ;;
 esac
 

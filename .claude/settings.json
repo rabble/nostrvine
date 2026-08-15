@@ -70,7 +70,7 @@
     ],
     "SessionEnd": [
       {
-        "matcher": "logout|prompt_input_exit|other|bypass_permissions_disabled",
+        "matcher": "logout|prompt_input_exit|bypass_permissions_disabled",
         "hooks": [
           {
             "type": "command",
