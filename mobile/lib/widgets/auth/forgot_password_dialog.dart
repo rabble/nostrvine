@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:keycast_flutter/keycast_flutter.dart' show ForgotPasswordResult;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/validators.dart';
 
@@ -14,7 +15,7 @@ import 'package:openvine/utils/validators.dart';
 void showForgotPasswordDialog({
   required BuildContext context,
   required String initialEmail,
-  required Future<void> Function(String email) onSendResetEmail,
+  required Future<ForgotPasswordResult> Function(String email) onSendResetEmail,
 }) {
   VineBottomSheet.show<void>(
     context: context,
@@ -35,7 +36,7 @@ class _ForgotPasswordSheetContent extends StatefulWidget {
   });
 
   final String initialEmail;
-  final Future<void> Function(String email) onSendResetEmail;
+  final Future<ForgotPasswordResult> Function(String email) onSendResetEmail;
 
   @override
   State<_ForgotPasswordSheetContent> createState() =>
@@ -46,6 +47,8 @@ class _ForgotPasswordSheetContentState
     extends State<_ForgotPasswordSheetContent> {
   late final TextEditingController _emailController;
   final _formKey = GlobalKey<FormState>();
+  var _isSubmitting = false;
+  var _sendFailed = false;
 
   @override
   void initState() {
@@ -57,6 +60,36 @@ class _ForgotPasswordSheetContentState
   void dispose() {
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _sendFailed = false;
+    });
+
+    try {
+      final result = await widget.onSendResetEmail(
+        _emailController.text.trim(),
+      );
+      if (!mounted) return;
+
+      if (result.success) {
+        context.pop();
+      } else {
+        setState(() => _sendFailed = true);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _sendFailed = true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -102,12 +135,20 @@ class _ForgotPasswordSheetContentState
               validator: (value) =>
                   Validators.validateEmail(value, messages: validationMessages),
             ),
+            if (_sendFailed) ...[
+              const SizedBox(height: 16),
+              Text(
+                '${context.l10n.authFailedToSendResetEmail} '
+                '${context.l10n.authTryAgain}',
+                style: VineTheme.bodyMediumFont(color: VineTheme.error),
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => context.pop(),
+                  onPressed: _isSubmitting ? null : () => context.pop(),
                   child: Text(
                     context.l10n.forgotPasswordCancel,
                     style: TextStyle(color: context.vineColors.onSurfaceMuted),
@@ -119,14 +160,12 @@ class _ForgotPasswordSheetContentState
                     backgroundColor: VineTheme.vineGreen,
                     foregroundColor: context.vineColors.background,
                   ),
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      final email = _emailController.text.trim();
-                      context.pop();
-                      await widget.onSendResetEmail(email);
-                    }
-                  },
-                  child: Text(context.l10n.forgotPasswordSendLink),
+                  onPressed: _isSubmitting ? null : _submit,
+                  child: Text(
+                    _isSubmitting
+                        ? context.l10n.authSending
+                        : context.l10n.forgotPasswordSendLink,
+                  ),
                 ),
               ],
             ),

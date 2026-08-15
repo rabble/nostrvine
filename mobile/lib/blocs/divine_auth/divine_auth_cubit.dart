@@ -430,8 +430,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState>
     }
   }
 
-  /// Send password reset email
-  Future<void> sendPasswordResetEmail(String email) async {
+  /// Sends a password reset request and returns whether it was accepted.
+  Future<ForgotPasswordResult> sendPasswordResetEmail(String email) async {
     final normalizedEmail = Validators.normalizeAuthEmail(email);
     Log.info(
       'Sending password reset email to ${redactEmailForLogs(normalizedEmail)}',
@@ -449,6 +449,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState>
           category: LogCategory.auth,
         );
       }
+      return result;
     } catch (e, stackTrace) {
       Log.error(
         'Password reset error: $e',
@@ -457,6 +458,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState>
       );
       // OAuth client network failure — matrix-NO (Network/IO).
       addError(e, stackTrace);
+      return ForgotPasswordResult(success: false);
     }
   }
 

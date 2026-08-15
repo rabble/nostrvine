@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:keycast_flutter/keycast_flutter.dart' show ForgotPasswordResult;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/auth/forgot_password_dialog.dart';
 
@@ -16,7 +17,10 @@ void main() {
       resetEmails = [];
     });
 
-    Widget createTestWidget({String initialEmail = ''}) {
+    Widget createTestWidget({
+      String initialEmail = '',
+      Future<ForgotPasswordResult> Function(String email)? onSendResetEmail,
+    }) {
       return MaterialApp.router(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -31,9 +35,12 @@ void main() {
                     onPressed: () => showForgotPasswordDialog(
                       context: context,
                       initialEmail: initialEmail,
-                      onSendResetEmail: (email) async {
-                        resetEmails.add(email);
-                      },
+                      onSendResetEmail:
+                          onSendResetEmail ??
+                          (email) async {
+                            resetEmails.add(email);
+                            return ForgotPasswordResult(success: true);
+                          },
                     ),
                     child: const Text('Show Dialog'),
                   ),
@@ -163,6 +170,35 @@ void main() {
 
         // Dialog should be closed
         expect(find.text('Reset Password'), findsNothing);
+      });
+
+      testWidgets('keeps dialog open and shows retry copy when sending fails', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            initialEmail: 'user@example.com',
+            onSendResetEmail: (_) async => ForgotPasswordResult(
+              success: false,
+              error: 'Server response must not be shown',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await openDialog(tester);
+
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text('Reset Password'), findsOneWidget);
+        expect(
+          find.text('${l10n.authFailedToSendResetEmail} ${l10n.authTryAgain}'),
+          findsOneWidget,
+        );
+        expect(find.text('Server response must not be shown'), findsNothing);
       });
     });
   });
