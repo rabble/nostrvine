@@ -81,6 +81,107 @@ void main() {
       expect(result, false);
       expect(ZendeskSupportService.isAvailable, false);
     });
+
+    test('a repeat call keeps a successful initialization', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      final second = await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      // Completing the initialization gate twice used to throw out of
+      // initialize() and, on the way through the catch-all, reset
+      // _initialized on an SDK that had just come up fine.
+      expect(second, true);
+      expect(ZendeskSupportService.isAvailable, true);
+    });
+  });
+
+  group('ZendeskSupportService initialization gate', () {
+    // The deferred startup phase kicks off initialize() without awaiting it,
+    // so the auth listener can reach these identity calls while the native
+    // handshake is still in flight. Both must wait for it rather than read a
+    // transiently false _initialized and give up.
+    test('setJwtIdentity waits for an in-flight initialization', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') {
+              await Future<void>.delayed(const Duration(milliseconds: 20));
+              return true;
+            }
+            return null;
+          });
+
+      final nip98Service = _RecordingNip98AuthService();
+
+      final initialization = ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      await ZendeskSupportService.setJwtIdentity(
+        nip98Service: nip98Service,
+        relayManagerUrl: 'https://test-relay.divine.video',
+      );
+      await initialization;
+
+      // Reaching token creation is the observable: bailing at the
+      // not-initialized check would leave this at zero.
+      expect(nip98Service.createAuthTokenCalls, 1);
+    });
+
+    test(
+      'setAnonymousIdentityWithUserInfo waits for an in-flight initialization',
+      () async {
+        var userIdentityCalls = 0;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') {
+                await Future<void>.delayed(const Duration(milliseconds: 20));
+                return true;
+              }
+              if (call.method == 'setUserIdentity') {
+                userIdentityCalls++;
+                return true;
+              }
+              return null;
+            });
+
+        ZendeskSupportService.setUserIdentity(
+          npub: 'npub1testuser',
+          displayName: 'Test User',
+        );
+
+        final initialization = ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        final identitySet =
+            await ZendeskSupportService.setAnonymousIdentityWithUserInfo();
+        await initialization;
+
+        // This is the identity the JWT upgrade is allowed to fall back to, so
+        // losing the startup race here leaves a logged-in reporter with no
+        // Zendesk identity at all.
+        expect(identitySet, true);
+        expect(userIdentityCalls, 1);
+      },
+    );
   });
 
   group('ZendeskSupportService.showNewTicketScreen', () {
@@ -1524,6 +1625,22 @@ void main() {
       },
     );
   });
+}
+
+/// Fails token creation like [_FakeNip98AuthService], but records whether
+/// fetchPreAuthToken was reached at all. That count is what separates "the
+/// initialization gate let the caller through" from "the caller bailed at the
+/// not-initialized check", since both end in a false return.
+class _RecordingNip98AuthService implements Nip98AuthService {
+  int createAuthTokenCalls = 0;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #createAuthToken) {
+      createAuthTokenCalls++;
+    }
+    return null;
+  }
 }
 
 /// Minimal fake for Nip98AuthService that always fails token creation.

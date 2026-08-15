@@ -28,11 +28,13 @@ class ZendeskSupportService {
     'com.openvine/zendesk_support',
   );
   static const Duration _jwtRefreshReuseWindow = Duration(minutes: 4);
+  static const Duration _initializationTimeout = Duration(seconds: 10);
 
   static final CrashReportingService _crashlytics =
       CrashReportingService.instance;
 
   static bool _initialized = false;
+  static Completer<void> _initializationCompleter = Completer<void>();
 
   /// Check if Zendesk is available (credentials configured and initialized)
   static bool get isAvailable => _initialized;
@@ -64,6 +66,7 @@ class ZendeskSupportService {
     _clearAuthContext();
     _now = DateTime.now;
     _jwtIdentityRefreshOverride = null;
+    _initializationCompleter = Completer<void>();
   }
 
   @visibleForTesting
@@ -113,6 +116,7 @@ class ZendeskSupportService {
         'Zendesk credentials not configured - bug reports will use email fallback',
         category: LogCategory.system,
       );
+      _completeInitialization();
       return false;
     }
 
@@ -137,6 +141,7 @@ class ZendeskSupportService {
         );
       }
 
+      _completeInitialization();
       return _initialized;
     } on PlatformException catch (e) {
       Log.error(
@@ -144,6 +149,7 @@ class ZendeskSupportService {
         category: LogCategory.system,
       );
       _initialized = false;
+      _completeInitialization();
       return false;
     } catch (e) {
       Log.error(
@@ -151,7 +157,31 @@ class ZendeskSupportService {
         category: LogCategory.system,
       );
       _initialized = false;
+      _completeInitialization();
       return false;
+    }
+  }
+
+  /// Opens the initialization gate. Safe to call on every exit path of
+  /// [initialize], including a repeat call after the SDK is already up.
+  static void _completeInitialization() {
+    if (!_initializationCompleter.isCompleted) {
+      _initializationCompleter.complete();
+    }
+  }
+
+  /// Blocks until [initialize] has settled, so identity calls made during the
+  /// deferred startup phase do not read a [_initialized] that is only
+  /// transiently false.
+  static Future<void> _awaitInitialization() async {
+    try {
+      await _initializationCompleter.future.timeout(_initializationTimeout);
+    } on TimeoutException {
+      Log.warning(
+        'Zendesk: initialization did not settle within '
+        '${_initializationTimeout.inSeconds}s',
+        category: LogCategory.system,
+      );
     }
   }
 
@@ -198,6 +228,11 @@ class ZendeskSupportService {
   /// after login without a network call. JWT identity upgrade happens
   /// asynchronously afterward and overrides this when successful.
   static Future<bool> setAnonymousIdentityWithUserInfo() async {
+    // Races startup for the same reason setJwtIdentity does: this is the
+    // fallback identity the JWT upgrade is allowed to fail back to, so it
+    // must not be the one that silently loses the race.
+    await _awaitInitialization();
+
     if (!_initialized) return false;
     if (_userName == null || _userEmail == null) return false;
 
@@ -385,6 +420,8 @@ class ZendeskSupportService {
     required Nip98AuthService nip98Service,
     required String relayManagerUrl,
   }) async {
+    await _awaitInitialization();
+
     if (!_initialized) {
       Log.warning(
         'Zendesk JWT: SDK not initialized',
