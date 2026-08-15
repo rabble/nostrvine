@@ -2311,14 +2311,15 @@ class ProfileRepository implements ProfileReader {
     return _boostProfiles(filtered, boostPubkeys);
   }
 
-  /// Orders a server-sorted result page, falling back when the requested
-  /// sort is a no-op on the payload.
+  /// Orders a server-sorted result page by the signals the REST payload
+  /// actually carries.
   ///
   /// For a `followers` sort, ranks by REST `follower_count` descending, then
-  /// REST `video_count` descending as a tie-breaker. This values real follower
-  /// counts first (your Alice with few followers still beats a non-followed
-  /// famous Alice via the outer `_boostProfiles` step) while keeping the most
-  /// followed among equals on top. Kind 0 Vine archive metrics are
+  /// REST `video_count` descending, then server index. The video tie-breaker
+  /// is what orders archive-imported profiles, which all carry
+  /// `follower_count: 0`, and it also separates equally followed profiles.
+  /// Profiles the viewer follows are promoted ahead of this ordering by the
+  /// outer `_boostProfiles` step. Kind 0 Vine archive metrics are
   /// intentionally not used here because they are different quantities.
   static List<UserProfile> _rankServerSortedPage(
     List<UserProfile> profiles,
