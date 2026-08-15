@@ -397,6 +397,10 @@ void main() {
         wait: const Duration(milliseconds: 1),
         expect: () => [
           NotificationFeedState(isRefreshing: true),
+          NotificationFeedState(
+            isRefreshing: true,
+            status: NotificationFeedStatus.loaded,
+          ),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         errors: () => [
