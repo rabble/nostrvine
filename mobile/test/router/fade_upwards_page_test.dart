@@ -25,6 +25,12 @@ class _FakeGoRouterState extends Fake implements GoRouterState {
   final String? path;
 
   @override
+  GoRoute? get topRoute => null;
+
+  @override
+  String? get fullPath => null;
+
+  @override
   final Map<String, String> pathParameters;
 
   @override
