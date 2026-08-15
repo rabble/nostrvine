@@ -28,6 +28,11 @@
 # bind — that is conservative on purpose, not a gap to close with fuzzy
 # matching.
 #
+# Known v1 limits are tracked in #7213: this guard only binds literals that
+# already match app_en.arb, so already-drifted flow copy remains invisible; it
+# also checks by substring against the extracted file text, so copy shortening
+# can pass until the planned exact-literal inverse check lands.
+#
 # Regenerate after an intentional copy change (review the printed diff of
 # added/removed bindings — regeneration re-blesses whatever ARB says today):
 #   UPDATE_BASELINE=1 bash mobile/scripts/check_maestro_copy_drift.sh
@@ -226,6 +231,9 @@ HEADER = """# Binding baseline: each English literal the Maestro suite asserts o
 # (ICU placeholders) and survive regeneration; all other rows are auto-derived.
 # Regenerate after intentional copy changes with UPDATE_BASELINE=1 and review
 # the printed diff — regeneration re-blesses whatever app_en.arb says today.
+# Known v1 limits are tracked in #7213: already-drifted flow literals do not
+# bind, and substring checking can miss copy shortening until the inverse
+# exact-literal check lands.
 """
 
 def save_manifest(path, bindings):
@@ -349,9 +357,10 @@ for (key, rel), rendered in sorted(bindings.items()):
               f"       flow:     {rel}\n"
               f"       ARB now says: {current}\n"
               f"     That exact string no longer appears in the flow. Update the "
-              f"flow to the current copy, or — if the copy change was intentional "
-              f"— regenerate: UPDATE_BASELINE=1 bash "
-              f"mobile/scripts/check_maestro_copy_drift.sh",
+              f"flow to the current copy first. If the flow intentionally stopped "
+              f"asserting this copy, regenerate with ACCEPT_REMOVALS=1 "
+              f"UPDATE_BASELINE=1 bash mobile/scripts/check_maestro_copy_drift.sh "
+              f"and call out the removed binding in the PR.",
               file=sys.stderr)
         failures += 1
 

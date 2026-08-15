@@ -6,6 +6,9 @@
 # (ICU placeholders) and survive regeneration; all other rows are auto-derived.
 # Regenerate after intentional copy changes with UPDATE_BASELINE=1 and review
 # the printed diff — regeneration re-blesses whatever app_en.arb says today.
+# Known v1 limits are tracked in #7213: already-drifted flow literals do not
+# bind, and substring checking can miss copy shortening until the inverse
+# exact-literal check lands.
 
 appTitle	e2e/maestro/asserts/assertSplash.yaml
 appsDirectoryRefresh	e2e/maestro/tests/profileNavigation.yaml
