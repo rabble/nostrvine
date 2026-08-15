@@ -4504,7 +4504,8 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Hindi na-load ang mga video.';
+  String get profileFeedError =>
+      'Hindi maabot ang server. Tingnan ang iyong koneksyon at subukan ulit.';
 
   @override
   String get profileFeedLoadMoreError =>

@@ -4435,7 +4435,8 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Kunde inte läsa in videor.';
+  String get profileFeedError =>
+      'Kan inte nå servern. Kontrollera din anslutning och försök igen.';
 
   @override
   String get profileFeedLoadMoreError =>

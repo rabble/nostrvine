@@ -4209,7 +4209,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => '動画を読み込めませんでした。';
+  String get profileFeedError => 'サーバーに接続できません。接続を確認してもう一度お試しください。';
 
   @override
   String get profileFeedLoadMoreError => 'これ以上の動画を読み込めませんでした。引っ張って更新してください。';

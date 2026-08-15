@@ -35,7 +35,7 @@
     "dmReactionRetryAction": "Riprova",
     "dmMessageBubbleVideoReplyHint": "Apri il video di riferimento",
     "commonSomethingWentWrong": "Qualcosa è andato storto",
-    "profileFeedError": "Non è stato possibile caricare i video.",
+    "profileFeedError": "Impossibile raggiungere il server. Controlla la connessione e riprova.",
     "profileFeedLoadMoreError": "Non è stato possibile caricare altri video. Trascina per aggiornare.",
     "appTitle": "Divine",
     "@appTitle": {

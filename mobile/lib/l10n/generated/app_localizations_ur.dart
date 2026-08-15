@@ -4445,7 +4445,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'ویڈیوز لوڈ نہیں ہو سکیں۔';
+  String get profileFeedError =>
+      'سرور تک رسائی نہیں ہو رہی۔ اپنا کنکشن چیک کر کے دوبارہ کوشش کریں۔';
 
   @override
   String get profileFeedLoadMoreError =>

@@ -4228,7 +4228,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => '영상을 불러오지 못했어요.';
+  String get profileFeedError => '서버에 연결할 수 없습니다. 연결을 확인하고 다시 시도해 주세요.';
 
   @override
   String get profileFeedLoadMoreError => '영상을 더 불러오지 못했어요. 당겨서 새로고침하세요.';

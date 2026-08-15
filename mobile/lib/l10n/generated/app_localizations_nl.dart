@@ -4457,7 +4457,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Video\'s konden niet worden geladen.';
+  String get profileFeedError =>
+      'Kan de server niet bereiken. Controleer je verbinding en probeer het opnieuw.';
 
   @override
   String get profileFeedLoadMoreError =>

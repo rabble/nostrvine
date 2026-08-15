@@ -4401,7 +4401,8 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get profileFeedError => 'Video gagal dimuat.';
+  String get profileFeedError =>
+      'Tidak dapat menjangkau server. Periksa koneksimu dan coba lagi.';
 
   @override
   String get profileFeedLoadMoreError =>
