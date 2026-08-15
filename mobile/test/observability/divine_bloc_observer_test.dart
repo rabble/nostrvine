@@ -2,16 +2,34 @@
 // ABOUTME: ReportableError, sanitizes the reason annotation, and preserves
 // ABOUTME: Log.error coverage for every Bloc onError trigger.
 
+import 'package:drift/drift.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:sqlite3/common.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class _MockCrashReportingService extends Mock
     implements CrashReportingService {}
+
+/// The corrupt statement behind #7507, as the real `sqlite3` type.
+///
+/// The database runs on a background isolate, so blocs actually see a
+/// `DriftRemoteException` — but its `toString()` is exactly
+/// `remoteCause.toString()` and its constructor is private, so the cause
+/// itself is the faithful stand-in. The bound parameter matters: it is what
+/// puts content below the header line.
+final _realCorruptionException = SqliteException(
+  extendedResultCode: 26,
+  message: 'file is not a database',
+  explanation: 'file is not a database (code 26)',
+  operation: 'preparing a statement',
+  causingStatement: 'PRAGMA user_version',
+  parametersToStatement: <Object?>['abc123'],
+);
 
 class _CountCubit extends Cubit<int> {
   _CountCubit() : super(0);
@@ -382,13 +400,8 @@ void main() {
       /// a Drift failure forwarded from the background isolate, wrapped at the
       /// `addError` call site. `_publishLike` is the real reporting site behind
       /// one of the duplicate Crashlytics groups.
-      Reportable<Object> driftCorruptionFailure() => Reportable(
-        Exception(
-          'SqliteException(26): file is not a database, '
-          'file is not a database (code 26)',
-        ),
-        context: '_publishLike',
-      );
+      Reportable<Object> driftCorruptionFailure() =>
+          Reportable(_realCorruptionException, context: '_publishLike');
 
       setUp(() {
         isCorrupted = false;
@@ -432,10 +445,46 @@ void main() {
         );
       });
 
-      test('suppresses a corruption buried in an aggregate error', () {
-        // NotificationFeedBloc._onRefreshed reports this shape: the corrupt
-        // statement is one leg of a Future.wait, so the SQLite header is not
-        // the first thing the error prints.
+      test('suppresses the real ParallelWaitError signature', () async {
+        // Signature 5 of #7507, raised from
+        // `NotificationFeedBloc._onRefreshed`: the corrupt statement is one
+        // leg of a record `.wait`, and `ParallelWaitError` extends `Error`, so
+        // it lands in that handler's generic catch and is wrapped there.
+        //
+        // Built by actually failing a `.wait` rather than by hand-writing what
+        // it prints — the gate's whole job is reading a string the SDK
+        // produces, so a fabricated one would prove nothing about the fix.
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+        isCorrupted = true;
+
+        Object? raised;
+        try {
+          await (
+            Future<int>.error(_realCorruptionException),
+            Future<String>.value('ok'),
+          ).wait;
+        } on Object catch (error) {
+          raised = error;
+        }
+
+        reportedBy(cubit, Reportable(raised!, context: '_onRefreshed'));
+
+        verifyNever(
+          () => mockCrash.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        );
+      });
+
+      test('suppresses a corruption a wrapper pushed off the header line', () {
+        // `CouldNotRollBackException` prints the ROLLBACK's own failure first
+        // and the error that triggered the rollback below it, so the SQLite
+        // header is not on line 1. This is the shape that requires
+        // `mentionsDatabaseCorruption` rather than the header-only classifier;
+        // every other wrapper in play keeps the header on line 1.
         final cubit = _CountCubit();
         addTearDown(cubit.close);
         isCorrupted = true;
@@ -443,12 +492,12 @@ void main() {
         reportedBy(
           cubit,
           Reportable(
-            Exception(
-              'ParallelWaitError(([NotificationItem(id: abc,\n'
-              '  body: hi)], []), (null, AsyncError: SqliteException(26): '
-              'file is not a database))',
+            CouldNotRollBackException(
+              _realCorruptionException,
+              StackTrace.empty,
+              StateError('connection closed'),
             ),
-            context: '_onRefreshed',
+            context: '_onVoteCountsFetchRequested',
           ),
         );
 

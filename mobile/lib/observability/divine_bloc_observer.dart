@@ -44,8 +44,8 @@ const String kBlocDiagnosticNotObserved = '<not observed>';
 /// #3758.
 ///
 /// A second gate suppresses Crashlytics forwarding for database failures once
-/// the local database has already reported corruption — see
-/// [isDatabaseCorrupted].
+/// the local database has already reported corruption — see the
+/// `isDatabaseCorrupted` constructor argument.
 ///
 /// Wire once at app start, before `runApp`:
 ///

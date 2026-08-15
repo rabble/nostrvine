@@ -36,13 +36,23 @@ bool indicatesDatabaseCorruption(Object error) {
 }
 
 /// Whether [error] mentions on-disk corruption **anywhere** in its text,
-/// including inside a wrapper that embeds a cause's `toString()`.
+/// including inside a wrapper that prints its cause below its own first line.
 ///
 /// Deliberately looser than [indicatesDatabaseCorruption], which reads the
-/// header line only. Aggregate and wrapper errors bury the SQLite header
-/// arbitrarily deep — a `ParallelWaitError` stringifies its whole failed
-/// record, so the corrupt statement can land on any line — and those wrappers
-/// are exactly what downstream callers see.
+/// header line only. Most wrappers a downstream caller sees keep the SQLite
+/// header on line 1, so the strict classifier already covers them:
+/// `DriftRemoteException` forwards `remoteCause.toString()` verbatim,
+/// `DriftWrappedException` opens with `'$cause at …'`, and `ParallelWaitError`
+/// prints only its *default* error — the first leg to fail — never its
+/// `values` or `errors` records.
+///
+/// `CouldNotRollBackException` is the shape that defeats it: it prints the
+/// failure raised by the `ROLLBACK` itself first, and the error that triggered
+/// the rollback on the line below. A transaction aborted by corruption whose
+/// rollback then fails for some other reason therefore carries the SQLite
+/// header on line 2, where only this classifier can see it. drift transactions
+/// are used in `event_router.dart` and the DM/conversation DAOs, so the shape
+/// is reachable rather than hypothetical.
 ///
 /// The stricter classifier is not merely stricter, it protects a different
 /// decision. It gates the salvage/wipe of a database, where a false positive
