@@ -3144,7 +3144,7 @@ class DmRepository {
         // duplicate. Also skip when the cancel interlock fired: `protocol`
         // stays null on that path, and a plaintext copy of a message the
         // user just deleted must not go out.
-        if (persistedLocally && protocol != 'nip17' && !skipNip04Fallback) {
+        if (persistedLocally && nextProtocol != 'nip17' && !skipNip04Fallback) {
           unawaited(
             _sendNip04Message(
               recipientPubkey: recipientPubkey,
