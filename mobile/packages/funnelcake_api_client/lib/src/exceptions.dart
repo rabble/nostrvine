@@ -10,6 +10,13 @@ class FunnelcakeException implements Exception {
   final String message;
 
   /// The lower-level error that caused this exception, when one was wrapped.
+  ///
+  /// Contract: only some wrap sites populate this today — currently the
+  /// author-videos fetch. A wrap site that does not pass `cause:` leaves it
+  /// null, and callers classifying failures by cause (for example creator
+  /// analytics' connection-vs-server copy) silently fall back to their
+  /// generic verdict for those endpoints. Populate the field before relying
+  /// on it for a new call site.
   final Object? cause;
 
   @override

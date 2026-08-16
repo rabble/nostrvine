@@ -345,6 +345,9 @@ class _ErrorView extends StatelessWidget {
 
 class _CreatorAnalyticsSignInRequiredException implements Exception {
   const _CreatorAnalyticsSignInRequiredException();
+
+  @override
+  String toString() => 'CreatorAnalyticsSignInRequiredException';
 }
 
 String _analyticsErrorMessage(BuildContext context, Object? error) {

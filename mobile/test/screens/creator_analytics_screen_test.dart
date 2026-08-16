@@ -220,6 +220,8 @@ void main() {
   });
 
   testWidgets('toggles diagnostics from the app bar action', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     await pumpAnalyticsScreen(
       tester,
       videos: [
@@ -233,14 +235,16 @@ void main() {
       ],
     );
 
-    expect(find.text('Total videos: 1'), findsNothing);
+    expect(find.text(l10n.analyticsDiagnosticsTotalVideos(1)), findsNothing);
 
     await tester.tap(find.bySemanticsLabel('Toggle diagnostics'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Total videos: 1'), findsOneWidget);
-    expect(find.text('Sources: bulk-video-stats'), findsOneWidget);
-    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.analyticsDiagnosticsTotalVideos(1)), findsOneWidget);
+    expect(
+      find.text(l10n.analyticsDiagnosticsSources('bulk-video-stats')),
+      findsOneWidget,
+    );
     expect(
       find.text(l10n.analyticsDiagnosticsFailedSources('none')),
       findsOneWidget,
