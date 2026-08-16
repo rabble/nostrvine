@@ -429,6 +429,7 @@ class _PassiveAuthThumbnailImageState extends State<PassiveAuthThumbnailImage> {
           name: widget.logName,
           category: LogCategory.video,
         );
+        _markPassiveAuthUnavailable(retryUrl);
       case ViewerAuthUnavailable():
         Log.info(
           '${widget.logPrefix}: Passive auth retry unavailable for $retryUrl',

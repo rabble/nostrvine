@@ -174,6 +174,60 @@ void main() {
         expect(firstClientCalls, equals(1));
         expect(retryClientCalls, equals(1));
       });
+
+      test(
+        'defers closing a retired transport until sibling requests finish',
+        () async {
+          const pubkey =
+              '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+          final staleRequest = Completer<http.StreamedResponse>();
+          late _ControlledClient firstClient;
+          late _ControlledClient retryClient;
+          var firstClientCalls = 0;
+          var retryClientCalls = 0;
+          var factoryCalls = 0;
+
+          firstClient = _ControlledClient((request) {
+            firstClientCalls++;
+            if (firstClientCalls == 1) {
+              return staleRequest.future;
+            }
+            throw http.ClientException('Connection reset', request.url);
+          });
+          retryClient = _ControlledClient((request) async {
+            retryClientCalls++;
+            return _rpcResult(request, {'result': pubkey});
+          });
+          final clients = [firstClient, retryClient];
+
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClientFactory: () => clients[factoryCalls++],
+          );
+
+          final staleFuture = rpc.getPublicKey();
+          await Future<void>.value();
+          expect(firstClientCalls, equals(1));
+
+          final resetResult = await rpc.getPublicKey();
+          expect(resetResult, pubkey);
+          expect(factoryCalls, equals(2));
+          expect(firstClient.closeCount, equals(0));
+
+          staleRequest.completeError(
+            http.ClientException(
+              'Bad file descriptor',
+              Uri.parse('https://login.divine.video/api/nostr'),
+            ),
+          );
+
+          expect(await staleFuture, pubkey);
+          expect(factoryCalls, equals(2));
+          expect(retryClientCalls, equals(2));
+          expect(firstClient.closeCount, equals(1));
+        },
+      );
     });
 
     group('signEvent', () {
@@ -972,10 +1026,9 @@ void main() {
           );
         });
 
-        final slots = await rpcWith(mockClient).nip17WrapBatch(
-          rumor,
-          recipients,
-        );
+        final slots = await rpcWith(
+          mockClient,
+        ).nip17WrapBatch(rumor, recipients);
 
         expect(slots, hasLength(2));
         expect(slots![0].isSuccess, isTrue);
@@ -997,10 +1050,9 @@ void main() {
           );
         });
 
-        final slots = await rpcWith(mockClient).nip17WrapBatch(
-          rumor,
-          recipients,
-        );
+        final slots = await rpcWith(
+          mockClient,
+        ).nip17WrapBatch(rumor, recipients);
 
         expect(slots![0].isSuccess, isTrue);
         expect(slots[1].isSuccess, isFalse);
@@ -1191,4 +1243,39 @@ void main() {
       });
     });
   });
+}
+
+http.StreamedResponse _rpcResult(
+  http.BaseRequest request,
+  Object body, {
+  int statusCode = 200,
+}) {
+  return http.StreamedResponse(
+    Stream.value(utf8.encode(jsonEncode(body))),
+    statusCode,
+    request: request,
+  );
+}
+
+class _ControlledClient extends http.BaseClient {
+  _ControlledClient(this._handler);
+
+  final Future<http.StreamedResponse> Function(http.BaseRequest request)
+  _handler;
+  int closeCount = 0;
+  bool isClosed = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    if (isClosed) {
+      throw http.ClientException('Client is already closed.', request.url);
+    }
+    return _handler(request);
+  }
+
+  @override
+  void close() {
+    closeCount++;
+    isClosed = true;
+  }
 }

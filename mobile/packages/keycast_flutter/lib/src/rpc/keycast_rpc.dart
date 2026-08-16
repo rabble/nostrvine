@@ -2,6 +2,7 @@
 // ABOUTME: Provides remote signing via Keycast server for Nostr events
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -113,6 +114,8 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   final http.Client Function() _clientFactory;
   http.Client _client;
   bool _ownsClient;
+  final Map<http.Client, int> _inFlightByClient = HashMap.identity();
+  final Set<http.Client> _clientsPendingClose = HashSet.identity();
   final TokenRefreshCallback? _onTokenRefresh;
   bool _signCanonicalUnsupported = false;
 
@@ -195,7 +198,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     return fromResult(json['result']);
   }
 
-  /// Sends one RPC request and, for socket-level [http.ClientException] only,
+  /// Sends one RPC request and, for transport-level [http.ClientException],
   /// resets the HTTP transport before retrying once.
   ///
   /// The retry is deliberately below RPC parsing and token-refresh handling:
@@ -207,10 +210,12 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     Duration? Function()? timeout,
     bool classifyLocalTimeout = true,
   }) async {
+    final attemptClient = _client;
     try {
       return await _sendRequest(
         method,
         params,
+        client: attemptClient,
         timeout: timeout?.call(),
         classifyLocalTimeout: classifyLocalTimeout,
       );
@@ -221,7 +226,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         name: 'KeycastRpc',
         category: LogCategory.auth,
       );
-      _resetHttpClient();
+      _resetHttpClientAfterFailure(attemptClient);
       try {
         return await _sendRequest(
           method,
@@ -240,19 +245,46 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     }
   }
 
-  void _resetHttpClient() {
-    final previousClient = _client;
-    final shouldClosePrevious = _ownsClient;
+  void _resetHttpClientAfterFailure(http.Client failedClient) {
+    if (!identical(_client, failedClient)) return;
+    final shouldCloseFailedClient = _ownsClient;
     _client = _clientFactory();
     _ownsClient = true;
-    if (shouldClosePrevious) {
-      previousClient.close();
+    _retireHttpClient(failedClient, shouldClose: shouldCloseFailedClient);
+  }
+
+  void _retireHttpClient(http.Client client, {required bool shouldClose}) {
+    if (!shouldClose) return;
+    if ((_inFlightByClient[client] ?? 0) > 0) {
+      _clientsPendingClose.add(client);
+      return;
+    }
+    client.close();
+  }
+
+  http.Client _acquireHttpClient([http.Client? preferredClient]) {
+    final client = preferredClient ?? _client;
+    _inFlightByClient[client] = (_inFlightByClient[client] ?? 0) + 1;
+    return client;
+  }
+
+  void _releaseHttpClient(http.Client client) {
+    final inFlight = _inFlightByClient[client];
+    if (inFlight == null) return;
+    if (inFlight > 1) {
+      _inFlightByClient[client] = inFlight - 1;
+      return;
+    }
+    _inFlightByClient.remove(client);
+    if (_clientsPendingClose.remove(client)) {
+      client.close();
     }
   }
 
   Future<http.Response> _sendRequest(
     String method,
     List<dynamic> params, {
+    http.Client? client,
     Duration? timeout,
     bool classifyLocalTimeout = true,
   }) async {
@@ -263,9 +295,10 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     );
     final stopwatch = Stopwatch()..start();
     final effectiveTimeout = timeout ?? requestTimeout;
+    final requestClient = _acquireHttpClient(client);
     http.Response response;
     try {
-      response = await _client
+      response = await requestClient
           .post(
             Uri.parse(nostrApi),
             headers: {
@@ -281,6 +314,8 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         'Local $method request timed out after ${effectiveTimeout.inSeconds}s',
         method: method,
       );
+    } finally {
+      _releaseHttpClient(requestClient);
     }
     stopwatch.stop();
     Log.debug(
