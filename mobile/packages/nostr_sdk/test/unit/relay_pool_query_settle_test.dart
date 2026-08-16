@@ -654,6 +654,71 @@ void main() {
       expect(result.timedOut, isFalse);
     });
 
+    // A relay-participation count is the only thing that separates "every
+    // relay says there is nothing" from "nobody was asked". A connected-relay
+    // snapshot cannot: a relay counts as connected while being write-only, or
+    // while its socket is dead but not yet observed.
+    group('noRelaysParticipated', () {
+      test('reports a fan-out no relay took', () async {
+        final nostr = _newNostr();
+        final unreachable = _SilentRelay('wss://send-fails.example')
+          ..sendSucceeds = false;
+        expect(await nostr.relayPool.add(unreachable), isTrue);
+
+        final result = await nostr.queryEventsDetailed([
+          {
+            'kinds': [1],
+          },
+        ], timeout: _timeout);
+
+        expect(result.noRelaysParticipated, isTrue);
+      });
+
+      test(
+        'reports a connected write-only relay as no participation',
+        () async {
+          final nostr = _newNostr();
+          final writeOnly = _SilentRelay('wss://write-only.example');
+          expect(await nostr.relayPool.add(writeOnly), isTrue);
+          writeOnly.relayStatus.readAccess = false;
+
+          final result = await nostr.queryEventsDetailed([
+            {
+              'kinds': [1],
+            },
+          ], timeout: _timeout);
+
+          expect(
+            writeOnly.relayStatus.connected,
+            equals(ClientConnected.connected),
+            reason:
+                'the point of this case is that the relay looks healthy to '
+                'everything except the REQ',
+          );
+          expect(result.noRelaysParticipated, isTrue);
+        },
+      );
+
+      test('reports participation once a relay answers', () async {
+        final nostr = _newNostr();
+        final answering = _SilentRelay('wss://answers.example');
+        expect(await nostr.relayPool.add(answering), isTrue);
+
+        final pending = nostr.queryEventsDetailed([
+          {
+            'kinds': [1],
+          },
+        ], timeout: _timeout);
+
+        final subId = await answering.awaitPendingQuery();
+        await answering.deliver(['EOSE', subId]);
+
+        final result = await pending;
+
+        expect(result.noRelaysParticipated, isFalse);
+      });
+    });
+
     group('requireAllRelaysSettled', () {
       // Long enough that the settle window would have completed the query
       // well before it, so a timeout here can only mean the window was

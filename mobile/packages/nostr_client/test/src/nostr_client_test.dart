@@ -14,6 +14,11 @@ class _MockNostr extends Mock implements Nostr {
   /// Drives the `timedOut` field of the record synthesized below.
   bool timedOut = false;
 
+  /// Drives the `noRelaysParticipated` field of that same record — the SDK
+  /// reporting that no relay took the REQ, which a connected-relay snapshot
+  /// cannot see.
+  bool noRelaysParticipated = false;
+
   /// What the client last asked for full relay settlement, so a test can pin
   /// that the flag is threaded down rather than dropped on the floor.
   bool? lastRequireAllRelaysSettled;
@@ -24,7 +29,8 @@ class _MockNostr extends Mock implements Nostr {
   /// list-returning method that tests stub. Tests that care about the timeout
   /// signal set [timedOut] instead of stubbing a second method.
   @override
-  Future<({List<Event> events, bool timedOut})> queryEventsDetailed(
+  Future<({List<Event> events, bool timedOut, bool noRelaysParticipated})>
+  queryEventsDetailed(
     List<Map<String, dynamic>> filters, {
     String? id,
     List<String>? tempRelays,
@@ -42,7 +48,11 @@ class _MockNostr extends Mock implements Nostr {
       sendAfterAuth: sendAfterAuth,
       timeout: timeout,
     );
-    return (events: events, timedOut: timedOut);
+    return (
+      events: events,
+      timedOut: timedOut,
+      noRelaysParticipated: noRelaysParticipated,
+    );
   }
 }
 

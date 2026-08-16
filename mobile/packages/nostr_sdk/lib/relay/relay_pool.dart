@@ -1896,9 +1896,16 @@ class RelayPool {
   /// caller than no answer — see [_queriesRequiringFullSettlement]. The query
   /// then completes only once every relay that can still answer has, so a relay
   /// that stays connected and never sends a terminal frame runs the caller out
-  /// to its own timeout instead of being skipped past — as does a fan-out no
-  /// relay accepted at all.
-  Future<String> query(
+  /// to its own timeout instead of being skipped past.
+  ///
+  /// The returned `sentTo` names the relays that took the REQ: the frame
+  /// reached the socket, or the relay is behind an auth gate and the query is
+  /// parked for post-NIP-42 replay. Only those relays can ever answer, so an
+  /// empty `sentTo` means nothing was asked — which is not the same as every
+  /// relay having nothing, and is the distinction a caller about to replace a
+  /// replaceable event has to make. The future resolves once the fan-out is
+  /// done, ahead of `onComplete`.
+  Future<({String id, List<String> sentTo})> query(
     List<Map<String, dynamic>> filters,
     Function(Event) onEvent, {
     String? id,
@@ -1929,8 +1936,20 @@ class RelayPool {
 
     // Collect futures so we can await them before the early-completion
     // check. Each relayDoQuery call only resolves after relay.send()
-    // and saveQuery(), which is fast with skipReconnect: true.
-    final queryFutures = <Future<bool>>[];
+    // and saveQuery(), which is fast with skipReconnect: true. Each resolves
+    // to the relay's url when it took the REQ, so the fan-out can report who
+    // is actually able to answer.
+    final queryFutures = <Future<String?>>[];
+
+    Future<String?> sendQueryTo(
+      Relay relay, {
+      bool runBeforeConnected = false,
+    }) => relayDoQuery(
+      relay,
+      subscription,
+      sendAfterAuth,
+      runBeforeConnected: runBeforeConnected,
+    ).then((accepted) => accepted ? relay.url : null);
 
     // tempRelay, only query those relay which has bean provide
     if (tempRelays != null &&
@@ -1941,14 +1960,7 @@ class RelayPool {
         Relay? relay = _relays[tempRelayAddr];
         relay ??= checkAndGenTempRelay(tempRelayAddr);
 
-        queryFutures.add(
-          relayDoQuery(
-            relay,
-            subscription,
-            sendAfterAuth,
-            runBeforeConnected: true,
-          ),
-        );
+        queryFutures.add(sendQueryTo(relay, runBeforeConnected: true));
       }
     }
 
@@ -1964,32 +1976,34 @@ class RelayPool {
           }
         }
 
-        queryFutures.add(relayDoQuery(relay, subscription, sendAfterAuth));
+        queryFutures.add(sendQueryTo(relay));
       }
     }
 
     // cache relay
     if (relayTypes.contains(RelayType.cache)) {
       for (final relay in _cacheRelaysSnapshot()) {
-        queryFutures.add(relayDoQuery(relay, subscription, sendAfterAuth));
+        queryFutures.add(sendQueryTo(relay));
       }
     }
 
+    final List<String?> fanout;
     try {
       // Wait for all sends to complete (and saveQuery to run) before allowing
       // terminal frames to decide whether every relay has settled.
-      await Future.wait(queryFutures);
+      fanout = await Future.wait(queryFutures);
     } finally {
       if (onComplete != null) {
         _queryFanoutInProgress.remove(subscription.id);
       }
     }
+    final sentTo = fanout.nonNulls.toList();
 
     if (onComplete != null) {
       _fireQueryCompleteIfSettled(subscription.id);
     }
 
-    return subscription.id;
+    return (id: subscription.id, sentTo: sentTo);
   }
 
   /// send message to relay

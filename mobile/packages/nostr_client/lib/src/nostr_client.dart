@@ -903,16 +903,16 @@ class NostrClient {
         _relayManager.connectedRelays.isEmpty &&
         (effectiveTempRelays == null || effectiveTempRelays.isEmpty);
     final filtersJson = filters.map((f) => f.toJson()).toList();
-    Future<({List<Event> events, bool timedOut})> runWebSocketQuery() =>
-        _nostr.queryEventsDetailed(
-          filtersJson,
-          id: subscriptionId,
-          tempRelays: effectiveTempRelays,
-          relayTypes: relayTypes,
-          sendAfterAuth: sendAfterAuth,
-          timeout: timeout,
-          requireAllRelaysSettled: requireAllRelaysSettled,
-        );
+    Future<({List<Event> events, bool timedOut, bool noRelaysParticipated})>
+    runWebSocketQuery() => _nostr.queryEventsDetailed(
+      filtersJson,
+      id: subscriptionId,
+      tempRelays: effectiveTempRelays,
+      relayTypes: relayTypes,
+      sendAfterAuth: sendAfterAuth,
+      timeout: timeout,
+      requireAllRelaysSettled: requireAllRelaysSettled,
+    );
     // Throttle concurrent one-shot REQs so high fan-out (a profile with many
     // videos → per-item like-count/badge/profile/repost fetches) can't trip a
     // relay's "too many concurrent REQs" limit. `withResource` releases the
@@ -928,15 +928,19 @@ class NostrClient {
     // the NIP-50 search relays and leak temp relays nothing would clean up.
     // This check-then-call has no await before the query, so it closes the
     // race rather than narrowing it. See #5952.
-    final ({List<Event> events, bool timedOut}) websocketResult;
+    final ({List<Event> events, bool timedOut, bool noRelaysParticipated})
+    websocketResult;
     if (_queryPool.isClosed) {
       // Nothing was asked of the relays here, which is a different thing from
       // their having nothing. A display read is content to fall back on cache;
       // a full-settlement caller is about to replace what it read, so it gets
       // the same inconclusive answer a relay that never settled would give.
+      // The relays themselves are still reachable, so this is not a
+      // participation failure — `timedOut` is what carries it.
       websocketResult = (
         events: <Event>[],
         timedOut: requireAllRelaysSettled,
+        noRelaysParticipated: false,
       );
     } else {
       websocketResult = useQueryPool

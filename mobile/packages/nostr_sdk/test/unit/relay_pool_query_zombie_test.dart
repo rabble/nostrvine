@@ -38,7 +38,8 @@ void main() {
       await nostr.relayPool.add(relay);
     });
 
-    Future<({List<Event> events, bool timedOut})> queryOnce() {
+    Future<({List<Event> events, bool timedOut, bool noRelaysParticipated})>
+    queryOnce() {
       return nostr.queryEventsDetailed([
         {
           'kinds': [1],

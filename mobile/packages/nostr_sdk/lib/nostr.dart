@@ -321,8 +321,14 @@ class Nostr {
   }
 
   /// Set [requireAllRelaysSettled] when an incomplete answer must be reported
-  /// as [timedOut] rather than as a result — see [RelayPool.query].
-  Future<({List<Event> events, bool timedOut})> queryEventsDetailed(
+  /// as `timedOut` rather than as a result — see [RelayPool.query].
+  ///
+  /// `noRelaysParticipated` reports that no relay took the REQ at all, which
+  /// an empty `events` on its own cannot distinguish from every relay holding
+  /// nothing. It stays `false` when the fan-out itself ran out of time, since
+  /// that leaves participation genuinely unknown.
+  Future<({List<Event> events, bool timedOut, bool noRelaysParticipated})>
+  queryEventsDetailed(
     List<Map<String, dynamic>> filters, {
     String? id,
     List<String>? tempRelays,
@@ -336,6 +342,7 @@ class Nostr {
     final subscriptionId = id ?? StringUtil.rndNameStr(16);
     final deadline = DateTime.now().add(timeout);
     var timedOut = false;
+    var noRelaysParticipated = false;
 
     Duration remainingTimeout() {
       final remaining = deadline.difference(DateTime.now());
@@ -346,7 +353,7 @@ class Nostr {
     }
 
     try {
-      await query(
+      final fanout = await query(
         filters,
         id: subscriptionId,
         tempRelays: tempRelays,
@@ -362,13 +369,22 @@ class Nostr {
           }
         },
       ).timeout(remainingTimeout());
+      noRelaysParticipated = fanout.sentTo.isEmpty;
       await completer.future.timeout(remainingTimeout());
     } on TimeoutException {
       timedOut = true;
       unsubscribe(subscriptionId);
     }
 
-    return (events: eventBox.all(), timedOut: timedOut);
+    return (
+      events: eventBox.all(),
+      // A full-settlement caller is about to replace what it read, so a
+      // fan-out no relay took stays as inconclusive as a relay that never
+      // answered. A default read is content with what the reachable relays
+      // hold and keeps its prompt empty answer.
+      timedOut: timedOut || (requireAllRelaysSettled && noRelaysParticipated),
+      noRelaysParticipated: noRelaysParticipated,
+    );
   }
 
   Future<List<Event>> queryEvents(
@@ -412,7 +428,8 @@ class Nostr {
     );
   }
 
-  Future<String> query(
+  /// See [RelayPool.query] for what `sentTo` means and when it is empty.
+  Future<({String id, List<String> sentTo})> query(
     List<Map<String, dynamic>> filters,
     Function(Event) onEvent, {
     String? id,
