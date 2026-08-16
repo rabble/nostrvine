@@ -69,7 +69,7 @@ Complete dark-mode design system providing:
 | `DivineInfoCard` | Explanation callout — icon, optional title, body, optional footer. Four tones (`info`, `neutral`, `warning`, `error`) and a `compact` step. Replaces the per-screen "about this setting" boxes. |
 
 **DivineInfoCard tones:**
-- `info` — brand green, for explaining a feature or a concept (default)
+- `info` — `accentPositive`, for explaining a feature or a concept (default). This is brand green in dark mode and a darker green in light mode.
 - `neutral` — card surface with a muted outline, for detail that should recede
 - `warning` — something to read before acting
 - `error` — a risk or a failure
