@@ -272,7 +272,7 @@ void main() {
 
       await pumpBridge(tester);
       await tester.pump();
-      await tester.pump(const Duration(seconds: 5));
+      await tester.pump(videoReplyRelayEchoGrace);
 
       final rollbacks = verify(
         () => list.add(captureAny()),
