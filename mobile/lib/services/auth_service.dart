@@ -773,6 +773,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       }
 
       if (refreshed != null) {
+        if (upgradeOwnerPubkey != null &&
+            refreshed.userPubkey != upgradeOwnerPubkey) {
+          return;
+        }
         Log.info(
           'OAuth RPC upgrade: background refresh succeeded',
           name: 'AuthService',
@@ -885,18 +889,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       } on OAuthNetworkException catch (e) {
         Log.warning(
           'initialize: synchronous refresh failed due to network: $e',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        await _restoreDegradedDivineOAuthSession(
-          session,
-          anchorNpub: anchorNpub,
-        );
-        return;
-      } on TimeoutException catch (e) {
-        Log.warning(
-          'initialize: synchronous refresh timed out '
-          '(${_startupNetworkOperationTimeout.inSeconds}s): $e',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -1066,6 +1058,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       return false;
     }
     if (refreshed != null) {
+      if (expectedOwnerPubkey != null &&
+          refreshed.userPubkey != expectedOwnerPubkey) {
+        return false;
+      }
       if (expectedOwnerPubkey != null &&
           currentPublicKeyHex != expectedOwnerPubkey) {
         return false;

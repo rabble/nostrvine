@@ -151,6 +151,110 @@ void main() {
         },
       );
 
+      test(
+        'applies owner checks for callers that join an in-flight refresh',
+        () async {
+          final gate = Completer<KeycastSession?>();
+          when(oauthClient.getSession).thenAnswer((_) async => null);
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) => gate.future);
+
+          final coordinator = build();
+          final first = coordinator.refreshSession();
+          final second = coordinator.refreshSession(
+            expectedOwnerPubkey: 'current-owner',
+            storedSessionReader: () async =>
+                _session(userPubkey: 'current-owner'),
+          );
+
+          gate.complete(_session(userPubkey: 'previous-owner'));
+
+          expect(await first, isNotNull);
+          expect(await second, isNull);
+          verify(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'refuses a mismatched stored owner for callers that join an in-flight '
+        'refresh',
+        () async {
+          when(oauthClient.getSession).thenAnswer((_) async => null);
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) => Completer<KeycastSession?>().future);
+
+          final coordinator = build();
+          unawaited(coordinator.refreshSession());
+
+          final joined = await coordinator
+              .refreshSession(
+                expectedOwnerPubkey: 'current-owner',
+                storedSessionReader: () async =>
+                    _session(userPubkey: 'previous-owner'),
+              )
+              .timeout(
+                const Duration(milliseconds: 20),
+                onTimeout: () => _session(userPubkey: 'timed-out'),
+              );
+
+          expect(joined, isNull);
+          verify(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('applies caller timeout when joining an in-flight refresh', () {
+        fakeAsync((async) {
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) => Completer<KeycastSession?>().future);
+
+          final coordinator = build();
+          coordinator.refreshSession(timeout: const Duration(hours: 1));
+
+          Object? joinedError;
+          var joinedDone = false;
+          coordinator
+              .refreshSession(timeout: const Duration(milliseconds: 50))
+              .then(
+                (_) {
+                  joinedDone = true;
+                  return null;
+                },
+                onError: (Object error) {
+                  joinedError = error;
+                  joinedDone = true;
+                  return null;
+                },
+              );
+
+          async.elapse(const Duration(milliseconds: 51));
+
+          expect(joinedDone, isTrue);
+          expect(joinedError, isA<OAuthNetworkException>());
+          verify(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        });
+      });
+
       test('releases the slot after a hung request times out so the next '
           'call starts a fresh refresh', () {
         fakeAsync((async) {

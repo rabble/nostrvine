@@ -114,7 +114,15 @@ class OAuthSessionCoordinator {
     String? caller,
   }) {
     final pending = _pendingOAuthRefresh;
-    if (pending != null) return pending;
+    if (pending != null) {
+      return _guardRefreshForCaller(
+        pending,
+        expectedOwnerPubkey: expectedOwnerPubkey,
+        timeout: timeout,
+        storedSessionReader: storedSessionReader,
+        caller: caller,
+      );
+    }
 
     final refreshTimeout = timeout ?? _oauthRefreshTimeout;
     late final Future<KeycastSession?> refresh;
@@ -184,16 +192,6 @@ class OAuthSessionCoordinator {
       final pubkey = expectedOwnerPubkey ?? _currentPubkeyFallback();
       final refreshed = await oauthClient.refreshSession(userPubkey: pubkey);
       if (refreshed == null || !refreshed.hasRpcAccess) return null;
-      if (expectedOwnerPubkey != null &&
-          refreshed.userPubkey != expectedOwnerPubkey) {
-        _logOwnerMismatch(
-          caller,
-          expectedOwnerPubkey,
-          refreshed.userPubkey,
-          'refreshed',
-        );
-        return null;
-      }
 
       Log.info(
         '_refreshOAuthSession: succeeded '
@@ -212,6 +210,81 @@ class OAuthSessionCoordinator {
       );
       return null;
     }
+  }
+
+  Future<KeycastSession?> _guardRefreshForCaller(
+    Future<KeycastSession?> refresh, {
+    String? expectedOwnerPubkey,
+    Duration? timeout,
+    Future<KeycastSession?> Function()? storedSessionReader,
+    String? caller,
+  }) async {
+    if (expectedOwnerPubkey != null &&
+        storedSessionReader != null &&
+        !await _storedOwnerMatches(
+          expectedOwnerPubkey,
+          storedSessionReader,
+          caller,
+        )) {
+      return null;
+    }
+
+    final guardedRefresh = timeout == null
+        ? refresh
+        : refresh.timeout(
+            timeout,
+            onTimeout: () {
+              Log.warning(
+                '_refreshOAuthSession: timed out after '
+                '${timeout.inMilliseconds}ms — treating as network failure',
+                name: 'OAuthSessionCoordinator',
+                category: LogCategory.auth,
+              );
+              throw OAuthNetworkException('OAuth refresh timed out');
+            },
+          );
+    final refreshed = await guardedRefresh;
+    if (expectedOwnerPubkey != null &&
+        refreshed?.userPubkey != expectedOwnerPubkey) {
+      _logOwnerMismatch(
+        caller,
+        expectedOwnerPubkey,
+        refreshed?.userPubkey,
+        'refreshed',
+      );
+      return null;
+    }
+    return refreshed;
+  }
+
+  Future<bool> _storedOwnerMatches(
+    String expectedOwnerPubkey,
+    Future<KeycastSession?> Function() storedSessionReader,
+    String? caller,
+  ) async {
+    final activeSession = await _oauthClient?.getSession();
+    if (activeSession != null &&
+        activeSession.userPubkey != expectedOwnerPubkey) {
+      _logOwnerMismatch(
+        caller,
+        expectedOwnerPubkey,
+        activeSession.userPubkey,
+        'active',
+      );
+      return false;
+    }
+    final storedSession = await storedSessionReader();
+    if (storedSession != null &&
+        storedSession.userPubkey != expectedOwnerPubkey) {
+      _logOwnerMismatch(
+        caller,
+        expectedOwnerPubkey,
+        storedSession.userPubkey,
+        'stored',
+      );
+      return false;
+    }
+    return true;
   }
 
   void _logOwnerMismatch(
