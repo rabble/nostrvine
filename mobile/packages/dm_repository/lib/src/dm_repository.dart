@@ -1940,6 +1940,11 @@ class DmRepository {
         // Re-check dedup inside transaction (TOCTOU protection).
         if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
           skippedByTransactionalGiftWrapDedup = true;
+          Log.debug(
+            'DM dedup: gift wrap ${giftWrapEvent.id} already persisted '
+            'during transaction, skipping',
+            category: LogCategory.system,
+          );
           return;
         }
 
@@ -2015,8 +2020,8 @@ class DmRepository {
       await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
 
       Log.debug(
-        'Persisted DM (kind ${rumor.kind}) in conversation '
-        '$conversationId',
+        'Persisted NIP-17 DM (kind ${rumor.kind}) in conversation '
+        '$conversationId from ${rumor.pubkey}',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
@@ -2514,6 +2519,11 @@ class DmRepository {
         // Re-check dedup inside transaction (TOCTOU protection).
         if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
           skippedByTransactionalGiftWrapDedup = true;
+          Log.debug(
+            'DM dedup: event ${nip04Event.id} already persisted '
+            'during transaction, skipping',
+            category: LogCategory.system,
+          );
           return;
         }
 
@@ -2575,7 +2585,8 @@ class DmRepository {
       );
 
       Log.debug(
-        'Persisted NIP-04 DM in conversation $conversationId',
+        'Persisted NIP-04 DM (kind ${EventKind.directMessage}) in conversation '
+        '$conversationId from $senderPubkey',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
