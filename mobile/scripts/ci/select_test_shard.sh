@@ -97,7 +97,8 @@ find test -type f -name '*_test.dart' -not -path 'test/goldens/*' \
 
 total_files=$(wc -l < "$all_tests_file" | tr -d '[:space:]')
 if [ "$total_files" -eq 0 ]; then
-  echo "❌ Found no *_test.dart files under test/. Refusing to proceed." >&2
+  echo "❌ Found no shardable *_test.dart files under test/ (goldens are
+excluded and run by the Goldens job). Refusing to proceed." >&2
   exit 1
 fi
 
@@ -134,4 +135,6 @@ verb="Kept"
 echo "${verb} ${kept} of ${total_files} test files for shard ${INDEX} of ${TOTAL} (${removed} removed)."
 # Announce the goldens rather than dropping them quietly: a silent exclusion
 # reads as "the shards cover everything" when they deliberately do not.
-echo "Excluded ${goldens} golden test file(s) under test/goldens/ — run by the 'goldens' job."
+excluded_verb="Excluded"
+[ "$DRY_RUN" -eq 1 ] && excluded_verb="Would exclude"
+echo "${excluded_verb} ${goldens} golden test file(s) under test/goldens/ — run by the 'goldens' job."

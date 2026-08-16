@@ -17,12 +17,16 @@ through `scripts/golden.sh` and the `Goldens` CI job.
 - `widgets/design_system_gallery_golden_test.dart` — three image goldens
   (`divine_button_types`, `divine_button_sizes`, `divine_snackbars`)
   rendering `divine_ui` components on the dark app surface. They render from
-  the *app's* test context because `DivineIcon` resolves `assets/icon/*.svg`
-  by root path and the app bundles both those assets and the theme fonts;
-  the package cannot render them in isolation yet (#6235).
+  the *app's* test context because `divine_ui` bundles no fonts of its own —
+  it has no `flutter:` assets section — so `VineTheme` typography cannot
+  resolve inside the package's own tests. Package-local goldens are #6235.
 - `widgets/notification_rows_golden_test.dart` — a layout/geometry test
   (`tester.getTopLeft`), **not** an image comparison. It lives here because
-  the `Goldens` job owns the directory, not because it diffs pixels.
+  the `Goldens` job owns the directory, not because it diffs pixels. Note
+  that moving the directory to that job also moved this file from Ahem to
+  real fonts (the job sets `DIVINE_GOLDEN_TESTS`); its assertions are
+  relative, so the change is behaviour-neutral, but it is why the file no
+  longer runs in the sharded suite.
 
 Mechanics:
 
@@ -85,7 +89,7 @@ Two related traps:
 ./scripts/golden.sh verify
 
 # Update a specific test file
-./scripts/golden.sh update test/goldens/widgets/notification_rows_golden_test.dart
+./scripts/golden.sh update test/goldens/widgets/design_system_gallery_golden_test.dart
 
 # List all golden test files
 ./scripts/golden.sh list
@@ -93,12 +97,13 @@ Two related traps:
 # Show changes to golden images
 ./scripts/golden.sh diff
 
-# Run golden tests in CI mode (fails on uncommitted golden drift)
-./scripts/golden.sh ci
-
 # Clean all golden images
 ./scripts/golden.sh clean
 ```
+
+`update` is for iterating locally. It refuses to be quiet about it: off
+Linux it prints a warning that its output must not be committed, because
+the `Goldens` job compares against Linux-rendered references.
 
 ### `golden.sh verify` on a non-Linux machine
 
@@ -134,7 +139,13 @@ CI:**
    **`update_goldens: true`** (`gh workflow run "Mobile CI" --ref <branch>
    -f update_goldens=true`).
 3. Download the `goldens` artifact from that run.
-4. Unpack it over `mobile/test/goldens/`, inspect the images, and commit.
+4. Unpack it over `mobile/test/goldens/` (the archive is rooted there, so it
+   restores `widgets/goldens/*.png`), inspect the images, and commit.
+
+That dispatch run reports **`Mobile CI` red on purpose**: it skipped
+verification, so it is not a merge verdict, and the aggregate fails closed
+rather than publish a green check that compared no pixels over the PR's real
+one. Pushing the regenerated references produces the genuine verdict.
 
 `./scripts/golden.sh update` locally is still useful for *iterating* on a
 new golden — just don't commit what it produces.
@@ -260,9 +271,27 @@ testGoldens('Widget states', (tester) async {
 
 - Golden tests are slower than unit/widget tests
 - Run targeted golden tests during development
-- Selection is by **directory**, not by tag: everything under
-  `test/goldens/` runs in the `Goldens` job and nowhere else. The `golden`
-  tag in `dart_test.yaml` is not used for this and applies to no file.
+
+### How image goldens are kept out of every other suite
+
+An image golden cannot run inside `very_good test --optimization`: the
+merged bundle's entrypoint is `test/.test_optimizer.dart`, so the golden
+comparator's basedir becomes `test/` and `goldens/x.png` resolves to
+`test/goldens/x.png`, which does not exist. Three mechanisms keep it out,
+and a new image golden needs all three:
+
+| Where | Mechanism |
+|---|---|
+| CI `Tests` job | `scripts/ci/select_test_shard.sh` deletes `test/goldens/` from every shard |
+| `mise run test` | `@Tags(['golden', 'skip_very_good_optimization'])` on the file + `--exclude-tags "integration \|\| golden"` in the mise task |
+| pre-push hook | `scripts/install-hooks.sh` skips changed files under `test/goldens/` |
+
+`skip_very_good_optimization` is load-bearing on its own: file-level
+`@Tags` are dropped inside the merged bundle, so `golden` alone would be a
+dead letter. Adding it means bumping `test/vgv_tag_baseline.txt`.
+
+`golden.sh verify` and the `Goldens` job filter nothing, so the goldens do
+run there — which is the point.
 
 ## Resources
 

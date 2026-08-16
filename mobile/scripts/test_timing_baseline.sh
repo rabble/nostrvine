@@ -110,6 +110,9 @@ echo "Command logs are in $LOG_DIR"
 
 run_bucket app-unit flutter test test/unit --no-pub --reporter=compact
 run_bucket app-router flutter test test/router --no-pub --reporter=compact
+# Off Linux this bucket always fails: golden references are rendered on
+# the Ubuntu runner and Skia antialiases differently per OS. The timing
+# is still the measurement of interest, so record it without the verdict.
 run_bucket app-goldens scripts/golden.sh verify
 run_shell_bucket vgv-opt-out-count \
   "grep -rln \"skip_very_good_optimization\" test | wc -l | tr -d '[:space:]'"

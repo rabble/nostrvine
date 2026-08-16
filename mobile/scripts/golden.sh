@@ -31,12 +31,11 @@ print_help() {
     echo "  diff                - Show git diff of golden images"
     echo "  list                - List all golden test files"
     echo "  generate [widget]   - Generate golden tests for specific widget"
-    echo "  ci                  - Run golden tests in CI mode"
     echo "  help                - Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 update                              # Update all golden images"
-    echo "  $0 update test/goldens/widgets/notification_rows_golden_test.dart"
+    echo "  $0 update test/goldens/widgets/design_system_gallery_golden_test.dart"
     echo "  $0 verify                              # Verify all golden tests"
     echo "  $0 diff                                # Show changes to golden images"
 }
@@ -56,6 +55,11 @@ update_goldens() {
     fi
 
     echo -e "${GREEN}✓ Golden images updated successfully${NC}"
+    if [ "$(uname -s)" != "Linux" ]; then
+        echo -e "${YELLOW}Do NOT commit these: they were rendered on $(uname -s)${NC}"
+        echo -e "${YELLOW}and the Goldens job compares on Linux. Regenerate there —${NC}"
+        echo -e "${YELLOW}docs/GOLDEN_TESTING_GUIDE.md (Regenerating references).${NC}"
+    fi
 }
 
 verify_goldens() {
@@ -80,7 +84,6 @@ verify_goldens() {
         echo -e "${GREEN}✓ All golden tests passed${NC}"
     else
         echo -e "${RED}✗ Golden tests failed${NC}"
-        note_host_platform
         echo -e "${YELLOW}Intentional visual change? Regenerate on CI — see${NC}"
         echo -e "${YELLOW}docs/GOLDEN_TESTING_GUIDE.md (Regenerating references).${NC}"
         exit "$status"
@@ -162,22 +165,6 @@ generate_golden_test() {
     echo -e "${YELLOW}Remember to implement the test and run '$0 update $test_file'${NC}"
 }
 
-ci_mode() {
-    echo -e "${BLUE}Running golden tests in CI mode...${NC}"
-
-    require_golden_tests
-    flutter test --no-pub "$GOLDEN_DART_DEFINE" "$GOLDEN_TEST_PATH"
-
-    # Check for any uncommitted golden changes
-    if git diff --exit-code test/goldens/ > /dev/null 2>&1; then
-        echo -e "${GREEN}✓ Golden tests passed in CI${NC}"
-    else
-        echo -e "${RED}✗ Golden images have uncommitted changes${NC}"
-        git diff --stat test/goldens/
-        exit 1
-    fi
-}
-
 require_golden_tests() {
     if ! find "$GOLDEN_TEST_PATH" -name "*_test.dart" -type f | grep -q .; then
         echo -e "${RED}✗ No golden test files found under $GOLDEN_TEST_PATH${NC}"
@@ -205,9 +192,6 @@ case "${1:-help}" in
         ;;
     generate)
         generate_golden_test "$2"
-        ;;
-    ci)
-        ci_mode
         ;;
     help|--help|-h)
         print_help

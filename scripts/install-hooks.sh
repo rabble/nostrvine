@@ -424,11 +424,14 @@ fi
 TEST_FILES=""
 
 for file in $CHANGED_FILES; do
-    # Image goldens are verified by CI's Goldens job, never here. Their
-    # reference PNGs are committed as the Ubuntu runner rendered them, and
-    # Skia antialiases differently per OS (2.7-3.7% of pixels, all on glyph
-    # edges) — so running them on a developer's Mac fails every time and
-    # would make every golden change unpushable. Run
+    # test/goldens/ is owned by CI's Goldens job, which runs the whole
+    # directory. It is skipped here because the image goldens in it compare
+    # against Ubuntu-rendered references, and Skia antialiases differently
+    # per OS (2.7-3.7% of pixels, all on glyph edges) — on a Mac they fail
+    # every time, and the hook diffs origin/main...HEAD, so every push would
+    # re-run them, not just golden-touching ones. The directory also holds a
+    # layout-only test that would pass here; it is skipped too rather than
+    # teaching the hook which files carry references. Run
     # `mobile/scripts/golden.sh verify` by hand for the structural signal;
     # see mobile/docs/GOLDEN_TESTING_GUIDE.md.
     if [[ "$file" == mobile/test/goldens/* ]]; then
