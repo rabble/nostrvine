@@ -106,7 +106,7 @@ class UserProfileTile extends ConsumerWidget {
       relationship:
           ref.watch(followRelationshipProvider(pubkey)).value ??
           FollowRelationship.none,
-      followerCount: profile?.followerCount,
+      followerCount: profile?.restFollowerCount,
     );
 
     return Semantics(

@@ -56,7 +56,7 @@ class SearchUserTile extends ConsumerWidget {
             relationship:
                 ref.watch(followRelationshipProvider(profile.pubkey)).value ??
                 FollowRelationship.none,
-            followerCount: profile.followerCount,
+            followerCount: profile.restFollowerCount,
           );
 
     final profileListFeaturesEnabled = ref.watch(

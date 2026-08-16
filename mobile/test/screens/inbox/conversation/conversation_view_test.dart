@@ -955,6 +955,28 @@ void main() {
         );
       });
 
+      testWidgets('does not render a self-reported Vine follower count', (
+        tester,
+      ) async {
+        final profile = UserProfile(
+          pubkey: otherPubkey,
+          name: 'Jack',
+          rawData: const {'vine_followers': 430},
+          createdAt: now,
+          eventId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        );
+
+        await tester.pumpWidget(buildSubject(otherProfile: profile));
+        await tester.pump();
+        await tester.pump();
+
+        // vine_followers is the account's own kind-0 claim; only an
+        // authoritative follower_count earns a spot on the line.
+        expect(find.text(l10n.socialProofMutual), findsOneWidget);
+        expect(find.textContaining('430'), findsNothing);
+      });
+
       testWidgets(
         'renders collaborator invite as an inline video preview with co-post actions',
         (tester) async {

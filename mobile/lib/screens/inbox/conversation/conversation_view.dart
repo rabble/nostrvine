@@ -187,7 +187,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 relationship:
                     ref.watch(followRelationshipProvider(otherPubkey)).value ??
                     FollowRelationship.none,
-                followerCount: profile?.followerCount,
+                followerCount: profile?.restFollowerCount,
               ) ??
               '';
 
