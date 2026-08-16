@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VineBottomSheetActionMenu component
 // ABOUTME: Verifies action items, destructive states, and closeOnTap behavior
 
+import 'dart:ui' show Tristate;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -314,6 +316,98 @@ void main() {
 
       expect(leading.width, closeTo(24 * DivineIcon.maxScaleFactor, 0.001));
       expect(leading.height, leading.width);
+    });
+
+    group('accessibility', () {
+      Widget buildThemed(ThemeData theme, {required bool destructive}) =>
+          MaterialApp(
+            theme: theme,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => VineBottomSheetActionMenu.show(
+                    context: context,
+                    options: [
+                      VineBottomSheetActionData(
+                        iconPath: testIconPath,
+                        label: 'Edit',
+                        onTap: () {},
+                      ),
+                      if (destructive)
+                        VineBottomSheetActionData(
+                          iconPath: testIconPath,
+                          label: 'Delete',
+                          isDestructive: true,
+                          onTap: () {},
+                        ),
+                      const VineBottomSheetActionData(
+                        iconPath: testIconPath,
+                        label: 'Unavailable',
+                      ),
+                    ],
+                  ),
+                  child: const Text('Show Menu'),
+                ),
+              ),
+            ),
+          );
+
+      for (final (name, theme) in <(String, ThemeData)>[
+        ('dark', VineTheme.theme),
+        ('light', VineTheme.lightTheme),
+      ]) {
+        testWidgets('$name tiles meet the tap-target guidelines', (
+          tester,
+        ) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(buildThemed(theme, destructive: true));
+          await tester.tap(find.text('Show Menu'));
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          handle.dispose();
+        });
+
+        // Covers the normal and dimmed tiles. The dimmed one sits below
+        // 4.5:1 by design and stays legitimate only because it reports
+        // itself disabled, which WCAG exempts and this guideline honours —
+        // drop `enabled:` from the tile and this test fails.
+        //
+        // The destructive tile is excluded in light: VineTheme.error on the
+        // light sheet surface measures 3.68:1, a real gap that needs a
+        // design call on the tone rather than a unilateral recolour here.
+        // See #6235. It is included in dark, where it passes.
+        testWidgets('$name tiles meet the text-contrast guideline', (
+          tester,
+        ) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            buildThemed(theme, destructive: name == 'dark'),
+          );
+          await tester.tap(find.text('Show Menu'));
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+          handle.dispose();
+        });
+      }
+
+      testWidgets('a disabled tile reports itself as disabled', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildThemed(VineTheme.theme, destructive: false),
+        );
+        await tester.tap(find.text('Show Menu'));
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(find.text('Unavailable'));
+        expect(
+          node.getSemanticsData().flagsCollection.isEnabled,
+          Tristate.isFalse,
+        );
+        handle.dispose();
+      });
     });
   });
 

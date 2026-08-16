@@ -35,6 +35,8 @@ class VineBottomSheet extends StatelessWidget {
     this.buildScrollBody,
     this.trailing,
     this.onComplete,
+    this.closeSemanticLabel = 'Close',
+    this.completeSemanticLabel = 'Done',
     this.bottomInput,
     this.expanded = true,
     this.showHeaderDivider = true,
@@ -105,6 +107,18 @@ class VineBottomSheet extends StatelessWidget {
   /// sheet; the check button awaits [onComplete] then dismisses the sheet.
   /// The check button shows a loading indicator while [onComplete] is running.
   final AsyncCallback? onComplete;
+
+  /// Screen-reader label for the [onComplete] header's close (X) button.
+  ///
+  /// `divine_ui` carries no localizations, so callers pass a translated
+  /// string; the default is the English fallback.
+  final String closeSemanticLabel;
+
+  /// Screen-reader label for the [onComplete] header's check button.
+  ///
+  /// `divine_ui` carries no localizations, so callers pass a translated
+  /// string; the default is the English fallback.
+  final String completeSemanticLabel;
 
   /// Optional bottom input section (e.g., comment input)
   final Widget? bottomInput;
@@ -185,6 +199,8 @@ class VineBottomSheet extends StatelessWidget {
     Widget Function(ScrollController scrollController)? buildScrollBody,
     Widget? trailing,
     AsyncCallback? onComplete,
+    String closeSemanticLabel = 'Close',
+    String completeSemanticLabel = 'Done',
     Widget? bottomInput,
     bool expanded = true,
     bool showHeaderDivider = true,
@@ -253,6 +269,8 @@ class VineBottomSheet extends StatelessWidget {
               buildScrollBody: buildScrollBody,
               trailing: trailing,
               onComplete: onComplete,
+              closeSemanticLabel: closeSemanticLabel,
+              completeSemanticLabel: completeSemanticLabel,
               bottomInput: bottomInput,
               expanded: expanded,
               showHeaderDivider: showHeaderDivider,
@@ -296,6 +314,9 @@ class VineBottomSheet extends StatelessWidget {
           //     taps before bubbling.
           return GestureDetector(
             behavior: HitTestBehavior.translucent,
+            // The route's ModalBarrier already publishes a localized
+            // dismiss node; a second unlabeled one just adds noise.
+            excludeFromSemantics: true,
             // coverage:ignore-start
             // Defensive fallback. In practice the modal barrier pops the
             // route first on taps above the DraggableScrollableSheet, so
@@ -316,6 +337,9 @@ class VineBottomSheet extends StatelessWidget {
               builder: (context, scrollController) {
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
+                  // Swallows taps for the gesture arena only — it performs
+                  // no action, so it must not surface as a tappable node.
+                  excludeFromSemantics: true,
                   onTap: () {},
                   child: buildSheet(scrollController),
                 );
@@ -344,6 +368,8 @@ class VineBottomSheet extends StatelessWidget {
             contentTitleTrailing: contentTitleTrailing,
             trailing: trailing,
             onComplete: onComplete,
+            closeSemanticLabel: closeSemanticLabel,
+            completeSemanticLabel: completeSemanticLabel,
             bottomInput: bottomInput,
             expanded: expanded,
             showHeaderDivider: showHeaderDivider,
@@ -374,6 +400,8 @@ class VineBottomSheet extends StatelessWidget {
                 title: title,
                 trailing: trailing,
                 onComplete: onComplete,
+                closeSemanticLabel: closeSemanticLabel,
+                completeSemanticLabel: completeSemanticLabel,
                 body: body,
                 buildScrollBody: buildScrollBody,
                 scrollController: scrollController,
@@ -392,6 +420,8 @@ class VineBottomSheet extends StatelessWidget {
                 title: title,
                 trailing: trailing,
                 onComplete: onComplete,
+                closeSemanticLabel: closeSemanticLabel,
+                completeSemanticLabel: completeSemanticLabel,
                 body: body,
                 contentTitle: contentTitle,
                 contentTitleTrailing: contentTitleTrailing,
@@ -446,6 +476,8 @@ class _ScrollableContent extends StatelessWidget {
     required this.title,
     required this.trailing,
     required this.onComplete,
+    required this.closeSemanticLabel,
+    required this.completeSemanticLabel,
     required this.body,
     required this.buildScrollBody,
     required this.scrollController,
@@ -464,6 +496,8 @@ class _ScrollableContent extends StatelessWidget {
   final Widget? title;
   final Widget? trailing;
   final AsyncCallback? onComplete;
+  final String closeSemanticLabel;
+  final String completeSemanticLabel;
   final Widget? body;
   final Widget Function(ScrollController scrollController)? buildScrollBody;
   final ScrollController? scrollController;
@@ -486,12 +520,16 @@ class _ScrollableContent extends StatelessWidget {
           VineBottomSheetHeader(
             title: title,
             leading: onComplete != null
-                ? _CloseButton(onClose: () => Navigator.of(context).pop())
+                ? _CloseButton(
+                    onClose: () => Navigator.of(context).pop(),
+                    semanticLabel: closeSemanticLabel,
+                  )
                 : null,
             trailing: onComplete != null
                 ? _CompleteButton(
                     onComplete: onComplete!,
                     onDismiss: () => Navigator.of(context).pop(),
+                    semanticLabel: completeSemanticLabel,
                   )
                 : trailing,
             showDivider: showHeaderDivider,
@@ -577,6 +615,8 @@ class _FixedContent extends StatelessWidget {
     required this.title,
     required this.trailing,
     required this.onComplete,
+    required this.closeSemanticLabel,
+    required this.completeSemanticLabel,
     required this.body,
     required this.contentTitle,
     required this.contentTitleTrailing,
@@ -593,6 +633,8 @@ class _FixedContent extends StatelessWidget {
   final Widget? title;
   final Widget? trailing;
   final AsyncCallback? onComplete;
+  final String closeSemanticLabel;
+  final String completeSemanticLabel;
   final Widget? body;
   final String? contentTitle;
   final Widget? contentTitleTrailing;
@@ -616,12 +658,16 @@ class _FixedContent extends StatelessWidget {
             VineBottomSheetHeader(
               title: title,
               leading: onComplete != null
-                  ? _CloseButton(onClose: () => Navigator.of(context).pop())
+                  ? _CloseButton(
+                      onClose: () => Navigator.of(context).pop(),
+                      semanticLabel: closeSemanticLabel,
+                    )
                   : null,
               trailing: onComplete != null
                   ? _CompleteButton(
                       onComplete: onComplete!,
                       onDismiss: () => Navigator.of(context).pop(),
+                      semanticLabel: completeSemanticLabel,
                     )
                   : trailing,
               showDivider: showHeaderDivider,
@@ -680,9 +726,10 @@ class _FixedContent extends StatelessWidget {
 /// Close (X) button used in the header when [VineBottomSheet.onComplete]
 /// is set.
 class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onClose});
+  const _CloseButton({required this.onClose, required this.semanticLabel});
 
   final VoidCallback onClose;
+  final String semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -691,6 +738,7 @@ class _CloseButton extends StatelessWidget {
       type: DivineIconButtonType.secondary,
       size: DivineIconButtonSize.small,
       onPressed: onClose,
+      semanticLabel: semanticLabel,
     );
   }
 }
@@ -700,10 +748,15 @@ class _CloseButton extends StatelessWidget {
 /// Shows a loading indicator while the async [onComplete] callback runs,
 /// then calls [onDismiss] to close the sheet.
 class _CompleteButton extends StatefulWidget {
-  const _CompleteButton({required this.onComplete, required this.onDismiss});
+  const _CompleteButton({
+    required this.onComplete,
+    required this.onDismiss,
+    required this.semanticLabel,
+  });
 
   final AsyncCallback onComplete;
   final VoidCallback onDismiss;
+  final String semanticLabel;
 
   @override
   State<_CompleteButton> createState() => _CompleteButtonState();
@@ -728,7 +781,7 @@ class _CompleteButtonState extends State<_CompleteButton> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const SizedBox(
+      return SizedBox(
         width: 40,
         height: 40,
         child: Center(
@@ -738,6 +791,7 @@ class _CompleteButtonState extends State<_CompleteButton> {
             child: CircularProgressIndicator(
               strokeWidth: 2,
               color: VineTheme.primary,
+              semanticsLabel: widget.semanticLabel,
             ),
           ),
         ),
@@ -748,6 +802,7 @@ class _CompleteButtonState extends State<_CompleteButton> {
       icon: DivineIconName.check,
       size: DivineIconButtonSize.small,
       onPressed: _handleTap,
+      semanticLabel: widget.semanticLabel,
     );
   }
 }

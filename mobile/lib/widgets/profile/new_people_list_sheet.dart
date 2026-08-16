@@ -30,14 +30,17 @@ Future<void> showNewPeopleListSheet(
   if (!curatedListsEnabled(context)) return Future<void>.value();
 
   final bodyKey = GlobalKey<_NewPeopleListSheetBodyState>();
+  final l10n = context.l10n;
 
   return VineBottomSheet.show<void>(
     context: context,
     scrollable: false,
-    title: Builder(builder: (context) => Text(context.l10n.listNewPeopleList)),
+    title: Text(l10n.listNewPeopleList),
     onComplete: () async {
       await bodyKey.currentState?._createList();
     },
+    closeSemanticLabel: l10n.commonClose,
+    completeSemanticLabel: l10n.listDone,
     body: _NewPeopleListSheetBody(
       key: bodyKey,
       initialCollaborator: initialCollaborator,
