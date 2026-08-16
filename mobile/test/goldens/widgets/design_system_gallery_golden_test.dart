@@ -1,14 +1,24 @@
 // ABOUTME: Image goldens for the divine_ui components the app renders most.
-// ABOUTME: Run by the dedicated `goldens` CI job, never the sharded suite.
+// ABOUTME: Run only by the dedicated `Goldens` CI job / scripts/golden.sh.
+@Tags(['golden', 'skip_very_good_optimization'])
+// Permanent: image goldens cannot run inside `very_good test --optimization`.
+// The merged bundle's entrypoint is test/.test_optimizer.dart, so the golden
+// comparator's basedir becomes test/ and 'goldens/x.png' resolves to
+// test/goldens/x.png — a file that does not exist. skip_very_good_optimization
+// gives the file its own suite so the path resolves and the `golden` tag
+// becomes readable; `mise run test` then excludes it by tag, mirroring how
+// scripts/ci/select_test_shard.sh excludes test/goldens/ in CI.
+library;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// These render `divine_ui` components from the *app's* test context on
-/// purpose. The package's own goldens are blocked on `DivineIcon` resolving
-/// `assets/icon/*.svg` by root path (tracked in #6235); the app bundles those
-/// assets and the theme fonts, so the components render for real here.
+/// purpose: `divine_ui` bundles no fonts of its own, so `VineTheme`
+/// typography cannot resolve inside the package's own tests. Package-local
+/// goldens are tracked in #6235.
 void main() {
   group('divine_ui gallery goldens', () {
     testWidgets('button types', (tester) async {

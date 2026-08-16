@@ -322,52 +322,30 @@ blocTest<MyBloc, MyState>(
 
 ## Golden File Testing
 
-Golden tests compare widget rendering against master images.
+Golden tests compare widget rendering against master images. Divine keeps a
+deliberately small image-golden suite; the full contract lives in
+[`mobile/docs/GOLDEN_TESTING_GUIDE.md`](../../mobile/docs/GOLDEN_TESTING_GUIDE.md)
+and you should read it before adding one. The three rules that bite hardest:
 
-### Tag Golden Tests
-Run them separately:
+1. **Drain google_fonts before asserting.** `VineTheme` resolves the bundled
+   fonts asynchronously *per variant*, so without
+   `await tester.runAsync(GoogleFonts.pendingFonts)` the first test in an
+   isolate captures Ahem blocks. It still "passes" when regenerated — the
+   failure mode is a wrong reference, not a red test.
+2. **Never commit locally-generated references.** Skia antialiases
+   differently per OS (2.7–3.7% of pixels here), so references are produced
+   on the Ubuntu runner via the `update_goldens` workflow dispatch.
+   `golden.sh verify` is therefore expected to show a pixel diff on macOS.
+3. **Tag the file `@Tags(['golden', 'skip_very_good_optimization'])`.** An
+   image golden cannot run inside `very_good test --optimization`: the merged
+   bundle's entrypoint moves the comparator basedir to `test/`, so the
+   reference path stops resolving. `skip_very_good_optimization` is what
+   makes the `golden` tag readable at all — file-level tags are dropped
+   inside the bundle. Adding it means bumping `test/vgv_tag_baseline.txt`.
 
-```dart
-testWidgets(
-  'render matches golden file',
-  tags: TestTag.golden,
-  (WidgetTester tester) async {
-    await tester.pumpWidget(MyWidget());
-
-    await expectLater(
-      find.byType(MyWidget),
-      matchesGoldenFile('my_widget.png'),
-    );
-  },
-);
-```
-
-### Configure Tags
-In `dart_test.yaml`:
-
-```yaml
-tags:
-  golden:
-    description: "Tests that compare golden files."
-```
-
-### Running Golden Tests
-
-```bash
-# Run only golden tests
-flutter test --tags golden
-
-# Update golden files
-flutter test --tags golden --update-goldens
-```
-
-### Define Tag Constants
-
-```dart
-abstract class TestTag {
-  static const golden = 'golden';
-}
-```
+Goldens live under `mobile/test/goldens/`, which the CI `Tests` shards, the
+`mise run test` task, and the pre-push hook all exclude; the dedicated
+`Goldens` job owns them.
 
 ---
 
