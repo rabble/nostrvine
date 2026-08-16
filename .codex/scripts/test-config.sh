@@ -448,6 +448,17 @@ fi
 
 gitdir=$(git -C "$WT_LINK" rev-parse --absolute-git-dir)
 
+# Staging is only the visible half: the background rm must actually reclaim
+# the staged artifacts, or every session-end just moves the disk bill around.
+for _ in $(seq 1 100); do
+  [ ! -e "$gitdir/claude-purge" ] && break
+  sleep 0.1
+done
+if [ -e "$gitdir/claude-purge" ]; then
+  echo "Purge hook staged artifacts but never deleted them." >&2
+  exit 1
+fi
+
 mkdir -p "$gitdir/claude-purge/old"
 touch "$gitdir/claude-purge/old/artifact"
 NOOP_OUTPUT=$(cd "$WT_LINK" && \
