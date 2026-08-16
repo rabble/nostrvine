@@ -223,21 +223,21 @@ class C2paSigningService {
         );
       }
 
-      final sFileNew = signedFile.renameSync(inputFile.path);
+      final renamedFile = signedFile.renameSync(inputFile.path);
       Log.debug(
-        'Signed file renamed: ${sFileNew.path}',
+        'Signed file renamed: ${renamedFile.path}',
         name: 'C2paSigningService',
         category: LogCategory.video,
       );
 
-      final signedSize = await sFileNew.length();
+      final signedSize = await renamedFile.length();
       Log.info(
-        'C2PA signing complete: ${sFileNew.path} (${signedSize ~/ 1024} KB)',
+        'C2PA signing complete: ${renamedFile.path} (${signedSize ~/ 1024} KB)',
         name: 'C2paSigningService',
         category: LogCategory.video,
       );
 
-      return C2paSigningResult(signedFilePath: sFileNew.path, success: true);
+      return C2paSigningResult(signedFilePath: renamedFile.path, success: true);
     } catch (e, stackTrace) {
       final failureReason = classifyFailureReason(e);
       Log.error(
@@ -409,7 +409,7 @@ class C2paSigningService {
     };
 
     if (_containsAny(message, const [
-      'signature invalid',
+      'cose signature invalid',
       'invalid signature',
       'signature verification',
       'credential',
