@@ -58,9 +58,19 @@ bool isPrivateOrLinkLocalHost(String host) {
   final normalized = host.toLowerCase().trim();
   if (normalized.isEmpty) return true;
   // A bracketed IPv6 literal arrives with its brackets when read off a URI.
-  final bare = normalized.startsWith('[') && normalized.endsWith(']')
+  final bracketless = normalized.startsWith('[') && normalized.endsWith(']')
       ? normalized.substring(1, normalized.length - 1)
       : normalized;
+
+  // A trailing dot root-anchors a name without changing what it resolves to,
+  // so `localhost.` and `192.168.1.1.` must be judged as their bare forms.
+  // Left in, the dot breaks every lookup below: it adds an empty fifth part
+  // that defeats [_tryParseIPv4], and it misses both [isLoopbackHost] and
+  // [_privateHostSuffixes] on the name comparison.
+  final bare = bracketless.endsWith('.')
+      ? bracketless.substring(0, bracketless.length - 1)
+      : bracketless;
+  if (bare.isEmpty) return true;
 
   final ipv4 = _tryParseIPv4(bare);
   if (ipv4 != null) return _isPrivateIPv4(ipv4);

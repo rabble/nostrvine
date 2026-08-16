@@ -101,6 +101,17 @@ void main() {
       }
     });
 
+    test('refuses root-anchored respellings of private targets', () {
+      for (final url in [
+        'wss://192.168.1.1.',
+        'wss://127.0.0.1.',
+        'wss://localhost.',
+        'wss://printer.local.',
+      ]) {
+        expect(isRemoteSuppliedRelayUrlAllowed(url), isFalse, reason: url);
+      }
+    });
+
     test('refuses private-network hostname suffixes', () {
       for (final url in [
         'wss://printer.local',
@@ -192,6 +203,17 @@ void main() {
       );
       expect(isSignerCallbackRelayUrlAllowed('ws://relay.damus.io'), isFalse);
       expect(isSignerCallbackRelayUrlAllowed('ws://192.168.1.10'), isFalse);
+    });
+
+    test('rejects root-anchored respellings of loopback and LAN', () {
+      for (final url in [
+        'wss://localhost.',
+        'wss://127.0.0.1.',
+        'wss://192.168.1.1.',
+        'ws://localhost.',
+      ]) {
+        expect(isSignerCallbackRelayUrlAllowed(url), isFalse, reason: url);
+      }
     });
 
     test('rejects non-WebSocket, malformed, and mis-nested URLs', () {

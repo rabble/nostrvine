@@ -61,6 +61,31 @@ void main() {
       }
     });
 
+    test('root-anchored names are judged as their bare form', () {
+      // A trailing dot is a fully-qualified spelling of the same name. Left
+      // in, it adds an empty fifth part that defeats the IPv4 literal parse
+      // and misses both the loopback set and the private-suffix list.
+      for (final host in [
+        'localhost.',
+        '127.0.0.1.',
+        '192.168.1.1.',
+        '10.0.2.2.',
+        '169.254.169.254.',
+        'printer.local.',
+        'db.internal.',
+      ]) {
+        expect(isPrivateOrLinkLocalHost(host), isTrue, reason: host);
+      }
+    });
+
+    test('a bare root label carries no host at all', () {
+      expect(isPrivateOrLinkLocalHost('.'), isTrue);
+    });
+
+    test('a trailing dot does not make a public host private', () {
+      expect(isPrivateOrLinkLocalHost('relay.divine.video.'), isFalse);
+    });
+
     test('treats an empty or unparseable host as private', () {
       expect(isPrivateOrLinkLocalHost(''), isTrue);
       expect(isPrivateOrLinkLocalHost('   '), isTrue);
