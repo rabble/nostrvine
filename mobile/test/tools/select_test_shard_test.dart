@@ -167,6 +167,17 @@ void main() {
           contains('Excluded 1 golden test file'),
           reason: 'the exclusion must be announced, not silent',
         );
+        // Goldens must also be out of the *partition*, not merely deleted
+        // afterwards. If they stay in it they inflate the kept/total counts,
+        // and a shard whose only assigned file is a golden would report
+        // kept=1, pass the "refusing a vacuous pass" guard below, and then
+        // run an empty bundle. Asserting the denominator is what pins that:
+        // the deletion loop alone leaves this test green either way.
+        expect(
+          result.stdout,
+          contains('Kept 1 of ${shardable.length} test files'),
+          reason: 'shard $index counted a golden in its partition',
+        );
       }
     });
 
