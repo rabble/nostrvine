@@ -466,6 +466,115 @@ void main() {
       });
     });
 
+    group('relationshipTo', () {
+      /// Stubs the relay query so [pubkeys] each follow the current user.
+      void stubFollowersOfMe(List<String> pubkeys) {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            for (final pubkey in pubkeys)
+              Event(
+                pubkey,
+                3,
+                [
+                  ['p', testCurrentUserPubkey],
+                ],
+                '',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              ),
+          ],
+        );
+      }
+
+      test('returns none for a stranger', () async {
+        await repository.initialize();
+
+        expect(
+          repository.relationshipTo(testTargetPubkey),
+          equals(FollowRelationship.none),
+        );
+      });
+
+      test('returns youFollow when only the current user follows', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+        stubFollowersOfMe([testTargetPubkey2]);
+
+        await repository.initialize();
+        await repository.getMyFollowers();
+
+        expect(
+          repository.relationshipTo(testTargetPubkey),
+          equals(FollowRelationship.youFollow),
+        );
+      });
+
+      test('returns followsYou when only the target follows', () async {
+        stubFollowersOfMe([testTargetPubkey]);
+
+        await repository.initialize();
+        await repository.getMyFollowers();
+
+        expect(
+          repository.relationshipTo(testTargetPubkey),
+          equals(FollowRelationship.followsYou),
+        );
+      });
+
+      test('returns mutual when both follow each other', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+        stubFollowersOfMe([testTargetPubkey]);
+
+        await repository.initialize();
+        await repository.getMyFollowers();
+
+        expect(
+          repository.relationshipTo(testTargetPubkey),
+          equals(FollowRelationship.mutual),
+        );
+      });
+
+      test('reports youFollow, not mutual, while the follower cache is '
+          'cold', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+        stubFollowersOfMe([testTargetPubkey]);
+
+        await repository.initialize();
+
+        // getMyFollowers() has not run, so "follows you" is unknowable and
+        // must not be claimed.
+        expect(
+          repository.relationshipTo(testTargetPubkey),
+          equals(FollowRelationship.youFollow),
+        );
+      });
+
+      test('returns none for the current user', () async {
+        stubFollowersOfMe([testTargetPubkey]);
+
+        await repository.initialize();
+        await repository.getMyFollowers();
+
+        expect(
+          repository.relationshipTo(testCurrentUserPubkey),
+          equals(FollowRelationship.none),
+        );
+      });
+
+      test('returns none for an empty pubkey', () async {
+        await repository.initialize();
+
+        expect(
+          repository.relationshipTo(''),
+          equals(FollowRelationship.none),
+        );
+      });
+    });
+
     group('follow', () {
       test('throws when not authenticated', () async {
         when(() => mockNostrClient.hasKeys).thenReturn(false);
