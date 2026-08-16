@@ -1,5 +1,11 @@
 {
     "@@locale": "fil",
+    "devOptionsStorageFootprint": "Paggamit ng storage",
+    "devOptionsStorageFootprintDescription": "Bawat folder na sinusulatan ng app. Bahagi lang nito ang nababawi kapag nag-clear ng cache.",
+    "devOptionsStorageFootprintMeasure": "Sukatin",
+    "devOptionsStorageFootprintTotal": "Kabuuan: {size}",
+    "devOptionsStorageFootprintCopied": "Nakopya ang storage report",
+    "devOptionsStorageFootprintFailure": "Hindi masukat ang storage",
     "commentAuthorAvatarSemanticLabel": "Tingnan ang profile ni {name}",
     "publishErrorNotSignedIn": "Mag-sign in muna para makapag-publish ng video.",
     "publishErrorNoRetry": "Walang upload na puwedeng subukan ulit.",

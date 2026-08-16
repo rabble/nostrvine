@@ -9,6 +9,27 @@ class AppLocalizationsFil extends AppLocalizations {
   AppLocalizationsFil([String locale = 'fil']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Paggamit ng storage';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Bawat folder na sinusulatan ng app. Bahagi lang nito ang nababawi kapag nag-clear ng cache.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Sukatin';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Kabuuan: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Nakopya ang storage report';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'Hindi masukat ang storage';
+
+  @override
   String get feedTuningMoreLabel => 'Mas marami pa nito';
 
   @override

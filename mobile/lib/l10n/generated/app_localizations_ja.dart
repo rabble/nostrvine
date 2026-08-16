@@ -9,6 +9,27 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'ストレージ使用量';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'アプリが書き込むすべてのディレクトリ。キャッシュ削除で解放されるのはその一部だけです。';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => '計測';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return '合計: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'ストレージレポートをコピーしました';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'ストレージを計測できませんでした';
+
+  @override
   String get feedTuningMoreLabel => 'もっと見たい';
 
   @override

@@ -1,5 +1,11 @@
 {
     "@@locale": "ko",
+    "devOptionsStorageFootprint": "저장 공간 사용량",
+    "devOptionsStorageFootprintDescription": "앱이 기록하는 모든 디렉터리입니다. 캐시를 지워도 일부만 확보됩니다.",
+    "devOptionsStorageFootprintMeasure": "측정",
+    "devOptionsStorageFootprintTotal": "합계: {size}",
+    "devOptionsStorageFootprintCopied": "저장 공간 보고서를 복사했습니다",
+    "devOptionsStorageFootprintFailure": "저장 공간을 측정할 수 없습니다",
     "commentAuthorAvatarSemanticLabel": "{name}님의 프로필 보기",
     "publishErrorNotSignedIn": "영상을 게시하려면 로그인해주세요.",
     "publishErrorNoRetry": "다시 시도할 업로드가 없어요.",

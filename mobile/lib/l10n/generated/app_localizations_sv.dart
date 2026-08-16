@@ -9,6 +9,27 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Lagringsanvändning';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Varje mapp appen skriver till. Att rensa cachen frigör bara en del av det.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Mät';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Totalt: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Lagringsrapport kopierad';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'Kunde inte mäta lagringen';
+
+  @override
   String get feedTuningMoreLabel => 'Mer så här';
 
   @override

@@ -9,6 +9,27 @@ class AppLocalizationsMs extends AppLocalizations {
   AppLocalizationsMs([String locale = 'ms']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Penggunaan storan';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Setiap folder yang ditulis oleh apl. Mengosongkan cache hanya membebaskan sebahagian daripadanya.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Ukur';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Jumlah: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Laporan storan disalin';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'Storan tidak dapat diukur';
+
+  @override
   String get feedTuningMoreLabel => 'Lebih banyak seperti ini';
 
   @override

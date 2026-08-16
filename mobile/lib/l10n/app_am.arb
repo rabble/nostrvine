@@ -1,5 +1,11 @@
 {
     "@@locale": "am",
+    "devOptionsStorageFootprint": "የማከማቻ አጠቃቀም",
+    "devOptionsStorageFootprintDescription": "መተግበሪያው የሚጽፍበት እያንዳንዱ አቃፊ። መሸጎጫን ማጽዳት ከዚህ ውስጥ የተወሰነውን ብቻ ነው የሚለቀው።",
+    "devOptionsStorageFootprintMeasure": "ለካ",
+    "devOptionsStorageFootprintTotal": "ጠቅላላ፦ {size}",
+    "devOptionsStorageFootprintCopied": "የማከማቻ ሪፖርት ተቀድቷል",
+    "devOptionsStorageFootprintFailure": "ማከማቻውን መለካት አልተቻለም",
     "commentAuthorAvatarSemanticLabel": "የ{name}ን መገለጫ ይመልከቱ",
     "publishErrorNotSignedIn": "ቪዲዮዎችን ለማተም እባክዎ ይግቡ።",
     "publishErrorNoRetry": "እንደገና የሚሞከር ስቀላ የለም።",

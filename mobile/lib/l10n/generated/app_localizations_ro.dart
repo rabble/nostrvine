@@ -9,6 +9,28 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Spațiu ocupat';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Fiecare director în care scrie aplicația. Golirea cache-ului eliberează doar o parte.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Măsoară';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Total: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Raport de stocare copiat';
+
+  @override
+  String get devOptionsStorageFootprintFailure =>
+      'Spațiul nu a putut fi măsurat';
+
+  @override
   String get feedTuningMoreLabel => 'Mai multe ca ăsta';
 
   @override

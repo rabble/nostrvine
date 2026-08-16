@@ -14,6 +14,7 @@ import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/storage_providers.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:openvine/utils/byte_size_format.dart';
 
 /// Settings screen for clearing caches and auditing the clip library.
 class StorageManagementPage extends ConsumerWidget {
@@ -174,7 +175,7 @@ class _CacheSection extends StatelessWidget {
           Text(
             busy
                 ? l10n.settingsStorageMeasuring
-                : l10n.settingsStorageCacheInUse(_formatBytes(bytes)),
+                : l10n.settingsStorageCacheInUse(formatByteSize(bytes)),
             style: VineTheme.titleMediumFont(
               color: context.vineColors.primaryText,
             ),
@@ -204,7 +205,7 @@ class _CacheSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text(
-            l10n.settingsStorageClearConfirmMessage(_formatBytes(bytes)),
+            l10n.settingsStorageClearConfirmMessage(formatByteSize(bytes)),
             style: VineTheme.bodyMediumFont(
               color: context.vineColors.mutedText,
             ),
@@ -267,7 +268,7 @@ class _CacheLimitControl extends StatelessWidget {
               ),
             ),
             Text(
-              _formatBytes(limit),
+              formatByteSize(limit),
               style: VineTheme.bodyMediumFont(
                 color: context.vineColors.accentPositive,
               ),
@@ -529,23 +530,10 @@ class _RepairFootprint extends StatelessWidget {
         style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
       StorageRecoveryStatus.measured => Text(
-        l10n.settingsStorageRepairFootprint(_formatBytes(bytes)),
+        l10n.settingsStorageRepairFootprint(formatByteSize(bytes)),
         style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       _ => const SizedBox.shrink(),
     };
   }
-}
-
-/// Formats [bytes] as a short human-readable size (e.g. `1.2 MB`).
-String _formatBytes(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  var size = bytes / 1024;
-  var unit = 0;
-  while (size >= 1024 && unit < units.length - 1) {
-    size /= 1024;
-    unit++;
-  }
-  return '${size.toStringAsFixed(size >= 10 ? 0 : 1)} ${units[unit]}';
 }

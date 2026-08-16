@@ -1,5 +1,11 @@
 {
     "@@locale": "es",
+    "devOptionsStorageFootprint": "Uso de almacenamiento",
+    "devOptionsStorageFootprintDescription": "Todos los directorios en los que escribe la app. Borrar la caché solo libera una parte.",
+    "devOptionsStorageFootprintMeasure": "Medir",
+    "devOptionsStorageFootprintTotal": "Total: {size}",
+    "devOptionsStorageFootprintCopied": "Informe de almacenamiento copiado",
+    "devOptionsStorageFootprintFailure": "No se pudo medir el almacenamiento",
     "commentAuthorAvatarSemanticLabel": "Ver el perfil de {name}",
     "publishErrorNotSignedIn": "Iniciá sesión para publicar vídeos.",
     "publishErrorNoRetry": "No hay ninguna subida para reintentar.",

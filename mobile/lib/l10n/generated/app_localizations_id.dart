@@ -9,6 +9,28 @@ class AppLocalizationsId extends AppLocalizations {
   AppLocalizationsId([String locale = 'id']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Penggunaan penyimpanan';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Setiap folder tempat aplikasi menulis. Menghapus cache hanya membebaskan sebagiannya.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Ukur';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Total: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Laporan penyimpanan disalin';
+
+  @override
+  String get devOptionsStorageFootprintFailure =>
+      'Tidak dapat mengukur penyimpanan';
+
+  @override
   String get feedTuningMoreLabel => 'Lebih banyak seperti ini';
 
   @override

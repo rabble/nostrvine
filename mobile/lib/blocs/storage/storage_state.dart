@@ -67,6 +67,21 @@ enum StorageRecoveryStatus {
   failure,
 }
 
+/// Lifecycle of the developer footprint diagnostic.
+enum StorageFootprintStatus {
+  /// Not measured yet.
+  idle,
+
+  /// Walking every directory the app writes to.
+  measuring,
+
+  /// Footprint known; see [StorageState.footprint].
+  measured,
+
+  /// The measurement failed.
+  failure,
+}
+
 /// State for the settings "Storage" screen.
 class StorageState extends Equatable {
   /// Creates a state.
@@ -79,6 +94,8 @@ class StorageState extends Equatable {
     this.brokenClips = const [],
     this.recoveryStatus = StorageRecoveryStatus.idle,
     this.recoveryFootprintBytes = 0,
+    this.footprintStatus = StorageFootprintStatus.idle,
+    this.footprint = StorageFootprint.empty,
   });
 
   /// Lifecycle of the cache section.
@@ -105,6 +122,12 @@ class StorageState extends Equatable {
   /// Total bytes a repair wipe would clear, or zero while unmeasured.
   final int recoveryFootprintBytes;
 
+  /// Lifecycle of the developer footprint diagnostic.
+  final StorageFootprintStatus footprintStatus;
+
+  /// Every directory the app writes to, measured on demand.
+  final StorageFootprint footprint;
+
   /// Returns a copy with the given fields replaced.
   StorageState copyWith({
     StorageCacheStatus? cacheStatus,
@@ -115,6 +138,8 @@ class StorageState extends Equatable {
     List<DivineVideoClip>? brokenClips,
     StorageRecoveryStatus? recoveryStatus,
     int? recoveryFootprintBytes,
+    StorageFootprintStatus? footprintStatus,
+    StorageFootprint? footprint,
   }) {
     return StorageState(
       cacheStatus: cacheStatus ?? this.cacheStatus,
@@ -126,6 +151,8 @@ class StorageState extends Equatable {
       recoveryStatus: recoveryStatus ?? this.recoveryStatus,
       recoveryFootprintBytes:
           recoveryFootprintBytes ?? this.recoveryFootprintBytes,
+      footprintStatus: footprintStatus ?? this.footprintStatus,
+      footprint: footprint ?? this.footprint,
     );
   }
 
@@ -139,5 +166,7 @@ class StorageState extends Equatable {
     brokenClips,
     recoveryStatus,
     recoveryFootprintBytes,
+    footprintStatus,
+    footprint,
   ];
 }

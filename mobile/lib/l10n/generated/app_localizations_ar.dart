@@ -9,6 +9,27 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'مساحة التخزين المستخدمة';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'كل مجلد يكتب فيه التطبيق. مسح ذاكرة التخزين المؤقت يحرر جزءًا منها فقط.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'قياس';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'الإجمالي: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'تم نسخ تقرير التخزين';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'تعذر قياس مساحة التخزين';
+
+  @override
   String get feedTuningMoreLabel => 'المزيد مثل هذا';
 
   @override

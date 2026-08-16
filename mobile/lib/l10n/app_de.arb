@@ -1,5 +1,11 @@
 {
     "@@locale": "de",
+    "devOptionsStorageFootprint": "Speicherverbrauch",
+    "devOptionsStorageFootprintDescription": "Jedes Verzeichnis, in das die App schreibt. Cache leeren gibt nur einen Teil davon frei.",
+    "devOptionsStorageFootprintMeasure": "Messen",
+    "devOptionsStorageFootprintTotal": "Gesamt: {size}",
+    "devOptionsStorageFootprintCopied": "Speicherbericht kopiert",
+    "devOptionsStorageFootprintFailure": "Speicher konnte nicht gemessen werden",
     "commentAuthorAvatarSemanticLabel": "Profil von {name} ansehen",
     "publishErrorNotSignedIn": "Melde dich an, um Videos zu veröffentlichen.",
     "publishErrorNoRetry": "Kein Upload zum Wiederholen.",

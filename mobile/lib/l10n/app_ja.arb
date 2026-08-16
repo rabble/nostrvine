@@ -1,5 +1,11 @@
 {
     "@@locale": "ja",
+    "devOptionsStorageFootprint": "ストレージ使用量",
+    "devOptionsStorageFootprintDescription": "アプリが書き込むすべてのディレクトリ。キャッシュ削除で解放されるのはその一部だけです。",
+    "devOptionsStorageFootprintMeasure": "計測",
+    "devOptionsStorageFootprintTotal": "合計: {size}",
+    "devOptionsStorageFootprintCopied": "ストレージレポートをコピーしました",
+    "devOptionsStorageFootprintFailure": "ストレージを計測できませんでした",
     "commentAuthorAvatarSemanticLabel": "{name}のプロフィールを表示",
     "publishErrorNotSignedIn": "動画を投稿するにはサインインしてね。",
     "publishErrorNoRetry": "やり直せるアップロードがないよ。",

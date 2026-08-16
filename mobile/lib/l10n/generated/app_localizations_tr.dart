@@ -9,6 +9,27 @@ class AppLocalizationsTr extends AppLocalizations {
   AppLocalizationsTr([String locale = 'tr']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Depolama kullanımı';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Uygulamanın yazdığı her klasör. Önbelleği temizlemek bunun yalnızca bir kısmını boşaltır.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Ölç';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Toplam: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Depolama raporu kopyalandı';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'Depolama ölçülemedi';
+
+  @override
   String get feedTuningMoreLabel => 'Bunun gibi daha fazla';
 
   @override

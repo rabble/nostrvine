@@ -9,6 +9,27 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Storage Footprint';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Every directory the app writes to. Clearing caches only reclaims part of this.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Measure';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Total: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Storage report copied';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'Could not measure storage';
+
+  @override
   String get feedTuningMoreLabel => 'More like this';
 
   @override

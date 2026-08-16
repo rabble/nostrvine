@@ -138,6 +138,42 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
+  /// Header of the Developer Options section that measures the app's on-disk footprint.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage Footprint'**
+  String get devOptionsStorageFootprint;
+
+  /// Explains that the footprint covers more than the caches the Storage screen can clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Every directory the app writes to. Clearing caches only reclaims part of this.'**
+  String get devOptionsStorageFootprintDescription;
+
+  /// Button that starts walking every directory the app writes to.
+  ///
+  /// In en, this message translates to:
+  /// **'Measure'**
+  String get devOptionsStorageFootprintMeasure;
+
+  /// Total bytes across every measured directory.
+  ///
+  /// In en, this message translates to:
+  /// **'Total: {size}'**
+  String devOptionsStorageFootprintTotal(String size);
+
+  /// Confirmation shown after the footprint report is copied to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage report copied'**
+  String get devOptionsStorageFootprintCopied;
+
+  /// Shown when the footprint measurement failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not measure storage'**
+  String get devOptionsStorageFootprintFailure;
+
   /// Indicator and snackbar text when the user swipes right to get more videos like the current one.
   ///
   /// In en, this message translates to:

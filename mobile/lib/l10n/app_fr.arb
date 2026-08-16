@@ -1,5 +1,11 @@
 {
     "@@locale": "fr",
+    "devOptionsStorageFootprint": "Empreinte de stockage",
+    "devOptionsStorageFootprintDescription": "Tous les dossiers dans lesquels l'app écrit. Vider le cache n'en libère qu'une partie.",
+    "devOptionsStorageFootprintMeasure": "Mesurer",
+    "devOptionsStorageFootprintTotal": "Total : {size}",
+    "devOptionsStorageFootprintCopied": "Rapport de stockage copié",
+    "devOptionsStorageFootprintFailure": "Impossible de mesurer le stockage",
     "commentAuthorAvatarSemanticLabel": "Voir le profil de {name}",
     "publishErrorNotSignedIn": "Connecte-toi pour publier des vidéos.",
     "publishErrorNoRetry": "Aucun envoi à relancer.",

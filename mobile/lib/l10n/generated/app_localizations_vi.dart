@@ -9,6 +9,28 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Dung lượng đã dùng';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Mọi thư mục ứng dụng ghi vào. Xóa bộ nhớ đệm chỉ giải phóng một phần trong đó.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Đo';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Tổng: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied =>
+      'Đã sao chép báo cáo dung lượng';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'Không đo được dung lượng';
+
+  @override
   String get feedTuningMoreLabel => 'Thêm kiểu này';
 
   @override

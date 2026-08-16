@@ -1,5 +1,11 @@
 {
     "@@locale": "ro",
+    "devOptionsStorageFootprint": "Spațiu ocupat",
+    "devOptionsStorageFootprintDescription": "Fiecare director în care scrie aplicația. Golirea cache-ului eliberează doar o parte.",
+    "devOptionsStorageFootprintMeasure": "Măsoară",
+    "devOptionsStorageFootprintTotal": "Total: {size}",
+    "devOptionsStorageFootprintCopied": "Raport de stocare copiat",
+    "devOptionsStorageFootprintFailure": "Spațiul nu a putut fi măsurat",
     "commentAuthorAvatarSemanticLabel": "Vezi profilul lui {name}",
     "publishErrorNotSignedIn": "Autentifică-te ca să publici videoclipuri.",
     "publishErrorNoRetry": "Nu există nicio încărcare de reîncercat.",

@@ -9,6 +9,27 @@ class AppLocalizationsAm extends AppLocalizations {
   AppLocalizationsAm([String locale = 'am']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'የማከማቻ አጠቃቀም';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'መተግበሪያው የሚጽፍበት እያንዳንዱ አቃፊ። መሸጎጫን ማጽዳት ከዚህ ውስጥ የተወሰነውን ብቻ ነው የሚለቀው።';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'ለካ';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'ጠቅላላ፦ $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'የማከማቻ ሪፖርት ተቀድቷል';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'ማከማቻውን መለካት አልተቻለም';
+
+  @override
   String get feedTuningMoreLabel => 'እንደዚህ ያሉ ተጨማሪ';
 
   @override

@@ -1,5 +1,11 @@
 {
     "@@locale": "nl",
+    "devOptionsStorageFootprint": "Opslaggebruik",
+    "devOptionsStorageFootprintDescription": "Elke map waarin de app schrijft. Cache wissen maakt daar maar een deel van vrij.",
+    "devOptionsStorageFootprintMeasure": "Meten",
+    "devOptionsStorageFootprintTotal": "Totaal: {size}",
+    "devOptionsStorageFootprintCopied": "Opslagrapport gekopieerd",
+    "devOptionsStorageFootprintFailure": "Kan opslag niet meten",
     "commentAuthorAvatarSemanticLabel": "Profiel van {name} bekijken",
     "publishErrorNotSignedIn": "Log in om video's te publiceren.",
     "publishErrorNoRetry": "Geen upload om opnieuw te proberen.",

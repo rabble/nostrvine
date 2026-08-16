@@ -9,6 +9,27 @@ class AppLocalizationsKo extends AppLocalizations {
   AppLocalizationsKo([String locale = 'ko']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => '저장 공간 사용량';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      '앱이 기록하는 모든 디렉터리입니다. 캐시를 지워도 일부만 확보됩니다.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => '측정';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return '합계: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => '저장 공간 보고서를 복사했습니다';
+
+  @override
+  String get devOptionsStorageFootprintFailure => '저장 공간을 측정할 수 없습니다';
+
+  @override
   String get feedTuningMoreLabel => '이런 영상 더 보기';
 
   @override

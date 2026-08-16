@@ -9,6 +9,28 @@ class AppLocalizationsUr extends AppLocalizations {
   AppLocalizationsUr([String locale = 'ur']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'اسٹوریج کا استعمال';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'ہر وہ فولڈر جس میں ایپ لکھتی ہے۔ کیشے صاف کرنے سے اس کا صرف کچھ حصہ خالی ہوتا ہے۔';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'پیمائش کریں';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'کل: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'اسٹوریج رپورٹ کاپی ہو گئی';
+
+  @override
+  String get devOptionsStorageFootprintFailure =>
+      'اسٹوریج کی پیمائش نہیں ہو سکی';
+
+  @override
   String get feedTuningMoreLabel => 'مزید اسی طرح کی';
 
   @override

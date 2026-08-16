@@ -1,5 +1,17 @@
 {
   "@@locale": "en",
+  "devOptionsStorageFootprint": "Storage Footprint",
+  "@devOptionsStorageFootprint": {"description": "Header of the Developer Options section that measures the app's on-disk footprint."},
+  "devOptionsStorageFootprintDescription": "Every directory the app writes to. Clearing caches only reclaims part of this.",
+  "@devOptionsStorageFootprintDescription": {"description": "Explains that the footprint covers more than the caches the Storage screen can clear."},
+  "devOptionsStorageFootprintMeasure": "Measure",
+  "@devOptionsStorageFootprintMeasure": {"description": "Button that starts walking every directory the app writes to."},
+  "devOptionsStorageFootprintTotal": "Total: {size}",
+  "@devOptionsStorageFootprintTotal": {"description": "Total bytes across every measured directory.", "placeholders": {"size": {"type": "String"}}},
+  "devOptionsStorageFootprintCopied": "Storage report copied",
+  "@devOptionsStorageFootprintCopied": {"description": "Confirmation shown after the footprint report is copied to the clipboard."},
+  "devOptionsStorageFootprintFailure": "Could not measure storage",
+  "@devOptionsStorageFootprintFailure": {"description": "Shown when the footprint measurement failed."},
   "feedTuningMoreLabel": "More like this",
   "@feedTuningMoreLabel": {
     "description": "Indicator and snackbar text when the user swipes right to get more videos like the current one."

@@ -1,5 +1,11 @@
 {
     "@@locale": "tr",
+    "devOptionsStorageFootprint": "Depolama kullanımı",
+    "devOptionsStorageFootprintDescription": "Uygulamanın yazdığı her klasör. Önbelleği temizlemek bunun yalnızca bir kısmını boşaltır.",
+    "devOptionsStorageFootprintMeasure": "Ölç",
+    "devOptionsStorageFootprintTotal": "Toplam: {size}",
+    "devOptionsStorageFootprintCopied": "Depolama raporu kopyalandı",
+    "devOptionsStorageFootprintFailure": "Depolama ölçülemedi",
     "commentAuthorAvatarSemanticLabel": "{name} kullanıcısının profilini görüntüle",
     "publishErrorNotSignedIn": "Video yayınlamak için lütfen giriş yap.",
     "publishErrorNoRetry": "Yeniden denenecek bir yükleme yok.",

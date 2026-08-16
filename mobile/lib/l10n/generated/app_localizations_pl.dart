@@ -9,6 +9,28 @@ class AppLocalizationsPl extends AppLocalizations {
   AppLocalizationsPl([String locale = 'pl']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Zajętość pamięci';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Każdy katalog, do którego zapisuje aplikacja. Czyszczenie pamięci podręcznej zwalnia tylko część.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Zmierz';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Łącznie: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Skopiowano raport pamięci';
+
+  @override
+  String get devOptionsStorageFootprintFailure =>
+      'Nie udało się zmierzyć pamięci';
+
+  @override
   String get feedTuningMoreLabel => 'Więcej takich';
 
   @override

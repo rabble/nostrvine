@@ -9,6 +9,27 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => '存储占用';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      '应用写入的所有目录。清除缓存只能释放其中一部分。';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => '测量';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return '共计：$size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => '已复制存储报告';
+
+  @override
+  String get devOptionsStorageFootprintFailure => '无法测量存储占用';
+
+  @override
   String get feedTuningMoreLabel => '更多这类内容';
 
   @override

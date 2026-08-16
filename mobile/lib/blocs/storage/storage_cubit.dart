@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/storage_footprint.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 
@@ -184,6 +185,32 @@ class StorageCubit extends Cubit<StorageState> {
       addError(error, stackTrace);
       if (isClosed) return;
       emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.failure));
+    }
+  }
+
+  /// Measures every directory the app writes to for the developer diagnostic.
+  ///
+  /// Unlike [loadCacheSize], this includes what no in-app action can reclaim —
+  /// the documents directory and the durable database — which is the whole
+  /// point: it answers where an unexplained OS-reported footprint sits.
+  ///
+  /// The walk takes seconds on a large install and the user can navigate away
+  /// while it runs, so the result is dropped if the cubit closed first.
+  Future<void> measureFootprint() async {
+    emit(state.copyWith(footprintStatus: StorageFootprintStatus.measuring));
+    try {
+      final footprint = await _service.measureFootprint();
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          footprintStatus: StorageFootprintStatus.measured,
+          footprint: footprint,
+        ),
+      );
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      if (isClosed) return;
+      emit(state.copyWith(footprintStatus: StorageFootprintStatus.failure));
     }
   }
 

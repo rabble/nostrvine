@@ -1,5 +1,11 @@
 {
   "@@locale": "ur",
+  "devOptionsStorageFootprint": "اسٹوریج کا استعمال",
+  "devOptionsStorageFootprintDescription": "ہر وہ فولڈر جس میں ایپ لکھتی ہے۔ کیشے صاف کرنے سے اس کا صرف کچھ حصہ خالی ہوتا ہے۔",
+  "devOptionsStorageFootprintMeasure": "پیمائش کریں",
+  "devOptionsStorageFootprintTotal": "کل: {size}",
+  "devOptionsStorageFootprintCopied": "اسٹوریج رپورٹ کاپی ہو گئی",
+  "devOptionsStorageFootprintFailure": "اسٹوریج کی پیمائش نہیں ہو سکی",
   "feedTuningMoreLabel": "مزید اسی طرح کی",
   "@feedTuningMoreLabel": {
     "description": "Indicator and snackbar text when the user swipes right to get more videos like the current one."

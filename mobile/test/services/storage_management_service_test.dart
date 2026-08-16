@@ -7,12 +7,23 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/storage_footprint.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockCache extends Mock implements MediaCacheManager {}
+
+/// Whether [dir] can still be listed, i.e. the mode bits actually took.
+bool _isReadable(Directory dir) {
+  try {
+    dir.listSync();
+    return true;
+  } on FileSystemException {
+    return false;
+  }
+}
 
 class _MockClipLibrary extends Mock implements ClipLibraryService {}
 
@@ -130,6 +141,33 @@ void main() {
           ),
         );
         expect(usage.tempRenders, const CacheUsageCategory(usedBytes: 10));
+      });
+
+      test('keeps scanning temp renders when one vanishes mid-walk', () async {
+        final vanished = writeFile('${temp.path}/watermarked_vanished.mp4', 20);
+        final merged = writeFile('${temp.path}/merged_2.mp4', 10);
+        final audio = writeFile('${temp.path}/merged_audio_3.wav', 40);
+        service = StorageManagementService(
+          videoCache: videoCache,
+          imageCache: imageCache,
+          clipLibrary: clipLibrary,
+          prefs: prefs,
+          temporaryDirectoryProvider: () async => temp,
+          documentsDirectoryProvider: () async => docs,
+          fileLengthProvider: (file) async {
+            if (file.path == vanished.path) {
+              throw const FileSystemException('vanished');
+            }
+            return file.length();
+          },
+        );
+
+        final usage = await service.cacheUsage();
+
+        expect(
+          usage.tempRenders.usedBytes,
+          merged.lengthSync() + audio.lengthSync(),
+        );
       });
     });
 
@@ -294,6 +332,175 @@ void main() {
         await service.setVideoCacheLimit(1);
 
         expect(prefs.getInt(kCacheLimitPrefKey), kCacheLimitMinBytes);
+      });
+    });
+
+    group('measureFootprint', () {
+      late Directory appSupport;
+      late Directory caches;
+
+      StorageManagementService footprintService({Directory? cacheDirectory}) =>
+          StorageManagementService(
+            videoCache: videoCache,
+            imageCache: imageCache,
+            clipLibrary: clipLibrary,
+            prefs: prefs,
+            temporaryDirectoryProvider: () async => temp,
+            documentsDirectoryProvider: () async => docs,
+            applicationSupportDirectoryProvider: () async => appSupport,
+            applicationCacheDirectoryProvider: () async =>
+                cacheDirectory ?? caches,
+          );
+
+      setUp(() {
+        appSupport = Directory.systemTemp.createTempSync('storage_support_');
+        caches = Directory.systemTemp.createTempSync('storage_caches_');
+      });
+
+      tearDown(() {
+        if (appSupport.existsSync()) appSupport.deleteSync(recursive: true);
+        if (caches.existsSync()) caches.deleteSync(recursive: true);
+      });
+
+      test('totals each root and ranks its children largest first', () async {
+        writeFile('${docs.path}/divine_small.mp4', 100);
+        writeFile('${docs.path}/divine_big.mp4', 900);
+        writeFile('${docs.path}/transition_seams/seam.jpg', 400);
+        writeFile('${appSupport.path}/openvine/database/divine_db.db', 700);
+
+        final footprint = await footprintService().measureFootprint();
+        final documents = footprint.roots.firstWhere(
+          (root) => root.label == 'Documents',
+        );
+
+        expect(documents.totalBytes, 1400);
+        expect(documents.largestChildren.map((child) => child.name), [
+          'divine_big.mp4',
+          'transition_seams',
+          'divine_small.mp4',
+        ]);
+        expect(documents.largestChildren.first.isDirectory, isFalse);
+        expect(documents.largestChildren[1].isDirectory, isTrue);
+        expect(footprint.totalBytes, 2100);
+      });
+
+      test('counts the durable database no in-app action clears', () async {
+        writeFile('${appSupport.path}/openvine/database/divine_db.db', 4096);
+
+        final footprint = await footprintService().measureFootprint();
+
+        // cacheUsage() reports only what clearCaches() reclaims, so the
+        // database is invisible there — this is what makes the diagnostic
+        // able to explain an unaccounted-for footprint.
+        expect(await footprintService().cacheSizeBytes(), 0);
+        expect(footprint.totalBytes, 4096);
+      });
+
+      test(
+        'reports a root shared by two providers once, naming both',
+        () async {
+          writeFile('${temp.path}/leftover.mp4', 500);
+
+          // Android resolves the temporary and cache directories to the same
+          // getCacheDir(); counting both would double the reported total.
+          final footprint = await footprintService(
+            cacheDirectory: temp,
+          ).measureFootprint();
+
+          final shared = footprint.roots.where(
+            (root) => root.path == temp.path,
+          );
+          expect(shared, hasLength(1));
+          expect(footprint.totalBytes, 500);
+          // Both names appear, so a report with one root fewer than another
+          // platform's reads as a merge rather than as a failed walk.
+          expect(shared.single.label, 'Caches + Temporary');
+        },
+      );
+
+      test('report text carries the totals and the biggest entries', () async {
+        writeFile('${docs.path}/divine_big.mp4', 2048);
+
+        final report = (await footprintService().measureFootprint())
+            .toReportText();
+
+        expect(report, contains('Total: 2.0 KB (2048 bytes)'));
+        expect(report, contains('Documents: 2.0 KB (2048 bytes)'));
+        expect(report, contains('divine_big.mp4'));
+      });
+
+      test('report accounts for the entries it did not list', () async {
+        for (var i = 0; i < 15; i++) {
+          writeFile('${docs.path}/divine_$i.mp4', 100 + i);
+        }
+
+        final report = (await footprintService().measureFootprint())
+            .toReportText();
+
+        // 15 children, 12 listed: the three smallest (100, 101, 102) are
+        // left out, so the report has to name them or the listed sizes look
+        // like they should add up to the root total and do not.
+        expect(report, contains('(3 smaller entries not listed)'));
+        expect(report, contains('303 B\t(3 smaller entries not listed)'));
+      });
+
+      test('report marks a root when part of its walk was incomplete', () {
+        const footprint = StorageFootprint(
+          roots: [
+            StorageFootprintRoot(
+              label: 'Documents',
+              path: '/documents',
+              totalBytes: 0,
+              largestChildren: [],
+              childCount: 0,
+              isIncomplete: true,
+            ),
+          ],
+        );
+
+        final report = footprint.toReportText();
+
+        expect(report, contains('Documents: 0 B (0 bytes)'));
+        expect(report, contains('(walk incomplete; totals may be low)'));
+        expect(report, isNot(contains('(empty)')));
+      });
+
+      test('an unreadable subdirectory does not zero its readable '
+          'siblings', () async {
+        if (Platform.isWindows) {
+          markTestSkipped(
+            'POSIX permission bits are needed to make a '
+            'directory unreadable.',
+          );
+          return;
+        }
+
+        writeFile('${docs.path}/media/locked/inside.mp4', 10);
+        writeFile('${docs.path}/media/keep.mp4', 400);
+        writeFile('${docs.path}/media/sub/also_keep.mp4', 600);
+        final locked = Directory('${docs.path}/media/locked');
+
+        Process.runSync('chmod', ['000', locked.path]);
+        // Restore before the group tearDown, which cannot delete an
+        // unreadable directory. addTearDown runs first.
+        addTearDown(() => Process.runSync('chmod', ['755', locked.path]));
+        if (_isReadable(locked)) {
+          markTestSkipped(
+            'Running with permissions that ignore the mode '
+            'bits (e.g. as root), so the walk cannot be made to fail.',
+          );
+          return;
+        }
+
+        final footprint = await footprintService().measureFootprint();
+        final documents = footprint.roots.firstWhere(
+          (root) => root.label == 'Documents',
+        );
+
+        // A single recursive listing surfaces the whole tree through one
+        // stream, so the throw on `locked` used to abandon everything not
+        // yet visited and report zero for the entire subtree (#7642).
+        expect(documents.totalBytes, 1000);
       });
     });
   });

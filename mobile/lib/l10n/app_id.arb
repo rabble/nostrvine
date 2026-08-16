@@ -1,5 +1,11 @@
 {
     "@@locale": "id",
+    "devOptionsStorageFootprint": "Penggunaan penyimpanan",
+    "devOptionsStorageFootprintDescription": "Setiap folder tempat aplikasi menulis. Menghapus cache hanya membebaskan sebagiannya.",
+    "devOptionsStorageFootprintMeasure": "Ukur",
+    "devOptionsStorageFootprintTotal": "Total: {size}",
+    "devOptionsStorageFootprintCopied": "Laporan penyimpanan disalin",
+    "devOptionsStorageFootprintFailure": "Tidak dapat mengukur penyimpanan",
     "commentAuthorAvatarSemanticLabel": "Lihat profil {name}",
     "publishErrorNotSignedIn": "Silakan masuk untuk mempublikasikan video.",
     "publishErrorNoRetry": "Tidak ada unggahan untuk dicoba ulang.",
