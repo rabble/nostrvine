@@ -1702,6 +1702,10 @@ class DmRepository {
     try {
       // Dedup: skip if already processed (message row or ledger). #5452.
       if (await _alreadyProcessed(giftWrapEvent.id)) {
+        Log.debug(
+          'Skipping already-processed gift wrap ${giftWrapEvent.id}',
+          category: LogCategory.system,
+        );
         return;
       }
 
@@ -1937,14 +1941,11 @@ class DmRepository {
       var inserted = false;
       var skippedByTransactionalGiftWrapDedup = false;
       await _conversationsDao.runInTransaction(() async {
-        // Re-check dedup inside transaction (TOCTOU protection).
+        // Re-check dedup inside transaction (TOCTOU protection). The skip is
+        // logged after the transaction below; logging here too would emit one
+        // line per skip twice.
         if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
           skippedByTransactionalGiftWrapDedup = true;
-          Log.debug(
-            'DM dedup: gift wrap ${giftWrapEvent.id} already persisted '
-            'during transaction, skipping',
-            category: LogCategory.system,
-          );
           return;
         }
 
@@ -2452,7 +2453,13 @@ class DmRepository {
   Future<void> _handleNip04Event(Event nip04Event) async {
     try {
       // Dedup: use event ID as giftWrapId for the unique index.
-      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) return;
+      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
+        Log.debug(
+          'Skipping already-persisted NIP-04 event ${nip04Event.id}',
+          category: LogCategory.system,
+        );
+        return;
+      }
 
       // Extract recipient from p tag
       String? recipientPubkey;
@@ -2516,14 +2523,11 @@ class DmRepository {
       var inserted = false;
       var skippedByTransactionalGiftWrapDedup = false;
       await _conversationsDao.runInTransaction(() async {
-        // Re-check dedup inside transaction (TOCTOU protection).
+        // Re-check dedup inside transaction (TOCTOU protection). The skip is
+        // logged after the transaction below; logging here too would emit one
+        // line per skip twice.
         if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
           skippedByTransactionalGiftWrapDedup = true;
-          Log.debug(
-            'DM dedup: event ${nip04Event.id} already persisted '
-            'during transaction, skipping',
-            category: LogCategory.system,
-          );
           return;
         }
 
