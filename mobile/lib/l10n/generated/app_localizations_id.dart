@@ -4613,6 +4613,19 @@ class AppLocalizationsId extends AppLocalizations {
   String get uploadPublishedMessage => 'Video dipublikasikan ke profilmu';
 
   @override
+  String get postPublishConfirmationTitle => 'Dipublikasikan ke profilmu';
+
+  @override
+  String get postPublishConfirmationView => 'Lihat';
+
+  @override
+  String get postPublishConfirmationShare => 'Bagikan';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail video yang baru saja kamu publikasikan';
+
+  @override
   String get uploadFailedMessage => 'Unggah gagal - silakan coba lagi';
 
   @override

@@ -1,10 +1,10 @@
 // ABOUTME: Widget tests for the UploadFailureListener success-tracking state machine.
 // ABOUTME: Covers: success while authenticated, success buffered during re-auth then
 // ABOUTME: flushed on restore, BackgroundPublishVanished not miscounted as success,
-// ABOUTME: and BackgroundPublishBloc state-test coverage for recentlySucceededIds.
+// ABOUTME: BackgroundPublishBloc state coverage, and the sheet-vs-snackbar branch.
 
 import 'dart:async';
-
+import 'dart:typed_data';
 import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +22,10 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/post_publish_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/navigator_keys.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Test doubles
@@ -45,6 +47,27 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
 }
 
 class _MockGoRouter extends Mock implements GoRouter {}
+
+class _MockRouteInformationProvider extends Mock
+    implements GoRouteInformationProvider {}
+
+/// A [GoRouter] mock parked at [location], which is what decides whether the
+/// confirmation appears as a sheet or a snackbar.
+_MockGoRouter _routerAt(String location) {
+  final router = _MockGoRouter();
+  final routeInformation = _MockRouteInformationProvider();
+  when(
+    () => routeInformation.value,
+  ).thenReturn(RouteInformation(uri: Uri.parse(location)));
+  when(() => router.routeInformationProvider).thenReturn(routeInformation);
+  when(() => router.push<void>(any())).thenAnswer((_) async {});
+  return router;
+}
+
+const _ownHex =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+final String _ownNpub = NostrKeyUtils.encodePubKey(_ownHex);
+String get _ownProfileLocation => RoutePaths.profileForNpub(_ownNpub);
 
 class _NoOpAnalytics implements AnalyticsEventSink {
   @override
@@ -79,7 +102,7 @@ class _NoOpAnalytics implements AnalyticsEventSink {
 /// the listener.
 ///
 /// The [MaterialApp] is keyed to [NavigatorKeys.root] so that
-/// [_showPublishSuccessSnackbar] can resolve its [ScaffoldMessenger] via
+/// the success confirmation can resolve its [ScaffoldMessenger] via
 /// the same key the production code uses.
 Widget _buildHarness({
   required _MockBackgroundPublishBloc publishBloc,
@@ -155,8 +178,24 @@ BackgroundUpload _inProgress(String id) =>
 
 /// A [BackgroundPublishState] that carries success signals, with no remaining
 /// uploads — mirrors what the bloc emits on [PublishSuccess].
-BackgroundPublishState _succeededState(String id, [String? secondId]) =>
-    BackgroundPublishState(recentlySucceededIds: {id, ?secondId});
+BackgroundPublishState _succeededState(
+  String id, {
+  String? secondId,
+  String? stableId = _publishedStableId,
+  Uint8List? thumbnailBytes,
+}) => BackgroundPublishState(
+  recentlyPublished: [
+    PublishedVideo(
+      draftId: id,
+      stableId: stableId,
+      thumbnailBytes: thumbnailBytes,
+    ),
+    if (secondId != null)
+      PublishedVideo(draftId: secondId, stableId: 'second-$secondId'),
+  ],
+);
+
+const _publishedStableId = 'published-d-tag';
 
 /// A [BackgroundPublishState] where upload [id] disappeared without a success
 /// signal — mirrors what the bloc emits on [BackgroundPublishVanished].
@@ -165,6 +204,17 @@ BackgroundPublishState _vanishedState() => const BackgroundPublishState();
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+/// An experiment with [publishId] already assigned to the treatment arm.
+Future<PostPublishExperiment> _treatmentExperiment(String publishId) async {
+  final experiment = PostPublishExperiment(analytics: _NoOpAnalytics());
+  await experiment.screenShown(
+    publishId: publishId,
+    destination: 'profile',
+    variant: PostPublishVariant.viewShare,
+  );
+  return experiment;
+}
 
 void main() {
   late _MockBackgroundPublishBloc publishBloc;
@@ -219,7 +269,7 @@ void main() {
         _buildHarness(publishBloc: publishBloc, authService: authService),
       );
 
-      publishStream.add(_succeededState('draft-1', 'draft-2'));
+      publishStream.add(_succeededState('draft-1', secondId: 'draft-2'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -228,52 +278,42 @@ void main() {
       expect(find.text(l10n.uploadPublishedCountMessage(2)), findsOneWidget);
     });
 
-    testWidgets('shows create-again action for the treatment variant', (
+    testWidgets('shows the confirmation sheet on the treatment arm', (
       tester,
     ) async {
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
-      final experiment = PostPublishExperiment(
-        analytics: _NoOpAnalytics(),
-      );
-      await experiment.screenShown(
-        publishId: 'draft-treatment',
-        destination: 'profile',
-        variant: PostPublishVariant.createAgain,
-      );
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
+      final experiment = await _treatmentExperiment('draft-treatment');
 
       await tester.pumpWidget(
         _buildHarness(
           publishBloc: publishBloc,
           authService: authService,
           experiment: experiment,
+          router: _routerAt(_ownProfileLocation),
         ),
       );
 
       publishStream.add(_succeededState('draft-treatment'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
-      expect(find.text(l10n.libraryRecordVideo), findsOneWidget);
+      expect(find.text(l10n.postPublishConfirmationTitle), findsOneWidget);
+      expect(find.text(l10n.postPublishConfirmationView), findsOneWidget);
+      expect(find.text(l10n.postPublishConfirmationShare), findsOneWidget);
+      // The sheet replaces the snackbar rather than stacking on it.
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
     });
 
-    testWidgets('create-again pushes the recorder over the payoff screen', (
+    testWidgets('view opens the published video over the profile', (
       tester,
     ) async {
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
-      final router = _MockGoRouter();
-      when(() => router.push<void>(any())).thenAnswer((_) async {});
-      final experiment = PostPublishExperiment(
-        analytics: _NoOpAnalytics(),
-      );
-      await experiment.screenShown(
-        publishId: 'draft-treatment',
-        destination: 'profile',
-        variant: PostPublishVariant.createAgain,
-      );
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
+      final router = _routerAt(_ownProfileLocation);
+      final experiment = await _treatmentExperiment('draft-treatment');
 
       await tester.pumpWidget(
         _buildHarness(
@@ -285,21 +325,138 @@ void main() {
       );
 
       publishStream.add(_succeededState('draft-treatment'));
-      await tester.pump();
-      // Let the snackbar finish sliding in so the action is hit-testable.
-      await tester.pump(const Duration(milliseconds: 750));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).postPublishConfirmationView,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.libraryRecordVideo), findsOneWidget);
-      await tester.tap(find.byType(SnackBarAction));
-      await tester.pump();
-
-      // `push`, not `go`: closing the recorder must pop back to the profile
-      // the experiment treats as the payoff, not reset to the feed.
+      // `push`, not `go`: closing the video must pop back to the profile the
+      // creator was standing on, not reset to the feed.
       verify(
-        () => router.push<void>('/video-recorder?entry_point=post_publish'),
+        () => router.push<void>(
+          RoutePaths.videoDetailForId(_publishedStableId),
+        ),
       ).called(1);
       verifyNever(() => router.go(any()));
+    });
+
+    testWidgets('falls back to the snackbar once the user has moved on', (
+      tester,
+    ) async {
+      // The publish lands in the background and can arrive minutes later. A
+      // modal sheet over the feed is an ambush; the snackbar is not.
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
+      final experiment = await _treatmentExperiment('draft-treatment');
+
+      await tester.pumpWidget(
+        _buildHarness(
+          publishBloc: publishBloc,
+          authService: authService,
+          experiment: experiment,
+          router: _routerAt(RoutePaths.videoFeedForIndex(0)),
+        ),
+      );
+
+      publishStream.add(_succeededState('draft-treatment'));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+      expect(find.text(l10n.postPublishConfirmationTitle), findsNothing);
+    });
+
+    testWidgets('falls back to the snackbar when the video has no d tag', (
+      tester,
+    ) async {
+      // Without a stable id there is nothing to view or share, so the sheet
+      // would offer two dead buttons.
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
+      final experiment = await _treatmentExperiment('draft-treatment');
+
+      await tester.pumpWidget(
+        _buildHarness(
+          publishBloc: publishBloc,
+          authService: authService,
+          experiment: experiment,
+          router: _routerAt(_ownProfileLocation),
+        ),
+      );
+
+      publishStream.add(_succeededState('draft-treatment', stableId: null));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+      expect(find.text(l10n.postPublishConfirmationTitle), findsNothing);
+    });
+
+    testWidgets('falls back to the snackbar when a batch lands at once', (
+      tester,
+    ) async {
+      // The sheet previews and navigates to one video; two have no correct
+      // single target.
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
+      final experiment = await _treatmentExperiment('draft-treatment');
+
+      await tester.pumpWidget(
+        _buildHarness(
+          publishBloc: publishBloc,
+          authService: authService,
+          experiment: experiment,
+          router: _routerAt(_ownProfileLocation),
+        ),
+      );
+
+      publishStream.add(
+        _succeededState('draft-treatment', secondId: 'draft-2'),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(2)), findsOneWidget);
+      expect(find.text(l10n.postPublishConfirmationTitle), findsNothing);
+    });
+
+    testWidgets('the control arm keeps a snackbar with no action', (
+      tester,
+    ) async {
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
+      final experiment = PostPublishExperiment(analytics: _NoOpAnalytics());
+      await experiment.screenShown(
+        publishId: 'draft-control',
+        destination: 'profile',
+        variant: PostPublishVariant.control,
+      );
+
+      await tester.pumpWidget(
+        _buildHarness(
+          publishBloc: publishBloc,
+          authService: authService,
+          experiment: experiment,
+          router: _routerAt(_ownProfileLocation),
+        ),
+      );
+
+      publishStream.add(_succeededState('draft-control'));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+      expect(find.text(l10n.postPublishConfirmationTitle), findsNothing);
+      expect(find.byType(SnackBarAction), findsNothing);
     });
 
     testWidgets(

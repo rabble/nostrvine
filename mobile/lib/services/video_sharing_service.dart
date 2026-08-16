@@ -345,15 +345,23 @@ class VideoSharingService {
     return results;
   }
 
+  /// Generate external share URL from a [VideoEvent.stableId].
+  ///
+  /// Callers that hold a hydrated event should use [generateShareUrl]. This
+  /// exists for the post-publish confirmation, which knows the freshly
+  /// published video only by its `d` tag — seconds after publish the event
+  /// is often not yet resolvable from Funnelcake or any relay.
+  static String shareUrlForStableId(String stableId) =>
+      'https://divine.video/video/$stableId';
+
   /// Generate external share URL for the video.
   ///
   /// Always emits an `https://divine.video/video/...` URL. The route accepts
   /// raw event IDs, d-tags, and NIP-19 references, and [VideoEvent.stableId]
   /// falls back to the event ID when a `d` tag is missing — so this never
   /// returns a non-routable URL.
-  String generateShareUrl(VideoEvent video) {
-    return 'https://divine.video/video/${video.stableId}';
-  }
+  String generateShareUrl(VideoEvent video) =>
+      shareUrlForStableId(video.stableId);
 
   /// Generate share text for external sharing (social media, etc.)
   ///

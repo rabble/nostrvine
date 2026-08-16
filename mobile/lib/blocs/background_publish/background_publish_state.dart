@@ -27,20 +27,56 @@ class BackgroundUpload extends Equatable {
   List<Object?> get props => [draft.id, progress, result];
 }
 
+/// A video that just finished publishing, identified well enough for the
+/// post-publish confirmation to link to it and share it.
+///
+/// [stableId] is the video's `d` tag. It routes `/video/<stableId>` and
+/// builds the share URL without waiting for the event to propagate to a
+/// relay. Null for an upload that carried no `videoId`.
+///
+/// [thumbnailBytes] is the draft's cover frame, decoded from disk *before*
+/// this state is emitted, so the confirmation can show the video with no
+/// network fetch. Bytes rather than a path because publishing a draft
+/// deletes it, and `deleteDraft` reclaims the cover file along with every
+/// other clip file the draft owned — the path would be dangling by the time
+/// the sheet decoded it.
+class PublishedVideo extends Equatable {
+  const PublishedVideo({
+    required this.draftId,
+    this.stableId,
+    this.thumbnailBytes,
+  });
+
+  final String draftId;
+  final String? stableId;
+  final Uint8List? thumbnailBytes;
+
+  /// [thumbnailBytes] is deliberately absent: it is read from the draft
+  /// identified by [draftId], so it cannot vary independently, and comparing
+  /// it would mean an element-wise walk of a JPEG on every state comparison.
+  @override
+  List<Object?> get props => [draftId, stableId];
+}
+
 class BackgroundPublishState extends Equatable {
   const BackgroundPublishState({
     this.uploads = const [],
-    this.recentlySucceededIds = const {},
+    this.recentlyPublished = const [],
   });
 
   final List<BackgroundUpload> uploads;
 
-  /// Draft IDs that completed with [PublishSuccess] in the most recent
-  /// state transition. Cleared on the next emission that does not add new
+  /// Videos that completed with [PublishSuccess] in the most recent state
+  /// transition. Cleared on the next emission that does not add new
   /// successes. Used by [UploadFailureListener] to distinguish true publish
   /// success from [BackgroundPublishVanished], which also removes an upload
   /// without a success result.
-  final Set<String> recentlySucceededIds;
+  final List<PublishedVideo> recentlyPublished;
+
+  /// Draft IDs from [recentlyPublished], for callers that only need to know
+  /// *that* a draft published rather than which video it became.
+  Set<String> get recentlySucceededIds =>
+      recentlyPublished.map((video) => video.draftId).toSet();
 
   /// Returns true if there is any upload in progress (no result yet).
   bool get hasUploadInProgress =>
@@ -48,14 +84,14 @@ class BackgroundPublishState extends Equatable {
 
   BackgroundPublishState copyWith({
     List<BackgroundUpload>? uploads,
-    Set<String>? recentlySucceededIds,
+    List<PublishedVideo>? recentlyPublished,
   }) {
     return BackgroundPublishState(
       uploads: uploads ?? this.uploads,
-      recentlySucceededIds: recentlySucceededIds ?? const {},
+      recentlyPublished: recentlyPublished ?? const [],
     );
   }
 
   @override
-  List<Object?> get props => [uploads, recentlySucceededIds];
+  List<Object?> get props => [uploads, recentlyPublished];
 }

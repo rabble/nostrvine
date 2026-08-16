@@ -4717,6 +4717,19 @@ class AppLocalizationsFil extends AppLocalizations {
   String get uploadPublishedMessage => 'Na-publish na ang video sa profile mo';
 
   @override
+  String get postPublishConfirmationTitle => 'Na-publish na sa profile mo';
+
+  @override
+  String get postPublishConfirmationView => 'Tingnan';
+
+  @override
+  String get postPublishConfirmationShare => 'I-share';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Thumbnail ng video na kaka-publish mo lang';
+
+  @override
   String get uploadFailedMessage => 'Hindi nag-upload - subukan ulit';
 
   @override

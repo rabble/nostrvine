@@ -989,6 +989,28 @@ void main() {
       expect(url, equals('https://divine.video/video/$eventId'));
     });
 
+    test('shareUrlForStableId agrees with generateShareUrl', () {
+      // The post-publish confirmation has only the d-tag, never a
+      // hydrated VideoEvent. If these two ever drift, a freshly
+      // published video would be shared under a different URL than
+      // the same video shared from the feed.
+      final now = DateTime.now();
+      final video = VideoEvent(
+        id: _testVideoId,
+        pubkey: _testPubkey,
+        createdAt: now.millisecondsSinceEpoch ~/ 1000,
+        timestamp: now,
+        content: 'Test',
+        vineId: 'my-vine-id',
+        rawTags: const {'d': 'my-vine-id'},
+      );
+
+      expect(
+        VideoSharingService.shareUrlForStableId('my-vine-id'),
+        equals(service.generateShareUrl(video)),
+      );
+    });
+
     test('hasSharedWithRecently returns false for unknown user', () {
       expect(service.hasSharedWithRecently('unknown'), isFalse);
     });

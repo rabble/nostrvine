@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/providers/router_location_provider.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:openvine/utils/npub_hex.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Route types supported by the app
@@ -213,6 +214,22 @@ bool _isKnownRouteShape(List<String> segments) {
 RouteContext parseRoute(String path) {
   return _parseRoute(path, knownOnly: false) ??
       const RouteContext(type: RouteType.home, videoIndex: 0);
+}
+
+/// Whether [location] is [currentUserHex]'s own profile, in grid or feed mode.
+///
+/// Takes the raw router location (query string and all) so callers can pass
+/// `routeInformationProvider.value.uri` straight through, with or without
+/// its query.
+///
+/// Compares through [routeIdentifiesUser] rather than string-matching the
+/// segment: a `:npub` segment may be npub, nprofile, bare hex, or the
+/// relative `me`, so a deep link carrying any encoding but bech32 would
+/// otherwise read as somebody else's profile.
+bool isOwnProfileLocation(String location, String currentUserHex) {
+  final route = parseRoute(location);
+  return route.type == RouteType.profile &&
+      routeIdentifiesUser(route.npub, currentUserHex);
 }
 
 /// Parse a URL path only when its route family is explicitly modeled.

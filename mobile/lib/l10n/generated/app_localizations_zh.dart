@@ -4404,6 +4404,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uploadPublishedMessage => '视频已发布到你的主页';
 
   @override
+  String get postPublishConfirmationTitle => '已发布到你的主页';
+
+  @override
+  String get postPublishConfirmationView => '查看';
+
+  @override
+  String get postPublishConfirmationShare => '分享';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel => '你刚发布的视频缩略图';
+
+  @override
   String get uploadFailedMessage => '上传失败——请重试';
 
   @override

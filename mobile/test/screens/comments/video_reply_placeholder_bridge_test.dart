@@ -240,7 +240,9 @@ void main() {
         publish,
         Stream.fromIterable([
           _publishing([draft]),
-          const BackgroundPublishState(recentlySucceededIds: {'draft-1'}),
+          const BackgroundPublishState(
+            recentlyPublished: [PublishedVideo(draftId: 'draft-1')],
+          ),
         ]),
         initialState: _publishing([draft]),
       );
@@ -261,7 +263,9 @@ void main() {
         publish,
         Stream.fromIterable([
           _publishing([draft]),
-          const BackgroundPublishState(recentlySucceededIds: {'draft-1'}),
+          const BackgroundPublishState(
+            recentlyPublished: [PublishedVideo(draftId: 'draft-1')],
+          ),
         ]),
         initialState: _publishing([draft]),
       );

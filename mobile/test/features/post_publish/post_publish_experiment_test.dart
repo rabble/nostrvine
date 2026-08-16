@@ -1,17 +1,20 @@
-// ABOUTME: Tests deterministic post-publish assignment and CTA analytics.
+// ABOUTME: Tests the post-publish confirmation experiment's bucketing and
+// ABOUTME: the analytics it emits when View or Share is tapped.
 
 import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/post_publish/post_publish_experiment.dart';
 
-class _RecordingSink implements AnalyticsEventSink {
-  final events = <({String name, Map<String, Object> parameters})>[];
+class _RecordingAnalytics implements AnalyticsEventSink {
+  final List<({String name, Map<String, Object> parameters})> events = [];
 
   @override
   Future<void> logEvent({
     required String name,
     required Map<String, Object> parameters,
-  }) async => events.add((name: name, parameters: parameters));
+  }) async {
+    events.add((name: name, parameters: parameters));
+  }
 
   @override
   Future<void> logScreenView({
@@ -30,101 +33,179 @@ class _RecordingSink implements AnalyticsEventSink {
   }) async {}
 }
 
+/// A deterministic 64-hex pubkey for sample [i].
+String _syntheticPubkey(int i) => i.toRadixString(16).padLeft(64, '0');
+
+/// A pubkey whose sha256 lands in [variant]'s bucket.
+///
+/// Only a fixture — it asks the function under test, so it cannot pin the
+/// split. `splits the population close to evenly` does that.
+String _pubkeyForVariant(PostPublishVariant variant) {
+  final experiment = PostPublishExperiment(analytics: _RecordingAnalytics());
+  for (var i = 0; i < 1000; i++) {
+    final candidate = _syntheticPubkey(i);
+    if (experiment.variantForUser(candidate) == variant) return candidate;
+  }
+  throw StateError('No pubkey found for $variant');
+}
+
 void main() {
-  const controlPubkey =
-      '0000000000000000000000000000000000000000000000000000000000000000';
-  const treatmentPubkey =
-      'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  group(PostPublishExperiment, () {
+    late _RecordingAnalytics analytics;
+    late PostPublishExperiment experiment;
 
-  test('assigns the same user deterministically across calls', () {
-    final experiment = PostPublishExperiment(analytics: _RecordingSink());
-
-    expect(
-      experiment.variantForUser(controlPubkey),
-      PostPublishVariant.control,
-    );
-    expect(
-      experiment.variantForUser(treatmentPubkey),
-      PostPublishVariant.createAgain,
-    );
-    expect(
-      experiment.variantForUser(treatmentPubkey),
-      PostPublishVariant.createAgain,
-    );
-  });
-
-  test('assigns the same bucket regardless of hex casing', () {
-    final experiment = PostPublishExperiment(analytics: _RecordingSink());
-
-    expect(
-      experiment.variantForUser(treatmentPubkey.toUpperCase()),
-      experiment.variantForUser(treatmentPubkey),
-    );
-  });
-
-  test('assigns control when no pubkey is available', () {
-    final experiment = PostPublishExperiment(analytics: _RecordingSink());
-
-    expect(experiment.variantForUser(null), PostPublishVariant.control);
-  });
-
-  test('records destination, variant, and seconds to create again', () async {
-    final sink = _RecordingSink();
-    var now = DateTime.utc(2026, 8, 8, 12);
-    final experiment = PostPublishExperiment(analytics: sink, now: () => now);
-
-    await experiment.screenShown(
-      publishId: 'publish-1',
-      destination: 'profile',
-      variant: PostPublishVariant.createAgain,
-    );
-    final offer = experiment.completed({'publish-1'});
-    expect(offer, isNotNull);
-    now = now.add(const Duration(seconds: 17));
-    await experiment.createAgainTapped(offer!);
-
-    expect(sink.events.map((event) => event.name), [
-      'post_publish_screen_shown',
-      'post_publish_create_again_tapped',
-    ]);
-    expect(sink.events.first.parameters, {
-      'destination': 'profile',
-      'variant': 'create_again',
+    setUp(() {
+      analytics = _RecordingAnalytics();
+      experiment = PostPublishExperiment(analytics: analytics);
     });
-    expect(sink.events.last.parameters, {'seconds_since_publish': 17});
-  });
 
-  test('bounds pending assignments that never resolve', () async {
-    final experiment = PostPublishExperiment(analytics: _RecordingSink());
+    group('variantForUser', () {
+      test('buckets a signed-out user into control', () {
+        expect(
+          experiment.variantForUser(null),
+          equals(PostPublishVariant.control),
+        );
+      });
 
-    await experiment.screenShown(
-      publishId: 'stranded',
-      destination: 'profile',
-      variant: PostPublishVariant.createAgain,
-    );
-    for (var i = 0; i < 32; i++) {
+      test('is case-insensitive so one account cannot change buckets', () {
+        // A signer that returns uppercase hex must not move the account
+        // between arms mid-experiment.
+        final pubkey = _pubkeyForVariant(PostPublishVariant.viewShare);
+
+        expect(
+          experiment.variantForUser(pubkey.toUpperCase()),
+          equals(experiment.variantForUser(pubkey)),
+        );
+      });
+
+      test('splits the population close to evenly', () {
+        // The one property an A/B experiment depends on. Asserting a
+        // probed fixture lands in the bucket it was probed for is circular
+        // and stays green at any threshold; this does not.
+        const sampleSize = 1000;
+        final treatment = List.generate(sampleSize, _syntheticPubkey)
+            .where(
+              (pubkey) =>
+                  experiment.variantForUser(pubkey) ==
+                  PostPublishVariant.viewShare,
+            )
+            .length;
+
+        expect(treatment / sampleSize, closeTo(0.5, 0.05));
+      });
+    });
+
+    group('completed', () {
+      test('offers the confirmation for a viewShare publish', () async {
+        await experiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: PostPublishVariant.viewShare,
+        );
+
+        expect(experiment.completed({'publish-1'}), isNotNull);
+      });
+
+      test('offers nothing for a control publish', () async {
+        await experiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: PostPublishVariant.control,
+        );
+
+        expect(experiment.completed({'publish-1'}), isNull);
+      });
+
+      test('offers nothing for a publish it never saw', () {
+        expect(experiment.completed({'unknown-publish'}), isNull);
+      });
+
+      test('does not offer twice for the same publish', () async {
+        await experiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: PostPublishVariant.viewShare,
+        );
+        experiment.completed({'publish-1'});
+
+        expect(experiment.completed({'publish-1'}), isNull);
+      });
+
+      test('a failed publish forfeits its offer', () async {
+        await experiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: PostPublishVariant.viewShare,
+        );
+        experiment.failed({'publish-1'});
+
+        expect(experiment.completed({'publish-1'}), isNull);
+      });
+    });
+
+    group('tap analytics', () {
+      test('viewTapped reports elapsed seconds since publish', () async {
+        final offer = PostPublishConfirmationOffer(
+          publishedAt: DateTime(2026, 8, 15, 12),
+        );
+        final clocked = PostPublishExperiment(
+          analytics: analytics,
+          now: () => DateTime(2026, 8, 15, 12, 0, 7),
+        );
+
+        await clocked.viewTapped(offer);
+
+        expect(
+          analytics.events.single.name,
+          equals('post_publish_view_tapped'),
+        );
+        expect(
+          analytics.events.single.parameters['seconds_since_publish'],
+          equals(7),
+        );
+      });
+
+      test('shareTapped logs its own event name', () async {
+        await experiment.shareTapped(
+          PostPublishConfirmationOffer(publishedAt: DateTime.now()),
+        );
+
+        expect(
+          analytics.events.single.name,
+          equals('post_publish_share_tapped'),
+        );
+      });
+
+      test('clamps a clock that ran backwards to zero', () async {
+        final offer = PostPublishConfirmationOffer(
+          publishedAt: DateTime(2026, 8, 15, 12),
+        );
+        final clocked = PostPublishExperiment(
+          analytics: analytics,
+          now: () => DateTime(2026, 8, 15, 11, 59),
+        );
+
+        await clocked.viewTapped(offer);
+
+        expect(
+          analytics.events.single.parameters['seconds_since_publish'],
+          equals(0),
+        );
+      });
+    });
+
+    test('screenShown reports the variant under test', () async {
       await experiment.screenShown(
-        publishId: 'publish-$i',
+        publishId: 'publish-1',
         destination: 'profile',
-        variant: PostPublishVariant.createAgain,
+        variant: PostPublishVariant.viewShare,
       );
-    }
 
-    // The oldest stranded entry is evicted; the newest 32 still resolve.
-    expect(experiment.completed({'stranded'}), isNull);
-    expect(experiment.completed({'publish-31'}), isNotNull);
-  });
-
-  test('drops treatment state when a publish fails', () async {
-    final experiment = PostPublishExperiment(analytics: _RecordingSink());
-
-    await experiment.screenShown(
-      publishId: 'publish-failed',
-      destination: 'profile',
-      variant: PostPublishVariant.createAgain,
-    );
-    experiment.failed({'publish-failed'});
-
-    expect(experiment.completed({'publish-failed'}), isNull);
+      expect(analytics.events.single.name, equals('post_publish_screen_shown'));
+      expect(
+        analytics.events.single.parameters['variant'],
+        equals('view_share'),
+      );
+    });
   });
 }

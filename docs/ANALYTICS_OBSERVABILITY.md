@@ -123,16 +123,28 @@ than treating a missing value as instant.
 
 The existing profile destination and published-video confirmation remain the
 payoff. A deterministic 50/50 assignment from the authenticated hex pubkey
-adds a create-again action to that confirmation for the `create_again`
-variant. The control variant is unchanged. Assignment is local in the app;
-there is no remote kill switch or Firebase Admin setup for this experiment.
+gives the `view_share` variant a confirmation sheet offering **View** and
+**Share** instead of the bare snackbar. The control variant is unchanged.
+Assignment is local in the app; there is no remote kill switch or Firebase
+Admin setup for this experiment.
+
+The sheet requires a single video, a resolvable `d` tag, and the creator
+still standing on their own profile. Everything else in the treatment arm
+falls back to the control snackbar, so `post_publish_screen_shown` counts
+assignments rather than sheets.
 
 - Baseline second-post rate: 44.1%
 
 Events:
 
 - `post_publish_screen_shown`: `destination`, `variant`
-- `post_publish_create_again_tapped`: `seconds_since_publish`
+- `post_publish_view_tapped`: `seconds_since_publish`
+- `post_publish_share_tapped`: `seconds_since_publish`
+
+Arm B was previously a "Record a Video" action under the variant name
+`create_again`, logging `post_publish_create_again_tapped`. Those names were
+retired rather than reused so the two treatments never share a bucket — data
+before and after the swap is not comparable within one variant name.
 
 ## Invite Attribution
 

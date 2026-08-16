@@ -4620,6 +4620,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get uploadPublishedMessage => 'Video profiline yayınlandı';
 
   @override
+  String get postPublishConfirmationTitle => 'Profiline yayınlandı';
+
+  @override
+  String get postPublishConfirmationView => 'Görüntüle';
+
+  @override
+  String get postPublishConfirmationShare => 'Paylaş';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Az önce yayınladığın videonun küçük resmi';
+
+  @override
   String get uploadFailedMessage => 'Yükleme başarısız - lütfen tekrar dene';
 
   @override

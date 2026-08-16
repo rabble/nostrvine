@@ -31,6 +31,7 @@ import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/event_api_client.dart';
 import 'package:openvine/services/ios_device_attestation_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/published_event_local_echo.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -158,6 +159,7 @@ class VideoEventPublisher {
     EventApiClient? eventApiClient,
     AudioReuseConsentChecker? audioReuseConsentChecker,
     IosDeviceAttestationService? iosDeviceAttestationService,
+    PublishedEventLocalEcho? publishedEventLocalEcho,
   }) : _iosDeviceAttestation =
            iosDeviceAttestationService ?? IosDeviceAttestationService(),
        _uploadManager = uploadManager,
@@ -171,6 +173,7 @@ class VideoEventPublisher {
        _profileStatsDao = profileStatsDao,
        _savedSoundsService = savedSoundsService,
        _soundSyncRepositoryGetter = soundSyncRepositoryGetter,
+       _publishedEventLocalEcho = publishedEventLocalEcho,
        _eventApiClient = eventApiClient,
        _audioReuseConsentChecker = audioReuseConsentChecker;
   final UploadManager _uploadManager;
@@ -202,6 +205,10 @@ class VideoEventPublisher {
   /// pool on transient REST failures. When null (legacy / test wiring), the
   /// publisher uses the WebSocket-only retry path.
   final EventApiClient? _eventApiClient;
+
+  /// Makes the published event readable before any relay can serve it back.
+  /// Null disables the write (tests, callers with no storage wired).
+  final PublishedEventLocalEcho? _publishedEventLocalEcho;
   final AudioReuseConsentChecker? _audioReuseConsentChecker;
 
   /// Verifies that a selected sound is permitted to be reused.
@@ -1910,6 +1917,8 @@ class VideoEventPublisher {
       logPublishPhase(PublishPhases.nostrPublish, publishWatch.elapsed);
 
       if (publishResult) {
+        await _publishedEventLocalEcho?.record(event);
+
         final shouldAddToDiscoveryCache =
             replyContext == null || addReplyToFeed;
         if (_videoEventService != null && shouldAddToDiscoveryCache) {

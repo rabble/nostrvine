@@ -4412,6 +4412,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get uploadPublishedMessage => '動画をプロフィールに公開したよ';
 
   @override
+  String get postPublishConfirmationTitle => 'プロフィールに公開したよ';
+
+  @override
+  String get postPublishConfirmationView => '表示';
+
+  @override
+  String get postPublishConfirmationShare => '共有';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel => '公開したばかりの動画のサムネイル';
+
+  @override
   String get uploadFailedMessage => 'アップロードがうまくいかなかった - もう一回試してみて';
 
   @override

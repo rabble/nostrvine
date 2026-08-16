@@ -50,6 +50,7 @@ import 'package:openvine/features/appearance/providers/appearance_providers.dart
 import 'package:openvine/features/people_lists/curated_lists_gate.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
 import 'package:openvine/features/post_publish/post_publish_experiment.dart';
+import 'package:openvine/features/post_publish/view/post_publish_confirmation_sheet.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -79,6 +80,7 @@ import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/providers/deep_link_listeners.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
@@ -126,6 +128,7 @@ import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
 import 'package:openvine/startup/database_corruption_gate.dart';
@@ -137,6 +140,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/app_shell_badge_scope.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
@@ -3093,7 +3097,8 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
   var _lastKnownFailedIds = <String>{};
   var _lastKnownSucceededIds = <String>{};
   var _pendingSuccessCount = 0;
-  PostPublishCreateAgainOffer? _pendingCreateAgainOffer;
+  PostPublishConfirmationOffer? _pendingConfirmationOffer;
+  PublishedVideo? _pendingPublishedVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -3102,34 +3107,42 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
         final container = ProviderScope.containerOf(context);
         final authService = container.read(authServiceProvider);
 
-        // Use the bloc's own recentlySucceededIds so we never confuse a
+        // Use the bloc's own recentlyPublished so we never confuse a
         // BackgroundPublishVanished removal with a true publish success.
-        final succeededIds = state.recentlySucceededIds.difference(
-          _lastKnownSucceededIds,
-        );
+        final newlyPublished = state.recentlyPublished
+            .where((video) => !_lastKnownSucceededIds.contains(video.draftId))
+            .toList();
         _lastKnownSucceededIds = state.recentlySucceededIds;
-        final succeededCount = succeededIds.length;
-        final createAgainOffer = container
+        final succeededCount = newlyPublished.length;
+        final confirmationOffer = container
             .read(postPublishExperimentProvider)
-            .completed(succeededIds);
+            .completed(newlyPublished.map((video) => video.draftId).toSet());
+        // The confirmation navigates to and shares one video, so it only
+        // applies when exactly one landed.
+        final publishedVideo = succeededCount == 1
+            ? newlyPublished.single
+            : null;
 
         if (succeededCount > 0) {
           if (authService.isAuthenticated) {
             // Show immediately — user is still in-app. If the root navigator
             // context is unavailable the snackbar would be silently dropped,
             // so buffer it and replay once the context is ready.
-            if (!_showPublishSuccessSnackbar(
+            if (!_showPublishSuccess(
               succeededCount,
-              createAgainOffer: createAgainOffer,
+              offer: confirmationOffer,
+              video: publishedVideo,
               container: container,
             )) {
               _pendingSuccessCount += succeededCount;
-              _pendingCreateAgainOffer ??= createAgainOffer;
+              _pendingConfirmationOffer ??= confirmationOffer;
+              _pendingPublishedVideo ??= publishedVideo;
             }
           } else {
             // Buffer for when auth is restored after re-auth redirect.
             _pendingSuccessCount += succeededCount;
-            _pendingCreateAgainOffer ??= createAgainOffer;
+            _pendingConfirmationOffer ??= confirmationOffer;
+            _pendingPublishedVideo ??= publishedVideo;
           }
         }
 
@@ -3148,13 +3161,15 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
 
         // Auth is now confirmed — flush buffered successes from re-auth window.
         if (_pendingSuccessCount > 0 &&
-            _showPublishSuccessSnackbar(
+            _showPublishSuccess(
               _pendingSuccessCount,
-              createAgainOffer: _pendingCreateAgainOffer,
+              offer: _pendingConfirmationOffer,
+              video: _pendingPublishedVideo,
               container: container,
             )) {
           _pendingSuccessCount = 0;
-          _pendingCreateAgainOffer = null;
+          _pendingConfirmationOffer = null;
+          _pendingPublishedVideo = null;
         }
 
         final newFailedIds = currentFailedIds.difference(_lastKnownFailedIds);
@@ -3177,9 +3192,17 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
   }
 }
 
-/// Shows a snackbar confirming that [count] background uploads completed.
+/// Confirms that [count] background uploads completed.
 ///
-/// Returns `true` when the snackbar was shown.
+/// Returns `true` when something was shown.
+///
+/// A single video published by the treatment arm, while the user is still
+/// standing on their own profile, gets the full confirmation sheet: a preview
+/// plus View and Share. Everything else — the control arm, a batch, a video
+/// with no `d` tag, or a user who has already navigated on — gets the plain
+/// snackbar. A modal sheet is fine as a payoff for the screen you are looking
+/// at and an ambush anywhere else, since the publish finishes in the
+/// background and can land minutes later.
 ///
 /// Uses [NavigatorKeys.root] to resolve both localization and
 /// [ScaffoldMessenger] from inside the app tree. The listener itself is mounted
@@ -3192,16 +3215,36 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
 /// element reports `mounted` while every ancestor lookup returns null. Failing
 /// closed here hands the count back to the caller's buffer/replay path instead
 /// of throwing out of the bloc listener.
-bool _showPublishSuccessSnackbar(
+bool _showPublishSuccess(
   int count, {
   required ProviderContainer container,
-  PostPublishCreateAgainOffer? createAgainOffer,
+  PostPublishConfirmationOffer? offer,
+  PublishedVideo? video,
 }) {
   final navContext = NavigatorKeys.root.currentContext;
   if (navContext == null || !navContext.mounted) return false;
   final l10n = Localizations.of<AppLocalizations>(navContext, AppLocalizations);
   final messenger = ScaffoldMessenger.maybeOf(navContext);
   if (l10n == null || messenger == null) return false;
+
+  final stableId = video?.stableId;
+  // Router state is consulted last so the control arm never builds it.
+  if (count == 1 &&
+      offer != null &&
+      stableId != null &&
+      _isOnOwnProfile(container)) {
+    unawaited(
+      PostPublishConfirmationSheet.show(
+        context: navContext,
+        thumbnailBytes: video!.thumbnailBytes,
+        onView: () => _onConfirmationView(container, offer, stableId),
+        onShare: () =>
+            _onConfirmationShare(navContext, container, offer, stableId),
+      ),
+    );
+    return true;
+  }
+
   messenger.showSnackBar(
     SnackBar(
       content: Text(
@@ -3210,33 +3253,57 @@ bool _showPublishSuccessSnackbar(
       ),
       backgroundColor: navContext.vineColors.nav,
       behavior: SnackBarBehavior.floating,
-      action: createAgainOffer == null
-          ? null
-          : SnackBarAction(
-              label: l10n.libraryRecordVideo,
-              onPressed: () {
-                unawaited(
-                  container
-                      .read(postPublishExperimentProvider)
-                      .createAgainTapped(createAgainOffer),
-                );
-                // Push, not go: the payoff this experiment measures is the
-                // profile the user is standing on, so closing the recorder
-                // has to pop back to it instead of resetting to the feed.
-                unawaited(
-                  container
-                      .read(goRouterProvider)
-                      .push<void>(
-                        VideoRecorderScreen.pathForEntryPoint(
-                          CreationEntryPoint.postPublish,
-                        ),
-                      ),
-                );
-              },
-            ),
     ),
   );
   return true;
+}
+
+/// Whether the router is currently showing the signed-in user's own profile.
+bool _isOnOwnProfile(ProviderContainer container) {
+  final pubkeyHex = container.read(authServiceProvider).currentPublicKeyHex;
+  if (pubkeyHex == null) return false;
+  // Same primitive routerLocationStreamProvider reads, and unlike
+  // routerDelegate.currentConfiguration it cannot assert on an empty stack.
+  final location = container
+      .read(goRouterProvider)
+      .routeInformationProvider
+      .value
+      .uri;
+  return isOwnProfileLocation(location.path, pubkeyHex);
+}
+
+void _onConfirmationView(
+  ProviderContainer container,
+  PostPublishConfirmationOffer offer,
+  String stableId,
+) {
+  unawaited(container.read(postPublishExperimentProvider).viewTapped(offer));
+  // Push, not go: closing the video has to pop back to the profile the
+  // creator was standing on rather than resetting to the feed.
+  unawaited(
+    container
+        .read(goRouterProvider)
+        .push<void>(RoutePaths.videoDetailForId(stableId)),
+  );
+}
+
+void _onConfirmationShare(
+  BuildContext context,
+  ProviderContainer container,
+  PostPublishConfirmationOffer offer,
+  String stableId,
+) {
+  unawaited(container.read(postPublishExperimentProvider).shareTapped(offer));
+  // The platform sheet rather than the in-app one: that needs a hydrated
+  // VideoEvent, and seconds after publish the event is often not yet
+  // resolvable from Funnelcake or any relay. The rich sheet stays one tap
+  // away on the video detail screen.
+  unawaited(
+    showShareSheet(
+      context,
+      ShareParams(text: VideoSharingService.shareUrlForStableId(stableId)),
+    ),
+  );
 }
 
 /// Shows failure bottom sheets one after another for each failed upload.

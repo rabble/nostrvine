@@ -4669,6 +4669,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get uploadPublishedMessage => 'Video gepubliceerd op je profiel';
 
   @override
+  String get postPublishConfirmationTitle => 'Gepubliceerd op je profiel';
+
+  @override
+  String get postPublishConfirmationView => 'Bekijken';
+
+  @override
+  String get postPublishConfirmationShare => 'Delen';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Miniatuur van de video die je zojuist hebt gepubliceerd';
+
+  @override
   String get uploadFailedMessage => 'Upload mislukt — probeer het opnieuw';
 
   @override

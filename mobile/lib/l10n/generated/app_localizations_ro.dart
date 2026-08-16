@@ -4783,6 +4783,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get uploadPublishedMessage => 'Videoclip publicat pe profilul tău';
 
   @override
+  String get postPublishConfirmationTitle => 'Publicat pe profilul tău';
+
+  @override
+  String get postPublishConfirmationView => 'Vezi';
+
+  @override
+  String get postPublishConfirmationShare => 'Partajează';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Miniatura videoclipului pe care tocmai l-ai publicat';
+
+  @override
   String get uploadFailedMessage => 'Încărcarea a eșuat - încearcă din nou';
 
   @override

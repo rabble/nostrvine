@@ -41,9 +41,19 @@ sealed class PublishResult extends Equatable {
 
 class PublishSuccess extends PublishResult {
   const PublishSuccess({
+    this.stableId,
     this.inviteWarnings = const [],
     this.audioReuseDegraded = false,
   });
+
+  /// The published video's `d` tag, which is also its [VideoEvent.stableId].
+  ///
+  /// Identifies the video without a relay round-trip, so the post-publish
+  /// confirmation can link to `/video/<stableId>` and build a share URL
+  /// while the event is still propagating. Null for an upload whose
+  /// `videoId` is absent or empty — never the empty string, so a caller can
+  /// treat non-null as routable.
+  final String? stableId;
 
   final List<CollaboratorInviteWarning> inviteWarnings;
 
@@ -55,7 +65,7 @@ class PublishSuccess extends PublishResult {
   bool get hasInviteWarnings => inviteWarnings.isNotEmpty;
 
   @override
-  List<Object?> get props => [inviteWarnings, audioReuseDegraded];
+  List<Object?> get props => [stableId, inviteWarnings, audioReuseDegraded];
 }
 
 /// A failed publish, classified by [kind] so the UI can localize it.
@@ -450,7 +460,12 @@ class VideoPublishService {
       onProgressChanged(draftId: draft.id, progress: 1);
 
       Log.info('📝 Published successfully', category: .video);
+      // Empty is as unusable as absent: it would route to `/video/` and share
+      // `divine.video/video/`. Same guard _sendCollaboratorInvites applies to
+      // this field.
+      final videoId = pendingUpload.videoId;
       return PublishSuccess(
+        stableId: (videoId == null || videoId.isEmpty) ? null : videoId,
         inviteWarnings: inviteWarnings,
         audioReuseDegraded: audioReuseDegraded,
       );

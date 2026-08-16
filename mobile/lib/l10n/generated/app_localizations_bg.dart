@@ -4696,6 +4696,19 @@ class AppLocalizationsBg extends AppLocalizations {
   String get uploadPublishedMessage => 'Видеото е публикувано в профила ти';
 
   @override
+  String get postPublishConfirmationTitle => 'Публикувано в профила ти';
+
+  @override
+  String get postPublishConfirmationView => 'Виж';
+
+  @override
+  String get postPublishConfirmationShare => 'Сподели';
+
+  @override
+  String get postPublishConfirmationThumbnailLabel =>
+      'Миниатюра на видеото, което току-що публикува';
+
+  @override
   String get uploadFailedMessage => 'Качването не мина - опитай пак';
 
   @override
