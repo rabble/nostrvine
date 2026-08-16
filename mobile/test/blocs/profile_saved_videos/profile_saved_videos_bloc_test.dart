@@ -350,6 +350,44 @@ void main() {
       );
 
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'reconcile that resolves nothing reports the bookmarks as unresolved',
+        // #7587 on the warm path: the previously-shown videos have all been
+        // unbookmarked, so none of them is in the reconcile window. They are
+        // no evidence that the window resolved, and counting them as such
+        // would send the tab back to "Nothing saved yet".
+        setUp: () async {
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_saved_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [createTestVideo('video-1')],
+              itemIds: const ['video-1'],
+              nextPageOffset: 1,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
+            BookmarkItem(type: 'e', id: 'video-2'),
+          ]);
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        skip: 1,
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having((s) => s.savedEventIds, 'savedEventIds', ['video-2'])
+              .having((s) => s.hasUnresolvedSaves, 'hasUnresolvedSaves', true),
+        ],
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
         'removal event drops video and persists snapshot without it',
         build: () => createBloc(
           deletedVideoFilter: (video) => video.id == 'deleted-video',

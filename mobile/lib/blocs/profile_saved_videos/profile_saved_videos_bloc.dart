@@ -279,7 +279,6 @@ class ProfileSavedVideosBloc
       for (final video in state.videos)
         if (!_deletedVideoFilter(video)) video.id: video,
     };
-    var resolvedVideoCount = byId.length;
     // Anchor on the previous top ID rather than a length delta, so a capped
     // persisted ID list can't balloon the reconcile window into a full
     // re-fetch on reopen (see ProfileLikedVideosBloc for the rationale).
@@ -295,9 +294,14 @@ class ProfileSavedVideosBloc
     final windowIds = freshIds.take(windowSize).toList();
 
     final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
+    // Counts this window's fetch only. A video carried over in [byId] but
+    // absent from [windowIds] is no longer saved, so it is no evidence that
+    // the window resolved — seeding the count with it would send an
+    // all-unresolved window back to the empty state this fix exists to avoid.
+    var resolvedVideoCount = 0;
     if (missingIds.isNotEmpty) {
       final fetchResult = await _fetchVideos(missingIds, cacheResults: true);
-      resolvedVideoCount += fetchResult.resolvedVideoCount;
+      resolvedVideoCount = fetchResult.resolvedVideoCount;
       for (final video in fetchResult.videos) {
         byId[video.id] = video;
       }

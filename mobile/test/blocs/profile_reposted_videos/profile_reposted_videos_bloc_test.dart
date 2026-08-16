@@ -454,6 +454,63 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'reconcile that resolves nothing reports the reposts as unresolved',
+        // #7587's archetype on the warm path: the previously-shown videos have
+        // all been un-reposted, so none of them is in the reconcile window.
+        // They are no evidence that the window resolved, and counting them as
+        // such would send the tab back to "Nothing reposted yet".
+        setUp: () async {
+          final id1 = createAddressableId(currentUserPubkey, 'd1');
+          final id2 = createAddressableId(currentUserPubkey, 'd2');
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_reposted_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [
+                createTestVideo(
+                  id: 'e1',
+                  pubkey: currentUserPubkey,
+                  vineId: 'd1',
+                ),
+              ],
+              itemIds: [id1],
+              nextPageOffset: 1,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [id2],
+              addressableIdToRepostId: const {},
+            ),
+          );
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        skip: 1,
+        expect: () => [
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having(
+                (s) => s.repostedAddressableIds.length,
+                'repostedAddressableIds',
+                1,
+              )
+              .having(
+                (s) => s.hasUnresolvedReposts,
+                'hasUnresolvedReposts',
+                true,
+              ),
+        ],
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'filters tombstoned videos from cached snapshot restore',
         setUp: () async {
           final id1 = createAddressableId(currentUserPubkey, 'd1');
