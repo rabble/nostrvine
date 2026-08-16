@@ -54,9 +54,7 @@ void main() {
     });
 
     testWidgets('paints the brand palette when on', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(value: true, onChanged: (_) {}),
-      );
+      await tester.pumpWidget(buildTestWidget(value: true, onChanged: (_) {}));
 
       final toggle = tester.widget<Switch>(find.byType(Switch));
       expect(toggle.activeTrackColor, equals(VineTheme.primary));
@@ -92,9 +90,10 @@ void main() {
       String? subtitle,
       DivineIconName? leadingIcon,
       Widget? leading,
+      ThemeData? theme,
     }) {
       return MaterialApp(
-        theme: VineTheme.theme,
+        theme: theme ?? VineTheme.theme,
         home: Scaffold(
           body: DivineSwitchTile(
             title: 'Autoplay',
@@ -108,10 +107,11 @@ void main() {
       );
     }
 
+    setUp(() => VineThemeColors.debugFallbackCount = 0);
+    tearDown(() => VineThemeColors.debugFallbackCount = 0);
+
     testWidgets('renders the title', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(value: false, onChanged: (_) {}),
-      );
+      await tester.pumpWidget(buildTestWidget(value: false, onChanged: (_) {}));
 
       expect(find.text('Autoplay'), findsOneWidget);
     });
@@ -129,9 +129,7 @@ void main() {
     });
 
     testWidgets('omits the subtitle when absent', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(value: false, onChanged: (_) {}),
-      );
+      await tester.pumpWidget(buildTestWidget(value: false, onChanged: (_) {}));
 
       expect(tester.widget<ListTile>(find.byType(ListTile)).subtitle, isNull);
     });
@@ -148,10 +146,47 @@ void main() {
       expect(find.byType(DivineIcon), findsOneWidget);
     });
 
-    testWidgets('omits the leading icon when absent', (tester) async {
+    testWidgets('uses light accentPositive for the leading icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        buildTestWidget(value: false, onChanged: (_) {}),
+        buildTestWidget(
+          value: false,
+          onChanged: (_) {},
+          leadingIcon: DivineIconName.gear,
+          theme: VineTheme.lightTheme,
+        ),
       );
+
+      final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
+      expect(icon.color, VineTheme.lightColors.accentPositive);
+      expect(
+        icon.color,
+        isNot(VineTheme.primary),
+        reason: 'light mode must not fall back to the dark brand green',
+      );
+      expect(VineThemeColors.debugFallbackCount, 0);
+    });
+
+    testWidgets('uses dark accentPositive for the leading icon', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          value: false,
+          onChanged: (_) {},
+          leadingIcon: DivineIconName.gear,
+          theme: VineTheme.theme,
+        ),
+      );
+
+      final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
+      expect(icon.color, VineTheme.darkColors.accentPositive);
+      expect(VineThemeColors.debugFallbackCount, 0);
+    });
+
+    testWidgets('omits the leading icon when absent', (tester) async {
+      await tester.pumpWidget(buildTestWidget(value: false, onChanged: (_) {}));
 
       expect(find.byType(DivineIcon), findsNothing);
     });
@@ -252,36 +287,31 @@ void main() {
     // Assert the styles themselves are unchanged: the assertion only fires
     // when the rebuilt paragraph measures differently, which the test font
     // never does, so `takeException()` cannot catch a regression here.
-    testWidgets(
-      'keeps its text styles across a disabled → enabled flip',
-      (tester) async {
-        const longSubtitle =
-            'Include a Divine client tag on events you publish so other Nostr '
-            'apps can attribute them correctly.';
+    testWidgets('keeps its text styles across a disabled → enabled flip', (
+      tester,
+    ) async {
+      const longSubtitle =
+          'Include a Divine client tag on events you publish so other Nostr '
+          'apps can attribute them correctly.';
 
-        TextStyle styleOf(String data) =>
-            tester.widget<Text>(find.text(data)).style!;
+      TextStyle styleOf(String data) =>
+          tester.widget<Text>(find.text(data)).style!;
 
-        await tester.pumpWidget(
-          buildTestWidget(value: true, subtitle: longSubtitle),
-        );
-        await tester.pump();
-        final disabledTitle = styleOf('Autoplay');
-        final disabledSubtitle = styleOf(longSubtitle);
+      await tester.pumpWidget(
+        buildTestWidget(value: true, subtitle: longSubtitle),
+      );
+      await tester.pump();
+      final disabledTitle = styleOf('Autoplay');
+      final disabledSubtitle = styleOf(longSubtitle);
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            value: true,
-            subtitle: longSubtitle,
-            onChanged: (_) {},
-          ),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        buildTestWidget(value: true, subtitle: longSubtitle, onChanged: (_) {}),
+      );
+      await tester.pumpAndSettle();
 
-        expect(styleOf('Autoplay'), equals(disabledTitle));
-        expect(styleOf(longSubtitle), equals(disabledSubtitle));
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(styleOf('Autoplay'), equals(disabledTitle));
+      expect(styleOf(longSubtitle), equals(disabledSubtitle));
+      expect(tester.takeException(), isNull);
+    });
   });
 }

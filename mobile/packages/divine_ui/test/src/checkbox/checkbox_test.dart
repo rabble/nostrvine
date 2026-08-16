@@ -74,9 +74,7 @@ void main() {
 
     group('states', () {
       testWidgets('renders unselected state', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         final animatedOpacity = tester.widget<AnimatedOpacity>(
           find.byType(AnimatedOpacity),
@@ -165,9 +163,7 @@ void main() {
       });
 
       testWidgets('renders with custom label widget', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(label: const Icon(Icons.star)),
-        );
+        await tester.pumpWidget(buildTestWidget(label: const Icon(Icons.star)));
 
         expect(find.byType(DivineSpriteCheckbox), findsOneWidget);
         expect(find.byType(Icon), findsOneWidget);
@@ -229,8 +225,10 @@ void main() {
       Widget label = const Text('Test label'),
       CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.center,
       Duration animationDuration = const Duration(milliseconds: 100),
+      ThemeData? theme,
     }) {
       return MaterialApp(
+        theme: theme,
         home: Scaffold(
           body: Center(
             child: DivineRowCheckbox(
@@ -247,18 +245,14 @@ void main() {
 
     group('rendering', () {
       testWidgets('renders checkbox with border', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(onChanged: (_) {}),
-        );
+        await tester.pumpWidget(buildTestWidget(onChanged: (_) {}));
 
         expect(find.byType(DivineCheckbox), findsOneWidget);
         expect(find.byType(AnimatedContainer), findsOneWidget);
       });
 
       testWidgets('renders with label', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(onChanged: (_) {}),
-        );
+        await tester.pumpWidget(buildTestWidget(onChanged: (_) {}));
 
         expect(find.text('Test label'), findsOneWidget);
       });
@@ -270,9 +264,7 @@ void main() {
       ) async {
         bool? newValue;
         await tester.pumpWidget(
-          buildTestWidget(
-            onChanged: (value) => newValue = value,
-          ),
+          buildTestWidget(onChanged: (value) => newValue = value),
         );
 
         await tester.tap(find.byType(DivineRowCheckbox));
@@ -345,11 +337,7 @@ void main() {
 
         expect(
           tester.getSemantics(find.byType(DivineRowCheckbox)),
-          isSemantics(
-            hasCheckedState: true,
-            isChecked: true,
-            isEnabled: true,
-          ),
+          isSemantics(hasCheckedState: true, isChecked: true, isEnabled: true),
         );
         handle.dispose();
       });
@@ -387,48 +375,109 @@ void main() {
     });
 
     group('border styling', () {
-      testWidgets('has muted border when unselected', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            onChanged: (_) {},
-          ),
-        );
-
+      Color borderColor(WidgetTester tester) {
         final container = tester.widget<AnimatedContainer>(
           find.byType(AnimatedContainer),
         );
         final boxDecoration = container.decoration! as BoxDecoration;
-        expect(boxDecoration.border!.top.color, VineTheme.outlineMuted);
+        return boxDecoration.border!.top.color;
+      }
+
+      setUp(() => VineThemeColors.debugFallbackCount = 0);
+      tearDown(() => VineThemeColors.debugFallbackCount = 0);
+
+      testWidgets('uses light outlineMuted border when unselected', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(onChanged: (_) {}, theme: VineTheme.lightTheme),
+        );
+
+        expect(borderColor(tester), VineTheme.lightColors.outlineMuted);
+        expect(VineThemeColors.debugFallbackCount, 0);
       });
 
-      testWidgets('has primary border when selected', (tester) async {
+      testWidgets('uses dark outlineMuted border when unselected', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(onChanged: (_) {}, theme: VineTheme.theme),
+        );
+
+        expect(borderColor(tester), VineTheme.darkColors.outlineMuted);
+        expect(VineThemeColors.debugFallbackCount, 0);
+      });
+
+      testWidgets('uses light accentPositive border when selected', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           buildTestWidget(
             state: DivineCheckboxState.selected,
             onChanged: (_) {},
+            theme: VineTheme.lightTheme,
           ),
         );
 
-        final container = tester.widget<AnimatedContainer>(
-          find.byType(AnimatedContainer),
+        final color = borderColor(tester);
+        expect(color, VineTheme.lightColors.accentPositive);
+        expect(
+          color,
+          isNot(VineTheme.primary),
+          reason: 'light mode must not fall back to the dark brand green',
         );
-        final boxDecoration = container.decoration! as BoxDecoration;
-        expect(boxDecoration.border!.top.color, VineTheme.primary);
+        expect(VineThemeColors.debugFallbackCount, 0);
       });
 
-      testWidgets('has primary border when intermediate', (tester) async {
+      testWidgets('uses dark accentPositive border when selected', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            state: DivineCheckboxState.selected,
+            onChanged: (_) {},
+            theme: VineTheme.theme,
+          ),
+        );
+
+        expect(borderColor(tester), VineTheme.darkColors.accentPositive);
+        expect(VineThemeColors.debugFallbackCount, 0);
+      });
+
+      testWidgets('uses light accentPositive border when intermediate', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           buildTestWidget(
             state: DivineCheckboxState.intermediate,
             onChanged: (_) {},
+            theme: VineTheme.lightTheme,
           ),
         );
 
-        final container = tester.widget<AnimatedContainer>(
-          find.byType(AnimatedContainer),
+        final color = borderColor(tester);
+        expect(color, VineTheme.lightColors.accentPositive);
+        expect(
+          color,
+          isNot(VineTheme.primary),
+          reason: 'light mode must not fall back to the dark brand green',
         );
-        final boxDecoration = container.decoration! as BoxDecoration;
-        expect(boxDecoration.border!.top.color, VineTheme.primary);
+        expect(VineThemeColors.debugFallbackCount, 0);
+      });
+
+      testWidgets('uses dark accentPositive border when intermediate', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            state: DivineCheckboxState.intermediate,
+            onChanged: (_) {},
+            theme: VineTheme.theme,
+          ),
+        );
+
+        expect(borderColor(tester), VineTheme.darkColors.accentPositive);
+        expect(VineThemeColors.debugFallbackCount, 0);
       });
     });
 
@@ -452,10 +501,7 @@ void main() {
       testWidgets('passes animation duration to checkbox', (tester) async {
         const customDuration = Duration(milliseconds: 200);
         await tester.pumpWidget(
-          buildTestWidget(
-            animationDuration: customDuration,
-            onChanged: (_) {},
-          ),
+          buildTestWidget(animationDuration: customDuration, onChanged: (_) {}),
         );
 
         final checkbox = tester.widget<DivineCheckbox>(
@@ -467,10 +513,7 @@ void main() {
       testWidgets('passes animation duration to container', (tester) async {
         const customDuration = Duration(milliseconds: 200);
         await tester.pumpWidget(
-          buildTestWidget(
-            animationDuration: customDuration,
-            onChanged: (_) {},
-          ),
+          buildTestWidget(animationDuration: customDuration, onChanged: (_) {}),
         );
 
         final container = tester.widget<AnimatedContainer>(
