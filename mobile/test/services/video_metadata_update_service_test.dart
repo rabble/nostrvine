@@ -904,6 +904,86 @@ void main() {
       );
 
       test(
+        'preserves multiple clip-source credits when editing metadata',
+        () async {
+          const sourceCreatorA =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          const sourceCreatorB =
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+          const sourceAddressableIdA = '34236:$sourceCreatorA:source-a';
+          const sourceAddressableIdB = '34236:$sourceCreatorB:source-b';
+          final video = _testVideo(
+            extraTags: const [
+              [
+                'a',
+                sourceAddressableIdA,
+                'wss://source-a.relay',
+                clipSourceCreditTagMarker,
+              ],
+              [
+                'a',
+                sourceAddressableIdB,
+                'wss://source-b.relay',
+                clipSourceCreditTagMarker,
+              ],
+            ],
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(title: 'Updated title'),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'a',
+                sourceAddressableIdA,
+                'wss://source-a.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'a',
+                sourceAddressableIdB,
+                'wss://source-b.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'p',
+                sourceCreatorA,
+                'wss://source-a.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'p',
+                sourceCreatorB,
+                'wss://source-b.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+        },
+      );
+
+      test(
         'drops a mention p-tag when its pubkey is promoted to collaborator',
         () async {
           const promoted =
@@ -1525,56 +1605,5 @@ void main() {
         expect(inspiredByPTags(), isEmpty);
       });
     });
-  });
-
-  group('clip-source credit preservation', () {
-    test(
-      'preserves all clip-source a-tags and p-tags during metadata edit',
-      () async {
-        const sourceCreatorA = 'source_creator_a_pubkey';
-        const sourceAddressableIdA = '34236:source_creator_a_pubkey:clip-a';
-        const sourceCreatorB = 'source_creator_b_pubkey';
-        const sourceAddressableIdB = '34236:source_creator_b_pubkey:clip-b';
-
-        final video = _testVideo(
-          extraTags: [
-            // Clip-source tags for first creator (both a-tag and p-tag)
-            ['clip-source', sourceAddressableIdA],
-            ['clip-source', sourceCreatorA, 'p'],
-            // Clip-source tags for second creator (both a-tag and p-tag)
-            ['clip-source', sourceAddressableIdB],
-            ['clip-source', sourceCreatorB, 'p'],
-          ],
-        );
-
-        final result = await service.updateVideo(
-          originalVideo: video,
-          editorState: VideoEditorProviderState(
-            title: 'Updated title',
-          ),
-          initialCollaboratorPubkeys: const {},
-        );
-
-        expect(result, isA<VideoUpdateSuccess>());
-
-        // Verify all 4 clip-source tags are preserved
-        expect(
-          capturedTags,
-          contains(equals(['clip-source', sourceAddressableIdA])),
-        );
-        expect(
-          capturedTags,
-          contains(equals(['clip-source', sourceCreatorA, 'p'])),
-        );
-        expect(
-          capturedTags,
-          contains(equals(['clip-source', sourceAddressableIdB])),
-        );
-        expect(
-          capturedTags,
-          contains(equals(['clip-source', sourceCreatorB, 'p'])),
-        );
-      },
-    );
   });
 }
