@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +12,7 @@ import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/published_event_local_echo.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
@@ -52,6 +52,9 @@ void main() {
   const testPubkey =
       '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
 
+  late List<Event> persistedEvents;
+  Object? persistFailure;
+
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_FakeVideoEvent());
@@ -67,12 +70,19 @@ void main() {
     mockPersonalEventCache = _MockPersonalEventCacheService();
     mockVideoEventService = _MockVideoEventService();
 
+    persistedEvents = [];
+    persistFailure = null;
     publisher = VideoEventPublisher(
       uploadManager: mockUploadManager,
       nostrService: mockNostrClient,
       authService: mockAuthService,
       personalEventCache: mockPersonalEventCache,
       videoEventService: mockVideoEventService,
+      publishedEventLocalEcho: PublishedEventLocalEcho((event) async {
+        final failure = persistFailure;
+        if (failure != null) throw failure;
+        persistedEvents.add(event);
+      }),
     );
 
     when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -183,6 +193,36 @@ void main() {
         ),
       ).called(1);
       verify(() => mockVideoEventService.addVideoEvent(any())).called(1);
+    });
+
+    test(
+      'caches the published event locally so it is readable at once',
+      () async {
+        // The relay commits to ClickHouse on a minutes-long batch timer and
+        // funnelcake reads that same table, so nothing can serve this event
+        // back yet. Without the local write, the post-publish confirmation's
+        // View button opens /video/<d-tag> onto "Video not found".
+        final signedEvent = createSignedEvent();
+        stubSigning(signedEvent);
+        stubPublish(signedEvent);
+
+        await publisher.publishDirectUpload(createUpload());
+
+        expect(persistedEvents.map((e) => e.id), equals([signedEvent.id]));
+      },
+    );
+
+    test('a failed local cache write does not fail the publish', () async {
+      // The video is already live on the relay by this point; losing the
+      // read-back optimisation must not report the publish as failed.
+      final signedEvent = createSignedEvent();
+      stubSigning(signedEvent);
+      stubPublish(signedEvent);
+      persistFailure = Exception('disk full');
+
+      final result = await publisher.publishDirectUpload(createUpload());
+
+      expect(result, isTrue);
     });
 
     test('does not mark published when relays reject with OK false despite '

@@ -41,6 +41,7 @@ import 'package:openvine/services/nsfw_content_filter.dart';
 // ignore: unnecessary_import
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/published_event_local_echo.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -291,6 +292,12 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     soundSyncRepositoryGetter: () => ref.read(soundSyncRepositoryValueProvider),
     eventApiClient: eventApiClient,
     audioReuseConsentChecker: consentResolver.verify,
+    // ref.read at call time, not watch: this keepAlive provider must not
+    // rebuild (and drop its in-flight publish coalescer) when storage is
+    // rebuilt, same reasoning as soundSyncRepositoryGetter above.
+    publishedEventLocalEcho: PublishedEventLocalEcho(
+      (event) => ref.read(videoLocalStorageProvider).saveEventsBatch([event]),
+    ),
   );
 }
 
