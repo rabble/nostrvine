@@ -558,7 +558,9 @@ if [ ! -d "$WT_LINK/mobile/build" ] || [ ! -d "$WT_LINK/mobile/.dart_tool" ]; th
 fi
 
 PURGE_OUTPUT=$(cd "$WT_LINK" && \
-  env CLAUDE_PROJECT_DIR="$WT_LINK" "$CLAUDE_PURGE_HOOK" \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" \
+    CLAUDE_PURGE_SKIP_PEER_SCAN=1 \
+    "$CLAUDE_PURGE_HOOK" \
     <<< '{"reason":"prompt_input_exit"}')
 printf '%s\n' "$PURGE_OUTPUT" | jq -e \
   '.systemMessage == "Purged 3 build/.dart_tool dirs from purge-linked"' >/dev/null
@@ -587,7 +589,9 @@ fi
 mkdir -p "$gitdir/claude-purge/old"
 touch "$gitdir/claude-purge/old/artifact"
 NOOP_OUTPUT=$(cd "$WT_LINK" && \
-  env CLAUDE_PROJECT_DIR="$WT_LINK" "$CLAUDE_PURGE_HOOK" \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" \
+    CLAUDE_PURGE_SKIP_PEER_SCAN=1 \
+    "$CLAUDE_PURGE_HOOK" \
     <<< '{"reason":"prompt_input_exit"}')
 if [ -n "$NOOP_OUTPUT" ] || [ -d "$gitdir/claude-purge" ]; then
   echo "Purge hook did not clean leftover staging on a no-op run." >&2
@@ -632,7 +636,9 @@ EOF
     touch "$XDEV_GITDIR/claude-purge"
     XDEV_NAME=$(basename "$XDEV_LINK")
     XDEV_OUTPUT=$(cd "$XDEV_LINK" && \
-      env CLAUDE_PROJECT_DIR="$XDEV_LINK" "$CLAUDE_PURGE_HOOK" \
+      env CLAUDE_PROJECT_DIR="$XDEV_LINK" \
+        CLAUDE_PURGE_SKIP_PEER_SCAN=1 \
+        "$CLAUDE_PURGE_HOOK" \
         <<< '{"reason":"prompt_input_exit"}' || true)
     printf '%s\n' "$XDEV_OUTPUT" | jq -e --arg name "$XDEV_NAME" \
       '.systemMessage == ("Purged 2 build/.dart_tool dirs from " + $name)' >/dev/null || {

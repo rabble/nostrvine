@@ -99,16 +99,18 @@ case "$gitdir" in
   *) exit 0 ;;
 esac
 
-peer_scan="$(active_worktree_peers)"
-if [ -n "$peer_scan" ]; then
-  peer_count="${peer_scan%%	*}"
-  peer_list="${peer_scan#*	}"
-  jq -n \
-    --arg count "$peer_count" \
-    --arg root "$root" \
-    --arg peers "$peer_list" \
-    '{systemMessage: ("Skipped build-artifact purge for " + $root + " because " + $count + " other live process(es) have cwd inside this worktree:\n" + $peers + "Run the purge after the other session or terminal exits.")}'
-  exit 0
+if [ "${CLAUDE_PURGE_SKIP_PEER_SCAN:-0}" != "1" ]; then
+  peer_scan="$(active_worktree_peers)"
+  if [ -n "$peer_scan" ]; then
+    peer_count="${peer_scan%%	*}"
+    peer_list="${peer_scan#*	}"
+    jq -n \
+      --arg count "$peer_count" \
+      --arg root "$root" \
+      --arg peers "$peer_list" \
+      '{systemMessage: ("Skipped build-artifact purge for " + $root + " because " + $count + " other live process(es) have cwd inside this worktree:\n" + $peers + "Run the purge after the other session or terminal exits.")}'
+    exit 0
+  fi
 fi
 
 # Stage removals under the linked worktree gitdir, then delete detached.
