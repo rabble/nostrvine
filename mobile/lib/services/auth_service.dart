@@ -679,11 +679,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Keycast signer before building the identity so we get a
       // KeycastNostrIdentity instead of a LocalNostrIdentity.
       if (session != null && session.hasRpcAccess) {
-        _keycastSigner = KeycastRpc.fromSession(
-          _oauthConfig,
-          session,
-          onTokenRefresh: _refreshAccessToken,
-        );
+        _setKeycastSigner(_newKeycastSigner(session));
       }
 
       await _setupUserSession(localKey!, AuthenticationSource.divineOAuth);
@@ -808,11 +804,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           return;
         }
-        _keycastSigner = KeycastRpc.fromSession(
-          _oauthConfig,
-          refreshed,
-          onTokenRefresh: _refreshAccessToken,
-        );
+        _setKeycastSigner(_newKeycastSigner(refreshed));
         _currentIdentity = _buildIdentity();
         _hasExpiredOAuthSession = false;
         _setRpcCapability(AuthRpcCapability.rpcReady);
@@ -1088,6 +1080,20 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// app-resume refresh all share a single refresh token exchange.
   Future<String?> _refreshAccessToken() =>
       _oauthCoordinator.refreshAccessToken();
+
+  KeycastRpc _newKeycastSigner(KeycastSession session) =>
+      KeycastRpc.fromSession(
+        _oauthConfig,
+        session,
+        onTokenRefresh: _refreshAccessToken,
+      );
+
+  void _setKeycastSigner(KeycastRpc? signer) {
+    if (identical(_keycastSigner, signer)) return;
+    final previous = _keycastSigner;
+    _keycastSigner = signer;
+    previous?.close();
+  }
 
   /// Get discovered user relays (NIP-65)
   List<DiscoveredRelay> get userRelays => List.unmodifiable(_userRelays);
@@ -2802,13 +2808,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
     try {
       if (session.hasRpcAccess) {
-        _keycastSigner = KeycastRpc.fromSession(
-          _oauthConfig,
-          session,
-          onTokenRefresh: _refreshAccessToken,
-        );
+        _setKeycastSigner(_newKeycastSigner(session));
       } else {
-        _keycastSigner = null;
+        _setKeycastSigner(null);
       }
 
       // Prefer the pubkey stored in the session over an RPC call.
@@ -3514,7 +3516,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       }
 
       // Clean up Keycast RPC signer if active
-      _keycastSigner = null;
+      _setKeycastSigner(null);
       _setRpcCapability(AuthRpcCapability.unavailable);
 
       // Detach any in-flight token refresh so post-signout logins start a
@@ -3687,7 +3689,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     try {
       await _clearAmberInfo();
     } catch (_) {}
-    _keycastSigner = null;
+    _setKeycastSigner(null);
     _setRpcCapability(AuthRpcCapability.unavailable);
     _keyStorage.clearCache();
 
@@ -4241,7 +4243,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        _keycastSigner = null;
+        _setKeycastSigner(null);
       }
     }
     if (source != AuthenticationSource.bunker && _bunkerSigner != null) {
@@ -4648,11 +4650,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           await clearDismissedDivineLoginBannerForCurrentUser();
           if (!resumeContextStillCurrent()) return;
-          _keycastSigner = KeycastRpc.fromSession(
-            _oauthConfig,
-            session,
-            onTokenRefresh: _refreshAccessToken,
-          );
+          _setKeycastSigner(_newKeycastSigner(session));
           _currentIdentity = _buildIdentity();
           _hasExpiredOAuthSession = false;
           _setRpcCapability(AuthRpcCapability.rpcReady);
@@ -4720,6 +4718,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // Close Amber signer if active
     _amberSigner?.close();
     _amberSigner = null;
+
+    _setKeycastSigner(null);
 
     _nostrConnect.dispose();
 

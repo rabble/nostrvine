@@ -228,6 +228,121 @@ void main() {
           expect(firstClient.closeCount, equals(1));
         },
       );
+
+      test('close drains retired transports and rejects later use', () async {
+        const pubkey =
+            '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+        final staleRequest = Completer<http.StreamedResponse>();
+        late _ControlledClient firstClient;
+        late _ControlledClient retryClient;
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        var factoryCalls = 0;
+
+        firstClient = _ControlledClient((request) {
+          firstClientCalls++;
+          if (firstClientCalls == 1) {
+            return staleRequest.future;
+          }
+          throw http.ClientException('Connection reset', request.url);
+        });
+        retryClient = _ControlledClient((request) async {
+          retryClientCalls++;
+          return _rpcResult(request, {'result': pubkey});
+        });
+        final clients = [firstClient, retryClient];
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClientFactory: () => clients[factoryCalls++],
+        );
+
+        final staleFuture = rpc.getPublicKey();
+        await Future<void>.value();
+        expect(await rpc.getPublicKey(), pubkey);
+        expect(firstClient.closeCount, equals(0));
+
+        rpc.close();
+
+        expect(firstClient.closeCount, equals(1));
+        expect(retryClient.closeCount, equals(1));
+        await expectLater(rpc.getPublicKey(), throwsA(isA<StateError>()));
+
+        staleRequest.completeError(
+          http.ClientException(
+            'Bad file descriptor',
+            Uri.parse('https://login.divine.video/api/nostr'),
+          ),
+        );
+        await expectLater(staleFuture, throwsA(isA<http.ClientException>()));
+        expect(retryClientCalls, equals(1));
+      });
+
+      test('shares one single-op deadline across a socket retry', () async {
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        final firstClient = MockClient((request) async {
+          firstClientCalls++;
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+          throw http.ClientException('Connection reset', request.url);
+        });
+        final retryClient = MockClient((request) {
+          retryClientCalls++;
+          return Completer<http.Response>().future;
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: firstClient,
+          httpClientFactory: () => retryClient,
+          requestTimeout: const Duration(milliseconds: 250),
+        );
+        final stopwatch = Stopwatch()..start();
+
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(isA<RpcTimeoutException>()),
+        );
+
+        expect(firstClientCalls, equals(1));
+        expect(retryClientCalls, equals(1));
+        expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 330)));
+      });
+
+      test(
+        'shares one single-op deadline across a 401 refresh retry',
+        () async {
+          var callCount = 0;
+          mockClient = MockClient((request) async {
+            callCount++;
+            if (callCount == 1) {
+              await Future<void>.delayed(const Duration(milliseconds: 150));
+              return http.Response('Unauthorized', 401);
+            }
+            return Completer<http.Response>().future;
+          });
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'expired_token',
+            httpClient: mockClient,
+            onTokenRefresh: () async => 'fresh_token',
+            requestTimeout: const Duration(milliseconds: 250),
+          );
+          final stopwatch = Stopwatch()..start();
+
+          await expectLater(
+            rpc.getPublicKey(),
+            throwsA(isA<RpcTimeoutException>()),
+          );
+
+          expect(callCount, equals(2));
+          expect(
+            stopwatch.elapsed,
+            lessThan(const Duration(milliseconds: 330)),
+          );
+        },
+      );
     });
 
     group('signEvent', () {
