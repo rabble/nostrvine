@@ -147,7 +147,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       );
 
       final nostrClient = ref.read(nostrServiceProvider);
-      final videoEventService = ref.read(videoEventServiceProvider);
       final canQueryRelays =
           nostrClient.isInitialized && nostrClient.connectedRelayCount > 0;
 
@@ -162,26 +161,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
             );
 
       if (video != null) {
-        // Even when the repository returns a video, it may still be hidden by
-        // the viewer's block/mute/divine-host/content filters or a deletion
-        // tombstone. Those are view-time filters, not lookup failures, so they
-        // correctly surface as "not found" rather than deferring to a relay
-        // retry — retrying would keep returning the same filtered row.
-        if (videoEventService.shouldHideVideo(video) ||
-            videoEventService.isVideoEventKnownDeleted(video)) {
-          Log.warning(
-            '❌ Video not found (filtered/deleted): ${widget.videoId}',
-            name: 'VideoDetailScreen',
-            category: LogCategory.video,
-          );
-          if (mounted) {
-            setState(() {
-              _error = _VideoDetailError.notFound;
-              _isLoading = false;
-            });
-          }
-          return;
-        }
         Log.info(
           '✅ Loaded video: ${video.title}',
           name: 'VideoDetailScreen',

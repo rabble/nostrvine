@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:go_router/go_router.dart';
@@ -951,6 +952,46 @@ void main() {
           find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
           findsOneWidget,
         );
+      });
+
+      testWidgets('renders the player once an unblock clears the filter', (
+        tester,
+      ) async {
+        // The hide filters are view-time state, not a lookup result: build()
+        // watches the moderation version providers so unblocking the author
+        // brings the video back without a refetch. Latching the load-time
+        // verdict into the error state would strand the screen on not-found.
+        final video = createTestVideoEvent(
+          id: 'unblocked_video_id',
+          pubkey: 'unblocked_pubkey',
+          title: 'Unblocked Video',
+        );
+
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'unblocked_video_id',
+          ),
+        ).thenAnswer((_) async => video);
+        when(
+          () => mockVideoEventService.shouldHideVideo(video),
+        ).thenReturn(true);
+
+        await tester.pumpWidget(buildSubject(videoId: 'unblocked_video_id'));
+        await tester.pump();
+
+        expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
+
+        when(
+          () => mockVideoEventService.shouldHideVideo(video),
+        ).thenReturn(false);
+        ProviderScope.containerOf(
+          tester.element(find.byType(VideoDetailScreen)),
+        ).read(blocklistVersionProvider.notifier).increment();
+
+        await tester.pump();
+
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+        expect(find.text(l10n.videoErrorNotFound), findsNothing);
       });
     });
   });
