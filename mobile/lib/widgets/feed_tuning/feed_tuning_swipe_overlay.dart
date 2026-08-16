@@ -143,9 +143,22 @@ class _FeedTuningSwipeOverlayState extends State<FeedTuningSwipeOverlay> {
     final committed =
         _dragIntent == _DragIntent.horizontal &&
         _passedThreshold &&
-        direction != null;
+        direction != null &&
+        _isRouteAnimationComplete();
     _reset();
     if (committed) widget.onTuned(direction);
+  }
+
+  /// Returns true if the enclosing route is fully visible.
+  ///
+  /// Prevents tuning commits while the route is animating (e.g., during
+  /// iOS back-gesture dismissal or page transitions). A route that is not
+  /// animating or has no animation returns true.
+  bool _isRouteAnimationComplete() {
+    final route = ModalRoute.of(context);
+    final animation = route?.animation;
+    if (animation == null) return true;
+    return animation.status == AnimationStatus.completed;
   }
 
   bool _isPlatformBackGestureStart(Offset globalPosition) {
