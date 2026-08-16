@@ -127,8 +127,8 @@ enum _PrivateItemsState {
   /// The private item array was decrypted and parsed.
   readable,
 
-  /// `content` is non-empty but did not yield items — a deprecated NIP-04
-  /// payload, a signer that declined, or malformed plaintext.
+  /// `content` is non-empty but did not yield items — a payload encrypted to
+  /// another key, a signer that declined, or malformed plaintext.
   ///
   /// Distinct from [none] on purpose: treating it as "no private items" is
   /// what lets the write path publish a public duplicate of an item it cannot
@@ -870,6 +870,11 @@ class BookmarkService {
   /// NIP-51 encrypts private items to the author's own key, so this needs only
   /// the signer this device already has — every identity that can publish a
   /// bookmark can also decrypt one.
+  ///
+  /// Both schemes are read. NIP-51 deprecated NIP-04 for this field but tells
+  /// clients to detect it by the `iv` marker and decrypt accordingly, and lists
+  /// written under it are still live. Refusing them instead left the write path
+  /// permanently blocked on a list it could have read.
   Future<_PrivateItemsRead> _readPrivateItems(String content) async {
     const unreadable = _PrivateItemsRead(
       state: _PrivateItemsState.unreadable,
@@ -880,25 +885,16 @@ class BookmarkService {
       return const _PrivateItemsRead(state: _PrivateItemsState.none, tags: []);
     }
 
-    // NIP-51 deprecated NIP-04 for this field and tells clients to detect it by
-    // the `iv` marker. Divine does not read that scheme; reporting it as
-    // unreadable is what stops the write path from guessing "not bookmarked".
-    if (content.contains('?iv=')) {
-      Log.warning(
-        'Bookmark list uses the deprecated NIP-04 private-item scheme - '
-        'private items left unread',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return unreadable;
-    }
-
     final pubkey = _authService.currentPublicKeyHex;
     final identity = _authService.currentIdentity;
     if (pubkey == null || identity == null) return unreadable;
 
     try {
-      final plaintext = await identity.nip44Decrypt(pubkey, content);
+      // A NIP-44 payload is base64, and `?` is outside that alphabet, so the
+      // marker cannot appear in one.
+      final plaintext = NIP04.isEncrypted(content)
+          ? await identity.decrypt(pubkey, content)
+          : await identity.nip44Decrypt(pubkey, content);
       if (plaintext == null) {
         Log.warning(
           'Signer could not decrypt the private bookmark items',

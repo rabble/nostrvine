@@ -10,6 +10,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip04/nip04.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -139,6 +140,14 @@ void main() {
     /// encrypted to the author's own key.
     Future<String> encryptToSelf(List<List<String>> items) async {
       final ciphertext = await identity.nip44Encrypt(pubkey, jsonEncode(items));
+      return ciphertext!;
+    }
+
+    /// The same payload under the scheme NIP-51 deprecated but still tells
+    /// clients to read. Genuine ciphertext, not a `?iv=`-shaped literal: only
+    /// a real one exercises the decrypt branch rather than the failure path.
+    Future<String> encryptToSelfNip04(List<List<String>> items) async {
+      final ciphertext = await identity.encrypt(pubkey, jsonEncode(items));
       return ciphertext!;
     }
 
@@ -1335,27 +1344,89 @@ void main() {
         );
       });
 
-      group('unreadable content', () {
-        test('refuses to publish when the payload is NIP-04', () async {
-          // NIP-51 deprecated NIP-04 here but tells clients to detect it by
-          // the `iv` marker; one such list is live on relay.divine.video.
+      group('deprecated NIP-04 payloads', () {
+        test('reads private items written under NIP-04', () async {
           stubRelay(
             events: [
-              bookmarkListEvent([], content: 'c29tZQ==?iv=aXY='),
+              bookmarkListEvent(
+                [],
+                content: await encryptToSelfNip04([
+                  ['e', privateVideo],
+                ]),
+              ),
+            ],
+          );
+          final service = createService();
+
+          await service.syncGlobalBookmarks();
+
+          expect(service.hasUnreadablePrivateItems, isFalse);
+          expect(
+            service.globalBookmarks.map((item) => item.id),
+            contains(privateVideo),
+          );
+        });
+
+        test('toggles a list whose private items are NIP-04', () async {
+          // The list this unblocks: before, every mutation was refused and the
+          // user could never save or unsave again.
+          stubRelay(
+            events: [
+              bookmarkListEvent(
+                [],
+                content: await encryptToSelfNip04([
+                  ['e', privateVideo],
+                ]),
+              ),
             ],
           );
           final service = createService();
 
           final result = await service.toggleVideoInGlobalBookmarks('wanted');
 
-          expect(result.succeeded, isFalse);
-          expect(
-            result.failure,
-            equals(BookmarkToggleFailure.privateItemsUnreadable),
-          );
-          expect(signedTags, isNull, reason: 'nothing may be published');
+          expect(result.succeeded, isTrue);
+          expect(result.failure, isNull);
+          expect(signedEventIds(), contains('wanted'));
         });
 
+        test(
+          're-encrypts the array as NIP-44 when an item is removed',
+          () async {
+            stubRelay(
+              events: [
+                bookmarkListEvent(
+                  [],
+                  content: await encryptToSelfNip04([
+                    ['e', privateVideo],
+                    ['e', 'kept-private'],
+                  ]),
+                ),
+              ],
+            );
+            final service = createService();
+
+            final result = await service.toggleVideoInGlobalBookmarks(
+              privateVideo,
+            );
+
+            expect(result.succeeded, isTrue);
+            expect(
+              NIP04.isEncrypted(signedContent!),
+              isFalse,
+              reason: 'a rewrite upgrades the array off the deprecated scheme',
+            );
+            expect(
+              await decryptToSelf(signedContent!),
+              equals([
+                ['e', 'kept-private'],
+              ]),
+              reason: 'only the removed entry is dropped',
+            );
+          },
+        );
+      });
+
+      group('unreadable content', () {
         test('refuses to publish when the signer cannot decrypt', () async {
           // Content encrypted to a different identity: real ciphertext this
           // signer will never read.
@@ -1410,6 +1481,8 @@ void main() {
         test(
           'reports the blind spot so callers can stay indeterminate',
           () async {
+            // Carries the `iv` marker but is not decryptable under either
+            // scheme, so it stays a blind spot rather than reading as empty.
             stubRelay(
               events: [
                 bookmarkListEvent([], content: 'c29tZQ==?iv=aXY='),
