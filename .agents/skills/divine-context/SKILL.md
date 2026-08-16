@@ -56,15 +56,15 @@ When you learn a **cross-repo** fact while working in a divine-* repo, propose i
    ```bash
    cd ~/code/divine/divine-context
    git fetch origin main
-   git worktree add /tmp/dc-<topic> -b update-from-<thisrepo>-<topic>-$(date +%Y-%m-%d) origin/main
+   git worktree add .claude/worktrees/dc-<topic> -b update-from-<thisrepo>-<topic>-$(date +%Y-%m-%d) origin/main
    # edit files
-   cd /tmp/dc-<topic>
+   cd .claude/worktrees/dc-<topic>
    git add <only the files you changed>          # never -A
    git commit -m "<short desc>: <what changed>"
    git push -u origin HEAD
    gh pr create --title "..." --body "..."
    ```
-   **Use a `/tmp` worktree.** Other agents may be editing divine-context concurrently; isolating in a worktree avoids branch-state collisions.
+   **Use a worktree inside the divine-context checkout.** Other agents may be editing divine-context concurrently; isolating in a worktree avoids branch-state collisions. Put it in `.claude/worktrees/` (gitignored there) — **not `/tmp`**. On macOS `/tmp` is swept, and a worktree there takes any uncommitted work with it; see `WORKTREES.md` in divine-context. Remove it with `git worktree remove` once the PR merges, since nothing cleans it up for you.
 6. **One logical change per PR.** Five unrelated improvements = five PRs.
 
 ### What goes in divine-context (and what doesn't)
@@ -107,7 +107,8 @@ PR opened: <url>
 | "I'll just edit divine-context directly without showing the user first" | Some proposals may be intentional omissions. Show the list first. |
 | "This is repo-local but feels useful, so I'll add it anyway" | Cross-repo only. Repo-local belongs in `AGENTS.md`. |
 | "Local main looks fine, no need to fetch" | Local main may be days stale. Always branch from `origin/main`. |
-| "I'll skip the worktree, just `git checkout` in place" | Concurrent agents may be editing. Use `/tmp/dc-<topic>` worktree. |
+| "I'll skip the worktree, just `git checkout` in place" | Concurrent agents may be editing. Use a `.claude/worktrees/dc-<topic>` worktree. |
+| "I'll put the worktree in `/tmp`, it's throwaway" | `/tmp` is swept on macOS and takes uncommitted work with it. Keep it inside the divine-context checkout. |
 | "I'll bundle five small fixes into one PR — easier to review" | One logical change per PR. Reviewers can disagree with one without blocking the others. |
 | "I'll `git add -A` — faster" | Catches unrelated files. Stage by name. |
 | "I can't verify this fact, but it sounds right" | Mark `<!-- TODO: verify -->` instead of inventing. |
