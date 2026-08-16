@@ -142,7 +142,37 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
   return store.isProtectedMinorFor(pubkey);
 });
 
-/// The #176 DM-restriction seam — fail CLOSED, a deliberate divergence from
+/// Whether a Keycast-backed protected-minor verdict can apply to the current
+/// account. Returns `true` only for OAuth-authenticated accounts and for
+/// accounts that have previously been marked as Keycast-custodial.
+///
+/// The #176 DM restriction uses this to distinguish accounts that may have
+/// an unknown verdict from Keycast (and must fail closed) from pure
+/// self-custody accounts that Keycast can never produce a verdict for (and
+/// must not be permanently restricted by an unanswerable check).
+final keycastSignalApplicableProvider = Provider<bool>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final pubkey = authService.currentPublicKeyHex;
+  final authSource = authService.authenticationSource;
+  final store = ref.watch(protectedMinorStickyStoreProvider);
+
+  // OAuth accounts can receive a Keycast verdict; fail closed on unknown.
+  if (authSource == AuthenticationSource.divineOAuth) {
+    return true;
+  }
+
+  // Self-custody accounts that were previously seen by Keycast must stay
+  // fail-closed, since a pubkey can flip between auth sources on the same device.
+  if (pubkey != null && store.wasKeycastAccountFor(pubkey)) {
+    return true;
+  }
+
+  // Pure self-custody accounts that have never been seen by Keycast are not
+  // subject to Keycast signals.
+  return false;
+});
+
+/// The #176 DM-restriction seam — fail CLOSED conditionally, a deliberate divergence from
 /// [isProtectedMinorProvider] (which #175's content lock consumes fail-open):
 /// the restricted party can trivially suppress the input that produces an
 /// absent answer (airplane mode, cleared storage, blocked keycast domain,
@@ -154,10 +184,11 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
 /// - persisted last-known `notProtected` -> unrestricted, so adults don't eat
 ///   a lockout on every network blip;
 /// - everything else (protected, unknown, loading, missing token, never
-///   resolved, unauthenticated) -> restricted.
+///   resolved) -> restricted.
 ///
-/// Pure self-custody accounts are outside Keycast's verified-minor signal and
-/// must not be permanently restricted by an answer Keycast can never provide.
+/// Pure self-custody accounts that have never been associated with Keycast
+/// are never restricted — they are outside Keycast's verified-minor signal and
+/// must not be permanently blocked by a check Keycast can never produce.
 final isDmRestrictedProvider = Provider<bool>((ref) {
   final authState = ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);
@@ -165,10 +196,10 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   final authSource = authService.authenticationSource;
   final store = ref.watch(protectedMinorStickyStoreProvider);
   final live = ref.watch(protectedMinorStatusProvider);
+  final keycastApplicable = ref.watch(keycastSignalApplicableProvider);
 
   if (authSource == AuthenticationSource.divineOAuth) {
-    // Intentional fire-and-forget monotonic marker; SharedPreferences updates
-    // its in-memory cache before the Future completes.
+    // Mark as Keycast account for future self-custody detection (fire-and-forget).
     store.markKeycastAccount(pubkey);
   }
 
@@ -188,17 +219,11 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   final lastKnown = store.lastKnownFor(pubkey);
   if (lastKnown != null) return lastKnown;
   if (authState != AuthState.authenticated || pubkey == null) return true;
-  if (authSource == AuthenticationSource.divineOAuth) return true;
-  if (store.wasKeycastAccountFor(pubkey)) return true;
-  return switch (authSource) {
-    AuthenticationSource.automatic ||
-    AuthenticationSource.importedKeys ||
-    AuthenticationSource.bunker ||
-    AuthenticationSource.amber ||
-    AuthenticationSource.nip07 => false,
-    AuthenticationSource.none => true,
-    AuthenticationSource.divineOAuth => true,
-  };
+
+  // Fail closed only when Keycast signals are applicable to this account.
+  if (!keycastApplicable) return false;
+
+  return true;
 });
 
 /// Whether the current DM restriction comes from a confirmed protected-minor
