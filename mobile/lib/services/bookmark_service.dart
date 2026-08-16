@@ -8,6 +8,7 @@ import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -183,6 +184,13 @@ class BookmarkService {
   /// NIP-51 kind for the uncategorized ("global") bookmark list.
   static const int globalBookmarksKind = 10003;
 
+  /// How far past this device's clock a kind-10003 may be stamped.
+  ///
+  /// The relay refuses `created_at` more than 60 s in the future, so a stamp
+  /// that steps over another client's revision has to stay well under that —
+  /// this device's clock and the relay's are not the same clock.
+  static const int maxPublishFutureSkew = 30;
+
   /// The `content` Divine wrote into kind 10003 before it respected NIP-51's
   /// reservation of that field for the encrypted private-item array.
   ///
@@ -324,6 +332,28 @@ class BookmarkService {
       return false;
     }
     return _now().difference(local.acceptedAt) < localPublishAbsenceGracePeriod;
+  }
+
+  /// The `created_at` for the next publish, or `null` when this device cannot
+  /// stamp one that both supersedes [_revision] and stays acceptable.
+  ///
+  /// Kind 10003 is normally stamped `now - 30s` for relay clock drift. A
+  /// NIP-51 client that does not backdate can therefore hold the current
+  /// revision at a timestamp this device's stamp cannot beat, and the relay
+  /// keeps the higher `created_at` — so the publish is accepted, the user is
+  /// told "Saved", and the merge discards it (#7629). Step past that revision
+  /// instead, unless doing so would land beyond [maxPublishFutureSkew], where
+  /// the relay would refuse the event outright.
+  int? _nextPublishCreatedAt() {
+    final nowSeconds = _now().millisecondsSinceEpoch ~/ 1000;
+    final backdated =
+        nowSeconds -
+        NostrTimestamp.getDriftToleranceForKind(globalBookmarksKind);
+    final revision = _revision;
+    if (revision == null || backdated > revision.createdAt) return backdated;
+
+    final superseding = revision.createdAt + 1;
+    return superseding > nowSeconds + maxPublishFutureSkew ? null : superseding;
   }
 
   /// Whether an empty answer from a partial set of relays still has to be
@@ -899,10 +929,23 @@ class BookmarkService {
         content = encrypted;
       }
 
+      final createdAt = _nextPublishCreatedAt();
+      if (createdAt == null) {
+        Log.warning(
+          'Not publishing global bookmarks: cannot stamp a revision newer '
+          'than ${_revision?.createdAt} without exceeding the relay clock '
+          'tolerance',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+
       final event = await _authService.createAndSignEvent(
         kind: globalBookmarksKind,
         content: content,
         tags: [for (final item in candidate) item.toTag()],
+        createdAt: createdAt,
       );
 
       if (event == null) return false;
