@@ -533,8 +533,9 @@ class OutboxBridges extends StatelessWidget {
 
 /// How long an in-flight video-reply placeholder stays up after a successful
 /// publish, waiting for the relay echo to swap it for the canonical comment
-/// before the bridge rolls it back (#6960 review: 5s was too tight on poor
-/// networks). Public-by-test only — tests pump exactly this duration.
+/// before the bridge rolls it back. Widened from 5s because slow-network
+/// echoes could exceed the old window and make the row disappear before it
+/// re-appeared. Public-by-test only — tests pump exactly this duration.
 @visibleForTesting
 const Duration videoReplyRelayEchoGrace = Duration(seconds: 10);
 
