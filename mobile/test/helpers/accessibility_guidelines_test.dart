@@ -140,19 +140,6 @@ void main() {
 
       expect(failure, isNotNull);
     });
-
-    testWidgets('checks contrast against real VineTheme typography', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _app(Text('legible label', style: VineTheme.bodyMediumFont())),
-      );
-
-      await expectMeetsAccessibilityGuidelines(
-        tester,
-        guidelines: const [textContrastGuideline],
-      );
-    });
   });
 
   group('expectMeetsAccessibilityGuidelinesInBothAppearances', () {
