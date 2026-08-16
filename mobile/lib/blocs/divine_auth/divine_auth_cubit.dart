@@ -455,6 +455,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState>
         'Password reset error: $e',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
+        stackTrace: stackTrace,
       );
       // OAuth client network failure — matrix-NO (Network/IO).
       addError(e, stackTrace);

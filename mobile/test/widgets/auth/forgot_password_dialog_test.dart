@@ -258,6 +258,47 @@ void main() {
 
         expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
         expect(find.text(l10n.authFailedToSendResetEmail), findsOneWidget);
+        expect(
+          tester
+              .widget<ElevatedButton>(
+                find.widgetWithText(ElevatedButton, l10n.authTryAgain),
+              )
+              .onPressed,
+          isNotNull,
+        );
+      });
+
+      testWidgets('ignores a second submit tap before rebuild', (
+        tester,
+      ) async {
+        final sendCompleter = Completer<bool>();
+        var sendCount = 0;
+        await tester.pumpWidget(
+          createTestWidget(
+            initialEmail: 'user@example.com',
+            onSendResetEmail: (_) {
+              sendCount += 1;
+              return sendCompleter.future;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+        await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        final sendButton = find.widgetWithText(
+          ElevatedButton,
+          l10n.forgotPasswordSendLink,
+        );
+        await tester.tap(sendButton);
+        await tester.tap(sendButton, warnIfMissed: false);
+
+        expect(sendCount, 1);
+
+        sendCompleter.complete(true);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.forgotPasswordTitle), findsNothing);
       });
 
       testWidgets('keeps dialog open and shows retry copy when sending fails', (
