@@ -52,6 +52,10 @@ CuratedList _makeList(String id, {DateTime? createdAt}) {
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(Duration.zero);
+  });
+
   group(DiscoverListsScreen, () {
     late _MockCuratedListService mockService;
     late List<CuratedList> preloadedLists;
@@ -122,9 +126,14 @@ void main() {
           () => mockService.streamPublicListsFromRelays(
             until: any(named: 'until'),
             excludeIds: any(named: 'excludeIds'),
+            timeout: any(named: 'timeout'),
           ),
-        ).thenAnswer((_) {
+        ).thenAnswer((invocation) {
           streamCalls++;
+          expect(
+            invocation.namedArguments[#timeout],
+            const Duration(seconds: 3),
+          );
           return const Stream<List<CuratedList>>.empty();
         });
 
@@ -152,7 +161,7 @@ void main() {
         expect(
           find.byType(CircularProgressIndicator),
           findsNothing,
-          reason: '_loadMoreLists should have completed via timeout',
+          reason: '_loadMoreLists should have completed on empty stream',
         );
 
         // --- Second scroll: should NOT trigger pagination again ---
@@ -202,6 +211,42 @@ void main() {
       expect(find.text(l10n.discoverListsRelayTimeout), findsOneWidget);
       expect(find.text(l10n.commonRetry), findsOneWidget);
     });
+
+    testWidgets('initial partial results stay visible after relay timeout', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final controller = StreamController<List<CuratedList>>();
+      addTearDown(controller.close);
+
+      when(
+        () => mockService.streamPublicListsFromRelays(),
+      ).thenAnswer((_) => controller.stream);
+
+      await tester.pumpWidget(buildSubject(initialLists: []));
+      await tester.pump();
+      await tester.pump();
+
+      final partialLists = List.generate(
+        10,
+        (index) => _makeList('partial_$index'),
+      );
+      controller.add(partialLists);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('List partial_0'), findsOneWidget);
+
+      controller.addError(
+        TimeoutException('Public curated lists relay read timed out'),
+      );
+      await tester.pump();
+
+      expect(find.text('List partial_0'), findsOneWidget);
+      expect(find.text(l10n.discoverListsFailedToLoad), findsNothing);
+      expect(find.text(l10n.discoverListsRelayTimeout), findsNothing);
+    });
+
     testWidgets('refresh that never emits keeps the lists already on screen', (
       tester,
     ) async {
@@ -235,6 +280,75 @@ void main() {
       expect(find.text('List list_0'), findsOneWidget);
       expect(find.text(l10n.discoverListsFailedToLoad), findsNothing);
       expect(find.text(l10n.discoverListsRelayTimeout), findsNothing);
+    });
+
+    testWidgets('dispose cancels the active initial relay stream', (
+      tester,
+    ) async {
+      var streamCanceled = false;
+      final controller = StreamController<List<CuratedList>>(
+        onCancel: () {
+          streamCanceled = true;
+        },
+      );
+      addTearDown(controller.close);
+
+      when(
+        () => mockService.streamPublicListsFromRelays(),
+      ).thenAnswer((_) => controller.stream);
+
+      await tester.pumpWidget(buildSubject(initialLists: []));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      expect(streamCanceled, isTrue);
+    });
+
+    testWidgets('pagination cancels the relay stream after unmount', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      var paginationStreamCanceled = false;
+      final controller = StreamController<List<CuratedList>>(
+        onCancel: () {
+          paginationStreamCanceled = true;
+        },
+      );
+      addTearDown(controller.close);
+
+      when(
+        () => mockService.streamPublicListsFromRelays(
+          until: any(named: 'until'),
+          excludeIds: any(named: 'excludeIds'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((_) => controller.stream);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('List list_49'),
+        500,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pump();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      controller.add([_makeList('after_unmount')]);
+      await tester.pump();
+
+      expect(paginationStreamCanceled, isTrue);
     });
 
     testWidgets('initial EOSE with zero lists renders empty state', (

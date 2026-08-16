@@ -376,31 +376,6 @@ class CuratedListRelayGateway {
         0;
   }
 
-  /// Fetch public curated lists from Nostr relays for discovery.
-  ///
-  /// Prefer [streamPublicListsFromRelays] when the caller can render
-  /// progressive updates.
-  Future<List<CuratedList>> fetchPublicListsFromRelays({
-    List<String>? searchTags,
-    Duration timeout = kPublicCuratedListsRelayReadTimeout,
-  }) async {
-    final lists = <CuratedList>[];
-    await for (final update in streamPublicListsFromRelays(timeout: timeout)) {
-      lists
-        ..clear()
-        ..addAll(update);
-    }
-
-    // Apply tag filter if specified
-    if (searchTags != null && searchTags.isNotEmpty) {
-      return lists.where((list) {
-        return list.tags.any((tag) => searchTags.contains(tag.toLowerCase()));
-      }).toList();
-    }
-
-    return lists;
-  }
-
   /// Fetch public lists from any user that contain a specific video
   /// Uses Nostr #e filter to find kind 30005 events referencing the video
   /// Returns list of CuratedList objects (progressive loading via stream version)

@@ -1752,15 +1752,6 @@ class CuratedListService extends ChangeNotifier {
   }) =>
       _relayGateway.fetchPublicList(authorPubkey: authorPubkey, listId: listId);
 
-  /// See [CuratedListRelayGateway.fetchPublicListsFromRelays].
-  Future<List<CuratedList>> fetchPublicListsFromRelays({
-    List<String>? searchTags,
-    Duration timeout = kPublicCuratedListsRelayReadTimeout,
-  }) => _relayGateway.fetchPublicListsFromRelays(
-    searchTags: searchTags,
-    timeout: timeout,
-  );
-
   /// See [CuratedListRelayGateway.fetchPublicListsContainingVideo].
   Future<List<CuratedList>> fetchPublicListsContainingVideo(
     String videoEventId,

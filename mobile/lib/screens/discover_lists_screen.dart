@@ -51,6 +51,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
   int _autoPaginationAttempts = 0;
   static const int _maxAutoPaginationAttempts = 5;
   static const int _minListsBeforeAutoPaginate = 10;
+  static const Duration _paginationRelayReadTimeout = Duration(seconds: 3);
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -202,7 +203,11 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
             provider.setLoading(false);
             setState(() {
               _isRefreshing = false;
-              if (!hadExistingLists || error is! TimeoutException) {
+              final hasRenderedLists = ref
+                  .read(discoveredListsProvider)
+                  .lists
+                  .isNotEmpty;
+              if (!hasRenderedLists || error is! TimeoutException) {
                 _errorMessage = error is TimeoutException
                     ? context.l10n.discoverListsRelayTimeout
                     : context.l10n.discoverListsFailedToLoadWithError('$error');
@@ -267,6 +272,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       final stream = service.streamPublicListsFromRelays(
         until: providerState.oldestTimestamp,
         excludeIds: existingIds,
+        timeout: _paginationRelayReadTimeout,
       );
 
       await for (final lists in stream) {
