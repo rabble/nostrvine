@@ -14,7 +14,7 @@ repositories {
 val flutterRoot = providers.environmentVariable("FLUTTER_ROOT")
     .orElse(providers.environmentVariable("FLUTTER_HOME"))
     .orNull
-    ?: throw GradleException("FLUTTER_ROOT must be set to test caption_generator")
+    ?: throw GradleException("FLUTTER_ROOT must be set to compile caption_generator")
 val flutterDebugEmbeddingJar =
     file("$flutterRoot/bin/cache/artifacts/engine/android-arm64/flutter.jar")
 
@@ -49,7 +49,7 @@ android {
 }
 
 dependencies {
-    add("debugCompileOnly", files(flutterDebugEmbeddingJar))
+    compileOnly(files(flutterDebugEmbeddingJar))
     testImplementation(files(flutterDebugEmbeddingJar))
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")

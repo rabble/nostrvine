@@ -1,14 +1,41 @@
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
 
 CODEMAGIC_PATH = Path(__file__).resolve().parents[3] / "codemagic.yaml"
+MISE_PATH = Path(__file__).resolve().parents[3] / "mobile" / "mise.toml"
+MOBILE_CI_PATH = (
+    Path(__file__).resolve().parents[3] / ".github" / "workflows" / "mobile_ci.yaml"
+)
 
 
 class CodemagicAndroidBuildNumberTest(unittest.TestCase):
     def setUp(self) -> None:
         self.contents = CODEMAGIC_PATH.read_text()
+        self.mobile_ci_contents = MOBILE_CI_PATH.read_text()
+        self.mise_contents = MISE_PATH.read_text()
+
+    def test_codemagic_yaml_parses_with_aliases(self) -> None:
+        result = subprocess.run(
+            [
+                "ruby",
+                "-e",
+                (
+                    "require 'yaml'; "
+                    "data = YAML.safe_load(File.read(ARGV[0]), aliases: true); "
+                    "abort 'missing workflows' unless data.fetch('workflows').is_a?(Hash); "
+                    "abort 'missing definitions' unless data.fetch('definitions').is_a?(Hash)"
+                ),
+                str(CODEMAGIC_PATH),
+            ],
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_android_aab_build_uses_google_play_floor(self) -> None:
         self.assertIn(
@@ -35,14 +62,31 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
     def test_shorebird_release_commands_are_signed_and_preflighted(self) -> None:
         self.assertIn("*preflight_shorebird_ios_release", self.contents)
         self.assertIn("*preflight_shorebird_android_release", self.contents)
+        self.assertIn("shorebird releases list --platform=android --json", self.contents)
+        self.assertIn("shorebird releases list --platform=ios --json", self.contents)
+        self.assertIn("shorebird_release_preflight.rb", self.contents)
+        self.assertNotIn("shorebird releases info", self.contents)
         self.assertIn("--build-name=$BUILD_NAME", self.contents)
         self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", self.contents)
-        self.assertIn("already exists and is active", self.contents)
 
-    def test_shorebird_flutter_version_uses_current_supported_engine(self) -> None:
-        self.assertIn("flutter: 3.44.9", self.contents)
-        self.assertIn("FLUTTER_VERSION: 3.44.9", self.contents)
-        self.assertNotIn("3.44.0", self.contents)
+    def test_flutter_pins_match_current_shorebird_engine(self) -> None:
+        mise_version = re.search(r'^flutter = "([^"]+)"$', self.mise_contents, re.MULTILINE)
+        self.assertIsNotNone(mise_version)
+        expected = mise_version.group(1)
+
+        mobile_ci_versions = set(
+            re.findall(r'flutter-version: "([^"]+)"', self.mobile_ci_contents)
+        )
+        codemagic_flutter_versions = set(
+            re.findall(r"^\s+flutter: ([0-9]+\.[0-9]+\.[0-9]+)$", self.contents, re.MULTILINE)
+        )
+        shorebird_release_versions = set(
+            re.findall(r"^\s+FLUTTER_VERSION: ([0-9]+\.[0-9]+\.[0-9]+)$", self.contents, re.MULTILINE)
+        )
+
+        self.assertEqual({expected}, mobile_ci_versions)
+        self.assertEqual({expected}, codemagic_flutter_versions)
+        self.assertEqual({expected}, shorebird_release_versions)
 
     def test_shorebird_patch_commands_publish_to_staging_and_are_signed(self) -> None:
         self.assertIn(
@@ -73,19 +117,18 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("'packages/**/android/**'", self.contents)
         self.assertIn("'packages/**/darwin/**'", self.contents)
         self.assertIn("Cut a normal store release instead of a Shorebird patch.", self.contents)
-        self.assertIsNone(
-            re.search(r"shorebird patch .*(--allow-native-diffs|--allow-asset-diffs)", self.contents)
-        )
+        for command in self._shorebird_patch_commands():
+            self.assertNotRegex(command, r"--allow-native-diffs|--allow-asset-diffs")
 
     def test_shorebird_cache_is_enabled_for_release_and_patch_workflows(self) -> None:
-        self.assertEqual(self.contents.count("- $HOME/.shorebird"), 4)
+        for workflow in ("ios-build", "android-build", "ios-patch", "android-patch"):
+            self.assertIn("- $HOME/.shorebird", self._workflow_block(workflow))
 
     def test_shorebird_install_runs_before_ios_dependency_resolution(self) -> None:
         ios_build = self.contents.index("ios-build:")
         ios_patch = self.contents.index("ios-patch:")
         android_build = self.contents.index("android-build:")
         android_patch = self.contents.index("android-patch:")
-        macos_build = self.contents.index("macos-build:")
 
         self.assertLess(
             self.contents.index("- *shorebird_install", ios_build),
@@ -103,7 +146,27 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
             self.contents.index("- *shorebird_install", android_patch),
             self.contents.index("- *setup_local_properties", android_patch),
         )
-        self.assertLess(android_patch, macos_build)
+
+    def _workflow_block(self, workflow_name: str) -> str:
+        start = self.contents.index(f"  {workflow_name}:")
+        next_workflow = re.search(r"^  [a-z0-9-]+:", self.contents[start + 1 :], re.MULTILINE)
+        if next_workflow is None:
+            return self.contents[start:]
+        return self.contents[start : start + 1 + next_workflow.start()]
+
+    def _shorebird_patch_commands(self) -> list[str]:
+        commands = []
+        lines = self.contents.splitlines()
+        for index, line in enumerate(lines):
+            if "shorebird patch " not in line:
+                continue
+            command_lines = [line]
+            cursor = index
+            while command_lines[-1].rstrip().endswith("\\"):
+                cursor += 1
+                command_lines.append(lines[cursor])
+            commands.append("\n".join(command_lines))
+        return commands
 
 
 if __name__ == "__main__":

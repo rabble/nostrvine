@@ -304,15 +304,17 @@ definitions:
           echo "SHOREBIRD_RELEASE_VERSION=$RELEASE_VERSION"
         } > build/shorebird/android_release.env
         echo "Android Shorebird release version: $RELEASE_VERSION"
-        if shorebird releases info --release-version="$RELEASE_VERSION" --json > build/shorebird/release_info.json 2> build/shorebird/release_info.err; then
-          if ruby -rjson -e 'release = JSON.parse(File.read(ARGV[0])).fetch("release"); exit(release.fetch("platform_statuses", {}).fetch(ARGV[1], nil) == "active" ? 0 : 1)' build/shorebird/release_info.json android; then
-            echo "ERROR: Android Shorebird release $RELEASE_VERSION already exists and is active."
-            echo "Bump the build number/version or delete the failed Shorebird release before retrying."
-            exit 1
+        if ! shorebird releases list --platform=android --json > build/shorebird/release_info.json 2> build/shorebird/release_info.err; then
+          echo "ERROR: could not list existing Shorebird releases."
+          if [ -s build/shorebird/release_info.err ]; then
+            sed 's/^/stderr: /' build/shorebird/release_info.err
           fi
-        else
-          echo "No existing Shorebird release found for $RELEASE_VERSION; continuing."
+          if [ -s build/shorebird/release_info.json ]; then
+            sed 's/^/stdout: /' build/shorebird/release_info.json
+          fi
+          exit 1
         fi
+        ruby scripts/shorebird_release_preflight.rb build/shorebird/release_info.json android "$RELEASE_VERSION"
     - &preflight_shorebird_ios_release
       name: Preflight iOS Shorebird release
       script: |
@@ -348,15 +350,17 @@ definitions:
           echo "SHOREBIRD_RELEASE_VERSION=$RELEASE_VERSION"
         } > build/shorebird/ios_release.env
         echo "iOS Shorebird release version: $RELEASE_VERSION"
-        if shorebird releases info --release-version="$RELEASE_VERSION" --json > build/shorebird/release_info.json 2> build/shorebird/release_info.err; then
-          if ruby -rjson -e 'release = JSON.parse(File.read(ARGV[0])).fetch("release"); exit(release.fetch("platform_statuses", {}).fetch(ARGV[1], nil) == "active" ? 0 : 1)' build/shorebird/release_info.json ios; then
-            echo "ERROR: iOS Shorebird release $RELEASE_VERSION already exists and is active."
-            echo "Bump the build number/version or delete the failed Shorebird release before retrying."
-            exit 1
+        if ! shorebird releases list --platform=ios --json > build/shorebird/release_info.json 2> build/shorebird/release_info.err; then
+          echo "ERROR: could not list existing Shorebird releases."
+          if [ -s build/shorebird/release_info.err ]; then
+            sed 's/^/stderr: /' build/shorebird/release_info.err
           fi
-        else
-          echo "No existing Shorebird release found for $RELEASE_VERSION; continuing."
+          if [ -s build/shorebird/release_info.json ]; then
+            sed 's/^/stdout: /' build/shorebird/release_info.json
+          fi
+          exit 1
         fi
+        ruby scripts/shorebird_release_preflight.rb build/shorebird/release_info.json ios "$RELEASE_VERSION"
     - &build_apk
       name: Build Android APK
       script: |

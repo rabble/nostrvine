@@ -87,7 +87,7 @@ jobs:
     name: CI Configuration Tests
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run CI configuration unit tests
         run: python3 -m unittest discover -s .github/scripts/tests
 
@@ -109,7 +109,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
@@ -322,7 +322,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
@@ -346,7 +346,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
@@ -372,7 +372,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
