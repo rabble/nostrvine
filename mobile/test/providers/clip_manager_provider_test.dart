@@ -1144,6 +1144,35 @@ void main() {
         );
       });
 
+      test('leaves a frames-only stop-motion clip untouched', () {
+        // The frames strip lays out from the frame holds and never reads
+        // trimEnd, so trimming here would drop the composition total below
+        // the limit — hiding the over-limit overlays — while every frame
+        // stayed on screen.
+        const frame = StopMotionClipFrame(
+          path: '/tmp/frame_0.jpg',
+          duration: Duration(seconds: 10),
+        );
+        final clip = DivineVideoClip(
+          id: 'frames',
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime(2026),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          stopMotionFrames: const [frame],
+        );
+
+        expect(clip.isStopMotion, isTrue);
+
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: clip,
+          existingClips: const [],
+        );
+
+        expect(seeded, same(clip));
+        expect(seeded.trimEnd, equals(Duration.zero));
+      });
+
       test('leaves a clip shorter than the trim minimum untouched', () {
         final clip = _budgetClip(
           id: 'sliver',

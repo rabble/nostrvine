@@ -68,10 +68,18 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
   /// Returns [clip] with an end trim that keeps its visible window within the
   /// remaining editor budget after [existingClips].
+  ///
+  /// Frames-only stop-motion clips are returned untouched: their strip lays
+  /// out from the frame holds and ignores trim, so an end trim would shrink
+  /// the composition total — hiding the over-limit overlays — while every
+  /// frame stayed on screen. Stop-motion overflow is resolved by deleting
+  /// frames instead.
   static DivineVideoClip seedImportTrimForEditorBudget({
     required DivineVideoClip clip,
     required List<DivineVideoClip> existingClips,
   }) {
+    if (clip.isStopMotion) return clip;
+
     final usedDuration = existingClips.fold<Duration>(
       Duration.zero,
       (sum, existing) => sum + existing.playbackDuration,
