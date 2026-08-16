@@ -7,7 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/router/go_router_page_name.dart';
 
 class _FakeGoRouterState extends Fake implements GoRouterState {
-  _FakeGoRouterState({this.name, this.path, this.topRoute, this.fullPath});
+  _FakeGoRouterState({
+    this.name,
+    this.path,
+    this.topRoute,
+    this.fullPath,
+    Uri? uri,
+  }) : uri = uri ?? Uri(path: '/');
 
   @override
   final String? name;
@@ -20,6 +26,9 @@ class _FakeGoRouterState extends Fake implements GoRouterState {
 
   @override
   final String? fullPath;
+
+  @override
+  final Uri uri;
 }
 
 GoRoute _goRoute({required String path, required String name}) {
@@ -64,9 +73,38 @@ void main() {
 
     test('falls back to fullPath when no stable name is available', () {
       expect(
-        goRouterPageName(_FakeGoRouterState(fullPath: '/explore/:name')),
-        '/explore/:name',
+        goRouterPageName(_FakeGoRouterState(fullPath: '/search/:query')),
+        '/search/:query',
       );
     });
+
+    test('normalizes unnamed shell tab path templates to screen names', () {
+      expect(
+        goRouterPageName(_FakeGoRouterState(path: '/notifications/:index')),
+        'notifications',
+      );
+      expect(
+        goRouterPageName(_FakeGoRouterState(path: '/explore/tab/:name')),
+        'explore',
+      );
+      expect(
+        goRouterPageName(_FakeGoRouterState(path: '/profile/:npub/:index')),
+        'profile',
+      );
+      expect(
+        goRouterPageName(_FakeGoRouterState(path: '/liked-videos/:index')),
+        'liked-videos',
+      );
+    });
+
+    test(
+      'uses concrete shell URI path when go_router leaves name and path null',
+      () {
+        expect(
+          goRouterPageName(_FakeGoRouterState(uri: Uri(path: '/inbox'))),
+          'inbox',
+        );
+      },
+    );
   });
 }
