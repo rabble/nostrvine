@@ -976,8 +976,10 @@ void main() {
 
         final awards = await repository.loadAwardedBadges();
 
-        // The winning list pins a different badge, so this one is unaccepted.
-        // That other pin has no award event and is listed on its own.
+        // The list is length 2: the winning list pins a different badge,
+        // so this one is unaccepted, and that other pin has no award event
+        // and is listed on its own.
+        expect(awards, hasLength(2));
         expect(_byCoordinate(awards, coordinate).isAccepted, isFalse);
       },
     );
@@ -1143,8 +1145,10 @@ void main() {
 
         final awards = await repository.loadAwardedBadges();
 
-        // The winning list pins a different badge, so this one is unaccepted.
-        // That other pin has no award event and is listed on its own.
+        // The list is length 2: the winning list pins a different badge,
+        // so this one is unaccepted, and that other pin has no award event
+        // and is listed on its own.
+        expect(awards, hasLength(2));
         expect(_byCoordinate(awards, coordinate).isAccepted, isFalse);
       },
     );
