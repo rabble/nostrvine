@@ -211,6 +211,25 @@ class RelayPool {
   /// replaceable event must treat that as inconclusive, the same as silence.
   final Set<String> _queryClosedWithoutAnswer = {};
 
+  /// One-shot queries no relay took at all, so nothing can ever answer them.
+  ///
+  /// No relay ran `saveQuery`, so there is no terminal frame still owed and no
+  /// post-AUTH replay. A failed send does leave the raw `REQ` in the relay's
+  /// `pendingMessages` for the next `onConnected` to replay — `_isReqNaming`
+  /// only skips REQs naming a *saved* subscription — but a query that was
+  /// never saved has no [Subscription] to admit the results, so anything it
+  /// draws back drops at the subscription lookup. Waiting is therefore
+  /// pointless: the caller's answer cannot change between here and its
+  /// deadline. [requireAllRelaysSettled] used to wait anyway because
+  /// completing looked identical to "every relay says there is nothing";
+  /// `sentTo` from [query] is what tells those apart now.
+  ///
+  /// Recorded only while the query still has a live completion callback, so a
+  /// fan-out that resolves after its caller gave up cannot strand an entry
+  /// here — which would both grow unbounded and, if the id were ever reused,
+  /// let a later full-settlement query skip its hold.
+  final Set<String> _queryReachedNoRelay = {};
+
   /// Track publishes awaiting OK confirmations (per event id).
   final Map<String, PublishTracker> _pendingPublishes = {};
 
@@ -842,15 +861,23 @@ class RelayPool {
   /// what arms [querySettleWindow] for whichever relays are still silent.
   /// Set [afterClosedWithoutAnswer] for `CLOSED` frames that cannot prove
   /// absence for callers that require full settlement.
+  /// Set [afterFanoutReachedNoRelay] when the REQ fan-out ended with no relay
+  /// having taken the query.
+  ///
+  /// Every set this records into is written *after* the `callback == null`
+  /// return, so a query the caller already abandoned cannot re-enter the
+  /// bookkeeping that [_completeQuery] and [unsubscribe] have swept.
   void _fireQueryCompleteIfSettled(
     String subId, {
     bool afterTerminalFrame = false,
     bool afterClosedWithoutAnswer = false,
+    bool afterFanoutReachedNoRelay = false,
   }) {
     final callback = _queryCompleteCallbacks[subId];
     if (callback == null) return;
     if (afterTerminalFrame) _queryAnswered.add(subId);
     if (afterClosedWithoutAnswer) _queryClosedWithoutAnswer.add(subId);
+    if (afterFanoutReachedNoRelay) _queryReachedNoRelay.add(subId);
     if (_queryFanoutInProgress.contains(subId)) return;
 
     final list = [
@@ -871,13 +898,17 @@ class RelayPool {
 
     // Nothing is pending — but for a full-settlement caller that only means
     // the query is finished if some relay actually answered it, and no relay
-    // refused to answer. When every `relayDoQuery` send failed, no relay ever
-    // saved the query, so this sweep finds nothing outstanding and would hand
-    // back an empty box no relay contributed to. Likewise, a relay `CLOSED` the
-    // REQ has made no data claim. A caller about to replace what it read cannot
-    // tell either apart from "every relay says there is nothing", so let it run
-    // out to its own timeout instead.
+    // refused to answer. A relay that `CLOSED` the REQ has made no data claim,
+    // and a relay that stayed silent may still be about to speak, so a caller
+    // about to replace what it read waits both out rather than read an empty
+    // box as "every relay says there is nothing".
+    //
+    // A fan-out no relay took is the one shape that cannot improve by waiting
+    // — see [_queryReachedNoRelay] — and `sentTo` already tells the caller the
+    // answer is not authoritative, so it completes now instead of costing the
+    // caller its whole deadline.
     if (_queriesRequiringFullSettlement.contains(subId) &&
+        !_queryReachedNoRelay.contains(subId) &&
         (!_queryAnswered.contains(subId) ||
             _queryClosedWithoutAnswer.contains(subId))) {
       return;
@@ -953,6 +984,7 @@ class RelayPool {
     _queryCompleteCallbacks.remove(subId);
     _queryAnswered.remove(subId);
     _queryClosedWithoutAnswer.remove(subId);
+    _queryReachedNoRelay.remove(subId);
     _queriesRequiringFullSettlement.remove(subId);
     _querySettleTimers.remove(subId)?.cancel();
     _releaseQuery(subId);
@@ -1844,6 +1876,7 @@ class RelayPool {
       _queryFanoutInProgress.remove(id);
       _queryAnswered.remove(id);
       _queryClosedWithoutAnswer.remove(id);
+      _queryReachedNoRelay.remove(id);
       _queriesRequiringFullSettlement.remove(id);
       _querySettleTimers.remove(id)?.cancel();
       _releaseQuery(id);
@@ -1896,9 +1929,19 @@ class RelayPool {
   /// caller than no answer — see [_queriesRequiringFullSettlement]. The query
   /// then completes only once every relay that can still answer has, so a relay
   /// that stays connected and never sends a terminal frame runs the caller out
-  /// to its own timeout instead of being skipped past — as does a fan-out no
-  /// relay accepted at all.
-  Future<String> query(
+  /// to its own timeout instead of being skipped past.
+  ///
+  /// The returned `sentTo` names the relays that took the REQ: the frame
+  /// reached the socket, or the relay is behind an auth gate and the query is
+  /// parked for post-NIP-42 replay. Only those relays can ever answer, so an
+  /// empty `sentTo` means nothing was asked — which is not the same as every
+  /// relay having nothing, and is the distinction a caller about to replace a
+  /// replaceable event has to make. Cache relays count toward it, so it
+  /// answers "did anything take this REQ", not "did a network relay take it".
+  ///
+  /// The future resolves once the fan-out is done. `onComplete` may already
+  /// have fired by then — a fan-out that settles the query calls it inline.
+  Future<({String id, List<String> sentTo})> query(
     List<Map<String, dynamic>> filters,
     Function(Event) onEvent, {
     String? id,
@@ -1929,8 +1972,20 @@ class RelayPool {
 
     // Collect futures so we can await them before the early-completion
     // check. Each relayDoQuery call only resolves after relay.send()
-    // and saveQuery(), which is fast with skipReconnect: true.
-    final queryFutures = <Future<bool>>[];
+    // and saveQuery(), which is fast with skipReconnect: true. Each resolves
+    // to the relay's url when it took the REQ, so the fan-out can report who
+    // is actually able to answer.
+    final queryFutures = <Future<String?>>[];
+
+    Future<String?> sendQueryTo(
+      Relay relay, {
+      bool runBeforeConnected = false,
+    }) => relayDoQuery(
+      relay,
+      subscription,
+      sendAfterAuth,
+      runBeforeConnected: runBeforeConnected,
+    ).then((accepted) => accepted ? relay.url : null);
 
     // tempRelay, only query those relay which has bean provide
     if (tempRelays != null &&
@@ -1941,14 +1996,7 @@ class RelayPool {
         Relay? relay = _relays[tempRelayAddr];
         relay ??= checkAndGenTempRelay(tempRelayAddr);
 
-        queryFutures.add(
-          relayDoQuery(
-            relay,
-            subscription,
-            sendAfterAuth,
-            runBeforeConnected: true,
-          ),
-        );
+        queryFutures.add(sendQueryTo(relay, runBeforeConnected: true));
       }
     }
 
@@ -1964,32 +2012,37 @@ class RelayPool {
           }
         }
 
-        queryFutures.add(relayDoQuery(relay, subscription, sendAfterAuth));
+        queryFutures.add(sendQueryTo(relay));
       }
     }
 
     // cache relay
     if (relayTypes.contains(RelayType.cache)) {
       for (final relay in _cacheRelaysSnapshot()) {
-        queryFutures.add(relayDoQuery(relay, subscription, sendAfterAuth));
+        queryFutures.add(sendQueryTo(relay));
       }
     }
 
+    final List<String?> fanout;
     try {
       // Wait for all sends to complete (and saveQuery to run) before allowing
       // terminal frames to decide whether every relay has settled.
-      await Future.wait(queryFutures);
+      fanout = await Future.wait(queryFutures);
     } finally {
       if (onComplete != null) {
         _queryFanoutInProgress.remove(subscription.id);
       }
     }
+    final sentTo = fanout.nonNulls.toList();
 
     if (onComplete != null) {
-      _fireQueryCompleteIfSettled(subscription.id);
+      _fireQueryCompleteIfSettled(
+        subscription.id,
+        afterFanoutReachedNoRelay: sentTo.isEmpty,
+      );
     }
 
-    return subscription.id;
+    return (id: subscription.id, sentTo: sentTo);
   }
 
   /// send message to relay

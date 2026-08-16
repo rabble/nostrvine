@@ -140,10 +140,10 @@ Create a persistent subscription.
 
 ##### query()
 ```dart
-String query(
+Future<({String id, List<String> sentTo})> query(
   List<Map<String, dynamic>> filters,
   Function(Event) onEvent,
-  {String? id, Function? onComplete, List<String>? tempRelays, List<String>? targetRelays, List<int> relayTypes = RelayType.ALL, bool sendAfterAuth = false}
+  {String? id, Function? onComplete, List<String>? tempRelays, List<String>? targetRelays, List<int> relayTypes = RelayType.all, bool sendAfterAuth = false, bool requireAllRelaysSettled = false}
 )
 ```
 Create a one-time query subscription.
@@ -157,6 +157,9 @@ Create a one-time query subscription.
 - `targetRelays`: Optional target relays
 - `relayTypes`: Types of relays to use
 - `sendAfterAuth`: Send query after relay authentication
+- `requireAllRelaysSettled`: Report an incomplete answer as incomplete rather than as a result — for callers about to replace what they read
+
+**Returns:** the subscription id, plus `sentTo` — the relays that took the REQ, cache relays included. An empty `sentTo` means nothing was asked, which an empty result set on its own cannot distinguish from every relay holding nothing. The future resolves when the fan-out is done; `onComplete` may already have fired, since a fan-out that settles the query calls it inline.
 
 ##### queryEvents()
 ```dart

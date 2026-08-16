@@ -842,10 +842,22 @@ class NostrClient {
   /// partial answer — and an incomplete answer arrives as `timedOut: true`
   /// instead. That covers the answers nobody gave as well as the partial ones:
   /// a fan-out no relay accepted, and a query skipped because the client is
-  /// being disposed, both report `timedOut: true` rather than an empty answer
-  /// (a client with no reachable relay at all reports `noRelays` instead).
+  /// being disposed, both report `timedOut: true` rather than an empty answer.
   /// Note this only bounds the WebSocket leg; cached rows are merged in either
   /// way.
+  ///
+  /// `noRelays` says nothing was asked, whatever the flag. It covers a client
+  /// with no connected relay and no temp relay, a client already disposed when
+  /// the call arrived, and a fan-out no relay took — the last of which a
+  /// connected-relay snapshot cannot see, since a write-only relay and one
+  /// whose socket died since its last status update both still count as
+  /// connected. A relay that answers only out of the local event cache counts
+  /// as participation, so this is "nothing took the REQ", not "no network
+  /// relay took it".
+  ///
+  /// A client disposed *mid-call* is deliberately not in that list: the relays
+  /// were reachable and only this one query was dropped, so it arrives as
+  /// `timedOut` for a full-settlement caller instead.
   Future<({List<Event> events, bool timedOut, bool noRelays})>
   queryEventsDetailed(
     List<Filter> filters, {
@@ -899,20 +911,23 @@ class NostrClient {
         (effectiveTempRelays == null || effectiveTempRelays.isEmpty)) {
       await retryDisconnectedRelays();
     }
-    final noRelays =
+    // A pre-flight snapshot, so it can only catch the relayless case it can
+    // see from here; the fan-out's own account of who took the REQ is folded
+    // in below.
+    final noConnectedRelays =
         _relayManager.connectedRelays.isEmpty &&
         (effectiveTempRelays == null || effectiveTempRelays.isEmpty);
     final filtersJson = filters.map((f) => f.toJson()).toList();
-    Future<({List<Event> events, bool timedOut})> runWebSocketQuery() =>
-        _nostr.queryEventsDetailed(
-          filtersJson,
-          id: subscriptionId,
-          tempRelays: effectiveTempRelays,
-          relayTypes: relayTypes,
-          sendAfterAuth: sendAfterAuth,
-          timeout: timeout,
-          requireAllRelaysSettled: requireAllRelaysSettled,
-        );
+    Future<({List<Event> events, bool timedOut, bool noRelaysParticipated})>
+    runWebSocketQuery() => _nostr.queryEventsDetailed(
+      filtersJson,
+      id: subscriptionId,
+      tempRelays: effectiveTempRelays,
+      relayTypes: relayTypes,
+      sendAfterAuth: sendAfterAuth,
+      timeout: timeout,
+      requireAllRelaysSettled: requireAllRelaysSettled,
+    );
     // Throttle concurrent one-shot REQs so high fan-out (a profile with many
     // videos → per-item like-count/badge/profile/repost fetches) can't trip a
     // relay's "too many concurrent REQs" limit. `withResource` releases the
@@ -928,15 +943,19 @@ class NostrClient {
     // the NIP-50 search relays and leak temp relays nothing would clean up.
     // This check-then-call has no await before the query, so it closes the
     // race rather than narrowing it. See #5952.
-    final ({List<Event> events, bool timedOut}) websocketResult;
+    final ({List<Event> events, bool timedOut, bool noRelaysParticipated})
+    websocketResult;
     if (_queryPool.isClosed) {
       // Nothing was asked of the relays here, which is a different thing from
       // their having nothing. A display read is content to fall back on cache;
       // a full-settlement caller is about to replace what it read, so it gets
       // the same inconclusive answer a relay that never settled would give.
+      // The relays themselves are still reachable, so this is not a
+      // participation failure — `timedOut` is what carries it.
       websocketResult = (
         events: <Event>[],
         timedOut: requireAllRelaysSettled,
+        noRelaysParticipated: false,
       );
     } else {
       websocketResult = useQueryPool
@@ -966,7 +985,7 @@ class NostrClient {
     return (
       events: _mergeEvents(cacheResults, websocketEvents, limit: limit),
       timedOut: websocketResult.timedOut,
-      noRelays: noRelays,
+      noRelays: noConnectedRelays || websocketResult.noRelaysParticipated,
     );
   }
 
