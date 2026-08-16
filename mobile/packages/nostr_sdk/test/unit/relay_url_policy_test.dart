@@ -157,6 +157,56 @@ void main() {
     );
   });
 
+  group('isSignerCallbackRelayUrlAllowed', () {
+    test('accepts the loopback relay a same-device signer runs', () {
+      // Aegis hands back exactly these two after approving a pairing.
+      expect(isSignerCallbackRelayUrlAllowed('wss://127.0.0.1:28443'), isTrue);
+      expect(isSignerCallbackRelayUrlAllowed('ws://127.0.0.1:8081'), isTrue);
+      expect(isSignerCallbackRelayUrlAllowed('ws://localhost:8081'), isTrue);
+    });
+
+    test('accepts wss:// for a publicly routable host', () {
+      expect(
+        isSignerCallbackRelayUrlAllowed('wss://localrelay.link:28443'),
+        isTrue,
+      );
+      expect(isSignerCallbackRelayUrlAllowed('wss://relay.damus.io'), isTrue);
+    });
+
+    test('rejects the private network the signer does not live on', () {
+      for (final url in [
+        'wss://192.168.1.10:28443',
+        'wss://10.5.0.1:28443',
+        'wss://172.16.0.1:28443',
+        'wss://169.254.1.1:28443',
+        'wss://signer.local:28443',
+      ]) {
+        expect(isSignerCallbackRelayUrlAllowed(url), isFalse, reason: url);
+      }
+    });
+
+    test('rejects cleartext anywhere but loopback', () {
+      expect(
+        isSignerCallbackRelayUrlAllowed('ws://localrelay.link:28443'),
+        isFalse,
+      );
+      expect(isSignerCallbackRelayUrlAllowed('ws://relay.damus.io'), isFalse);
+      expect(isSignerCallbackRelayUrlAllowed('ws://192.168.1.10'), isFalse);
+    });
+
+    test('rejects non-WebSocket, malformed, and mis-nested URLs', () {
+      for (final url in [
+        'https://localrelay.link:28443',
+        'http://127.0.0.1:8081',
+        '',
+        'wss://',
+        'wss://http://evil.example',
+      ]) {
+        expect(isSignerCallbackRelayUrlAllowed(url), isFalse, reason: url);
+      }
+    });
+  });
+
   group('admitRemoteSuppliedRelays', () {
     test('caps the list and reports the truncation', () {
       final urls = [for (var i = 0; i < 50; i++) 'wss://relay-$i.example'];

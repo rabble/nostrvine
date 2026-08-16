@@ -74,6 +74,26 @@ bool isRemoteSuppliedRelayUrlAllowed(String url) {
   return uri != null && _isRemoteSuppliedUriAllowed(uri);
 }
 
+/// Whether [url] may be dialed when a NIP-46 signer named it in its callback.
+///
+/// Sits between the other two. A signer app on this device is not the stranger
+/// [isRemoteSuppliedRelayUrlAllowed] guards against — same-device signers run
+/// their relay on loopback and hand the client that address, and NIP-46 puts
+/// the signer "in control of what relays are being used", so refusing loopback
+/// would break the flow the callback exists to serve.
+///
+/// The rest of that predicate's reasoning still holds: the callback is a deep
+/// link, so whoever opened it chose this URL, and it must not be able to point
+/// the device at the user's LAN or VPN. Cleartext stays confined to loopback,
+/// where it never leaves the device.
+bool isSignerCallbackRelayUrlAllowed(String url) {
+  final uri = _tryParseRelayUri(url);
+  if (uri == null) return false;
+  final host = uri.host;
+  if (isLoopbackHost(host)) return isRelayUrlAllowed(url);
+  return _isRemoteSuppliedUriAllowed(uri);
+}
+
 bool _isRemoteSuppliedUriAllowed(Uri uri) =>
     uri.scheme.toLowerCase() == 'wss' && !isPrivateOrLinkLocalHost(uri.host);
 

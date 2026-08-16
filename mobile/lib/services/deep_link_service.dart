@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -459,11 +460,13 @@ class DeepLinkService {
     return null;
   }
 
+  /// The relay a signer named in its callback, or null when we may not dial it.
+  ///
+  /// Any app can open this scheme, so the hint is only as trustworthy as the
+  /// caller. Dropping it leaves the callback itself intact: the pairing
+  /// handoff still reconnects the relays the session advertised.
   static String? _validSignerCallbackRelay(String? relay) {
-    if (relay == null || relay.isEmpty) return null;
-    final uri = Uri.tryParse(relay);
-    if (uri == null || uri.host.isEmpty) return null;
-    if (uri.scheme != 'wss' && uri.scheme != 'ws') return null;
+    if (relay == null || !isSignerCallbackRelayUrlAllowed(relay)) return null;
     return relay;
   }
 

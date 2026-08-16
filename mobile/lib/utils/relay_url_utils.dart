@@ -18,7 +18,8 @@ export 'package:nostr_sdk/nostr_sdk.dart'
         isLoopbackHost,
         isPrivateOrLinkLocalHost,
         isRelayUrlAllowed,
-        isRemoteSuppliedRelayUrlAllowed;
+        isRemoteSuppliedRelayUrlAllowed,
+        isSignerCallbackRelayUrlAllowed;
 
 const _divineRelayHost = 'relay.divine.video';
 const _divineApiBaseUrl = 'https://api.divine.video';
