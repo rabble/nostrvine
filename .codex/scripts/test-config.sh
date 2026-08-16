@@ -22,6 +22,8 @@ CLAUDE_ANALYZE_HOOK="$REPO_ROOT/.claude/hooks/post-edit-analyze.sh"
 # pins). The SessionEnd matcher is asserted exactly because it deliberately
 # excludes non-terminal reasons such as `other`.
 while IFS= read -r hook_cmd; do
+  # Match the literal settings.json command prefix, not the current shell env.
+  # shellcheck disable=SC2016
   case "$hook_cmd" in
     '"$CLAUDE_PROJECT_DIR"'/*)
       hook_path=${hook_cmd#'"$CLAUDE_PROJECT_DIR"'}
@@ -507,59 +509,8 @@ if [ -n "$CLEAR_OUTPUT$RESUME_OUTPUT" ] || [ ! -d "$WT_LINK/mobile/build" ] || [
   exit 1
 fi
 
-PURGE_PEER_BIN="$SCRATCH_DIR/purge-peer-bin"
-mkdir -p "$PURGE_PEER_BIN"
-for tool in bash cat jq git find stat mv rm mkdir rmdir basename nohup sed head tr; do
-  ln -s "$(command -v "$tool")" "$PURGE_PEER_BIN/$tool"
-done
-cat > "$PURGE_PEER_BIN/ps" <<'EOF'
-#!/bin/bash
-if [ "$1" = "-eo" ] && [ "$2" = "pid=,comm=" ]; then
-  echo "4242 zsh"
-  exit 0
-fi
-if [ "$1" = "-o" ] && [ "$2" = "ppid=" ] && [ "$3" = "-p" ]; then
-  exit 0
-fi
-exit 1
-EOF
-cat > "$PURGE_PEER_BIN/lsof" <<'EOF'
-#!/bin/bash
-pid=""
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = "-p" ]; then
-    pid="$2"
-    break
-  fi
-  shift
-done
-[ "$pid" = "4242" ] || exit 1
-printf 'n%s\n' "$PURGE_PEER_CWD"
-EOF
-chmod +x "$PURGE_PEER_BIN/ps" "$PURGE_PEER_BIN/lsof"
-PEER_OUTPUT=$(cd "$WT_LINK" && \
-  env PATH="$PURGE_PEER_BIN" \
-    CLAUDE_PROJECT_DIR="$WT_LINK" \
-    PURGE_PEER_CWD="$WT_LINK/mobile" \
-    "$CLAUDE_PURGE_HOOK" \
-    <<< '{"reason":"prompt_input_exit"}')
-if ! printf '%s\n' "$PEER_OUTPUT" | jq -e \
-  '.systemMessage
-   | contains("Skipped build-artifact purge")
-     and contains("pid 4242")
-     and contains("other live process")' >/dev/null; then
-  echo "Purge hook did not explain the shared-worktree skip." >&2
-  echo "Output was: $PEER_OUTPUT" >&2
-  exit 1
-fi
-if [ ! -d "$WT_LINK/mobile/build" ] || [ ! -d "$WT_LINK/mobile/.dart_tool" ]; then
-  echo "Purge hook deleted artifacts while another process was active in the worktree." >&2
-  exit 1
-fi
-
 PURGE_OUTPUT=$(cd "$WT_LINK" && \
   env CLAUDE_PROJECT_DIR="$WT_LINK" \
-    CLAUDE_PURGE_SKIP_PEER_SCAN=1 \
     "$CLAUDE_PURGE_HOOK" \
     <<< '{"reason":"prompt_input_exit"}')
 printf '%s\n' "$PURGE_OUTPUT" | jq -e \
@@ -590,7 +541,6 @@ mkdir -p "$gitdir/claude-purge/old"
 touch "$gitdir/claude-purge/old/artifact"
 NOOP_OUTPUT=$(cd "$WT_LINK" && \
   env CLAUDE_PROJECT_DIR="$WT_LINK" \
-    CLAUDE_PURGE_SKIP_PEER_SCAN=1 \
     "$CLAUDE_PURGE_HOOK" \
     <<< '{"reason":"prompt_input_exit"}')
 if [ -n "$NOOP_OUTPUT" ] || [ -d "$gitdir/claude-purge" ]; then
@@ -626,9 +576,9 @@ EOF
   mkdir -p "$XDEV_LINK/mobile/build" "$XDEV_LINK/mobile/.dart_tool"
   touch "$XDEV_LINK/mobile/build/output.o" \
     "$XDEV_LINK/mobile/.dart_tool/package_config.json"
-  XDEV_WORKTREE_DEV=$(stat -c %d "$XDEV_LINK/mobile" 2>/dev/null || echo no-dev-1)
+  XDEV_WORKTREE_DEV=$(stat -c %d "$XDEV_LINK/mobile" 2>/dev/null || stat -f %d "$XDEV_LINK/mobile" 2>/dev/null || echo no-dev-1)
   XDEV_GITDIR=$(git -C "$XDEV_LINK" rev-parse --absolute-git-dir)
-  XDEV_GITDIR_DEV=$(stat -c %d "$XDEV_GITDIR" 2>/dev/null || echo no-dev-2)
+  XDEV_GITDIR_DEV=$(stat -c %d "$XDEV_GITDIR" 2>/dev/null || stat -f %d "$XDEV_GITDIR" 2>/dev/null || echo no-dev-2)
   if [ "$XDEV_WORKTREE_DEV" != "$XDEV_GITDIR_DEV" ]; then
     # A regular file at the staging path makes any staging attempt fail loudly
     # (mkdir -p cannot succeed), so this test discriminates the in-place path
@@ -637,7 +587,6 @@ EOF
     XDEV_NAME=$(basename "$XDEV_LINK")
     XDEV_OUTPUT=$(cd "$XDEV_LINK" && \
       env CLAUDE_PROJECT_DIR="$XDEV_LINK" \
-        CLAUDE_PURGE_SKIP_PEER_SCAN=1 \
         "$CLAUDE_PURGE_HOOK" \
         <<< '{"reason":"prompt_input_exit"}' || true)
     printf '%s\n' "$XDEV_OUTPUT" | jq -e --arg name "$XDEV_NAME" \

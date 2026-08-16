@@ -6,6 +6,7 @@ set -e
 
 HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=lib/dart-runner.sh
+# shellcheck disable=SC1091
 source "$HOOK_DIR/lib/dart-runner.sh"
 
 emit_block() {
