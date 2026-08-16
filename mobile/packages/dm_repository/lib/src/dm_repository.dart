@@ -1702,6 +1702,15 @@ class DmRepository {
     try {
       // Dedup: skip if already processed (message row or ledger). #5452.
       if (await _alreadyProcessed(giftWrapEvent.id)) {
+        // History drain pass 2 re-routes already-persisted wraps through this
+        // handler (preDecrypted miss). Per-wrap debug would fill the 50k
+        // capture ring and evict the persist lines that diagnose #7631.
+        if (_historyDrain == null) {
+          Log.debug(
+            'Skipping already-processed gift wrap ${giftWrapEvent.id}',
+            category: LogCategory.system,
+          );
+        }
         return;
       }
 
@@ -1937,7 +1946,9 @@ class DmRepository {
       var inserted = false;
       var skippedByTransactionalGiftWrapDedup = false;
       await _conversationsDao.runInTransaction(() async {
-        // Re-check dedup inside transaction (TOCTOU protection).
+        // Re-check dedup inside transaction (TOCTOU protection). The skip is
+        // logged after the transaction below; logging here too would emit one
+        // line per skip twice.
         if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
           skippedByTransactionalGiftWrapDedup = true;
           return;
@@ -2015,8 +2026,8 @@ class DmRepository {
       await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
 
       Log.debug(
-        'Persisted DM (kind ${rumor.kind}) in conversation '
-        '$conversationId',
+        'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
+        '$conversationId from ${rumor.pubkey} createdAt=$persistedCreatedAt',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
@@ -2447,7 +2458,15 @@ class DmRepository {
   Future<void> _handleNip04Event(Event nip04Event) async {
     try {
       // Dedup: use event ID as giftWrapId for the unique index.
-      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) return;
+      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
+        if (_historyDrain == null) {
+          Log.debug(
+            'Skipping already-persisted NIP-04 event ${nip04Event.id}',
+            category: LogCategory.system,
+          );
+        }
+        return;
+      }
 
       // Extract recipient from p tag
       String? recipientPubkey;
@@ -2511,7 +2530,9 @@ class DmRepository {
       var inserted = false;
       var skippedByTransactionalGiftWrapDedup = false;
       await _conversationsDao.runInTransaction(() async {
-        // Re-check dedup inside transaction (TOCTOU protection).
+        // Re-check dedup inside transaction (TOCTOU protection). The skip is
+        // logged after the transaction below; logging here too would emit one
+        // line per skip twice.
         if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
           skippedByTransactionalGiftWrapDedup = true;
           return;
@@ -2575,7 +2596,10 @@ class DmRepository {
       );
 
       Log.debug(
-        'Persisted NIP-04 DM in conversation $conversationId',
+        'Persisted NIP-04 DM ${nip04Event.id} '
+        '(kind ${EventKind.directMessage}) in conversation '
+        '$conversationId from $senderPubkey '
+        'createdAt=${nip04Event.createdAt}',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
