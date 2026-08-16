@@ -156,10 +156,7 @@ class DivineSectionHeader extends StatelessWidget {
       child: Text(
         title.toUpperCase(),
         style: VineTheme.labelMediumFont(
-          // vineGreen is a dark-mode accent — it measures ~2.1:1 on the light
-          // background, well under the 4.5:1 this 12sp label needs, so light
-          // mode falls back to the neutral the buttons already use there.
-          color: colors.isLight ? colors.onSurface : VineTheme.vineGreen,
+          color: colors.accentBrand,
         ).copyWith(letterSpacing: 1.2),
       ),
     );
