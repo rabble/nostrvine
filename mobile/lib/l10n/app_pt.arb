@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "O servidor de mídia ({serverName}) não está disponível. Você pode escolher outro nas configurações.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "O arquivo de vídeo é grande demais para o servidor. Tente cortá-lo ou reduzir a qualidade.",
+    "videoEditorOverLimitCanvas": "Acima do limite de 6,3 s — corte para publicar",
+    "videoEditorOverLimitTimeline": "Corte esta parte para publicar",
     "publishErrorServerInternalError": "O servidor de mídia ({serverName}) teve um erro interno. Você pode escolher outro nas configurações.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "O servidor de mídia ({serverName}) está temporariamente fora do ar. Tente novamente em breve ou escolha outro nas configurações.",

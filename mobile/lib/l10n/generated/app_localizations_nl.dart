@@ -7516,10 +7516,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Het videobestand is te groot voor de server. Knip het in of verlaag de kwaliteit.';
 
   @override
-  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+  String get videoEditorOverLimitCanvas =>
+      'Boven de limiet van 6,3 s — knip in om te posten';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+  String get videoEditorOverLimitTimeline => 'Knip dit stuk eruit om te posten';
 
   @override
   String publishErrorServerInternalError(String serverName) {

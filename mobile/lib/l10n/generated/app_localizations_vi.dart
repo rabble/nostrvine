@@ -7489,10 +7489,11 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tệp video quá lớn so với máy chủ. Thử cắt ngắn hoặc giảm chất lượng.';
 
   @override
-  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+  String get videoEditorOverLimitCanvas =>
+      'Vượt giới hạn 6,3 giây — cắt ngắn để đăng';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+  String get videoEditorOverLimitTimeline => 'Cắt bỏ phần này để đăng';
 
   @override
   String publishErrorServerInternalError(String serverName) {

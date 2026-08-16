@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "미디어 서버({serverName})를 사용할 수 없어요. 설정에서 다른 서버를 고를 수 있어요.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "영상 파일이 서버에 올리기엔 너무 커요. 영상을 자르거나 화질을 낮춰서 시도해보세요.",
+    "videoEditorOverLimitCanvas": "6.3초 제한을 넘었어요. 올리려면 잘라내세요",
+    "videoEditorOverLimitTimeline": "올리려면 이 부분을 잘라내세요",
     "publishErrorServerInternalError": "미디어 서버({serverName})에 내부 오류가 발생했어요. 설정에서 다른 서버를 고를 수 있어요.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "미디어 서버({serverName})가 일시적으로 다운됐어요. 잠시 후 다시 시도하거나 설정에서 다른 서버를 골라보세요.",

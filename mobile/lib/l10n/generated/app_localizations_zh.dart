@@ -7108,10 +7108,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get publishErrorFileTooLarge => '视频文件对服务器来说太大了。试试剪辑一下或降低画质。';
 
   @override
-  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+  String get videoEditorOverLimitCanvas => '超过 6.3 秒上限，剪短才能发布';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+  String get videoEditorOverLimitTimeline => '剪掉这段才能发布';
 
   @override
   String publishErrorServerInternalError(String serverName) {

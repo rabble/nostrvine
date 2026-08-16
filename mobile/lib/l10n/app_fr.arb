@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "Le serveur multimédia ({serverName}) n'est pas disponible. Tu peux en choisir un autre dans tes réglages.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "Le fichier vidéo est trop volumineux pour le serveur. Essaie de le raccourcir ou de baisser la qualité.",
+    "videoEditorOverLimitCanvas": "Au-delà de la limite de 6,3 s — raccourcis pour publier",
+    "videoEditorOverLimitTimeline": "Coupe cette partie pour publier",
     "publishErrorServerInternalError": "Le serveur multimédia ({serverName}) a rencontré une erreur interne. Tu peux en choisir un autre dans tes réglages.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "Le serveur multimédia ({serverName}) est temporairement hors service. Réessaie bientôt ou choisis-en un autre dans tes réglages.",

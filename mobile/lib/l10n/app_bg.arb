@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "Медийният сървър ({serverName}) не е наличен. Можеш да избереш друг в настройките.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "Видеофайлът е твърде голям за сървъра. Опитай да го скъсиш или да намалиш качеството.",
+    "videoEditorOverLimitCanvas": "Над лимита от 6,3 сек — скъси, за да публикуваш",
+    "videoEditorOverLimitTimeline": "Отрежи тази част, за да публикуваш",
     "publishErrorServerInternalError": "Медийният сървър ({serverName}) получи вътрешна грешка. Можеш да избереш друг в настройките.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "Медийният сървър ({serverName}) временно не работи. Опитай пак скоро или избери друг в настройките.",

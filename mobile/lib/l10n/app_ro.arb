@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "Serverul media ({serverName}) nu este disponibil. Poți alege altul în setări.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "Fișierul video este prea mare pentru server. Încearcă să-l scurtezi sau să reduci calitatea.",
+    "videoEditorOverLimitCanvas": "Peste limita de 6,3 s — scurtează ca să postezi",
+    "videoEditorOverLimitTimeline": "Taie această parte ca să postezi",
     "publishErrorServerInternalError": "Serverul media ({serverName}) a avut o eroare internă. Poți alege altul în setări.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "Serverul media ({serverName}) este temporar indisponibil. Încearcă din nou în scurt timp sau alege altul în setări.",

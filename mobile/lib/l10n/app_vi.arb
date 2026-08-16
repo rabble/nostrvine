@@ -4281,6 +4281,8 @@
     }
   },
   "publishErrorFileTooLarge": "Tệp video quá lớn so với máy chủ. Thử cắt ngắn hoặc giảm chất lượng.",
+  "videoEditorOverLimitCanvas": "Vượt giới hạn 6,3 giây — cắt ngắn để đăng",
+  "videoEditorOverLimitTimeline": "Cắt bỏ phần này để đăng",
   "publishErrorServerInternalError": "Máy chủ media ({serverName}) gặp lỗi nội bộ. Bạn có thể chọn máy chủ khác trong cài đặt.",
   "@publishErrorServerInternalError": {
     "description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.",

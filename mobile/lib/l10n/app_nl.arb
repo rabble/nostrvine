@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "De mediaserver ({serverName}) is niet beschikbaar. Je kunt een andere kiezen in je instellingen.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "Het videobestand is te groot voor de server. Knip het in of verlaag de kwaliteit.",
+    "videoEditorOverLimitCanvas": "Boven de limiet van 6,3 s — knip in om te posten",
+    "videoEditorOverLimitTimeline": "Knip dit stuk eruit om te posten",
     "publishErrorServerInternalError": "De mediaserver ({serverName}) had een interne fout. Je kunt een andere kiezen in je instellingen.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "De mediaserver ({serverName}) is tijdelijk uit de lucht. Probeer het zo opnieuw of kies een andere in je instellingen.",

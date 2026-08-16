@@ -7656,10 +7656,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Fișierul video este prea mare pentru server. Încearcă să-l scurtezi sau să reduci calitatea.';
 
   @override
-  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+  String get videoEditorOverLimitCanvas =>
+      'Peste limita de 6,3 s — scurtează ca să postezi';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+  String get videoEditorOverLimitTimeline => 'Taie această parte ca să postezi';
 
   @override
   String publishErrorServerInternalError(String serverName) {

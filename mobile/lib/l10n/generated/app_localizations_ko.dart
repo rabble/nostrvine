@@ -7169,10 +7169,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '영상 파일이 서버에 올리기엔 너무 커요. 영상을 자르거나 화질을 낮춰서 시도해보세요.';
 
   @override
-  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+  String get videoEditorOverLimitCanvas => '6.3초 제한을 넘었어요. 올리려면 잘라내세요';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+  String get videoEditorOverLimitTimeline => '올리려면 이 부분을 잘라내세요';
 
   @override
   String publishErrorServerInternalError(String serverName) {

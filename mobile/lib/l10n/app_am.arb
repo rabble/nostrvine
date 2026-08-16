@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "የሚዲያ አገልጋዩ ({serverName}) አይገኝም። በቅንብሮችዎ ውስጥ ሌላ መምረጥ ይችላሉ።",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "የቪዲዮ ፋይሉ ለአገልጋዩ በጣም ትልቅ ነው። ቆርጠው ለማሳጠር ወይም ጥራቱን ለመቀነስ ይሞክሩ።",
+    "videoEditorOverLimitCanvas": "ከ6.3 ሰከንድ ገደብ አልፏል። ለመለጠፍ ቆርጠው አሳጥሩ",
+    "videoEditorOverLimitTimeline": "ለመለጠፍ ይህን ክፍል ይቁረጡ",
     "publishErrorServerInternalError": "የሚዲያ አገልጋዩ ({serverName}) የውስጥ ስህተት አጋጥሞታል። በቅንብሮችዎ ውስጥ ሌላ መምረጥ ይችላሉ።",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "የሚዲያ አገልጋዩ ({serverName}) ለጊዜው ተቋርጧል። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ ወይም በቅንብሮችዎ ውስጥ ሌላ ይምረጡ።",

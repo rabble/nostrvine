@@ -7560,10 +7560,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il file video è troppo grande per il server. Prova a tagliarlo o ad abbassare la qualità.';
 
   @override
-  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+  String get videoEditorOverLimitCanvas =>
+      'Oltre il limite di 6,3 s — taglia per pubblicare';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+  String get videoEditorOverLimitTimeline =>
+      'Taglia via questa parte per pubblicare';
 
   @override
   String publishErrorServerInternalError(String serverName) {

@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "Server media ({serverName}) tidak tersedia. Kamu bisa memilih yang lain di pengaturan.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "File video terlalu besar untuk server. Coba pangkas videonya atau turunkan kualitasnya.",
+    "videoEditorOverLimitCanvas": "Melebihi batas 6,3 dtk — pangkas untuk posting",
+    "videoEditorOverLimitTimeline": "Pangkas bagian ini untuk posting",
     "publishErrorServerInternalError": "Server media ({serverName}) mengalami kesalahan internal. Kamu bisa memilih yang lain di pengaturan.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "Server media ({serverName}) sedang tidak aktif sementara. Coba lagi sebentar lagi atau pilih yang lain di pengaturan.",

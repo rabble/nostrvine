@@ -7429,10 +7429,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'ملف الفيديو أكبر من أن يقبله الخادم. جرّب قصّه أو خفض الجودة.';
 
   @override
-  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+  String get videoEditorOverLimitCanvas =>
+      'تجاوزت حد 6.3 ثانية، قصّ الفيديو للنشر';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+  String get videoEditorOverLimitTimeline => 'قصّ هذا الجزء للنشر';
 
   @override
   String publishErrorServerInternalError(String serverName) {

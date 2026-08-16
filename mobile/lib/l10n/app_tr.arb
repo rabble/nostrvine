@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "Medya sunucusu ({serverName}) kullanılamıyor. Ayarlarından başka birini seçebilirsin.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "Video dosyası sunucu için fazla büyük. Kırpmayı ya da kaliteyi düşürmeyi dene.",
+    "videoEditorOverLimitCanvas": "6,3 sn sınırını aştın — paylaşmak için kırp",
+    "videoEditorOverLimitTimeline": "Paylaşmak için bu kısmı kırp",
     "publishErrorServerInternalError": "Medya sunucusunda ({serverName}) dahili bir hata oluştu. Ayarlarından başka birini seçebilirsin.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "Medya sunucusu ({serverName}) geçici olarak çalışmıyor. Birazdan tekrar dene ya da ayarlarından başka birini seç.",

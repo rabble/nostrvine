@@ -4281,6 +4281,8 @@
     }
   },
   "publishErrorFileTooLarge": "视频文件对服务器来说太大了。试试剪辑一下或降低画质。",
+  "videoEditorOverLimitCanvas": "超过 6.3 秒上限，剪短才能发布",
+  "videoEditorOverLimitTimeline": "剪掉这段才能发布",
   "publishErrorServerInternalError": "媒体服务器（{serverName}）内部出错。你可以在设置中换一个。",
   "@publishErrorServerInternalError": {
     "description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.",

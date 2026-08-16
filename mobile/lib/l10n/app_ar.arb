@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "خادم الوسائط ({serverName}) غير متاح. يمكنك اختيار خادم آخر من الإعدادات.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "ملف الفيديو أكبر من أن يقبله الخادم. جرّب قصّه أو خفض الجودة.",
+    "videoEditorOverLimitCanvas": "تجاوزت حد 6.3 ثانية، قصّ الفيديو للنشر",
+    "videoEditorOverLimitTimeline": "قصّ هذا الجزء للنشر",
     "publishErrorServerInternalError": "واجه خادم الوسائط ({serverName}) خطأً داخليًا. يمكنك اختيار خادم آخر من الإعدادات.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "خادم الوسائط ({serverName}) متوقّف مؤقتًا. حاول مرّة أخرى بعد قليل أو اختر خادمًا آخر من الإعدادات.",

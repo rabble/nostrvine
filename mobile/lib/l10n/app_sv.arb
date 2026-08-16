@@ -10,6 +10,8 @@
     "publishErrorServerNotFound": "Mediaservern ({serverName}) är inte tillgänglig. Du kan välja en annan i dina inställningar.",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "Videofilen är för stor för servern. Prova att korta ner den eller sänka kvaliteten.",
+    "videoEditorOverLimitCanvas": "Över gränsen på 6,3 s — korta ner för att posta",
+    "videoEditorOverLimitTimeline": "Klipp bort den här delen för att posta",
     "publishErrorServerInternalError": "Mediaservern ({serverName}) råkade ut för ett internt fel. Du kan välja en annan i dina inställningar.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "Mediaservern ({serverName}) är tillfälligt nere. Försök igen snart eller välj en annan i dina inställningar.",

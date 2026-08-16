@@ -7533,10 +7533,12 @@ class AppLocalizationsMs extends AppLocalizations {
       'Fail video terlalu besar untuk pelayan. Cuba memangkasnya atau mengurangkan kualiti.';
 
   @override
-  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+  String get videoEditorOverLimitCanvas =>
+      'Melebihi had 6.3s — pangkas untuk menyiarkan';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+  String get videoEditorOverLimitTimeline =>
+      'Pangkas bahagian ini untuk menyiarkan';
 
   @override
   String publishErrorServerInternalError(String serverName) {

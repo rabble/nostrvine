@@ -4281,6 +4281,8 @@
     }
   },
   "publishErrorFileTooLarge": "Fail video terlalu besar untuk pelayan. Cuba memangkasnya atau mengurangkan kualiti.",
+  "videoEditorOverLimitCanvas": "Melebihi had 6.3s — pangkas untuk menyiarkan",
+  "videoEditorOverLimitTimeline": "Pangkas bahagian ini untuk menyiarkan",
   "publishErrorServerInternalError": "Pelayan media ({serverName}) mengalami ralat dalaman. Anda boleh memilih yang lain dalam tetapan anda.",
   "@publishErrorServerInternalError": {
     "description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.",
