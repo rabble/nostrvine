@@ -9,6 +9,7 @@ import 'package:divine_camera/divine_camera.dart' show CameraLensMetadata;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
@@ -77,14 +78,18 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
     final remainingDuration = VideoEditorConstants.maxDuration - usedDuration;
 
-    if (remainingDuration <= Duration.zero) {
-      return clip.copyWith(trimEnd: clip.duration - clip.trimStart);
-    }
-
     if (clip.playbackDuration <= remainingDuration) return clip;
 
+    // Never seed a window shorter than the floor the editor's own trim paths
+    // enforce, or a multi-select whose earlier clips already fill the budget
+    // lands the rest as zero-length strips nobody can grab a handle on.
+    final targetPlaybackDuration =
+        remainingDuration > TimelineConstants.minTrimDuration
+        ? remainingDuration
+        : TimelineConstants.minTrimDuration;
+
     final visibleSourceDuration = clip.playbackDurationToSourceDuration(
-      remainingDuration,
+      targetPlaybackDuration,
     );
     final trimEnd = clip.duration - clip.trimStart - visibleSourceDuration;
     if (trimEnd <= clip.trimEnd) return clip;

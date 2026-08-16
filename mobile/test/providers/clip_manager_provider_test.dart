@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -1073,6 +1074,94 @@ void main() {
         );
 
         expect(seeded, same(clip));
+      });
+
+      test('converts the remaining budget through the clip playback speed', () {
+        final clip = _budgetClip(
+          id: 'fast',
+          duration: const Duration(seconds: 60),
+          playbackSpeed: 2,
+        );
+
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: clip,
+          existingClips: const [],
+        );
+
+        // A 2x clip covers twice as much source media per second of playback,
+        // so the visible source window is 12.6s for a 6.3s budget.
+        expect(
+          seeded.trimmedDuration,
+          equals(const Duration(seconds: 12, milliseconds: 600)),
+        );
+        expect(
+          seeded.playbackDuration,
+          equals(VideoEditorConstants.maxDuration),
+        );
+      });
+
+      test('floors the seeded window at the editor trim minimum when the '
+          'budget is already spent', () {
+        // library_screen inserts each selected clip in turn, so a multi-select
+        // whose first pick fills the budget leaves nothing for the rest.
+        final existing = _budgetClip(
+          id: 'fills',
+          duration: VideoEditorConstants.maxDuration,
+        );
+
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: _budgetClip(
+            id: 'second',
+            duration: const Duration(seconds: 60),
+          ),
+          existingClips: [existing],
+        );
+
+        expect(
+          seeded.trimmedDuration,
+          equals(TimelineConstants.minTrimDuration),
+        );
+      });
+
+      test('floors the seeded window when the remaining budget is below the '
+          'editor trim minimum', () {
+        final existing = _budgetClip(
+          id: 'nearly-fills',
+          duration: const Duration(seconds: 6, milliseconds: 280),
+        );
+
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: _budgetClip(
+            id: 'second',
+            duration: const Duration(seconds: 60),
+          ),
+          existingClips: [existing],
+        );
+
+        expect(
+          seeded.trimmedDuration,
+          equals(TimelineConstants.minTrimDuration),
+        );
+      });
+
+      test('leaves a clip shorter than the trim minimum untouched', () {
+        final clip = _budgetClip(
+          id: 'sliver',
+          duration: const Duration(milliseconds: 30),
+        );
+
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: clip,
+          existingClips: [
+            _budgetClip(
+              id: 'fills',
+              duration: VideoEditorConstants.maxDuration,
+            ),
+          ],
+        );
+
+        expect(seeded, same(clip));
+        expect(seeded.trimEnd, equals(Duration.zero));
       });
     });
   });
