@@ -5348,5 +5348,10 @@
   "changeEmailSentTitle": "Два линка са на път",
   "changeEmailSentMessage": "Потвърди от {email} и от адреса в акаунта ти. Имейлът се сменя, щом направиш и двете.",
   "changeEmailSentExpiry": "Линковете спират да работят след 24 часа.",
-  "changeEmailSentDone": "Ясно"
+  "changeEmailSentDone": "Ясно",
+  "socialProofMutual": "Взаимно",
+  "socialProofFollowsYou": "Следва те",
+  "socialProofYouFollow": "Следваш",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} последовател} other{{formattedCount} последователи}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} видео} other{{formattedCount} видеа}}"
 }

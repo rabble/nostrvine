@@ -51,6 +51,20 @@ class NostrKeyUtils {
     }
   }
 
+  /// The full npub for [hexPubkey], or the hex itself when it cannot be
+  /// encoded.
+  ///
+  /// For UI that shows a key as an identifier of last resort. Never truncates:
+  /// the caller's `maxLines` / `TextOverflow.ellipsis` decides how much fits,
+  /// so a copied or read value is always the exact identifier.
+  static String npubOrHex(String hexPubkey) {
+    try {
+      return encodePubKey(hexPubkey);
+    } on Exception {
+      return hexPubkey;
+    }
+  }
+
   /// Create a truncated npub for display (e.g., "npub1abc...xyz")
   ///
   /// Converts a hex pubkey to npub format and truncates for UI display.

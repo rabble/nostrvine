@@ -5217,5 +5217,10 @@
   "changeEmailSentTitle": "İki bağlantı yolda",
   "changeEmailSentMessage": "{email} adresinden ve hesabındaki adresten onayla. İkisi de bitince e-postan değişir.",
   "changeEmailSentExpiry": "Bağlantılar 24 saat sonra geçersiz olur.",
-  "changeEmailSentDone": "Anladım"
+  "changeEmailSentDone": "Anladım",
+  "socialProofMutual": "Karşılıklı",
+  "socialProofFollowsYou": "Seni takip ediyor",
+  "socialProofYouFollow": "Takip ediyorsun",
+  "socialProofFollowerCount": "{count, plural, other{{formattedCount} takipçi}}",
+  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}"
 }

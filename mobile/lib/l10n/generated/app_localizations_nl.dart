@@ -12196,8 +12196,28 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount videos',
+      other: '$formattedCount video\'\'s',
       one: '$formattedCount video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get socialProofMutual => 'Wederzijds';
+
+  @override
+  String get socialProofFollowsYou => 'Volgt jou';
+
+  @override
+  String get socialProofYouFollow => 'Jij volgt';
+
+  @override
+  String socialProofFollowerCount(int count, String formattedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$formattedCount volgers',
+      one: '$formattedCount volger',
     );
     return '$_temp0';
   }

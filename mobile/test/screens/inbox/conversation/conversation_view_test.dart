@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
@@ -24,11 +25,14 @@ import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/follow_relationship_provider.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/watermark_download_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -220,6 +224,12 @@ void main() {
           // The view now reads the blocklist eagerly in build() to filter
           // reaction reactors, so every pump needs a stubbed repository.
           contentBlocklistRepositoryProvider.overrideWithValue(mockBlocklist),
+          nip05VerificationProvider.overrideWith(
+            (ref, pubkey) async => Nip05VerificationStatus.none,
+          ),
+          followRelationshipProvider.overrideWith(
+            (ref, pubkey) => Stream.value(FollowRelationship.mutual),
+          ),
         ],
         home: BlocProvider<ConversationBloc>.value(
           value: mockBloc,
@@ -916,6 +926,55 @@ void main() {
         await tester.pump();
 
         expect(find.text('Alice'), findsOneWidget);
+      });
+
+      testWidgets('uses social proof instead of kind-0 name as handle', (
+        tester,
+      ) async {
+        final profile = UserProfile(
+          pubkey: otherPubkey,
+          name: 'Jack',
+          rawData: const {'follower_count': 2100},
+          createdAt: now,
+          eventId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        );
+
+        await tester.pumpWidget(buildSubject(otherProfile: profile));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Jack'), findsOneWidget);
+        expect(find.text('@Jack'), findsNothing);
+        expect(
+          find.text(
+            '${l10n.socialProofMutual} · '
+            '${l10n.socialProofFollowerCount(2100, '2.1K')}',
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('does not render a self-reported Vine follower count', (
+        tester,
+      ) async {
+        final profile = UserProfile(
+          pubkey: otherPubkey,
+          name: 'Jack',
+          rawData: const {'vine_followers': 430},
+          createdAt: now,
+          eventId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        );
+
+        await tester.pumpWidget(buildSubject(otherProfile: profile));
+        await tester.pump();
+        await tester.pump();
+
+        // vine_followers is the account's own kind-0 claim; only an
+        // authoritative follower_count earns a spot on the line.
+        expect(find.text(l10n.socialProofMutual), findsOneWidget);
+        expect(find.textContaining('430'), findsNothing);
       });
 
       testWidgets(

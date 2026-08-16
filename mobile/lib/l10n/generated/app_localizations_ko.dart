@@ -11583,8 +11583,26 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount videos',
-      one: '$formattedCount video',
+      other: '영상 $formattedCount개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get socialProofMutual => '맞팔로우';
+
+  @override
+  String get socialProofFollowsYou => '나를 팔로우함';
+
+  @override
+  String get socialProofYouFollow => '팔로우 중';
+
+  @override
+  String socialProofFollowerCount(int count, String formattedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '팔로워 $formattedCount명',
     );
     return '$_temp0';
   }

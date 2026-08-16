@@ -12271,4 +12271,24 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get socialProofMutual => 'Mutuo';
+
+  @override
+  String get socialProofFollowsYou => 'Te sigue';
+
+  @override
+  String get socialProofYouFollow => 'Siguiendo';
+
+  @override
+  String socialProofFollowerCount(int count, String formattedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$formattedCount seguidores',
+      one: '$formattedCount seguidor',
+    );
+    return '$_temp0';
+  }
 }

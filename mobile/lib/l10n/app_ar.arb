@@ -5217,5 +5217,10 @@
   "changeEmailSentTitle": "رابطان في الطريق",
   "changeEmailSentMessage": "أكّد من {email} ومن العنوان المسجّل في حسابك. يتبدّل بريدك بعد إتمام الاثنين.",
   "changeEmailSentExpiry": "تتوقف الروابط عن العمل بعد 24 ساعة.",
-  "changeEmailSentDone": "فهمت"
+  "changeEmailSentDone": "فهمت",
+  "socialProofMutual": "متابعة متبادلة",
+  "socialProofFollowsYou": "يتابعك",
+  "socialProofYouFollow": "تتابعه",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} متابِع} other{{formattedCount} متابِع}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} فيديو} other{{formattedCount} فيديو}}"
 }

@@ -45,10 +45,10 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/settings/supporter_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/user_identifier_line_resolver.dart';
 import 'package:openvine/widgets/signup_invites_availability_builder.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -659,18 +659,27 @@ class _AccountHeaderProfile extends ConsumerWidget {
     final displayName =
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
 
-    final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
     final claimedNip05 = profile?.displayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref
               .watch(nip05VerificationProvider(pubkey))
               .whenOrNull(data: (status) => status)
         : null;
-    final hasVerifiedNip05 =
-        verificationStatus == Nip05VerificationStatus.verified;
-    final uniqueIdentifier = hasVerifiedNip05 && claimedNip05 != null
-        ? claimedNip05
-        : truncatedNpub;
+    // Always the signed-in account, so a failed check never hides the handle:
+    // the owner needs to see what they claimed in order to fix it.
+    //
+    // No social proof either. This line answers "which account am I signed in
+    // as", and the owner's own follower count does not identify an account —
+    // passing it would shadow the npub below for everyone with a follower.
+    final uniqueIdentifier =
+        resolveUserIdentifierLine(
+          l10n: context.l10n,
+          locale: Localizations.localeOf(context).toLanguageTag(),
+          handle: claimedNip05,
+          verificationStatus: verificationStatus,
+          isOwnProfile: true,
+        ) ??
+        NostrKeyUtils.npubOrHex(pubkey);
 
     return Column(
       children: [
@@ -799,7 +808,7 @@ class _AccountSwitchTile extends ConsumerWidget {
         profile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(account.pubkeyHex);
     final identifier =
-        profile?.displayNip05 ?? NostrKeyUtils.truncateNpub(account.pubkeyHex);
+        profile?.displayNip05 ?? NostrKeyUtils.npubOrHex(account.pubkeyHex);
 
     return Semantics(
       button: true,

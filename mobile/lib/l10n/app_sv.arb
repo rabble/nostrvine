@@ -5217,5 +5217,10 @@
   "changeEmailSentTitle": "Två länkar är på väg",
   "changeEmailSentMessage": "Bekräfta från {email} och från adressen på ditt konto. E-posten byts när båda är klara.",
   "changeEmailSentExpiry": "Länkarna slutar fungera efter 24 timmar.",
-  "changeEmailSentDone": "Okej"
+  "changeEmailSentDone": "Okej",
+  "socialProofMutual": "Ömsesidigt",
+  "socialProofFollowsYou": "Följer dig",
+  "socialProofYouFollow": "Du följer",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} följare} other{{formattedCount} följare}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} videor}}"
 }

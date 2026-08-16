@@ -4555,5 +4555,10 @@
   "changeEmailSentTitle": "링크 두 통을 보냈어요",
   "changeEmailSentMessage": "{email}과 계정에 등록된 주소에서 확인해 주세요. 둘 다 끝나면 이메일이 바뀝니다.",
   "changeEmailSentExpiry": "링크는 24시간 뒤에 만료돼요.",
-  "changeEmailSentDone": "알겠어요"
+  "changeEmailSentDone": "알겠어요",
+  "socialProofMutual": "맞팔로우",
+  "socialProofFollowsYou": "나를 팔로우함",
+  "socialProofYouFollow": "팔로우 중",
+  "socialProofFollowerCount": "{count, plural, other{팔로워 {formattedCount}명}}",
+  "searchUserVideoCount": "{count, plural, other{영상 {formattedCount}개}}"
 }

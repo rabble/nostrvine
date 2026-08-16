@@ -422,11 +422,12 @@ const _knownUntranslatedDebt = <String>{
   'analyticsConnectionIssue',
   'analyticsDiagnosticsFailedSources',
   'analyticsServerUnavailable',
-  'searchUserVideoCount',
   // Account restore failure copy is new; translation pass tracked in #7659.
   'authAccountRestoreFailed',
   'settingsAccountRestoreFailed',
   'settingsAccountRestoreFailedSwitchMessage',
+  // The four social-proof keys and searchUserVideoCount left this list when
+  // this branch translated them into every locale.
 };
 
 const _profileBadgeSheetKeys = <String>{

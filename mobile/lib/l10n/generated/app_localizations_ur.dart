@@ -12121,8 +12121,28 @@ class AppLocalizationsUr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount videos',
-      one: '$formattedCount video',
+      other: '$formattedCount ویڈیوز',
+      one: '$formattedCount ویڈیو',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get socialProofMutual => 'باہمی';
+
+  @override
+  String get socialProofFollowsYou => 'آپ کو فالو کرتا ہے';
+
+  @override
+  String get socialProofYouFollow => 'آپ فالو کرتے ہیں';
+
+  @override
+  String socialProofFollowerCount(int count, String formattedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$formattedCount فالوورز',
+      one: '$formattedCount فالوور',
     );
     return '$_temp0';
   }

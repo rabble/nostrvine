@@ -49,7 +49,6 @@ lib/widgets/profile_editor/username_status_indicator.dart
 lib/widgets/report_content_dialog.dart
 lib/widgets/save_original_progress_sheet.dart
 lib/widgets/upload_failure_sheet.dart
-lib/widgets/user_profile_tile.dart
 lib/widgets/video_clip/video_clip_preview.dart
 lib/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart
 lib/widgets/video_editor/main_editor/video_editor_canvas.dart

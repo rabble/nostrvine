@@ -20655,6 +20655,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{{formattedCount} video} other{{formattedCount} videos}}'**
   String searchUserVideoCount(int count, String formattedCount);
+
+  /// Secondary line on a user row: the viewer and this account follow each other. Shown in place of a truncated npub, which cannot tell two same-named people apart.
+  ///
+  /// In en, this message translates to:
+  /// **'Mutual'**
+  String get socialProofMutual;
+
+  /// Secondary line on a user row: this account follows the viewer, who does not follow back.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows you'**
+  String get socialProofFollowsYou;
+
+  /// Secondary line on a user row: the viewer follows this account, which does not follow back.
+  ///
+  /// In en, this message translates to:
+  /// **'You follow'**
+  String get socialProofYouFollow;
+
+  /// Secondary line on a user row: how many followers this account has. Joined to the relationship label with a middot.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{formattedCount} follower} other{{formattedCount} followers}}'**
+  String socialProofFollowerCount(int count, String formattedCount);
 }
 
 class _AppLocalizationsDelegate

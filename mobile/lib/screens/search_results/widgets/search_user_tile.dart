@@ -2,6 +2,7 @@ import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -9,16 +10,17 @@ import 'package:openvine/features/people_lists/models/people_list_entry_point.da
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/follow_relationship_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
+import 'package:openvine/utils/user_identifier_line_resolver.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Reusable tile widget for displaying a user profile in search results.
 ///
 /// Shows avatar, display name, and a secondary line that disambiguates users:
-/// REST video count when known, otherwise a verified NIP-05 handle or npub
-/// fallback. Uses [ConsumerWidget] (Riverpod) for the providers that gate the
-/// add-to-list action and legacy NIP-05 verification.
+/// REST video count when known, otherwise a NIP-05 handle, otherwise social
+/// proof via [resolveUserIdentifierLine]. Uses [ConsumerWidget] (Riverpod) for
+/// the providers that gate the add-to-list action and NIP-05 verification.
 class SearchUserTile extends ConsumerWidget {
   const SearchUserTile({required this.profile, this.onTap, super.key});
 
@@ -38,16 +40,24 @@ class SearchUserTile extends ConsumerWidget {
               .watch(nip05VerificationProvider(profile.pubkey))
               .whenOrNull(data: (status) => status)
         : null;
-    final verifiedNip05 = verificationStatus?.name == 'verified'
-        ? claimedNip05
-        : null;
+    final ownPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final secondaryText = videoCount != null && videoCount > 0
         ? context.l10n.searchUserVideoCount(
             videoCount,
             CountFormatter.formatCompact(videoCount, locale: locale),
           )
-        : verifiedNip05 ?? profile.truncatedNpub;
+        : resolveUserIdentifierLine(
+            l10n: context.l10n,
+            locale: locale,
+            handle: claimedNip05,
+            verificationStatus: verificationStatus,
+            isOwnProfile: profile.pubkey == ownPubkey,
+            relationship:
+                ref.watch(followRelationshipProvider(profile.pubkey)).value ??
+                FollowRelationship.none,
+            followerCount: profile.restFollowerCount,
+          );
 
     final profileListFeaturesEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileListFeatures),
@@ -58,7 +68,6 @@ class SearchUserTile extends ConsumerWidget {
     final curatedListsEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.curatedLists),
     );
-    final ownPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
     final showAddToList =
         profileListFeaturesEnabled &&
         curatedListsEnabled &&
@@ -92,14 +101,15 @@ class SearchUserTile extends ConsumerWidget {
                         color: context.vineColors.primaryText,
                       ),
                     ),
-                    Text(
-                      secondaryText,
-                      style: VineTheme.bodyMediumFont(
-                        color: context.vineColors.secondaryText,
+                    if (secondaryText != null)
+                      Text(
+                        secondaryText,
+                        style: VineTheme.bodyMediumFont(
+                          color: context.vineColors.secondaryText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ],
                 ),
               ),

@@ -8,6 +8,8 @@ import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:follow_repository/follow_repository.dart'
+    show FollowRelationship;
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
@@ -18,6 +20,8 @@ import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/follow_relationship_provider.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -30,10 +34,9 @@ import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/string_utils.dart';
+import 'package:openvine/utils/user_identifier_line_resolver.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
-import 'package:openvine/widgets/profile/profile_header_widget.dart'
-    show truncateNpubForDisplay;
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
@@ -165,19 +168,28 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         : moderationDisplayName(context, otherPubkey) ??
               profile?.bestDisplayName ??
               UserProfile.defaultDisplayNameFor(otherPubkey);
-    // Prefer the profile's NIP-05 / divine handle when set, otherwise
-    // fall back to a truncated npub so the header always carries a
-    // stable secondary identifier under the display name. Format
-    // mirrors the profile header (`profile_header_widget.dart`): first
-    // 16 chars of the npub + ellipsis.
-    final profileHandle = profile?.handle;
+    final claimedNip05 = profile?.shortDisplayNip05;
+    final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
+        ? ref
+              .watch(nip05VerificationProvider(otherPubkey))
+              .whenOrNull(data: (status) => status)
+        : null;
+    // Prefer the profile's NIP-05 / divine handle when set, otherwise the
+    // follow relationship — which tells the viewer which of several
+    // same-named people they are messaging, as a truncated npub never did.
     final handle = isDeleted
         ? context.l10n.inboxConversationDeletedAccountSubtitle
-        : (profileHandle != null && profileHandle.isNotEmpty)
-        ? profileHandle
-        : (otherPubkey.isNotEmpty
-              ? truncateNpubForDisplay(NostrKeyUtils.encodePubKey(otherPubkey))
-              : '');
+        : resolveUserIdentifierLine(
+                l10n: context.l10n,
+                locale: Localizations.localeOf(context).toLanguageTag(),
+                handle: claimedNip05,
+                verificationStatus: verificationStatus,
+                relationship:
+                    ref.watch(followRelationshipProvider(otherPubkey)).value ??
+                    FollowRelationship.none,
+                followerCount: profile?.restFollowerCount,
+              ) ??
+              '';
 
     return BlocProvider(
       create: (_) => SharedVideoSaveCubit(

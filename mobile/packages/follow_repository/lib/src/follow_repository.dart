@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:follow_repository/src/follow_list_kind.dart';
+import 'package:follow_repository/src/follow_relationship.dart';
 import 'package:follow_repository/src/follower_stats.dart';
 import 'package:follow_repository/src/followers_snapshot.dart';
 import 'package:follow_repository/src/following_snapshot.dart';
@@ -156,6 +157,8 @@ class FollowRepository {
 
   // In-memory cache — my followers (populated after first fetch)
   List<String> _cachedMyFollowersPubkeys = [];
+  List<String>? _myFollowersLookupSource;
+  Set<String> _myFollowersLookupCache = const {};
   int _cachedMyFollowersDatedCount = 0;
   int _cachedMyFollowerCount = 0;
   bool _hasMyFollowersCache = false;
@@ -250,6 +253,49 @@ class FollowRepository {
   /// Check if current user is following a specific pubkey
   bool isFollowing(String pubkey) => _followingPubkeys.contains(pubkey);
 
+  /// The current user's follow relationship with [pubkey].
+  ///
+  /// Reads only the in-memory following and follower caches, so it is cheap
+  /// enough to call per row while a list scrolls and never issues a network
+  /// request. Returns [FollowRelationship.none] for the current user's own
+  /// pubkey and for an empty [pubkey].
+  ///
+  /// Before [getMyFollowers] has populated the follower cache, "follows you"
+  /// is unknowable, so a mutual reads as [FollowRelationship.youFollow] and a
+  /// one-way follower reads as [FollowRelationship.none]. That cold-cache
+  /// degradation only under-claims and upgrades as data arrives. It is not a
+  /// guarantee against a stale contact list, though: the following and
+  /// follower sets are unions across sources that are never pruned, so a
+  /// superseded kind 3 from one relay can still read as
+  /// [FollowRelationship.followsYou] or [FollowRelationship.mutual] after an
+  /// unfollow.
+  FollowRelationship relationshipTo(String pubkey) {
+    if (pubkey.isEmpty || pubkey == _nostrClient.publicKey) {
+      return FollowRelationship.none;
+    }
+    final youFollow = isFollowing(pubkey);
+    final followsYou =
+        _hasMyFollowersCache && _myFollowersLookup.contains(pubkey);
+    return switch ((youFollow, followsYou)) {
+      (true, true) => FollowRelationship.mutual,
+      (true, false) => FollowRelationship.youFollow,
+      (false, true) => FollowRelationship.followsYou,
+      (false, false) => FollowRelationship.none,
+    };
+  }
+
+  /// [_cachedMyFollowersPubkeys] as a set, rebuilt only when that list is
+  /// replaced, so per-row membership tests stay O(1) on accounts with many
+  /// thousands of followers. Both writers assign a fresh list instance, which
+  /// is what makes the identity check a sufficient invalidation signal.
+  Set<String> get _myFollowersLookup {
+    if (!identical(_myFollowersLookupSource, _cachedMyFollowersPubkeys)) {
+      _myFollowersLookupSource = _cachedMyFollowersPubkeys;
+      _myFollowersLookupCache = _cachedMyFollowersPubkeys.toSet();
+    }
+    return _myFollowersLookupCache;
+  }
+
   /// Get the list of followers for the current user.
   ///
   /// Queries Nostr relays for Kind 3 (contact list) events that mention
@@ -263,7 +309,10 @@ class FollowRepository {
 
   /// [getMyFollowers] plus the size of the datable prefix.
   Future<({List<String> pubkeys, int datedCount})> _fetchMyFollowers() async {
-    final result = await _fetchOrderedFollowers(_nostrClient.publicKey);
+    final pubkey = _nostrClient.publicKey;
+    if (pubkey.isEmpty) return (pubkeys: <String>[], datedCount: 0);
+
+    final result = await _fetchOrderedFollowers(pubkey);
     _cachedMyFollowersPubkeys = result.pubkeys;
     _cachedMyFollowersDatedCount = result.datedCount;
     _hasMyFollowersCache = true;
