@@ -36,7 +36,7 @@ const faviconPaddingFraction = 0.06;
 
 /// Matches the native adaptive icon foreground inset in
 /// `android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`.
-const maskableInsetFraction = 0.16;
+const maskableInsetFraction = 0.18; // Fixed to fit 40% maskable safe zone
 
 void main() {
   final appIconSourceImage = _readSquarePng(appIconSource, 'app icon');
