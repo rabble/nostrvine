@@ -7,6 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 typedef BadgeCurrentPubkeyReader = String? Function();
 
+/// Whether [pubkey] is hidden for the current user — blocked, muted, or on
+/// the platform blocklist.
+///
+/// A function rather than the blocklist repository itself: a repository does
+/// not depend on another repository, and the app layer already owns the
+/// canonical hide set.
+typedef BadgeHiddenPubkeyReader = bool Function(String pubkey);
+
 // Trust-safety bulk actions must stay bounded even when a public badge is
 // claimed by a very large group. These limits keep relay/cache reads finite:
 // first discover the newest claim events, then verify latest profile-badge
@@ -180,20 +188,58 @@ class ProfileBadgeViewData {
 }
 
 class BadgeAwardViewData {
-  const BadgeAwardViewData({
-    required this.award,
+  /// A badge delivered by an award event addressed to the user.
+  BadgeAwardViewData({
+    required Nip58BadgeAward award,
     this.definition,
     this.isAccepted = false,
     this.isHidden = false,
-  });
+  }) : award = award,
+       definitionCoordinate = award.definitionCoordinate,
+       awardEventId = award.event.id,
+       awardedAt = award.event.createdAt;
 
-  final Nip58BadgeAward award;
+  /// A badge pinned to the user's own profile whose award event could not
+  /// be found.
+  ///
+  /// The award is the issuer's event, so it can disappear — a deletion
+  /// request, a banned account, a relay that no longer carries it — while
+  /// the pin, which is the user's own event, stays. Without this the badge
+  /// renders on their profile with no row anywhere to take it down from.
+  const BadgeAwardViewData.pinnedWithoutAward({
+    required this.definitionCoordinate,
+    required this.awardEventId,
+    required this.awardedAt,
+    this.definition,
+  }) : award = null,
+       isAccepted = true,
+       // A pin cannot be dismissed: hiding the row is what stranded the
+       // badge in the first place.
+       isHidden = false;
+
+  /// Null when the award event backing this badge could not be found.
+  final Nip58BadgeAward? award;
+
   final Nip58BadgeDefinition? definition;
   final bool isAccepted;
   final bool isHidden;
 
-  String get awardEventId => award.event.id;
-  String get definitionCoordinate => award.definitionCoordinate;
+  /// Address of the badge, which survives the award event going missing.
+  final String definitionCoordinate;
+
+  final String awardEventId;
+
+  /// When the badge arrived — the award's timestamp, or the pin's when the
+  /// award is gone. Orders the awarded list.
+  final int awardedAt;
+
+  /// Whether the award event behind this badge was found.
+  ///
+  /// False means the only action that makes sense is removing it: it is
+  /// already pinned, and dismissing the row would hide it while leaving it
+  /// on the profile.
+  bool get hasAwardEvent => award != null;
+
   String get displayName =>
       definition?.name ?? _definitionNameFromCoordinate(definitionCoordinate);
   String? get imageUrl => definition?.imageUrl;
@@ -261,15 +307,21 @@ class BadgeRepository {
     required SharedPreferences sharedPreferences,
     required BadgeCurrentPubkeyReader currentPubkey,
     required BadgeEventSigner signEvent,
+    BadgeHiddenPubkeyReader? isHiddenPubkey,
   }) : _nostrClient = nostrClient,
        _sharedPreferences = sharedPreferences,
        _currentPubkey = currentPubkey,
-       _signEvent = signEvent;
+       _signEvent = signEvent,
+       _isHiddenPubkey = isHiddenPubkey;
 
   final NostrClient _nostrClient;
   final SharedPreferences _sharedPreferences;
   final BadgeCurrentPubkeyReader _currentPubkey;
   final BadgeEventSigner _signEvent;
+
+  /// Null leaves awards unfiltered, which is what an anonymous or test
+  /// repository wants — there is no blocklist to consult.
+  final BadgeHiddenPubkeyReader? _isHiddenPubkey;
 
   /// The profile badge list this repository last published, and whose it is.
   ///
@@ -325,7 +377,6 @@ class BadgeRepository {
     _DashboardLookupMemo memo,
   ) async {
     final pubkey = _requireCurrentPubkey();
-    final dismissedAwardIds = _dismissedAwardIds(pubkey);
     final awardsFuture = _queryAwardsForRecipient(pubkey);
     final profileBadgesFuture = memo.profileBadges(
       pubkey,
@@ -340,10 +391,6 @@ class BadgeRepository {
     final awards = results[0]! as List<Nip58BadgeAward>;
     final profileBadges = results[1] as Nip58ProfileBadges?;
 
-    final definitions = await _definitionsByCoordinate(memo, [
-      for (final award in awards) award.definitionCoordinate,
-    ]);
-
     // Newest award per badge, the same rule the issued list uses: being
     // awarded a badge twice is normal, and listing both leaves one row that
     // can never resolve.
@@ -356,20 +403,75 @@ class BadgeRepository {
       }
     }
 
-    final viewData =
-        [
-          for (final award in newestPerCoordinate.values)
-            BadgeAwardViewData(
-              award: award,
-              definition: definitions[award.definitionCoordinate],
-              isAccepted: _containsBadgeCoordinate(profileBadges, award),
-              isHidden: dismissedAwardIds.contains(award.event.id),
-            ),
-        ]..sort(
-          (left, right) =>
-              right.award.event.createdAt.compareTo(left.award.event.createdAt),
-        );
+    final pinnedWithoutAward = _pinnedWithoutAward(
+      profileBadges,
+      newestPerCoordinate.keys.toSet(),
+    );
+
+    final dismissedCoordinates = await _dismissedCoordinates(pubkey, awards);
+    final definitions = await _definitionsByCoordinate(memo, [
+      for (final award in awards) award.definitionCoordinate,
+      for (final ref in pinnedWithoutAward) ref.definitionCoordinate,
+    ]);
+
+    final isHiddenPubkey = _isHiddenPubkey;
+    final viewData = <BadgeAwardViewData>[];
+    for (final award in newestPerCoordinate.values) {
+      final isAccepted = _containsBadgeCoordinate(profileBadges, award);
+      // An award lands on you without your consent, so an account you
+      // blocked can keep handing you badges. Dropping them is what makes
+      // blocking the account the answer to unwanted badges, instead of
+      // dismissing each one by hand forever. An accepted award stays: it is
+      // pinned to the user's own profile, and hiding the row would strand it
+      // there with no way to take it down.
+      if (!isAccepted && (isHiddenPubkey?.call(award.event.pubkey) ?? false)) {
+        continue;
+      }
+      viewData.add(
+        BadgeAwardViewData(
+          award: award,
+          definition: definitions[award.definitionCoordinate],
+          isAccepted: isAccepted,
+          isHidden: dismissedCoordinates.contains(award.definitionCoordinate),
+        ),
+      );
+    }
+    for (final ref in pinnedWithoutAward) {
+      viewData.add(
+        BadgeAwardViewData.pinnedWithoutAward(
+          definitionCoordinate: ref.definitionCoordinate,
+          awardEventId: ref.awardEventId,
+          // The pin is the only event left to date this by.
+          awardedAt: profileBadges?.event.createdAt ?? 0,
+          definition: definitions[ref.definitionCoordinate],
+        ),
+      );
+    }
+
+    viewData.sort(
+      (left, right) => right.awardedAt.compareTo(left.awardedAt),
+    );
     return List<BadgeAwardViewData>.unmodifiable(viewData);
+  }
+
+  /// The badges pinned to [profileBadges] that no award in
+  /// [coordinatesWithAward] backs.
+  ///
+  /// Deduplicated by coordinate: the list is another client's event and can
+  /// name the same badge twice, which would render two rows that both
+  /// remove the same pin.
+  static List<Nip58ProfileBadgeRef> _pinnedWithoutAward(
+    Nip58ProfileBadges? profileBadges,
+    Set<String> coordinatesWithAward,
+  ) {
+    final seen = <String>{};
+    return [
+      for (final ref in profileBadges?.badges ?? const <Nip58ProfileBadgeRef>[])
+        if (ref.definitionCoordinate.isNotEmpty &&
+            !coordinatesWithAward.contains(ref.definitionCoordinate) &&
+            seen.add(ref.definitionCoordinate))
+          ref,
+    ];
   }
 
   Future<List<ProfileBadgeViewData>> loadAcceptedBadgesForProfile(
@@ -982,8 +1084,8 @@ class BadgeRepository {
   Future<void> acceptAward(BadgeAwardViewData award) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
-    final coordinate = award.award.definitionCoordinate;
-    final awardEventId = award.award.event.id;
+    final coordinate = award.definitionCoordinate;
+    final awardEventId = award.awardEventId;
     final current =
         currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[];
 
@@ -1025,34 +1127,35 @@ class BadgeRepository {
     final refs =
         (currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[])
             .where(
-              (ref) =>
-                  ref.definitionCoordinate != award.award.definitionCoordinate,
+              (ref) => ref.definitionCoordinate != award.definitionCoordinate,
             )
             .toList(growable: false);
 
     await _publishProfileBadges(refs);
   }
 
-  /// Brings a dismissed award back into the awarded list.
-  Future<void> unhideAward(String awardEventId) async {
+  /// Brings the dismissed badge at [definitionCoordinate] back into the
+  /// awarded list.
+  Future<void> unhideAward(String definitionCoordinate) async {
     final pubkey = _requireCurrentPubkey();
-    final dismissed = _dismissedAwardIds(pubkey);
-    if (dismissed.remove(awardEventId)) {
-      await _sharedPreferences.setStringList(
-        _dismissedAwardsKey(pubkey),
-        dismissed.toList(growable: false),
-      );
+    final dismissed = _storedDismissedCoordinates(pubkey);
+    if (dismissed.remove(definitionCoordinate)) {
+      await _writeDismissedCoordinates(pubkey, dismissed);
     }
   }
 
-  Future<void> hideAward(String awardEventId) async {
+  /// Dismisses the badge at [definitionCoordinate] for the current user.
+  ///
+  /// Keyed on the badge, not on the award event that delivered it: the
+  /// awarded list shows one row per badge — the newest award wins — so a
+  /// dismissal keyed on an event id died the moment the same badge was
+  /// awarded again, which is exactly what an account handing out unwanted
+  /// badges does.
+  Future<void> hideAward(String definitionCoordinate) async {
     final pubkey = _requireCurrentPubkey();
-    final dismissed = _dismissedAwardIds(pubkey);
-    if (dismissed.add(awardEventId)) {
-      await _sharedPreferences.setStringList(
-        _dismissedAwardsKey(pubkey),
-        dismissed.toList(growable: false),
-      );
+    final dismissed = _storedDismissedCoordinates(pubkey);
+    if (dismissed.add(definitionCoordinate)) {
+      await _writeDismissedCoordinates(pubkey, dismissed);
     }
   }
 
@@ -1283,10 +1386,61 @@ class BadgeRepository {
     return event;
   }
 
-  Set<String> _dismissedAwardIds(String pubkey) {
-    return (_sharedPreferences.getStringList(_dismissedAwardsKey(pubkey)) ??
+  Set<String> _storedDismissedCoordinates(String pubkey) {
+    return (_sharedPreferences.getStringList(
+              _dismissedCoordinatesKey(pubkey),
+            ) ??
             const <String>[])
         .toSet();
+  }
+
+  Future<void> _writeDismissedCoordinates(
+    String pubkey,
+    Set<String> coordinates,
+  ) {
+    return _sharedPreferences.setStringList(
+      _dismissedCoordinatesKey(pubkey),
+      coordinates.toList(growable: false),
+    );
+  }
+
+  /// The dismissed badge coordinates, absorbing dismissals still stored
+  /// under the older award-event key.
+  ///
+  /// Dismissals used to be keyed on the award event id. Rewriting them here
+  /// rather than dropping them keeps a rejection the user already made, and
+  /// each id is retired only once its award has actually been seen — an
+  /// award missing from this relay pass is left for a later load instead of
+  /// being discarded.
+  Future<Set<String>> _dismissedCoordinates(
+    String pubkey,
+    List<Nip58BadgeAward> awards,
+  ) async {
+    final dismissed = _storedDismissedCoordinates(pubkey);
+    final legacyIds =
+        (_sharedPreferences.getStringList(_dismissedAwardsKey(pubkey)) ??
+                const <String>[])
+            .toSet();
+    if (legacyIds.isEmpty) return dismissed;
+
+    final retired = <String>{};
+    for (final award in awards) {
+      if (legacyIds.contains(award.event.id)) {
+        retired.add(award.event.id);
+        dismissed.add(award.definitionCoordinate);
+      }
+    }
+    if (retired.isEmpty) return dismissed;
+
+    legacyIds.removeAll(retired);
+    await _writeDismissedCoordinates(pubkey, dismissed);
+    await (legacyIds.isEmpty
+        ? _sharedPreferences.remove(_dismissedAwardsKey(pubkey))
+        : _sharedPreferences.setStringList(
+            _dismissedAwardsKey(pubkey),
+            legacyIds.toList(growable: false),
+          ));
+    return dismissed;
   }
 
   String _requireCurrentPubkey() {
@@ -1351,6 +1505,11 @@ class BadgeRepository {
     return (kind: kind, pubkey: parts[1], dTag: parts.sublist(2).join(':'));
   }
 
+  static String _dismissedCoordinatesKey(String pubkey) {
+    return 'dismissed_badge_coordinates_$pubkey';
+  }
+
+  /// Key of the retired per-award dismissal list, read only to migrate it.
   static String _dismissedAwardsKey(String pubkey) {
     return 'dismissed_badge_awards_$pubkey';
   }

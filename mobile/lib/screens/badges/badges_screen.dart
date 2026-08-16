@@ -413,13 +413,19 @@ class _AwardedBadgeCard extends StatelessWidget {
                   isLoading: actionStatus == BadgeActionStatus.removing,
                   onPressed: _isBusy ? null : () => cubit.removeAward(award),
                 )
-              else ...[
+              else
                 DivineButton(
                   label: context.l10n.badgesActionAccept,
                   size: DivineButtonSize.small,
                   isLoading: actionStatus == BadgeActionStatus.accepting,
                   onPressed: _isBusy ? null : () => cubit.acceptAward(award),
                 ),
+              // Offered for an accepted badge too: removing only unpins it,
+              // and the badge stays on the list until it is also rejected.
+              // Withheld when the award event is gone — the badge is pinned
+              // and unremovable anywhere else, so dismissing the row is the
+              // one thing that must not be possible.
+              if (award.hasAwardEvent)
                 DivineButton(
                   label: context.l10n.badgesActionReject,
                   type: DivineButtonType.secondary,
@@ -429,7 +435,6 @@ class _AwardedBadgeCard extends StatelessWidget {
                       ? null
                       : () => _hideWithUndo(context, award),
                 ),
-              ],
             ],
           ),
         ],
@@ -438,10 +443,10 @@ class _AwardedBadgeCard extends StatelessWidget {
   }
 }
 
-/// Hides [award] and offers an immediate way back.
+/// Rejects [award] and offers an immediate way back.
 ///
-/// Rejecting is local and publishes nothing, so without an undo a mistap
-/// would strand the badge until the issuer awarded it again.
+/// Without an undo a mistap would strand the badge in the hidden section,
+/// so the way back is offered right where the mistake happened.
 Future<void> _hideWithUndo(
   BuildContext context,
   BadgeAwardViewData award,
@@ -450,7 +455,7 @@ Future<void> _hideWithUndo(
   final messenger = ScaffoldMessenger.of(context);
   final l10n = context.l10n;
 
-  await cubit.hideAward(award);
+  await cubit.rejectAward(award);
   if (cubit.state.actionStatus != BadgeActionStatus.completed) return;
 
   messenger.showSnackBar(

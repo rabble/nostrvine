@@ -80,7 +80,7 @@ void main() {
       final awards = await repository.loadAwardedBadges();
 
       expect(awards, hasLength(1));
-      expect(awards.single.award.event.id, _eventId(1));
+      expect(awards.single.awardEventId, _eventId(1));
       expect(awards.single.isAccepted, isTrue);
       expect(awards.single.definition?.name, 'Diviner of the Day');
       expect(awards.single.isHidden, isFalse);
@@ -346,6 +346,104 @@ void main() {
       },
     );
 
+    group('a badge pinned without a reachable award', () {
+      final coordinate = '30009:${_pubkey(3)}:unwanted';
+
+      void stubPinOnly() {
+        _stubQueries(nostrClient, {
+          'awarded': const [],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(50),
+              pubkey: _pubkey(1),
+              createdAt: 4000,
+              tags: [
+                ['a', coordinate],
+                ['e', _eventId(51)],
+              ],
+            ),
+          ],
+        });
+      }
+
+      test('is still listed so it can be taken off the profile', () async {
+        stubPinOnly();
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards.single.definitionCoordinate, coordinate);
+        expect(awards.single.awardEventId, _eventId(51));
+        expect(awards.single.isAccepted, isTrue);
+        expect(awards.single.hasAwardEvent, isFalse);
+        expect(awards.single.awardedAt, 4000);
+      });
+
+      test('cannot be dismissed, only removed', () async {
+        stubPinOnly();
+
+        await repository.hideAward(coordinate);
+
+        expect((await repository.loadAwardedBadges()).single.isHidden, isFalse);
+      });
+
+      test('removeAward unpins it', () async {
+        stubPinOnly();
+        final award = (await repository.loadAwardedBadges()).single;
+
+        await repository.removeAward(award);
+
+        expect(lastSignedEvent()!.tags, isEmpty);
+      });
+
+      test('is not listed twice when the pin names it twice', () async {
+        _stubQueries(nostrClient, {
+          'awarded': const [],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(52),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate],
+                ['e', _eventId(51)],
+                ['a', coordinate],
+                ['e', _eventId(53)],
+              ],
+            ),
+          ],
+        });
+
+        expect(await repository.loadAwardedBadges(), hasLength(1));
+      });
+
+      test('gives way to the award once it is reachable again', () async {
+        _stubQueries(nostrClient, {
+          'awarded': [
+            _awardEvent(
+              id: _eventId(51),
+              issuerPubkey: _pubkey(3),
+              definitionCoordinate: coordinate,
+              recipients: [_pubkey(1)],
+            ),
+          ],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(50),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate],
+                ['e', _eventId(51)],
+              ],
+            ),
+          ],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards, hasLength(1));
+        expect(awards.single.hasAwardEvent, isTrue);
+      });
+    });
+
     test('hideAward stores a local per-user dismissal', () async {
       final award = _awardEvent(
         id: _eventId(11),
@@ -357,15 +455,194 @@ void main() {
         'awarded': [award],
       });
 
-      await repository.hideAward(_eventId(11));
+      await repository.hideAward('30009:${_pubkey(2)}:daily-diviner');
 
       // Still returned, flagged rather than dropped, so it can be restored.
       final awards = await repository.loadAwardedBadges();
       expect(awards.single.isHidden, isTrue);
       expect(
-        preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
-        [_eventId(11)],
+        preferences.getStringList(
+          'dismissed_badge_coordinates_${_pubkey(1)}',
+        ),
+        ['30009:${_pubkey(2)}:daily-diviner'],
       );
+    });
+
+    test('hideAward survives the same badge being awarded again', () async {
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      final first = _awardEvent(
+        id: _eventId(11),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+      );
+      final reAward = _awardEvent(
+        id: _eventId(12),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+        createdAt: 2000,
+      );
+      _stubQueries(nostrClient, {
+        'awarded': [first],
+      });
+      await repository.hideAward(coordinate);
+
+      _stubQueries(nostrClient, {
+        'awarded': [first, reAward],
+      });
+
+      final awards = await repository.loadAwardedBadges();
+      expect(awards.single.awardEventId, _eventId(12));
+      expect(awards.single.isHidden, isTrue);
+    });
+
+    test('a dismissal stored per award event migrates to its badge', () async {
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      final dismissed = _awardEvent(
+        id: _eventId(13),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+      );
+      final reAward = _awardEvent(
+        id: _eventId(14),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+        createdAt: 2000,
+      );
+      await preferences.setStringList('dismissed_badge_awards_${_pubkey(1)}', [
+        _eventId(13),
+      ]);
+      _stubQueries(nostrClient, {
+        'awarded': [dismissed, reAward],
+      });
+
+      final awards = await repository.loadAwardedBadges();
+
+      expect(awards.single.isHidden, isTrue);
+      expect(
+        preferences.getStringList(
+          'dismissed_badge_coordinates_${_pubkey(1)}',
+        ),
+        [coordinate],
+      );
+      expect(
+        preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
+        isNull,
+      );
+    });
+
+    test('a dismissal whose award is unavailable is kept for later', () async {
+      await preferences.setStringList('dismissed_badge_awards_${_pubkey(1)}', [
+        _eventId(15),
+      ]);
+
+      await repository.loadAwardedBadges();
+
+      expect(
+        preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
+        [_eventId(15)],
+      );
+    });
+
+    test('migrating one dismissal leaves the unresolved one behind', () async {
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      await preferences.setStringList('dismissed_badge_awards_${_pubkey(1)}', [
+        _eventId(18),
+        _eventId(19),
+      ]);
+      _stubQueries(nostrClient, {
+        'awarded': [
+          _awardEvent(
+            id: _eventId(18),
+            issuerPubkey: _pubkey(2),
+            definitionCoordinate: coordinate,
+            recipients: [_pubkey(1)],
+          ),
+        ],
+      });
+
+      await repository.loadAwardedBadges();
+
+      expect(
+        preferences.getStringList(
+          'dismissed_badge_coordinates_${_pubkey(1)}',
+        ),
+        [coordinate],
+      );
+      expect(
+        preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
+        [_eventId(19)],
+      );
+    });
+
+    group('a hidden issuer', () {
+      late BadgeRepository blocked;
+
+      setUp(() {
+        blocked = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => _pubkey(1),
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+          isHiddenPubkey: (pubkey) => pubkey == _pubkey(3),
+        );
+      });
+
+      test('has its unaccepted awards dropped', () async {
+        _stubQueries(nostrClient, {
+          'awarded': [
+            _awardEvent(
+              id: _eventId(16),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+              recipients: [_pubkey(1)],
+            ),
+            _awardEvent(
+              id: _eventId(17),
+              issuerPubkey: _pubkey(3),
+              definitionCoordinate: '30009:${_pubkey(3)}:unwanted',
+              recipients: [_pubkey(1)],
+            ),
+          ],
+        });
+
+        final awards = await blocked.loadAwardedBadges();
+
+        expect(awards.single.awardEventId, _eventId(16));
+      });
+
+      test('keeps an award the user already accepted', () async {
+        final coordinate = '30009:${_pubkey(3)}:unwanted';
+        _stubQueries(nostrClient, {
+          'awarded': [
+            _awardEvent(
+              id: _eventId(17),
+              issuerPubkey: _pubkey(3),
+              definitionCoordinate: coordinate,
+              recipients: [_pubkey(1)],
+            ),
+          ],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(18),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate],
+                ['e', _eventId(17)],
+              ],
+            ),
+          ],
+        });
+
+        final awards = await blocked.loadAwardedBadges();
+
+        // Pinned to the profile, so it has to stay reachable to be removed.
+        expect(awards.single.isAccepted, isTrue);
+      });
     });
 
     test('loadAwardedBadges loads each unique definition once', () async {
@@ -592,7 +869,9 @@ void main() {
 
         final awards = await repository.loadAwardedBadges();
 
-        expect(awards.single.isAccepted, isFalse);
+        // The winning list pins a different badge, so this one is unaccepted.
+        // That other pin has no award event and is listed on its own.
+        expect(_byCoordinate(awards, coordinate).isAccepted, isFalse);
       },
     );
 
@@ -757,7 +1036,9 @@ void main() {
 
         final awards = await repository.loadAwardedBadges();
 
-        expect(awards.single.isAccepted, isFalse);
+        // The winning list pins a different badge, so this one is unaccepted.
+        // That other pin has no award event and is listed on its own.
+        expect(_byCoordinate(awards, coordinate).isAccepted, isFalse);
       },
     );
 
@@ -1450,22 +1731,26 @@ void main() {
             ),
           ],
         });
-        await repository.hideAward(_eventId(84));
+        await repository.hideAward('30009:${_pubkey(2)}:daily-diviner');
 
-        await repository.unhideAward(_eventId(84));
+        await repository.unhideAward('30009:${_pubkey(2)}:daily-diviner');
 
         expect((await repository.loadAwardedBadges()).single.isHidden, isFalse);
         expect(
-          preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
+          preferences.getStringList(
+            'dismissed_badge_coordinates_${_pubkey(1)}',
+          ),
           isEmpty,
         );
       });
 
-      test('does nothing for an award that was never dismissed', () async {
-        await repository.unhideAward(_eventId(85));
+      test('does nothing for a badge that was never dismissed', () async {
+        await repository.unhideAward('30009:${_pubkey(2)}:weekly-diviner');
 
         expect(
-          preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
+          preferences.getStringList(
+            'dismissed_badge_coordinates_${_pubkey(1)}',
+          ),
           isNull,
         );
       });
@@ -1480,7 +1765,7 @@ void main() {
         );
 
         await expectLater(
-          anonymous.unhideAward(_eventId(86)),
+          anonymous.unhideAward('30009:${_pubkey(2)}:daily-diviner'),
           throwsA(isA<StateError>()),
         );
       });
@@ -1503,7 +1788,7 @@ void main() {
           ),
         ],
       });
-      await repository.hideAward(_eventId(88));
+      await repository.hideAward('30009:${_pubkey(2)}:weekly-diviner');
 
       final dashboard = await repository.loadDashboard();
 
@@ -2728,6 +3013,15 @@ Event _event({
 }
 
 const _artworkUrl = 'https://media.divine.video/scene.png';
+
+BadgeAwardViewData _byCoordinate(
+  List<BadgeAwardViewData> awards,
+  String coordinate,
+) {
+  return awards.firstWhere(
+    (award) => award.definitionCoordinate == coordinate,
+  );
+}
 
 String _eventId(int seed) => seed.toRadixString(16).padLeft(64, '0');
 

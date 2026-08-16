@@ -182,7 +182,71 @@ void main() {
       await tester.tap(find.text(l10n.badgesHiddenSnackbarUndo));
       await tester.pumpAndSettle();
 
-      verify(() => repository.unhideAward(awardedBadge.awardEventId)).called(1);
+      verify(
+        () => repository.unhideAward(awardedBadge.definitionCoordinate),
+      ).called(1);
+    });
+
+    testWidgets('an accepted award can be rejected, not only removed', (
+      tester,
+    ) async {
+      final accepted = _awardViewData(isAccepted: true);
+      when(repository.loadDashboard).thenAnswer(
+        (_) async => BadgeDashboardData(
+          awarded: [accepted],
+          issued: const [],
+          created: const [],
+        ),
+      );
+      when(() => repository.hideAward(any())).thenAnswer((_) async {});
+      when(() => repository.removeAward(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.badgesActionRemove), findsOneWidget);
+      await tester.tap(find.text(l10n.badgesActionReject));
+      await tester.pumpAndSettle();
+
+      // Unpinned as well as dismissed: hiding alone would leave it on the
+      // profile while it is gone from the dashboard.
+      verify(() => repository.removeAward(accepted)).called(1);
+      verify(
+        () => repository.hideAward(accepted.definitionCoordinate),
+      ).called(1);
+    });
+
+    testWidgets('a badge pinned without an award can only be removed', (
+      tester,
+    ) async {
+      const coordinate = '30009:pinned-issuer:orphan';
+      when(repository.loadDashboard).thenAnswer(
+        (_) async => const BadgeDashboardData(
+          awarded: [
+            BadgeAwardViewData.pinnedWithoutAward(
+              definitionCoordinate: coordinate,
+              awardEventId: 'orphan-award',
+              awardedAt: 1000,
+            ),
+          ],
+          issued: [],
+          created: [],
+        ),
+      );
+      when(() => repository.removeAward(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Dismissing it would hide the only row that can take it off the
+      // profile, so the action is not offered.
+      expect(find.text(l10n.badgesActionReject), findsNothing);
+      expect(find.text(l10n.badgesActionAccept), findsNothing);
+
+      await tester.tap(find.text(l10n.badgesActionRemove));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.removeAward(any())).called(1);
     });
 
     testWidgets('restores a dismissed award from the hidden section', (
@@ -209,7 +273,9 @@ void main() {
       await tester.tap(find.text(l10n.badgesActionRestore));
       await tester.pumpAndSettle();
 
-      verify(() => repository.unhideAward(awardedBadge.awardEventId)).called(1);
+      verify(
+        () => repository.unhideAward(awardedBadge.definitionCoordinate),
+      ).called(1);
     });
 
     testWidgets('accept button delegates to the repository', (tester) async {
