@@ -667,6 +667,10 @@ class _AccountHeaderProfile extends ConsumerWidget {
         : null;
     // Always the signed-in account, so a failed check never hides the handle:
     // the owner needs to see what they claimed in order to fix it.
+    //
+    // No social proof either. This line answers "which account am I signed in
+    // as", and the owner's own follower count does not identify an account —
+    // passing it would shadow the npub below for everyone with a follower.
     final uniqueIdentifier =
         resolveUserIdentifierLine(
           l10n: context.l10n,
@@ -674,7 +678,6 @@ class _AccountHeaderProfile extends ConsumerWidget {
           handle: claimedNip05,
           verificationStatus: verificationStatus,
           isOwnProfile: true,
-          followerCount: profile?.followerCount,
         ) ??
         NostrKeyUtils.npubOrHex(pubkey);
 

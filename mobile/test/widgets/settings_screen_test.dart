@@ -68,6 +68,17 @@ _MockInviteStatusCubit _createMockInviteCubit() {
   return cubit;
 }
 
+_MockBackgroundPublishBloc _stubbedPublishBloc() {
+  final bloc = _MockBackgroundPublishBloc();
+  when(() => bloc.state).thenReturn(const BackgroundPublishState());
+  whenListen(
+    bloc,
+    const Stream<BackgroundPublishState>.empty(),
+    initialState: const BackgroundPublishState(),
+  );
+  return bloc;
+}
+
 void main() {
   group(SettingsScreen, () {
     late _MockAuthService mockAuthService;
@@ -222,6 +233,65 @@ void main() {
         find.text(NostrKeyUtils.encodePubKey(currentPubkey)),
         findsOneWidget,
       );
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('account header keeps the npub over the own follower count', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            authServiceProvider.overrideWithValue(mockAuthService),
+            draftStorageServiceProvider.overrideWithValue(
+              mockDraftStorageService,
+            ),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.authenticated,
+            ),
+            knownAccountsProvider.overrideWith((ref) async => const []),
+            // No NIP-05, but a follower count from the REST profile. Social
+            // proof must not stand in for the signed-in account's identifier.
+            userProfileReactiveProvider.overrideWith(
+              (ref, pubkey) => Stream.value(
+                UserProfile(
+                  pubkey: pubkey,
+                  name: 'Jack',
+                  rawData: const {'follower_count': 12},
+                  createdAt: DateTime(2024),
+                  eventId: 'event-$pubkey',
+                ),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<InviteStatusCubit>.value(
+                  value: _createMockInviteCubit(),
+                ),
+                BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
+                BlocProvider<BackgroundPublishBloc>.value(
+                  value: _stubbedPublishBloc(),
+                ),
+              ],
+              child: const SettingsScreen(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(NostrKeyUtils.encodePubKey(currentPubkey)),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.socialProofFollowerCount(12, '12')), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
