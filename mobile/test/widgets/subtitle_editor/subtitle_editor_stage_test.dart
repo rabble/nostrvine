@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
@@ -278,6 +279,33 @@ void main() {
 
       expect(currentLoadIsMounted(), isFalse);
       releaseLoader.complete();
+    });
+
+    testWidgets('treats aborted preview source loading as cancellation', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pump(
+          cues: const [EditableCue(start: 0, end: 1000, text: 'one')],
+          initializePreviewController: (_) async {},
+          loadPreviewSources:
+              ({
+                required controller,
+                required sources,
+                required log,
+                required isLoadCurrent,
+              }) async {
+                throw const SourceLoadAborted(
+                  index: 0,
+                  source: 'https://example.com/video.mp4',
+                );
+              },
+        ),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.subtitleEditorPreviewUnavailable), findsNothing);
     });
   });
 }

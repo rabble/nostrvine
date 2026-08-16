@@ -305,6 +305,15 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
       // has somewhere to land. A player that never plays never decodes one,
       // and the preview would sit on its placeholder forever.
       await controller.play();
+    } on SourceLoadAborted catch (error) {
+      Log.debug(
+        'Subtitle editor preview source load cancelled: $error',
+        name: 'SubtitleEditorStage',
+        category: LogCategory.video,
+      );
+      unawaited(_playerStates?.cancel());
+      _playerStates = null;
+      unawaited(controller.dispose());
     } on Object catch (error) {
       // Without this the failure would be an unhandled async error and the
       // preview would show an unexplained black box.
