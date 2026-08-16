@@ -69,6 +69,16 @@ final class ProfileSavedVideosState extends Equatable {
   /// unsupported format filtering).
   final int nextPageOffset;
 
+  /// Whether the viewer has bookmarks that none of the fetches resolved.
+  ///
+  /// `videos.isEmpty` on its own conflates "you have no bookmarks" with "we
+  /// could not load them", and only [savedEventIds] separates the two. The
+  /// distinction cannot be recovered further down: `getVideosByIds` returns an
+  /// empty list for a relay that never answered as readily as for an event
+  /// that does not exist, so the ID list is the only evidence the tab holds
+  /// that the viewer saved anything at all.
+  bool get hasUnresolvedSaves => videos.isEmpty && savedEventIds.isNotEmpty;
+
   /// Whether data has been successfully loaded.
   bool get isLoaded => status == ProfileSavedVideosStatus.success;
 

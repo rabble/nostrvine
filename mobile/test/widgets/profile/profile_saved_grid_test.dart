@@ -134,6 +134,30 @@ void main() {
         );
       });
 
+      // Regression for #7587: a bookmark that did not resolve to a video was
+      // rendered as "Nothing saved yet", telling a viewer who has bookmarks
+      // to go make some. `savedEventIds` is what separates the two outcomes.
+      testWidgets(
+        'error message, not empty state, when saved IDs did not resolve',
+        (tester) async {
+          const savedId =
+              '615a098cbf969c0d73b28c8f25eb59b9745db95c19d7b1998068d9b31c3df1a0';
+          when(() => mockBloc.state).thenReturn(
+            const ProfileSavedVideosState(
+              status: ProfileSavedVideosStatus.success,
+              savedEventIds: [savedId],
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileErrorLoadingSaved), findsOneWidget);
+          expect(find.text(l10n.profileNoSavedVideosTitle), findsNothing);
+          expect(find.text(l10n.profileSavedOwnEmpty), findsNothing);
+        },
+      );
+
       testWidgets('grid of saved videos when videos exist', (tester) async {
         final videos = _createTestVideos(count: 3);
         when(() => mockBloc.state).thenReturn(
