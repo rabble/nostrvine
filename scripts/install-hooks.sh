@@ -424,6 +424,17 @@ fi
 TEST_FILES=""
 
 for file in $CHANGED_FILES; do
+    # Image goldens are verified by CI's Goldens job, never here. Their
+    # reference PNGs are committed as the Ubuntu runner rendered them, and
+    # Skia antialiases differently per OS (~3% of pixels, all on glyph
+    # edges) — so running them on a developer's Mac fails every time and
+    # would make every golden change unpushable. Run
+    # `mobile/scripts/golden.sh verify` by hand for the structural signal;
+    # see mobile/docs/GOLDEN_TESTING_GUIDE.md.
+    if [[ "$file" == mobile/test/goldens/* ]]; then
+        continue
+    fi
+
     # If it's already a test file, add it directly
     if [[ "$file" == *"_test.dart" ]]; then
         if [ -f "$REPO_ROOT/$file" ]; then
