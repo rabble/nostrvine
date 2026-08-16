@@ -1356,5 +1356,99 @@ void main() {
         );
       },
     );
+    test(
+      'Expired session with still-offline terminal state',
+      () async {
+        // Regression: Terminal offline state must not loop upgrade attempts
+        // indefinitely and must preserve session data for future recovery.
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final pubkey = 'ab' * 32;
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+          refreshToken: 'refresh_token_for_offline',
+          userPubkey: pubkey,
+        );
+        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+        secureStorage['keycast_refresh_token'] = 'refresh_token_for_offline';
+
+        // getSession returns null (no active session after expiry)
+        // refreshSession throws OAuthNetworkException (network offline)
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenThrow(
+          OAuthNetworkException('Network offline'),
+        );
+
+        final authService = createAuthService();
+
+        // initialize() kicks off relay discovery against real sockets, which
+        // the test binding rejects with the UnsupportedError 'Mocked
+        // response'. Tolerate exactly that noise — but keep every assertion
+        // OUTSIDE the guarded zone: an expect() thrown inside a guarded zone
+        // is swallowed by the error handler and orphans the zone future, so
+        // the test can only ever time out instead of reporting the failure.
+        await runIgnoringMockedHttpErrors(authService.initialize);
+
+        // initialize() returns while the unawaited background RPC upgrade
+        // (authRpcCapability: unavailable -> upgrading) is still in flight.
+        // Every mock resolves without real timers, so the event queue drains
+        // deterministically before the terminal-state assertions below.
+        await waitForRpcUpgradeToSettle(authService);
+
+        // After timeout, identity downgrades to PubkeyOnly
+        expect(
+          authService.currentIdentity,
+          isA<PubkeyOnlyNostrIdentity>(),
+          reason:
+              'Terminal offline state downgrades to PubkeyOnlyNostrIdentity '
+              'when no recovery path exists',
+        );
+
+        // RPC capability is unavailable (no recovery possible)
+        expect(
+          authService.authRpcCapability,
+          equals(AuthRpcCapability.unavailable),
+          reason:
+              'Terminal offline state sets authRpcCapability to unavailable '
+              'since network is down and no fallback refresh can occur',
+        );
+
+        // Session is still flagged as expired
+        expect(
+          authService.hasExpiredOAuthSession,
+          isTrue,
+          reason:
+              'Expired session flag persists even in terminal offline state '
+              'for UI to show recovery affordances',
+        );
+
+        // Refresh token is preserved for potential future recovery
+        expect(
+          secureStorage['keycast_refresh_token'],
+          equals('refresh_token_for_offline'),
+          reason:
+              'Refresh token must be preserved in terminal offline state '
+              'so user can manually retry login when network returns',
+        );
+
+        // The in-flight flag must be cleared on the network-failure path so
+        // later upgrade attempts are not wedged behind a finished one.
+        expect(
+          authService.isRpcUpgradeInProgress,
+          isFalse,
+          reason:
+              'Terminal offline state must release the RPC upgrade in-flight '
+              'flag when the offline refresh fails',
+        );
+      },
+    );
   });
 }
