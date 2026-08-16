@@ -290,7 +290,7 @@ class _CueList extends StatelessWidget {
               child: _Stage(
                 state: state,
                 videoUrl: videoUrl,
-                playbackUrls: video.playbackSourceUrlsForPlatform,
+                playbackUrls: video.previewPlaybackSources,
                 videoId: video.id,
                 loadFrames: loadFrames,
               ),

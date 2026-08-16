@@ -3,6 +3,7 @@
 // ABOUTME: detection (dart:io) that don't belong in the pure data model.
 
 import 'package:flutter/foundation.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
@@ -20,14 +21,6 @@ String _getBandwidthBasedQuality() {
     case VideoQuality.low:
       return 'low';
   }
-}
-
-List<String> _orderedUniqueUrls(Iterable<String?> urls) {
-  final seen = <String>{};
-  return [
-    for (final url in urls)
-      if (url != null && url.isNotEmpty && seen.add(url)) url,
-  ];
 }
 
 /// Extension methods for VideoEvent that require app-level dependencies.
@@ -264,29 +257,19 @@ extension VideoEventAppExtensions on VideoEvent {
     return url;
   }
 
-  /// Ordered network sources to attempt in short-form preview players.
+  /// Ordered network sources to attempt in a preview player, best rendition
+  /// first.
   ///
-  /// Mirrors the feed's default source selection: Divine blobs start from the
-  /// transcoded MP4 derivative and fall back to HLS, while the broken bare blob
-  /// URL is withheld unless the user explicitly forces raw playback.
-  List<String> get playbackSourceUrlsForPlatform {
-    final primary = getOptimalVideoUrlForPlatform();
-    final original = videoUrl;
-    final originalIsUnsafeRawBlob =
-        _isRawDivineBlobUrl(original) && primary != original;
-    return _orderedUniqueUrls([
-      primary,
-      getFallbackUrl(),
-      if (!originalIsUnsafeRawBlob) original,
-    ]);
-  }
-
-  bool _isRawDivineBlobUrl(String? url) {
-    if (url == null || url.isEmpty || !isFromDivineServer) return false;
-    final uri = Uri.tryParse(url);
-    if (uri == null) return false;
-    return _extractVideoHash(url) != null && uri.pathSegments.length == 1;
-  }
+  /// This is the feed's ladder, not a second one: [resolvePlaybackSources]
+  /// expands the platform pick into its canonical alternatives and withholds
+  /// the bare Divine blob, which answers a Range request with a cached
+  /// `NoSuchKey` body dressed up as a 206 (divine-blossom#198). Hand the result
+  /// to [setSourceWithFallbacks] — the HLS entry is a master playlist the
+  /// native player takes directly.
+  List<String> get previewPlaybackSources => resolvePlaybackSources(
+    this,
+    urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
+  );
 
   /// HLS URL selected by bandwidth tracker quality.
   String? _hlsForBandwidth() {

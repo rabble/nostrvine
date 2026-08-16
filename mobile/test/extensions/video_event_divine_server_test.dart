@@ -376,42 +376,55 @@ void main() {
     });
   });
 
-  group('playbackSourceUrlsForPlatform', () {
+  group('previewPlaybackSources', () {
     const hash =
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
-    test('uses derivative and HLS for extensionless Divine blobs', () {
+    test('withholds the bare blob for extensionless Divine URLs', () {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
+      // The regression in #7550: the preview used to be handed the bare blob,
+      // which answers a Range request with a cached NoSuchKey body dressed up
+      // as a 206 (divine-blossom#198).
       expect(
-        video.playbackSourceUrlsForPlatform,
+        video.previewPlaybackSources,
         equals([
           'https://media.divine.video/$hash/720p.mp4',
-          'https://media.divine.video/$hash/hls/stream_720p.m3u8',
+          'https://media.divine.video/$hash/hls/master.m3u8',
         ]),
       );
     });
 
-    test('keeps raw Divine blobs only when raw playback is forced', () async {
+    test('falls back to HLS after the raw blob when raw playback is '
+        'forced', () async {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
       await videoFormatPreference.setFormat(VideoPlaybackFormat.raw);
       addTearDown(() => videoFormatPreference.setFormat(null));
 
       expect(
-        video.playbackSourceUrlsForPlatform,
+        video.previewPlaybackSources,
         equals([
           'https://media.divine.video/$hash',
-          'https://media.divine.video/$hash/hls/stream_720p.m3u8',
+          'https://media.divine.video/$hash/hls/master.m3u8',
         ]),
       );
     });
 
-    test('deduplicates non-Divine sources', () {
+    test('offers the HLS rung as a master playlist, not a media playlist', () {
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      // A media playlist (stream_720p.m3u8) carries no #EXT-X-STREAM-INF, so
+      // anything that parses variants out of it resolves to nothing. The
+      // master is the rung the feed uses and the one the native player takes.
+      expect(video.previewPlaybackSources.last, endsWith('/hls/master.m3u8'));
+    });
+
+    test('leaves non-Divine videos with their single original source', () {
       final video = _createVideoWithUrl('https://example.com/video.mp4');
 
       expect(
-        video.playbackSourceUrlsForPlatform,
+        video.previewPlaybackSources,
         equals(['https://example.com/video.mp4']),
       );
     });

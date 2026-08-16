@@ -9,8 +9,8 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
-import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/widgets/caption_pill.dart';
@@ -38,10 +38,10 @@ class SubtitleEditorStage extends StatefulWidget {
   /// Playable URL of the published video.
   final String videoUrl;
 
-  /// Ordered playback candidates for the preview player.
+  /// Ordered playback candidates for the preview player, tried in order.
   ///
-  /// Falls back to [videoUrl] when empty so existing tests and non-feed callers
-  /// keep their previous behavior.
+  /// Falls back to [videoUrl] when empty so non-feed callers keep their
+  /// previous behavior.
   final List<String> playbackUrls;
 
   /// Full event id of the video, used as the media-cache key.
@@ -80,22 +80,6 @@ class SubtitleEditorStage extends StatefulWidget {
     if (isPlaying || seekTarget == null) return true;
     final delta = report - seekTarget;
     return (delta.isNegative ? -delta : delta) <= seekSettleTolerance;
-  }
-
-  /// Resolves candidate URLs before they are handed to the native player.
-  @visibleForTesting
-  static Future<List<String>> resolvePreviewPlaybackUrls({
-    required Iterable<String> playbackUrls,
-    required Future<String?> Function(String? url) resolvePlayableUrl,
-  }) async {
-    final seen = <String>{};
-    final resolved = <String>[];
-    for (final source in playbackUrls) {
-      final url = await resolvePlayableUrl(source);
-      if (url == null || url.isEmpty || !seen.add(url)) continue;
-      resolved.add(url);
-    }
-    return resolved;
   }
 
   @override
@@ -222,17 +206,17 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
   }
 
   Future<void> _openPlayer() async {
-    final urls = await SubtitleEditorStage.resolvePreviewPlaybackUrls(
-      playbackUrls: widget.playbackUrls.isEmpty
-          ? [widget.videoUrl]
-          : widget.playbackUrls,
-      // An m3u8 source has to be resolved to its MP4 before the native player
-      // can take it; for anything else this hands back the URL unchanged.
-      resolvePlayableUrl: VideoEventAppExtensions.resolvePlayableUrl,
+    // Handed to the player as-is: an HLS master playlist is a source it takes
+    // natively on both platforms, so resolving one to an MP4 first would only
+    // buy a round-trip and a downgrade to the lowest-bandwidth variant.
+    final urls = orderedUniqueSources(
+      widget.playbackUrls.isEmpty ? [widget.videoUrl] : widget.playbackUrls,
     );
-    if (!mounted) return;
     if (urls.isEmpty) {
-      setState(() => _failed = true);
+      // Reached synchronously from initState, before the first build, so the
+      // flag is picked up without a setState that would mark a building
+      // element dirty.
+      _failed = true;
       return;
     }
 
@@ -242,7 +226,16 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
     );
     try {
       await controller.initialize();
-      await _setFirstPlayableSource(controller, urls);
+      await setSourceWithFallbacks(
+        index: 0,
+        controller: controller,
+        sources: urls,
+        log: (message) => Log.debug(
+          message,
+          name: 'SubtitleEditorStage',
+          category: LogCategory.video,
+        ),
+      );
       await controller.setLooping(looping: true);
       if (!mounted) {
         await controller.dispose();
@@ -271,29 +264,6 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
         _failed = true;
       });
     }
-  }
-
-  Future<void> _setFirstPlayableSource(
-    DivineVideoPlayerController controller,
-    List<String> urls,
-  ) async {
-    Object? lastError;
-    StackTrace? lastStackTrace;
-    for (final url in urls) {
-      try {
-        await controller.setSource(VideoClip.network(url));
-        return;
-      } on Object catch (error, stackTrace) {
-        lastError = error;
-        lastStackTrace = stackTrace;
-        Log.warning(
-          'Could not open subtitle preview source $url: $error',
-          name: 'SubtitleEditorStage',
-          category: LogCategory.video,
-        );
-      }
-    }
-    Error.throwWithStackTrace(lastError!, lastStackTrace!);
   }
 
   void _onPlayerState(DivineVideoPlayerState state) {
