@@ -16,6 +16,7 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
+import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -45,6 +46,7 @@ void main() {
     /// The tags of the last kind-10003 handed to the signer.
     List<List<String>>? signedTags;
     String? signedContent;
+    int? signedCreatedAt;
 
     Event bookmarkListEvent(
       List<String> eventIds, {
@@ -175,6 +177,7 @@ void main() {
       authService = _MockAuthService();
       signedTags = null;
       signedContent = null;
+      signedCreatedAt = null;
 
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
@@ -189,16 +192,19 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((invocation) async {
         signedTags =
             invocation.namedArguments[#tags] as List<List<String>>? ?? [];
         signedContent = invocation.namedArguments[#content] as String?;
+        signedCreatedAt = invocation.namedArguments[#createdAt] as int?;
         return Event(
           pubkey,
           invocation.namedArguments[#kind] as int,
           signedTags!,
           signedContent!,
+          createdAt: signedCreatedAt,
         );
       });
 
@@ -469,13 +475,26 @@ void main() {
             ['e', 'their-private-one'],
           ]);
           var clock = DateTime(2026);
+          // Contemporaneous with the injected clock: left at the SDK's
+          // real-wall-clock default the event sits months ahead of it, a skew
+          // no relay would serve and one that would force the publish stamp to
+          // cap instead of exercising the ordinary carried-content path (#7629).
+          final theirRevisionAt = clock.millisecondsSinceEpoch ~/ 1000;
           final service = createService(now: () => clock);
 
           stubRelay(events: []);
           await service.syncGlobalBookmarks();
 
           clock = clock.add(const Duration(minutes: 1));
-          stubRelay(events: [bookmarkListEvent([], content: ciphertext)]);
+          stubRelay(
+            events: [
+              bookmarkListEvent(
+                [],
+                content: ciphertext,
+                createdAt: theirRevisionAt,
+              ),
+            ],
+          );
           await service.syncGlobalBookmarks();
 
           clock = clock.add(const Duration(minutes: 1));
@@ -489,7 +508,15 @@ void main() {
 
           // The unconfirmed empty must not have reached the content, so a
           // publish still carries the other client's private items.
-          stubRelay(events: [bookmarkListEvent([], content: ciphertext)]);
+          stubRelay(
+            events: [
+              bookmarkListEvent(
+                [],
+                content: ciphertext,
+                createdAt: theirRevisionAt,
+              ),
+            ],
+          );
           await service.addToGlobalBookmarks(
             const BookmarkItem(type: 'e', id: 'mine'),
           );
@@ -1293,6 +1320,125 @@ void main() {
         expect(service.globalBookmarks.map((item) => item.id), [
           lower.tags.first[1],
         ]);
+      });
+    });
+
+    group('publish timestamps', () {
+      final clock = DateTime.utc(2026);
+      final nowSeconds = clock.millisecondsSinceEpoch ~/ 1000;
+      final drift = NostrTimestamp.getDriftToleranceForKind(
+        BookmarkService.globalBookmarksKind,
+      );
+
+      test(
+        'backdates for relay clock drift when there is nothing to supersede',
+        () async {
+          stubRelay(events: []);
+          final service = createService(now: () => clock);
+
+          expect(
+            (await service.toggleVideoInGlobalBookmarks('video-a')).succeeded,
+            isTrue,
+          );
+
+          expect(signedCreatedAt, nowSeconds - drift);
+        },
+      );
+
+      test(
+        'steps past a revision a non-backdating client left behind',
+        () async {
+          // NIP-51 interop: a client that stamps exact wall clock leaves the
+          // current revision newer than this device's backdated stamp, and the
+          // relay keeps the higher created_at.
+          final theirs = bookmarkListEvent(
+            ['video-a'],
+            createdAt: nowSeconds - 5,
+          );
+          stubRelay(events: [theirs]);
+          final service = createService(now: () => clock);
+
+          expect(
+            (await service.toggleVideoInGlobalBookmarks('video-b')).succeeded,
+            isTrue,
+          );
+
+          expect(
+            signedCreatedAt,
+            theirs.createdAt + 1,
+            reason: 'a backdated stamp would lose the relay merge silently',
+          );
+        },
+      );
+
+      test('steps to the cap when it still supersedes the revision', () async {
+        // Pins the boundary where the superseding stamp equals the cap: this
+        // publish should use the step-past value, not the backdated default.
+        final theirs = bookmarkListEvent(
+          ['video-a'],
+          createdAt: nowSeconds + BookmarkService.maxPublishFutureSkew - 1,
+        );
+        stubRelay(events: [theirs]);
+        final service = createService(now: () => clock);
+
+        expect(
+          (await service.toggleVideoInGlobalBookmarks('video-b')).succeeded,
+          isTrue,
+        );
+
+        expect(
+          signedCreatedAt,
+          nowSeconds + BookmarkService.maxPublishFutureSkew,
+        );
+      });
+
+      test(
+        'still publishes, capped, against an implausible revision',
+        () async {
+          // Milliseconds written as seconds. Refusing here would block every
+          // later write on this device until the wall clock caught up — and
+          // `_revision` is persisted, so a restart would not clear it. A capped
+          // stamp still wins everywhere the bogus revision is absent.
+          stubRelay(
+            events: [
+              bookmarkListEvent(
+                ['video-a'],
+                createdAt: clock.millisecondsSinceEpoch,
+              ),
+            ],
+          );
+          final service = createService(now: () => clock);
+
+          final result = await service.toggleVideoInGlobalBookmarks('video-b');
+
+          expect(result.succeeded, isTrue);
+          expect(
+            signedCreatedAt,
+            nowSeconds + BookmarkService.maxPublishFutureSkew,
+          );
+        },
+      );
+
+      test('stays monotonic across two publishes in the same second', () async {
+        stubRelay(events: []);
+        final service = createService(now: () => clock);
+
+        expect(
+          (await service.toggleVideoInGlobalBookmarks('video-a')).succeeded,
+          isTrue,
+        );
+        final first = signedCreatedAt!;
+
+        expect(
+          (await service.toggleVideoInGlobalBookmarks('video-b')).succeeded,
+          isTrue,
+        );
+
+        expect(
+          signedCreatedAt,
+          greaterThan(first),
+          reason: 'the clock has not moved, so the revision has to carry it',
+        );
       });
     });
 

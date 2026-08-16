@@ -8,6 +8,7 @@ import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -183,6 +184,14 @@ class BookmarkService {
   /// NIP-51 kind for the uncategorized ("global") bookmark list.
   static const int globalBookmarksKind = 10003;
 
+  /// How far past this device's clock a kind-10003 may be stamped.
+  ///
+  /// A publish goes to the whole pool and only needs `acceptedByAny`, so this
+  /// is a best-effort pool-wide compromise rather than any one relay's limit:
+  /// Divine's refuses `created_at` more than 60 s ahead, a stricter relay may
+  /// refuse sooner, and this device's clock is not the relay's either.
+  static const int maxPublishFutureSkew = 30;
+
   /// The `content` Divine wrote into kind 10003 before it respected NIP-51's
   /// reservation of that field for the encrypted private-item array.
   ///
@@ -324,6 +333,43 @@ class BookmarkService {
       return false;
     }
     return _now().difference(local.acceptedAt) < localPublishAbsenceGracePeriod;
+  }
+
+  /// The `created_at` for the next publish.
+  ///
+  /// Kind 10003 is normally stamped `now - 30s` for relay clock drift. A
+  /// NIP-51 client that does not backdate can therefore hold the current
+  /// revision at a timestamp this device's stamp cannot beat, and the relay
+  /// keeps the higher `created_at` — so the publish is accepted, the user is
+  /// told "Saved", and the merge discards it (#7629). Step past that revision
+  /// instead, capped at [maxPublishFutureSkew].
+  ///
+  /// The cap is best-effort, never a refusal. Adoption applies no upper bound
+  /// on how far ahead a revision may be stamped ([_isStaleRevision] only
+  /// rejects older), and [_revision] is persisted, so one implausibly
+  /// future-dated event — a skewed clock, or milliseconds written as seconds —
+  /// would otherwise block every later write on this device until the wall
+  /// clock caught up, across restarts. A capped stamp still beats the plain
+  /// backdated one everywhere the bogus revision is absent.
+  int _nextPublishCreatedAt() {
+    final nowSeconds = _now().millisecondsSinceEpoch ~/ 1000;
+    final backdated =
+        nowSeconds -
+        NostrTimestamp.getDriftToleranceForKind(globalBookmarksKind);
+    final revision = _revision;
+    if (revision == null || backdated > revision.createdAt) return backdated;
+
+    final superseding = revision.createdAt + 1;
+    final ceiling = nowSeconds + maxPublishFutureSkew;
+    if (superseding <= ceiling) return superseding;
+
+    Log.warning(
+      'Cannot stamp past kind 10003 revision ${revision.createdAt}; '
+      'publishing at $ceiling, which the relay merge may discard',
+      name: 'BookmarkService',
+      category: LogCategory.system,
+    );
+    return ceiling;
   }
 
   /// Whether an empty answer from a partial set of relays still has to be
@@ -903,6 +949,7 @@ class BookmarkService {
         kind: globalBookmarksKind,
         content: content,
         tags: [for (final item in candidate) item.toTag()],
+        createdAt: _nextPublishCreatedAt(),
       );
 
       if (event == null) return false;
