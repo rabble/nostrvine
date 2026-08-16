@@ -149,7 +149,10 @@ class _FeedTuningSwipeOverlayState extends State<FeedTuningSwipeOverlay> {
   }
 
   bool _isPlatformBackGestureStart(Offset globalPosition) {
-    if (Theme.of(context).platform != TargetPlatform.iOS) return false;
+    final platform = Theme.of(context).platform;
+    if (platform != TargetPlatform.iOS && platform != TargetPlatform.macOS) {
+      return false;
+    }
 
     final route = ModalRoute.of(context);
     if (route is! PageRoute<dynamic> || !route.popGestureEnabled) return false;

@@ -212,7 +212,22 @@ void main() {
       expect(tuned, [FeedTuningDirection.more]);
     });
 
-    testWidgets('non-iOS pushed route edge swipe can still tune', (
+    testWidgets('macOS pushed route edge swipe pops without tuning', (
+      tester,
+    ) async {
+      final tuned = await pumpPushedOverlay(
+        tester,
+        platform: TargetPlatform.macOS,
+      );
+
+      await tester.dragFrom(const Offset(5, 300), const Offset(500, 0));
+      await tester.pumpAndSettle();
+
+      expect(tuned, isEmpty);
+      expect(find.text('home'), findsOneWidget);
+    });
+
+    testWidgets('Android pushed route edge swipe can still tune', (
       tester,
     ) async {
       final tuned = await pumpPushedOverlay(
