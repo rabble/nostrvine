@@ -16,6 +16,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -292,7 +293,7 @@ class _CustomLabelerTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
-    final handle = profile?.shortDisplayNip05;
+    final identifier = profile?.shortDisplayNip05 ?? _fullNpub(pubkey);
 
     return ListTile(
       leading: Icon(Icons.label_outline, color: context.vineColors.disabled),
@@ -302,16 +303,14 @@ class _CustomLabelerTile extends ConsumerWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: handle != null && handle.isNotEmpty
-          ? Text(
-              handle,
-              style: VineTheme.bodyMediumFont(
-                color: context.vineColors.secondaryText,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            )
-          : null,
+      subtitle: Text(
+        identifier,
+        style: VineTheme.bodyMediumFont(
+          color: context.vineColors.secondaryText,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: DivineIconButton(
         icon: DivineIconName.minus,
         backgroundColor: VineTheme.transparent,
@@ -451,7 +450,7 @@ class _BlockedUserTile extends ConsumerWidget {
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
     // No relationship line here: "You follow" under an account you have
     // blocked reads as a contradiction, so the handle is the whole signal.
-    final handle = profile?.shortDisplayNip05;
+    final identifier = profile?.shortDisplayNip05 ?? _fullNpub(pubkey);
 
     return ListTile(
       leading: Container(
@@ -495,16 +494,12 @@ class _BlockedUserTile extends ConsumerWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: handle != null && handle.isNotEmpty
-          ? Text(
-              handle,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.secondaryText,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            )
-          : null,
+      subtitle: Text(
+        identifier,
+        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: DivineButton(
         label: context.l10n.safetySettingsUnblock,
         type: DivineButtonType.link,
@@ -512,5 +507,13 @@ class _BlockedUserTile extends ConsumerWidget {
         onPressed: onUnblock,
       ),
     );
+  }
+}
+
+String _fullNpub(String pubkey) {
+  try {
+    return NostrKeyUtils.encodePubKey(pubkey);
+  } on Exception {
+    return pubkey;
   }
 }

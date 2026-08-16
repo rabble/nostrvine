@@ -1876,6 +1876,36 @@ void main() {
         verifyNever(() => mockNostrClient.queryEvents(any()));
       });
 
+      test('does not mark an empty-pubkey follower result as cached', () async {
+        const follower =
+            'e5f6789012345678901234567890abcdef1234567890123456789012abcd1234';
+        var currentPubkey = '';
+        when(() => mockNostrClient.publicKey).thenAnswer((_) => currentPubkey);
+
+        final unauthenticatedFollowers = await repository.getMyFollowers();
+        expect(unauthenticatedFollowers, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+
+        currentPubkey = testCurrentUserPubkey;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+
+        final firstEmission = await repository.watchMyFollowers().first;
+
+        expect(firstEmission.pubkeys, equals([follower]));
+      });
+
       test('returns followers for current user', () async {
         const follower1 =
             'e5f6789012345678901234567890abcdef1234567890123456789012abcd1234';

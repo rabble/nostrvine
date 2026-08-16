@@ -305,7 +305,10 @@ class FollowRepository {
 
   /// [getMyFollowers] plus the size of the datable prefix.
   Future<({List<String> pubkeys, int datedCount})> _fetchMyFollowers() async {
-    final result = await _fetchOrderedFollowers(_nostrClient.publicKey);
+    final pubkey = _nostrClient.publicKey;
+    if (pubkey.isEmpty) return (pubkeys: <String>[], datedCount: 0);
+
+    final result = await _fetchOrderedFollowers(pubkey);
     _cachedMyFollowersPubkeys = result.pubkeys;
     _cachedMyFollowersDatedCount = result.datedCount;
     _hasMyFollowersCache = true;

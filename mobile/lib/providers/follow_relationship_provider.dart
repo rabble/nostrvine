@@ -2,6 +2,7 @@
 // ABOUTME: Backs the social-proof identifier line that replaced truncated npubs
 
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -18,6 +19,9 @@ part 'follow_relationship_provider.g.dart';
 /// is not worth surfacing on a secondary identifier line.
 @Riverpod(keepAlive: true)
 Future<void> myFollowersWarmup(Ref ref) async {
+  final readiness = ref.watch(nostrSessionProvider);
+  if (!readiness.isReadyForActiveClient) return;
+
   final repository = ref.watch(followRepositoryProvider);
   try {
     await repository.getMyFollowers();

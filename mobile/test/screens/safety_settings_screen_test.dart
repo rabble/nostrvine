@@ -9,10 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -21,6 +23,7 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockContentBlocklistRepository extends Mock
@@ -107,6 +110,10 @@ void main() {
     late _MockContentFilterService mockContentFilterService;
     late _MockVideoEventService mockVideoEventService;
     late DivineHostFilterService divineHostFilterService;
+    const blockedPubkey =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const labelerPubkey =
+        'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
@@ -158,7 +165,10 @@ void main() {
       ).thenAnswer((_) => const Stream<List<String>>.empty());
     });
 
-    Widget createTestWidget({bool isProtectedMinor = false}) {
+    Widget createTestWidget({
+      bool isProtectedMinor = false,
+      Map<String, UserProfile?> profiles = const {},
+    }) {
       final container = ProviderContainer(
         overrides: [
           contentBlocklistRepositoryProvider.overrideWithValue(
@@ -186,6 +196,9 @@ void main() {
             divineHostFilterService,
           ),
           isProtectedMinorProvider.overrideWithValue(isProtectedMinor),
+          userProfileReactiveProvider.overrideWith(
+            (ref, pubkey) => Stream.value(profiles[pubkey]),
+          ),
         ],
       );
 
@@ -222,6 +235,49 @@ void main() {
 
       expect(find.text(l10n.safetySettingsBlockedUsers), findsOneWidget);
     });
+
+    testWidgets('blocked users without profiles keep a full npub identifier', (
+      tester,
+    ) async {
+      await mockBlocklistRepository.blockUser(blockedPubkey);
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final npub = NostrKeyUtils.encodePubKey(blockedPubkey);
+      await tester.scrollUntilVisible(find.text(npub), 200);
+
+      expect(
+        find.text(UserProfile.defaultDisplayNameFor(blockedPubkey)),
+        findsOneWidget,
+      );
+      expect(find.text(npub), findsOneWidget);
+    });
+
+    testWidgets(
+      'custom labelers without profiles keep a full npub identifier',
+      (tester) async {
+        when(
+          () => mockModerationLabelService.customLabelers,
+        ).thenReturn({labelerPubkey});
+        when(() => mockModerationLabelService.subscribedLabelers).thenReturn({
+          ModerationLabelService.fallbackModerationPubkeyHex,
+          labelerPubkey,
+        });
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final npub = NostrKeyUtils.encodePubKey(labelerPubkey);
+        await tester.scrollUntilVisible(find.text(npub), 200);
+
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(labelerPubkey)),
+          findsOneWidget,
+        );
+        expect(find.text(npub), findsOneWidget);
+      },
+    );
 
     testWidgets('should use dark background color', (tester) async {
       await tester.pumpWidget(createTestWidget());
@@ -339,10 +395,7 @@ void main() {
         );
         expect(tile.onChanged, isNull); // disabled: cannot be toggled
         expect(tile.value, isFalse);
-        expect(
-          find.text(l10n.safetySettingsAgeLockedForMinor),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.safetySettingsAgeLockedForMinor), findsOneWidget);
       },
     );
 

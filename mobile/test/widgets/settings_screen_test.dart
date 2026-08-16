@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
@@ -31,9 +32,10 @@ import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/environment_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,6 +75,8 @@ void main() {
     late _MockLocaleCubit mockLocaleCubit;
     late SharedPreferences sharedPreferences;
     final l10n = lookupAppLocalizations(const Locale('en'));
+    const currentPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
     final twoAccounts = [
       KnownAccount(
         pubkeyHex:
@@ -100,9 +104,7 @@ void main() {
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.isAnonymous).thenReturn(false);
-      when(
-        () => mockAuthService.currentPublicKeyHex,
-      ).thenReturn('abc123pubkey');
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(currentPubkey);
       when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(
         () => mockAuthService.authStateStream,
@@ -216,6 +218,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(UserAvatar), findsOneWidget);
+      expect(
+        find.text(NostrKeyUtils.encodePubKey(currentPubkey)),
+        findsOneWidget,
+      );
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -430,6 +436,103 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+
+    testWidgets(
+      'account switcher uses full npub fallback for same-name accounts',
+      (tester) async {
+        const firstPubkey =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        const secondPubkey =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+        final accounts = [
+          KnownAccount(
+            pubkeyHex: firstPubkey,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime(2024),
+            lastUsedAt: DateTime(2024),
+          ),
+          KnownAccount(
+            pubkeyHex: secondPubkey,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime(2024),
+            lastUsedAt: DateTime(2024),
+          ),
+        ];
+
+        await sharedPreferences.setBool('ff_accountSwitching', true);
+        when(() => mockAuthService.currentPublicKeyHex).thenReturn(firstPubkey);
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) async => accounts);
+        final publishBloc = _MockBackgroundPublishBloc();
+        when(
+          () => publishBloc.state,
+        ).thenReturn(const BackgroundPublishState());
+        whenListen(
+          publishBloc,
+          const Stream<BackgroundPublishState>.empty(),
+          initialState: const BackgroundPublishState(),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
+              currentAuthStateProvider.overrideWith(
+                (ref) => AuthState.authenticated,
+              ),
+              knownAccountsProvider.overrideWith((ref) async => accounts),
+              userProfileReactiveProvider.overrideWith(
+                (ref, pubkey) => Stream.value(
+                  UserProfile(
+                    pubkey: pubkey,
+                    name: 'Jack',
+                    rawData: const {},
+                    createdAt: DateTime(2024),
+                    eventId: 'event-$pubkey',
+                  ),
+                ),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: _createMockInviteCubit(),
+                  ),
+                  BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
+                  BlocProvider<BackgroundPublishBloc>.value(value: publishBloc),
+                ],
+                child: const SettingsScreen(),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Switch account'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Jack'), findsWidgets);
+        expect(
+          find.text(NostrKeyUtils.encodePubKey(firstPubkey)),
+          findsWidgets,
+        );
+        expect(
+          find.text(NostrKeyUtils.encodePubKey(secondPubkey)),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
 
     testWidgets('renders navigation tiles', (tester) async {
       await tester.pumpWidget(buildSubject());

@@ -68,7 +68,7 @@ final class MyFollowersWarmupProvider
   }
 }
 
-String _$myFollowersWarmupHash() => r'8b56b34a7e4e51590b2355d89ac76e7931355ad8';
+String _$myFollowersWarmupHash() => r'544631a238ec616cf74ef8ff475a97020eed7686';
 
 /// The current user's follow relationship with [pubkey], kept live.
 ///

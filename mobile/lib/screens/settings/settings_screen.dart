@@ -667,14 +667,16 @@ class _AccountHeaderProfile extends ConsumerWidget {
         : null;
     // Always the signed-in account, so a failed check never hides the handle:
     // the owner needs to see what they claimed in order to fix it.
-    final uniqueIdentifier = resolveUserIdentifierLine(
-      l10n: context.l10n,
-      locale: Localizations.localeOf(context).toLanguageTag(),
-      handle: claimedNip05,
-      verificationStatus: verificationStatus,
-      isOwnProfile: true,
-      followerCount: profile?.followerCount,
-    );
+    final uniqueIdentifier =
+        resolveUserIdentifierLine(
+          l10n: context.l10n,
+          locale: Localizations.localeOf(context).toLanguageTag(),
+          handle: claimedNip05,
+          verificationStatus: verificationStatus,
+          isOwnProfile: true,
+          followerCount: profile?.followerCount,
+        ) ??
+        _fullNpub(pubkey);
 
     return Column(
       children: [
@@ -694,16 +696,15 @@ class _AccountHeaderProfile extends ConsumerWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        if (uniqueIdentifier != null)
-          Text(
-            uniqueIdentifier,
-            style: VineTheme.bodyMediumFont(
-              color: context.vineColors.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        Text(
+          uniqueIdentifier,
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
           ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }
@@ -803,8 +804,7 @@ class _AccountSwitchTile extends ConsumerWidget {
     final displayName =
         profile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(account.pubkeyHex);
-    final identifier =
-        profile?.displayNip05 ?? NostrKeyUtils.truncateNpub(account.pubkeyHex);
+    final identifier = profile?.displayNip05 ?? _fullNpub(account.pubkeyHex);
 
     return Semantics(
       button: true,
@@ -863,6 +863,14 @@ class _AccountSwitchTile extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+String _fullNpub(String pubkey) {
+  try {
+    return NostrKeyUtils.encodePubKey(pubkey);
+  } on Exception {
+    return pubkey;
   }
 }
 

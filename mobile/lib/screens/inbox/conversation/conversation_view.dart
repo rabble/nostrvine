@@ -21,6 +21,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/follow_relationship_provider.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -167,6 +168,12 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         : moderationDisplayName(context, otherPubkey) ??
               profile?.bestDisplayName ??
               UserProfile.defaultDisplayNameFor(otherPubkey);
+    final claimedNip05 = profile?.shortDisplayNip05;
+    final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
+        ? ref
+              .watch(nip05VerificationProvider(otherPubkey))
+              .whenOrNull(data: (status) => status)
+        : null;
     // Prefer the profile's NIP-05 / divine handle when set, otherwise the
     // follow relationship — which tells the viewer which of several
     // same-named people they are messaging, as a truncated npub never did.
@@ -175,7 +182,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         : resolveUserIdentifierLine(
                 l10n: context.l10n,
                 locale: Localizations.localeOf(context).toLanguageTag(),
-                handle: profile?.handle,
+                handle: claimedNip05,
+                verificationStatus: verificationStatus,
                 relationship:
                     ref.watch(followRelationshipProvider(otherPubkey)).value ??
                     FollowRelationship.none,
