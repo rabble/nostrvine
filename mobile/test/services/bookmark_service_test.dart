@@ -477,7 +477,8 @@ void main() {
           var clock = DateTime(2026);
           // Contemporaneous with the injected clock: left at the SDK's
           // real-wall-clock default the event sits months ahead of it, a skew
-          // no relay would serve and one the publish path now declines (#7629).
+          // no relay would serve and one that would force the publish stamp to
+          // cap instead of exercising the ordinary carried-content path (#7629).
           final theirRevisionAt = clock.millisecondsSinceEpoch ~/ 1000;
           final service = createService(now: () => clock);
 
@@ -1370,9 +1371,9 @@ void main() {
         },
       );
 
-      test('steps past a revision that lands exactly on the cap', () async {
-        // The boundary is inclusive: this is still a stamp the relay accepts,
-        // so it must be used rather than treated as over the line.
+      test('steps to the cap when it still supersedes the revision', () async {
+        // Pins the boundary where the superseding stamp equals the cap: this
+        // publish should use the step-past value, not the backdated default.
         final theirs = bookmarkListEvent(
           ['video-a'],
           createdAt: nowSeconds + BookmarkService.maxPublishFutureSkew - 1,
