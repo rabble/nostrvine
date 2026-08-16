@@ -761,5 +761,135 @@ void main() {
 
       expect(unhandledErrors, isEmpty);
     });
+
+    test('absorbs a social Error racing an author video failure', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+      final unhandledErrors = <Object>[];
+
+      when(() => api.isAvailable).thenReturn(true);
+      // The tolerant wrapper only catches Exceptions, so an Error (an
+      // invariant) escapes it and would otherwise surface as an unhandled
+      // async error when the required load aborts first.
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async {
+        await Future<void>.delayed(Duration.zero);
+        throw StateError('social invariant failed');
+      });
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenThrow(
+        const FunnelcakeApiException(message: 'author failed', statusCode: 500),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+
+      await runZonedGuarded<Future<void>>(
+        () async {
+          await expectLater(
+            repo.fetchCreatorAnalytics(pubkey),
+            throwsA(isA<CreatorAnalyticsLoadException>()),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        (error, stackTrace) {
+          unhandledErrors.add(error);
+        },
+      );
+
+      expect(unhandledErrors, isEmpty);
+    });
+
+    test('keeps earlier bulk-stats chunks when a later chunk fails', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+      var authorCalls = 0;
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(() => api.getVideoViews(any())).thenAnswer((_) async => 12);
+      when(
+        () => api.getBulkVideoStats(any()),
+      ).thenAnswer((invocation) async {
+        final ids = invocation.positionalArguments[0] as List<String>;
+        // Second chunk (the video-100 tail) fails; the first chunk succeeds.
+        if (ids.contains('video-100')) {
+          throw const FunnelcakeApiException(
+            message: 'bulk chunk failed',
+            statusCode: 500,
+          );
+        }
+        return BulkVideoStatsResponse(
+          stats: {
+            for (final id in ids)
+              id: BulkVideoStatsEntry(
+                eventId: id,
+                reactions: 4,
+                comments: 2,
+                reposts: 1,
+                views: 15,
+              ),
+          },
+        );
+      });
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer((_) async {
+        final page = authorCalls++;
+        if (page == 0) {
+          return VideosByAuthorResponse(
+            videos: [
+              for (var i = 0; i < 100; i++)
+                _videoStats(
+                  id: 'video-$i',
+                  pubkey: pubkey,
+                  createdAtSeconds: 1739350000 - i,
+                ),
+            ],
+            hasMore: true,
+          );
+        }
+        return VideosByAuthorResponse(
+          videos: [
+            _videoStats(
+              id: 'video-100',
+              pubkey: pubkey,
+              createdAtSeconds: 1739349900,
+            ),
+          ],
+          hasMore: false,
+        );
+      });
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+      final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+      expect(snapshot.diagnostics.totalVideos, 101);
+      // The first chunk's stats survive the second chunk's failure.
+      expect(
+        snapshot.videos
+            .singleWhere((video) => video.id == 'video-0')
+            .rawTags['views'],
+        '15',
+      );
+      expect(snapshot.diagnostics.videosHydratedByBulkStats, 100);
+      expect(snapshot.diagnostics.failedSources, {
+        AnalyticsDataSource.bulkVideoStats,
+      });
+      // video-100 still gets views from the per-video endpoint.
+      expect(
+        snapshot.videos
+            .singleWhere((video) => video.id == 'video-100')
+            .rawTags['views'],
+        '12',
+      );
+    });
   });
 }

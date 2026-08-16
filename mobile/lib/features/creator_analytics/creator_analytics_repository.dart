@@ -136,6 +136,12 @@ class FunnelcakeCreatorAnalyticsRepository
     try {
       authorResult = await _fetchAuthorVideos(pubkey);
     } on Exception catch (e) {
+      // The concurrent social-counts fetch can still complete with an Error
+      // (the tolerant wrapper only catches Exceptions, so invariants keep
+      // propagating on the success path). Nobody awaits it anymore once this
+      // load aborts, so absorb it here rather than leaking an unhandled
+      // async error.
+      socialFuture.ignore();
       throw CreatorAnalyticsLoadException(
         _classifyRequiredLoadFailure(e),
         cause: e,
@@ -262,7 +268,11 @@ class FunnelcakeCreatorAnalyticsRepository
     Set<AnalyticsDataSource> failedSources,
   ) async {
     try {
-      return await _enrichVideosWithBulkStats(videos);
+      final result = await _enrichVideosWithBulkStats(videos);
+      if (result.hadFailures) {
+        failedSources.add(AnalyticsDataSource.bulkVideoStats);
+      }
+      return result;
     } on Exception catch (e, stackTrace) {
       failedSources.add(AnalyticsDataSource.bulkVideoStats);
       Log.error(
@@ -286,14 +296,32 @@ class FunnelcakeCreatorAnalyticsRepository
     final ids = videos.map((video) => video.id).where((id) => id.isNotEmpty);
     final chunks = _chunkStrings(ids.toList(), 100);
     final statsById = <String, BulkVideoStatsEntry>{};
+    var hadFailures = false;
 
     for (final chunk in chunks) {
-      final chunkResponse = await _client.getBulkVideoStats(chunk);
-      statsById.addAll(chunkResponse.stats);
+      // Tolerance is per chunk: a later chunk failing must not discard the
+      // stats earlier chunks already fetched.
+      try {
+        final chunkResponse = await _client.getBulkVideoStats(chunk);
+        statsById.addAll(chunkResponse.stats);
+      } on Exception catch (e, stackTrace) {
+        hadFailures = true;
+        Log.error(
+          'Failed to hydrate creator analytics videos with bulk stats',
+          name: 'CreatorAnalyticsRepository',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
     }
 
     if (statsById.isEmpty) {
-      return _HydrationResult(videos: videos, hydratedCount: 0);
+      return _HydrationResult(
+        videos: videos,
+        hydratedCount: 0,
+        hadFailures: hadFailures,
+      );
     }
 
     var hydratedCount = 0;
@@ -333,7 +361,11 @@ class FunnelcakeCreatorAnalyticsRepository
       );
     }).toList();
 
-    return _HydrationResult(videos: hydrated, hydratedCount: hydratedCount);
+    return _HydrationResult(
+      videos: hydrated,
+      hydratedCount: hydratedCount,
+      hadFailures: hadFailures,
+    );
   }
 
   Future<_HydrationResult> _hydrateVideoViewsTolerant(
