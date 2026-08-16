@@ -1589,6 +1589,34 @@ void main() {
         expect(result.noRelays, isTrue);
       });
 
+      test(
+        'reports noRelays when no relay took the REQ despite being connected',
+        () async {
+          // The pre-flight snapshot cannot see this: a write-only relay, or
+          // one whose socket died since its last status update, is still
+          // reported as connected. Only the fan-out knows nothing was asked.
+          stubWebSocketEvents([]);
+          mockNostr.noRelaysParticipated = true;
+
+          final result = await client.queryEventsDetailed([textNoteFilter()]);
+
+          expect(
+            mockRelayManager.connectedRelays,
+            isNotEmpty,
+            reason: 'otherwise the pre-flight check would have flagged it',
+          );
+          expect(result.events, isEmpty);
+          expect(
+            result.noRelays,
+            isTrue,
+            reason:
+                'reported as a timeout, this reads as "the relays were '
+                'reachable and slow" — the caller retries instead of telling '
+                'the user their relays are unreachable',
+          );
+        },
+      );
+
       test('reports noRelays on a disposed client', () async {
         await client.dispose();
 

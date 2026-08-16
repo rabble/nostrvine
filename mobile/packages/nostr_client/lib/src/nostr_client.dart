@@ -842,10 +842,15 @@ class NostrClient {
   /// partial answer — and an incomplete answer arrives as `timedOut: true`
   /// instead. That covers the answers nobody gave as well as the partial ones:
   /// a fan-out no relay accepted, and a query skipped because the client is
-  /// being disposed, both report `timedOut: true` rather than an empty answer
-  /// (a client with no reachable relay at all reports `noRelays` instead).
+  /// being disposed, both report `timedOut: true` rather than an empty answer.
   /// Note this only bounds the WebSocket leg; cached rows are merged in either
   /// way.
+  ///
+  /// `noRelays` says nothing was asked, whatever the flag. It covers a client
+  /// with no connected relay and no temp relay, a disposed client, and a
+  /// fan-out no relay took — the last of which a connected-relay snapshot
+  /// cannot see, since a write-only relay and one whose socket died since its
+  /// last status update both still count as connected.
   Future<({List<Event> events, bool timedOut, bool noRelays})>
   queryEventsDetailed(
     List<Filter> filters, {
@@ -899,7 +904,10 @@ class NostrClient {
         (effectiveTempRelays == null || effectiveTempRelays.isEmpty)) {
       await retryDisconnectedRelays();
     }
-    final noRelays =
+    // A pre-flight snapshot, so it can only catch the relayless case it can
+    // see from here; the fan-out's own account of who took the REQ is folded
+    // in below.
+    final noConnectedRelays =
         _relayManager.connectedRelays.isEmpty &&
         (effectiveTempRelays == null || effectiveTempRelays.isEmpty);
     final filtersJson = filters.map((f) => f.toJson()).toList();
@@ -970,7 +978,7 @@ class NostrClient {
     return (
       events: _mergeEvents(cacheResults, websocketEvents, limit: limit),
       timedOut: websocketResult.timedOut,
-      noRelays: noRelays,
+      noRelays: noConnectedRelays || websocketResult.noRelaysParticipated,
     );
   }
 
