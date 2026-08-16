@@ -48,24 +48,19 @@ class _TapTarget extends StatelessWidget {
   }
 }
 
-/// Draws label text in the same colour as the surface behind it in light mode,
-/// and in a legible colour in dark mode.
+/// A tap target that is compliant in dark mode and 20dp in light mode.
 ///
 /// Deliberately inverted so exactly one appearance fails, which is what makes
-/// the two-appearance sweep worth running.
-class _LightModeContrastRegression extends StatelessWidget {
-  const _LightModeContrastRegression();
+/// the two-appearance sweep worth running. Sizes rather than colours: the
+/// guideline compares exact integers, so the fixture cannot drift with glyph
+/// rasterization the way a contrast reading does.
+class _LightModeTapTargetRegression extends StatelessWidget {
+  const _LightModeTapTargetRegression();
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Text(
-      'appearance-sensitive label',
-      style: TextStyle(
-        fontSize: 14,
-        color: isDark ? Colors.black : Colors.white,
-      ),
-    );
+    return _TapTarget(side: isDark ? 60 : 20, label: 'Appearance sensitive');
   }
 }
 
@@ -155,26 +150,19 @@ void main() {
       );
     });
 
-    testWidgets(
-      'fails on a contrast regression that only lands in light mode',
-      (
-        tester,
-      ) async {
-        final failure = await _failureFrom(
-          () => expectMeetsAccessibilityGuidelinesInBothAppearances(
-            tester,
-            (theme) => _app(
-              const _LightModeContrastRegression(),
-              theme: theme,
-              background: Colors.white,
-            ),
-            guidelines: const [textContrastGuideline],
-          ),
-        );
+    testWidgets('fails on a regression that only lands in light mode', (
+      tester,
+    ) async {
+      final failure = await _failureFrom(
+        () => expectMeetsAccessibilityGuidelinesInBothAppearances(
+          tester,
+          (theme) => _app(const _LightModeTapTargetRegression(), theme: theme),
+          guidelines: const [androidTapTargetGuideline],
+        ),
+      );
 
-        expect(failure, isNotNull);
-        expect(failure.toString(), contains('light appearance'));
-      },
-    );
+      expect(failure, isNotNull);
+      expect(failure.toString(), contains('light appearance'));
+    });
   });
 }
