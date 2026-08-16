@@ -58,7 +58,6 @@ class AnimationPickerChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vineColors;
-    final isLight = colors.isLight;
     return Semantics(
       button: true,
       selected: selected,
@@ -73,28 +72,10 @@ class AnimationPickerChip extends StatelessWidget {
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: selected
-                  ? isLight
-                        ? colors.primaryContainer
-                        : VineTheme.primary.withValues(alpha: 0.18)
-                  : isLight
-                  ? colors.containerLow
-                  : VineTheme.lightText.withValues(alpha: 0.08),
+              color: selected ? colors.controlSelectedFill : colors.controlFill,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                // Light mode cannot lean on the accent the way dark does:
-                // `primaryContainer` and `containerLow` are 1.001:1 apart, so
-                // the border is the only thing left to carry the selected
-                // state. `outline` against `outlineMuted` is 1.37:1 — this
-                // pairing puts it at 10.10:1, matching the glyph and label
-                // that already resolve `onSurface` here.
-                color: selected
-                    ? isLight
-                          ? colors.onSurface
-                          : VineTheme.primary
-                    : isLight
-                    ? colors.outlineMuted
-                    : VineTheme.transparent,
+                color: selected ? colors.accentBrand : colors.controlOutline,
               ),
             ),
             child: Padding(
@@ -141,9 +122,7 @@ class CurvePickerRow extends StatelessWidget {
                 painter: CurveGlyphPainter(
                   curve: flutterCurveFor(AnimationCurve.values[i]),
                   color: AnimationCurve.values[i] == selected
-                      ? context.vineColors.isLight
-                            ? context.vineColors.onSurface
-                            : VineTheme.primary
+                      ? context.vineColors.accentBrand
                       : context.vineColors.secondaryText,
                 ),
               ),

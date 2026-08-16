@@ -398,16 +398,8 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                                     child: DivineIcon(
                                       icon: _directionIcon(direction),
                                       size: 18,
-                                      // Matches the curve glyphs, which
-                                      // already resolve `onSurface` in
-                                      // light. Not a contrast call —
-                                      // `accentPositive` is 5.78:1 on the
-                                      // chip's `primaryContainer` fill —
-                                      // but a consistency one.
                                       color: direction == active.direction
-                                          ? context.vineColors.isLight
-                                                ? context.vineColors.onSurface
-                                                : VineTheme.primary
+                                          ? context.vineColors.accentBrand
                                           : context.vineColors.secondaryText,
                                     ),
                                   ),
@@ -561,16 +553,11 @@ class _PhaseToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.vineColors;
-    final isLight = colors.isLight;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: isLight
-            ? colors.containerLow
-            : VineTheme.lightText.withValues(alpha: 0.08),
+        color: colors.controlFill,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isLight ? colors.outlineMuted : VineTheme.transparent,
-        ),
+        border: Border.all(color: colors.controlOutline),
       ),
       child: Row(
         children: [
@@ -604,7 +591,6 @@ class _PhaseSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vineColors;
-    final isLight = colors.isLight;
     return Expanded(
       child: Semantics(
         button: true,
@@ -619,30 +605,16 @@ class _PhaseSegment extends StatelessWidget {
             ),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: selected
-                  ? isLight
-                        ? colors.primaryContainer
-                        : VineTheme.primary.withValues(alpha: 0.18)
-                  : null,
+              color: selected ? colors.controlSelectedFill : null,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                // See `AnimationPickerChip`: the light fills are 1.001:1
-                // apart, so the border carries the selected state alone.
-                color: selected
-                    ? isLight
-                          ? colors.onSurface
-                          : VineTheme.primary
-                    : VineTheme.transparent,
+                color: selected ? colors.accentBrand : VineTheme.transparent,
               ),
             ),
             child: Text(
               label,
               style: VineTheme.labelMediumFont(
-                color: selected
-                    ? isLight
-                          ? colors.onSurface
-                          : VineTheme.primary
-                    : colors.mutedText,
+                color: selected ? colors.accentBrand : colors.mutedText,
               ),
             ),
           ),
@@ -702,14 +674,11 @@ class _LayerTypeTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    // Same reasoning as the phase segments — and `primary`
-                    // only reaches 2.22:1 on a light tile, so it cannot mark
-                    // the selection there either.
+                    // Same unselected ring as the transition tiles and the
+                    // chips in this sheet: muted in light, invisible in dark.
                     color: selected
-                        ? colors.isLight
-                              ? colors.onSurface
-                              : VineTheme.primary
-                        : VineTheme.transparent,
+                        ? colors.accentBrand
+                        : colors.controlOutline,
                     width: 2,
                   ),
                 ),
@@ -738,11 +707,7 @@ class _LayerTypeTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: VineTheme.labelSmallFont(
-                    color: selected
-                        ? colors.isLight
-                              ? colors.onSurface
-                              : VineTheme.primary
-                        : colors.mutedText,
+                    color: selected ? colors.accentBrand : colors.mutedText,
                   ),
                 ),
               ),

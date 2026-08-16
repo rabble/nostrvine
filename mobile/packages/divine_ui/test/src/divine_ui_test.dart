@@ -106,6 +106,10 @@ void main() {
         'onErrorContainer': (c) => c.onErrorContainer,
         'accentPositive': (c) => c.accentPositive,
         'accentWarning': (c) => c.accentWarning,
+        'accentBrand': (c) => c.accentBrand,
+        'controlSelectedFill': (c) => c.controlSelectedFill,
+        'controlFill': (c) => c.controlFill,
+        'controlOutline': (c) => c.controlOutline,
         'inverseSurface': (c) => c.inverseSurface,
         'inverseOnSurface': (c) => c.inverseOnSurface,
         'mediaChrome': (c) => c.mediaChrome,
@@ -155,6 +159,10 @@ void main() {
         onErrorContainer: color,
         accentPositive: color,
         accentWarning: color,
+        accentBrand: color,
+        controlSelectedFill: color,
+        controlFill: color,
+        controlOutline: color,
         accentChipOrange: VineAccentChip(container: color, onContainer: color),
         accentChipYellow: VineAccentChip(container: color, onContainer: color),
         accentChipBlue: VineAccentChip(container: color, onContainer: color),
@@ -195,6 +203,10 @@ void main() {
           onErrorContainer: const Color(0xFF000017),
           accentPositive: const Color(0xFF00001A),
           accentWarning: const Color(0xFF00001B),
+          accentBrand: const Color(0xFF000020),
+          controlSelectedFill: const Color(0xFF000021),
+          controlFill: const Color(0xFF000022),
+          controlOutline: const Color(0xFF000023),
           accentChipOrange: const VineAccentChip(
             container: Color(0xFF00001D),
             onContainer: Color(0xFF00001E),
@@ -230,6 +242,10 @@ void main() {
         expect(copied.onErrorContainer, const Color(0xFF000017));
         expect(copied.accentPositive, const Color(0xFF00001A));
         expect(copied.accentWarning, const Color(0xFF00001B));
+        expect(copied.accentBrand, const Color(0xFF000020));
+        expect(copied.controlSelectedFill, const Color(0xFF000021));
+        expect(copied.controlFill, const Color(0xFF000022));
+        expect(copied.controlOutline, const Color(0xFF000023));
         expect(
           copied.accentChipOrange,
           const VineAccentChip(
@@ -336,6 +352,12 @@ void main() {
             onErrorContainer: token == 'onErrorContainer' ? Colors.white : null,
             accentPositive: token == 'accentPositive' ? Colors.white : null,
             accentWarning: token == 'accentWarning' ? Colors.white : null,
+            accentBrand: token == 'accentBrand' ? Colors.white : null,
+            controlSelectedFill: token == 'controlSelectedFill'
+                ? Colors.white
+                : null,
+            controlFill: token == 'controlFill' ? Colors.white : null,
+            controlOutline: token == 'controlOutline' ? Colors.white : null,
             inverseSurface: token == 'inverseSurface' ? Colors.white : null,
             inverseOnSurface: token == 'inverseOnSurface' ? Colors.white : null,
             mediaChrome: token == 'mediaChrome' ? Colors.white : null,

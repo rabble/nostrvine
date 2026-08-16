@@ -40,27 +40,23 @@ void main() {
       await pumpChip(tester, selected: true, theme: VineTheme.lightTheme);
 
       final decoration = decorationOf(tester);
-      expect(decoration.color, VineTheme.lightColors.primaryContainer);
-      // `outline` would sit at 1.37:1 against the unselected chip's border,
-      // and the two fills are 1.001:1 apart, so nothing else marks the state.
+      expect(decoration.color, VineTheme.lightColors.controlSelectedFill);
       expect(
         (decoration.border! as Border).top.color,
-        VineTheme.lightColors.onSurface,
+        VineTheme.lightColors.accentBrand,
       );
     });
 
     testWidgets(
       'leaves the unselected chip on the muted border in light mode',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await pumpChip(tester, selected: false, theme: VineTheme.lightTheme);
 
         final decoration = decorationOf(tester);
-        expect(decoration.color, VineTheme.lightColors.containerLow);
+        expect(decoration.color, VineTheme.lightColors.controlFill);
         expect(
           (decoration.border! as Border).top.color,
-          VineTheme.lightColors.outlineMuted,
+          VineTheme.lightColors.controlOutline,
         );
       },
     );
@@ -70,7 +66,7 @@ void main() {
 
       expect(
         (decorationOf(tester).border! as Border).top.color,
-        VineTheme.primary,
+        VineTheme.darkColors.accentBrand,
       );
     });
   });
