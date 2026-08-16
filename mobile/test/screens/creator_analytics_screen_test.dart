@@ -362,6 +362,53 @@ void main() {
     },
   );
 
+  testWidgets(
+    'ranks top content by views, not hidden likes, when bulk stats fail',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final now = DateTime.now();
+      final older = now.subtract(const Duration(days: 2));
+
+      await pumpAnalyticsScreen(
+        tester,
+        videos: [
+          VideoEvent(
+            id: 'high-likes-older',
+            pubkey: 'a' * 64,
+            createdAt: older.millisecondsSinceEpoch ~/ 1000,
+            content: 'older high likes',
+            timestamp: older,
+            title: 'Older High Likes',
+            rawTags: const {'views': '120'},
+            nostrLikeCount: 50,
+          ),
+          VideoEvent(
+            id: 'low-likes-newer',
+            pubkey: 'a' * 64,
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            content: 'newer low likes',
+            timestamp: now,
+            title: 'Newer Low Likes',
+            rawTags: const {'views': '120'},
+            nostrLikeCount: 1,
+          ),
+        ],
+        failedSources: const {AnalyticsDataSource.bulkVideoStats},
+      );
+
+      // Same views, so recency (not the hidden 50-vs-1 likes) decides order.
+      // The newer title also appears in the most-viewed highlight; the last
+      // match is the top-content row.
+      final newerTop = tester.getTopLeft(find.text('Newer Low Likes').last).dy;
+      final olderTop = tester.getTopLeft(find.text('Older High Likes')).dy;
+      expect(newerTop, lessThan(olderTop));
+    },
+  );
+
   testWidgets('renders non-empty failed sources diagnostics', (tester) async {
     final l10n = lookupAppLocalizations(const Locale('en'));
 

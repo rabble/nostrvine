@@ -1536,12 +1536,23 @@ class _CreatorAnalyticsSummary {
             )
             .toList()
           ..sort((a, b) {
-            final interactionCompare = b.interactions.compareTo(a.interactions);
-            if (interactionCompare != 0) return interactionCompare;
-            if (a.views == null && b.views == null) return 0;
+            // While engagement is degraded the numbers are hidden, so ranking
+            // by them would still assert an order the rest of the dashboard
+            // refuses to show. Fall back to views, then recency.
+            if (hasEngagementData) {
+              final interactionCompare = b.interactions.compareTo(
+                a.interactions,
+              );
+              if (interactionCompare != 0) return interactionCompare;
+            }
+            if (a.views == null && b.views == null) {
+              return b.video.createdAt.compareTo(a.video.createdAt);
+            }
             if (a.views == null) return 1;
             if (b.views == null) return -1;
-            return b.views!.compareTo(a.views!);
+            final viewCompare = b.views!.compareTo(a.views!);
+            if (viewCompare != 0) return viewCompare;
+            return b.video.createdAt.compareTo(a.video.createdAt);
           });
 
     final likes = performance.fold<int>(0, (sum, video) => sum + video.likes);
