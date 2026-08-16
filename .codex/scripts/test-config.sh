@@ -233,16 +233,17 @@ if ! git -C "$TEST_REPO" diff --cached --name-only \
 fi
 
 GUARD_SOCKET_DIR="$SCRATCH_DIR/cc-socks-test"
-TEST_REPO_LINK="$SCRATCH_DIR/repo-link"
-mkdir -p "$GUARD_SOCKET_DIR"
-ln -s "$TEST_REPO" "$TEST_REPO_LINK"
+GUARD_BIN_DIR="$SCRATCH_DIR/guard-bin"
+OTHER_REPO="$SCRATCH_DIR/other-repo"
+mkdir -p "$GUARD_SOCKET_DIR" "$GUARD_BIN_DIR" "$OTHER_REPO"
+git -C "$OTHER_REPO" init -q
 python3 - "$GUARD_SOCKET_DIR" <<'PY'
 import os
 import socket
 import sys
 
 socket_dir = sys.argv[1]
-for pid in ("111", "222", "333"):
+for pid in ("111", "222", "333", "444", "777"):
     path = os.path.join(socket_dir, f"{pid}.sock")
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
@@ -251,7 +252,7 @@ for pid in ("111", "222", "333"):
         sock.close()
 PY
 
-cat > "$BIN_DIR/ps" <<'EOF'
+cat > "$GUARD_BIN_DIR/ps" <<'EOF'
 #!/bin/bash
 case "$*" in
   "-eo pid=,comm=")
@@ -259,6 +260,9 @@ case "$*" in
 111 /opt/homebrew/bin/claude
 222 sleep
 333 claude
+444 claude
+555 claude
+777 claude
 PSOUT
     exit 0
     ;;
@@ -269,18 +273,24 @@ if [ "$1" = "-o" ] && [ "$2" = "comm=" ] && [ "$3" = "-p" ]; then
     111) echo "/opt/homebrew/bin/claude"; exit 0 ;;
     222) echo "sleep"; exit 0 ;;
     333) echo "claude"; exit 0 ;;
-    *) exit 1 ;;
+    444) echo "claude"; exit 0 ;;
+    555) echo "claude"; exit 0 ;;
+    777) echo "claude"; exit 0 ;;
+    *) echo "bash"; exit 0 ;;
   esac
 fi
 
 if [ "$1" = "-o" ] && [ "$2" = "ppid=" ] && [ "$3" = "-p" ]; then
-  exit 1
+  case "$4" in
+    777) echo "1"; exit 0 ;;
+    *) echo "777"; exit 0 ;;
+  esac
 fi
 
 exit 1
 EOF
 
-cat > "$BIN_DIR/lsof" <<'EOF'
+cat > "$GUARD_BIN_DIR/lsof" <<'EOF'
 #!/bin/bash
 pid=""
 while [ "$#" -gt 0 ]; do
@@ -294,16 +304,19 @@ done
 case "$pid" in
   111) printf 'n%s\n' "$TEST_REPO" ;;
   222) printf 'n%s\n' "$TEST_REPO" ;;
-  333) printf 'n%s\n' "$TEST_REPO_LINK" ;;
+  333) printf 'n%s\n' "$TEST_REPO/mobile" ;;
+  444) printf 'n%s\n' "$OTHER_REPO" ;;
+  555) printf 'n%s\n' "$TEST_REPO" ;;
+  777) printf 'n%s\n' "$TEST_REPO" ;;
   *) exit 1 ;;
 esac
 EOF
-chmod +x "$BIN_DIR/ps" "$BIN_DIR/lsof"
+chmod +x "$GUARD_BIN_DIR/ps" "$GUARD_BIN_DIR/lsof"
 
 GUARD_OUTPUT=$(cd "$TEST_REPO" && \
-  env PATH="$BIN_DIR:/usr/bin:/bin" \
+  env PATH="$GUARD_BIN_DIR:/usr/bin:/bin" \
     TEST_REPO="$TEST_REPO" \
-    TEST_REPO_LINK="$TEST_REPO_LINK" \
+    OTHER_REPO="$OTHER_REPO" \
     CLAUDE_PROJECT_DIR="$TEST_REPO" \
     CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
     "$WORKTREE_GUARD_HOOK")
@@ -314,6 +327,9 @@ if ! printf '%s\n' "$GUARD_OUTPUT" | jq -e '
     and contains("pid 111")
     and contains("pid 333")
     and (contains("pid 222") | not)
+    and (contains("pid 444") | not)
+    and (contains("pid 555") | not)
+    and (contains("pid 777") | not)
 ' >/dev/null; then
   echo "Session worktree guard did not report only live Claude sessions in the same canonical worktree." >&2
   echo "Output was: $GUARD_OUTPUT" >&2
