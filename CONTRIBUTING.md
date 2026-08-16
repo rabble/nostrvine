@@ -284,7 +284,9 @@ mise run test           # before pushing — whole suite, as CI runs it
 
 Additional expectations:
 
-- Run `mobile/scripts/golden.sh verify` for visual changes.
+- Run `mobile/scripts/golden.sh verify` for visual changes. Golden
+  references are regenerated on the CI runner, not locally — see
+  `mobile/docs/GOLDEN_TESTING_GUIDE.md`.
 - If you touch `mobile/packages/videos_repository`, run
   `flutter test --coverage` from that package.
 - Add or update tests next to the changed feature or package.

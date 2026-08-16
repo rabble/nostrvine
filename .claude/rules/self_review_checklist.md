@@ -228,8 +228,11 @@ Then:
 - [ ] Manual test plan covers both own-profile and other-profile paths
   (or equivalent primary vs secondary code paths) where relevant.
 - [ ] CI: `build / build` (divine_ui coverage), `Analyze`,
-  `Tests (shard N/total)` for every shard, aggregate `Mobile CI`,
-  `Format`, `Generated Files` all green before requesting review.
+  `Tests (shard N/total)` for every shard, `Goldens`, aggregate
+  `Mobile CI`, `Format`, `Generated Files` all green before requesting
+  review. A red `Goldens` on a UI change is usually a real visual
+  regression — download its `golden-failures` artifact and look at the
+  diff before assuming drift.
 - [ ] **Checks watched to completion after the push**
   (`gh pr checks <n> --watch`), not merely launched. The handback
   comment is written *after* reading the result — never alongside the
