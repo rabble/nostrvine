@@ -177,12 +177,17 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
               .markDataLoaded('video_detail');
         }
       } else {
+        // A null result only establishes absence when relays were queryable
+        // for the whole lookup. Checking that at the start alone misses the
+        // resume case: a REQ can begin against a relay that is gone by the
+        // time the per-query timeout fires, and an empty result from a lookup
+        // that lost its relays is not a confirmed "not found". Check both
+        // ends and defer to the relay-ready retry when either fails.
+        final canQueryRelaysNow =
+            nostrClient.isInitialized && nostrClient.connectedRelayCount > 0;
         if (allowRelayReadyRetry &&
-            !canQueryRelays &&
+            (!canQueryRelays || !canQueryRelaysNow) &&
             _scheduleRelayReadyRetry(nostrClient)) {
-          // Cold-start links can arrive before the relay layer is queryable.
-          // Retry once after the first relay connection instead of surfacing a
-          // permanent "Video not found" during startup.
           Log.info(
             '⏳ Video lookup deferred until relay connection is ready',
             name: 'VideoDetailScreen',

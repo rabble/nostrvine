@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:go_router/go_router.dart';
@@ -708,6 +709,58 @@ void main() {
           );
         },
       );
+
+      testWidgets('retries when the relay connection drops mid-fetch', (
+        tester,
+      ) async {
+        // Resume case: the lookup starts with a relay that is gone by the
+        // time the per-query timeout fires. The empty result never
+        // established absence, so it must not surface a permanent
+        // "not found".
+        var connectedRelayCount = 1;
+        when(
+          () => mockNostrClient.connectedRelayCount,
+        ).thenAnswer((_) => connectedRelayCount);
+
+        final video = createTestVideoEvent(
+          id: 'dropped_relay_video',
+          pubkey: 'test_pubkey',
+          title: 'Dropped Relay Video',
+        );
+
+        var attempts = 0;
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'dropped_relay_video',
+          ),
+        ).thenAnswer((_) async {
+          attempts++;
+          if (attempts == 1) {
+            connectedRelayCount = 0;
+            return null;
+          }
+          return video;
+        });
+
+        await tester.pumpWidget(buildSubject(videoId: 'dropped_relay_video'));
+        await tester.pump();
+
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        expect(find.text(l10n.videoErrorNotFound), findsNothing);
+
+        connectedRelayCount = 1;
+        relayStatusController.add({
+          'wss://relay.divine.video': RelayConnectionStatus.connected(
+            'wss://relay.divine.video',
+          ),
+        });
+
+        await tester.pump();
+        await tester.pump();
+
+        expect(attempts, 2);
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+      });
     });
 
     group('fetch error', () {
@@ -951,6 +1004,46 @@ void main() {
           find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
           findsOneWidget,
         );
+      });
+
+      testWidgets('renders the player once an unblock clears the filter', (
+        tester,
+      ) async {
+        // The hide filters are view-time state, not a lookup result: build()
+        // watches the moderation version providers so unblocking the author
+        // brings the video back without a refetch. Latching the load-time
+        // verdict into the error state would strand the screen on not-found.
+        final video = createTestVideoEvent(
+          id: 'unblocked_video_id',
+          pubkey: 'unblocked_pubkey',
+          title: 'Unblocked Video',
+        );
+
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'unblocked_video_id',
+          ),
+        ).thenAnswer((_) async => video);
+        when(
+          () => mockVideoEventService.shouldHideVideo(video),
+        ).thenReturn(true);
+
+        await tester.pumpWidget(buildSubject(videoId: 'unblocked_video_id'));
+        await tester.pump();
+
+        expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
+
+        when(
+          () => mockVideoEventService.shouldHideVideo(video),
+        ).thenReturn(false);
+        ProviderScope.containerOf(
+          tester.element(find.byType(VideoDetailScreen)),
+        ).read(blocklistVersionProvider.notifier).increment();
+
+        await tester.pump();
+
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+        expect(find.text(l10n.videoErrorNotFound), findsNothing);
       });
     });
   });
