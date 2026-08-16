@@ -467,6 +467,13 @@ class ProfileSavedVideosBloc
           isLoadingMore: false,
           hasMoreContent: hasMore,
           nextPageOffset: newOffset,
+          // The page just fetched is now the evidence behind an empty list,
+          // so it has to replace the earlier page's count. Without this a
+          // first page that resolved nothing keeps asserting failure even
+          // after a later page resolved videos that were filtered out here.
+          lastFetchResolvedVideoCount: allVideos.isEmpty
+              ? fetchResult.resolvedVideoCount
+              : null,
         ),
       );
       await _persistSnapshot(
