@@ -14,6 +14,44 @@ CLAUDE_ANALYZE_HOOK="$REPO_ROOT/.claude/hooks/post-edit-analyze.sh"
 
 "$REPO_ROOT/.codex/scripts/sync-agent-skills.sh" --check
 
+# Every registered Claude hook command must resolve to an executable file in
+# this repository — a registration pointing at a missing file must fail loudly
+# here, not silently at session end. Every hook timeout must be whole seconds
+# (a millisecond-scale value like 5000 exceeds the 600s ceiling this suite
+# pins). The SessionEnd matcher is asserted exactly because it deliberately
+# excludes non-terminal reasons such as `other`.
+while IFS= read -r hook_cmd; do
+  case "$hook_cmd" in
+    '"$CLAUDE_PROJECT_DIR"'/*)
+      hook_path=${hook_cmd#'"$CLAUDE_PROJECT_DIR"'}
+      if [ ! -x "$REPO_ROOT$hook_path" ]; then
+        echo "Registered Claude hook is missing or not executable: $hook_cmd" >&2
+        exit 1
+      fi
+      ;;
+    *)
+      echo "Unrecognized Claude hook command shape: $hook_cmd" >&2
+      exit 1
+      ;;
+  esac
+done < <(jq -r '.hooks | .[] | .[] | .hooks[].command' "$REPO_ROOT/.claude/settings.json")
+
+bad_timeouts=$(jq -r '.hooks | .[] | .[] | .hooks[].timeout' "$REPO_ROOT/.claude/settings.json" \
+  | awk '$1 !~ /^[0-9]+$/ || $1 > 600 { print }')
+if [ -n "$bad_timeouts" ]; then
+  echo "Claude hook timeouts must be whole seconds and at most 600: got $bad_timeouts" >&2
+  exit 1
+fi
+
+jq -e '.hooks.SessionEnd[]
+  | select(.matcher == "logout|prompt_input_exit|bypass_permissions_disabled")
+  | .hooks[]
+  | select(.command | endswith("session-end-purge-build-artifacts.sh"))' \
+  "$REPO_ROOT/.claude/settings.json" >/dev/null || {
+  echo "SessionEnd purge hook registration is missing or its matcher changed." >&2
+  exit 1
+}
+
 # shellcheck disable=SC2016
 grep -Fq 'Read and apply ALL rules from `AGENTS.md`' \
   "$REPO_ROOT/.agents/skills/review-before-commit/SKILL.md"
