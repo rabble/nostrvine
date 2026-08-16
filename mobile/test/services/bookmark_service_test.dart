@@ -1087,6 +1087,100 @@ void main() {
         );
       });
 
+      test(
+        'a display read issued before a save cannot land after it',
+        () async {
+          final staleRead = supersededRevision(['video-a']);
+          var relayHeld = staleRead;
+          final releaseRead = Completer<void>();
+          var queries = 0;
+
+          when(
+            () => nostrClient.queryEventsDetailed(
+              any(),
+              useCache: any(named: 'useCache'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((_) async {
+            if (++queries == 1) {
+              await releaseRead.future;
+              return (events: [staleRead], timedOut: false, noRelays: false);
+            }
+            return (events: [relayHeld], timedOut: false, noRelays: false);
+          });
+          when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+            invocation,
+          ) async {
+            final event = invocation.positionalArguments.first as Event;
+            relayHeld = event;
+            if (!releaseRead.isCompleted) releaseRead.complete();
+            return PublishOutcome(
+              eventId: event.id,
+              acceptedBy: const ['wss://relay.example'],
+              rejectedBy: const {},
+              noResponseFrom: const [],
+            );
+          });
+
+          final service = createService();
+          final read = service.syncGlobalBookmarks();
+          final save = service.toggleVideoInGlobalBookmarks('video-b');
+
+          await Future<void>.delayed(Duration.zero);
+          if (queries == 1 && !releaseRead.isCompleted) releaseRead.complete();
+          await Future.wait([read, save]);
+
+          expect(service.globalBookmarks.map((item) => item.id), [
+            'video-a',
+            'video-b',
+          ]);
+        },
+      );
+
+      test('an empty relay answer cannot undo a recent first save', () async {
+        final clock = DateTime(2026);
+        stubRelay(events: []);
+        final service = createService(now: () => clock);
+
+        final first = await service.toggleVideoInGlobalBookmarks('video-b');
+        expect(first.succeeded, isTrue);
+
+        final second = await service.toggleVideoInGlobalBookmarks('video-c');
+        expect(second.succeeded, isTrue);
+        expect(signedEventIds(), ['video-b', 'video-c']);
+        expect(service.globalBookmarks.map((item) => item.id), [
+          'video-b',
+          'video-c',
+        ]);
+      });
+
+      test(
+        'a confirmed absence clears after the local publish grace expires',
+        () async {
+          var clock = DateTime(2026);
+          stubRelay(events: []);
+          final service = createService(now: () => clock);
+
+          final result = await service.toggleVideoInGlobalBookmarks('video-b');
+          expect(result.succeeded, isTrue);
+
+          clock = clock.add(
+            BookmarkService.localPublishAbsenceGracePeriod +
+                const Duration(seconds: 1),
+          );
+          expect(
+            await service.syncGlobalBookmarks(requireAuthoritative: true),
+            isTrue,
+          );
+
+          expect(
+            service.globalBookmarks,
+            isEmpty,
+            reason: 'a real delete elsewhere must not be hidden forever',
+          );
+        },
+      );
+
       test('overlapping toggles do not publish from the same base', () async {
         var relayHeld = supersededRevision(['video-a']);
         final holdFirstPublish = Completer<void>();

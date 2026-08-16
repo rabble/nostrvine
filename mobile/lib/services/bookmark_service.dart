@@ -234,6 +234,14 @@ class BookmarkService {
   /// and pays nothing for it.
   static const absenceConfirmationTtl = Duration(minutes: 5);
 
+  /// How long a confirmed-empty answer is allowed to lag behind a local publish.
+  ///
+  /// Relay `OK` means the event was accepted, not that every later query can
+  /// read it back. During that indexing window, an empty answer is not evidence
+  /// that the user deleted the list elsewhere; after the window expires, a
+  /// confirmed absence is allowed to clear the list normally.
+  static const localPublishAbsenceGracePeriod = Duration(seconds: 30);
+
   /// When a full-settlement read last established that this user has no
   /// kind-10003 at all.
   DateTime? _absenceConfirmedAt;
@@ -242,6 +250,10 @@ class BookmarkService {
   /// adopted, or the one it last published. `null` once a confirmed-empty
   /// answer established that no list exists.
   ({int createdAt, String id})? _revision;
+
+  /// The locally published revision that is still inside the relay read-after-
+  /// write grace period.
+  ({int createdAt, String id, DateTime acceptedAt})? _localPublishRevision;
 
   /// Tail of the serialized operation queue. See [_serialized].
   Future<void> _queue = Future<void>.value();
@@ -287,6 +299,16 @@ class BookmarkService {
       return event.createdAt < revision.createdAt;
     }
     return event.id.compareTo(revision.id) > 0;
+  }
+
+  bool get _hasRecentLocalPublish {
+    final revision = _revision;
+    final local = _localPublishRevision;
+    if (revision == null || local == null) return false;
+    if (revision.createdAt != local.createdAt || revision.id != local.id) {
+      return false;
+    }
+    return _now().difference(local.acceptedAt) < localPublishAbsenceGracePeriod;
   }
 
   /// Whether an empty answer from a partial set of relays still has to be
@@ -423,6 +445,16 @@ class BookmarkService {
       }
 
       if (events.isEmpty) {
+        if (_hasRecentLocalPublish) {
+          Log.info(
+            'Ignoring empty kind 10003 answer inside local publish grace '
+            'period, keeping ${globalBookmarks.length} bookmarks',
+            name: 'BookmarkService',
+            category: LogCategory.system,
+          );
+          return null;
+        }
+
         // Nobody holds a list, and — because of the confirmation above — that
         // is either an authoritative answer or one that had nothing to
         // destroy. The first save may create one.
@@ -437,6 +469,7 @@ class BookmarkService {
         _privateItemsState = _PrivateItemsState.none;
         _lastKnownRemoteContent = '';
         _revision = null;
+        _localPublishRevision = null;
       } else {
         // Seeing the event disproves the absence, so the stamp cannot stand.
         // A list whose items are all private has no public tags, leaving
@@ -462,6 +495,7 @@ class BookmarkService {
           return null;
         }
         await _adoptGlobalBookmarksFromEvent(newest);
+        _localPublishRevision = null;
       }
 
       await _saveBookmarksToSharedPreferences();
@@ -872,6 +906,11 @@ class BookmarkService {
       // The revision this device now holds. A read that still answers with the
       // one this replaced is stale, not a correction — see [_isStaleRevision].
       _revision = (createdAt: event.createdAt, id: event.id);
+      _localPublishRevision = (
+        createdAt: event.createdAt,
+        id: event.id,
+        acceptedAt: _now(),
+      );
       _globalBookmarks
         ..clear()
         ..addAll(candidate);
