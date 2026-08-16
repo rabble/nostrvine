@@ -764,42 +764,54 @@ void main() {
         },
       );
 
-      // Short: this query is never going to be answered, so the test pays it
-      // in full. Nothing races it, so it cannot flake short.
-      const unacceptedTimeout = Duration(milliseconds: 400);
-
       test(
-        'reports a query no relay accepted as a timeout, not an empty answer',
+        'completes a query no relay took at once, still inconclusive',
         () async {
           final nostr = _newNostr();
           final unreachable = _SilentRelay('wss://send-fails.example')
             ..sendSucceeds = false;
           expect(await nostr.relayPool.add(unreachable), isTrue);
 
-          final pending = nostr.queryEventsDetailed(
+          final stopwatch = Stopwatch()..start();
+          final result = await nostr.queryEventsDetailed(
             [
               {
                 'kinds': [10003],
               },
             ],
-            timeout: unacceptedTimeout,
+            timeout: _timeout,
             requireAllRelaysSettled: true,
           );
-
-          final result = await pending;
+          stopwatch.stop();
 
           expect(result.events, isEmpty);
           expect(
             result.timedOut,
             isTrue,
             reason:
-                'no relay took the REQ, so nothing was pending for the '
-                'post-fan-out sweep to wait on and it completed the query '
-                'with no relay having answered at all — an empty box that '
-                'reads exactly like "every relay says there is nothing"',
+                'an empty box no relay contributed to reads exactly like '
+                '"every relay says there is nothing", which is what lets a '
+                'caller about to republish truncate a replaceable list',
+          );
+          expect(
+            result.noRelaysParticipated,
+            isTrue,
+            reason: 'and this is what tells it apart from a relay gone quiet',
+          );
+          expect(
+            stopwatch.elapsed,
+            lessThan(_timeout),
+            reason:
+                'no relay saved the REQ, so no terminal frame, post-AUTH '
+                'replay or reconnect can change the answer — waiting out the '
+                'deadline only delays the error the caller is going to show',
           );
         },
       );
+
+      // Short: this query is never going to be answered, so the test pays it
+      // in full. Nothing races it, so it cannot flake short.
+      const unacceptedTimeout = Duration(milliseconds: 400);
 
       test(
         'reports a relay CLOSED refusal as a timeout, not an empty answer',

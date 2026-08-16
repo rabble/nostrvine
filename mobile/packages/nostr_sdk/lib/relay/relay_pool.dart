@@ -211,6 +211,16 @@ class RelayPool {
   /// replaceable event must treat that as inconclusive, the same as silence.
   final Set<String> _queryClosedWithoutAnswer = {};
 
+  /// One-shot queries no relay took at all, so nothing can ever answer them.
+  ///
+  /// Nothing was saved on any relay, which means no terminal frame, no
+  /// post-AUTH replay, and no reconnect re-issue. Waiting is therefore
+  /// pointless — the caller's answer cannot change between here and its
+  /// deadline. The reason [requireAllRelaysSettled] used to wait anyway was
+  /// that completing looked identical to "every relay says there is nothing";
+  /// `sentTo` from [query] is what tells those apart now.
+  final Set<String> _queryReachedNoRelay = {};
+
   /// Track publishes awaiting OK confirmations (per event id).
   final Map<String, PublishTracker> _pendingPublishes = {};
 
@@ -871,13 +881,17 @@ class RelayPool {
 
     // Nothing is pending — but for a full-settlement caller that only means
     // the query is finished if some relay actually answered it, and no relay
-    // refused to answer. When every `relayDoQuery` send failed, no relay ever
-    // saved the query, so this sweep finds nothing outstanding and would hand
-    // back an empty box no relay contributed to. Likewise, a relay `CLOSED` the
-    // REQ has made no data claim. A caller about to replace what it read cannot
-    // tell either apart from "every relay says there is nothing", so let it run
-    // out to its own timeout instead.
+    // refused to answer. A relay that `CLOSED` the REQ has made no data claim,
+    // and a relay that stayed silent may still be about to speak, so a caller
+    // about to replace what it read waits both out rather than read an empty
+    // box as "every relay says there is nothing".
+    //
+    // A fan-out no relay took is the one shape that cannot improve by waiting
+    // — see [_queryReachedNoRelay] — and `sentTo` already tells the caller the
+    // answer is not authoritative, so it completes now instead of costing the
+    // caller its whole deadline.
     if (_queriesRequiringFullSettlement.contains(subId) &&
+        !_queryReachedNoRelay.contains(subId) &&
         (!_queryAnswered.contains(subId) ||
             _queryClosedWithoutAnswer.contains(subId))) {
       return;
@@ -953,6 +967,7 @@ class RelayPool {
     _queryCompleteCallbacks.remove(subId);
     _queryAnswered.remove(subId);
     _queryClosedWithoutAnswer.remove(subId);
+    _queryReachedNoRelay.remove(subId);
     _queriesRequiringFullSettlement.remove(subId);
     _querySettleTimers.remove(subId)?.cancel();
     _releaseQuery(subId);
@@ -1844,6 +1859,7 @@ class RelayPool {
       _queryFanoutInProgress.remove(id);
       _queryAnswered.remove(id);
       _queryClosedWithoutAnswer.remove(id);
+      _queryReachedNoRelay.remove(id);
       _queriesRequiringFullSettlement.remove(id);
       _querySettleTimers.remove(id)?.cancel();
       _releaseQuery(id);
@@ -2000,6 +2016,7 @@ class RelayPool {
     final sentTo = fanout.nonNulls.toList();
 
     if (onComplete != null) {
+      if (sentTo.isEmpty) _queryReachedNoRelay.add(subscription.id);
       _fireQueryCompleteIfSettled(subscription.id);
     }
 
