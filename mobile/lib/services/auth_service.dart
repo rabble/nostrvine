@@ -522,9 +522,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     };
   }
 
-  /// True when a divineOAuth user's session expired and refresh failed.
-  /// The user's identity is intact but remote signing is unavailable.
-  /// UI should prompt re-login instead of "Secure Your Account".
   bool get hasExpiredOAuthSession =>
       _hasExpiredOAuthSession &&
       _authSource == AuthenticationSource.divineOAuth;
@@ -3568,10 +3565,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _keycastSigner = null;
       _setRpcCapability(AuthRpcCapability.unavailable);
 
-      // Detach any in-flight token refresh so post-signout logins start a
-      // fresh attempt instead of joining one issued for the outgoing session.
-      // The raw expired flag is left untouched for OAuth restores; public
-      // consumers gate it by the active auth source.
+      // Detach in-flight refreshes; the getter hides stale OAuth expiry state.
       _oauthCoordinator.detach();
 
       await _clearOAuthSessionForSignOut();
