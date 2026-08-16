@@ -27,7 +27,10 @@ import 'package:openvine/widgets/signup_invites_availability_builder.dart';
 /// tab. Each tab owns a feed BLoC with independent server-side pagination.
 class InboxNotificationsPage extends ConsumerWidget {
   /// Creates an [InboxNotificationsPage].
-  const InboxNotificationsPage({super.key});
+  const InboxNotificationsPage({this.isVisible = true, super.key});
+
+  /// Whether the kept-alive inbox notifications pane is currently visible.
+  final bool isVisible;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,6 +48,7 @@ class InboxNotificationsPage extends ConsumerWidget {
     return _InboxNotificationsScaffold(
       notificationRepository: notificationRepository,
       followRepository: followRepository,
+      isVisible: isVisible,
     );
   }
 }
@@ -53,10 +57,12 @@ class _InboxNotificationsScaffold extends StatefulWidget {
   const _InboxNotificationsScaffold({
     required this.notificationRepository,
     required this.followRepository,
+    required this.isVisible,
   });
 
   final NotificationRepository notificationRepository;
   final FollowRepository followRepository;
+  final bool isVisible;
 
   @override
   State<_InboxNotificationsScaffold> createState() =>
@@ -131,6 +137,7 @@ class _InboxNotificationsScaffoldState
                   _NotificationTab(
                     notificationRepository: widget.notificationRepository,
                     followRepository: widget.followRepository,
+                    isVisible: widget.isVisible,
                     child: const Column(
                       children: [
                         _InvitesBanner(),
@@ -141,21 +148,25 @@ class _InboxNotificationsScaffoldState
                   _NotificationTab(
                     notificationRepository: widget.notificationRepository,
                     followRepository: widget.followRepository,
+                    isVisible: widget.isVisible,
                     filter: NotificationKind.like,
                   ),
                   _NotificationTab(
                     notificationRepository: widget.notificationRepository,
                     followRepository: widget.followRepository,
+                    isVisible: widget.isVisible,
                     filter: NotificationKind.comment,
                   ),
                   _NotificationTab(
                     notificationRepository: widget.notificationRepository,
                     followRepository: widget.followRepository,
+                    isVisible: widget.isVisible,
                     filter: NotificationKind.follow,
                   ),
                   _NotificationTab(
                     notificationRepository: widget.notificationRepository,
                     followRepository: widget.followRepository,
+                    isVisible: widget.isVisible,
                     filter: NotificationKind.repost,
                   ),
                 ],
@@ -172,12 +183,14 @@ class _NotificationTab extends ConsumerStatefulWidget {
   const _NotificationTab({
     required this.notificationRepository,
     required this.followRepository,
+    required this.isVisible,
     this.filter,
     this.child = const NotificationsView(),
   });
 
   final NotificationRepository notificationRepository;
   final FollowRepository followRepository;
+  final bool isVisible;
   final NotificationKind? filter;
   final Widget child;
 
@@ -209,8 +222,50 @@ class _NotificationTabState extends ConsumerState<_NotificationTab>
         appBadgeClearer: appBadgeClearer,
         filter: widget.filter,
       )..add(const NotificationFeedStarted()),
-      child: widget.child,
+      child: _NotificationVisibilityDispatcher(
+        isVisible: widget.isVisible,
+        child: widget.child,
+      ),
     );
+  }
+}
+
+class _NotificationVisibilityDispatcher extends StatefulWidget {
+  const _NotificationVisibilityDispatcher({
+    required this.isVisible,
+    required this.child,
+  });
+
+  final bool isVisible;
+  final Widget child;
+
+  @override
+  State<_NotificationVisibilityDispatcher> createState() =>
+      _NotificationVisibilityDispatcherState();
+}
+
+class _NotificationVisibilityDispatcherState
+    extends State<_NotificationVisibilityDispatcher> {
+  bool? _wasVisible;
+
+  void _observeVisibility() {
+    final visible = widget.isVisible;
+    final wasVisible = _wasVisible;
+    _wasVisible = visible;
+    if (wasVisible == false && visible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<NotificationFeedBloc>().add(
+          const NotificationFeedBecameVisible(),
+        );
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _observeVisibility();
+    return widget.child;
   }
 }
 

@@ -40,6 +40,10 @@ class NotificationFeedBloc
     on<NotificationFeedStarted>(_onStarted, transformer: droppable());
     on<NotificationFeedLoadMore>(_onLoadMore, transformer: droppable());
     on<NotificationFeedRefreshed>(_onRefreshed, transformer: droppable());
+    on<NotificationFeedBecameVisible>(
+      _onBecameVisible,
+      transformer: droppable(),
+    );
     on<NotificationFeedItemTapped>(_onItemTapped);
     on<NotificationFeedFollowBack>(_onFollowBack, transformer: sequential());
 
@@ -58,6 +62,7 @@ class NotificationFeedBloc
   int _emptyPageContinuations = 0;
   bool _loadMoreFailed = false;
   bool _emptyPageContinuationPending = false;
+  bool _markSeenInFlight = false;
 
   static const _maxEmptyPageContinuations = 3;
 
@@ -249,6 +254,8 @@ class NotificationFeedBloc
   /// caught here and never rethrown — the repository has already restored the
   /// snapshot on failure, so the list stays usable.
   Future<bool> _markSeenOnOpen() async {
+    if (_markSeenInFlight) return false;
+    _markSeenInFlight = true;
     try {
       await _notificationRepository.markAllAsRead();
       return true;
@@ -269,6 +276,8 @@ class NotificationFeedBloc
         s,
       );
       return false;
+    } finally {
+      _markSeenInFlight = false;
     }
   }
 
@@ -406,6 +415,18 @@ class NotificationFeedBloc
           refreshError: true,
         ),
       );
+    }
+  }
+
+  /// Handle the kept-alive inbox branch becoming visible again.
+  Future<void> _onBecameVisible(
+    NotificationFeedBecameVisible event,
+    Emitter<NotificationFeedState> emit,
+  ) async {
+    if (_filter != null) return;
+    final markSucceeded = await _markSeenOnOpen();
+    if (markSucceeded) {
+      unawaited(_clearAppBadge());
     }
   }
 

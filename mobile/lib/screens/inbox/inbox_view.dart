@@ -20,6 +20,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
@@ -137,6 +138,7 @@ class _InboxViewState extends ConsumerState<InboxView>
     final notificationCount = context.watch<NotificationBadgeCubit>().state;
     final messageCount = context.watch<DmUnreadCountCubit>().state;
     final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    final isInboxBranchVisible = ref.watch(activeBranchIndexProvider) == 2;
     _syncToIdentity(currentPubkey);
 
     return ColoredBox(
@@ -171,7 +173,11 @@ class _InboxViewState extends ConsumerState<InboxView>
                     // lib/notifications/view/inbox_notifications_page.dart.
                     notifications: KeyedSubtree(
                       key: ValueKey('notifications-$currentPubkey'),
-                      child: const InboxNotificationsPage(),
+                      child: InboxNotificationsPage(
+                        isVisible:
+                            isInboxBranchVisible &&
+                            _selectedTab == InboxTab.notifications,
+                      ),
                     ),
                     messages: _messagesActivated
                         ? KeyedSubtree(
