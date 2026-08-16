@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -590,6 +591,73 @@ void main() {
       },
     );
 
+    test(
+      'records social counts as used when the endpoint returns null',
+      () async {
+        const pubkey = 'pubkey';
+        final api = MockFunnelcakeApiClient();
+
+        when(() => api.isAvailable).thenReturn(true);
+        when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+        when(
+          () => api.getBulkVideoStats(any()),
+        ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+        when(() => api.getVideoViews(any())).thenAnswer((_) async => 12);
+        when(
+          () => api.getVideosByAuthor(
+            pubkey: pubkey,
+            limit: 100,
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => VideosByAuthorResponse(
+            videos: [_videoStats(id: 'social-null-video', pubkey: pubkey)],
+          ),
+        );
+
+        final repo = FunnelcakeCreatorAnalyticsRepository(api);
+        final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+        expect(
+          snapshot.diagnostics.sourcesUsed,
+          contains(AnalyticsDataSource.socialCounts),
+        );
+        expect(
+          snapshot.diagnostics.failedSources,
+          isNot(contains(AnalyticsDataSource.socialCounts)),
+        );
+      },
+    );
+
+    test('does not tolerate invariant failures from bulk hydration', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(() => api.getBulkVideoStats(any())).thenThrow(
+        StateError('bulk stats invariant failed'),
+      );
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => VideosByAuthorResponse(
+          videos: [_videoStats(id: 'bulk-invariant-video', pubkey: pubkey)],
+        ),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+
+      await expectLater(
+        repo.fetchCreatorAnalytics(pubkey),
+        throwsA(isA<StateError>()),
+      );
+    });
+
     test('rethrows author video failures', () async {
       const pubkey = 'pubkey';
       final api = MockFunnelcakeApiClient();
@@ -610,7 +678,46 @@ void main() {
 
       await expectLater(
         repo.fetchCreatorAnalytics(pubkey),
-        throwsA(isA<FunnelcakeApiException>()),
+        throwsA(
+          isA<CreatorAnalyticsLoadException>().having(
+            (error) => error.kind,
+            'kind',
+            CreatorAnalyticsFailureKind.serverUnavailable,
+          ),
+        ),
+      );
+    });
+
+    test('classifies wrapped DNS failures as connection issues', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenThrow(
+        const FunnelcakeException(
+          'Failed to fetch author videos',
+          cause: SocketException("Failed host lookup: 'api.divine.video'"),
+        ),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+
+      await expectLater(
+        repo.fetchCreatorAnalytics(pubkey),
+        throwsA(
+          isA<CreatorAnalyticsLoadException>().having(
+            (error) => error.kind,
+            'kind',
+            CreatorAnalyticsFailureKind.connectionIssue,
+          ),
+        ),
       );
     });
 
@@ -643,7 +750,7 @@ void main() {
         () async {
           await expectLater(
             repo.fetchCreatorAnalytics(pubkey),
-            throwsA(isA<FunnelcakeApiException>()),
+            throwsA(isA<CreatorAnalyticsLoadException>()),
           );
           await Future<void>.delayed(Duration.zero);
         },

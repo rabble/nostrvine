@@ -1,10 +1,12 @@
 // ABOUTME: Typed repository and diagnostics for creator analytics data loading.
 // ABOUTME: Normalizes Funnelcake responses and tracks metric provenance.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
+import 'package:openvine/utils/expected_network_error.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -14,6 +16,24 @@ enum AnalyticsDataSource {
   bulkVideoStats,
   videoViewsEndpoint,
   socialCounts,
+}
+
+/// User-facing failure class for the required analytics load.
+enum CreatorAnalyticsFailureKind {
+  serverUnavailable,
+  connectionIssue,
+  unableToLoad,
+}
+
+/// Exception thrown when the required creator analytics load cannot continue.
+class CreatorAnalyticsLoadException implements Exception {
+  const CreatorAnalyticsLoadException(this.kind, {this.cause});
+
+  final CreatorAnalyticsFailureKind kind;
+  final Object? cause;
+
+  @override
+  String toString() => 'CreatorAnalyticsLoadException: ${kind.name}';
 }
 
 /// Diagnostics to explain data quality and endpoint contribution.
@@ -107,8 +127,20 @@ class FunnelcakeCreatorAnalyticsRepository
     final sourcesUsed = <AnalyticsDataSource>{};
     final failedSources = <AnalyticsDataSource>{};
 
-    final socialFuture = _getSocialCountsTolerant(pubkey, failedSources);
-    final authorResult = await _fetchAuthorVideos(pubkey);
+    final socialFuture = _getSocialCountsTolerant(
+      pubkey,
+      failedSources,
+      sourcesUsed,
+    );
+    final _AuthorVideosResult authorResult;
+    try {
+      authorResult = await _fetchAuthorVideos(pubkey);
+    } on Exception catch (e) {
+      throw CreatorAnalyticsLoadException(
+        _classifyRequiredLoadFailure(e),
+        cause: e,
+      );
+    }
     if (authorResult.videos.isNotEmpty) {
       sourcesUsed.add(AnalyticsDataSource.authorVideos);
     }
@@ -138,9 +170,6 @@ class FunnelcakeCreatorAnalyticsRepository
     final videos = mergeProfileFeedVideoLists(const [], hydratedVideos);
 
     final social = await socialFuture;
-    if (social != null) {
-      sourcesUsed.add(AnalyticsDataSource.socialCounts);
-    }
     final withViewData = videos
         .where((video) => extractViewLikeCount(video) != null)
         .length;
@@ -209,10 +238,13 @@ class FunnelcakeCreatorAnalyticsRepository
   Future<SocialCounts?> _getSocialCountsTolerant(
     String pubkey,
     Set<AnalyticsDataSource> failedSources,
+    Set<AnalyticsDataSource> sourcesUsed,
   ) async {
     try {
-      return await _getSocialCounts(pubkey);
-    } on Object catch (e, stackTrace) {
+      final result = await _getSocialCounts(pubkey);
+      sourcesUsed.add(AnalyticsDataSource.socialCounts);
+      return result;
+    } on Exception catch (e, stackTrace) {
       failedSources.add(AnalyticsDataSource.socialCounts);
       Log.error(
         'Failed to fetch creator analytics social counts',
@@ -231,7 +263,7 @@ class FunnelcakeCreatorAnalyticsRepository
   ) async {
     try {
       return await _enrichVideosWithBulkStats(videos);
-    } on Object catch (e, stackTrace) {
+    } on Exception catch (e, stackTrace) {
       failedSources.add(AnalyticsDataSource.bulkVideoStats);
       Log.error(
         'Failed to hydrate creator analytics videos with bulk stats',
@@ -314,7 +346,7 @@ class FunnelcakeCreatorAnalyticsRepository
         failedSources.add(AnalyticsDataSource.videoViewsEndpoint);
       }
       return result;
-    } on Object catch (e, stackTrace) {
+    } on Exception catch (e, stackTrace) {
       failedSources.add(AnalyticsDataSource.videoViewsEndpoint);
       Log.error(
         'Failed to hydrate creator analytics videos with view counts',
@@ -354,7 +386,7 @@ class FunnelcakeCreatorAnalyticsRepository
         chunk.map((video) async {
           try {
             return await _client.getVideoViews(video.id);
-          } on Object catch (e, stackTrace) {
+          } on Exception catch (e, stackTrace) {
             hadFailures = true;
             Log.error(
               'Failed to hydrate creator analytics video view count',
@@ -409,6 +441,27 @@ class FunnelcakeCreatorAnalyticsRepository
     return chunks;
   }
 }
+
+CreatorAnalyticsFailureKind _classifyRequiredLoadFailure(Exception error) {
+  if (error is FunnelcakeApiException && error.statusCode >= 500) {
+    return CreatorAnalyticsFailureKind.serverUnavailable;
+  }
+  if (error is FunnelcakeTimeoutException ||
+      error is TimeoutException ||
+      _isExpectedNetworkException(error) ||
+      _isExpectedNetworkException(_funnelcakeCause(error))) {
+    return CreatorAnalyticsFailureKind.connectionIssue;
+  }
+  return CreatorAnalyticsFailureKind.unableToLoad;
+}
+
+Object? _funnelcakeCause(Exception error) {
+  if (error is FunnelcakeException) return error.cause;
+  return null;
+}
+
+bool _isExpectedNetworkException(Object? error) =>
+    error != null && isExpectedNetworkFailure(error);
 
 class _HydrationResult {
   const _HydrationResult({

@@ -493,7 +493,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException('Failed to fetch author videos: $e');
+      throw FunnelcakeException('Failed to fetch author videos: $e', cause: e);
     }
   }
 

@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
@@ -24,6 +23,9 @@ void main() {
   Future<void> pumpAnalyticsScreen(
     WidgetTester tester, {
     required List<VideoEvent> videos,
+    SocialCounts? socialCounts,
+    bool hasSocialCounts = true,
+    Set<AnalyticsDataSource> failedSources = const {},
   }) async {
     final authService = _MockAuthService();
     final repository = _MockCreatorAnalyticsRepository();
@@ -33,11 +35,14 @@ void main() {
     when(() => repository.fetchCreatorAnalytics(any())).thenAnswer(
       (_) async => CreatorAnalyticsSnapshot(
         videos: videos,
-        socialCounts: SocialCounts(
-          pubkey: 'a' * 64,
-          followerCount: 10,
-          followingCount: 2,
-        ),
+        socialCounts: hasSocialCounts
+            ? socialCounts ??
+                  SocialCounts(
+                    pubkey: 'a' * 64,
+                    followerCount: 10,
+                    followingCount: 2,
+                  )
+            : null,
         diagnostics: CreatorAnalyticsDiagnostics(
           totalVideos: videos.length,
           videosWithAnyViews: videos.length,
@@ -45,10 +50,34 @@ void main() {
           videosHydratedByBulkStats: 1,
           videosHydratedByViewsEndpoint: 0,
           sourcesUsed: const {AnalyticsDataSource.bulkVideoStats},
+          failedSources: failedSources,
           fetchedAt: now,
         ),
       ),
     );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          creatorAnalyticsRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: const CreatorAnalyticsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> pumpAnalyticsSignedOutScreen(WidgetTester tester) async {
+    final authService = _MockAuthService();
+    final repository = _MockCreatorAnalyticsRepository();
+
+    when(() => authService.currentPublicKeyHex).thenReturn(null);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -211,7 +240,11 @@ void main() {
 
     expect(find.text('Total videos: 1'), findsOneWidget);
     expect(find.text('Sources: bulk-video-stats'), findsOneWidget);
-    expect(find.text('Failed sources: none'), findsOneWidget);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(
+      find.text(l10n.analyticsDiagnosticsFailedSources('none')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('maps server errors to localized copy without raw details', (
@@ -221,15 +254,106 @@ void main() {
 
     await pumpAnalyticsErrorScreen(
       tester,
-      error: const FunnelcakeApiException(
-        message: 'Failed to fetch bulk video stats',
-        statusCode: 500,
-        url: 'https://api.divine.video/api/videos/stats/bulk',
+      error: const CreatorAnalyticsLoadException(
+        CreatorAnalyticsFailureKind.serverUnavailable,
+        cause: 'raw server detail',
       ),
     );
 
     expect(find.text(l10n.analyticsServerUnavailable), findsOneWidget);
-    expect(find.textContaining('FunnelcakeApiException'), findsNothing);
-    expect(find.textContaining('https://api.divine.video'), findsNothing);
+    expect(find.textContaining('raw server detail'), findsNothing);
+  });
+
+  testWidgets('maps connection errors to localized copy', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await pumpAnalyticsErrorScreen(
+      tester,
+      error: const CreatorAnalyticsLoadException(
+        CreatorAnalyticsFailureKind.connectionIssue,
+      ),
+    );
+
+    expect(find.text(l10n.analyticsConnectionIssue), findsOneWidget);
+  });
+
+  testWidgets('shows sign-in copy when no user is authenticated', (
+    tester,
+  ) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await pumpAnalyticsSignedOutScreen(tester);
+
+    expect(find.text(l10n.analyticsSignInRequired), findsOneWidget);
+  });
+
+  testWidgets('renders failed social counts as unavailable', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await pumpAnalyticsScreen(
+      tester,
+      videos: [
+        analyticsVideo(
+          id: 'social-failed-video',
+          views: 120,
+          nostrLikeCount: 19,
+          nostrCommentCount: 7,
+          nostrRepostCount: 1,
+        ),
+      ],
+      hasSocialCounts: false,
+      failedSources: const {AnalyticsDataSource.socialCounts},
+    );
+
+    expect(find.text(l10n.analyticsNa), findsWidgets);
+    expect(find.text(l10n.analyticsFollowersCount('0')), findsNothing);
+    expect(find.text(l10n.analyticsFollowingCount('0')), findsNothing);
+  });
+
+  testWidgets(
+    'does not claim engagement metrics are accurate when stats fail',
+    (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpAnalyticsScreen(
+        tester,
+        videos: [
+          analyticsVideo(id: 'bulk-failed-video', views: 0),
+        ],
+        failedSources: const {AnalyticsDataSource.bulkVideoStats},
+      );
+
+      expect(find.text(l10n.analyticsViewDataUnavailable), findsNothing);
+      expect(find.text(l10n.analyticsNa), findsWidgets);
+    },
+  );
+
+  testWidgets('renders non-empty failed sources diagnostics', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await pumpAnalyticsScreen(
+      tester,
+      videos: [
+        analyticsVideo(id: 'diagnostics-failure-video', views: 120),
+      ],
+      failedSources: const {
+        AnalyticsDataSource.bulkVideoStats,
+        AnalyticsDataSource.socialCounts,
+      },
+    );
+
+    await tester.tap(find.bySemanticsLabel('Toggle diagnostics'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        l10n.analyticsDiagnosticsFailedSources(
+          'bulk-video-stats, social-counts',
+        ),
+      ),
+      findsOneWidget,
+    );
   });
 }

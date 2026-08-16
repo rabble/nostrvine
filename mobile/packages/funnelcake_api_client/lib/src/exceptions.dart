@@ -4,13 +4,20 @@
 /// Base exception for all Funnelcake API errors.
 class FunnelcakeException implements Exception {
   /// Creates a new Funnelcake exception.
-  const FunnelcakeException(this.message);
+  const FunnelcakeException(this.message, {this.cause});
 
   /// The error message describing what went wrong.
   final String message;
 
+  /// The lower-level error that caused this exception, when one was wrapped.
+  final Object? cause;
+
   @override
-  String toString() => 'FunnelcakeException: $message';
+  String toString() {
+    final wrapped = cause;
+    if (wrapped == null) return 'FunnelcakeException: $message';
+    return 'FunnelcakeException: $message (cause: $wrapped)';
+  }
 }
 
 /// Exception thrown when the Funnelcake API is not configured.
