@@ -186,6 +186,13 @@ class FunnelcakeApiClient {
           continue;
         }
         return response;
+      } on TimeoutException catch (e) {
+        // Future.timeout sets duration; transport timeouts constructed by
+        // the client stack usually do not. The former has spent this call's
+        // whole budget and must not start another attempt.
+        if (e.duration != null) rethrow;
+        if (!_canRetry(attempt, remaining())) rethrow;
+        await _awaitRetryDelay(attempt, remaining());
       } on Object {
         // Nothing above constructs a FunnelcakeException, so any throw here
         // is transport-level and worth another attempt.
