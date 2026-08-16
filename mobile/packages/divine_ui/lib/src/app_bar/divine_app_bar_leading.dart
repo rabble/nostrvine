@@ -202,6 +202,10 @@ class _LeadingIconButton extends StatelessWidget {
       onTap: onPressed,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
+        // The wrapping Semantics already declares the tap. Two configs
+        // declaring the same action cannot merge, so leaving this one in
+        // emits a second, anonymous button nested inside the labelled one.
+        excludeFromSemantics: true,
         onTap: onPressed,
         child: ExcludeSemantics(child: AbsorbPointer(child: visibleButton)),
       ),

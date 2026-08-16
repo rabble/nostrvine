@@ -979,5 +979,51 @@ void main() {
         );
       });
     });
+
+    group('accessibility', () {
+      testWidgets(
+        'expandLeadingHitArea leaves no unlabeled tappable node',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Feed',
+              showBackButton: true,
+              onBackPressed: () {},
+              expandLeadingHitArea: true,
+            ),
+          );
+
+          // The stretching GestureDetector declares the same tap action as
+          // the Semantics wrapping it, and two configs declaring one action
+          // cannot merge — so without excludeFromSemantics the tree carries
+          // an anonymous button nested inside the labelled one.
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+
+          // ...and the labelled button is still there afterwards.
+          expect(find.bySemanticsLabel('Go back'), findsOneWidget);
+          handle.dispose();
+        },
+      );
+
+      testWidgets('expandLeadingHitArea still activates the callback', (
+        tester,
+      ) async {
+        var pressed = 0;
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Feed',
+            showBackButton: true,
+            onBackPressed: () => pressed++,
+            expandLeadingHitArea: true,
+          ),
+        );
+
+        await tester.tapAt(const Offset(8, 8));
+        await tester.pumpAndSettle();
+
+        expect(pressed, 1);
+      });
+    });
   });
 }
