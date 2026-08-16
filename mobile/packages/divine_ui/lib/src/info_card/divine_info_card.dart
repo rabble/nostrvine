@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 
 /// What a [DivineInfoCard] means, which picks its accent colour.
 enum DivineInfoCardTone {
-  /// Explains a feature or a concept. The default, in brand green.
+  /// Explains a feature or a concept. The default, using `accentPositive`:
+  /// brand green in dark mode and a darker green in light mode.
   info,
 
   /// Supporting detail that should not compete with the content around it.
@@ -84,7 +85,8 @@ class DivineInfoCard extends StatelessWidget {
   /// supporting rows a longer explanation breaks into.
   final Widget? footer;
 
-  /// Accent colour for the icon, the border, and a tinted tone's title.
+  /// Accent colour for the icon, and for a tinted tone's surface, border,
+  /// and title.
   Color _accent(VineThemeColors colors) => switch (tone) {
     DivineInfoCardTone.info => colors.accentPositive,
     DivineInfoCardTone.neutral => colors.secondaryText,

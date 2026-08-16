@@ -10,9 +10,10 @@ void main() {
       DivineInfoCardTone tone = DivineInfoCardTone.info,
       bool compact = false,
       Widget? footer,
+      ThemeData? theme,
     }) {
       return MaterialApp(
-        theme: VineTheme.theme,
+        theme: theme ?? VineTheme.theme,
         home: Scaffold(
           body: DivineInfoCard(
             message: 'Your keys are your account.',
@@ -186,28 +187,51 @@ void main() {
     });
 
     group('tone', () {
-      testWidgets('info tints surface and border with brand green', (
+      testWidgets('info follows accentPositive in both appearances', (
         tester,
       ) async {
         await tester.pumpWidget(buildSubject(title: 'Heading'));
+        await tester.pumpAndSettle();
 
         final decoration = decorationOf(tester);
+        final darkAccent = VineTheme.darkColors.accentPositive;
         expect(
           decoration.color,
-          VineTheme.vineGreen.withValues(alpha: DivineInfoCard.surfaceOpacity),
+          darkAccent.withValues(alpha: DivineInfoCard.surfaceOpacity),
         );
         expect(
           (decoration.border! as Border).top.color,
-          VineTheme.vineGreen.withValues(alpha: DivineInfoCard.borderOpacity),
+          darkAccent.withValues(alpha: DivineInfoCard.borderOpacity),
         );
-        expect(iconOf(tester).color, VineTheme.vineGreen);
-        expect(styleOf(tester, 'Heading').color, VineTheme.vineGreen);
+        expect(iconOf(tester).color, darkAccent);
+        expect(styleOf(tester, 'Heading').color, darkAccent);
+
+        await tester.pumpWidget(
+          buildSubject(title: 'Heading', theme: VineTheme.lightTheme),
+        );
+        await tester.pumpAndSettle();
+
+        final lightDecoration = decorationOf(tester);
+        final lightAccent = VineTheme.lightColors.accentPositive;
+        expect(
+          lightDecoration.color,
+          lightAccent.withValues(alpha: DivineInfoCard.surfaceOpacity),
+        );
+        expect(
+          (lightDecoration.border! as Border).top.color,
+          lightAccent.withValues(alpha: DivineInfoCard.borderOpacity),
+        );
+        expect(iconOf(tester).color, lightAccent);
+        expect(styleOf(tester, 'Heading').color, lightAccent);
+        expect(
+          lightAccent,
+          isNot(VineTheme.vineGreen),
+          reason: 'light mode must use accentPositive, not raw brand green',
+        );
       });
 
       testWidgets('warning tints with the warning colour', (tester) async {
-        await tester.pumpWidget(
-          buildSubject(tone: DivineInfoCardTone.warning),
-        );
+        await tester.pumpWidget(buildSubject(tone: DivineInfoCardTone.warning));
 
         expect(
           decorationOf(tester).color,
@@ -232,15 +256,40 @@ void main() {
         await tester.pumpWidget(
           buildSubject(title: 'Heading', tone: DivineInfoCardTone.neutral),
         );
+        await tester.pumpAndSettle();
 
         final decoration = decorationOf(tester);
-        expect(decoration.color, VineTheme.cardBackground);
+        expect(decoration.color, VineTheme.darkColors.card);
         expect(
           (decoration.border! as Border).top.color,
-          VineTheme.outlineMuted,
+          VineTheme.darkColors.outlineMuted,
         );
-        expect(iconOf(tester).color, VineTheme.secondaryText);
-        expect(styleOf(tester, 'Heading').color, VineTheme.primaryText);
+        expect(iconOf(tester).color, VineTheme.darkColors.secondaryText);
+        expect(
+          styleOf(tester, 'Heading').color,
+          VineTheme.darkColors.primaryText,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            title: 'Heading',
+            tone: DivineInfoCardTone.neutral,
+            theme: VineTheme.lightTheme,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final lightDecoration = decorationOf(tester);
+        expect(lightDecoration.color, VineTheme.lightColors.card);
+        expect(
+          (lightDecoration.border! as Border).top.color,
+          VineTheme.lightColors.outlineMuted,
+        );
+        expect(iconOf(tester).color, VineTheme.lightColors.secondaryText);
+        expect(
+          styleOf(tester, 'Heading').color,
+          VineTheme.lightColors.primaryText,
+        );
       });
     });
 
@@ -248,10 +297,7 @@ void main() {
       testWidgets('uses the section-level metrics by default', (tester) async {
         await tester.pumpWidget(buildSubject(title: 'Heading'));
 
-        expect(
-          decorationOf(tester).borderRadius,
-          BorderRadius.circular(12),
-        );
+        expect(decorationOf(tester).borderRadius, BorderRadius.circular(12));
         expect(iconOf(tester).size, 24);
         expect(
           tester
