@@ -559,7 +559,7 @@ class VideoReplyPlaceholderBridge extends StatefulWidget {
 
 class _VideoReplyPlaceholderBridgeState
     extends State<VideoReplyPlaceholderBridge> {
-  static const _relayEchoGrace = Duration(seconds: 5);
+  static const _relayEchoGrace = Duration(seconds: 10);
 
   /// Draft ids this bridge has already inserted a placeholder for.
   ///
