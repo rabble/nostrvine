@@ -177,15 +177,12 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
               .markDataLoaded('video_detail');
         }
       } else {
-        // A null result is ambiguous: it can mean the video is genuinely
-        // absent, or that the relay layer was not yet queryable when the
-        // lookup ran (cold start, app resume, or a 3–5s per-query timeout that
-        // fired before EOSE). The original check only retried when
-        // !canQueryRelays at the *start* of the lookup; a lookup that started
-        // with 0 relays but saw a connection arrive mid-flight would still
-        // surface a permanent "not found". Re-check queryability after the
-        // fetch and defer the not-found until the relay-ready retry has had a
-        // chance.
+        // A null result only establishes absence when relays were queryable
+        // for the whole lookup. Checking that at the start alone misses the
+        // resume case: a REQ can begin against a relay that is gone by the
+        // time the per-query timeout fires, and an empty result from a lookup
+        // that lost its relays is not a confirmed "not found". Check both
+        // ends and defer to the relay-ready retry when either fails.
         final canQueryRelaysNow =
             nostrClient.isInitialized && nostrClient.connectedRelayCount > 0;
         if (allowRelayReadyRetry &&
