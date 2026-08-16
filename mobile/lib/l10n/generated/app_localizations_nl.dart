@@ -2736,6 +2736,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get analyticsUnableToLoad => 'Statistieken laden lukt niet.';
 
   @override
+  String get analyticsServerUnavailable =>
+      'Creator analytics is having server trouble. Please try again in a moment.';
+
+  @override
+  String get analyticsConnectionIssue =>
+      'Creator analytics could not connect. Check your connection and try again.';
+
+  @override
   String get analyticsSignInRequired =>
       'Log in om creator-statistieken te bekijken.';
 
@@ -2921,6 +2929,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String analyticsDiagnosticsSources(String sources) {
     return 'Bronnen: $sources';
+  }
+
+  @override
+  String analyticsDiagnosticsFailedSources(String sources) {
+    return 'Failed sources: $sources';
   }
 
   @override

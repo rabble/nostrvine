@@ -55,7 +55,7 @@ class _CreatorAnalyticsScreenState
     final authService = ref.read(authServiceProvider);
     final pubkey = authService.currentPublicKeyHex;
     if (pubkey == null || pubkey.isEmpty) {
-      throw StateError(context.l10n.analyticsSignInRequired);
+      throw const _CreatorAnalyticsSignInRequiredException();
     }
 
     final repository = ref.read(creatorAnalyticsRepositoryProvider);
@@ -83,9 +83,13 @@ class _CreatorAnalyticsScreenState
     return [
       _KpiGrid(
         summary: summary,
-        followerCount: data.socialCounts?.followerCount ?? 0,
+        followerValue: data.socialCountsFailed
+            ? context.l10n.analyticsNa
+            : StringUtils.formatCompactNumber(
+                data.socialCounts?.followerCount ?? 0,
+              ),
       ),
-      if (!summary.hasViewData) ...[
+      if (!summary.hasViewData && summary.hasEngagementData) ...[
         const SizedBox(height: 12),
         _AnalyticsCard(
           title: context.l10n.analyticsViewDataTitle,
@@ -123,9 +127,11 @@ class _CreatorAnalyticsScreenState
         children: [
           Text(
             context.l10n.analyticsFollowersCount(
-              StringUtils.formatCompactNumber(
-                data.socialCounts?.followerCount ?? 0,
-              ),
+              data.socialCountsFailed
+                  ? context.l10n.analyticsNa
+                  : StringUtils.formatCompactNumber(
+                      data.socialCounts?.followerCount ?? 0,
+                    ),
             ),
             style: VineTheme.bodyMediumFont(
               color: context.vineColors.primaryText,
@@ -134,9 +140,11 @@ class _CreatorAnalyticsScreenState
           const SizedBox(height: 6),
           Text(
             context.l10n.analyticsFollowingCount(
-              StringUtils.formatCompactNumber(
-                data.socialCounts?.followingCount ?? 0,
-              ),
+              data.socialCountsFailed
+                  ? context.l10n.analyticsNa
+                  : StringUtils.formatCompactNumber(
+                      data.socialCounts?.followingCount ?? 0,
+                    ),
             ),
             style: VineTheme.bodyMediumFont(
               color: context.vineColors.primaryText,
@@ -302,6 +310,8 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final message = _analyticsErrorMessage(context, error);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -315,7 +325,7 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '$error',
+              message,
               textAlign: TextAlign.center,
               style: VineTheme.bodyMediumFont(
                 color: context.vineColors.onSurfaceMuted,
@@ -331,6 +341,30 @@ class _ErrorView extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CreatorAnalyticsSignInRequiredException implements Exception {
+  const _CreatorAnalyticsSignInRequiredException();
+
+  @override
+  String toString() => 'CreatorAnalyticsSignInRequiredException';
+}
+
+String _analyticsErrorMessage(BuildContext context, Object? error) {
+  final l10n = context.l10n;
+  if (error is _CreatorAnalyticsSignInRequiredException) {
+    return l10n.analyticsSignInRequired;
+  }
+  if (error is CreatorAnalyticsLoadException) {
+    return switch (error.kind) {
+      CreatorAnalyticsFailureKind.serverUnavailable =>
+        l10n.analyticsServerUnavailable,
+      CreatorAnalyticsFailureKind.connectionIssue =>
+        l10n.analyticsConnectionIssue,
+      CreatorAnalyticsFailureKind.unableToLoad => l10n.analyticsUnableToLoad,
+    };
+  }
+  return l10n.analyticsUnableToLoad;
 }
 
 class _RangeSelector extends StatelessWidget {
@@ -385,12 +419,16 @@ class _DiagnosticsPanel extends StatelessWidget {
         AnalyticsDataSource.authorVideos => 'author-videos',
         AnalyticsDataSource.bulkVideoStats => 'bulk-video-stats',
         AnalyticsDataSource.videoViewsEndpoint => 'video-views-endpoint',
+        AnalyticsDataSource.socialCounts => 'social-counts',
       };
     }
 
     final sourceText = diagnostics.sourcesUsed.isEmpty
         ? 'none'
         : diagnostics.sourcesUsed.map(sourceLabel).join(', ');
+    final failedSourceText = diagnostics.failedSources.isEmpty
+        ? 'none'
+        : diagnostics.failedSources.map(sourceLabel).join(', ');
 
     return _AnalyticsCard(
       title: context.l10n.analyticsDiagnostics,
@@ -448,6 +486,13 @@ class _DiagnosticsPanel extends StatelessWidget {
               color: context.vineColors.onSurfaceMuted,
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            context.l10n.analyticsDiagnosticsFailedSources(failedSourceText),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -473,10 +518,10 @@ class _DiagnosticsPanel extends StatelessWidget {
 }
 
 class _KpiGrid extends StatelessWidget {
-  const _KpiGrid({required this.summary, required this.followerCount});
+  const _KpiGrid({required this.summary, required this.followerValue});
 
   final _CreatorAnalyticsSummary summary;
-  final int followerCount;
+  final String followerValue;
 
   @override
   Widget build(BuildContext context) {
@@ -505,7 +550,9 @@ class _KpiGrid extends StatelessWidget {
             _KpiCard(
               width: cardWidth,
               label: context.l10n.analyticsInteractions,
-              value: StringUtils.formatCompactNumber(summary.totalInteractions),
+              value: summary.hasEngagementData
+                  ? StringUtils.formatCompactNumber(summary.totalInteractions)
+                  : context.l10n.analyticsNa,
               // No design-system glyph for these two yet (#4833).
               iconWidget: const Icon(
                 Icons.touch_app_outlined,
@@ -516,7 +563,8 @@ class _KpiGrid extends StatelessWidget {
             _KpiCard(
               width: cardWidth,
               label: context.l10n.analyticsEngagement,
-              value: summary.engagementRate == null
+              value:
+                  !summary.hasEngagementData || summary.engagementRate == null
                   ? context.l10n.analyticsNa
                   : '${NumberFormat.decimalPattern().format(summary.engagementRate! * 100)}%',
               icon: DivineIconName.trendUp,
@@ -524,13 +572,15 @@ class _KpiGrid extends StatelessWidget {
             _KpiCard(
               width: cardWidth,
               label: context.l10n.analyticsFollowers,
-              value: StringUtils.formatCompactNumber(followerCount),
+              value: followerValue,
               icon: DivineIconName.users,
             ),
             _KpiCard(
               width: cardWidth,
               label: context.l10n.analyticsAvgPerPost,
-              value: summary.videoCount == 0
+              value: !summary.hasEngagementData
+                  ? context.l10n.analyticsNa
+                  : summary.videoCount == 0
                   ? '0'
                   : NumberFormat.decimalPattern().format(
                       summary.averageInteractionsPerVideo,
@@ -612,6 +662,18 @@ class _EngagementBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!summary.hasEngagementData) {
+      return _AnalyticsCard(
+        title: context.l10n.analyticsInteractionMix,
+        child: Text(
+          context.l10n.analyticsNa,
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
+        ),
+      );
+    }
+
     final total = summary.totalInteractions;
     final likesShare = total == 0 ? 0.0 : summary.totalLikes / total;
     final commentsShare = total == 0 ? 0.0 : summary.totalComments / total;
@@ -729,30 +791,36 @@ class _PerformanceHighlights extends StatelessWidget {
           const SizedBox(height: 10),
           _HighlightRow(
             label: context.l10n.analyticsMostDiscussed,
-            metricText: context.l10n.analyticsCommentsCount(
-              StringUtils.formatCompactNumber(
-                summary.mostDiscussed?.comments ?? 0,
-              ),
-            ),
-            title:
-                summary.mostDiscussed?.displayTitle ??
-                context.l10n.analyticsNoVideosYet,
-            onTap: summary.mostDiscussed == null
+            metricText: summary.hasEngagementData
+                ? context.l10n.analyticsCommentsCount(
+                    StringUtils.formatCompactNumber(
+                      summary.mostDiscussed?.comments ?? 0,
+                    ),
+                  )
+                : context.l10n.analyticsNa,
+            title: summary.hasEngagementData
+                ? (summary.mostDiscussed?.displayTitle ??
+                      context.l10n.analyticsNoVideosYet)
+                : context.l10n.analyticsNa,
+            onTap: !summary.hasEngagementData || summary.mostDiscussed == null
                 ? null
                 : () => onTapPerformance(summary.mostDiscussed!),
           ),
           const SizedBox(height: 10),
           _HighlightRow(
             label: context.l10n.analyticsMostReposted,
-            metricText: context.l10n.analyticsRepostsCount(
-              StringUtils.formatCompactNumber(
-                summary.mostReposted?.reposts ?? 0,
-              ),
-            ),
-            title:
-                summary.mostReposted?.displayTitle ??
-                context.l10n.analyticsNoVideosYet,
-            onTap: summary.mostReposted == null
+            metricText: summary.hasEngagementData
+                ? context.l10n.analyticsRepostsCount(
+                    StringUtils.formatCompactNumber(
+                      summary.mostReposted?.reposts ?? 0,
+                    ),
+                  )
+                : context.l10n.analyticsNa,
+            title: summary.hasEngagementData
+                ? (summary.mostReposted?.displayTitle ??
+                      context.l10n.analyticsNoVideosYet)
+                : context.l10n.analyticsNa,
+            onTap: !summary.hasEngagementData || summary.mostReposted == null
                 ? null
                 : () => onTapPerformance(summary.mostReposted!),
           ),
@@ -868,6 +936,7 @@ class _TopVideosList extends StatelessWidget {
                   _TopVideoRow(
                     rank: i + 1,
                     performance: topVideos[i],
+                    hasEngagementData: summary.hasEngagementData,
                     onTap: () => onTapPerformance(topVideos[i]),
                   ),
                   if (i != topVideos.length - 1) const SizedBox(height: 12),
@@ -882,11 +951,13 @@ class _TopVideoRow extends StatelessWidget {
   const _TopVideoRow({
     required this.rank,
     required this.performance,
+    required this.hasEngagementData,
     required this.onTap,
   });
 
   final int rank;
   final VideoPerformance performance;
+  final bool hasEngagementData;
   final VoidCallback onTap;
 
   @override
@@ -929,7 +1000,7 @@ class _TopVideoRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${performance.views != null ? context.l10n.analyticsViewsCount(StringUtils.formatCompactNumber(performance.views!)) : context.l10n.analyticsViewsUnavailable} \u2022 '
-                    '${context.l10n.analyticsInteractionsCount(StringUtils.formatCompactNumber(performance.interactions))}',
+                    '${hasEngagementData ? context.l10n.analyticsInteractionsCount(StringUtils.formatCompactNumber(performance.interactions)) : context.l10n.analyticsNa}',
                     style: VineTheme.bodySmallFont(
                       color: context.vineColors.onSurfaceMuted,
                     ),
@@ -939,7 +1010,7 @@ class _TopVideoRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              performance.engagementRate == null
+              !hasEngagementData || performance.engagementRate == null
                   ? context.l10n.analyticsNa
                   : '${(performance.engagementRate! * 100).toStringAsFixed(1)}%',
               style: VineTheme.bodySmallFont(color: VineTheme.vineGreen),
@@ -999,8 +1070,16 @@ class _PostAnalyticsDetailScreenState
 
     final repository = ref.read(creatorAnalyticsRepositoryProvider);
     final snapshot = await repository.fetchCreatorAnalytics(pubkey);
+    final hasEngagementData = !snapshot.diagnostics.failedSources.contains(
+      AnalyticsDataSource.bulkVideoStats,
+    );
     for (final video in snapshot.videos) {
-      if (video.id == widget.videoId) return VideoPerformance.fromVideo(video);
+      if (video.id == widget.videoId) {
+        return VideoPerformance.fromVideo(
+          video,
+          hasEngagementData: hasEngagementData,
+        );
+      }
     }
     return null;
   }
@@ -1072,7 +1151,8 @@ class _PostAnalyticsDetailView extends StatelessWidget {
     final likes = performance.likes;
     final comments = performance.comments;
     final reposts = performance.reposts;
-    final total = performance.interactions;
+    final hasEngagementData = performance.hasEngagementData;
+    final total = hasEngagementData ? performance.interactions : 0;
 
     final likesShare = total == 0 ? 0.0 : likes / total;
     final commentsShare = total == 0 ? 0.0 : comments / total;
@@ -1114,45 +1194,61 @@ class _PostAnalyticsDetailView extends StatelessWidget {
                         ),
                         _MetricPill(
                           label: context.l10n.analyticsLikes,
-                          value: StringUtils.formatCompactNumber(likes),
+                          value: hasEngagementData
+                              ? StringUtils.formatCompactNumber(likes)
+                              : context.l10n.analyticsNa,
                         ),
                         _MetricPill(
                           label: context.l10n.analyticsComments,
-                          value: StringUtils.formatCompactNumber(comments),
+                          value: hasEngagementData
+                              ? StringUtils.formatCompactNumber(comments)
+                              : context.l10n.analyticsNa,
                         ),
                         _MetricPill(
                           label: context.l10n.analyticsReposts,
-                          value: StringUtils.formatCompactNumber(reposts),
+                          value: hasEngagementData
+                              ? StringUtils.formatCompactNumber(reposts)
+                              : context.l10n.analyticsNa,
                         ),
                         _MetricPill(
                           label: context.l10n.analyticsEngagement,
-                          value: performance.engagementRate == null
+                          value:
+                              !hasEngagementData ||
+                                  performance.engagementRate == null
                               ? context.l10n.analyticsNa
                               : '${(performance.engagementRate! * 100).toStringAsFixed(1)}%',
                         ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    _BreakdownRow(
-                      label: context.l10n.analyticsLikes,
-                      value: likes,
-                      share: likesShare,
-                      color: VineTheme.likeRed,
-                    ),
-                    const SizedBox(height: 8),
-                    _BreakdownRow(
-                      label: context.l10n.analyticsComments,
-                      value: comments,
-                      share: commentsShare,
-                      color: VineTheme.commentBlue,
-                    ),
-                    const SizedBox(height: 8),
-                    _BreakdownRow(
-                      label: context.l10n.analyticsReposts,
-                      value: reposts,
-                      share: repostShare,
-                      color: VineTheme.vineGreenDark,
-                    ),
+                    if (hasEngagementData) ...[
+                      _BreakdownRow(
+                        label: context.l10n.analyticsLikes,
+                        value: likes,
+                        share: likesShare,
+                        color: VineTheme.likeRed,
+                      ),
+                      const SizedBox(height: 8),
+                      _BreakdownRow(
+                        label: context.l10n.analyticsComments,
+                        value: comments,
+                        share: commentsShare,
+                        color: VineTheme.commentBlue,
+                      ),
+                      const SizedBox(height: 8),
+                      _BreakdownRow(
+                        label: context.l10n.analyticsReposts,
+                        value: reposts,
+                        share: repostShare,
+                        color: VineTheme.vineGreenDark,
+                      ),
+                    ] else
+                      Text(
+                        context.l10n.analyticsNa,
+                        style: VineTheme.bodySmallFont(
+                          color: context.vineColors.onSurfaceMuted,
+                        ),
+                      ),
                     const SizedBox(height: 14),
                     DivineButton(
                       label: context.l10n.analyticsOpenPost,
@@ -1219,6 +1315,18 @@ class _DailyTrendCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!summary.hasEngagementData) {
+      return _AnalyticsCard(
+        title: context.l10n.analyticsRecentDailyInteractions,
+        child: Text(
+          context.l10n.analyticsNa,
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
+        ),
+      );
+    }
+
     final points = summary.dailyInteractions;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final maxValue = points.fold<int>(
@@ -1360,6 +1468,12 @@ class _CreatorAnalyticsData {
   final SocialCounts? socialCounts;
   final CreatorAnalyticsDiagnostics diagnostics;
   final DateTime fetchedAt;
+
+  bool get socialCountsFailed =>
+      diagnostics.failedSources.contains(AnalyticsDataSource.socialCounts);
+
+  bool get engagementFailed =>
+      diagnostics.failedSources.contains(AnalyticsDataSource.bulkVideoStats);
 }
 
 class _CreatorAnalyticsSummary {
@@ -1367,6 +1481,7 @@ class _CreatorAnalyticsSummary {
     required this.videoCount,
     required this.totalViews,
     required this.hasViewData,
+    required this.hasEngagementData,
     required this.totalLikes,
     required this.totalComments,
     required this.totalReposts,
@@ -1383,6 +1498,7 @@ class _CreatorAnalyticsSummary {
   final int videoCount;
   final int totalViews;
   final bool hasViewData;
+  final bool hasEngagementData;
   final int totalLikes;
   final int totalComments;
   final int totalReposts;
@@ -1409,15 +1525,35 @@ class _CreatorAnalyticsSummary {
       return !_videoTimestamp(video).isBefore(start);
     }).toList();
 
-    final performance = videos.map(VideoPerformance.fromVideo).toList()
-      ..sort((a, b) {
-        final interactionCompare = b.interactions.compareTo(a.interactions);
-        if (interactionCompare != 0) return interactionCompare;
-        if (a.views == null && b.views == null) return 0;
-        if (a.views == null) return 1;
-        if (b.views == null) return -1;
-        return b.views!.compareTo(a.views!);
-      });
+    final hasEngagementData = !data.engagementFailed;
+    final performance =
+        videos
+            .map(
+              (video) => VideoPerformance.fromVideo(
+                video,
+                hasEngagementData: hasEngagementData,
+              ),
+            )
+            .toList()
+          ..sort((a, b) {
+            // While engagement is degraded the numbers are hidden, so ranking
+            // by them would still assert an order the rest of the dashboard
+            // refuses to show. Fall back to views, then recency.
+            if (hasEngagementData) {
+              final interactionCompare = b.interactions.compareTo(
+                a.interactions,
+              );
+              if (interactionCompare != 0) return interactionCompare;
+            }
+            if (a.views == null && b.views == null) {
+              return b.video.createdAt.compareTo(a.video.createdAt);
+            }
+            if (a.views == null) return 1;
+            if (b.views == null) return -1;
+            final viewCompare = b.views!.compareTo(a.views!);
+            if (viewCompare != 0) return viewCompare;
+            return b.video.createdAt.compareTo(a.video.createdAt);
+          });
 
     final likes = performance.fold<int>(0, (sum, video) => sum + video.likes);
     final comments = performance.fold<int>(
@@ -1478,6 +1614,7 @@ class _CreatorAnalyticsSummary {
       videoCount: performance.length,
       totalViews: views,
       hasViewData: hasViewData,
+      hasEngagementData: hasEngagementData,
       totalLikes: likes,
       totalComments: comments,
       totalReposts: reposts,
@@ -1536,6 +1673,7 @@ class VideoPerformance {
   const VideoPerformance({
     required this.video,
     required this.views,
+    required this.hasEngagementData,
     required this.likes,
     required this.comments,
     required this.reposts,
@@ -1544,7 +1682,10 @@ class VideoPerformance {
     required this.displayTitle,
   });
 
-  factory VideoPerformance.fromVideo(VideoEvent video) {
+  factory VideoPerformance.fromVideo(
+    VideoEvent video, {
+    bool hasEngagementData = true,
+  }) {
     final likes = liveLikeCountSeed(video) ?? 0;
     final comments = liveCommentCountSeed(video) ?? 0;
     final reposts = liveRepostCountSeed(video) ?? 0;
@@ -1560,6 +1701,7 @@ class VideoPerformance {
     return VideoPerformance(
       video: video,
       views: views,
+      hasEngagementData: hasEngagementData,
       likes: likes,
       comments: comments,
       reposts: reposts,
@@ -1571,6 +1713,7 @@ class VideoPerformance {
 
   final VideoEvent video;
   final int? views;
+  final bool hasEngagementData;
   final int likes;
   final int comments;
   final int reposts;

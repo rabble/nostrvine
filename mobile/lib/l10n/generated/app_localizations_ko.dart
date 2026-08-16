@@ -2586,6 +2586,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get analyticsUnableToLoad => '분석을 불러올 수 없어요.';
 
   @override
+  String get analyticsServerUnavailable =>
+      'Creator analytics is having server trouble. Please try again in a moment.';
+
+  @override
+  String get analyticsConnectionIssue =>
+      'Creator analytics could not connect. Check your connection and try again.';
+
+  @override
   String get analyticsSignInRequired => '크리에이터 분석을 보려면 로그인해주세요.';
 
   @override
@@ -2765,6 +2773,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String analyticsDiagnosticsSources(String sources) {
     return '소스: $sources';
+  }
+
+  @override
+  String analyticsDiagnosticsFailedSources(String sources) {
+    return 'Failed sources: $sources';
   }
 
   @override

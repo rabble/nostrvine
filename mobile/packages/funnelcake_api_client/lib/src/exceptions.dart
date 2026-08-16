@@ -4,13 +4,27 @@
 /// Base exception for all Funnelcake API errors.
 class FunnelcakeException implements Exception {
   /// Creates a new Funnelcake exception.
-  const FunnelcakeException(this.message);
+  const FunnelcakeException(this.message, {this.cause});
 
   /// The error message describing what went wrong.
   final String message;
 
+  /// The lower-level error that caused this exception, when one was wrapped.
+  ///
+  /// Contract: only some wrap sites populate this today — currently the
+  /// author-videos fetch. A wrap site that does not pass `cause:` leaves it
+  /// null, and callers classifying failures by cause (for example creator
+  /// analytics' connection-vs-server copy) silently fall back to their
+  /// generic verdict for those endpoints. Populate the field before relying
+  /// on it for a new call site.
+  final Object? cause;
+
   @override
-  String toString() => 'FunnelcakeException: $message';
+  String toString() {
+    final wrapped = cause;
+    if (wrapped == null) return 'FunnelcakeException: $message';
+    return 'FunnelcakeException: $message (cause: $wrapped)';
+  }
 }
 
 /// Exception thrown when the Funnelcake API is not configured.

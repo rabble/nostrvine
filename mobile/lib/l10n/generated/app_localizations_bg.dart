@@ -2767,6 +2767,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get analyticsUnableToLoad => 'Анализът не може да се зареди.';
 
   @override
+  String get analyticsServerUnavailable =>
+      'Creator analytics is having server trouble. Please try again in a moment.';
+
+  @override
+  String get analyticsConnectionIssue =>
+      'Creator analytics could not connect. Check your connection and try again.';
+
+  @override
   String get analyticsSignInRequired =>
       'Влез, за да видиш анализите за създатели.';
 
@@ -2953,6 +2961,11 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String analyticsDiagnosticsSources(String sources) {
     return 'Източници: $sources';
+  }
+
+  @override
+  String analyticsDiagnosticsFailedSources(String sources) {
+    return 'Failed sources: $sources';
   }
 
   @override

@@ -2724,6 +2724,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String get analyticsUnableToLoad => 'تجزیات لوڈ نہیں ہو سکے۔';
 
   @override
+  String get analyticsServerUnavailable =>
+      'Creator analytics is having server trouble. Please try again in a moment.';
+
+  @override
+  String get analyticsConnectionIssue =>
+      'Creator analytics could not connect. Check your connection and try again.';
+
+  @override
   String get analyticsSignInRequired =>
       'کریئیٹر تجزیات دیکھنے کے لیے سائن ان کریں۔';
 
@@ -2907,6 +2915,11 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String analyticsDiagnosticsSources(String sources) {
     return 'ذرائع: $sources';
+  }
+
+  @override
+  String analyticsDiagnosticsFailedSources(String sources) {
+    return 'Failed sources: $sources';
   }
 
   @override

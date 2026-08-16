@@ -4751,6 +4751,18 @@ abstract class AppLocalizations {
   /// **'Unable to load analytics.'**
   String get analyticsUnableToLoad;
 
+  /// No description provided for @analyticsServerUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator analytics is having server trouble. Please try again in a moment.'**
+  String get analyticsServerUnavailable;
+
+  /// No description provided for @analyticsConnectionIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator analytics could not connect. Check your connection and try again.'**
+  String get analyticsConnectionIssue;
+
   /// No description provided for @analyticsSignInRequired.
   ///
   /// In en, this message translates to:
@@ -5050,6 +5062,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sources: {sources}'**
   String analyticsDiagnosticsSources(String sources);
+
+  /// No description provided for @analyticsDiagnosticsFailedSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed sources: {sources}'**
+  String analyticsDiagnosticsFailedSources(String sources);
 
   /// No description provided for @analyticsDiagnosticsUseFixture.
   ///

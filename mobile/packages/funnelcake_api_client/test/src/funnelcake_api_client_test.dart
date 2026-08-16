@@ -5806,6 +5806,20 @@ void main() {
       expect(exception.toString(), equals('FunnelcakeException: Test error'));
     });
 
+    test('FunnelcakeException preserves wrapped cause', () {
+      const cause = FormatException('bad response');
+      const exception = FunnelcakeException('Test error', cause: cause);
+
+      expect(exception.cause, same(cause));
+      expect(
+        exception.toString(),
+        equals(
+          'FunnelcakeException: Test error '
+          '(cause: FormatException: bad response)',
+        ),
+      );
+    });
+
     test('FunnelcakeNotConfiguredException has correct message', () {
       const exception = FunnelcakeNotConfiguredException();
       expect(exception.message, equals('Funnelcake API not configured'));

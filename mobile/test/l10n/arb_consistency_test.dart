@@ -418,7 +418,10 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
-  // People-search video-count copy still needs a translation pass outside en.
+  // Translation pass tracked in #7632.
+  'analyticsConnectionIssue',
+  'analyticsDiagnosticsFailedSources',
+  'analyticsServerUnavailable',
   'searchUserVideoCount',
 };
 
