@@ -852,6 +852,37 @@ void main() {
           verify(() => mockAppBadgeClearer.clear()).called(1);
         },
       );
+
+      test(
+        'drops the visible mark while the initial open mark is in flight',
+        () async {
+          final markCompleter = Completer<void>();
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenAnswer((_) => markCompleter.future);
+
+          final bloc = createBloc(appBadgeClearer: mockAppBadgeClearer);
+          addTearDown(bloc.close);
+
+          // _onStarted marks seen after refreshFeed; hold that write in
+          // flight so a became-visible mark would overlap it.
+          bloc.add(NotificationFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+
+          // Different event type from Started, so droppable() cannot drop
+          // it. Only _markSeenInFlight prevents the second mark-all POST.
+          bloc.add(NotificationFeedBecameVisible());
+          await Future<void>.delayed(Duration.zero);
+
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          verifyNever(() => mockAppBadgeClearer.clear());
+
+          markCompleter.complete();
+          await Future<void>.delayed(Duration.zero);
+
+          verify(() => mockAppBadgeClearer.clear()).called(1);
+        },
+      );
     });
 
     group('NotificationFeedRefreshed', () {
