@@ -1395,19 +1395,13 @@ void main() {
         // OUTSIDE the guarded zone: an expect() thrown inside a guarded zone
         // is swallowed by the error handler and orphans the zone future, so
         // the test can only ever time out instead of reporting the failure.
-        await runIgnoringMockedHttpErrors(() async {
-          await authService.initialize();
+        await runIgnoringMockedHttpErrors(authService.initialize);
 
-          // initialize() returns while the unawaited background RPC upgrade
-          // (authRpcCapability: unavailable -> upgrading) is still in flight.
-          // Wait for it to fail on the offline refresh before asserting the
-          // terminal state.
-          final deadline = DateTime.now().add(const Duration(seconds: 2));
-          while (authService.isRpcUpgradeInProgress &&
-              DateTime.now().isBefore(deadline)) {
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-          }
-        });
+        // initialize() returns while the unawaited background RPC upgrade
+        // (authRpcCapability: unavailable -> upgrading) is still in flight.
+        // Every mock resolves without real timers, so the event queue drains
+        // deterministically before the terminal-state assertions below.
+        await waitForRpcUpgradeToSettle(authService);
 
         // After timeout, identity downgrades to PubkeyOnly
         expect(
@@ -1445,14 +1439,14 @@ void main() {
               'so user can manually retry login when network returns',
         );
 
-        // Background upgrade does not loop indefinitely
-        // (i.e., no scheduled retry on purely offline state)
+        // The in-flight flag must be cleared on the network-failure path so
+        // later upgrade attempts are not wedged behind a finished one.
         expect(
           authService.isRpcUpgradeInProgress,
           isFalse,
           reason:
-              'Terminal offline state must not schedule infinite upgrade '
-              'retry — there is no recovery path on the network',
+              'Terminal offline state must release the RPC upgrade in-flight '
+              'flag when the offline refresh fails',
         );
       },
     );
