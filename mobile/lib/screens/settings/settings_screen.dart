@@ -676,7 +676,7 @@ class _AccountHeaderProfile extends ConsumerWidget {
           isOwnProfile: true,
           followerCount: profile?.followerCount,
         ) ??
-        _fullNpub(pubkey);
+        NostrKeyUtils.npubOrHex(pubkey);
 
     return Column(
       children: [
@@ -804,7 +804,8 @@ class _AccountSwitchTile extends ConsumerWidget {
     final displayName =
         profile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(account.pubkeyHex);
-    final identifier = profile?.displayNip05 ?? _fullNpub(account.pubkeyHex);
+    final identifier =
+        profile?.displayNip05 ?? NostrKeyUtils.npubOrHex(account.pubkeyHex);
 
     return Semantics(
       button: true,
@@ -863,14 +864,6 @@ class _AccountSwitchTile extends ConsumerWidget {
         ),
       ),
     );
-  }
-}
-
-String _fullNpub(String pubkey) {
-  try {
-    return NostrKeyUtils.encodePubKey(pubkey);
-  } on Exception {
-    return pubkey;
   }
 }
 

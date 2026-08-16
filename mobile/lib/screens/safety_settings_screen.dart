@@ -293,7 +293,8 @@ class _CustomLabelerTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
-    final identifier = profile?.shortDisplayNip05 ?? _fullNpub(pubkey);
+    final identifier =
+        profile?.shortDisplayNip05 ?? NostrKeyUtils.npubOrHex(pubkey);
 
     return ListTile(
       leading: Icon(Icons.label_outline, color: context.vineColors.disabled),
@@ -450,7 +451,8 @@ class _BlockedUserTile extends ConsumerWidget {
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
     // No relationship line here: "You follow" under an account you have
     // blocked reads as a contradiction, so the handle is the whole signal.
-    final identifier = profile?.shortDisplayNip05 ?? _fullNpub(pubkey);
+    final identifier =
+        profile?.shortDisplayNip05 ?? NostrKeyUtils.npubOrHex(pubkey);
 
     return ListTile(
       leading: Container(
@@ -507,13 +509,5 @@ class _BlockedUserTile extends ConsumerWidget {
         onPressed: onUnblock,
       ),
     );
-  }
-}
-
-String _fullNpub(String pubkey) {
-  try {
-    return NostrKeyUtils.encodePubKey(pubkey);
-  } on Exception {
-    return pubkey;
   }
 }
