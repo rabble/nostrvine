@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -414,6 +415,120 @@ void main() {
         expect(finalList[0].name, 'Large List'); // 5 videos
         expect(finalList[1].name, 'Medium List'); // 3 videos
         expect(finalList[2].name, 'Small List'); // 1 video
+      });
+
+      test('completes empty when relays EOSE without events', () async {
+        void Function()? onEose;
+        when(
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenAnswer((invocation) {
+          onEose = invocation.namedArguments[#onEose] as void Function()?;
+          return eventController.stream;
+        });
+
+        final updates = <List<CuratedList>>[];
+        var completed = false;
+        service.streamPublicListsFromRelays().listen(
+          updates.add,
+          onDone: () {
+            completed = true;
+          },
+        );
+
+        await pumpEventQueue();
+        onEose!();
+        await pumpEventQueue();
+
+        expect(updates, isEmpty);
+        expect(completed, isTrue);
+      });
+
+      test('completes with received events when relays EOSE', () async {
+        void Function()? onEose;
+        when(
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenAnswer((invocation) {
+          onEose = invocation.namedArguments[#onEose] as void Function()?;
+          return eventController.stream;
+        });
+
+        final updates = <List<CuratedList>>[];
+        var completed = false;
+        service.streamPublicListsFromRelays().listen(
+          updates.add,
+          onDone: () {
+            completed = true;
+          },
+        );
+
+        await pumpEventQueue();
+        eventController.add(
+          createListEvent(
+            dTag: 'list_with_videos',
+            name: 'List With Videos',
+            videoIds: ['video1'],
+          ),
+        );
+        await pumpEventQueue();
+        onEose!();
+        await pumpEventQueue();
+
+        expect(updates, hasLength(1));
+        expect(updates.single.single.name, 'List With Videos');
+        expect(completed, isTrue);
+      });
+
+      test('silent relay read times out and cancels subscription', () {
+        fakeAsync((async) {
+          var canceled = false;
+          eventController = StreamController<Event>(
+            onCancel: () {
+              canceled = true;
+            },
+          );
+          when(
+            () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          ).thenAnswer((_) => eventController.stream);
+
+          Object? receivedError;
+          service
+              .streamPublicListsFromRelays(
+                timeout: const Duration(milliseconds: 100),
+              )
+              .listen(
+                (_) {},
+                onError: (Object error) {
+                  receivedError = error;
+                },
+              );
+
+          async.flushMicrotasks();
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          expect(receivedError, isA<TimeoutException>());
+          expect(canceled, isTrue);
+        });
+      });
+
+      test('listener cancellation cleans up relay subscription', () async {
+        var canceled = false;
+        eventController = StreamController<Event>(
+          onCancel: () {
+            canceled = true;
+          },
+        );
+        when(
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenAnswer((_) => eventController.stream);
+
+        final subscription = service.streamPublicListsFromRelays().listen(
+          (_) {},
+        );
+        await pumpEventQueue();
+        await subscription.cancel();
+
+        expect(canceled, isTrue);
       });
     });
   });
