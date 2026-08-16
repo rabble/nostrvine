@@ -8,7 +8,8 @@ import android.media.MediaRecorder
 import androidx.camera.video.AudioSpec
 
 /**
- * Input device types that mean the user deliberately plugged in a microphone.
+ * Input device types that mean the user deliberately plugged in a recording
+ * input.
  *
  * Only devices reported by `AudioManager.GET_DEVICES_INPUTS` are ever tested
  * against this set, so every entry is a real capture device.
@@ -23,7 +24,6 @@ import androidx.camera.video.AudioSpec
 private val EXTERNAL_MIC_TYPES = setOf(
     AudioDeviceInfo.TYPE_USB_DEVICE,
     AudioDeviceInfo.TYPE_USB_HEADSET,
-    AudioDeviceInfo.TYPE_USB_ACCESSORY,
     AudioDeviceInfo.TYPE_WIRED_HEADSET
 )
 

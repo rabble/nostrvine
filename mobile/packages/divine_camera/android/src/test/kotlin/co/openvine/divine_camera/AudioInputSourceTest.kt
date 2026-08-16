@@ -66,7 +66,6 @@ internal class AudioInputSourceTest {
         val pluggedIn = mapOf(
             "USB_DEVICE" to AudioDeviceInfo.TYPE_USB_DEVICE,
             "USB_HEADSET" to AudioDeviceInfo.TYPE_USB_HEADSET,
-            "USB_ACCESSORY" to AudioDeviceInfo.TYPE_USB_ACCESSORY,
             "WIRED_HEADSET" to AudioDeviceInfo.TYPE_WIRED_HEADSET
         )
         for ((name, type) in pluggedIn) {
@@ -78,6 +77,22 @@ internal class AudioInputSourceTest {
                 "$name should route capture to MIC"
             )
         }
+    }
+
+    @Test
+    fun usbAccessory_keepsCameraXDefault() {
+        // AOSP's MIC and CAMCORDER policies do not select USB accessory inputs,
+        // so switching source for this type would only leave the camera-tuned
+        // path without making the accessory the capture device.
+        assertEquals(
+            AudioSpec.SOURCE_AUTO,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_USB_ACCESSORY
+                )
+            )
+        )
     }
 
     @Test
