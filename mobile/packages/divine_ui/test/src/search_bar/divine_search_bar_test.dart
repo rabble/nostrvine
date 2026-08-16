@@ -2,6 +2,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineSearchBar, () {
     Widget buildTestWidget({
@@ -209,6 +211,14 @@ void main() {
 
       expect(find.byIcon(Icons.clear), findsNothing);
       expect(find.byIcon(Icons.filter_list), findsNothing);
+    });
+
+    group('accessibility', () {
+      testWidgets('meets the accessibility guidelines', (tester) async {
+        await tester.pumpWidget(buildTestWidget(onChanged: (_) {}));
+
+        await expectMeetsAccessibilityGuidelines(tester);
+      });
     });
   });
 }

@@ -11,6 +11,8 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group('DivineIconButton', () {
     Widget buildTestWidget({
@@ -329,21 +331,17 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('with semanticLabel meets the labeled-tap-target guideline', (
+      testWidgets('with semanticLabel meets the accessibility guidelines', (
         tester,
       ) async {
-        final handle = tester.ensureSemantics();
         await tester.pumpWidget(
           buildTestWidget(semanticLabel: 'Search', onPressed: () {}),
         );
-        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-        handle.dispose();
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
 
-      testWidgets('small meets the 48dp / 44pt tap-target guidelines', (
-        tester,
-      ) async {
-        final handle = tester.ensureSemantics();
+      testWidgets('small meets the accessibility guidelines', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
             size: DivineIconButtonSize.small,
@@ -351,9 +349,8 @@ void main() {
             onPressed: () {},
           ),
         );
-        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-        handle.dispose();
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
     });
 

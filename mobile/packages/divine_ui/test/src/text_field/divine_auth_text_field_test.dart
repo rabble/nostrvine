@@ -2,6 +2,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineAuthTextField, () {
     Widget buildTestWidget({
@@ -42,28 +44,22 @@ void main() {
     }
 
     group('accessibility', () {
-      testWidgets('password field meets 48dp / 44pt tap-target guidelines', (
+      testWidgets('password field meets the accessibility guidelines', (
         tester,
       ) async {
-        final handle = tester.ensureSemantics();
         await tester.pumpWidget(
           buildTestWidget(label: 'Password', obscureText: true),
         );
-        await tester.pump();
-        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-        handle.dispose();
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
 
-      testWidgets('text field meets 48dp / 44pt tap-target guidelines', (
+      testWidgets('text field meets the accessibility guidelines', (
         tester,
       ) async {
-        final handle = tester.ensureSemantics();
         await tester.pumpWidget(buildTestWidget(label: 'Email'));
-        await tester.pump();
-        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-        handle.dispose();
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
     });
 

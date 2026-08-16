@@ -5,6 +5,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineSelectableRow, () {
     Widget buildSubject({
@@ -120,6 +122,16 @@ void main() {
         isNot(VineTheme.vineGreen),
         reason: 'light mode must not fall back to the dark-only brand green',
       );
+    });
+
+    group('accessibility', () {
+      testWidgets('meets the accessibility guidelines when selected', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(isSelected: true, subtitle: 'DE'));
+
+        await expectMeetsAccessibilityGuidelines(tester);
+      });
     });
   });
 }

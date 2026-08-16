@@ -2,6 +2,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineCheckboxTile, () {
     Widget buildSubject({
@@ -156,5 +158,13 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    group('accessibility', () {
+      testWidgets('meets the accessibility guidelines', (tester) async {
+        await tester.pumpWidget(buildSubject(value: true, onChanged: (_) {}));
+
+        await expectMeetsAccessibilityGuidelines(tester);
+      });
+    });
   });
 }

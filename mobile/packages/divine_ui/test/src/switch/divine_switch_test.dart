@@ -2,6 +2,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineSwitch, () {
     Widget buildTestWidget({
@@ -312,6 +314,20 @@ void main() {
       expect(styleOf('Autoplay'), equals(disabledTitle));
       expect(styleOf(longSubtitle), equals(disabledSubtitle));
       expect(tester.takeException(), isNull);
+    });
+
+    group('accessibility', () {
+      testWidgets('meets the accessibility guidelines', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            value: true,
+            subtitle: 'Play the next video automatically',
+            onChanged: (_) {},
+          ),
+        );
+
+        await expectMeetsAccessibilityGuidelines(tester);
+      });
     });
   });
 }
