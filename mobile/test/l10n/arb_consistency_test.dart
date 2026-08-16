@@ -418,12 +418,16 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
+  // Translation pass tracked in #7632.
+  'analyticsConnectionIssue',
+  'analyticsDiagnosticsFailedSources',
+  'analyticsServerUnavailable',
   // Account restore failure copy is new; translation pass tracked in #7659.
-  // The social-proof and #7632 keys left this list when this branch
-  // translated them into every locale.
   'authAccountRestoreFailed',
   'settingsAccountRestoreFailed',
   'settingsAccountRestoreFailedSwitchMessage',
+  // The four social-proof keys and searchUserVideoCount left this list when
+  // this branch translated them into every locale.
 };
 
 const _profileBadgeSheetKeys = <String>{
