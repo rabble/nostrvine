@@ -4,8 +4,10 @@
 import 'package:count_formatter/count_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/follow_relationship_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
@@ -34,11 +36,15 @@ void main() {
     Widget buildSubject(
       UserProfile profile, {
       Nip05VerificationStatus verificationStatus = Nip05VerificationStatus.none,
+      FollowRelationship relationship = FollowRelationship.none,
     }) {
       return testProviderScope(
         additionalOverrides: [
           nip05VerificationProvider.overrideWith(
             (ref, pubkey) async => verificationStatus,
+          ),
+          followRelationshipProvider.overrideWith(
+            (ref, pubkey) => Stream.value(relationship),
           ),
         ],
         child: MaterialApp(
@@ -115,13 +121,16 @@ void main() {
       expect(find.textContaining('npub'), findsNothing);
     });
 
-    testWidgets('falls back to the npub when the count and verified NIP-05 are '
-        'unknown', (tester) async {
+    testWidgets('keeps the claimed handle while verification is unresolved', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(profileWith()));
       await tester.pump();
 
-      expect(find.textContaining('npub'), findsOneWidget);
-      expect(find.textContaining('_@lauren'), findsNothing);
+      // A pending or failed well-known fetch is a network condition, not an
+      // identity claim, so it must not demote the handle to a bare key.
+      expect(find.text('@lauren'), findsOneWidget);
+      expect(find.textContaining('npub'), findsNothing);
     });
 
     testWidgets('does not render Vine loop count as a video count', (
@@ -131,9 +140,40 @@ void main() {
         buildSubject(profileWith(rawData: const {'vine_loops': 5000})),
       );
 
-      expect(find.textContaining('npub'), findsOneWidget);
       expect(find.textContaining('5000'), findsNothing);
       expect(find.textContaining('videos'), findsNothing);
+    });
+
+    testWidgets('shows social proof when there is no handle or video count', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          profileWith(nip05: '', rawData: const {'follower_count': 2100}),
+          relationship: FollowRelationship.mutual,
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.text(
+          '${l10n.socialProofMutual} · '
+          '${l10n.socialProofFollowerCount(2100, '2.1K')}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('npub'), findsNothing);
+    });
+
+    testWidgets('renders no secondary line when nothing is known', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(profileWith(nip05: '')));
+      await tester.pump();
+
+      // An npub here would be noise, not disambiguation.
+      expect(find.text('Lauren Test'), findsOneWidget);
+      expect(find.textContaining('npub'), findsNothing);
     });
   });
 }

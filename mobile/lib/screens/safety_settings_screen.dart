@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/safety_settings/safety_settings_cubit.dart';
 import 'package:openvine/blocs/safety_settings/safety_settings_state.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -15,7 +16,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -241,31 +241,7 @@ class _CustomLabelersSection extends StatelessWidget {
     );
     return Column(
       children: [
-        ...customLabelers.map(
-          (pubkey) => ListTile(
-            leading: Icon(
-              Icons.label_outline,
-              color: context.vineColors.disabled,
-            ),
-            title: Text(
-              NostrKeyUtils.truncateNpub(pubkey),
-              style: VineTheme.bodyLargeFont(
-                color: context.vineColors.primaryText,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: DivineIconButton(
-              icon: DivineIconName.minus,
-              backgroundColor: VineTheme.transparent,
-              foregroundColor: context.vineColors.secondaryText,
-              showShadow: false,
-              tooltip: context.l10n.safetySettingsRemoveLabeler,
-              onPressed: () =>
-                  context.read<SafetySettingsCubit>().removeLabeler(pubkey),
-            ),
-          ),
-        ),
+        ...customLabelers.map((pubkey) => _CustomLabelerTile(pubkey: pubkey)),
         ListTile(
           leading: DivineIcon(
             icon: DivineIconName.plus,
@@ -300,6 +276,52 @@ class _CustomLabelersSection extends StatelessWidget {
     if (result != null && result.isNotEmpty) {
       await cubit.addLabeler(result);
     }
+  }
+}
+
+/// One subscribed labeler, identified by profile rather than by raw key.
+///
+/// Labelers are ordinary accounts with a kind 0, so the name and handle a
+/// person recognises are available; a truncated npub told them nothing about
+/// which service they had subscribed to.
+class _CustomLabelerTile extends ConsumerWidget {
+  const _CustomLabelerTile({required this.pubkey});
+
+  final String pubkey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
+    final handle = profile?.shortDisplayNip05;
+
+    return ListTile(
+      leading: Icon(Icons.label_outline, color: context.vineColors.disabled),
+      title: Text(
+        profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey),
+        style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: handle != null && handle.isNotEmpty
+          ? Text(
+              handle,
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      trailing: DivineIconButton(
+        icon: DivineIconName.minus,
+        backgroundColor: VineTheme.transparent,
+        foregroundColor: context.vineColors.secondaryText,
+        showShadow: false,
+        tooltip: context.l10n.safetySettingsRemoveLabeler,
+        onPressed: () =>
+            context.read<SafetySettingsCubit>().removeLabeler(pubkey),
+      ),
+    );
   }
 }
 
@@ -425,8 +447,11 @@ class _BlockedUserTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileReactiveProvider(pubkey));
     final profile = profileAsync.value;
-    final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
-    final displayName = profile?.bestDisplayName ?? truncatedNpub;
+    final displayName =
+        profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
+    // No relationship line here: "You follow" under an account you have
+    // blocked reads as a contradiction, so the handle is the whole signal.
+    final handle = profile?.shortDisplayNip05;
 
     return ListTile(
       leading: Container(
@@ -470,12 +495,16 @@ class _BlockedUserTile extends ConsumerWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: Text(
-        truncatedNpub,
-        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      subtitle: handle != null && handle.isNotEmpty
+          ? Text(
+              handle,
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.secondaryText,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
       trailing: DivineButton(
         label: context.l10n.safetySettingsUnblock,
         type: DivineButtonType.link,

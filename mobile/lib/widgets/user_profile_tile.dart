@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -11,10 +12,10 @@ import 'package:openvine/features/people_lists/models/people_list_entry_point.da
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/follow_relationship_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/user_identifier_line_resolver.dart';
 import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -86,8 +87,6 @@ class UserProfileTile extends ConsumerWidget {
     final showAddToList =
         profileListFeaturesEnabled && curatedListsEnabled && !isCurrentUser;
 
-    // Get display name or truncated npub (fallback for users without Kind 0)
-    final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
     final displayName =
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
 
@@ -97,13 +96,18 @@ class UserProfileTile extends ConsumerWidget {
               .watch(nip05VerificationProvider(pubkey))
               .whenOrNull(data: (status) => status)
         : null;
-    final hasVerifiedNip05 =
-        verificationStatus == Nip05VerificationStatus.verified;
 
-    // Only show NIP-05 when verification succeeds; otherwise show npub.
-    final uniqueIdentifier = hasVerifiedNip05 && claimedNip05 != null
-        ? claimedNip05
-        : truncatedNpub;
+    final uniqueIdentifier = resolveUserIdentifierLine(
+      l10n: context.l10n,
+      locale: Localizations.localeOf(context).toLanguageTag(),
+      handle: claimedNip05,
+      verificationStatus: verificationStatus,
+      isOwnProfile: isCurrentUser,
+      relationship:
+          ref.watch(followRelationshipProvider(pubkey)).value ??
+          FollowRelationship.none,
+      followerCount: profile?.followerCount,
+    );
 
     return Semantics(
       identifier: 'user_profile_tile_$pubkey',
@@ -138,14 +142,15 @@ class UserProfileTile extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      uniqueIdentifier,
-                      style: VineTheme.bodySmallFont(
-                        color: context.vineColors.onSurfaceVariant,
+                    if (uniqueIdentifier != null)
+                      Text(
+                        uniqueIdentifier,
+                        style: VineTheme.bodySmallFont(
+                          color: context.vineColors.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ],
                 ),
               ),

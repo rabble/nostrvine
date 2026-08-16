@@ -562,9 +562,11 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Should still render with fallback content
+        // Should still render with fallback content. With no profile there is
+        // no handle and no social proof, so the row carries the generated
+        // display name alone rather than a bare key.
         expect(find.byType(UserProfileTile), findsOneWidget);
-        expect(find.text('npub1mis'), findsOneWidget); // Abbreviated pubkey
+        expect(find.textContaining('npub1mis'), findsNothing);
 
         // Should not crash
         expect(tester.takeException(), isNull);
