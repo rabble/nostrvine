@@ -27,7 +27,7 @@ Future<bool?> showUnfollowConfirmation(
                 onPressed: () => Navigator.of(context).pop(false),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: context.vineColors.surfaceContainer,
-                  foregroundColor: VineTheme.vineGreen,
+                  foregroundColor: context.vineColors.accentPositive,
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
                     horizontal: 16,
@@ -42,7 +42,9 @@ Future<bool?> showUnfollowConfirmation(
                 ),
                 child: Text(
                   context.l10n.commonCancel,
-                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.accentPositive,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

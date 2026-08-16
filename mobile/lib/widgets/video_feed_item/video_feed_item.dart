@@ -1023,15 +1023,15 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                   Navigator.of(context).pop();
                   context.push('/content-filters');
                 },
-                icon: const DivineIcon(
+                icon: DivineIcon(
                   icon: DivineIconName.slidersHorizontal,
                   size: 18,
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 label: Text(
                   context.l10n.contentWarningManageFilters,
-                  style: const TextStyle(
-                    color: VineTheme.vineGreen,
+                  style: TextStyle(
+                    color: context.vineColors.accentPositive,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),

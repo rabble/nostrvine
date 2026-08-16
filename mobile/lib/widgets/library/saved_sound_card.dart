@@ -229,7 +229,9 @@ class _SavedSoundText extends StatelessWidget {
         if (source?.creatorName case final creator?)
           Text(
             context.l10n.soundCreatorBy(creator),
-            style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
+            style: VineTheme.labelMediumFont(
+              color: context.vineColors.accentPositive,
+            ),
           ),
         if (source?.description case final description?)
           Text(
@@ -304,7 +306,7 @@ class _WaveformBars extends StatelessWidget {
         painter: StereoWaveformPainter(
           leftChannel: Float32List.fromList(sound.waveformSamples),
           progress: progress,
-          activeColor: VineTheme.vineGreen,
+          activeColor: context.vineColors.accentPositive,
           inactiveColor: context.vineColors.onSurfaceVariant,
           audioDuration: duration,
           maxDuration: duration,
@@ -355,7 +357,7 @@ class _SavedSoundTag extends StatelessWidget {
           label,
           style: VineTheme.labelSmallFont(
             color: isPersonal
-                ? VineTheme.vineGreen
+                ? context.vineColors.accentPositive
                 : context.vineColors.onSurfaceVariant,
           ),
         ),

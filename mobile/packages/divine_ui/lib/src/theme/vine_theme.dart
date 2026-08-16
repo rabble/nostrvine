@@ -210,10 +210,12 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// integration, a completed step.
   ///
   /// Its dark value is [VineTheme.vineGreen], so dark mode is unchanged. The
-  /// brand green is 2.08:1 on the light canvas, below the 3:1 non-text floor,
-  /// so the light value is the seeded tone the light `colorScheme.primary`
-  /// already resolves to. Reusing it keeps one green in light mode rather
-  /// than introducing a second, near-identical one.
+  /// brand green is 2.08:1 on the light canvas, below the 3:1 non-text floor.
+  /// The light value is that green darkened 20% at the same hue: it now
+  /// labels body copy as well as icons, and the seeded `colorScheme.primary`
+  /// tone it used to borrow read 5.13:1 on [surfaceContainerHigh] — clearing
+  /// 4.5:1 flat, but trailing its dark counterpart by more than the third
+  /// this palette allows.
   final Color accentPositive;
 
   /// Attention-status accent, drawn directly on [background] — an expired
@@ -221,8 +223,10 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   ///
   /// Its dark value is [VineTheme.accentOrange], so dark mode is unchanged.
   /// This one labels body copy as well as icons, so the light value clears
-  /// 4.5:1 rather than 3:1 — and is pitched at [accentPositive]'s ratio on
-  /// [background] so the two accents carry the same weight side by side.
+  /// 4.5:1 rather than 3:1. It was originally pitched at [accentPositive]'s
+  /// ratio on [background] so the two read at equal weight; darkening
+  /// `accentPositive` for its own body-copy duty broke that pairing, and
+  /// re-darkening the orange to chase it was judged the larger brand change.
   final Color accentWarning;
 
   /// Decorative accent chips, drawn on [background] or [card] — notification
@@ -1241,7 +1245,7 @@ class VineTheme {
     skeleton: Color(0xFFE7E4E1),
     errorContainer: Color(0xFFFFE7E2),
     onErrorContainer: Color(0xFF8C1D18),
-    accentPositive: Color(0xFF226A4C),
+    accentPositive: Color(0xFF1B553D),
     accentWarning: Color(0xFFAE3100),
     // Pale tint / darkened accent. Each pair clears 4.5:1 foreground-on-
     // container (6.30–7.51) and holds 1.18–1.30 container-on-background, which

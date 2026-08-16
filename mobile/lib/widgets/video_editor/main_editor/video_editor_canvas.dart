@@ -2559,6 +2559,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           _proVideoController,
           key: scope.editorKey,
           configs: ProImageEditorConfigs(
+            // pro_image_editor falls back to its own bare ThemeData,
+            // which carries no VineThemeColors. Everything under it
+            // would resolve context.vineColors through the silent dark
+            // fallback and paint dark tokens on a light page.
+            theme: Theme.of(context),
             stateHistory: StateHistoryConfigs(
               initStateHistory: editorStateHistory.isNotEmpty
                   ? .fromMap(

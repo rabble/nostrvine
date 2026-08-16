@@ -235,7 +235,7 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
                 FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9 ,]')),
               ],
               onSubmitted: _addTag,
-              cursorColor: VineTheme.vineGreen,
+              cursorColor: context.vineColors.accentPositive,
               style: VineTheme.bodyLargeFont(
                 color: context.vineColors.onSurface,
               ),
@@ -255,8 +255,8 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
                 enabledBorder: InputBorder.none,
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(_searchInputBorderRadius),
-                  borderSide: const BorderSide(
-                    color: VineTheme.primary,
+                  borderSide: BorderSide(
+                    color: context.vineColors.accentPositive,
                     width: 2,
                   ),
                 ),
@@ -311,9 +311,9 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
             return AnimatedOpacity(
               opacity: isLoading ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
-              child: const LinearProgressIndicator(
+              child: LinearProgressIndicator(
                 backgroundColor: Colors.transparent,
-                color: VineTheme.primary,
+                color: context.vineColors.accentPositive,
                 minHeight: 2,
               ),
             );
@@ -418,12 +418,17 @@ class _SuggestionChip extends StatelessWidget {
                   ),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(left: 8, right: 12, top: 8, bottom: 8),
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 8,
+                  right: 12,
+                  top: 8,
+                  bottom: 8,
+                ),
                 child: DivineIcon(
                   icon: .plus,
                   size: 16,
-                  color: VineTheme.primary,
+                  color: context.vineColors.accentPositive,
                 ),
               ),
             ],

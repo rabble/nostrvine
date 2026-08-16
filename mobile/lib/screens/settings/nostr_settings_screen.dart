@@ -75,7 +75,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                   leading: Icon(
                     Icons.hub,
                     size: DivineIcon.scaleSize(context, 24),
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   title: context.l10n.nostrSettingsRelays,
                   subtitle: context.l10n.nostrSettingsRelaysSubtitle,
@@ -85,7 +85,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                   leading: Icon(
                     Icons.troubleshoot,
                     size: DivineIcon.scaleSize(context, 24),
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   title: context.l10n.nostrSettingsRelayDiagnostics,
                   subtitle: context.l10n.nostrSettingsRelayDiagnosticsSubtitle,
@@ -96,7 +96,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                 leading: Icon(
                   Icons.cloud_upload,
                   size: DivineIcon.scaleSize(context, 24),
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 title: context.l10n.nostrSettingsMediaServers,
                 subtitle: context.l10n.nostrSettingsMediaServersSubtitle,
@@ -109,7 +109,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                 DivineSectionHeader(context.l10n.nostrSettingsSectionAccount),
                 DivineListTile(
                   icon: DivineIconName.key,
-                  iconColor: VineTheme.vineGreen,
+                  iconColor: context.vineColors.accentPositive,
                   title: context.l10n.nostrSettingsKeyManagement,
                   subtitle: context.l10n.nostrSettingsKeyManagementSubtitle,
                   onTap: () => context.push(KeyManagementScreen.path),
@@ -119,7 +119,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                   leading: Icon(
                     Icons.alternate_email,
                     size: DivineIcon.scaleSize(context, 24),
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   title: context.l10n.nostrSettingsNip05Address,
                   subtitle: context.l10n.nostrSettingsNip05AddressSubtitle,
@@ -127,7 +127,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                 ),
                 DivineListTile(
                   icon: DivineIconName.downloadSimple,
-                  iconColor: VineTheme.vineGreen,
+                  iconColor: context.vineColors.accentPositive,
                   title: context.l10n.nostrSettingsMoveAccount,
                   subtitle: context.l10n.nostrSettingsMoveAccountSubtitle,
                   semanticIdentifier: SemanticIds.settingsMoveAccountRow,
@@ -268,7 +268,7 @@ class _SignatureVerificationTile extends ConsumerWidget {
 
     return DivineListTile(
       icon: DivineIconName.shieldCheck,
-      iconColor: VineTheme.vineGreen,
+      iconColor: context.vineColors.accentPositive,
       title: context.l10n.nostrSettingsSignatureVerification,
       subtitle: signatureVerificationPolicySubtitle(context, policy),
       onTap: () =>

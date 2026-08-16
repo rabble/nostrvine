@@ -149,9 +149,9 @@ class _MetadataReplyLink extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.arrowBendUpLeft,
-              color: VineTheme.vineGreen,
+              color: context.vineColors.accentPositive,
               size: 20,
             ),
             const SizedBox(width: 12),

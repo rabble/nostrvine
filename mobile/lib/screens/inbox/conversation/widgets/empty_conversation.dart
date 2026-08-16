@@ -115,7 +115,9 @@ class _ViewProfileButton extends StatelessWidget {
         ),
         child: Text(
           context.l10n.inboxConversationViewProfileButton,
-          style: VineTheme.titleMediumFont(color: VineTheme.primary),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.accentPositive,
+          ),
         ),
       ),
     );

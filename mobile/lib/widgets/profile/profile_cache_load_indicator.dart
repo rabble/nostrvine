@@ -17,12 +17,12 @@ class ProfileCacheLoadIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     // Purely decorative background-refresh hint; the cached grid is already
     // on screen, so keep it out of the semantics tree.
-    return const ExcludeSemantics(
+    return ExcludeSemantics(
       child: SizedBox(
         height: height,
         child: LinearProgressIndicator(
           minHeight: height,
-          color: VineTheme.primary,
+          color: context.vineColors.accentPositive,
           backgroundColor: VineTheme.transparent,
         ),
       ),

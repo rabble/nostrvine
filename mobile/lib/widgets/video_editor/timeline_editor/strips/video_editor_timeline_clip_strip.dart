@@ -1176,7 +1176,7 @@ class _LoopTransitionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = hasTransition
-        ? VineTheme.primary
+        ? context.vineColors.accentPositive
         : context.vineColors.secondaryText;
     final left = math.max(
       0.0,
@@ -1237,7 +1237,7 @@ class _TransitionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = hasTransition
-        ? VineTheme.primary
+        ? context.vineColors.accentPositive
         : context.vineColors.secondaryText;
     return Semantics(
       button: true,

@@ -235,7 +235,7 @@ class _InviteCodeCard extends StatelessWidget {
               // actions have always had, while the DS widget supplies the
               // 48px tap target and semantics.
               backgroundColor: VineTheme.transparent,
-              foregroundColor: VineTheme.vineGreen,
+              foregroundColor: context.vineColors.accentPositive,
               showShadow: false,
               tooltip: context.l10n.invitesCopyInvite,
               onPressed: () => ClipboardUtils.copy(
@@ -247,7 +247,7 @@ class _InviteCodeCard extends StatelessWidget {
             DivineIconButton(
               icon: DivineIconName.shareFat,
               backgroundColor: VineTheme.transparent,
-              foregroundColor: VineTheme.vineGreen,
+              foregroundColor: context.vineColors.accentPositive,
               showShadow: false,
               tooltip: context.l10n.invitesShareInvite,
               onPressed: () => showShareSheet(
@@ -284,9 +284,9 @@ class _ClaimedCodeRow extends StatelessWidget {
               ),
             ),
           ),
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.check,
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
             size: 16,
           ),
           const SizedBox(width: 4),

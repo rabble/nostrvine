@@ -31,7 +31,9 @@ class BadgeStatusPill extends StatelessWidget {
             : pending.container,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: accepted ? VineTheme.vineGreen : pending.onContainer,
+          color: accepted
+              ? context.vineColors.accentPositive
+              : pending.onContainer,
         ),
       ),
       child: Padding(
@@ -39,7 +41,9 @@ class BadgeStatusPill extends StatelessWidget {
         child: Text(
           label,
           style: VineTheme.labelSmallFont(
-            color: accepted ? VineTheme.vineGreen : pending.onContainer,
+            color: accepted
+                ? context.vineColors.accentPositive
+                : pending.onContainer,
           ),
         ),
       ),

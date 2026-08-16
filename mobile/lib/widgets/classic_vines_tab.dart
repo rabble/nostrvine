@@ -265,12 +265,12 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 alignment: Alignment.center,
                 child: widget.isLoadingMore
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: VineTheme.vineGreen,
+                          color: context.vineColors.accentPositive,
                         ),
                       )
                     : const SizedBox.shrink(),

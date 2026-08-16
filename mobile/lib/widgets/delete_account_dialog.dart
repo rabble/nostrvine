@@ -370,7 +370,7 @@ class _DeletionProgressSheetContent extends StatelessWidget {
                     [
                       CircularProgressIndicator(
                         value: current / total,
-                        color: VineTheme.vineGreen,
+                        color: context.vineColors.accentPositive,
                         backgroundColor: context.vineColors.card,
                       ),
                       const SizedBox(height: 16),
@@ -392,7 +392,9 @@ class _DeletionProgressSheetContent extends StatelessWidget {
                       ),
                     ],
                   AccountDeletionProgressPreparing() => [
-                    const CircularProgressIndicator(color: VineTheme.vineGreen),
+                    CircularProgressIndicator(
+                      color: context.vineColors.accentPositive,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       context.l10n.deleteAccountPreparingDeletion,

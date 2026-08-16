@@ -118,12 +118,12 @@ class _WatermarkDownloadProgressViewState
                     ),
                     const SizedBox(height: 24),
                     if (state.isProcessing) ...[
-                      const SizedBox(
+                      SizedBox(
                         width: 32,
                         height: 32,
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
-                          color: VineTheme.vineGreen,
+                          color: context.vineColors.accentPositive,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -158,9 +158,9 @@ class _WatermarkDownloadProgressViewState
     final l10n = context.l10n;
     return switch (result) {
       WatermarkDownloadSuccess() => [
-        const DivineIcon(
+        DivineIcon(
           icon: DivineIconName.checkCircle,
-          color: VineTheme.vineGreen,
+          color: context.vineColors.accentPositive,
           size: 48,
         ),
         const SizedBox(height: 16),
@@ -199,9 +199,9 @@ class _WatermarkDownloadProgressViewState
         ),
       ],
       WatermarkDownloadPermissionDenied() => [
-        const DivineIcon(
+        DivineIcon(
           icon: DivineIconName.lockSimple,
-          color: VineTheme.vineGreen,
+          color: context.vineColors.accentPositive,
           size: 48,
         ),
         const SizedBox(height: 16),

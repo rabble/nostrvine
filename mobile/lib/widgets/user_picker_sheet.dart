@@ -439,7 +439,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               enableSuggestions: false,
               onChanged: _onSearchChanged,
               onSubmitted: _onSearchChanged,
-              cursorColor: VineTheme.vineGreen,
+              cursorColor: context.vineColors.accentPositive,
               style: VineTheme.bodyLargeFont(
                 color: context.vineColors.onSurface,
               ),
@@ -475,8 +475,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                 enabledBorder: .none,
                 focusedBorder: OutlineInputBorder(
                   borderRadius: .circular(_searchInputBorderRadius),
-                  borderSide: const BorderSide(
-                    color: VineTheme.primary,
+                  borderSide: BorderSide(
+                    color: context.vineColors.accentPositive,
                     width: 2,
                   ),
                 ),
@@ -684,7 +684,9 @@ class _EmptyFollowList extends StatelessWidget {
                 child: Text(
                   context.l10n.userPickerGoBack,
                   textAlign: TextAlign.center,
-                  style: VineTheme.titleMediumFont(color: VineTheme.primary),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.accentPositive,
+                  ),
                 ),
               ),
             ),

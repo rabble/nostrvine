@@ -30,9 +30,9 @@ class UserListCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.users,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -120,9 +120,9 @@ class CuratedListCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.video_library,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                     size: 24,
                   ),
                   const SizedBox(width: 12),
@@ -184,8 +184,8 @@ class CuratedListCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         curatedList.tags.take(3).map((t) => '#$t').join(' '),
-                        style: const TextStyle(
-                          color: VineTheme.vineGreen,
+                        style: TextStyle(
+                          color: context.vineColors.accentPositive,
                           fontSize: 12,
                         ),
                         maxLines: 1,

@@ -74,9 +74,9 @@ class _FontListItem extends StatelessWidget {
                 ),
               ),
               if (selected)
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.check,
-                  color: VineTheme.primary,
+                  color: context.vineColors.accentPositive,
                   size: 28,
                 ),
             ],

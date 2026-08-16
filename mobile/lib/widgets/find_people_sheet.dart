@@ -192,8 +192,10 @@ class _ResultsList extends StatelessWidget {
                 scrollController: scrollController,
                 onSelectUser: onSelectUser,
               ),
-            UserSearchStatus.loading => const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            UserSearchStatus.loading => Center(
+              child: CircularProgressIndicator(
+                color: context.vineColors.accentPositive,
+              ),
             ),
             UserSearchStatus.success when state.results.isNotEmpty =>
               _SearchResultsList(

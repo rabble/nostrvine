@@ -77,7 +77,7 @@ class UnblockConfirmationView extends StatelessWidget {
                           color: context.vineColors.onSurface,
                         ).copyWith(
                           decoration: TextDecoration.underline,
-                          decorationColor: VineTheme.vineGreen,
+                          decorationColor: context.vineColors.accentPositive,
                           decorationThickness: 2,
                         ),
                   ),

@@ -63,7 +63,7 @@ class _Tile extends StatelessWidget {
           audio.title ?? context.l10n.videoEditorAudioUntitledSound,
           style: VineTheme.titleMediumFont(
             color: isSelected
-                ? VineTheme.primary
+                ? context.vineColors.accentPositive
                 : context.vineColors.onSurface,
           ),
           maxLines: 1,
@@ -196,7 +196,7 @@ class _AudioBars extends StatelessWidget {
 
           return DecoratedBox(
             decoration: BoxDecoration(
-              color: VineTheme.primary,
+              color: context.vineColors.accentPositive,
               borderRadius: BorderRadius.circular(999),
             ),
             child: SizedBox(width: 2, height: height),

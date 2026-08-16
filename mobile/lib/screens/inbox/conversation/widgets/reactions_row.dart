@@ -195,7 +195,7 @@ class _ReactionPill extends StatelessWidget {
     final borderColor = isOwnFailed
         ? VineTheme.error
         : hasOwn
-        ? VineTheme.vineGreen
+        ? context.vineColors.accentPositive
         : context.vineColors.outline;
     final borderRadius = BorderRadius.circular(_height / 2);
 

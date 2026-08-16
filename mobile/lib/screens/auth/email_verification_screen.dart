@@ -1048,7 +1048,7 @@ class _ResendRow extends StatelessWidget {
                         style: VineTheme.labelLargeFont(
                           color: disabled
                               ? context.vineColors.secondaryText
-                              : VineTheme.vineGreen,
+                              : context.vineColors.accentPositive,
                         ),
                       ),
                     ),

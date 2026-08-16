@@ -35,9 +35,9 @@ class _AccountContentLabelsTileView extends StatelessWidget {
     return BlocBuilder<AccountContentLabelsCubit, AccountContentLabelsState>(
       builder: (context, state) {
         return ListTile(
-          leading: const DivineIcon(
+          leading: DivineIcon(
             icon: DivineIconName.warning,
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
           ),
           title: Text(
             context.l10n.contentPreferencesAccountLabels,

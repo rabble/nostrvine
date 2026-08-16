@@ -59,9 +59,9 @@ class _ContentFiltersTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const DivineIcon(
+      leading: DivineIcon(
         icon: DivineIconName.funnelSimple,
-        color: VineTheme.vineGreen,
+        color: context.vineColors.accentPositive,
       ),
       title: Text(
         context.l10n.contentPreferencesContentFilters,
@@ -110,9 +110,9 @@ class _LanguageSettingTile extends StatelessWidget {
           );
 
     return ListTile(
-      leading: const DivineIcon(
+      leading: DivineIcon(
         icon: DivineIconName.globe,
-        color: VineTheme.vineGreen,
+        color: context.vineColors.accentPositive,
       ),
       title: Text(
         context.l10n.contentPreferencesContentLanguage,
@@ -292,9 +292,9 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
         );
 
         return ListTile(
-          leading: const DivineIcon(
+          leading: DivineIcon(
             icon: DivineIconName.microphone,
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
           ),
           title: Text(
             context.l10n.contentPreferencesAudioInputDevice,

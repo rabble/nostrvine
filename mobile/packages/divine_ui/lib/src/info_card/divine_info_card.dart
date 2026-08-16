@@ -86,7 +86,7 @@ class DivineInfoCard extends StatelessWidget {
 
   /// Accent colour for the icon, the border, and a tinted tone's title.
   Color _accent(VineThemeColors colors) => switch (tone) {
-    DivineInfoCardTone.info => VineTheme.vineGreen,
+    DivineInfoCardTone.info => colors.accentPositive,
     DivineInfoCardTone.neutral => colors.secondaryText,
     DivineInfoCardTone.warning => VineTheme.warning,
     DivineInfoCardTone.error => VineTheme.error,

@@ -214,7 +214,7 @@ class _CaptionTileFrame extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: selected
-                          ? VineTheme.primary
+                          ? context.vineColors.accentPositive
                           : VineTheme.transparent,
                       width: 2,
                     ),
@@ -233,7 +233,7 @@ class _CaptionTileFrame extends StatelessWidget {
                   label,
                   style: VineTheme.labelSmallFont(
                     color: selected
-                        ? VineTheme.primary
+                        ? context.vineColors.accentPositive
                         : context.vineColors.mutedText,
                   ),
                 ),

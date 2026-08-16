@@ -70,9 +70,9 @@ class _VideoMetadataSelectionTileState
                     ),
                   ),
                 ),
-                const DivineIcon(
+                DivineIcon(
                   icon: .caretDown,
-                  color: VineTheme.primary,
+                  color: context.vineColors.accentPositive,
                 ),
               ],
             ),

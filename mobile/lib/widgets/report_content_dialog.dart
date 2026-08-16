@@ -536,7 +536,9 @@ class _ReportFormBody extends StatelessWidget {
                 children: [
                   Text(
                     l10n.reportDetailsRequired,
-                    style: VineTheme.labelSmallFont(color: VineTheme.vineGreen),
+                    style: VineTheme.labelSmallFont(
+                      color: context.vineColors.accentPositive,
+                    ),
                   ),
                   _CappedDetailsField(
                     fieldKey: detailsFieldKey,
@@ -630,7 +632,7 @@ class _ReasonCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isSelected
-                  ? VineTheme.vineGreen
+                  ? context.vineColors.accentPositive
                   : context.vineColors.surfaceContainer,
               width: 1.5,
             ),
@@ -680,8 +682,16 @@ class _RadioIndicator extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isSelected ? VineTheme.vineGreen : VineTheme.transparent,
-          border: Border.all(color: VineTheme.vineGreen, width: 2),
+          // Fill and ring resolve from the same token: a raw-green fill under
+          // an `accentPositive` ring reads two-tone in light (2.92:1 between
+          // them), and it left the white check at 2.11:1 on the fill.
+          color: isSelected
+              ? context.vineColors.accentPositive
+              : VineTheme.transparent,
+          border: Border.all(
+            color: context.vineColors.accentPositive,
+            width: 2,
+          ),
         ),
         child: isSelected
             ? Center(

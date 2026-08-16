@@ -227,8 +227,10 @@ class _LoadingIndicator extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          Center(
+            child: CircularProgressIndicator(
+              color: context.vineColors.accentPositive,
+            ),
           ),
           if (onClose case final onClose?)
             SafeArea(

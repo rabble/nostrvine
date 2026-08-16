@@ -55,23 +55,25 @@ class ListAttributionChip extends StatelessWidget {
               color: context.vineColors.card,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: VineTheme.vineGreen.withValues(alpha: 0.5),
+                color: context.vineColors.accentPositive.withValues(
+                  alpha: 0.5,
+                ),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.playlist,
                   size: 14,
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   listName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                 ),
               ],

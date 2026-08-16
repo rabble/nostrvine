@@ -40,7 +40,7 @@ class ClassicVinersSlider extends ConsumerWidget {
               children: [
                 Icon(
                   Icons.star,
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                   size: DivineIcon.scaleSize(context, 20),
                 ),
                 Text(

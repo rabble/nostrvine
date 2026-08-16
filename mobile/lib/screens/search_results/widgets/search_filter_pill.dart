@@ -57,7 +57,9 @@ class _SearchFilterButton extends StatelessWidget {
           ),
           child: Text(
             filter.label,
-            style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.accentPositive,
+            ),
           ),
         ),
       ),
@@ -111,11 +113,13 @@ class _VideoSearchSortButton extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.accentPositive,
+                  ),
                 ),
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.caretDown,
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
               ],
             ),

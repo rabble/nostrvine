@@ -198,8 +198,10 @@ class _InviteLoadingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.vineColors.background,
-      body: const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      body: Center(
+        child: CircularProgressIndicator(
+          color: context.vineColors.accentPositive,
+        ),
       ),
     );
   }
@@ -392,7 +394,9 @@ class _InviteCodeInput extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
-                color: hasError ? VineTheme.error : VineTheme.vineGreen,
+                color: hasError
+                    ? VineTheme.error
+                    : context.vineColors.accentPositive,
               ),
               floatingLabelBehavior: FloatingLabelBehavior.always,
               hintText: context.l10n.authEnterYourCode,
@@ -417,7 +421,9 @@ class _InviteCodeInput extends StatelessWidget {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
                 borderSide: BorderSide(
-                  color: hasError ? VineTheme.error : VineTheme.vineGreen,
+                  color: hasError
+                      ? VineTheme.error
+                      : context.vineColors.accentPositive,
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(

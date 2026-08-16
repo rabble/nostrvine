@@ -444,7 +444,9 @@ class _MessageTextState extends ConsumerState<_MessageText> {
     );
     // The primary green reads cleanly on the received bubble; on the sent
     // bubble it would sit green-on-green, so links there stay white.
-    final linkColor = widget.isSent ? VineTheme.whiteText : VineTheme.primary;
+    final linkColor = widget.isSent
+        ? VineTheme.whiteText
+        : context.vineColors.accentPositive;
     final referenceStyle = defaultStyle.copyWith(
       color: linkColor,
       decoration: TextDecoration.underline,
@@ -623,13 +625,13 @@ class _VideoLinkPreview extends ConsumerWidget {
         width: _videoCardWidth,
         height: _videoCardHeight,
         color: context.vineColors.card,
-        child: const Center(
+        child: Center(
           child: SizedBox(
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: VineTheme.vineGreen,
+              color: context.vineColors.accentPositive,
             ),
           ),
         ),
@@ -736,7 +738,9 @@ class _QuotedVideoFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = isSent ? VineTheme.whiteText : VineTheme.primary;
+    final accent = isSent
+        ? VineTheme.whiteText
+        : context.vineColors.accentPositive;
     final frame = SizedBox(
       width: _quotedPreviewWidth,
       child: DecoratedBox(

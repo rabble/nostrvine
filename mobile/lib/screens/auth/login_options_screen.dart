@@ -176,8 +176,10 @@ class _LoginOptionsView extends StatelessWidget {
               if (state is DivineAuthFormState) {
                 return _SignInContent(state: state);
               }
-              return const Center(
-                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+              return Center(
+                child: CircularProgressIndicator(
+                  color: context.vineColors.accentPositive,
+                ),
               );
             },
           ),
@@ -578,7 +580,9 @@ class _SignInOptionsHint extends ConsumerWidget {
                   TextSpan(text: l10n.authSignInOptionsHintPrefix),
                   TextSpan(
                     text: l10n.authSignInOptionsHintCta,
-                    style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+                    style: VineTheme.bodyMediumFont(
+                      color: context.vineColors.accentPositive,
+                    ),
                   ),
                 ],
               ),

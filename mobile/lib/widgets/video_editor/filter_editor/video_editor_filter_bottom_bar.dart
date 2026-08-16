@@ -122,7 +122,7 @@ class _FilterItem extends StatelessWidget {
                   borderRadius: .circular(20),
                   border: .all(
                     color: isSelected
-                        ? VineTheme.primary
+                        ? context.vineColors.accentPositive
                         : context.vineColors.outlineMuted,
                     width: 2,
                   ),

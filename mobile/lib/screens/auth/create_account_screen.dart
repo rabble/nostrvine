@@ -104,8 +104,10 @@ class _CreateAccountView extends StatelessWidget {
           }
           return Scaffold(
             backgroundColor: context.vineColors.background,
-            body: const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            body: Center(
+              child: CircularProgressIndicator(
+                color: context.vineColors.accentPositive,
+              ),
             ),
           );
         },

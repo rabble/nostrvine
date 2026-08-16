@@ -237,6 +237,17 @@ class DraftRenderParametersService {
       // editor canvas overrides none of them. Both sides reading the same
       // defaults is what keeps a re-render identical to what the user saw; if
       // the canvas ever overrides one, mirror it here.
+      //
+      // `configs.theme` is the one exception, and it is deliberate. The canvas
+      // does override it (so its subtree can resolve `context.vineColors`
+      // instead of the silent dark fallback), and the rasterizer host wraps
+      // captured layers in it too. It stays unmirrored because nothing this
+      // app puts in a layer reads the ambient text theme: emoji layers — the
+      // only layer type that does, via `platformTextStyle` — cannot be created
+      // here, and every `TextLayer` carries an explicit `textStyle`, which
+      // `RoundedBackgroundText` uses instead of `DefaultTextStyle`. Introducing
+      // an emoji layer, or a text layer with a null `textStyle`, makes the two
+      // sides diverge and this has to be mirrored after all.
       final captured = await _rasterizer.capture(
         layers: layers,
         editorBodySize: bodySize,

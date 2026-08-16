@@ -243,7 +243,10 @@ class _ItemButton extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: DivineIcon(icon: icon, color: VineTheme.primary),
+                  child: DivineIcon(
+                    icon: icon,
+                    color: context.vineColors.accentPositive,
+                  ),
                 ),
               ),
             ),

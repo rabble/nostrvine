@@ -65,10 +65,14 @@ class DivineSelectableRow extends StatelessWidget {
               style: VineTheme.bodySmallFont(color: colors.mutedText),
               overflow: TextOverflow.ellipsis,
             ),
+      // The tick is the only thing marking which row is chosen, so it has to
+      // clear contrast on the selected row's own fill. The raw brand green is
+      // 1.92:1 on light `surfaceContainer`; the token keeps that green in dark
+      // and swaps to the darkened one in light (5.61:1).
       trailing: isSelected
-          ? const DivineIcon(
+          ? DivineIcon(
               icon: DivineIconName.check,
-              color: VineTheme.vineGreen,
+              color: colors.accentPositive,
             )
           : null,
       onTap: onTap,

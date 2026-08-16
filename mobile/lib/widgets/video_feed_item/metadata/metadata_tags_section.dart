@@ -89,7 +89,12 @@ class _HashtagChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 4,
         children: [
-          Text('#', style: VineTheme.bodyLargeFont(color: VineTheme.vineGreen)),
+          Text(
+            '#',
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.accentPositive,
+            ),
+          ),
           Flexible(
             child: Text(
               tag,

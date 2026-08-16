@@ -31,9 +31,9 @@ class ReportConfirmationBody extends StatelessWidget {
         Row(
           spacing: 12,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.checkCircle,
-              color: VineTheme.vineGreen,
+              color: context.vineColors.accentPositive,
               size: 28,
             ),
             Expanded(
@@ -103,7 +103,9 @@ class _SafetyPolicyLink extends StatelessWidget {
               ),
               TextSpan(
                 text: l10n.reportSafetyUrl,
-                style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.accentPositive,
+                ),
               ),
             ],
           ),

@@ -469,8 +469,16 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                             child: DivineIcon(
                               icon: _directionIcon(direction),
                               size: 18,
+                              // Matches the curve glyphs directly above,
+                              // which already resolve `onSurface` in light.
+                              // Contrast is not the reason — `accentPositive`
+                              // is 5.78:1 on the chip's `primaryContainer`
+                              // fill — a lone green glyph beside neutral
+                              // siblings in one sheet is.
                               color: direction == _direction
-                                  ? VineTheme.primary
+                                  ? context.vineColors.isLight
+                                        ? context.vineColors.onSurface
+                                        : VineTheme.primary
                                   : context.vineColors.secondaryText,
                             ),
                           ),
@@ -560,7 +568,9 @@ class _TransitionTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: selected ? VineTheme.primary : Colors.transparent,
+                    color: selected
+                        ? context.vineColors.accentPositive
+                        : Colors.transparent,
                     width: 2,
                   ),
                 ),
@@ -590,7 +600,7 @@ class _TransitionTile extends StatelessWidget {
                   label,
                   style: VineTheme.labelSmallFont(
                     color: selected
-                        ? VineTheme.primary
+                        ? context.vineColors.accentPositive
                         : context.vineColors.mutedText,
                   ),
                 ),

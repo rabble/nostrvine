@@ -86,9 +86,9 @@ class _AppDetailContent extends StatelessWidget {
                     CircleAvatar(
                       radius: 28,
                       backgroundColor: context.vineColors.card,
-                      child: const DivineIcon(
+                      child: DivineIcon(
                         icon: DivineIconName.gridNine,
-                        color: VineTheme.vineGreen,
+                        color: context.vineColors.accentPositive,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -129,7 +129,7 @@ class _AppDetailContent extends StatelessWidget {
                       child: Text(
                         app.primaryOrigin,
                         style: VineTheme.bodyMediumFont(
-                          color: VineTheme.vineGreen,
+                          color: context.vineColors.accentPositive,
                         ),
                       ),
                     ),
@@ -217,7 +217,9 @@ class _PillList extends StatelessWidget {
               decoration: BoxDecoration(
                 color: context.vineColors.background,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: VineTheme.vineGreen.withAlpha(80)),
+                border: Border.all(
+                  color: context.vineColors.accentPositive.withAlpha(80),
+                ),
               ),
               child: Text(
                 item,

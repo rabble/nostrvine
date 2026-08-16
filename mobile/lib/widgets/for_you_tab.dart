@@ -253,9 +253,9 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
-                      const DivineIcon(
+                      DivineIcon(
                         icon: DivineIconName.sparkle,
-                        color: VineTheme.vineGreen,
+                        color: context.vineColors.accentPositive,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -263,7 +263,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                         child: Text(
                           context.l10n.forYouAlgorithmTitle,
                           style: VineTheme.labelLargeFont(
-                            color: VineTheme.vineGreen,
+                            color: context.vineColors.accentPositive,
                           ),
                         ),
                       ),
@@ -309,9 +309,9 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
         Row(
           spacing: 12,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.sparkle,
-              color: VineTheme.vineGreen,
+              color: context.vineColors.accentPositive,
               size: 28,
             ),
             Expanded(
@@ -328,7 +328,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
         Text(
           context.l10n.forYouAlgorithmSubtitle,
           style: VineTheme.bodySmallFont(
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
           ).copyWith(fontStyle: FontStyle.italic),
         ),
         const SizedBox(height: 24),
@@ -459,7 +459,11 @@ class _InteractionItem extends StatelessWidget {
               color: context.vineColors.card,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: DivineIcon(icon: icon, color: VineTheme.vineGreen, size: 18),
+            child: DivineIcon(
+              icon: icon,
+              color: context.vineColors.accentPositive,
+              size: 18,
+            ),
           ),
           Expanded(
             child: Column(
@@ -501,9 +505,9 @@ class _FutureFeatureItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 8,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.checkCircle,
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
             size: 18,
           ),
           Expanded(child: Text(text, style: _bodyTextStyleOf(context))),

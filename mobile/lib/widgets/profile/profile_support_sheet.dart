@@ -104,9 +104,9 @@ class _SupportLinkTile extends StatelessWidget {
       type: MaterialType.transparency,
       child: ListTile(
         minTileHeight: 56,
-        leading: const DivineIcon(
+        leading: DivineIcon(
           icon: DivineIconName.linkSimple,
-          color: VineTheme.primary,
+          color: context.vineColors.accentPositive,
         ),
         title: Text(
           link.provider.displayName,

@@ -292,7 +292,10 @@ class _HandleInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const Icon(Icons.alternate_email, color: VineTheme.vineGreen),
+      leading: Icon(
+        Icons.alternate_email,
+        color: context.vineColors.accentPositive,
+      ),
       title: Text(
         context.l10n.blueskyHandle,
         style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
@@ -313,9 +316,9 @@ class _DidInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const DivineIcon(
+      leading: DivineIcon(
         icon: DivineIconName.fingerprint,
-        color: VineTheme.vineGreen,
+        color: context.vineColors.accentPositive,
       ),
       title: Text(
         context.l10n.blueskyDid,
@@ -352,7 +355,7 @@ class _ProvisioningStatus extends StatelessWidget {
           };
 
     final statusColor = switch (state.provisioningState) {
-      AtprotoProvisioningState.ready => VineTheme.vineGreen,
+      AtprotoProvisioningState.ready => context.vineColors.accentPositive,
       AtprotoProvisioningState.pending => VineTheme.accentOrange,
       AtprotoProvisioningState.failed => VineTheme.error,
       _ => context.vineColors.mutedText,

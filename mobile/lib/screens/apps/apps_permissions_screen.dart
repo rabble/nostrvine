@@ -108,9 +108,9 @@ class _AppsPermissionsEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.lockSimple,
-              color: VineTheme.vineGreen,
+              color: context.vineColors.accentPositive,
               size: 28,
             ),
             const SizedBox(height: 16),
@@ -170,7 +170,9 @@ class _GrantCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             grant.capability,
-            style: VineTheme.labelLargeFont(color: VineTheme.vineGreen),
+            style: VineTheme.labelLargeFont(
+              color: context.vineColors.accentPositive,
+            ),
           ),
           const SizedBox(height: 16),
           Align(

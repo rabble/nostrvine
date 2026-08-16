@@ -532,7 +532,7 @@ class _InviteActions extends StatelessWidget {
     return switch (state) {
       CollaboratorInviteState.accepted => _StatusText(
         label: l10n.inboxCollabInviteAcceptedStatus,
-        color: VineTheme.primary,
+        color: context.vineColors.accentPositive,
       ),
       CollaboratorInviteState.ignored => _StatusText(
         label: l10n.inboxCollabInviteIgnoredStatus,

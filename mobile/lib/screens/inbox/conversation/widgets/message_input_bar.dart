@@ -89,7 +89,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
                   style: VineTheme.bodyLargeFont(
                     color: context.vineColors.primaryText,
                   ),
-                  cursorColor: VineTheme.primary,
+                  cursorColor: context.vineColors.accentPositive,
                   keyboardType: TextInputType.multiline,
                   // Return = newline; send via button only (#4620).
                   textInputAction: TextInputAction.newline,

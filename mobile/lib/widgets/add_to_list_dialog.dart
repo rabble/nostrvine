@@ -68,7 +68,7 @@ class SelectListDialog extends StatelessWidget {
                           ? DivineIconName.checkCircle
                           : DivineIconName.playlist,
                       color: isInList
-                          ? VineTheme.vineGreen
+                          ? context.vineColors.accentPositive
                           : context.vineColors.primaryText,
                     ),
                     title: Text(

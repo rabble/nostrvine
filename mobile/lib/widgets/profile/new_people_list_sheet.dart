@@ -204,9 +204,9 @@ class _CollaboratorsRow extends StatelessWidget {
                           ),
                         ),
                 ),
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.caretRight,
-                  color: VineTheme.primary,
+                  color: context.vineColors.accentPositive,
                 ),
               ],
             ),

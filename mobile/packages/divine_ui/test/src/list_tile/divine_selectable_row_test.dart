@@ -12,9 +12,10 @@ void main() {
       String? subtitle,
       DivineIconName? leadingIcon,
       VoidCallback? onTap,
+      ThemeData? theme,
     }) {
       return MaterialApp(
-        theme: VineTheme.theme,
+        theme: theme ?? VineTheme.theme,
         home: Scaffold(
           body: DivineSelectableRow(
             title: 'Deutsch',
@@ -87,6 +88,38 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tapped, isTrue);
+    });
+
+    testWidgets('the selection tick clears contrast in both appearances', (
+      tester,
+    ) async {
+      // The tick is the row's only selected-state cue, so it has to stay
+      // readable on the selected fill. The raw brand green is 1.92:1 on the
+      // light `surfaceContainer`; the token keeps dark unchanged and swaps to
+      // the darkened green in light.
+      await tester.pumpWidget(buildSubject(isSelected: true));
+      await tester.pumpAndSettle();
+      expect(
+        (tester.widget<ListTile>(find.byType(ListTile)).trailing! as DivineIcon)
+            .color,
+        VineTheme.darkColors.accentPositive,
+      );
+
+      await tester.pumpWidget(
+        buildSubject(isSelected: true, theme: VineTheme.lightTheme),
+      );
+      // MaterialApp lerps between themes, so a single pump samples the
+      // transition rather than the destination palette.
+      await tester.pumpAndSettle();
+      final lightTick =
+          tester.widget<ListTile>(find.byType(ListTile)).trailing!
+              as DivineIcon;
+      expect(lightTick.color, VineTheme.lightColors.accentPositive);
+      expect(
+        lightTick.color,
+        isNot(VineTheme.vineGreen),
+        reason: 'light mode must not fall back to the dark-only brand green',
+      );
     });
   });
 }

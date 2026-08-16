@@ -718,7 +718,7 @@ class _UniqueIdentifier extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasNip05 = nip05 != null && nip05!.isNotEmpty;
     final npub = NostrKeyUtils.encodePubKey(userIdHex);
-    const linkColor = VineTheme.vineGreen;
+    final linkColor = context.vineColors.accentPositive;
 
     // Watch NIP-05 verification status
     final verificationStatus = hasNip05

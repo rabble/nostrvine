@@ -124,7 +124,10 @@ class DivineSwitchTile extends StatelessWidget {
               leading ??
               (leadingIcon == null
                   ? null
-                  : DivineIcon(icon: leadingIcon!, color: VineTheme.primary)),
+                  : DivineIcon(
+                      icon: leadingIcon!,
+                      color: colors.accentPositive,
+                    )),
           title: Text(
             title,
             style: VineTheme.titleMediumFont(color: colors.primaryText),

@@ -398,8 +398,16 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                                     child: DivineIcon(
                                       icon: _directionIcon(direction),
                                       size: 18,
+                                      // Matches the curve glyphs, which
+                                      // already resolve `onSurface` in
+                                      // light. Not a contrast call —
+                                      // `accentPositive` is 5.78:1 on the
+                                      // chip's `primaryContainer` fill —
+                                      // but a consistency one.
                                       color: direction == active.direction
-                                          ? VineTheme.primary
+                                          ? context.vineColors.isLight
+                                                ? context.vineColors.onSurface
+                                                : VineTheme.primary
                                           : context.vineColors.secondaryText,
                                     ),
                                   ),
@@ -731,8 +739,10 @@ class _LayerTypeTile extends StatelessWidget {
                   label,
                   style: VineTheme.labelSmallFont(
                     color: selected
-                        ? VineTheme.primary
-                        : context.vineColors.mutedText,
+                        ? colors.isLight
+                              ? colors.onSurface
+                              : VineTheme.primary
+                        : colors.mutedText,
                   ),
                 ),
               ),

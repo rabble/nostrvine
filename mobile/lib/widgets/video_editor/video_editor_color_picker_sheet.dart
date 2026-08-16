@@ -245,7 +245,10 @@ class _ColorButton extends StatelessWidget {
           : context.vineColors.disabled,
       borderWidth: isColorPicker ? 2 : 1,
       child: isColorPicker
-          ? const DivineIcon(icon: .paintBrush, color: VineTheme.primary)
+          ? DivineIcon(
+              icon: .paintBrush,
+              color: context.vineColors.accentPositive,
+            )
           : null,
     );
   }

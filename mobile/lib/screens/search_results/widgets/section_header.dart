@@ -61,9 +61,9 @@ class SectionHeader extends StatelessWidget {
                   ),
                 ),
                 if (onTap != null)
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.caretRight,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
               ],
             ),
