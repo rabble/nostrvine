@@ -104,18 +104,22 @@ Two related traps:
 
 **Expect a pixel diff, and don't chase it.** References are committed as the
 Ubuntu runner produced them, and Skia antialiases differently per OS —
-measured at **2.7–2.8% of pixels** on this suite, entirely on glyph edges.
-`golden.sh verify` prints a notice saying so when the host isn't Linux.
+measured on macOS at **2.7% / 2.8% / 3.7% of pixels** for
+`divine_button_sizes` / `divine_button_types` / `divine_snackbars`,
+entirely on glyph edges. `golden.sh verify` prints a notice saying so when
+the host isn't Linux. Note the spread: the number is per golden, not one
+suite-wide constant, so treat ~4% as the ceiling rather than assuming
+anything above 3% is a regression.
 
 That run is still worth doing: it catches structural breakage — image
 *size* mismatches, thrown exceptions, layout overflow — which is what most
 real regressions look like. A 1px padding change on `DivineButton`, for
 instance, fails as a size mismatch on any OS. What it cannot tell you is
-whether a sub-3% pixel difference is drift or a genuine change; the
+whether a sub-4% pixel difference is drift or a genuine change; the
 `Goldens` CI job answers that.
 
 A tolerance-based comparator was considered and rejected: the tolerance
-would have to exceed ~3%, which is wide enough to hide a colour tweak or an
+would have to exceed ~4%, which is wide enough to hide a colour tweak or an
 icon swap — exactly the regressions the suite exists to catch.
 
 ### Regenerating references
