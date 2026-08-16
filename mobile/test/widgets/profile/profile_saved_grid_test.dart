@@ -15,6 +15,17 @@ import 'package:openvine/widgets/profile/profile_saved_grid.dart';
 import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';
 
+/// Pins the ambient physics that `AlwaysScrollableScrollPhysics` wraps, so a
+/// test does not depend on process-wide target-platform state.
+class _FixedPhysicsScrollBehavior extends ScrollBehavior {
+  const _FixedPhysicsScrollBehavior(this.physics);
+
+  final ScrollPhysics physics;
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) => physics;
+}
+
 class _MockProfileSavedVideosBloc
     extends MockBloc<ProfileSavedVideosEvent, ProfileSavedVideosState>
     implements ProfileSavedVideosBloc {}
@@ -50,7 +61,8 @@ void main() {
       ).thenAnswer((_) async => null);
     });
 
-    Widget buildSubject({MockGoRouter? goRouter}) {
+    Widget buildSubject({MockGoRouter? goRouter, ScrollPhysics? physics}) {
+      const grid = ProfileSavedGrid(userIdHex: 'test-user');
       final app = testProviderScope(
         additionalOverrides: [],
         child: MaterialApp(
@@ -60,7 +72,12 @@ void main() {
           home: Scaffold(
             body: BlocProvider<ProfileSavedVideosBloc>.value(
               value: mockBloc,
-              child: const ProfileSavedGrid(userIdHex: 'test-user'),
+              child: physics == null
+                  ? grid
+                  : ScrollConfiguration(
+                      behavior: _FixedPhysicsScrollBehavior(physics),
+                      child: grid,
+                    ),
             ),
           ),
         ),
@@ -233,6 +250,77 @@ void main() {
           () => mockBloc.add(const ProfileSavedVideosLoadMoreRequested()),
         ).called(greaterThanOrEqualTo(1));
       });
+
+      // Whether the unresolved state can reach page 2 depends on the ambient
+      // scroll physics, so inject them rather than relying on the target
+      // platform: `AlwaysScrollableScrollPhysics` resolves its parent through
+      // the theme's ScrollBehavior, which is built once per process, so a
+      // `debugDefaultTargetPlatformOverride` version of this test passes alone
+      // and fails in a suite (#7623, #7639).
+      //
+      // `ProfileTabErrorState` opts into AlwaysScrollableScrollPhysics, so the
+      // drag is accepted even though the content fits, and `maxScrollExtent`
+      // is 0 — which makes the mixin's near-bottom test
+      // (`pixels >= maxScrollExtent - threshold`) trivially true. What decides
+      // it is whether the drag moves `pixels` at all: bouncing overscroll
+      // notifies, clamping pins the position at the boundary and never does.
+      testWidgets(
+        'bouncing overscroll of the unresolved state requests the next page',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            ProfileSavedVideosState(
+              status: ProfileSavedVideosStatus.success,
+              savedEventIds: List.generate(40, (i) => 'saved-$i'),
+              nextPageOffset: 36,
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildSubject(physics: const BouncingScrollPhysics()),
+          );
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileErrorLoadingSaved), findsOneWidget);
+
+          await tester.drag(
+            find.byType(CustomScrollView),
+            const Offset(0, 400),
+          );
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockBloc.add(const ProfileSavedVideosLoadMoreRequested()),
+          ).called(greaterThanOrEqualTo(1));
+        },
+      );
+
+      testWidgets(
+        'clamping overscroll of the unresolved state cannot reach page 2',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            ProfileSavedVideosState(
+              status: ProfileSavedVideosStatus.success,
+              savedEventIds: List.generate(40, (i) => 'saved-$i'),
+              nextPageOffset: 36,
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildSubject(physics: const ClampingScrollPhysics()),
+          );
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileErrorLoadingSaved), findsOneWidget);
+
+          await tester.drag(
+            find.byType(CustomScrollView),
+            const Offset(0, 400),
+          );
+          await tester.pumpAndSettle();
+
+          verifyNever(
+            () => mockBloc.add(const ProfileSavedVideosLoadMoreRequested()),
+          );
+        },
+      );
 
       testWidgets('navigates to fullscreen feed when tile is tapped', (
         tester,
