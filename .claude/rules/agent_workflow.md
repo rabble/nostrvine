@@ -35,6 +35,24 @@ One task per worktree. If the current worktree is dirty, commit, stash
 intentionally, or discard intentionally before starting new work
 elsewhere. Do not mix unrelated work into one worktree.
 
+### Optional: warn on concurrent sessions in one worktree
+
+Two agent sessions in the same working tree is the failure this rule
+prevents, and nothing in git or the permission system catches it — both
+sessions are doing exactly what they were told. One session running an
+authorized `git reset --hard` while another reasons from a pre-reset
+snapshot is enough to lose, or wrongly "restore", a changeset.
+
+`.claude/hooks/session-start-worktree-guard.sh` warns at session start
+when another live session appears to have been launched from the same
+git worktree root. It is opt-in (registration snippet is in the script
+header) and deliberately not registered in the team `settings.json`, so
+anyone already running it at user scope is not warned twice. It warns
+only — it never blocks a session. The signal comes from Claude's process
+cwd and `/tmp/cc-socks*/<pid>.sock`, so it cannot see later `cd` calls
+inside tool shells and can become a silent no-op if Claude changes that
+internal socket path.
+
 ---
 
 ## 2. Rebase when publishing, finalizing, or resolving conflicts
