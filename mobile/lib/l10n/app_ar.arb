@@ -1,5 +1,11 @@
 {
     "@@locale": "ar",
+    "devOptionsStorageFootprint": "مساحة التخزين المستخدمة",
+    "devOptionsStorageFootprintDescription": "كل مجلد يكتب فيه التطبيق. مسح ذاكرة التخزين المؤقت يحرر جزءًا منها فقط.",
+    "devOptionsStorageFootprintMeasure": "قياس",
+    "devOptionsStorageFootprintTotal": "الإجمالي: {size}",
+    "devOptionsStorageFootprintCopied": "تم نسخ تقرير التخزين",
+    "devOptionsStorageFootprintFailure": "تعذر قياس مساحة التخزين",
     "commentAuthorAvatarSemanticLabel": "عرض ملف {name} الشخصي",
     "publishErrorNotSignedIn": "يرجى تسجيل الدخول لنشر الفيديوهات.",
     "publishErrorNoRetry": "لا يوجد رفع لإعادة محاولته.",

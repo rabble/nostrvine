@@ -12,6 +12,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/temp_render_janitor.dart';
+import 'package:openvine/utils/byte_size_format.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -79,6 +80,103 @@ class CacheUsage extends Equatable {
   List<Object?> get props => [video, images, transitionSeams, tempRenders];
 }
 
+/// One immediate child of a measured footprint root.
+class StorageFootprintEntry extends Equatable {
+  /// Creates an entry.
+  const StorageFootprintEntry({
+    required this.name,
+    required this.bytes,
+    required this.isDirectory,
+  });
+
+  /// Entry name, relative to its root.
+  final String name;
+
+  /// Bytes held by this entry — recursive when it is a directory.
+  final int bytes;
+
+  /// Whether this entry is a directory.
+  final bool isDirectory;
+
+  @override
+  List<Object?> get props => [name, bytes, isDirectory];
+}
+
+/// One root directory of the app's on-disk footprint.
+class StorageFootprintRoot extends Equatable {
+  /// Creates a measured root.
+  const StorageFootprintRoot({
+    required this.label,
+    required this.path,
+    required this.totalBytes,
+    required this.largestChildren,
+  });
+
+  /// Which platform directory this is, e.g. `Documents`.
+  final String label;
+
+  /// Absolute path on this device.
+  final String path;
+
+  /// Bytes held by the whole subtree.
+  final int totalBytes;
+
+  /// The biggest immediate children, largest first.
+  final List<StorageFootprintEntry> largestChildren;
+
+  @override
+  List<Object?> get props => [label, path, totalBytes, largestChildren];
+}
+
+/// The app's full on-disk footprint, split by root directory.
+class StorageFootprint extends Equatable {
+  /// Creates a footprint.
+  const StorageFootprint({required this.roots});
+
+  /// Nothing measured yet.
+  static const empty = StorageFootprint(roots: []);
+
+  /// Every root the app writes to, in measurement order.
+  final List<StorageFootprintRoot> roots;
+
+  /// Bytes across all roots.
+  int get totalBytes => roots.fold(0, (sum, root) => sum + root.totalBytes);
+
+  /// A plain-text report for pasting into a support thread.
+  ///
+  /// Deliberately unlocalized: it is read by whoever triages the report, not
+  /// by the user, and mixed-locale reports are harder to compare. Raw byte
+  /// counts sit alongside the readable size so a report stays sortable.
+  String toReportText() {
+    final buffer = StringBuffer()
+      ..writeln('Divine storage footprint')
+      ..writeln('Total: ${formatByteSize(totalBytes)} ($totalBytes bytes)');
+    for (final root in roots) {
+      buffer
+        ..writeln()
+        ..writeln(
+          '${root.label}: ${formatByteSize(root.totalBytes)} '
+          '(${root.totalBytes} bytes)',
+        )
+        ..writeln('  path: ${root.path}');
+      if (root.largestChildren.isEmpty) {
+        buffer.writeln('  (empty)');
+        continue;
+      }
+      for (final child in root.largestChildren) {
+        final suffix = child.isDirectory ? '/' : '';
+        buffer.writeln(
+          '  ${formatByteSize(child.bytes)}\t${child.name}$suffix',
+        );
+      }
+    }
+    return buffer.toString();
+  }
+
+  @override
+  List<Object?> get props => [roots];
+}
+
 /// Clears re-downloadable / regenerable media caches and audits the clip
 /// library for broken entries.
 ///
@@ -102,6 +200,10 @@ class StorageManagementService {
     required SharedPreferences prefs,
     @visibleForTesting Future<Directory> Function()? temporaryDirectoryProvider,
     @visibleForTesting Future<Directory> Function()? documentsDirectoryProvider,
+    @visibleForTesting
+    Future<Directory> Function()? applicationSupportDirectoryProvider,
+    @visibleForTesting
+    Future<Directory> Function()? applicationCacheDirectoryProvider,
     Set<String> Function()? protectedTempRenderPaths,
   }) : _videoCache = videoCache,
        _imageCache = imageCache,
@@ -111,6 +213,11 @@ class StorageManagementService {
            temporaryDirectoryProvider ?? getTemporaryDirectory,
        _documentsDirectoryProvider =
            documentsDirectoryProvider ?? getApplicationDocumentsDirectory,
+       _applicationSupportDirectoryProvider =
+           applicationSupportDirectoryProvider ??
+           getApplicationSupportDirectory,
+       _applicationCacheDirectoryProvider =
+           applicationCacheDirectoryProvider ?? getApplicationCacheDirectory,
        _protectedTempRenderPaths =
            protectedTempRenderPaths ?? _noProtectedPaths;
 
@@ -120,6 +227,8 @@ class StorageManagementService {
   final SharedPreferences _prefs;
   final Future<Directory> Function() _temporaryDirectoryProvider;
   final Future<Directory> Function() _documentsDirectoryProvider;
+  final Future<Directory> Function() _applicationSupportDirectoryProvider;
+  final Future<Directory> Function() _applicationCacheDirectoryProvider;
   final Set<String> Function() _protectedTempRenderPaths;
 
   static const String _logName = 'StorageManagementService';
@@ -176,6 +285,100 @@ class StorageManagementService {
     );
     final docs = await _documentsDirectoryProvider();
     await _deleteDirContents(Directory(p.join(docs.path, _seamDir)));
+  }
+
+  /// Every directory the app writes to, each with its largest immediate
+  /// children — the diagnostic for "the OS reports tens of GB but the cache
+  /// readout says megabytes".
+  ///
+  /// [cacheUsage] deliberately covers only what [clearCaches] can reclaim, so
+  /// it cannot locate a footprint that sits anywhere else. This walks all four
+  /// platform roots instead, including the ones no in-app action clears: the
+  /// documents directory (clip library, drafts, rendered videos) and the
+  /// durable database, which even the repair wipe preserves.
+  ///
+  /// Roots that resolve to the same directory are reported once — on Android
+  /// the temporary and cache directories are both `getCacheDir()` — so the
+  /// totals never double-count. A root the platform cannot resolve is omitted
+  /// rather than failing the whole measurement.
+  ///
+  /// Walks the full tree of every root, so it is slow on a large install and
+  /// belongs behind an explicit user action.
+  Future<StorageFootprint> measureFootprint({int childrenPerRoot = 12}) async {
+    final providers = <String, Future<Directory> Function()>{
+      'Documents': _documentsDirectoryProvider,
+      'Application Support': _applicationSupportDirectoryProvider,
+      'Caches': _applicationCacheDirectoryProvider,
+      'Temporary': _temporaryDirectoryProvider,
+    };
+    final roots = <StorageFootprintRoot>[];
+    final measuredPaths = <String>{};
+    for (final entry in providers.entries) {
+      final root = await _measureRoot(
+        label: entry.key,
+        provider: entry.value,
+        childrenPerRoot: childrenPerRoot,
+        measuredPaths: measuredPaths,
+      );
+      if (root != null) roots.add(root);
+    }
+    return StorageFootprint(roots: roots);
+  }
+
+  Future<StorageFootprintRoot?> _measureRoot({
+    required String label,
+    required Future<Directory> Function() provider,
+    required int childrenPerRoot,
+    required Set<String> measuredPaths,
+  }) async {
+    final Directory dir;
+    try {
+      dir = await provider();
+    } on Object catch (error) {
+      Log.warning(
+        '$_logName: resolving $label failed: $error',
+        name: _logName,
+        category: LogCategory.system,
+      );
+      return null;
+    }
+    if (!measuredPaths.add(_normalizePath(dir.path))) return null;
+
+    final children = <StorageFootprintEntry>[];
+    var totalBytes = 0;
+    if (dir.existsSync()) {
+      try {
+        await for (final entity in dir.list(followLinks: false)) {
+          final isDirectory = entity is Directory;
+          final bytes = switch (entity) {
+            Directory() => await _dirSize(entity),
+            File() => await _fileLength(entity),
+            _ => 0,
+          };
+          totalBytes += bytes;
+          children.add(
+            StorageFootprintEntry(
+              name: p.basename(entity.path),
+              bytes: bytes,
+              isDirectory: isDirectory,
+            ),
+          );
+        }
+      } on Object catch (error) {
+        Log.warning(
+          '$_logName: listing ${dir.path} failed: $error',
+          name: _logName,
+          category: LogCategory.system,
+        );
+      }
+    }
+    children.sort((a, b) => b.bytes.compareTo(a.bytes));
+    return StorageFootprintRoot(
+      label: label,
+      path: dir.path,
+      totalBytes: totalBytes,
+      largestChildren: children.take(childrenPerRoot).toList(),
+    );
   }
 
   /// Library clips whose backing media is gone — broken entries that can
@@ -241,6 +444,15 @@ class StorageManagementService {
       );
     }
     return size;
+  }
+
+  /// Length of [file], or zero when it vanished mid-walk or cannot be read.
+  Future<int> _fileLength(File file) async {
+    try {
+      return await file.length();
+    } on Object {
+      return 0;
+    }
   }
 
   Future<int> _tempRenderBytes(

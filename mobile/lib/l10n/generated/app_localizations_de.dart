@@ -9,6 +9,28 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Speicherverbrauch';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Jedes Verzeichnis, in das die App schreibt. Cache leeren gibt nur einen Teil davon frei.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Messen';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Gesamt: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Speicherbericht kopiert';
+
+  @override
+  String get devOptionsStorageFootprintFailure =>
+      'Speicher konnte nicht gemessen werden';
+
+  @override
   String get feedTuningMoreLabel => 'Mehr davon';
 
   @override

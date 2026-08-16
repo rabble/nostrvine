@@ -1,5 +1,11 @@
 {
     "@@locale": "pl",
+    "devOptionsStorageFootprint": "Zajętość pamięci",
+    "devOptionsStorageFootprintDescription": "Każdy katalog, do którego zapisuje aplikacja. Czyszczenie pamięci podręcznej zwalnia tylko część.",
+    "devOptionsStorageFootprintMeasure": "Zmierz",
+    "devOptionsStorageFootprintTotal": "Łącznie: {size}",
+    "devOptionsStorageFootprintCopied": "Skopiowano raport pamięci",
+    "devOptionsStorageFootprintFailure": "Nie udało się zmierzyć pamięci",
     "commentAuthorAvatarSemanticLabel": "Zobacz profil użytkownika {name}",
     "publishErrorNotSignedIn": "Zaloguj się, aby publikować filmy.",
     "publishErrorNoRetry": "Brak przesyłania do ponowienia.",

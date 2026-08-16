@@ -1,5 +1,11 @@
 {
     "@@locale": "it",
+    "devOptionsStorageFootprint": "Spazio occupato",
+    "devOptionsStorageFootprintDescription": "Ogni cartella in cui l'app scrive. Svuotare la cache ne libera solo una parte.",
+    "devOptionsStorageFootprintMeasure": "Misura",
+    "devOptionsStorageFootprintTotal": "Totale: {size}",
+    "devOptionsStorageFootprintCopied": "Report di archiviazione copiato",
+    "devOptionsStorageFootprintFailure": "Impossibile misurare lo spazio",
     "commentAuthorAvatarSemanticLabel": "Visualizza il profilo di {name}",
   "publishErrorNotSignedIn": "Accedi per pubblicare i video.",
   "publishErrorNoRetry": "Nessun caricamento da riprovare.",

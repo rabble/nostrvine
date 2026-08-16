@@ -378,5 +378,65 @@ void main() {
         await expectLater(pumpEventQueue(), completes);
       });
     });
+
+    group('measureFootprint', () {
+      const footprint = StorageFootprint(
+        roots: [
+          StorageFootprintRoot(
+            label: 'Documents',
+            path: '/documents',
+            totalBytes: 2048,
+            largestChildren: [
+              StorageFootprintEntry(
+                name: 'divine_1.mp4',
+                bytes: 2048,
+                isDirectory: false,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'emits the measured footprint',
+        setUp: () => when(
+          () => service.measureFootprint(),
+        ).thenAnswer((_) async => footprint),
+        build: build,
+        act: (cubit) => cubit.measureFootprint(),
+        expect: () => const [
+          StorageState(footprintStatus: StorageFootprintStatus.measuring),
+          StorageState(
+            footprintStatus: StorageFootprintStatus.measured,
+            footprint: footprint,
+          ),
+        ],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'emits failure when the walk throws',
+        setUp: () =>
+            when(() => service.measureFootprint()).thenThrow(Exception('boom')),
+        build: build,
+        act: (cubit) => cubit.measureFootprint(),
+        expect: () => const [
+          StorageState(footprintStatus: StorageFootprintStatus.measuring),
+          StorageState(footprintStatus: StorageFootprintStatus.failure),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      test('a measurement landing after close does not emit', () async {
+        final walk = Completer<StorageFootprint>();
+        when(() => service.measureFootprint()).thenAnswer((_) => walk.future);
+        final cubit = build();
+
+        unawaited(cubit.measureFootprint());
+        await cubit.close();
+        walk.complete(footprint);
+
+        await expectLater(pumpEventQueue(), completes);
+      });
+    });
   });
 }

@@ -187,6 +187,32 @@ class StorageCubit extends Cubit<StorageState> {
     }
   }
 
+  /// Measures every directory the app writes to for the developer diagnostic.
+  ///
+  /// Unlike [loadCacheSize], this includes what no in-app action can reclaim —
+  /// the documents directory and the durable database — which is the whole
+  /// point: it answers where an unexplained OS-reported footprint sits.
+  ///
+  /// The walk takes seconds on a large install and the user can navigate away
+  /// while it runs, so the result is dropped if the cubit closed first.
+  Future<void> measureFootprint() async {
+    emit(state.copyWith(footprintStatus: StorageFootprintStatus.measuring));
+    try {
+      final footprint = await _service.measureFootprint();
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          footprintStatus: StorageFootprintStatus.measured,
+          footprint: footprint,
+        ),
+      );
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      if (isClosed) return;
+      emit(state.copyWith(footprintStatus: StorageFootprintStatus.failure));
+    }
+  }
+
   /// Removes the broken clips found by [scanLibrary].
   Future<void> removeBrokenClips() async {
     if (state.brokenClips.isEmpty) return;

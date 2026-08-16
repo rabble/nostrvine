@@ -296,5 +296,93 @@ void main() {
         expect(prefs.getInt(kCacheLimitPrefKey), kCacheLimitMinBytes);
       });
     });
+
+    group('measureFootprint', () {
+      late Directory appSupport;
+      late Directory caches;
+
+      StorageManagementService footprintService({Directory? cacheDirectory}) =>
+          StorageManagementService(
+            videoCache: videoCache,
+            imageCache: imageCache,
+            clipLibrary: clipLibrary,
+            prefs: prefs,
+            temporaryDirectoryProvider: () async => temp,
+            documentsDirectoryProvider: () async => docs,
+            applicationSupportDirectoryProvider: () async => appSupport,
+            applicationCacheDirectoryProvider: () async =>
+                cacheDirectory ?? caches,
+          );
+
+      setUp(() {
+        appSupport = Directory.systemTemp.createTempSync('storage_support_');
+        caches = Directory.systemTemp.createTempSync('storage_caches_');
+      });
+
+      tearDown(() {
+        if (appSupport.existsSync()) appSupport.deleteSync(recursive: true);
+        if (caches.existsSync()) caches.deleteSync(recursive: true);
+      });
+
+      test('totals each root and ranks its children largest first', () async {
+        writeFile('${docs.path}/divine_small.mp4', 100);
+        writeFile('${docs.path}/divine_big.mp4', 900);
+        writeFile('${docs.path}/transition_seams/seam.jpg', 400);
+        writeFile('${appSupport.path}/openvine/database/divine_db.db', 700);
+
+        final footprint = await footprintService().measureFootprint();
+        final documents = footprint.roots.firstWhere(
+          (root) => root.label == 'Documents',
+        );
+
+        expect(documents.totalBytes, 1400);
+        expect(
+          documents.largestChildren.map((child) => child.name),
+          ['divine_big.mp4', 'transition_seams', 'divine_small.mp4'],
+        );
+        expect(documents.largestChildren.first.isDirectory, isFalse);
+        expect(documents.largestChildren[1].isDirectory, isTrue);
+        expect(footprint.totalBytes, 2100);
+      });
+
+      test('counts the durable database no in-app action clears', () async {
+        writeFile('${appSupport.path}/openvine/database/divine_db.db', 4096);
+
+        final footprint = await footprintService().measureFootprint();
+
+        // cacheUsage() reports only what clearCaches() reclaims, so the
+        // database is invisible there — this is what makes the diagnostic
+        // able to explain an unaccounted-for footprint.
+        expect(await footprintService().cacheSizeBytes(), 0);
+        expect(footprint.totalBytes, 4096);
+      });
+
+      test('reports a root shared by two providers once', () async {
+        writeFile('${temp.path}/leftover.mp4', 500);
+
+        // Android resolves the temporary and cache directories to the same
+        // getCacheDir(); counting both would double the reported total.
+        final footprint = await footprintService(
+          cacheDirectory: temp,
+        ).measureFootprint();
+
+        expect(
+          footprint.roots.where((root) => root.path == temp.path),
+          hasLength(1),
+        );
+        expect(footprint.totalBytes, 500);
+      });
+
+      test('report text carries the totals and the biggest entries', () async {
+        writeFile('${docs.path}/divine_big.mp4', 2048);
+
+        final report = (await footprintService().measureFootprint())
+            .toReportText();
+
+        expect(report, contains('Total: 2.0 KB (2048 bytes)'));
+        expect(report, contains('Documents: 2.0 KB (2048 bytes)'));
+        expect(report, contains('divine_big.mp4'));
+      });
+    });
   });
 }

@@ -9,6 +9,29 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Uso de armazenamento';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Todas as pastas em que o app escreve. Limpar o cache libera apenas uma parte.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Medir';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Total: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied =>
+      'Relatório de armazenamento copiado';
+
+  @override
+  String get devOptionsStorageFootprintFailure =>
+      'Não foi possível medir o armazenamento';
+
+  @override
   String get feedTuningMoreLabel => 'Mais como este';
 
   @override

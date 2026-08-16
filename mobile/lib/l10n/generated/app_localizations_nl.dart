@@ -9,6 +9,27 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Opslaggebruik';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Elke map waarin de app schrijft. Cache wissen maakt daar maar een deel van vrij.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Meten';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Totaal: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Opslagrapport gekopieerd';
+
+  @override
+  String get devOptionsStorageFootprintFailure => 'Kan opslag niet meten';
+
+  @override
   String get feedTuningMoreLabel => 'Meer zoals dit';
 
   @override

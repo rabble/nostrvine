@@ -1,5 +1,11 @@
 {
   "@@locale": "ms",
+  "devOptionsStorageFootprint": "Penggunaan storan",
+  "devOptionsStorageFootprintDescription": "Setiap folder yang ditulis oleh apl. Mengosongkan cache hanya membebaskan sebahagian daripadanya.",
+  "devOptionsStorageFootprintMeasure": "Ukur",
+  "devOptionsStorageFootprintTotal": "Jumlah: {size}",
+  "devOptionsStorageFootprintCopied": "Laporan storan disalin",
+  "devOptionsStorageFootprintFailure": "Storan tidak dapat diukur",
   "feedTuningMoreLabel": "Lebih banyak seperti ini",
   "@feedTuningMoreLabel": {
     "description": "Indicator and snackbar text when the user swipes right to get more videos like the current one."

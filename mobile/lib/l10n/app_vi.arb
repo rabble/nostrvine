@@ -1,5 +1,11 @@
 {
   "@@locale": "vi",
+  "devOptionsStorageFootprint": "Dung lượng đã dùng",
+  "devOptionsStorageFootprintDescription": "Mọi thư mục ứng dụng ghi vào. Xóa bộ nhớ đệm chỉ giải phóng một phần trong đó.",
+  "devOptionsStorageFootprintMeasure": "Đo",
+  "devOptionsStorageFootprintTotal": "Tổng: {size}",
+  "devOptionsStorageFootprintCopied": "Đã sao chép báo cáo dung lượng",
+  "devOptionsStorageFootprintFailure": "Không đo được dung lượng",
   "feedTuningMoreLabel": "Thêm kiểu này",
   "@feedTuningMoreLabel": {
     "description": "Indicator and snackbar text when the user swipes right to get more videos like the current one."

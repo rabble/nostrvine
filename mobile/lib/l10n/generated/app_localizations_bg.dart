@@ -9,6 +9,28 @@ class AppLocalizationsBg extends AppLocalizations {
   AppLocalizationsBg([String locale = 'bg']) : super(locale);
 
   @override
+  String get devOptionsStorageFootprint => 'Заето пространство';
+
+  @override
+  String get devOptionsStorageFootprintDescription =>
+      'Всяка папка, в която приложението пише. Изчистването на кеша освобождава само част от него.';
+
+  @override
+  String get devOptionsStorageFootprintMeasure => 'Измерване';
+
+  @override
+  String devOptionsStorageFootprintTotal(String size) {
+    return 'Общо: $size';
+  }
+
+  @override
+  String get devOptionsStorageFootprintCopied => 'Отчетът за паметта е копиран';
+
+  @override
+  String get devOptionsStorageFootprintFailure =>
+      'Паметта не можа да бъде измерена';
+
+  @override
   String get feedTuningMoreLabel => 'Повече такива';
 
   @override
