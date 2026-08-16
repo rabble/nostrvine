@@ -183,8 +183,18 @@ if [ -n "$NON_DART_OUTPUT" ]; then
   exit 1
 fi
 
+# The no-toolchain path must be exercised with mise and dart both hidden:
+# dev machines commonly install mise system-wide (e.g. /usr/bin/mise), and
+# then it resolves a real dart, analyzes the fixture, and emits no block —
+# failing this test before the purge-hook tests below ever run. Pin the PATH
+# to a scratch bin holding only the tools the hook needs when no SDK resolves.
+NO_TOOLCHAIN_BIN="$SCRATCH_DIR/no-toolchain-bin"
+mkdir -p "$NO_TOOLCHAIN_BIN"
+for tool in jq git sed grep cat dirname basename; do
+  ln -s "$(command -v "$tool")" "$NO_TOOLCHAIN_BIN/$tool"
+done
 MISSING_DART_OUTPUT=$(cd "$TEST_REPO" && \
-  env PATH="/usr/bin:/bin" "$POST_EDIT_HOOK" <<< "$POST_PAYLOAD")
+  env PATH="$NO_TOOLCHAIN_BIN" "$POST_EDIT_HOOK" <<< "$POST_PAYLOAD")
 printf '%s\n' "$MISSING_DART_OUTPUT" | jq -e \
   '.decision == "block" and (.reason | contains("Unable to run the repository Dart SDK"))' >/dev/null
 
