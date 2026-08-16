@@ -137,6 +137,39 @@ void main() {
       },
     );
 
+    test('removes test/goldens from every shard, never from just one', () {
+      // The `goldens` CI job owns test/goldens/ and runs it with real fonts
+      // loaded. Leaving a golden in the partition would run it inside the
+      // merged --optimization bundle, where google_fonts registers
+      // asynchronously and the image renders at a run-dependent size.
+      const golden = 'test/goldens/widgets/a_golden_test.dart';
+      final shardable = [
+        p.join('test', 'a_test.dart'),
+        p.join('test', 'b_test.dart'),
+      ];
+      const total = 2;
+
+      for (var index = 0; index < total; index++) {
+        sandbox.deleteSync(recursive: true);
+        sandbox = Directory.systemTemp.createTempSync('select_test_shard_');
+        createSandbox(testFiles: [...shardable, golden]);
+
+        final result = runShard(index, total);
+
+        expect(result.exitCode, 0, reason: '${result.stderr}');
+        expect(
+          survivingTestFiles(),
+          isNot(contains(golden)),
+          reason: 'shard $index kept a golden the goldens job also runs',
+        );
+        expect(
+          result.stdout,
+          contains('Excluded 1 golden test file'),
+          reason: 'the exclusion must be announced, not silent',
+        );
+      }
+    });
+
     test('--dry-run changes nothing', () {
       final allTests = [
         p.join('test', 'a_test.dart'),
