@@ -336,44 +336,28 @@ and you should read it before adding one. The three rules that bite hardest:
    differently per OS (2.7–3.7% of pixels here), so references are produced
    on the Ubuntu runner via the `update_goldens` workflow dispatch.
    `golden.sh verify` is therefore expected to show a pixel diff on macOS.
-3. **Tag the file `@Tags(['golden', 'skip_very_good_optimization'])`.** An
-   image golden cannot run inside `very_good test --optimization`: the merged
-   bundle's entrypoint moves the comparator basedir to `test/`, so the
-   reference path stops resolving. `skip_very_good_optimization` is what
-   makes the `golden` tag readable at all — file-level tags are dropped
-   inside the bundle. Adding it means bumping `test/vgv_tag_baseline.txt`.
+3. **Put `tags: ['golden']` on every test under `test/goldens/`.** An image
+   golden cannot survive `very_good test --optimization`: the merged bundle's
+   entrypoint moves the comparator basedir to `test/`, so `goldens/x.png`
+   resolves to `test/goldens/x.png` and does not exist. Test-level `tags:`
+   are ordinary Dart arguments, so unlike a file-level `@Tags` annotation
+   they survive bundling — `mise run test` passes
+   `--exclude-tags "integration || golden"` and the tests never run there.
+   That is why no `skip_very_good_optimization` opt-out is needed.
 
-Goldens live under `mobile/test/goldens/`, which the CI `Tests` shards, the
-`mise run test` task, and the pre-push hook all exclude; the dedicated
-`Goldens` job owns them.
+Goldens live under `mobile/test/goldens/`, which the CI `Tests` shards (by
+deleting the directory), `mise run test` (by tag), and the pre-push hook (by
+path) all exclude; the dedicated `Goldens` job owns them and filters nothing.
 
-Run and update goldens through the script from `mobile/`:
+Run and update them through the script, from `mobile/`:
 
 ```bash
 bash scripts/golden.sh verify
 bash scripts/golden.sh update test/goldens/widgets/design_system_gallery_golden_test.dart
 ```
 
-The committed PNGs must be generated on the Ubuntu CI runner, not on a local
-Mac. For intentional image changes, dispatch `Mobile CI` with
-`update_goldens=true`, download the `goldens` artifact, inspect it, and commit
-those files. Do not commit locally generated references.
-
-Two invariants are load-bearing:
-
-- Every test under `test/goldens/` must carry the `golden` tag so
-  `mise run test` can exclude it from the local
-  `very_good test --optimization` run, matching CI's directory exclusion.
-- Every image golden must drain `google_fonts` before asserting:
-
-```dart
-await tester.pumpWidget(...);
-await tester.runAsync(GoogleFonts.pendingFonts);
-await tester.pumpAndSettle();
-```
-
-See `mobile/docs/GOLDEN_TESTING_GUIDE.md` for the current workflow and the
-cross-OS rendering drift details.
+See `mobile/docs/GOLDEN_TESTING_GUIDE.md` for the full workflow and the
+cross-OS drift details.
 
 ---
 

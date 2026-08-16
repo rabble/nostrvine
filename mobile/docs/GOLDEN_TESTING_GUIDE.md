@@ -286,12 +286,16 @@ and a new image golden needs all three:
 | Where | Mechanism |
 |---|---|
 | CI `Tests` job | `scripts/ci/select_test_shard.sh` deletes `test/goldens/` from every shard |
-| `mise run test` | `@Tags(['golden', 'skip_very_good_optimization'])` on the file + `--exclude-tags "integration \|\| golden"` in the mise task |
+| `mise run test` | `tags: ['golden']` on every test in the file + `--exclude-tags "integration \|\| golden"` in the mise task |
 | pre-push hook | `scripts/install-hooks.sh` skips changed files under `test/goldens/` |
 
-`skip_very_good_optimization` is load-bearing on its own: file-level
-`@Tags` are dropped inside the merged bundle, so `golden` alone would be a
-dead letter. Adding it means bumping `test/vgv_tag_baseline.txt`.
+Use a **test-level** `tags:` argument, not a file-level `@Tags` annotation.
+File-level annotations are dropped inside the merged bundle, so `@Tags` there
+is a dead letter that only `skip_very_good_optimization` can rescue —
+test-level `tags:` are ordinary Dart arguments and survive, which is what lets
+this work without spending a `vgv_tag_baseline.txt` opt-out. Verified: bundled
+without the exclude the suite fails on the basedir; with it, package:test
+reports "No tests match the requested tag selectors".
 
 `golden.sh verify` and the `Goldens` job filter nothing, so the goldens do
 run there — which is the point.

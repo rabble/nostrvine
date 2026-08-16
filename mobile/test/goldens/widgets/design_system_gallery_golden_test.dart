@@ -1,15 +1,5 @@
 // ABOUTME: Image goldens for the divine_ui components the app renders most.
 // ABOUTME: Run only by the dedicated `Goldens` CI job / scripts/golden.sh.
-@Tags(['golden', 'skip_very_good_optimization'])
-// Permanent: image goldens cannot run inside `very_good test --optimization`.
-// The merged bundle's entrypoint is test/.test_optimizer.dart, so the golden
-// comparator's basedir becomes test/ and 'goldens/x.png' resolves to
-// test/goldens/x.png — a file that does not exist. skip_very_good_optimization
-// gives the file its own suite so the path resolves and the `golden` tag
-// becomes readable; `mise run test` then excludes it by tag, mirroring how
-// scripts/ci/select_test_shard.sh excludes test/goldens/ in CI.
-library;
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
