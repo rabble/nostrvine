@@ -17,6 +17,39 @@ import 'package:openvine/widgets/caption_pill.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_cue_timeline.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Loads the preview player's candidate sources into [controller].
+@visibleForTesting
+typedef SubtitlePreviewSourceLoader =
+    Future<void> Function({
+      required DivineVideoPlayerController controller,
+      required List<String> sources,
+      required void Function(String message) log,
+    });
+
+/// Initializes the preview player controller before source loading.
+@visibleForTesting
+typedef SubtitlePreviewControllerInitializer =
+    Future<void> Function(DivineVideoPlayerController controller);
+
+Future<void> _initializeSubtitlePreviewController(
+  DivineVideoPlayerController controller,
+) async {
+  await controller.initialize();
+}
+
+Future<void> _loadSubtitlePreviewSources({
+  required DivineVideoPlayerController controller,
+  required List<String> sources,
+  required void Function(String message) log,
+}) async {
+  await setSourceWithFallbacks(
+    index: 0,
+    controller: controller,
+    sources: sources,
+    log: log,
+  );
+}
+
 /// The video being captioned, with its cues laid out on a timeline beneath it.
 ///
 /// Owns the player: the timeline scrubs it, playback moves the timeline, and
@@ -32,6 +65,8 @@ class SubtitleEditorStage extends StatefulWidget {
     required this.selectedCue,
     required this.loadFrames,
     required this.playbackUrls,
+    this.initializePreviewController,
+    this.loadPreviewSources,
     super.key,
   });
 
@@ -45,8 +80,17 @@ class SubtitleEditorStage extends StatefulWidget {
   /// Ordered playback candidates for the preview player, tried in order.
   ///
   /// Build these with `VideoEvent.previewPlaybackSources` so the editor and
-  /// the feed pick renditions the same way.
+  /// the feed pick renditions the same way. The preview uses the feed's source
+  /// loader too, so loop playback clamps to the shared audio/video track end.
   final List<String> playbackUrls;
+
+  /// Loads [playbackUrls] into the preview player.
+  @visibleForTesting
+  final SubtitlePreviewSourceLoader? loadPreviewSources;
+
+  /// Initializes the preview player controller.
+  @visibleForTesting
+  final SubtitlePreviewControllerInitializer? initializePreviewController;
 
   /// Full event id of the video, used as the media-cache key.
   final String videoId;
@@ -227,9 +271,13 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
       debugLabel: 'subtitle_editor',
     );
     try {
-      await controller.initialize();
-      await setSourceWithFallbacks(
-        index: 0,
+      final initializePreviewController =
+          widget.initializePreviewController ??
+          _initializeSubtitlePreviewController;
+      await initializePreviewController(controller);
+      final loadPreviewSources =
+          widget.loadPreviewSources ?? _loadSubtitlePreviewSources;
+      await loadPreviewSources(
         controller: controller,
         sources: urls,
         log: (message) => Log.debug(

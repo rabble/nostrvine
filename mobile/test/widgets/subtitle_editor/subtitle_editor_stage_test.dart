@@ -47,6 +47,9 @@ void main() {
       required List<EditableCue> cues,
       EditableCue? selectedCue,
       TimelineFrameLoader loadFrames = _noFrames,
+      List<String> playbackUrls = const ['https://example.com/video.mp4'],
+      SubtitlePreviewControllerInitializer? initializePreviewController,
+      SubtitlePreviewSourceLoader? loadPreviewSources,
     }) => MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -56,7 +59,9 @@ void main() {
           width: 400,
           child: SubtitleEditorStage(
             videoUrl: 'https://example.com/video.mp4',
-            playbackUrls: const ['https://example.com/video.mp4'],
+            playbackUrls: playbackUrls,
+            initializePreviewController: initializePreviewController,
+            loadPreviewSources: loadPreviewSources,
             videoId:
                 '0000000000000000000000000000000000000000000000000000000000000000',
             cues: cues,
@@ -198,6 +203,40 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
 
       expect(frame.existsSync(), isFalse);
+    });
+
+    testWidgets('hands every playback candidate to the shared loader', (
+      tester,
+    ) async {
+      final loadedSources = <List<String>>[];
+
+      await tester.pumpWidget(
+        pump(
+          cues: const [EditableCue(start: 0, end: 1000, text: 'one')],
+          playbackUrls: const [
+            'https://example.com/720p.mp4',
+            'https://example.com/hls/master.m3u8',
+          ],
+          initializePreviewController: (_) async {},
+          loadPreviewSources:
+              ({required controller, required sources, required log}) async {
+                loadedSources.add(sources);
+              },
+        ),
+      );
+      for (var i = 0; i < 10 && loadedSources.isEmpty; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(
+        loadedSources,
+        equals([
+          [
+            'https://example.com/720p.mp4',
+            'https://example.com/hls/master.m3u8',
+          ],
+        ]),
+      );
     });
   });
 }
