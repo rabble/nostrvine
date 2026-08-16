@@ -37,6 +37,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tam erişimi geri almak için tekrar giriş yap';
 
   @override
+  String get settingsAccountRestoreFailed => 'Sign in again';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => 'İçerik Üretici Analitikleri';
 
   @override
@@ -4180,6 +4187,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get authSessionExpired =>
       'Oturumun sona erdi. Lütfen tekrar giriş yap.';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => 'Giriş başarısız. Lütfen tekrar dene.';

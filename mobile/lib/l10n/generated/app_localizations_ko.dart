@@ -36,6 +36,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsSessionExpiredSubtitle => '다시 로그인해서 전체 접근 권한을 복구해보세요';
 
   @override
+  String get settingsAccountRestoreFailed => 'Sign in again';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => '크리에이터 분석';
 
   @override
@@ -4007,6 +4014,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get authSessionExpired => '세션이 만료됐어요. 다시 로그인해주세요.';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => '로그인에 실패했어요. 다시 시도해주세요.';

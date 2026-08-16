@@ -37,6 +37,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Влез отново, за да си върнеш пълния достъп';
 
   @override
+  String get settingsAccountRestoreFailed => 'Sign in again';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => 'Аналитика за творци';
 
   @override
@@ -4256,6 +4263,10 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authSessionExpired => 'Сесията ти изтече. Влез отново.';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => 'Входът не мина. Опитай пак.';

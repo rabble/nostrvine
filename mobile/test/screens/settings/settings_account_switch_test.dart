@@ -413,23 +413,29 @@ void main() {
     expect(find.text(l10n.settingsAccountSwitchFailed), findsOneWidget);
   });
 
-  // Both failures mean the same thing to the user — the stored credentials
-  // cannot be used — and both take the re-auth route, so both clauses are
-  // covered here rather than only the one that happens to be listed first.
-  final unusableSessionFailures = <String, Object>{
-    'SessionExpiredException': SessionExpiredException(),
-    'AccountRestoreFailedException': const AccountRestoreFailedException(
-      otherPubkey,
-      AuthState.unauthenticated,
-    ),
-  };
+  // Both failures take the re-auth route, but missing local keys are not a
+  // session expiry and should not reuse session-expired copy.
+  final unusableSessionFailures =
+      <String, (Object, String Function(AppLocalizations))>{
+        'SessionExpiredException': (
+          SessionExpiredException(),
+          (l10n) => l10n.settingsSessionExpiredSwitchMessage,
+        ),
+        'AccountRestoreFailedException': (
+          const AccountRestoreFailedException(
+            otherPubkey,
+            AuthState.unauthenticated,
+          ),
+          (l10n) => l10n.settingsAccountRestoreFailedSwitchMessage,
+        ),
+      };
 
   for (final entry in unusableSessionFailures.entries) {
     testWidgets('offers a fresh sign-in on ${entry.key}', (tester) async {
       // Same seam as the `_MockDeviceScope` note above: reading
       // `switchController` throws inside the tile's try, standing in for a
       // swap that dies on the target account's unusable credentials.
-      when(() => deviceScope.switchController).thenThrow(entry.value);
+      when(() => deviceScope.switchController).thenThrow(entry.value.$1);
       when(() => authService.signOut()).thenAnswer((_) async {});
 
       final l10n = await pumpAndTapSwitch(tester);
@@ -439,10 +445,7 @@ void main() {
       // Recoverable by signing in again, so the user gets that offer instead
       // of the dead-end "couldn't switch" snackbar — and the copy says what
       // confirming costs, since it signs the working account out.
-      expect(
-        find.text(l10n.settingsSessionExpiredSwitchMessage),
-        findsOneWidget,
-      );
+      expect(find.text(entry.value.$2(l10n)), findsOneWidget);
       expect(find.text(l10n.settingsAccountSwitchFailed), findsNothing);
 
       await tester.tap(find.text(l10n.authSignInTitle));
@@ -460,9 +463,9 @@ void main() {
   testWidgets('declining the fresh sign-in keeps the current account', (
     tester,
   ) async {
-    when(() => deviceScope.switchController).thenThrow(
-      SessionExpiredException(),
-    );
+    when(
+      () => deviceScope.switchController,
+    ).thenThrow(SessionExpiredException());
     when(() => authService.signOut()).thenAnswer((_) async {});
 
     final l10n = await pumpAndTapSwitch(tester);

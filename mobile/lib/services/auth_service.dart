@@ -273,7 +273,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         oauthRefreshTimeout: _oauthRefreshTimeout,
         expiredSessionRefreshTimeout: _expiredSessionRefreshTimeout,
         currentPubkeyFallback: () => _currentProfile?.publicKeyHex,
-        hasExpiredSession: () => _hasExpiredOAuthSession,
+        hasExpiredSession: () => hasExpiredOAuthSession,
         onRefreshSucceeded: () => _hasExpiredOAuthSession = false,
       );
   // Owns the client-initiated nostrconnect:// session + wait future + callback
@@ -525,7 +525,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// True when a divineOAuth user's session expired and refresh failed.
   /// The user's identity is intact but remote signing is unavailable.
   /// UI should prompt re-login instead of "Secure Your Account".
-  bool get hasExpiredOAuthSession => _hasExpiredOAuthSession;
+  bool get hasExpiredOAuthSession =>
+      _hasExpiredOAuthSession &&
+      _authSource == AuthenticationSource.divineOAuth;
 
   /// True while a background OAuth RPC upgrade is in progress during startup.
   /// The session-expired sheet should be suppressed until this resolves so the
@@ -1038,7 +1040,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       name: 'AuthService',
       category: LogCategory.auth,
     );
-    return _tryRefreshOAuthSession(caller: 'tryRefreshExpiredSession');
+    return _tryRefreshOAuthSession(
+      caller: 'tryRefreshExpiredSession',
+      expectedOwnerPubkey: currentPublicKeyHex,
+    );
   }
 
   /// Returns the npub that was actively signed in at the time of the most
@@ -3565,7 +3570,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       // Detach any in-flight token refresh so post-signout logins start a
       // fresh attempt instead of joining one issued for the outgoing session.
-      // Deliberately leaves _hasExpiredOAuthSession untouched.
+      // The raw expired flag is left untouched for OAuth restores; public
+      // consumers gate it by the active auth source.
       _oauthCoordinator.detach();
 
       await _clearOAuthSessionForSignOut();

@@ -192,6 +192,18 @@ abstract class AppLocalizations {
   /// **'Sign in again to restore full access'**
   String get settingsSessionExpiredSubtitle;
 
+  /// No description provided for @settingsAccountRestoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get settingsAccountRestoreFailed;
+
+  /// No description provided for @settingsAccountRestoreFailedSwitchMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.'**
+  String get settingsAccountRestoreFailedSwitchMessage;
+
   /// No description provided for @settingsCreatorAnalytics.
   ///
   /// In en, this message translates to:
@@ -7294,6 +7306,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your session has expired. Please sign in again.'**
   String get authSessionExpired;
+
+  /// No description provided for @authAccountRestoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t unlock that account on this device. Sign in again.'**
+  String get authAccountRestoreFailed;
 
   /// No description provided for @authSignInFailed.
   ///

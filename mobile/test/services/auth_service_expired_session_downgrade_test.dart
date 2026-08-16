@@ -1043,6 +1043,85 @@ void main() {
     });
 
     test(
+      'expired OAuth flag does not leak after signing in with imported keys',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+        arrangeExpiredSessionWithLocalKeys();
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+          await waitForRpcUpgradeToSettle(authService);
+          expect(
+            authService.authenticationSource,
+            AuthenticationSource.divineOAuth,
+          );
+          expect(authService.hasExpiredOAuthSession, isTrue);
+
+          await authService.signOut();
+          final imported = await authService.importFromHex(
+            generatePrivateKey(),
+          );
+          expect(imported.success, isTrue);
+          expect(
+            authService.authenticationSource,
+            AuthenticationSource.importedKeys,
+          );
+          expect(authService.hasExpiredOAuthSession, isFalse);
+
+          clearInteractions(mockOAuthClient);
+          expect(await authService.tryRefreshExpiredSession(), isFalse);
+          verifyNever(
+            () => mockOAuthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          );
+        });
+      },
+    );
+
+    test(
+      'tryRefreshExpiredSession binds refresh to the current OAuth account',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+        arrangeExpiredSessionWithLocalKeys();
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+          await waitForRpcUpgradeToSettle(authService);
+          final currentPubkey = authService.currentPublicKeyHex;
+          expect(currentPubkey, isNotNull);
+          expect(authService.hasExpiredOAuthSession, isTrue);
+
+          clearInteractions(mockOAuthClient);
+          expect(await authService.tryRefreshExpiredSession(), isFalse);
+          verify(
+            () => mockOAuthClient.refreshSession(userPubkey: currentPubkey),
+          ).called(1);
+        });
+      },
+    );
+
+    test(
       'rejected refresh + no local keys still falls to unauthenticated',
       () async {
         SharedPreferences.setMockInitialValues({

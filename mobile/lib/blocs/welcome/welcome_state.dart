@@ -17,6 +17,9 @@ enum WelcomeStatus {
   /// An auth action failed due to expired session.
   sessionExpired,
 
+  /// An auth action failed because stored local account keys could not restore.
+  accountRestoreFailed,
+
   /// An auth action failed for a generic reason.
   error,
 

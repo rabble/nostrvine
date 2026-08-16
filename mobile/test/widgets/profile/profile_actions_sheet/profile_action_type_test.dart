@@ -11,7 +11,6 @@ void main() {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
-          hasExpiredSession: false,
           hasAnyProfileInfo: false,
         );
 
@@ -24,7 +23,6 @@ void main() {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
-          hasExpiredSession: false,
           hasAnyProfileInfo: true,
         );
 
@@ -37,7 +35,6 @@ void main() {
           final actions = ProfileActionType.pending(
             isOwnProfile: true,
             isAnonymous: false,
-            hasExpiredSession: false,
             hasAnyProfileInfo: false,
           );
 
@@ -49,7 +46,6 @@ void main() {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: false,
-          hasExpiredSession: false,
           hasAnyProfileInfo: true,
         );
 
@@ -60,18 +56,16 @@ void main() {
         final actions = ProfileActionType.pending(
           isOwnProfile: false,
           isAnonymous: true,
-          hasExpiredSession: false,
           hasAnyProfileInfo: false,
         );
 
         expect(actions, isEmpty);
       });
 
-      test('shows secureAccount for anonymous even with expired session', () {
+      test('shows secureAccount for anonymous without profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
-          hasExpiredSession: true,
           hasAnyProfileInfo: false,
         );
 
@@ -81,12 +75,11 @@ void main() {
       });
 
       test(
-        'returns only secureAccount when session expired and has profile info',
+        'returns only secureAccount for anonymous users with profile info',
         () {
           final actions = ProfileActionType.pending(
             isOwnProfile: true,
             isAnonymous: true,
-            hasExpiredSession: true,
             hasAnyProfileInfo: true,
           );
 

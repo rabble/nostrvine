@@ -37,6 +37,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'Mag-sign in ulit para mabalik ang buong access';
 
   @override
+  String get settingsAccountRestoreFailed => 'Sign in again';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => 'Creator Analytics';
 
   @override
@@ -4274,6 +4281,10 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get authSessionExpired =>
       'Nag-expire na ang iyong session. Mag-sign in ulit.';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => 'Hindi nag-sign in. Subukan ulit.';
