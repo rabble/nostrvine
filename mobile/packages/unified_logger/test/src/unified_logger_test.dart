@@ -188,6 +188,33 @@ void main() {
       expect(log.category, equals(LogCategory.relay));
     });
 
+    test('should capture warning details to file', () async {
+      final beforeCount = logService.getRecentLogs().length;
+
+      final exception = Exception('Warning exception');
+      final stackTrace = StackTrace.current;
+
+      Log.warning(
+        'Warning occurred',
+        category: LogCategory.video,
+        error: exception,
+        stackTrace: stackTrace,
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final capturedLogs = logService.getRecentLogs();
+      final newLogsCount = capturedLogs.length - beforeCount;
+
+      expect(newLogsCount, equals(1));
+      final log = capturedLogs.last;
+      expect(log.level, equals(LogLevel.warning));
+      expect(log.message, equals('Warning occurred'));
+      expect(log.error, contains('Warning exception'));
+      expect(log.stackTrace, isNotNull);
+      expect(log.category, equals(LogCategory.video));
+    });
+
     test(
       'captures logs from disabled categories '
       'for bug report export',
