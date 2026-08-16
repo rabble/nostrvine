@@ -73,6 +73,7 @@ void main() {
       when(
         () => mockCleanupService.markOwnerScopedLegacyDataForUser(any()),
       ).thenAnswer((_) async {});
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
 
       // In-memory secure storage backing
       secureStorage = {};
@@ -1041,6 +1042,99 @@ void main() {
         );
       });
     });
+
+    test(
+      'expired OAuth flag does not leak after signing in with imported keys',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+        arrangeExpiredSessionWithLocalKeys();
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+          await waitForRpcUpgradeToSettle(authService);
+          expect(
+            authService.authenticationSource,
+            AuthenticationSource.divineOAuth,
+          );
+          expect(authService.hasExpiredOAuthSession, isTrue);
+
+          await authService.signOut();
+          final imported = await authService.importFromHex(
+            generatePrivateKey(),
+          );
+          expect(imported.success, isTrue);
+          expect(
+            authService.authenticationSource,
+            AuthenticationSource.importedKeys,
+          );
+          expect(authService.hasExpiredOAuthSession, isFalse);
+
+          clearInteractions(mockOAuthClient);
+          expect(await authService.tryRefreshExpiredSession(), isFalse);
+          verifyNever(
+            () => mockOAuthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          );
+        });
+      },
+    );
+
+    test(
+      'tryRefreshExpiredSession refuses a stored session for another account',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+        arrangeExpiredSessionWithLocalKeys();
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final authService = createAuthService();
+
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
+          await waitForRpcUpgradeToSettle(authService);
+          final currentPubkey = authService.currentPublicKeyHex;
+          expect(currentPubkey, isNotNull);
+          expect(authService.hasExpiredOAuthSession, isTrue);
+
+          final otherSession = KeycastSession(
+            bunkerUrl: 'https://login.divine.video/api/nostr',
+            accessToken: 'expired_other_token',
+            expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+            refreshToken: 'refresh_token_account_b',
+            userPubkey: 'cd' * 32,
+          );
+          secureStorage['keycast_session'] = jsonEncode(
+            otherSession.toJson(),
+          );
+          secureStorage['keycast_refresh_token'] = 'refresh_token_account_b';
+
+          clearInteractions(mockOAuthClient);
+          expect(await authService.tryRefreshExpiredSession(), isFalse);
+          verifyNever(
+            () => mockOAuthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          );
+        });
+      },
+    );
 
     test(
       'rejected refresh + no local keys still falls to unauthenticated',

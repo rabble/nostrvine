@@ -37,6 +37,7 @@ void main() {
     setUp(() {
       mockCleanupService = _MockUserDataCleanupService();
       mockOAuthClient = _MockKeycastOAuth();
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
 
       when(
         () => mockCleanupService.shouldClearDataForUser(any()),
@@ -297,12 +298,16 @@ void main() {
 
       final pubkey = arrangeExpiredSessionWithMatchingLocalKeys();
 
-      // refreshSession hangs forever (simulates slow network)
+      // refreshSession stays slow enough for local-first auth to win.
       when(
         () => mockOAuthClient.refreshSession(
           userPubkey: any(named: 'userPubkey'),
         ),
-      ).thenAnswer((_) => Completer<KeycastSession?>().future);
+      ).thenAnswer(
+        (_) => Future<KeycastSession?>.delayed(
+          const Duration(milliseconds: 20),
+        ),
+      );
 
       final authService = createAuthService();
 
@@ -553,17 +558,11 @@ void main() {
 
       final authService = createAuthService();
 
-      await runZonedGuarded(
-        () async {
-          await authService.initialize();
+      await authService.initialize();
 
-          expect(authService.authState, equals(AuthState.unauthenticated));
-          expect(authService.hasExpiredOAuthSession, isTrue);
-        },
-        (error, stack) {
-          // Ignore background errors
-        },
-      );
+      expect(authService.authState, equals(AuthState.unauthenticated));
+      expect(authService.hasExpiredOAuthSession, isTrue);
+      await authService.dispose();
     });
 
     test('no local key + hanging refresh reaches unauthenticated', () async {
@@ -579,27 +578,22 @@ void main() {
       );
       secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
 
+      final refreshCompleter = Completer<KeycastSession?>();
       when(
         () => mockOAuthClient.refreshSession(
           userPubkey: any(named: 'userPubkey'),
         ),
-      ).thenAnswer((_) => Completer<KeycastSession?>().future);
+      ).thenAnswer((_) => refreshCompleter.future);
 
       final authService = createAuthService(
         startupNetworkOperationTimeout: const Duration(milliseconds: 1),
       );
 
-      await runZonedGuarded(
-        () async {
-          await authService.initialize();
+      await authService.initialize();
 
-          expect(authService.authState, equals(AuthState.unauthenticated));
-          expect(authService.hasExpiredOAuthSession, isTrue);
-        },
-        (error, stack) {
-          // Ignore background errors
-        },
-      );
+      expect(authService.authState, equals(AuthState.unauthenticated));
+      expect(authService.hasExpiredOAuthSession, isTrue);
+      await authService.dispose();
     });
 
     test(
@@ -642,6 +636,7 @@ void main() {
 
         refreshCompleter.complete(null);
         expect(await retry, isFalse);
+        await authService.dispose();
       },
     );
   });

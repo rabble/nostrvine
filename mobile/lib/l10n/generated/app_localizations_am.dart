@@ -36,6 +36,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsSessionExpiredSubtitle => 'ሙሉ መዳረሻን ለመመለስ እንደገና ይግቡ';
 
   @override
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => 'የፈጣሪ ትንታኔ';
 
   @override
@@ -4121,6 +4128,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get authSessionExpired => 'ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => 'መግባት አልተሳካም። እባክዎ እንደገና ይሞክሩ።';

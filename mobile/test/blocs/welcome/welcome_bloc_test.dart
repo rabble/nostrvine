@@ -476,7 +476,7 @@ void main() {
             signingInPubkeyHex: _testPubkeyHex,
           ),
           const WelcomeState(
-            status: WelcomeStatus.sessionExpired,
+            status: WelcomeStatus.accountRestoreFailed,
             previousAccounts: [_testPreviousAccount],
           ),
           const WelcomeState(

@@ -141,7 +141,8 @@ class _WelcomeView extends StatelessWidget {
           current.status == WelcomeStatus.navigatingToLoginOptions ||
           current.status == WelcomeStatus.navigatingToCreateAccount ||
           current.status == WelcomeStatus.error ||
-          current.status == WelcomeStatus.sessionExpired,
+          current.status == WelcomeStatus.sessionExpired ||
+          current.status == WelcomeStatus.accountRestoreFailed,
       listener: (context, state) {
         switch (state.status) {
           case WelcomeStatus.navigatingToCreateAccount:
@@ -159,6 +160,13 @@ class _WelcomeView extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(context.l10n.authSessionExpired),
+                backgroundColor: VineTheme.error,
+              ),
+            );
+          case WelcomeStatus.accountRestoreFailed:
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(context.l10n.authAccountRestoreFailed),
                 backgroundColor: VineTheme.error,
               ),
             );

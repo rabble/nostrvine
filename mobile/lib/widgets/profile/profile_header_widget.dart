@@ -295,7 +295,6 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     final pendingActions = ProfileActionType.pending(
       isOwnProfile: widget.isOwnProfile,
       isAnonymous: isAnonymous,
-      hasExpiredSession: hasExpiredSession,
       hasAnyProfileInfo: hasAnyProfileInfo,
     );
 

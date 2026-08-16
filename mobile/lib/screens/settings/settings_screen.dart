@@ -179,9 +179,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       category: LogCategory.auth,
     );
     if (!mounted) return;
+    final isRestoreFailure = error is AccountRestoreFailedException;
     final proceed = await _confirmSwitch(
-      title: context.l10n.settingsSessionExpired,
-      message: context.l10n.settingsSessionExpiredSwitchMessage,
+      title: isRestoreFailure
+          ? context.l10n.settingsAccountRestoreFailed
+          : context.l10n.settingsSessionExpired,
+      message: isRestoreFailure
+          ? context.l10n.settingsAccountRestoreFailedSwitchMessage
+          : context.l10n.settingsSessionExpiredSwitchMessage,
       confirmLabel: context.l10n.authSignInTitle,
       confirmType: DivineButtonType.primary,
     );

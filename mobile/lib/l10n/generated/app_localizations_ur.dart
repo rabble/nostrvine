@@ -37,6 +37,13 @@ class AppLocalizationsUr extends AppLocalizations {
       'مکمل رسائی بحال کرنے کے لیے دوبارہ سائن ان کریں';
 
   @override
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => 'کریئیٹر تجزیات';
 
   @override
@@ -4212,6 +4219,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get authSessionExpired =>
       'آپ کا سیشن ختم ہو گیا ہے۔ براہ کرم دوبارہ سائن ان کریں۔';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed =>

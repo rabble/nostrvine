@@ -1,5 +1,5 @@
 // ABOUTME: Tests for OAuthSessionCoordinator — single-flight dedup, timeout
-// ABOUTME: slot release, expired-session guard, and the success/detach ports.
+// ABOUTME: slot release, expired-session guard, and detach behavior.
 
 import 'dart:async';
 
@@ -26,13 +26,11 @@ void main() {
   group(OAuthSessionCoordinator, () {
     late _MockKeycastOAuth oauthClient;
     late bool hasExpired;
-    late int refreshSucceededCalls;
     late String? pubkeyFallback;
 
     setUp(() {
       oauthClient = _MockKeycastOAuth();
       hasExpired = true;
-      refreshSucceededCalls = 0;
       pubkeyFallback = 'fallback_pubkey';
     });
 
@@ -43,12 +41,11 @@ void main() {
           expiredSessionRefreshTimeout: expiredTimeout,
           currentPubkeyFallback: () => pubkeyFallback,
           hasExpiredSession: () => hasExpired,
-          onRefreshSucceeded: () => refreshSucceededCalls++,
         );
 
     group('refreshSession', () {
       test(
-        'returns the refreshed session and fires onRefreshSucceeded',
+        'returns the refreshed session',
         () async {
           final session = _session(userPubkey: 'owner');
           when(
@@ -62,7 +59,6 @@ void main() {
           );
 
           expect(result, same(session));
-          expect(refreshSucceededCalls, equals(1));
           verify(
             () => oauthClient.refreshSession(userPubkey: 'owner'),
           ).called(1);
@@ -86,7 +82,7 @@ void main() {
         },
       );
 
-      test('returns null and does not fire the success port when the '
+      test('returns null when the '
           'refreshed session has no RPC access', () async {
         // No accessToken -> hasRpcAccess is false.
         when(
@@ -99,7 +95,6 @@ void main() {
         final result = await build().refreshSession();
 
         expect(result, isNull);
-        expect(refreshSucceededCalls, isZero);
       });
 
       test('returns null (never throws) when the client throws', () async {
@@ -111,7 +106,6 @@ void main() {
         final result = await build().refreshSession();
 
         expect(result, isNull);
-        expect(refreshSucceededCalls, isZero);
       });
 
       test('rethrows OAuthNetworkException from the client', () async {
@@ -124,7 +118,6 @@ void main() {
           build().refreshSession(),
           throwsA(isA<OAuthNetworkException>()),
         );
-        expect(refreshSucceededCalls, isZero);
       });
 
       test('returns null when no OAuth client is configured', () async {
@@ -157,6 +150,113 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'applies owner checks for callers that join an in-flight refresh',
+        () async {
+          final gate = Completer<KeycastSession?>();
+          when(oauthClient.getSession).thenAnswer((_) async => null);
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) => gate.future);
+
+          final coordinator = build();
+          final first = coordinator.refreshSession();
+          final second = coordinator.refreshSession(
+            expectedOwnerPubkey: 'current-owner',
+            storedSessionReader: () async =>
+                _session(userPubkey: 'current-owner'),
+          );
+
+          gate.complete(_session(userPubkey: 'previous-owner'));
+
+          expect(await first, isNotNull);
+          expect(await second, isNull);
+          verify(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'refuses a mismatched stored owner for callers that join an in-flight '
+        'refresh',
+        () async {
+          when(oauthClient.getSession).thenAnswer((_) async => null);
+          final gate = Completer<KeycastSession?>();
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) => gate.future);
+
+          final coordinator = build();
+          final first = coordinator.refreshSession();
+
+          final joined = await coordinator
+              .refreshSession(
+                expectedOwnerPubkey: 'current-owner',
+                storedSessionReader: () async =>
+                    _session(userPubkey: 'previous-owner'),
+              )
+              .timeout(
+                const Duration(milliseconds: 20),
+                onTimeout: () => _session(userPubkey: 'timed-out'),
+              );
+
+          expect(joined, isNull);
+          gate.complete(_session());
+          expect(await first, isNotNull);
+          verify(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('applies caller timeout when joining an in-flight refresh', () {
+        fakeAsync((async) {
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) => Completer<KeycastSession?>().future);
+
+          final coordinator = build();
+          coordinator.refreshSession(timeout: const Duration(hours: 1));
+
+          Object? joinedError;
+          var joinedDone = false;
+          coordinator
+              .refreshSession(timeout: const Duration(milliseconds: 50))
+              .then(
+                (_) {
+                  joinedDone = true;
+                  return null;
+                },
+                onError: (Object error) {
+                  joinedError = error;
+                  joinedDone = true;
+                  return null;
+                },
+              );
+
+          async.elapse(const Duration(milliseconds: 51));
+
+          expect(joinedDone, isTrue);
+          expect(joinedError, isA<OAuthNetworkException>());
+          verify(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
+        });
+      });
 
       test('releases the slot after a hung request times out so the next '
           'call starts a fresh refresh', () {

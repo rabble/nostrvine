@@ -244,7 +244,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         emit,
         e,
         stackTrace,
-        emitSessionExpiredStatus: true,
+        recoveryStatus: WelcomeStatus.sessionExpired,
       );
     } on AccountRestoreFailedException catch (e, stackTrace) {
       Log.warning(
@@ -257,7 +257,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         emit,
         e,
         stackTrace,
-        emitSessionExpiredStatus: true,
+        recoveryStatus: WelcomeStatus.accountRestoreFailed,
       );
     } catch (e, stackTrace) {
       Log.error(
@@ -277,17 +277,12 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     Emitter<WelcomeState> emit,
     Object error,
     StackTrace stackTrace, {
-    required bool emitSessionExpiredStatus,
+    required WelcomeStatus? recoveryStatus,
   }) async {
     // Recoverable auth-flow failure — matrix-NO (Auth/session row).
     addError(error, stackTrace);
-    if (emitSessionExpiredStatus) {
-      emit(
-        state.copyWith(
-          status: WelcomeStatus.sessionExpired,
-          clearSigningIn: true,
-        ),
-      );
+    if (recoveryStatus != null) {
+      emit(state.copyWith(status: recoveryStatus, clearSigningIn: true));
     }
     await _authService.acceptTerms();
     emit(
@@ -333,7 +328,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         emit,
         e,
         stackTrace,
-        emitSessionExpiredStatus: false,
+        recoveryStatus: null,
       );
     } on AccountRestoreFailedException catch (e, stackTrace) {
       Log.warning(
@@ -347,7 +342,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         emit,
         e,
         stackTrace,
-        emitSessionExpiredStatus: false,
+        recoveryStatus: null,
       );
     } catch (e, stackTrace) {
       // Same auth/network/IO failure surface as `_onLogBackIn` —

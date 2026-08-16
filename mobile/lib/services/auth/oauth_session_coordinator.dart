@@ -24,20 +24,17 @@ class OAuthSessionCoordinator {
     required Duration expiredSessionRefreshTimeout,
     required String? Function() currentPubkeyFallback,
     required bool Function() hasExpiredSession,
-    required void Function() onRefreshSucceeded,
   }) : _oauthClient = oauthClient,
        _oauthRefreshTimeout = oauthRefreshTimeout,
        _expiredSessionRefreshTimeout = expiredSessionRefreshTimeout,
        _currentPubkeyFallback = currentPubkeyFallback,
-       _hasExpiredSession = hasExpiredSession,
-       _onRefreshSucceeded = onRefreshSucceeded;
+       _hasExpiredSession = hasExpiredSession;
 
   final KeycastOAuth? _oauthClient;
   final Duration _oauthRefreshTimeout;
   final Duration _expiredSessionRefreshTimeout;
   final String? Function() _currentPubkeyFallback;
   final bool Function() _hasExpiredSession;
-  final void Function() _onRefreshSucceeded;
 
   Future<bool>? _pendingRefresh;
   Future<KeycastSession?>? _pendingOAuthRefresh;
@@ -98,8 +95,7 @@ class OAuthSessionCoordinator {
   ///   joining a poisoned one (#4942).
   /// - `userPubkey` is bound before the session is persisted, so ownership
   ///   checks on restore stay valid.
-  /// - [onRefreshSucceeded] runs on success (the facade clears its
-  ///   `_hasExpiredOAuthSession` flag there).
+  /// - The caller owns result application after any account-currentness checks.
   ///
   /// [expectedOwnerPubkey] binds the refreshed session to a specific account.
   /// Callers that hold a stored session should pass its `userPubkey`;
@@ -111,47 +107,76 @@ class OAuthSessionCoordinator {
   ///
   /// Throws [OAuthNetworkException] when the refresh cannot reach Keycast or
   /// times out. The refresh token is preserved for a later retry in that case.
-  Future<KeycastSession?> refreshSession({String? expectedOwnerPubkey}) {
+  Future<KeycastSession?> refreshSession({
+    String? expectedOwnerPubkey,
+    Duration? timeout,
+    Future<KeycastSession?> Function()? storedSessionReader,
+    String? caller,
+  }) {
     final pending = _pendingOAuthRefresh;
-    if (pending != null) return pending;
+    if (pending != null) {
+      return _guardRefreshForCaller(
+        pending,
+        expectedOwnerPubkey: expectedOwnerPubkey,
+        timeout: timeout,
+        storedSessionReader: storedSessionReader,
+        caller: caller,
+      );
+    }
 
     late final Future<KeycastSession?> refresh;
-    refresh = _doRefreshSession(expectedOwnerPubkey: expectedOwnerPubkey)
-        .timeout(
-          _oauthRefreshTimeout,
-          onTimeout: () {
-            Log.warning(
-              '_refreshOAuthSession: timed out after '
-              '${_oauthRefreshTimeout.inMilliseconds}ms — '
-              'treating as network failure',
-              name: 'OAuthSessionCoordinator',
-              category: LogCategory.auth,
-            );
-            throw OAuthNetworkException('OAuth refresh timed out');
-          },
-        )
-        .whenComplete(() {
-          // Only release the slot if it still holds this attempt — signOut
-          // may have detached it and a fresh attempt may already be in
-          // flight.
-          if (identical(_pendingOAuthRefresh, refresh)) {
-            _pendingOAuthRefresh = null;
-          }
-        });
+    refresh =
+        _doRefreshSession(
+              expectedOwnerPubkey: expectedOwnerPubkey,
+              storedSessionReader: storedSessionReader,
+              caller: caller,
+            )
+            .timeout(
+              _oauthRefreshTimeout,
+              onTimeout: () {
+                Log.warning(
+                  '_refreshOAuthSession: timed out after '
+                  '${_oauthRefreshTimeout.inMilliseconds}ms — '
+                  'treating as network failure',
+                  name: 'OAuthSessionCoordinator',
+                  category: LogCategory.auth,
+                );
+                throw OAuthNetworkException('OAuth refresh timed out');
+              },
+            )
+            .whenComplete(() {
+              // Only release the slot if it still holds this attempt — signOut
+              // may have detached it and a fresh attempt may already be in
+              // flight.
+              if (identical(_pendingOAuthRefresh, refresh)) {
+                _pendingOAuthRefresh = null;
+              }
+            });
     return _pendingOAuthRefresh = refresh;
   }
 
   Future<KeycastSession?> _doRefreshSession({
     String? expectedOwnerPubkey,
+    Future<KeycastSession?> Function()? storedSessionReader,
+    String? caller,
   }) async {
     final oauthClient = _oauthClient;
     if (oauthClient == null) return null;
     try {
+      if (expectedOwnerPubkey != null &&
+          storedSessionReader != null &&
+          !await _storedOwnerMatches(
+            expectedOwnerPubkey,
+            storedSessionReader,
+            caller,
+          )) {
+        return null;
+      }
+
       final pubkey = expectedOwnerPubkey ?? _currentPubkeyFallback();
       final refreshed = await oauthClient.refreshSession(userPubkey: pubkey);
       if (refreshed == null || !refreshed.hasRpcAccess) return null;
 
-      _onRefreshSucceeded();
       Log.info(
         '_refreshOAuthSession: succeeded '
         '(userPubkey=${refreshed.userPubkey != null ? "bound" : "unbound"})',
@@ -169,6 +194,96 @@ class OAuthSessionCoordinator {
       );
       return null;
     }
+  }
+
+  Future<KeycastSession?> _guardRefreshForCaller(
+    Future<KeycastSession?> refresh, {
+    String? expectedOwnerPubkey,
+    Duration? timeout,
+    Future<KeycastSession?> Function()? storedSessionReader,
+    String? caller,
+  }) async {
+    if (expectedOwnerPubkey != null &&
+        storedSessionReader != null &&
+        !await _storedOwnerMatches(
+          expectedOwnerPubkey,
+          storedSessionReader,
+          caller,
+        )) {
+      return null;
+    }
+
+    final guardedRefresh = timeout == null
+        ? refresh
+        : refresh.timeout(
+            timeout,
+            onTimeout: () {
+              Log.warning(
+                '_refreshOAuthSession: timed out after '
+                '${timeout.inMilliseconds}ms — treating as network failure',
+                name: 'OAuthSessionCoordinator',
+                category: LogCategory.auth,
+              );
+              throw OAuthNetworkException('OAuth refresh timed out');
+            },
+          );
+    final refreshed = await guardedRefresh;
+    if (expectedOwnerPubkey != null &&
+        refreshed != null &&
+        refreshed.userPubkey != expectedOwnerPubkey) {
+      _logOwnerMismatch(
+        caller,
+        expectedOwnerPubkey,
+        refreshed.userPubkey,
+        'refreshed',
+      );
+      return null;
+    }
+    return refreshed;
+  }
+
+  Future<bool> _storedOwnerMatches(
+    String expectedOwnerPubkey,
+    Future<KeycastSession?> Function() storedSessionReader,
+    String? caller,
+  ) async {
+    final activeSession = await _oauthClient?.getSession();
+    if (activeSession != null &&
+        activeSession.userPubkey != expectedOwnerPubkey) {
+      _logOwnerMismatch(
+        caller,
+        expectedOwnerPubkey,
+        activeSession.userPubkey,
+        'active',
+      );
+      return false;
+    }
+    final storedSession = await storedSessionReader();
+    if (storedSession != null &&
+        storedSession.userPubkey != expectedOwnerPubkey) {
+      _logOwnerMismatch(
+        caller,
+        expectedOwnerPubkey,
+        storedSession.userPubkey,
+        'stored',
+      );
+      return false;
+    }
+    return true;
+  }
+
+  void _logOwnerMismatch(
+    String? caller,
+    String expectedOwnerPubkey,
+    String? actualOwnerPubkey,
+    String source,
+  ) {
+    Log.warning(
+      '${caller ?? '_refreshOAuthSession'}: refusing $source OAuth session '
+      'for owner $expectedOwnerPubkey because it belongs to $actualOwnerPubkey',
+      name: 'OAuthSessionCoordinator',
+      category: LogCategory.auth,
+    );
   }
 
   /// [TokenRefreshCallback] passed to [KeycastRpc] so it can recover from

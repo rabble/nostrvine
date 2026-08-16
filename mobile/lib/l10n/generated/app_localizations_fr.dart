@@ -37,6 +37,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Reconnecte-toi pour récupérer l\'accès complet';
 
   @override
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => 'Stats créateur';
 
   @override
@@ -4275,6 +4282,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authSessionExpired => 'Ta session a expiré. Reconnecte-toi.';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => 'Échec de la connexion. Réessaie.';

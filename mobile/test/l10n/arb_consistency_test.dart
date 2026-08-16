@@ -423,6 +423,10 @@ const _knownUntranslatedDebt = <String>{
   'analyticsDiagnosticsFailedSources',
   'analyticsServerUnavailable',
   'searchUserVideoCount',
+  // Account restore failure copy is new; translation pass tracked in #7659.
+  'authAccountRestoreFailed',
+  'settingsAccountRestoreFailed',
+  'settingsAccountRestoreFailedSwitchMessage',
 };
 
 const _profileBadgeSheetKeys = <String>{

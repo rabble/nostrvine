@@ -36,6 +36,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSessionExpiredSubtitle => '重新登录即可恢复完整访问权限';
 
   @override
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => '创作者数据';
 
   @override
@@ -3984,6 +3991,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get authSessionExpired => '你的登录已过期，请重新登录。';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => '登录失败，请重试。';

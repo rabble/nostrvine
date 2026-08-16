@@ -37,6 +37,13 @@ class AppLocalizationsMs extends AppLocalizations {
       'Log masuk semula untuk memulihkan akses penuh';
 
   @override
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => 'Analitik Pencipta';
 
   @override
@@ -4242,6 +4249,10 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get authSessionExpired =>
       'Sesi anda telah tamat tempoh. Sila log masuk semula.';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => 'Gagal log masuk. Sila cuba lagi.';

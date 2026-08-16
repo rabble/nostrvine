@@ -37,6 +37,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign in again to restore full access';
 
   @override
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
+
+  @override
+  String get settingsAccountRestoreFailedSwitchMessage =>
+      'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsCreatorAnalytics => 'Creator Analytics';
 
   @override
@@ -4207,6 +4214,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authSessionExpired =>
       'Your session has expired. Please sign in again.';
+
+  @override
+  String get authAccountRestoreFailed =>
+      'We couldn\'t unlock that account on this device. Sign in again.';
 
   @override
   String get authSignInFailed => 'Failed to sign in. Please try again.';
