@@ -5,10 +5,16 @@ import 'dart:math' as math;
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 /// Provenance source for analytics values.
-enum AnalyticsDataSource { authorVideos, bulkVideoStats, videoViewsEndpoint }
+enum AnalyticsDataSource {
+  authorVideos,
+  bulkVideoStats,
+  videoViewsEndpoint,
+  socialCounts,
+}
 
 /// Diagnostics to explain data quality and endpoint contribution.
 class CreatorAnalyticsDiagnostics {
@@ -20,6 +26,7 @@ class CreatorAnalyticsDiagnostics {
     required this.videosHydratedByViewsEndpoint,
     required this.sourcesUsed,
     required this.fetchedAt,
+    this.failedSources = const {},
     this.videoCatalogTruncated = false,
   });
 
@@ -29,6 +36,7 @@ class CreatorAnalyticsDiagnostics {
   final int videosHydratedByBulkStats;
   final int videosHydratedByViewsEndpoint;
   final Set<AnalyticsDataSource> sourcesUsed;
+  final Set<AnalyticsDataSource> failedSources;
   final DateTime fetchedAt;
   final bool videoCatalogTruncated;
 
@@ -97,20 +105,27 @@ class FunnelcakeCreatorAnalyticsRepository
     }
 
     final sourcesUsed = <AnalyticsDataSource>{};
+    final failedSources = <AnalyticsDataSource>{};
 
-    final socialFuture = _getSocialCounts(pubkey);
+    final socialFuture = _getSocialCountsTolerant(pubkey, failedSources);
     final authorResult = await _fetchAuthorVideos(pubkey);
     if (authorResult.videos.isNotEmpty) {
       sourcesUsed.add(AnalyticsDataSource.authorVideos);
     }
 
-    final bulkResult = await _enrichVideosWithBulkStats(authorResult.videos);
+    final bulkResult = await _enrichVideosWithBulkStatsTolerant(
+      authorResult.videos,
+      failedSources,
+    );
     var hydratedVideos = bulkResult.videos;
     if (bulkResult.hydratedCount > 0) {
       sourcesUsed.add(AnalyticsDataSource.bulkVideoStats);
     }
 
-    final endpointResult = await _hydrateVideoViews(hydratedVideos);
+    final endpointResult = await _hydrateVideoViewsTolerant(
+      hydratedVideos,
+      failedSources,
+    );
     hydratedVideos = endpointResult.videos;
     if (endpointResult.hydratedCount > 0) {
       sourcesUsed.add(AnalyticsDataSource.videoViewsEndpoint);
@@ -123,6 +138,9 @@ class FunnelcakeCreatorAnalyticsRepository
     final videos = mergeProfileFeedVideoLists(const [], hydratedVideos);
 
     final social = await socialFuture;
+    if (social != null) {
+      sourcesUsed.add(AnalyticsDataSource.socialCounts);
+    }
     final withViewData = videos
         .where((video) => extractViewLikeCount(video) != null)
         .length;
@@ -137,6 +155,7 @@ class FunnelcakeCreatorAnalyticsRepository
         videosHydratedByBulkStats: bulkResult.hydratedCount,
         videosHydratedByViewsEndpoint: endpointResult.hydratedCount,
         sourcesUsed: sourcesUsed,
+        failedSources: failedSources,
         fetchedAt: DateTime.now(),
         videoCatalogTruncated: authorResult.truncated,
       ),
@@ -185,6 +204,44 @@ class FunnelcakeCreatorAnalyticsRepository
         .where((video) => !video.isRepost && video.pubkey == pubkey)
         .toList();
     return _AuthorVideosResult(videos: authored, truncated: truncated);
+  }
+
+  Future<SocialCounts?> _getSocialCountsTolerant(
+    String pubkey,
+    Set<AnalyticsDataSource> failedSources,
+  ) async {
+    try {
+      return await _getSocialCounts(pubkey);
+    } on Object catch (e, stackTrace) {
+      failedSources.add(AnalyticsDataSource.socialCounts);
+      Log.error(
+        'Failed to fetch creator analytics social counts',
+        name: 'CreatorAnalyticsRepository',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  Future<_HydrationResult> _enrichVideosWithBulkStatsTolerant(
+    List<VideoEvent> videos,
+    Set<AnalyticsDataSource> failedSources,
+  ) async {
+    try {
+      return await _enrichVideosWithBulkStats(videos);
+    } on Object catch (e, stackTrace) {
+      failedSources.add(AnalyticsDataSource.bulkVideoStats);
+      Log.error(
+        'Failed to hydrate creator analytics videos with bulk stats',
+        name: 'CreatorAnalyticsRepository',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return _HydrationResult(videos: videos, hydratedCount: 0);
+    }
   }
 
   Future<_HydrationResult> _enrichVideosWithBulkStats(
@@ -247,6 +304,29 @@ class FunnelcakeCreatorAnalyticsRepository
     return _HydrationResult(videos: hydrated, hydratedCount: hydratedCount);
   }
 
+  Future<_HydrationResult> _hydrateVideoViewsTolerant(
+    List<VideoEvent> videos,
+    Set<AnalyticsDataSource> failedSources,
+  ) async {
+    try {
+      final result = await _hydrateVideoViews(videos);
+      if (result.hadFailures) {
+        failedSources.add(AnalyticsDataSource.videoViewsEndpoint);
+      }
+      return result;
+    } on Object catch (e, stackTrace) {
+      failedSources.add(AnalyticsDataSource.videoViewsEndpoint);
+      Log.error(
+        'Failed to hydrate creator analytics videos with view counts',
+        name: 'CreatorAnalyticsRepository',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return _HydrationResult(videos: videos, hydratedCount: 0);
+    }
+  }
+
   Future<_HydrationResult> _hydrateVideoViews(List<VideoEvent> videos) async {
     if (videos.isEmpty) {
       return const _HydrationResult(videos: [], hydratedCount: 0);
@@ -262,6 +342,7 @@ class FunnelcakeCreatorAnalyticsRepository
     }
 
     final fetchedViews = <String, int>{};
+    var hadFailures = false;
     final chunks = <List<VideoEvent>>[];
     for (var i = 0; i < missingViewVideos.length; i += 12) {
       final end = math.min(i + 12, missingViewVideos.length);
@@ -270,15 +351,36 @@ class FunnelcakeCreatorAnalyticsRepository
 
     for (final chunk in chunks) {
       final counts = await Future.wait(
-        chunk.map((video) => _client.getVideoViews(video.id)),
+        chunk.map((video) async {
+          try {
+            return await _client.getVideoViews(video.id);
+          } on Object catch (e, stackTrace) {
+            hadFailures = true;
+            Log.error(
+              'Failed to hydrate creator analytics video view count',
+              name: 'CreatorAnalyticsRepository',
+              category: LogCategory.video,
+              error: e,
+              stackTrace: stackTrace,
+            );
+            return null;
+          }
+        }),
       );
       for (var i = 0; i < chunk.length; i++) {
-        fetchedViews[chunk[i].id] = counts[i];
+        final count = counts[i];
+        if (count != null) {
+          fetchedViews[chunk[i].id] = count;
+        }
       }
     }
 
     if (fetchedViews.isEmpty) {
-      return _HydrationResult(videos: videos, hydratedCount: 0);
+      return _HydrationResult(
+        videos: videos,
+        hydratedCount: 0,
+        hadFailures: hadFailures,
+      );
     }
 
     var hydratedCount = 0;
@@ -290,7 +392,11 @@ class FunnelcakeCreatorAnalyticsRepository
       return video.copyWith(rawTags: mergedTags);
     }).toList();
 
-    return _HydrationResult(videos: hydrated, hydratedCount: hydratedCount);
+    return _HydrationResult(
+      videos: hydrated,
+      hydratedCount: hydratedCount,
+      hadFailures: hadFailures,
+    );
   }
 
   List<List<String>> _chunkStrings(List<String> input, int chunkSize) {
@@ -305,10 +411,15 @@ class FunnelcakeCreatorAnalyticsRepository
 }
 
 class _HydrationResult {
-  const _HydrationResult({required this.videos, required this.hydratedCount});
+  const _HydrationResult({
+    required this.videos,
+    required this.hydratedCount,
+    this.hadFailures = false,
+  });
 
   final List<VideoEvent> videos;
   final int hydratedCount;
+  final bool hadFailures;
 }
 
 class _AuthorVideosResult {

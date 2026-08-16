@@ -1,11 +1,13 @@
 // ABOUTME: Creator analytics dashboard draft for profile owners.
 // ABOUTME: Aggregates Funnelcake video and social metrics into creator insights.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -17,6 +19,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_analytics_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/utils/expected_network_error.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
@@ -55,7 +58,7 @@ class _CreatorAnalyticsScreenState
     final authService = ref.read(authServiceProvider);
     final pubkey = authService.currentPublicKeyHex;
     if (pubkey == null || pubkey.isEmpty) {
-      throw StateError(context.l10n.analyticsSignInRequired);
+      throw const _CreatorAnalyticsSignInRequiredException();
     }
 
     final repository = ref.read(creatorAnalyticsRepositoryProvider);
@@ -302,6 +305,8 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final message = _analyticsErrorMessage(context, error);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -315,7 +320,7 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '$error',
+              message,
               textAlign: TextAlign.center,
               style: VineTheme.bodyMediumFont(
                 color: context.vineColors.onSurfaceMuted,
@@ -331,6 +336,26 @@ class _ErrorView extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CreatorAnalyticsSignInRequiredException implements Exception {
+  const _CreatorAnalyticsSignInRequiredException();
+}
+
+String _analyticsErrorMessage(BuildContext context, Object? error) {
+  final l10n = context.l10n;
+  if (error is _CreatorAnalyticsSignInRequiredException) {
+    return l10n.analyticsSignInRequired;
+  }
+  if (error is FunnelcakeApiException && error.statusCode >= 500) {
+    return l10n.analyticsServerUnavailable;
+  }
+  if (error is FunnelcakeTimeoutException ||
+      error is TimeoutException ||
+      (error != null && isExpectedNetworkFailure(error))) {
+    return l10n.analyticsConnectionIssue;
+  }
+  return l10n.analyticsUnableToLoad;
 }
 
 class _RangeSelector extends StatelessWidget {
@@ -385,12 +410,16 @@ class _DiagnosticsPanel extends StatelessWidget {
         AnalyticsDataSource.authorVideos => 'author-videos',
         AnalyticsDataSource.bulkVideoStats => 'bulk-video-stats',
         AnalyticsDataSource.videoViewsEndpoint => 'video-views-endpoint',
+        AnalyticsDataSource.socialCounts => 'social-counts',
       };
     }
 
     final sourceText = diagnostics.sourcesUsed.isEmpty
         ? 'none'
         : diagnostics.sourcesUsed.map(sourceLabel).join(', ');
+    final failedSourceText = diagnostics.failedSources.isEmpty
+        ? 'none'
+        : diagnostics.failedSources.map(sourceLabel).join(', ');
 
     return _AnalyticsCard(
       title: context.l10n.analyticsDiagnostics,
@@ -444,6 +473,13 @@ class _DiagnosticsPanel extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             context.l10n.analyticsDiagnosticsSources(sourceText),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.l10n.analyticsDiagnosticsFailedSources(failedSourceText),
             style: VineTheme.bodySmallFont(
               color: context.vineColors.onSurfaceMuted,
             ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -116,12 +118,7 @@ void main() {
       ).thenAnswer(
         (_) async => VideosByAuthorResponse(
           videos: [
-            _videoStats(
-              id: 'a',
-              pubkey: pubkey,
-              reactions: 0,
-              comments: 0,
-            ),
+            _videoStats(id: 'a', pubkey: pubkey, reactions: 0, comments: 0),
           ],
         ),
       );
@@ -429,6 +426,233 @@ void main() {
 
       expect(snapshot.diagnostics.totalVideos, 400);
       expect(snapshot.diagnostics.videoCatalogTruncated, isTrue);
+    });
+
+    test('keeps author videos when bulk stats hydration fails', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(() => api.getBulkVideoStats(any())).thenThrow(
+        const FunnelcakeApiException(
+          message: 'bulk failed',
+          statusCode: 500,
+          url: 'https://api.divine.video/api/videos/stats/bulk',
+        ),
+      );
+      when(() => api.getVideoViews(any())).thenThrow(
+        const FunnelcakeApiException(message: 'views failed', statusCode: 500),
+      );
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => VideosByAuthorResponse(
+          videos: [_videoStats(id: 'bulk-failure-video', pubkey: pubkey)],
+        ),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+      final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+      expect(snapshot.videos.single.id, 'bulk-failure-video');
+      expect(snapshot.diagnostics.videosWithAnyViews, 0);
+      expect(snapshot.diagnostics.videosMissingViews, 1);
+      expect(snapshot.diagnostics.videosHydratedByBulkStats, 0);
+      expect(snapshot.diagnostics.failedSources, {
+        AnalyticsDataSource.bulkVideoStats,
+        AnalyticsDataSource.videoViewsEndpoint,
+      });
+    });
+
+    test('keeps author videos when a video views request fails', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(
+        () => api.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+      when(() => api.getVideoViews('views-failure-video')).thenThrow(
+        const FunnelcakeApiException(message: 'views failed', statusCode: 500),
+      );
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => VideosByAuthorResponse(
+          videos: [_videoStats(id: 'views-failure-video', pubkey: pubkey)],
+        ),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+      final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+      expect(snapshot.videos.single.id, 'views-failure-video');
+      expect(snapshot.diagnostics.videosWithAnyViews, 0);
+      expect(snapshot.diagnostics.videosMissingViews, 1);
+      expect(snapshot.diagnostics.videosHydratedByViewsEndpoint, 0);
+      expect(snapshot.diagnostics.failedSources, {
+        AnalyticsDataSource.videoViewsEndpoint,
+      });
+    });
+
+    test('hydrates remaining video views when one request fails', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(
+        () => api.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+      when(() => api.getVideoViews('bad-video')).thenThrow(
+        const FunnelcakeApiException(message: 'views failed', statusCode: 500),
+      );
+      when(() => api.getVideoViews('good-video')).thenAnswer((_) async => 33);
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => VideosByAuthorResponse(
+          videos: [
+            _videoStats(id: 'bad-video', pubkey: pubkey),
+            _videoStats(id: 'good-video', pubkey: pubkey),
+          ],
+        ),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+      final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+      expect(snapshot.diagnostics.videosHydratedByViewsEndpoint, 1);
+      expect(snapshot.diagnostics.videosWithAnyViews, 1);
+      expect(snapshot.diagnostics.videosMissingViews, 1);
+      expect(
+        snapshot.videos
+            .singleWhere((video) => video.id == 'good-video')
+            .rawTags['views'],
+        '33',
+      );
+      expect(snapshot.diagnostics.failedSources, {
+        AnalyticsDataSource.videoViewsEndpoint,
+      });
+    });
+
+    test(
+      'keeps videos and nulls social counts when social counts fail',
+      () async {
+        const pubkey = 'pubkey';
+        final api = MockFunnelcakeApiClient();
+
+        when(() => api.isAvailable).thenReturn(true);
+        when(() => api.getSocialCounts(pubkey)).thenThrow(
+          const FunnelcakeApiException(
+            message: 'social failed',
+            statusCode: 500,
+          ),
+        );
+        when(
+          () => api.getBulkVideoStats(any()),
+        ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+        when(() => api.getVideoViews(any())).thenAnswer((_) async => 12);
+        when(
+          () => api.getVideosByAuthor(
+            pubkey: pubkey,
+            limit: 100,
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => VideosByAuthorResponse(
+            videos: [_videoStats(id: 'social-failure-video', pubkey: pubkey)],
+          ),
+        );
+
+        final repo = FunnelcakeCreatorAnalyticsRepository(api);
+        final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+        expect(snapshot.videos.single.id, 'social-failure-video');
+        expect(snapshot.socialCounts, isNull);
+        expect(snapshot.diagnostics.failedSources, {
+          AnalyticsDataSource.socialCounts,
+        });
+      },
+    );
+
+    test('rethrows author video failures', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenThrow(
+        const FunnelcakeApiException(message: 'author failed', statusCode: 500),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+
+      await expectLater(
+        repo.fetchCreatorAnalytics(pubkey),
+        throwsA(isA<FunnelcakeApiException>()),
+      );
+    });
+
+    test('handles social failure when author video fetch also fails', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+      final unhandledErrors = <Object>[];
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async {
+        await Future<void>.delayed(Duration.zero);
+        throw const FunnelcakeApiException(
+          message: 'social failed',
+          statusCode: 500,
+        );
+      });
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenThrow(
+        const FunnelcakeApiException(message: 'author failed', statusCode: 500),
+      );
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+
+      await runZonedGuarded<Future<void>>(
+        () async {
+          await expectLater(
+            repo.fetchCreatorAnalytics(pubkey),
+            throwsA(isA<FunnelcakeApiException>()),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        (error, stackTrace) {
+          unhandledErrors.add(error);
+        },
+      );
+
+      expect(unhandledErrors, isEmpty);
     });
   });
 }

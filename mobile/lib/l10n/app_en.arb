@@ -1698,6 +1698,8 @@
   "analyticsDiagnosticsSemanticLabel": "Toggle diagnostics",
   "analyticsRetry": "Retry",
   "analyticsUnableToLoad": "Unable to load analytics.",
+  "analyticsServerUnavailable": "Creator analytics is having server trouble. Please try again in a moment.",
+  "analyticsConnectionIssue": "Creator analytics could not connect. Check your connection and try again.",
   "analyticsSignInRequired": "Sign in to view creator analytics.",
   "analyticsViewDataUnavailable": "Views are currently unavailable from the relay for these posts. Like/comment/repost metrics are still accurate.",
   "analyticsViewDataTitle": "View Data",
@@ -1833,6 +1835,14 @@
   },
   "analyticsDiagnosticsSources": "Sources: {sources}",
   "@analyticsDiagnosticsSources": {
+    "placeholders": {
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsDiagnosticsFailedSources": "Failed sources: {sources}",
+  "@analyticsDiagnosticsFailedSources": {
     "placeholders": {
       "sources": {
         "type": "String"

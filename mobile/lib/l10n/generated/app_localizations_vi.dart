@@ -2731,6 +2731,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get analyticsUnableToLoad => 'Không thể tải phân tích.';
 
   @override
+  String get analyticsServerUnavailable =>
+      'Creator analytics is having server trouble. Please try again in a moment.';
+
+  @override
+  String get analyticsConnectionIssue =>
+      'Creator analytics could not connect. Check your connection and try again.';
+
+  @override
   String get analyticsSignInRequired =>
       'Đăng nhập để xem phân tích nhà sáng tạo.';
 
@@ -2914,6 +2922,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String analyticsDiagnosticsSources(String sources) {
     return 'Nguồn: $sources';
+  }
+
+  @override
+  String analyticsDiagnosticsFailedSources(String sources) {
+    return 'Failed sources: $sources';
   }
 
   @override

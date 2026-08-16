@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
@@ -48,6 +49,33 @@ void main() {
         ),
       ),
     );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          creatorAnalyticsRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: const CreatorAnalyticsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> pumpAnalyticsErrorScreen(
+    WidgetTester tester, {
+    required Object error,
+  }) async {
+    final authService = _MockAuthService();
+    final repository = _MockCreatorAnalyticsRepository();
+
+    when(() => authService.currentPublicKeyHex).thenReturn('a' * 64);
+    when(() => repository.fetchCreatorAnalytics(any())).thenThrow(error);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -183,5 +211,25 @@ void main() {
 
     expect(find.text('Total videos: 1'), findsOneWidget);
     expect(find.text('Sources: bulk-video-stats'), findsOneWidget);
+    expect(find.text('Failed sources: none'), findsOneWidget);
+  });
+
+  testWidgets('maps server errors to localized copy without raw details', (
+    tester,
+  ) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await pumpAnalyticsErrorScreen(
+      tester,
+      error: const FunnelcakeApiException(
+        message: 'Failed to fetch bulk video stats',
+        statusCode: 500,
+        url: 'https://api.divine.video/api/videos/stats/bulk',
+      ),
+    );
+
+    expect(find.text(l10n.analyticsServerUnavailable), findsOneWidget);
+    expect(find.textContaining('FunnelcakeApiException'), findsNothing);
+    expect(find.textContaining('https://api.divine.video'), findsNothing);
   });
 }
