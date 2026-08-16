@@ -93,7 +93,13 @@ class _ProfileSavedGridState extends State<ProfileSavedGrid>
         // RefreshIndicator: with the tab's default clamping physics a pull
         // would stop working exactly when it is most wanted — after
         // unbookmarking the last video, or when a sync failed.
-        if (state.status == ProfileSavedVideosStatus.failure) {
+        //
+        // A settled-empty tab is two different outcomes, and the state carries
+        // both. Bookmarks that failed to resolve are a load failure, not an
+        // empty list: telling that viewer to go bookmark something is telling
+        // them to do what they already did.
+        if (state.status == ProfileSavedVideosStatus.failure ||
+            state.hasUnresolvedSaves) {
           return ProfileTabErrorState(
             message: context.l10n.profileErrorLoadingSaved,
             physics: const AlwaysScrollableScrollPhysics(),

@@ -49,6 +49,7 @@ final class ProfileRepostedVideosState extends Equatable {
     this.isRefreshing = false,
     this.hasMoreContent = true,
     this.nextPageOffset = 0,
+    this.lastFetchResolvedVideoCount = 0,
   });
 
   /// The current loading status
@@ -77,6 +78,21 @@ final class ProfileRepostedVideosState extends Equatable {
   /// Offset into [repostedAddressableIds] for the next page fetch.
   final int nextPageOffset;
 
+  /// Number of videos returned by the repository before platform filtering in
+  /// the last fetch that produced the current empty rendered list.
+  final int lastFetchResolvedVideoCount;
+
+  /// Whether the profile has reposts that the repository did not resolve.
+  ///
+  /// `videos.isEmpty` on its own conflates "nothing reposted" with "we could
+  /// not load them", and only [repostedAddressableIds] separates the two. This
+  /// is deliberately gated on the pre-filter resolve count: an unsupported
+  /// video format can leave the rendered list empty after a successful fetch.
+  bool get hasUnresolvedReposts =>
+      videos.isEmpty &&
+      repostedAddressableIds.isNotEmpty &&
+      lastFetchResolvedVideoCount == 0;
+
   /// Whether data has been successfully loaded
   bool get isLoaded => status == ProfileRepostedVideosStatus.success;
 
@@ -96,6 +112,7 @@ final class ProfileRepostedVideosState extends Equatable {
     bool? isRefreshing,
     bool? hasMoreContent,
     int? nextPageOffset,
+    int? lastFetchResolvedVideoCount,
   }) {
     return ProfileRepostedVideosState(
       status: status ?? this.status,
@@ -107,6 +124,8 @@ final class ProfileRepostedVideosState extends Equatable {
       isRefreshing: isRefreshing ?? this.isRefreshing,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       nextPageOffset: nextPageOffset ?? this.nextPageOffset,
+      lastFetchResolvedVideoCount:
+          lastFetchResolvedVideoCount ?? this.lastFetchResolvedVideoCount,
     );
   }
 
@@ -120,5 +139,6 @@ final class ProfileRepostedVideosState extends Equatable {
     isRefreshing,
     hasMoreContent,
     nextPageOffset,
+    lastFetchResolvedVideoCount,
   ];
 }

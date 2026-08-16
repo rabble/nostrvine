@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cache_sync/cache_sync.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -88,7 +89,10 @@ void main() {
       deletedVideoFilter: deletedVideoFilter ?? (_) => false,
     );
 
-    VideoEvent createTestVideo(String id) {
+    VideoEvent createTestVideo(
+      String id, {
+      String videoUrl = 'https://example.com/video.mp4',
+    }) {
       final now = DateTime.now();
       return VideoEvent(
         id: id,
@@ -97,7 +101,7 @@ void main() {
         content: '',
         timestamp: now,
         title: 'Test Video $id',
-        videoUrl: 'https://example.com/video.mp4',
+        videoUrl: videoUrl,
         thumbnailUrl: 'https://example.com/thumb.jpg',
       );
     }
@@ -342,6 +346,44 @@ void main() {
                 'unchanged videos',
                 ['video-1'],
               ),
+        ],
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'reconcile that resolves nothing reports the bookmarks as unresolved',
+        // #7587 on the warm path: the previously-shown videos have all been
+        // unbookmarked, so none of them is in the reconcile window. They are
+        // no evidence that the window resolved, and counting them as such
+        // would send the tab back to "Nothing saved yet".
+        setUp: () async {
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_saved_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [createTestVideo('video-1')],
+              itemIds: const ['video-1'],
+              nextPageOffset: 1,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
+            BookmarkItem(type: 'e', id: 'video-2'),
+          ]);
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        skip: 1,
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having((s) => s.savedEventIds, 'savedEventIds', ['video-2'])
+              .having((s) => s.hasUnresolvedSaves, 'hasUnresolvedSaves', true),
         ],
       );
 
@@ -647,6 +689,54 @@ void main() {
       final manyBookmarks = List.generate(
         bookmarkCount,
         (i) => BookmarkItem(type: 'e', id: 'video-$i'),
+      );
+
+      // A first page that resolves nothing sets the failure evidence. A later
+      // page that resolves videos the platform filter then drops must replace
+      // it, or the tab keeps claiming a failure that a fetch already answered.
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'a later page that resolved-then-filtered clears the failure evidence',
+        setUp: () {
+          // The platform filter only drops WebM on iOS/macOS, and the test
+          // binding reports android, so the filter is inert without this.
+          debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+          when(
+            () => mockBookmarkService.globalBookmarks,
+          ).thenReturn(manyBookmarks);
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((invocation) async {
+            final ids = invocation.positionalArguments.first as List<String>;
+            // Page 1 resolves nothing at all; page 2 resolves videos that are
+            // unplayable here, so both pages render empty for different
+            // reasons.
+            if (ids.contains('video-0')) return <VideoEvent>[];
+            return ids
+                .map(
+                  (id) =>
+                      createTestVideo(id, videoUrl: 'https://e.dev/$id.webm'),
+                )
+                .toList();
+          });
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ProfileSavedVideosSyncRequested());
+          await bloc.stream.firstWhere(
+            (state) => state.status == ProfileSavedVideosStatus.success,
+          );
+          expect(bloc.state.hasUnresolvedSaves, isTrue);
+          bloc.add(const ProfileSavedVideosLoadMoreRequested());
+        },
+        tearDown: () => debugDefaultTargetPlatformOverride = null,
+        verify: (bloc) {
+          expect(bloc.state.videos, isEmpty);
+          expect(bloc.state.savedEventIds, isNotEmpty);
+          expect(bloc.state.hasUnresolvedSaves, isFalse);
+        },
       );
 
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(

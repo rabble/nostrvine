@@ -99,6 +99,12 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
 
         // Only surface the failure screen when there is nothing cached to
         // show; a failed background refresh keeps the cached grid on screen.
+        //
+        // Unlike Saved and Reposts, this tab deliberately does NOT treat
+        // "liked IDs but no videos" as a failure. `_onBlocklistChanged` emits
+        // videos without touching `likedEventIds`, so blocking the author of
+        // every liked video reaches that shape with nothing having failed —
+        // see #7627.
         if (state.status == ProfileLikedVideosStatus.failure &&
             likedVideos.isEmpty) {
           return ProfileTabErrorState(
