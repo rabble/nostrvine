@@ -36,6 +36,14 @@ while IFS= read -r hook_cmd; do
   esac
 done < <(jq -r '.hooks | .[] | .[] | .hooks[].command' "$REPO_ROOT/.claude/settings.json")
 
+missing_timeouts=$(jq -r '.hooks | .[] | .[] | .hooks[]
+  | select(.timeout == null)
+  | .command' "$REPO_ROOT/.claude/settings.json")
+if [ -n "$missing_timeouts" ]; then
+  echo "Every Claude hook must declare an explicit whole-second timeout; missing on: $missing_timeouts" >&2
+  exit 1
+fi
+
 bad_timeouts=$(jq -r '.hooks | .[] | .[] | .hooks[].timeout' "$REPO_ROOT/.claude/settings.json" \
   | awk '$1 !~ /^[0-9]+$/ || $1 > 600 { print }')
 if [ -n "$bad_timeouts" ]; then
