@@ -111,18 +111,22 @@ class OAuthSessionCoordinator {
   ///
   /// Throws [OAuthNetworkException] when the refresh cannot reach Keycast or
   /// times out. The refresh token is preserved for a later retry in that case.
-  Future<KeycastSession?> refreshSession({String? expectedOwnerPubkey}) {
+  Future<KeycastSession?> refreshSession({
+    String? expectedOwnerPubkey,
+    Duration? timeout,
+  }) {
     final pending = _pendingOAuthRefresh;
     if (pending != null) return pending;
 
+    final refreshTimeout = timeout ?? _oauthRefreshTimeout;
     late final Future<KeycastSession?> refresh;
     refresh = _doRefreshSession(expectedOwnerPubkey: expectedOwnerPubkey)
         .timeout(
-          _oauthRefreshTimeout,
+          refreshTimeout,
           onTimeout: () {
             Log.warning(
               '_refreshOAuthSession: timed out after '
-              '${_oauthRefreshTimeout.inMilliseconds}ms — '
+              '${refreshTimeout.inMilliseconds}ms — '
               'treating as network failure',
               name: 'OAuthSessionCoordinator',
               category: LogCategory.auth,

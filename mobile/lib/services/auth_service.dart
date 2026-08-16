@@ -536,14 +536,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   static const rpcRefreshTimeout = Duration(seconds: 10);
 
   /// Default bound for the single-flight OAuth token refresh. It is longer
-  /// than KeycastOAuth's own HTTP bound so production code does not abandon
-  /// a slow-but-still-live request before the client has resolved it.
+  /// than KeycastOAuth's own HTTP bound.
   @visibleForTesting
   static const defaultOAuthRefreshTimeout = Duration(seconds: 35);
 
   /// Default bound for the full expired-session refresh flow (token refresh
-  /// plus session re-integration). This stays longer than the OAuth refresh
-  /// bound so the outer flow does not detach from a live refresh.
+  /// plus session re-integration).
   @visibleForTesting
   static const defaultExpiredSessionRefreshTimeout = Duration(seconds: 40);
 
@@ -885,9 +883,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     if (_oauthClient != null) {
       final KeycastSession? refreshed;
       try {
-        refreshed = await _oauthCoordinator
-            .refreshSession(expectedOwnerPubkey: session?.userPubkey)
-            .timeout(_startupNetworkOperationTimeout);
+        refreshed = await _oauthCoordinator.refreshSession(
+          expectedOwnerPubkey: session?.userPubkey,
+          timeout: _startupNetworkOperationTimeout,
+        );
       } on OAuthNetworkException catch (e) {
         Log.warning(
           'initialize: synchronous refresh failed due to network: $e',
@@ -1256,6 +1255,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           return;
 
         case AuthenticationSource.divineOAuth:
+          _authSource = AuthenticationSource.divineOAuth;
           await _initializeDivineOAuth();
           return;
 
