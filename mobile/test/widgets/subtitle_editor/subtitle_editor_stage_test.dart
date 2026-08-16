@@ -56,6 +56,7 @@ void main() {
           width: 400,
           child: SubtitleEditorStage(
             videoUrl: 'https://example.com/video.mp4',
+            playbackUrls: const ['https://example.com/video.mp4'],
             videoId:
                 '0000000000000000000000000000000000000000000000000000000000000000',
             cues: cues,

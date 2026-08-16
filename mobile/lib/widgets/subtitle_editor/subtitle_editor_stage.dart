@@ -31,17 +31,21 @@ class SubtitleEditorStage extends StatefulWidget {
     required this.totalDuration,
     required this.selectedCue,
     required this.loadFrames,
-    this.playbackUrls = const [],
+    required this.playbackUrls,
     super.key,
   });
 
   /// Playable URL of the published video.
+  ///
+  /// Addresses the video itself — the filmstrip reads frames from it. The
+  /// preview player uses [playbackUrls] instead, which may resolve to a
+  /// different rendition of the same video.
   final String videoUrl;
 
   /// Ordered playback candidates for the preview player, tried in order.
   ///
-  /// Falls back to [videoUrl] when empty so non-feed callers keep their
-  /// previous behavior.
+  /// Build these with `VideoEvent.previewPlaybackSources` so the editor and
+  /// the feed pick renditions the same way.
   final List<String> playbackUrls;
 
   /// Full event id of the video, used as the media-cache key.
@@ -209,9 +213,7 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
     // Handed to the player as-is: an HLS master playlist is a source it takes
     // natively on both platforms, so resolving one to an MP4 first would only
     // buy a round-trip and a downgrade to the lowest-bandwidth variant.
-    final urls = orderedUniqueSources(
-      widget.playbackUrls.isEmpty ? [widget.videoUrl] : widget.playbackUrls,
-    );
+    final urls = orderedUniqueSources(widget.playbackUrls);
     if (urls.isEmpty) {
       // Reached synchronously from initState, before the first build, so the
       // flag is picked up without a setState that would mark a building
