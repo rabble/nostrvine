@@ -1048,6 +1048,39 @@ void main() {
         );
       });
 
+      test('late 401 with timed-out refresh propagates timeout rather than '
+          'returning null', () async {
+        var postCalls = 0;
+        mockClient = MockClient((request) async {
+          postCalls++;
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+          return http.Response('expired', 401);
+        });
+        var refreshCalls = 0;
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          httpClient: mockClient,
+          batchRequestTimeout: const Duration(milliseconds: 200),
+          onTokenRefresh: () async {
+            refreshCalls++;
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return 'fresh_token';
+          },
+        );
+
+        await expectLater(
+          rpc.nip17UnwrapBatch([giftWrap('1')]),
+          throwsA(isA<TimeoutException>()),
+        );
+        expect(
+          postCalls,
+          equals(1),
+          reason: 'the refresh timed out before a retry POST could be issued.',
+        );
+        expect(refreshCalls, equals(1));
+      });
+
       test('is bounded by batchRequestTimeout, not the shorter single-op '
           'requestTimeout', () async {
         // The heavier batch verb must NOT be aborted by the short single-op

@@ -2,9 +2,12 @@
 // ABOUTME: Pins that locally-stored nsec bypasses Keycast RPC for signing.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -407,6 +410,55 @@ void main() {
             biometricPrompt: any(named: 'biometricPrompt'),
           ),
         );
+      },
+    );
+
+    test(
+      'same-pubkey RPC upgrade does not close signer retained by live client',
+      () async {
+        var retainedCalls = 0;
+        final retainedRpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'retained_token',
+          httpClient: MockClient((request) async {
+            retainedCalls++;
+            final body = jsonDecode(request.body) as Map<String, dynamic>;
+            expect(body['method'], equals('nip44_encrypt'));
+            return http.Response(jsonEncode({'result': 'ciphertext'}), 200);
+          }),
+        );
+        addTearDown(retainedRpc.close);
+
+        final upgradedRpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'upgraded_token',
+          httpClient: MockClient((request) async {
+            return http.Response(jsonEncode({'result': 'unused'}), 200);
+          }),
+        );
+
+        authService = createAuthService();
+        authService.debugSetKeycastSigner(retainedRpc);
+        final retainedIdentity = KeycastNostrIdentity(
+          pubkey: matchingContainer.publicKeyHex,
+          rpcSigner: retainedRpc,
+        );
+        authService.debugSetIdentity(retainedIdentity);
+
+        // Same-pubkey RPC upgrade replaces AuthService's current signer, but
+        // NostrService deliberately retains its live client and the identity
+        // object injected into that client. That retained identity's RPC must
+        // stay usable until the client is actually rebuilt or disposed.
+        authService.debugSetKeycastSigner(upgradedRpc, closePrevious: false);
+
+        expect(
+          await retainedIdentity.nip44Encrypt(
+            otherContainer.publicKeyHex,
+            'hello',
+          ),
+          equals('ciphertext'),
+        );
+        expect(retainedCalls, equals(1));
       },
     );
   });

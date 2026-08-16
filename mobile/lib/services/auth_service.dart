@@ -804,7 +804,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           return;
         }
-        _setKeycastSigner(_newKeycastSigner(refreshed));
+        _setKeycastSigner(_newKeycastSigner(refreshed), closePrevious: false);
         _currentIdentity = _buildIdentity();
         _hasExpiredOAuthSession = false;
         _setRpcCapability(AuthRpcCapability.rpcReady);
@@ -1088,11 +1088,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         onTokenRefresh: _refreshAccessToken,
       );
 
-  void _setKeycastSigner(KeycastRpc? signer) {
+  void _setKeycastSigner(KeycastRpc? signer, {bool closePrevious = true}) {
     if (identical(_keycastSigner, signer)) return;
     final previous = _keycastSigner;
     _keycastSigner = signer;
-    previous?.close();
+    if (closePrevious) previous?.close();
   }
 
   /// Get discovered user relays (NIP-65)
@@ -4517,26 +4517,26 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<void> debugDiscoverUserRelays(String npub) =>
       _discoveryOrchestrator.discoverUserRelays(npub, _currentIdentity?.pubkey);
 
-  /// Test seam that lets unit tests install a [NostrIdentity] without
-  /// going through the full sign-in pipeline. Used by tests that exercise
-  /// code paths (e.g. the bootstrap kind:10002 publish) which depend on
-  /// [currentIdentity] being set.
+  /// Test seam for code paths that need [currentIdentity] without full sign-in.
   @visibleForTesting
   void debugSetIdentity(NostrIdentity? identity) {
     _currentIdentity = identity;
   }
+
+  /// Test seam for signer lifecycle policy.
+  @visibleForTesting
+  void debugSetKeycastSigner(
+    KeycastRpc? signer, {
+    bool closePrevious = true,
+  }) => _setKeycastSigner(signer, closePrevious: closePrevious);
 
   /// Test seam that lets unit tests install a [SecureKeyContainer] so
   /// `signOut`'s account-scoped invalidation (and any other code path
   /// keyed on the current pubkey) can be exercised without driving the
   /// full sign-in pipeline.
   ///
-  /// **Scope warning**: this only sets `_currentKeyContainer`. It does
-  /// not touch `_authSource`, `_currentIdentity`, signer wiring, auth
-  /// state, or any other field that real sign-in initialises. Safe for
-  /// tests that exercise branches keyed solely on `_currentKeyContainer`
-  /// (e.g. the pubkey-capture step in `signOut`); using it as a general
-  /// "pretend to be signed in" shim will produce inconsistent state.
+  /// Scope warning: this sets only `_currentKeyContainer`; tests needing
+  /// identity, auth state, or signer wiring must install those separately.
   @visibleForTesting
   void debugSetCurrentKeyContainer(SecureKeyContainer? container) {
     _currentKeyContainer = container;
