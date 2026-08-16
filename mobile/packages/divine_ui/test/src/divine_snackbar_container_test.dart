@@ -772,5 +772,68 @@ void main() {
         const Color(0xFF123456),
       );
     });
+
+    group('accessibility', () {
+      Widget host(ThemeData theme, {required bool error}) => MaterialApp(
+        theme: theme,
+        home: Scaffold(
+          body: Center(
+            child: DivineSnackbarContainer(
+              label: 'Upload finished',
+              error: error,
+              actionLabel: 'Retry',
+              onActionPressed: () {},
+              onDismissPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      for (final (name, theme) in <(String, ThemeData)>[
+        ('dark', VineTheme.theme),
+        ('light', VineTheme.lightTheme),
+      ]) {
+        for (final error in [false, true]) {
+          final variant = error ? 'error' : 'default';
+
+          testWidgets('$name/$variant meets the tap-target guidelines', (
+            tester,
+          ) async {
+            final handle = tester.ensureSemantics();
+            await tester.pumpWidget(host(theme, error: error));
+
+            await expectLater(
+              tester,
+              meetsGuideline(androidTapTargetGuideline),
+            );
+            await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+            handle.dispose();
+          });
+
+          testWidgets('$name/$variant leaves no unlabeled tappable node', (
+            tester,
+          ) async {
+            final handle = tester.ensureSemantics();
+            await tester.pumpWidget(host(theme, error: error));
+
+            await expectLater(
+              tester,
+              meetsGuideline(labeledTapTargetGuideline),
+            );
+            handle.dispose();
+          });
+
+          testWidgets('$name/$variant meets the text-contrast guideline', (
+            tester,
+          ) async {
+            final handle = tester.ensureSemantics();
+            await tester.pumpWidget(host(theme, error: error));
+
+            await expectLater(tester, meetsGuideline(textContrastGuideline));
+            handle.dispose();
+          });
+        }
+      }
+    });
   });
 }

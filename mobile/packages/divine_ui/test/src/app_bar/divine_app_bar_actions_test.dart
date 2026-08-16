@@ -122,5 +122,66 @@ void main() {
       );
       expect(spacer.width, 16);
     });
+
+    group('accessibility', () {
+      Widget buildThemed(List<DiVineAppBarAction> actions, ThemeData theme) {
+        return MaterialApp(
+          theme: theme,
+          home: Scaffold(
+            body: DiVineAppBarActions(
+              actions: actions,
+              style: DiVineAppBarStyle.defaultStyle,
+            ),
+          ),
+        );
+      }
+
+      List<DiVineAppBarAction> labelledActions() => [
+        DiVineAppBarAction(
+          icon: const MaterialIconSource(Icons.search),
+          onPressed: () {},
+          semanticLabel: 'Search',
+        ),
+        DiVineAppBarAction(
+          icon: const MaterialIconSource(Icons.settings),
+          onPressed: () {},
+          semanticLabel: 'Settings',
+        ),
+      ];
+
+      testWidgets('labelled actions meet the labeled-tap-target guideline', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildThemed(labelledActions(), VineTheme.theme),
+        );
+
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('actions meet the 48dp / 44pt tap-target guidelines', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildThemed(labelledActions(), VineTheme.theme),
+        );
+
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('semanticLabel reaches the rendered button', (tester) async {
+        await tester.pumpWidget(
+          buildThemed(labelledActions(), VineTheme.lightTheme),
+        );
+
+        expect(find.bySemanticsLabel('Search'), findsOneWidget);
+        expect(find.bySemanticsLabel('Settings'), findsOneWidget);
+      });
+    });
   });
 }
