@@ -5220,7 +5220,7 @@
   "changeEmailSentDone": "Ok, capito",
   "socialProofMutual": "Reciproco",
   "socialProofFollowsYou": "Ti segue",
-  "socialProofYouFollow": "Segui",
+  "socialProofYouFollow": "Segui già",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} follower} other{{formattedCount} follower}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video}}"
 }

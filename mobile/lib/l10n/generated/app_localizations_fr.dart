@@ -12324,10 +12324,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get socialProofMutual => 'Mutuel';
 
   @override
-  String get socialProofFollowsYou => 'Vous suit';
+  String get socialProofFollowsYou => 'Te suit';
 
   @override
-  String get socialProofYouFollow => 'Vous suivez';
+  String get socialProofYouFollow => 'Tu suis';
 
   @override
   String socialProofFollowerCount(int count, String formattedCount) {

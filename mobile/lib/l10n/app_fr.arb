@@ -5219,8 +5219,8 @@
   "changeEmailSentExpiry": "Les liens expirent au bout de 24 heures.",
   "changeEmailSentDone": "Compris",
   "socialProofMutual": "Mutuel",
-  "socialProofFollowsYou": "Vous suit",
-  "socialProofYouFollow": "Vous suivez",
+  "socialProofFollowsYou": "Te suit",
+  "socialProofYouFollow": "Tu suis",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} abonné} other{{formattedCount} abonnés}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} vidéo} other{{formattedCount} vidéos}}"
 }

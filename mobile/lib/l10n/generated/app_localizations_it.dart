@@ -12291,7 +12291,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get socialProofFollowsYou => 'Ti segue';
 
   @override
-  String get socialProofYouFollow => 'Segui';
+  String get socialProofYouFollow => 'Segui già';
 
   @override
   String socialProofFollowerCount(int count, String formattedCount) {
