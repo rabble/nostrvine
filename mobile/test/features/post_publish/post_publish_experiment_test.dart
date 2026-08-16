@@ -33,12 +33,17 @@ class _RecordingAnalytics implements AnalyticsEventSink {
   }) async {}
 }
 
-/// A pubkey whose sha256 lands in each bucket, found by probing
-/// [PostPublishExperiment.variantForUser] rather than hardcoding a hash.
+/// A deterministic 64-hex pubkey for sample [i].
+String _syntheticPubkey(int i) => i.toRadixString(16).padLeft(64, '0');
+
+/// A pubkey whose sha256 lands in [variant]'s bucket.
+///
+/// Only a fixture — it asks the function under test, so it cannot pin the
+/// split. `splits the population close to evenly` does that.
 String _pubkeyForVariant(PostPublishVariant variant) {
   final experiment = PostPublishExperiment(analytics: _RecordingAnalytics());
   for (var i = 0; i < 1000; i++) {
-    final candidate = i.toRadixString(16).padLeft(64, '0');
+    final candidate = _syntheticPubkey(i);
     if (experiment.variantForUser(candidate) == variant) return candidate;
   }
   throw StateError('No pubkey found for $variant');
@@ -73,13 +78,20 @@ void main() {
         );
       });
 
-      test('assigns the same user the same variant every time', () {
-        final pubkey = _pubkeyForVariant(PostPublishVariant.viewShare);
+      test('splits the population close to evenly', () {
+        // The one property an A/B experiment depends on. Asserting a
+        // probed fixture lands in the bucket it was probed for is circular
+        // and stays green at any threshold; this does not.
+        const sampleSize = 1000;
+        final treatment = List.generate(sampleSize, _syntheticPubkey)
+            .where(
+              (pubkey) =>
+                  experiment.variantForUser(pubkey) ==
+                  PostPublishVariant.viewShare,
+            )
+            .length;
 
-        expect(
-          List.generate(5, (_) => experiment.variantForUser(pubkey)),
-          everyElement(equals(PostPublishVariant.viewShare)),
-        );
+        expect(treatment / sampleSize, closeTo(0.5, 0.05));
       });
     });
 
