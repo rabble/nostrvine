@@ -62,16 +62,14 @@ internal class AudioInputSourceTest {
     }
 
     @Test
-    fun everyExternalMicType_switchesToMic() {
-        val externalTypes = mapOf(
+    fun everyPluggedInMicType_switchesToMic() {
+        val pluggedIn = mapOf(
             "USB_DEVICE" to AudioDeviceInfo.TYPE_USB_DEVICE,
             "USB_HEADSET" to AudioDeviceInfo.TYPE_USB_HEADSET,
             "USB_ACCESSORY" to AudioDeviceInfo.TYPE_USB_ACCESSORY,
-            "WIRED_HEADSET" to AudioDeviceInfo.TYPE_WIRED_HEADSET,
-            "BLUETOOTH_SCO" to AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
-            "BLE_HEADSET" to AudioDeviceInfo.TYPE_BLE_HEADSET
+            "WIRED_HEADSET" to AudioDeviceInfo.TYPE_WIRED_HEADSET
         )
-        for ((name, type) in externalTypes) {
+        for ((name, type) in pluggedIn) {
             assertEquals(
                 MediaRecorder.AudioSource.MIC,
                 audioSourceForInputDeviceTypes(
@@ -80,6 +78,44 @@ internal class AudioInputSourceTest {
                 "$name should route capture to MIC"
             )
         }
+    }
+
+    @Test
+    fun bluetoothAlone_doesNotBecomeTheRecordingMic() {
+        // Wearing a headset to listen is not a request to record through it.
+        // Under MIC, AOSP reaches Bluetooth only via LE Audio (ranked below
+        // USB) or via SCO once Bluetooth is the communication device, which it
+        // is not while recording — so switching would either change nothing or
+        // silently hand the recording to the user's earbuds.
+        val bluetoothTypes = mapOf(
+            "BLUETOOTH_SCO" to AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+            "BLE_HEADSET" to AudioDeviceInfo.TYPE_BLE_HEADSET
+        )
+        for ((name, type) in bluetoothTypes) {
+            assertEquals(
+                AudioSpec.SOURCE_AUTO,
+                audioSourceForInputDeviceTypes(
+                    intArrayOf(AudioDeviceInfo.TYPE_BUILTIN_MIC, type)
+                ),
+                "$name alone should leave the camera-tuned default in place"
+            )
+        }
+    }
+
+    @Test
+    fun bluetoothAlongsideAPluggedInMic_stillSwitches() {
+        // Earbuds on, external mic in front of you. The switch still happens,
+        // and AOSP ranks USB above LE Audio, so the plugged-in mic wins.
+        assertEquals(
+            MediaRecorder.AudioSource.MIC,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_BLE_HEADSET,
+                    AudioDeviceInfo.TYPE_USB_DEVICE
+                )
+            )
+        )
     }
 
     /*
