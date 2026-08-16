@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
+import '../../../helpers/accessibility_guidelines.dart';
+
 void main() {
   Widget buildSubject({
     DivineIconName icon = DivineIconName.heart,
@@ -249,6 +251,22 @@ void main() {
           ),
         );
         expect(semantics.properties.label, equals('Like video'));
+      });
+
+      testWidgets('meets the tap-target and labelling guidelines', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(semanticLabel: 'Like video', count: 12),
+        );
+
+        // Semantics guidelines only: this button's ground is a video frame,
+        // never an app surface, so a contrast reading against the test's
+        // plain scaffold would describe the fixture rather than the product.
+        await expectMeetsAccessibilityGuidelines(
+          tester,
+          guidelines: divineSemanticsGuidelines,
+        );
       });
     });
 

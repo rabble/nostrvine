@@ -9,6 +9,8 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   testWidgets('renders appearance modes and persists a selected mode', (
     tester,
@@ -66,5 +68,28 @@ void main() {
     );
 
     expect(find.text('Appearance'), findsOneWidget);
+  });
+
+  testWidgets('meets the accessibility guidelines in both appearances', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final cubit = AppearanceCubit(
+      AppearanceRepository(await SharedPreferences.getInstance()),
+    );
+    addTearDown(cubit.close);
+
+    await expectMeetsAccessibilityGuidelinesInBothAppearances(
+      tester,
+      (theme) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: theme,
+        home: BlocProvider.value(
+          value: cubit,
+          child: const AppearanceSettingsScreen(),
+        ),
+      ),
+    );
   });
 }
