@@ -262,9 +262,13 @@ class FollowRepository {
   ///
   /// Before [getMyFollowers] has populated the follower cache, "follows you"
   /// is unknowable, so a mutual reads as [FollowRelationship.youFollow] and a
-  /// one-way follower reads as [FollowRelationship.none]. The relationship
-  /// only ever upgrades as data arrives; it never claims one that turns out
-  /// to be wrong.
+  /// one-way follower reads as [FollowRelationship.none]. That cold-cache
+  /// degradation only under-claims and upgrades as data arrives. It is not a
+  /// guarantee against a stale contact list, though: the following and
+  /// follower sets are unions across sources that are never pruned, so a
+  /// superseded kind 3 from one relay can still read as
+  /// [FollowRelationship.followsYou] or [FollowRelationship.mutual] after an
+  /// unfollow.
   FollowRelationship relationshipTo(String pubkey) {
     if (pubkey.isEmpty || pubkey == _nostrClient.publicKey) {
       return FollowRelationship.none;
