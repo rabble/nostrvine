@@ -2,6 +2,7 @@
 # Regression checks for repository Codex hooks and generated skills.
 
 set -e
+trap 'echo "test-config.sh failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 POST_EDIT_HOOK="$REPO_ROOT/.codex/hooks/post-edit-dart.sh"
