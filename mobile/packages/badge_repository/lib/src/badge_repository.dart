@@ -457,9 +457,14 @@ class BadgeRepository {
       );
     }
 
-    viewData.sort(
-      (left, right) => right.awardedAt.compareTo(left.awardedAt),
-    );
+    viewData.sort((left, right) {
+      final byRecency = right.awardedAt.compareTo(left.awardedAt);
+      if (byRecency != 0) return byRecency;
+      // Pinned-without-award rows all carry the profile list's timestamp,
+      // so tie-break on the coordinate to keep the order stable across
+      // loads rather than leaving equal timestamps to a non-stable sort.
+      return left.definitionCoordinate.compareTo(right.definitionCoordinate);
+    });
     return List<BadgeAwardViewData>.unmodifiable(viewData);
   }
 

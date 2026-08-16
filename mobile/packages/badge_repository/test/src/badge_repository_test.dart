@@ -442,6 +442,34 @@ void main() {
         expect(awards, hasLength(1));
         expect(awards.single.hasAwardEvent, isTrue);
       });
+
+      test('lists multiple orphan pins in a stable coordinate order', () async {
+        final issuer = _pubkey(3);
+        final coordA = '30009:$issuer:aaa';
+        final coordB = '30009:$issuer:bbb';
+        _stubQueries(nostrClient, {
+          'awarded': const [],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(54),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordB],
+                ['e', _eventId(55)],
+                ['a', coordA],
+                ['e', _eventId(56)],
+              ],
+            ),
+          ],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(
+          awards.map((award) => award.definitionCoordinate),
+          [coordA, coordB],
+        );
+      });
     });
 
     test('hideAward stores a local per-user dismissal', () async {
