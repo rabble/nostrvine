@@ -1469,12 +1469,22 @@ internal class DivineVideoPlayerInstance(
 
         override fun onPlayerError(error: PlaybackException) {
             val currentUri = player?.currentMediaItem?.localConfiguration?.uri
-            DivineVideoPlayerLog.error(
+            val nativeErrorCode = errorCodeFor(error)
+            val message =
                 "Player $playerId playback error [${error.errorCodeName}]: " +
                     "source=${currentUri ?: "unknown"} " +
-                    (error.message ?: "unknown"),
-                name = "DivineVideoPlayer.Playback",
-            )
+                    (error.message ?: "unknown")
+            if (nativeErrorCode == "media_processing") {
+                DivineVideoPlayerLog.warning(
+                    message,
+                    name = "DivineVideoPlayer.Playback",
+                )
+            } else {
+                DivineVideoPlayerLog.error(
+                    message,
+                    name = "DivineVideoPlayer.Playback",
+                )
+            }
             // A transient decoder failure may recover on a re-prepare; keep the
             // pending setClips result open so a successful retry still resolves
             // it (or the 10 s watchdog fires if every retry fails).
@@ -1485,7 +1495,7 @@ internal class DivineVideoPlayerInstance(
             pendingSetClipsResult?.error(
                 "PLAYER_ERROR",
                 error.message ?: "Unknown playback error",
-                mapOf("errorCode" to errorCodeFor(error)),
+                mapOf("errorCode" to nativeErrorCode),
             )
             pendingSetClipsResult = null
             sendStateUpdate()

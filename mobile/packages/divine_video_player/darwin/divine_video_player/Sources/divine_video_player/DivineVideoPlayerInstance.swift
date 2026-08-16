@@ -327,11 +327,20 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.errorCode = self.errorCode(for: error as NSError)
                 self.clearSetClipsTimeout()
                 self.clearBufferingWatchdog(resetReported: true)
-                DivineVideoPlayerLog.shared.error(
+                let message =
                     "Player \(self.playerId) composition failed: "
-                        + "\(error.localizedDescription)",
-                    name: "DivineVideoPlayer.Load"
-                )
+                    + "\(error.localizedDescription)"
+                if self.errorCode == "media_processing" {
+                    DivineVideoPlayerLog.shared.warning(
+                        message,
+                        name: "DivineVideoPlayer.Load"
+                    )
+                } else {
+                    DivineVideoPlayerLog.shared.error(
+                        message,
+                        name: "DivineVideoPlayer.Load"
+                    )
+                }
                 self.sendStateUpdate()
                 result(
                     FlutterError(
@@ -1127,11 +1136,20 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     } else {
                         self.errorCode = nil
                     }
-                    DivineVideoPlayerLog.shared.error(
+                    let message =
                         "Player \(self.playerId) item failed: "
-                            + "\(item.error?.localizedDescription ?? "unknown")",
-                        name: "DivineVideoPlayer.Playback"
-                    )
+                        + "\(item.error?.localizedDescription ?? "unknown")"
+                    if self.errorCode == "media_processing" {
+                        DivineVideoPlayerLog.shared.warning(
+                            message,
+                            name: "DivineVideoPlayer.Playback"
+                        )
+                    } else {
+                        DivineVideoPlayerLog.shared.error(
+                            message,
+                            name: "DivineVideoPlayer.Playback"
+                        )
+                    }
                 default:
                     break
                 }
