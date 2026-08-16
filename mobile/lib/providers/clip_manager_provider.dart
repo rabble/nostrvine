@@ -90,15 +90,17 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
     // Never seed a window shorter than the floor the editor's own trim paths
     // enforce, or a multi-select whose earlier clips already fill the budget
-    // lands the rest as zero-length strips nobody can grab a handle on.
-    final targetPlaybackDuration =
-        remainingDuration > TimelineConstants.minTrimDuration
-        ? remainingDuration
+    // lands the rest as zero-length strips nobody can grab a handle on. The
+    // floor is applied in source time because that is what those paths clamp
+    // (`clip.duration - minTrimDuration`), so it holds at any playback speed.
+    final budgetSourceDuration = clip.playbackDurationToSourceDuration(
+      remainingDuration,
+    );
+    final visibleSourceDuration =
+        budgetSourceDuration > TimelineConstants.minTrimDuration
+        ? budgetSourceDuration
         : TimelineConstants.minTrimDuration;
 
-    final visibleSourceDuration = clip.playbackDurationToSourceDuration(
-      targetPlaybackDuration,
-    );
     final trimEnd = clip.duration - clip.trimStart - visibleSourceDuration;
     if (trimEnd <= clip.trimEnd) return clip;
 

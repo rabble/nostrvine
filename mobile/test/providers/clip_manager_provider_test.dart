@@ -1144,6 +1144,30 @@ void main() {
         );
       });
 
+      test('applies the trim floor in source time on a slowed clip', () {
+        // The floor has to be applied to the source window, not the playback
+        // window: at 0.5x a 60ms playback window is only 30ms of source, which
+        // is under the floor ClipEditorBloc clamps trims to.
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: _budgetClip(
+            id: 'slow',
+            duration: const Duration(seconds: 60),
+            playbackSpeed: 0.5,
+          ),
+          existingClips: [
+            _budgetClip(
+              id: 'fills',
+              duration: VideoEditorConstants.maxDuration,
+            ),
+          ],
+        );
+
+        expect(
+          seeded.trimmedDuration,
+          equals(TimelineConstants.minTrimDuration),
+        );
+      });
+
       test('leaves a frames-only stop-motion clip untouched', () {
         // The frames strip lays out from the frame holds and never reads
         // trimEnd, so trimming here would drop the composition total below
