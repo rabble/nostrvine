@@ -3,6 +3,8 @@
 // ABOUTME: snackbar, disabled-when-repo-null behaviour, and that toggling a
 // ABOUTME: notification-type switch persists the flipped preference.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,10 +67,114 @@ void main() {
       );
     }
 
+    testWidgets('shows success snackbar when markAllAsRead succeeds', (
+      tester,
+    ) async {
+      when(mockRepo.markAllAsRead).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildSubject(repo: mockRepo));
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(NotificationSettingsScreen)),
+      );
+
+      await scrollUntilTappable(
+        tester,
+        find.text(l10n.notificationSettingsMarkAllAsRead),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      verify(mockRepo.markAllAsRead).called(1);
+      expect(
+        find.text(l10n.notificationSettingsAllMarkedAsRead),
+        findsOneWidget,
+      );
+      final banner = tester.widget<DivineSnackbarContainer>(
+        find.byType(DivineSnackbarContainer),
+      );
+      expect(banner.error, isFalse);
+    });
+
+    testWidgets('shows failure snackbar when markAllAsRead throws', (
+      tester,
+    ) async {
+      when(mockRepo.markAllAsRead).thenThrow(Exception('server fail'));
+
+      await tester.pumpWidget(buildSubject(repo: mockRepo));
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(NotificationSettingsScreen)),
+      );
+
+      await scrollUntilTappable(
+        tester,
+        find.text(l10n.notificationSettingsMarkAllAsRead),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      verify(mockRepo.markAllAsRead).called(1);
+      expect(
+        find.text(l10n.notificationSettingsMarkAllAsReadFailed),
+        findsOneWidget,
+      );
+      final banner = tester.widget<DivineSnackbarContainer>(
+        find.byType(DivineSnackbarContainer),
+      );
+      expect(banner.error, isTrue);
+    });
+
+    testWidgets('ignores repeat taps while markAllAsRead is still in flight', (
+      tester,
+    ) async {
+      final inFlight = Completer<void>();
+      var callCount = 0;
+      when(mockRepo.markAllAsRead).thenAnswer((_) {
+        callCount++;
+        return inFlight.future;
+      });
+
+      await tester.pumpWidget(buildSubject(repo: mockRepo));
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(NotificationSettingsScreen)),
+      );
+
+      await scrollUntilTappable(
+        tester,
+        find.text(l10n.notificationSettingsMarkAllAsRead),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
+      await tester.pump();
+      await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
+      await tester.pump();
+
+      expect(callCount, equals(1));
+
+      inFlight.complete();
+      await tester.pumpAndSettle();
+    });
+
     testWidgets(
-      'shows success snackbar when markAllAsRead succeeds',
+      'swaps the action card caret for a spinner while marking as read',
       (tester) async {
-        when(mockRepo.markAllAsRead).thenAnswer((_) async {});
+        final inFlight = Completer<void>();
+        when(mockRepo.markAllAsRead).thenAnswer((_) => inFlight.future);
 
         await tester.pumpWidget(buildSubject(repo: mockRepo));
         await tester.pumpAndSettle();
@@ -84,54 +190,32 @@ void main() {
           scrollable: find.byType(Scrollable).first,
         );
 
+        final actionTile = find
+            .ancestor(
+              of: find.text(l10n.notificationSettingsMarkAllAsRead),
+              matching: find.byType(ListTile),
+            )
+            .first;
+        final spinner = find.descendant(
+          of: actionTile,
+          matching: find.byType(CircularProgressIndicator),
+        );
+
+        expect(spinner, findsNothing);
+
         await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
 
-        verify(mockRepo.markAllAsRead).called(1);
+        expect(spinner, findsOneWidget);
         expect(
-          find.text(l10n.notificationSettingsAllMarkedAsRead),
-          findsOneWidget,
+          tester.getSemantics(spinner).getSemanticsData().label,
+          equals(l10n.commonLoading),
         );
-        final banner = tester.widget<DivineSnackbarContainer>(
-          find.byType(DivineSnackbarContainer),
-        );
-        expect(banner.error, isFalse);
-      },
-    );
 
-    testWidgets(
-      'shows failure snackbar when markAllAsRead throws',
-      (tester) async {
-        when(mockRepo.markAllAsRead).thenThrow(Exception('server fail'));
-
-        await tester.pumpWidget(buildSubject(repo: mockRepo));
+        inFlight.complete();
         await tester.pumpAndSettle();
 
-        final l10n = AppLocalizations.of(
-          tester.element(find.byType(NotificationSettingsScreen)),
-        );
-
-        await scrollUntilTappable(
-          tester,
-          find.text(l10n.notificationSettingsMarkAllAsRead),
-          200,
-          scrollable: find.byType(Scrollable).first,
-        );
-
-        await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        verify(mockRepo.markAllAsRead).called(1);
-        expect(
-          find.text(l10n.notificationSettingsMarkAllAsReadFailed),
-          findsOneWidget,
-        );
-        final banner = tester.widget<DivineSnackbarContainer>(
-          find.byType(DivineSnackbarContainer),
-        );
-        expect(banner.error, isTrue);
+        expect(spinner, findsNothing);
       },
     );
 
