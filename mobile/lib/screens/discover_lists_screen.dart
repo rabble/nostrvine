@@ -270,7 +270,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       );
 
       await for (final lists in stream) {
-        if (!mounted) continue;
+        if (!mounted) break;
 
         // Add new lists that we don't already have
         final newLists = lists
