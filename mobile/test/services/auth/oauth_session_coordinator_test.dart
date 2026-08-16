@@ -187,14 +187,15 @@ void main() {
         'refresh',
         () async {
           when(oauthClient.getSession).thenAnswer((_) async => null);
+          final gate = Completer<KeycastSession?>();
           when(
             () => oauthClient.refreshSession(
               userPubkey: any(named: 'userPubkey'),
             ),
-          ).thenAnswer((_) => Completer<KeycastSession?>().future);
+          ).thenAnswer((_) => gate.future);
 
           final coordinator = build();
-          unawaited(coordinator.refreshSession());
+          final first = coordinator.refreshSession();
 
           final joined = await coordinator
               .refreshSession(
@@ -208,6 +209,8 @@ void main() {
               );
 
           expect(joined, isNull);
+          gate.complete(_session());
+          expect(await first, isNotNull);
           verify(
             () => oauthClient.refreshSession(
               userPubkey: any(named: 'userPubkey'),
