@@ -209,7 +209,6 @@ class RelayPool {
   /// either answered or refused. But for [requireAllRelaysSettled], a refusal is
   /// not evidence that the relay had no events. A caller about to replace a
   /// replaceable event must treat that as inconclusive, the same as silence.
-  final Set<String> _queryClosedWithoutAnswer = {};
 
   /// Track publishes awaiting OK confirmations (per event id).
   final Map<String, PublishTracker> _pendingPublishes = {};
@@ -845,12 +844,10 @@ class RelayPool {
   void _fireQueryCompleteIfSettled(
     String subId, {
     bool afterTerminalFrame = false,
-    bool afterClosedWithoutAnswer = false,
   }) {
     final callback = _queryCompleteCallbacks[subId];
     if (callback == null) return;
     if (afterTerminalFrame) _queryAnswered.add(subId);
-    if (afterClosedWithoutAnswer) _queryClosedWithoutAnswer.add(subId);
     if (_queryFanoutInProgress.contains(subId)) return;
 
     final list = [
@@ -870,16 +867,15 @@ class RelayPool {
     }
 
     // Nothing is pending — but for a full-settlement caller that only means
-    // the query is finished if some relay actually answered it, and no relay
-    // refused to answer. When every `relayDoQuery` send failed, no relay ever
-    // saved the query, so this sweep finds nothing outstanding and would hand
-    // back an empty box no relay contributed to. Likewise, a relay `CLOSED` the
-    // REQ has made no data claim. A caller about to replace what it read cannot
-    // tell either apart from "every relay says there is nothing", so let it run
-    // out to its own timeout instead.
+    // the query is finished if at least one relay actually answered it with EOSE.
+    // EOSE is proof the relay processed the REQ and returned (possibly empty) data.
+    // If no relay sent EOSE, we cannot distinguish between "all relays disconnected"
+    // and "every relay says there is nothing", so let the caller run out to its own
+    // timeout instead. CLOSED alone does not block: a relay disconnecting (CLOSED
+    // without prior EOSE) doesn't prove the data is absent, only that we couldn't
+    // ask this relay. Completion proceeds once any relay proves it answered with EOSE.
     if (_queriesRequiringFullSettlement.contains(subId) &&
-        (!_queryAnswered.contains(subId) ||
-            _queryClosedWithoutAnswer.contains(subId))) {
+        !_queryAnswered.contains(subId)) {
       return;
     }
 
@@ -952,7 +948,6 @@ class RelayPool {
   void _completeQuery(String subId, Function callback) {
     _queryCompleteCallbacks.remove(subId);
     _queryAnswered.remove(subId);
-    _queryClosedWithoutAnswer.remove(subId);
     _queriesRequiringFullSettlement.remove(subId);
     _querySettleTimers.remove(subId)?.cancel();
     _releaseQuery(subId);
@@ -1647,11 +1642,7 @@ class RelayPool {
         // later query on that socket pays its full budget.
         if (!_hasLiveAuthHandshake(relay)) _closeAuthGate(relay);
       } else if (relay.discardQuery(subscriptionId)) {
-        _fireQueryCompleteIfSettled(
-          subscriptionId,
-          afterTerminalFrame: true,
-          afterClosedWithoutAnswer: true,
-        );
+        _fireQueryCompleteIfSettled(subscriptionId, afterTerminalFrame: false);
       }
     }
   }
@@ -1843,7 +1834,6 @@ class RelayPool {
       _queryCompleteCallbacks.remove(id);
       _queryFanoutInProgress.remove(id);
       _queryAnswered.remove(id);
-      _queryClosedWithoutAnswer.remove(id);
       _queriesRequiringFullSettlement.remove(id);
       _querySettleTimers.remove(id)?.cancel();
       _releaseQuery(id);
