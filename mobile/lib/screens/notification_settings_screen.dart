@@ -312,9 +312,12 @@ class _ActionCard extends StatelessWidget {
       trailing: isBusy
           ? SizedBox.square(
               dimension: DivineIcon.scaleSize(context, 24),
-              child: const CircularProgressIndicator(
+              child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(VineTheme.primary),
+                semanticsLabel: context.l10n.commonLoading,
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  VineTheme.primary,
+                ),
               ),
             )
           : const DivineIcon(
