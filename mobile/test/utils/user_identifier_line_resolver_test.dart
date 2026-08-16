@@ -87,6 +87,17 @@ void main() {
           equals('Mutual'),
         );
       });
+
+      test('falls through when the handle is only whitespace', () {
+        expect(
+          resolve(handle: '   ', relationship: FollowRelationship.mutual),
+          equals('Mutual'),
+        );
+      });
+
+      test('trims surrounding whitespace off a usable handle', () {
+        expect(resolve(handle: '  @jack  '), equals('@jack'));
+      });
     });
 
     group('social proof fallback', () {

@@ -33,8 +33,11 @@ String? resolveUserIdentifierLine({
 }) {
   final impersonationRisk =
       verificationStatus == Nip05VerificationStatus.failed && !isOwnProfile;
-  if (handle != null && handle.isNotEmpty && !impersonationRisk) {
-    return handle;
+  // Trim before the emptiness test: a kind-0 nip05 of only whitespace is not
+  // a usable handle, and sanitizeForDisplay does not strip it.
+  final trimmedHandle = handle?.trim();
+  if (trimmedHandle != null && trimmedHandle.isNotEmpty && !impersonationRisk) {
+    return trimmedHandle;
   }
 
   final relationshipLabel = switch (relationship) {
