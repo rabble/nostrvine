@@ -94,7 +94,9 @@ class _AboutTextState extends State<_AboutText> {
                     _isExpanded
                         ? context.l10n.profileShowLess
                         : context.l10n.profileShowMore,
-                    style: VineTheme.bodySmallFont(color: VineTheme.vineGreen),
+                    style: VineTheme.bodySmallFont(
+                      color: context.vineColors.accentPositive,
+                    ),
                   ),
                 ),
               ),

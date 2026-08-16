@@ -23,7 +23,7 @@ class AgeVerificationDialog extends StatelessWidget {
     backgroundColor: context.vineColors.background,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(color: VineTheme.vineGreen, width: 2),
+      side: BorderSide(color: context.vineColors.accentPositive, width: 2),
     ),
     child: Container(
       padding: const EdgeInsets.all(24),
@@ -31,9 +31,9 @@ class AgeVerificationDialog extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.user,
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
             size: 64,
           ),
           const SizedBox(height: 16),

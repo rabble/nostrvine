@@ -635,7 +635,7 @@ class _CommentVoteButtons extends StatelessWidget {
                     icon: DivineIconName.arrowFatUp,
                     size: 16,
                     color: voteState.isUpvoted
-                        ? VineTheme.vineGreen
+                        ? context.vineColors.accentPositive
                         : context.vineColors.onSurfaceMuted,
                   ),
                 ),
@@ -649,7 +649,7 @@ class _CommentVoteButtons extends StatelessWidget {
                   netScore.formatScore,
                   style: VineTheme.labelMediumFont(
                     color: voteState.isUpvoted
-                        ? VineTheme.vineGreen
+                        ? context.vineColors.accentPositive
                         : voteState.isDownvoted
                         ? VineTheme.likeRed
                         : context.vineColors.onSurfaceMuted,

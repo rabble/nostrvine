@@ -300,9 +300,9 @@ class _FontField extends StatelessWidget {
                   ),
                 ),
               ),
-              const DivineIcon(
+              DivineIcon(
                 icon: DivineIconName.caretDown,
-                color: VineTheme.primary,
+                color: context.vineColors.accentPositive,
               ),
             ],
           ),
@@ -390,7 +390,7 @@ class _ColorSwatch extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: selected
-                  ? VineTheme.primary
+                  ? context.vineColors.accentPositive
                   : context.vineColors.outlineMuted,
               width: 2,
             ),
@@ -478,7 +478,7 @@ class _AnimationChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: selected
-                  ? VineTheme.primary
+                  ? context.vineColors.accentPositive
                   : context.vineColors.outlineMuted,
               width: 2,
             ),
@@ -487,7 +487,7 @@ class _AnimationChip extends StatelessWidget {
             label,
             style: VineTheme.bodyMediumFont(
               color: selected
-                  ? VineTheme.primary
+                  ? context.vineColors.accentPositive
                   : context.vineColors.onSurfaceVariant,
             ),
           ),

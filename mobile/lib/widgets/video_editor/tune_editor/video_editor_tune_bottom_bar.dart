@@ -187,7 +187,7 @@ class _TuneChip extends StatelessWidget {
             borderRadius: .circular(16),
             border: .all(
               color: isSelected
-                  ? VineTheme.primary
+                  ? context.vineColors.accentPositive
                   : context.vineColors.outlineMuted,
               width: 2,
             ),
@@ -202,7 +202,7 @@ class _TuneChip extends StatelessWidget {
                   label,
                   style: VineTheme.bodySmallFont(
                     color: isSelected
-                        ? VineTheme.primary
+                        ? context.vineColors.accentPositive
                         : context.vineColors.onSurface,
                   ),
                 ),

@@ -96,8 +96,10 @@ class _HashtagSearchLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    return Center(
+      child: CircularProgressIndicator(
+        color: context.vineColors.accentPositive,
+      ),
     );
   }
 }
@@ -173,10 +175,12 @@ class _HashtagSearchResultsListState extends State<_HashtagSearchResultsList>
             ],
           ),
           if (widget.isLoadingMore)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
-                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                child: CircularProgressIndicator(
+                  color: context.vineColors.accentPositive,
+                ),
               ),
             ),
         ],

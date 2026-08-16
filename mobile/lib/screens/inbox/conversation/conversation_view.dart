@@ -630,9 +630,10 @@ class _ConversationContent extends StatelessWidget {
           (status: state.status, messages: state.displayedMessages),
       builder: (context, selected) {
         return switch (selected.status) {
-          ConversationStatus.initial ||
-          ConversationStatus.loading => const Center(
-            child: CircularProgressIndicator(color: VineTheme.primary),
+          ConversationStatus.initial || ConversationStatus.loading => Center(
+            child: CircularProgressIndicator(
+              color: context.vineColors.accentPositive,
+            ),
           ),
           ConversationStatus.error => Center(
             child: Text(

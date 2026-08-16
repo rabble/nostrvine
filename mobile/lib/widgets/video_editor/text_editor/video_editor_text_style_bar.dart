@@ -220,15 +220,17 @@ class _FontSelectorButton extends StatelessWidget {
                   child: Text(
                     display,
                     overflow: .ellipsis,
-                    style: VineTheme.titleMediumFont(color: VineTheme.primary),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.accentPositive,
+                    ),
                   ),
                 ),
                 AnimatedRotation(
                   turns: isOpen ? 0.5 : 0,
                   duration: const Duration(milliseconds: 200),
-                  child: const DivineIcon(
+                  child: DivineIcon(
                     icon: .caretDown,
-                    color: VineTheme.primary,
+                    color: context.vineColors.accentPositive,
                   ),
                 ),
               ],

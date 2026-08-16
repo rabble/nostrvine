@@ -215,7 +215,7 @@ class _ActionCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bgColor = VineTheme.vineGreen.withValues(alpha: 0.15);
-    const iconColor = VineTheme.vineGreen;
+    final iconColor = context.vineColors.accentPositive;
 
     return Semantics(
       button: true,
@@ -242,7 +242,7 @@ class _ActionCircle extends StatelessWidget {
                       // Same footprint as the icon it replaces, so the row does
                       // not reflow while the save is in flight. Mirrors the
                       // send button in share_sheet_message_input.dart.
-                      ? const SizedBox.square(
+                      ? SizedBox.square(
                           dimension: _iconSize,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,

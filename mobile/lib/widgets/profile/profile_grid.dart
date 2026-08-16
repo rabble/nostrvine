@@ -599,7 +599,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     );
 
     final content = RefreshIndicator(
-      color: VineTheme.primary,
+      color: context.vineColors.accentPositive,
       backgroundColor: context.vineColors.surfaceContainer,
       notificationPredicate: (_) => true,
       onRefresh: _refreshProfileContent,

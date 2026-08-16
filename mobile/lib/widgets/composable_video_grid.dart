@@ -116,8 +116,10 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
 
     return brokenTrackerAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      loading: () => Center(
+        child: CircularProgressIndicator(
+          color: context.vineColors.accentPositive,
+        ),
       ),
       error: (error, stack) {
         // Fallback: show all videos if tracker fails
@@ -300,9 +302,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   color: sheetContext.vineColors.card,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const DivineIcon(
+                child: DivineIcon(
                   icon: DivineIconName.pencilSimple,
-                  color: VineTheme.vineGreen,
+                  color: sheetContext.vineColors.accentPositive,
                   size: 20,
                 ),
               ),

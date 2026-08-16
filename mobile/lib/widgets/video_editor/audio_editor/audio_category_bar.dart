@@ -76,7 +76,7 @@ class _Chip extends StatelessWidget {
             label,
             style: VineTheme.titleSmallFont(
               color: isSelected
-                  ? VineTheme.primary
+                  ? context.vineColors.accentPositive
                   : context.vineColors.onSurfaceVariant,
             ),
           ),

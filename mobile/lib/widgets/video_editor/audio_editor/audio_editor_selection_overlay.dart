@@ -200,6 +200,7 @@ class _AudioPlaybackProgressButtonState
                             foregroundPainter: _CircularProgressBorderPainter(
                               progress: progress,
                               borderRadius: _buttonBorderRadius,
+                              color: context.vineColors.accentPositive,
                             ),
                             child: Center(
                               child: DivineIconButton(
@@ -231,10 +232,12 @@ class _CircularProgressBorderPainter extends CustomPainter {
   const _CircularProgressBorderPainter({
     required this.progress,
     required this.borderRadius,
+    required this.color,
   });
 
   final double progress;
   final double borderRadius;
+  final Color color;
   static const double _innerInset = 1;
 
   @override
@@ -245,7 +248,7 @@ class _CircularProgressBorderPainter extends CustomPainter {
     }
 
     final strokePaint = Paint()
-      ..color = VineTheme.primary
+      ..color = color
       ..style = .stroke
       ..strokeWidth = 2
       ..strokeCap = .round;
@@ -303,6 +306,7 @@ class _CircularProgressBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(_CircularProgressBorderPainter oldDelegate) {
     return progress != oldDelegate.progress ||
-        borderRadius != oldDelegate.borderRadius;
+        borderRadius != oldDelegate.borderRadius ||
+        color != oldDelegate.color;
   }
 }

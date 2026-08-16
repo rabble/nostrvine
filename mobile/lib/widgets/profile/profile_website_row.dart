@@ -46,15 +46,17 @@ class ProfileWebsiteRow extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 6,
             children: [
-              const DivineIcon(
+              DivineIcon(
                 icon: DivineIconName.globe,
                 size: 14,
-                color: VineTheme.vineGreen,
+                color: context.vineColors.accentPositive,
               ),
               Flexible(
                 child: Text(
                   displayUrl,
-                  style: VineTheme.bodySmallFont(color: VineTheme.vineGreen),
+                  style: VineTheme.bodySmallFont(
+                    color: context.vineColors.accentPositive,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

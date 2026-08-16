@@ -33,7 +33,7 @@ class LegalScreen extends StatelessWidget {
                 leading: Icon(
                   Icons.description,
                   size: DivineIcon.scaleSize(context, 24),
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 title: l10n.legalTermsOfService,
                 subtitle: l10n.legalTermsOfServiceSubtitle,
@@ -49,7 +49,7 @@ class LegalScreen extends StatelessWidget {
                 leading: Icon(
                   Icons.privacy_tip,
                   size: DivineIcon.scaleSize(context, 24),
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 title: l10n.legalPrivacyPolicy,
                 subtitle: l10n.legalPrivacyPolicySubtitle,
@@ -63,7 +63,7 @@ class LegalScreen extends StatelessWidget {
               ),
               DivineListTile(
                 icon: DivineIconName.shieldCheck,
-                iconColor: VineTheme.vineGreen,
+                iconColor: context.vineColors.accentPositive,
                 title: l10n.legalSafetyStandards,
                 subtitle: l10n.legalSafetyStandardsSubtitle,
                 trailingIcon: DivineIconName.arrowUpRight,
@@ -78,7 +78,7 @@ class LegalScreen extends StatelessWidget {
                 leading: Icon(
                   Icons.copyright,
                   size: DivineIcon.scaleSize(context, 24),
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 title: l10n.legalDmca,
                 subtitle: l10n.legalDmcaSubtitle,
@@ -94,7 +94,7 @@ class LegalScreen extends StatelessWidget {
                 leading: Icon(
                   Icons.source,
                   size: DivineIcon.scaleSize(context, 24),
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 title: l10n.legalOpenSourceLicenses,
                 subtitle: l10n.legalOpenSourceLicensesSubtitle,

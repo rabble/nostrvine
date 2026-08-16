@@ -124,17 +124,20 @@ class _ResultsBody extends StatelessWidget {
     return BlocBuilder<NewMessageSearchBloc, NewMessageSearchState>(
       builder: (context, state) {
         return switch (state.status) {
-          NewMessageSearchStatus.loadingContacts => const Center(
-            child: CircularProgressIndicator(color: VineTheme.primary),
+          NewMessageSearchStatus.loadingContacts => Center(
+            child: CircularProgressIndicator(
+              color: context.vineColors.accentPositive,
+            ),
           ),
           NewMessageSearchStatus.idle => _UserProfileList(
             profiles: state.contacts,
             emptyMessage: l10n.newMessageNoContacts,
           ),
-          NewMessageSearchStatus.searching when state.results.isEmpty =>
-            const Center(
-              child: CircularProgressIndicator(color: VineTheme.primary),
+          NewMessageSearchStatus.searching when state.results.isEmpty => Center(
+            child: CircularProgressIndicator(
+              color: context.vineColors.accentPositive,
             ),
+          ),
           NewMessageSearchStatus.searching => _UserProfileList(
             profiles: state.results,
           ),

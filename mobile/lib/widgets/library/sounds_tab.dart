@@ -675,9 +675,9 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.musicNote,
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
             size: 20,
           ),
           const SizedBox(width: 8),

@@ -536,7 +536,9 @@ class _ReportFormBody extends StatelessWidget {
                 children: [
                   Text(
                     l10n.reportDetailsRequired,
-                    style: VineTheme.labelSmallFont(color: VineTheme.vineGreen),
+                    style: VineTheme.labelSmallFont(
+                      color: context.vineColors.accentPositive,
+                    ),
                   ),
                   _CappedDetailsField(
                     fieldKey: detailsFieldKey,
@@ -630,7 +632,7 @@ class _ReasonCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isSelected
-                  ? VineTheme.vineGreen
+                  ? context.vineColors.accentPositive
                   : context.vineColors.surfaceContainer,
               width: 1.5,
             ),
@@ -681,7 +683,10 @@ class _RadioIndicator extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: isSelected ? VineTheme.vineGreen : VineTheme.transparent,
-          border: Border.all(color: VineTheme.vineGreen, width: 2),
+          border: Border.all(
+            color: context.vineColors.accentPositive,
+            width: 2,
+          ),
         ),
         child: isSelected
             ? Center(

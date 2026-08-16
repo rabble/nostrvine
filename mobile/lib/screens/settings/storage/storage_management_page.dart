@@ -268,7 +268,9 @@ class _CacheLimitControl extends StatelessWidget {
             ),
             Text(
               _formatBytes(limit),
-              style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.accentPositive,
+              ),
             ),
           ],
         ),
@@ -321,7 +323,9 @@ class _LibrarySection extends StatelessWidget {
               status == StorageLibraryStatus.cleaned)
             Text(
               l10n.settingsStorageLibraryHealthy,
-              style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.accentPositive,
+              ),
             )
           else if (status == StorageLibraryStatus.scanned && brokenCount > 0)
             Text(
@@ -424,7 +428,9 @@ class _RepairSection extends StatelessWidget {
           else if (status == StorageRecoveryStatus.recovered)
             Text(
               l10n.settingsStorageRepairSuccess,
-              style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.accentPositive,
+              ),
             )
           else if (status == StorageRecoveryStatus.failure)
             Text(

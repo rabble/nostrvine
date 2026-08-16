@@ -68,7 +68,7 @@ class VideoMetadataHelpSheet extends StatelessWidget {
                       context.l10n.videoMetadataGotItButton,
                       textAlign: TextAlign.center,
                       style: VineTheme.titleMediumFont(
-                        color: VineTheme.primary,
+                        color: context.vineColors.accentPositive,
                       ),
                     ),
                   ),

@@ -305,16 +305,20 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
               ),
               decoration: InputDecoration(
                 hintText: context.l10n.authBunkerUrlHint,
-                hintStyle: const TextStyle(color: VineTheme.vineGreen),
+                hintStyle: TextStyle(
+                  color: context.vineColors.accentPositive,
+                ),
                 filled: true,
                 fillColor: context.vineColors.surfaceContainer,
                 enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: VineTheme.vineGreen),
+                  borderSide: BorderSide(
+                    color: context.vineColors.accentPositive,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(
-                    color: VineTheme.vineGreen,
+                  borderSide: BorderSide(
+                    color: context.vineColors.accentPositive,
                     width: 2,
                   ),
                   borderRadius: BorderRadius.circular(16),
@@ -637,12 +641,12 @@ class _StatusIndicator extends StatelessWidget {
     return Center(
       child: Column(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: VineTheme.vineGreen,
+              color: context.vineColors.accentPositive,
             ),
           ),
           const SizedBox(height: 12),
@@ -698,25 +702,25 @@ class _ActionBar extends StatelessWidget {
               spacing: 10,
               children: [
                 _ActionButton(
-                  icon: const DivineIcon(
+                  icon: DivineIcon(
                     icon: DivineIconName.linkSimple,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   label: context.l10n.authCopyUrl,
                   onTap: isLoading ? null : onCopyUrl,
                 ),
                 _ActionButton(
-                  icon: const DivineIcon(
+                  icon: DivineIcon(
                     icon: DivineIconName.shareFat,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   label: context.l10n.authShare,
                   onTap: isLoading ? null : onShareUrl,
                 ),
                 _ActionButton(
-                  icon: const DivineIcon(
+                  icon: DivineIcon(
                     icon: DivineIconName.plus,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   label: context.l10n.authAddBunker,
                   onTap: isLoading ? null : onAddBunker,
@@ -759,8 +763,8 @@ class _ActionButton extends StatelessWidget {
             icon,
             Text(
               label,
-              style: const TextStyle(
-                color: VineTheme.vineGreen,
+              style: TextStyle(
+                color: context.vineColors.accentPositive,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -865,23 +869,23 @@ class _SignerRow extends StatelessWidget {
               ),
             ),
           ),
-          _checkOrEmpty(android),
+          _checkOrEmpty(context, android),
           const SizedBox(width: 24),
-          _checkOrEmpty(ios),
+          _checkOrEmpty(context, ios),
           const SizedBox(width: 24),
-          _checkOrEmpty(web),
+          _checkOrEmpty(context, web),
         ],
       ),
     );
   }
 
-  Widget _checkOrEmpty(bool supported) {
+  Widget _checkOrEmpty(BuildContext context, bool supported) {
     return SizedBox(
       width: 22,
       child: supported
-          ? const DivineIcon(
+          ? DivineIcon(
               icon: DivineIconName.check,
-              color: VineTheme.vineGreen,
+              color: context.vineColors.accentPositive,
               size: 22,
             )
           : const SizedBox.shrink(),

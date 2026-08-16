@@ -323,7 +323,9 @@ class _SectionIntro extends StatelessWidget {
         appStoreTipPolicy
             ? context.l10n.monetizationTipsSettingsConfiguredCount(configured)
             : context.l10n.monetizationSettingsConfiguredCount(configured),
-        style: VineTheme.bodySmallFont(color: VineTheme.primary),
+        style: VineTheme.bodySmallFont(
+          color: context.vineColors.accentPositive,
+        ),
       ),
     );
   }

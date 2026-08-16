@@ -158,10 +158,10 @@ class _GlobalErrorWidget extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'debug info',
                           style: TextStyle(
-                            color: VineTheme.vineGreen,
+                            color: context.vineColors.accentPositive,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             decoration: TextDecoration.none,

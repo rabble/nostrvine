@@ -322,7 +322,7 @@ class _WaveState extends State<_Wave> with SingleTickerProviderStateMixin {
         child: CustomPaint(
           painter: _VoiceOverWaveformPainter(
             bars: bars,
-            color: VineTheme.primary,
+            color: context.vineColors.accentPositive,
             scroll: _scroll,
           ),
           size: Size.infinite,

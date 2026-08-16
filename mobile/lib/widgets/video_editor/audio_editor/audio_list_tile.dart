@@ -63,7 +63,7 @@ class _Tile extends StatelessWidget {
           audio.title ?? context.l10n.videoEditorAudioUntitledSound,
           style: VineTheme.titleMediumFont(
             color: isSelected
-                ? VineTheme.primary
+                ? context.vineColors.accentPositive
                 : context.vineColors.onSurface,
           ),
           maxLines: 1,

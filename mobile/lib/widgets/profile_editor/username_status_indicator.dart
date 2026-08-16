@@ -111,15 +111,18 @@ class _UsernameAvailableIndicator extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.checkCircle,
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
             size: 16,
           ),
           const SizedBox(width: 8),
           Text(
             context.l10n.profileSetupUsernameAvailable,
-            style: const TextStyle(color: VineTheme.vineGreen, fontSize: 12),
+            style: TextStyle(
+              color: context.vineColors.accentPositive,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -194,8 +197,8 @@ class _UsernameReservedIndicator extends StatelessWidget {
                 },
                 child: Text(
                   context.l10n.profileSetupContactSupport,
-                  style: const TextStyle(
-                    color: VineTheme.primary,
+                  style: TextStyle(
+                    color: context.vineColors.accentPositive,
                     fontSize: 12,
                   ),
                 ),
@@ -207,8 +210,8 @@ class _UsernameReservedIndicator extends StatelessWidget {
                 ),
                 child: Text(
                   context.l10n.profileSetupCheckAgain,
-                  style: const TextStyle(
-                    color: VineTheme.primary,
+                  style: TextStyle(
+                    color: context.vineColors.accentPositive,
                     fontSize: 12,
                   ),
                 ),
@@ -373,8 +376,10 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
                   color: context.vineColors.surfaceContainer,
                 ),
               ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.vineGreen),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: context.vineColors.accentPositive,
+                ),
               ),
               contentPadding: const EdgeInsets.all(12),
             ),
@@ -404,7 +409,7 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
           },
           child: Text(
             context.l10n.profileSetupCheckAgain,
-            style: const TextStyle(color: VineTheme.vineGreen),
+            style: TextStyle(color: context.vineColors.accentPositive),
           ),
         ),
         FilledButton(

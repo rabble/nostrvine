@@ -550,7 +550,7 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
       children: [
         _OwnVideoActionTile(
           icon: DivineIconName.pencilSimple,
-          iconColor: VineTheme.vineGreen,
+          iconColor: context.vineColors.accentPositive,
           title: context.l10n.videoGridEditVideo,
           subtitle: context.l10n.videoGridEditVideoSubtitle,
           onTap: onEditVideo,
@@ -694,14 +694,14 @@ class _PendingCollaboratorInviteBanner extends ConsumerWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Padding(
-                              padding: EdgeInsets.only(
+                            Padding(
+                              padding: const EdgeInsets.only(
                                 top: _PendingInviteBannerTokens.iconTopPadding,
                               ),
                               child: ExcludeSemantics(
                                 child: DivineIcon(
                                   icon: DivineIconName.envelopeSimple,
-                                  color: VineTheme.vineGreen,
+                                  color: context.vineColors.accentPositive,
                                   size: 20,
                                 ),
                               ),

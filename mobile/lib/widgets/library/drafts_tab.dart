@@ -61,8 +61,10 @@ class DraftsTab extends ConsumerWidget {
       },
       builder: (context, state) {
         return switch (state) {
-          DraftsLibraryInitial() || DraftsLibraryLoading() => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          DraftsLibraryInitial() || DraftsLibraryLoading() => Center(
+            child: CircularProgressIndicator(
+              color: context.vineColors.accentPositive,
+            ),
           ),
           DraftsLibraryError() => Center(
             child: Padding(
@@ -442,13 +444,17 @@ class _DraftStatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: VineTheme.vineGreen.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.45)),
+        border: Border.all(
+          color: context.vineColors.accentPositive.withValues(alpha: 0.45),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         child: Text(
           label,
-          style: VineTheme.labelSmallFont(color: VineTheme.vineGreen),
+          style: VineTheme.labelSmallFont(
+            color: context.vineColors.accentPositive,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

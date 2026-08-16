@@ -190,7 +190,7 @@ class _AppsDirectoryRow extends StatelessWidget {
                           Text(
                             app.tagline,
                             style: VineTheme.labelLargeFont(
-                              color: VineTheme.vineGreen,
+                              color: context.vineColors.accentPositive,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -238,9 +238,9 @@ class _AppsDirectoryIcon extends StatelessWidget {
         color: context.vineColors.background,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const DivineIcon(
+      child: DivineIcon(
         icon: DivineIconName.gridNine,
-        color: VineTheme.vineGreen,
+        color: context.vineColors.accentPositive,
       ),
     );
 

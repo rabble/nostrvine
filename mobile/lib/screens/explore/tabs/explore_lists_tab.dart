@@ -129,9 +129,9 @@ class ExploreListsTab extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          const DivineIcon(
+                          DivineIcon(
                             icon: DivineIconName.playlist,
-                            color: VineTheme.vineGreen,
+                            color: context.vineColors.accentPositive,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -167,9 +167,9 @@ class ExploreListsTab extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          const DivineIcon(
+                          DivineIcon(
                             icon: DivineIconName.user,
-                            color: VineTheme.vineGreen,
+                            color: context.vineColors.accentPositive,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -243,9 +243,9 @@ class _SubscribedListsSection extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.checks,
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -285,9 +285,9 @@ class _SubscribedListsSection extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              const DivineIcon(
+              DivineIcon(
                 icon: DivineIconName.checks,
-                color: VineTheme.vineGreen,
+                color: context.vineColors.accentPositive,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -341,7 +341,11 @@ class _ListKindExplainer extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 8,
       children: [
-        DivineIcon(icon: icon, color: VineTheme.vineGreen, size: 18),
+        DivineIcon(
+          icon: icon,
+          color: context.vineColors.accentPositive,
+          size: 18,
+        ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

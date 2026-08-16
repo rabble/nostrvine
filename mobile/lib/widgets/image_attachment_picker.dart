@@ -237,7 +237,7 @@ class _AddButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: enabled
-                    ? VineTheme.vineGreen.withValues(alpha: 0.7)
+                    ? context.vineColors.accentPositive.withValues(alpha: 0.7)
                     : context.vineColors.mutedText.withValues(alpha: 0.7),
               ),
             ),
@@ -245,7 +245,7 @@ class _AddButton extends StatelessWidget {
               child: DivineIcon(
                 icon: DivineIconName.imagesSquare,
                 color: enabled
-                    ? VineTheme.vineGreen
+                    ? context.vineColors.accentPositive
                     : context.vineColors.mutedText,
               ),
             ),

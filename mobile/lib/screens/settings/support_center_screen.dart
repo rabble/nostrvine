@@ -273,7 +273,10 @@ class _SupportTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: DivineIcon(icon: icon, color: iconColor ?? VineTheme.vineGreen),
+      leading: DivineIcon(
+        icon: icon,
+        color: iconColor ?? context.vineColors.accentPositive,
+      ),
       title: Text(
         title,
         style: VineTheme.titleMediumFont(

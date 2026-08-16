@@ -734,9 +734,9 @@ class _SandboxStatusCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                 ] else ...[
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.shieldCheck,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                     size: 28,
                   ),
                   const SizedBox(height: 20),

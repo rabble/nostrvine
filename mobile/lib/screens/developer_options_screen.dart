@@ -186,9 +186,9 @@ class _DeveloperOptionsScreenState
                     ),
                   ),
                   trailing: isSelected
-                      ? const DivineIcon(
+                      ? DivineIcon(
                           icon: DivineIconName.check,
-                          color: VineTheme.vineGreen,
+                          color: context.vineColors.accentPositive,
                         )
                       : null,
                   onTap: () => _switchEnvironment(context, env, isSelected),
@@ -206,7 +206,9 @@ class _DeveloperOptionsScreenState
                 ),
                 child: Text(
                   context.l10n.devOptionsPageLoadTimes,
-                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.accentPositive,
+                  ),
                 ),
               ),
 
@@ -258,7 +260,7 @@ class _DeveloperOptionsScreenState
                   child: Text(
                     context.l10n.devOptionsSlowestScreens,
                     style: VineTheme.titleMediumFont(
-                      color: VineTheme.vineGreen,
+                      color: context.vineColors.accentPositive,
                     ),
                   ),
                 ),
@@ -301,7 +303,9 @@ class _DeveloperOptionsScreenState
                 ),
                 child: Text(
                   context.l10n.devOptionsVideoPlaybackFormat,
-                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.accentPositive,
+                  ),
                 ),
               ),
 
@@ -322,9 +326,9 @@ class _DeveloperOptionsScreenState
                     ),
                   ),
                   trailing: isSelected
-                      ? const DivineIcon(
+                      ? DivineIcon(
                           icon: DivineIconName.check,
-                          color: VineTheme.vineGreen,
+                          color: context.vineColors.accentPositive,
                         )
                       : null,
                   onTap: () => _switchFormat(option.format),
@@ -341,7 +345,7 @@ class _DeveloperOptionsScreenState
                   child: Text(
                     context.l10n.devOptionsMinorReviewSimulationTitle,
                     style: VineTheme.titleMediumFont(
-                      color: VineTheme.vineGreen,
+                      color: context.vineColors.accentPositive,
                     ),
                   ),
                 ),
@@ -427,7 +431,7 @@ class _DeveloperOptionsScreenState
                   child: Text(
                     context.l10n.devOptionsProtectedMinorSimulationTitle,
                     style: VineTheme.titleMediumFont(
-                      color: VineTheme.vineGreen,
+                      color: context.vineColors.accentPositive,
                     ),
                   ),
                 ),
@@ -502,7 +506,9 @@ class _DeveloperOptionsScreenState
                 ),
                 child: Text(
                   context.l10n.devOptionsInviteAvailabilityTitle,
-                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.accentPositive,
+                  ),
                 ),
               ),
               BlocBuilder<InviteAvailabilityCubit, InviteAvailabilityState>(
@@ -541,9 +547,9 @@ class _DeveloperOptionsScreenState
                         trailing:
                             availability.developerOverride ==
                                 InviteAvailabilityOverride.useServer
-                            ? const DivineIcon(
+                            ? DivineIcon(
                                 icon: DivineIconName.check,
-                                color: VineTheme.vineGreen,
+                                color: context.vineColors.accentPositive,
                               )
                             : null,
                         onTap: () => _setInviteAvailabilityOverride(
@@ -568,9 +574,9 @@ class _DeveloperOptionsScreenState
                         trailing:
                             availability.developerOverride ==
                                 InviteAvailabilityOverride.forceEnabled
-                            ? const DivineIcon(
+                            ? DivineIcon(
                                 icon: DivineIconName.check,
-                                color: VineTheme.vineGreen,
+                                color: context.vineColors.accentPositive,
                               )
                             : null,
                         onTap: () => _setInviteAvailabilityOverride(
@@ -597,9 +603,9 @@ class _DeveloperOptionsScreenState
                         trailing:
                             availability.developerOverride ==
                                 InviteAvailabilityOverride.forceDisabled
-                            ? const DivineIcon(
+                            ? DivineIcon(
                                 icon: DivineIconName.check,
-                                color: VineTheme.vineGreen,
+                                color: context.vineColors.accentPositive,
                               )
                             : null,
                         onTap: () => _setInviteAvailabilityOverride(

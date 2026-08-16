@@ -34,7 +34,7 @@ class VideoEditorDrawItemIndicator extends StatelessWidget {
         child: Container(
           width: VideoEditorConstants.drawItemWidth,
           height: 4,
-          color: VineTheme.primary,
+          color: context.vineColors.accentPositive,
         ),
       ),
     );

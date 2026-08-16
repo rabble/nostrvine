@@ -133,7 +133,10 @@ class _VineBottomSheetSelectionOption extends StatelessWidget {
                   ),
                 ),
                 if (isSelected)
-                  const DivineIcon(icon: .check, color: VineTheme.vineGreen),
+                  DivineIcon(
+                    icon: .check,
+                    color: context.vineColors.accentPositive,
+                  ),
               ],
             ),
           ),

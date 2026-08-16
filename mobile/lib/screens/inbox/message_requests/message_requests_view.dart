@@ -93,8 +93,10 @@ class _RequestList extends StatelessWidget {
       builder: (context, state) {
         if (state.status == ConversationListStatus.initial ||
             state.status == ConversationListStatus.loading) {
-          return const Center(
-            child: CircularProgressIndicator(color: VineTheme.primary),
+          return Center(
+            child: CircularProgressIndicator(
+              color: context.vineColors.accentPositive,
+            ),
           );
         }
 
@@ -104,8 +106,8 @@ class _RequestList extends StatelessWidget {
             return Center(
               child: Semantics(
                 label: context.l10n.inboxRestoringMessages,
-                child: const CircularProgressIndicator(
-                  color: VineTheme.primary,
+                child: CircularProgressIndicator(
+                  color: context.vineColors.accentPositive,
                 ),
               ),
             );

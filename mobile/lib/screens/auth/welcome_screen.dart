@@ -575,7 +575,7 @@ class _TermsNoticeState extends State<_TermsNotice> {
     final linkStyle = TextStyle(
       color: context.vineColors.primaryText,
       decoration: TextDecoration.underline,
-      decorationColor: VineTheme.vineGreen,
+      decorationColor: context.vineColors.accentPositive,
     );
 
     return RichText(
@@ -618,7 +618,7 @@ class _TermsNoticeState extends State<_TermsNotice> {
 /// Inline link that lets under-16 users discover the family-guidance flow.
 ///
 /// Renders "Not 16 yet? That's OK." in white, followed by the tappable
-/// "Here are your choices." call-to-action in [VineTheme.vineGreen].
+/// "Here are your choices." call-to-action in `accentPositive`.
 class _Under16Choices extends StatefulWidget {
   const _Under16Choices();
 
@@ -659,7 +659,9 @@ class _Under16ChoicesState extends State<_Under16Choices> {
             TextSpan(text: context.l10n.authUnder16Prefix),
             TextSpan(
               text: context.l10n.authUnder16ChoicesCta,
-              style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.accentPositive,
+              ),
               recognizer: _ctaRecognizer,
             ),
           ],

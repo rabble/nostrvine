@@ -147,10 +147,10 @@ class _FindPeopleItem extends StatelessWidget {
                     _ShareWithSection._avatarRadius,
                   ),
                 ),
-                child: const Center(
+                child: Center(
                   child: DivineIcon(
                     icon: DivineIconName.search,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                 ),
               ),
@@ -229,7 +229,7 @@ class _ContactItem extends StatelessWidget {
                 user.displayName ?? context.l10n.shareUserFallback,
                 style: TextStyle(
                   color: isSelected
-                      ? VineTheme.vineGreen
+                      ? context.vineColors.accentPositive
                       : context.vineColors.secondaryText,
                   fontSize: 11,
                 ),

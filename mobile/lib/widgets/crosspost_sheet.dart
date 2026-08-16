@@ -279,12 +279,12 @@ class _JobRow extends StatelessWidget {
             spacing: 12,
             children: [
               if (job.status.isPending)
-                const SizedBox(
+                SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                 )
               else
@@ -298,7 +298,7 @@ class _JobRow extends StatelessWidget {
                   color:
                       job.status == CrosspostJobStatus.posted ||
                           job.status == CrosspostJobStatus.skipped
-                      ? VineTheme.vineGreen
+                      ? context.vineColors.accentPositive
                       : VineTheme.error,
                 ),
               Expanded(
@@ -380,12 +380,14 @@ class _ViewPostLink extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: VineTheme.labelLargeFont(color: VineTheme.vineGreen),
+                style: VineTheme.labelLargeFont(
+                  color: context.vineColors.accentPositive,
+                ),
               ),
-              const DivineIcon(
+              DivineIcon(
                 icon: DivineIconName.arrowUpRight,
                 size: 16,
-                color: VineTheme.vineGreen,
+                color: context.vineColors.accentPositive,
               ),
             ],
           ),

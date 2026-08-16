@@ -420,7 +420,7 @@ class _RestoringHistoryIndicator extends StatelessWidget {
           ? LinearProgressIndicator(
               minHeight: 2,
               backgroundColor: context.vineColors.surfaceContainerHigh,
-              color: VineTheme.primary,
+              color: context.vineColors.accentPositive,
               semanticsLabel: context.l10n.inboxRestoringMessages,
             )
           : const SizedBox.shrink(),
@@ -677,12 +677,13 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         // loading spinner and InboxErrorState branches are unaffected.
         const SliverToBoxAdapter(child: _RestorePausedBannerGate()),
         ...switch (status) {
-          ConversationListStatus.initial ||
-          ConversationListStatus.loading => const [
+          ConversationListStatus.initial || ConversationListStatus.loading => [
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
-                child: CircularProgressIndicator(color: VineTheme.primary),
+                child: CircularProgressIndicator(
+                  color: context.vineColors.accentPositive,
+                ),
               ),
             ),
           ],
@@ -899,15 +900,15 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         // can't scroll to trigger a load — leaving a spinner that never
         // resolves.
         if (hasMore && !isFiltering)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
-                    color: VineTheme.primary,
+                    color: context.vineColors.accentPositive,
                     strokeWidth: 2,
                   ),
                 ),

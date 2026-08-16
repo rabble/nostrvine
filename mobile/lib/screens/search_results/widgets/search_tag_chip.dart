@@ -29,7 +29,9 @@ class SearchTagChip extends StatelessWidget {
             children: [
               Text(
                 '#',
-                style: VineTheme.bodyLargeFont(color: VineTheme.vineGreen),
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.accentPositive,
+                ),
               ),
               Flexible(
                 child: Text(

@@ -77,8 +77,10 @@ class RequestPreviewView extends ConsumerWidget {
     // `_resolveParticipants` returns `[]` for a conversation the local
     // database does not have, reaching this same layout without ever failing.
     if (status == RequestPreviewStatus.loading) {
-      return const _UnresolvedRequestScaffold(
-        child: CircularProgressIndicator(color: VineTheme.primary),
+      return _UnresolvedRequestScaffold(
+        child: CircularProgressIndicator(
+          color: context.vineColors.accentPositive,
+        ),
       );
     }
     if (status == RequestPreviewStatus.error || otherPubkey.isEmpty) {
@@ -549,7 +551,9 @@ class _OutlinedActionButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               label,
-              style: VineTheme.titleMediumFont(color: VineTheme.primary),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.accentPositive,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -587,7 +591,9 @@ class _SecondaryActionButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: Text(
                 label,
-                style: VineTheme.titleMediumFont(color: VineTheme.primary),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.accentPositive,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),

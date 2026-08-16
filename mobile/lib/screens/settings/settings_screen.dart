@@ -550,14 +550,14 @@ class _AccountHeader extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               spacing: 8,
                               children: [
-                                const DivineIcon(
+                                DivineIcon(
                                   icon: DivineIconName.shareNetwork,
-                                  color: VineTheme.vineGreen,
+                                  color: context.vineColors.accentPositive,
                                 ),
                                 Text(
                                   context.l10n.settingsInvites,
                                   style: VineTheme.titleMediumFont(
-                                    color: VineTheme.vineGreen,
+                                    color: context.vineColors.accentPositive,
                                   ),
                                 ),
                                 if (inviteState.hasAvailableInvites)
@@ -611,20 +611,20 @@ class _AccountHeader extends StatelessWidget {
                         spacing: 8,
                         children: [
                           if (!hasMultipleAccounts)
-                            const DivineIcon(
+                            DivineIcon(
                               icon: DivineIconName.userPlus,
-                              color: VineTheme.vineGreen,
+                              color: context.vineColors.accentPositive,
                             ),
                           Text(
                             buttonLabel,
                             style: VineTheme.titleMediumFont(
-                              color: VineTheme.vineGreen,
+                              color: context.vineColors.accentPositive,
                             ),
                           ),
                           if (hasMultipleAccounts)
-                            const DivineIcon(
+                            DivineIcon(
                               icon: DivineIconName.caretDown,
-                              color: VineTheme.vineGreen,
+                              color: context.vineColors.accentPositive,
                             ),
                         ],
                       ),
@@ -843,9 +843,9 @@ class _AccountSwitchTile extends ConsumerWidget {
                   ),
                 ),
                 if (isCurrentAccount)
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.check,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
               ],
             ),
@@ -888,9 +888,9 @@ class _AddAccountTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.caretRight,
-                  color: VineTheme.primary,
+                  color: context.vineColors.accentPositive,
                 ),
               ],
             ),

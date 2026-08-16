@@ -327,7 +327,7 @@ class _SoundListItem extends ConsumerWidget {
                           : context.l10n.soundCreditOnly,
                       style: VineTheme.labelSmallFont(
                         color: reuseAllowed
-                            ? VineTheme.vineGreen
+                            ? context.vineColors.accentPositive
                             : context.vineColors.onSurfaceVariant,
                       ),
                     ),

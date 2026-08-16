@@ -116,7 +116,7 @@ class NostrInfoSheetContent extends StatelessWidget {
               onPressed: onDismiss ?? () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 backgroundColor: context.vineColors.surfaceContainer,
-                foregroundColor: VineTheme.vineGreen,
+                foregroundColor: context.vineColors.accentPositive,
                 padding: const EdgeInsets.symmetric(
                   vertical: 12,
                   horizontal: 16,
@@ -131,7 +131,9 @@ class NostrInfoSheetContent extends StatelessWidget {
               ),
               child: Text(
                 context.l10n.nostrInfoGotIt,
-                style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.accentPositive,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

@@ -65,9 +65,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
                 ),
               if (showBluesky)
                 ListTile(
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.cloud_upload,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   title: Text(
                     context.l10n.settingsBlueskyPublishing,
@@ -85,9 +85,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
                 ),
               if (showCrossposting)
                 ListTile(
-                  leading: const DivineIcon(
+                  leading: DivineIcon(
                     icon: DivineIconName.shareNetwork,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   title: Text(
                     context.l10n.settingsCrosspostingTitle,
@@ -112,9 +112,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
               DivineSectionHeader(context.l10n.generalSettingsSectionApp),
               const _AppLanguageTile(),
               ListTile(
-                leading: const DivineIcon(
+                leading: DivineIcon(
                   icon: DivineIconName.sun,
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 title: Text(
                   context.l10n.appearanceSettingsTitle,
@@ -131,9 +131,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
                 onTap: () => context.push(AppearanceSettingsScreen.path),
               ),
               ListTile(
-                leading: const DivineIcon(
+                leading: DivineIcon(
                   icon: DivineIconName.stackSimple,
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 title: Text(
                   context.l10n.settingsStorageTitle,
@@ -148,9 +148,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
               DivineSectionHeader(context.l10n.generalSettingsSectionIdentity),
               if (showAccountCredentials) ...[
                 ListTile(
-                  leading: const DivineIcon(
+                  leading: DivineIcon(
                     icon: DivineIconName.envelope,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   title: Text(
                     context.l10n.accountSettingsChangeEmail,
@@ -167,9 +167,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   onTap: () => context.push(ChangeEmailScreen.path),
                 ),
                 ListTile(
-                  leading: const DivineIcon(
+                  leading: DivineIcon(
                     icon: DivineIconName.lockSimple,
-                    color: VineTheme.vineGreen,
+                    color: context.vineColors.accentPositive,
                   ),
                   title: Text(
                     context.l10n.accountSettingsChangePassword,
@@ -187,9 +187,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
                 ),
               ],
               ListTile(
-                leading: const DivineIcon(
+                leading: DivineIcon(
                   icon: DivineIconName.sealCheck,
-                  color: VineTheme.vineGreen,
+                  color: context.vineColors.accentPositive,
                 ),
                 title: Text(
                   context.l10n.verifyTitle,
@@ -330,9 +330,9 @@ class _AppLanguageTile extends StatelessWidget {
             : LocalePreferenceService.nativeNameFor(locale.languageCode);
 
         return ListTile(
-          leading: const DivineIcon(
+          leading: DivineIcon(
             icon: DivineIconName.globe,
-            color: VineTheme.vineGreen,
+            color: context.vineColors.accentPositive,
           ),
           title: Text(
             context.l10n.settingsAppLanguage,
