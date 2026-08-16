@@ -531,6 +531,13 @@ class OutboxBridges extends StatelessWidget {
   }
 }
 
+/// How long an in-flight video-reply placeholder stays up after a successful
+/// publish, waiting for the relay echo to swap it for the canonical comment
+/// before the bridge rolls it back (#6960 review: 5s was too tight on poor
+/// networks). Public-by-test only — tests pump exactly this duration.
+@visibleForTesting
+const Duration videoReplyRelayEchoGrace = Duration(seconds: 10);
+
 /// Surfaces an in-flight video reply as a pending row on its destination sheet.
 ///
 /// The video-reply flow publishes in the background and navigates to the root
@@ -559,8 +566,6 @@ class VideoReplyPlaceholderBridge extends StatefulWidget {
 
 class _VideoReplyPlaceholderBridgeState
     extends State<VideoReplyPlaceholderBridge> {
-  static const _relayEchoGrace = Duration(seconds: 10);
-
   /// Draft ids this bridge has already inserted a placeholder for.
   ///
   /// Guards re-insertion after the relay echo swaps the placeholder out: the
@@ -635,7 +640,7 @@ class _VideoReplyPlaceholderBridgeState
       _awaitingRelayEcho.add(draftId);
       _relayEchoGraceTimers.putIfAbsent(
         draftId,
-        () => Timer(_relayEchoGrace, () {
+        () => Timer(videoReplyRelayEchoGrace, () {
           if (!mounted) return;
           _awaitingRelayEcho.remove(draftId);
           _inserted.remove(draftId);
