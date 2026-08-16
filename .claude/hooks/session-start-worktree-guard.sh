@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# SessionStart hook: warn when another live Claude Code session already has
-# this git worktree open.
+# SessionStart hook: warn when another live Claude Code session appears to
+# have been launched from this git worktree.
 #
 # Two agent sessions writing one working tree is a silent hazard. In the
 # incident that prompted this hook, one session ran an authorized
@@ -32,9 +32,11 @@
 # it at user scope would get the warning twice.
 #
 # Detection: each live session owns a /tmp/cc-socks*/<pid>.sock socket. For
-# every other live Claude process with a matching socket, resolve its cwd and
-# compare canonical worktree roots. If no socket directory exists on your setup,
-# the hook is a silent no-op. Set CC_SOCK_DIR to test or override the socket dir.
+# every other live Claude process with a matching socket, resolve its process
+# cwd and compare git roots. This is a launch-directory signal: descendant tool
+# shells can cd elsewhere without changing the Claude process cwd. If no socket
+# directory exists on your setup, the hook is a silent no-op. Set CC_SOCK_DIR to
+# test or override the socket dir.
 #
 # Always exits 0. This warns; it never blocks a session.
 
@@ -53,7 +55,6 @@ fi
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
 mine=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -n "$mine" ] || exit 0
-mine=$(cd "$mine" 2>/dev/null && pwd -P) || exit 0
 [ "${#SOCK_DIRS[@]}" -gt 0 ] || exit 0
 
 # Walk up the process tree to find this session's own claude pid, so the
@@ -86,9 +87,8 @@ while read -r pid cm; do
   [ -n "$cwd" ] || continue
 
   their=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || continue
-  their=$(cd "$their" 2>/dev/null && pwd -P) || continue
-  # Different worktrees of the same repo are the pattern agent_workflow.md
-  # asks for, not a collision. Only an identical working tree matters.
+  # Compare the peer Claude process launch-directory git root. This cannot see
+  # the live cwd of shells spawned later by that session.
   [ "$their" = "$mine" ] || continue
 
   count=$((count + 1))
@@ -97,8 +97,6 @@ done < <(ps -eo pid=,comm= 2>/dev/null)
 
 [ "$count" -gt 0 ] || exit 0
 
-command -v jq >/dev/null 2>&1 || exit 0
-
 plural="session"
 verb="has"
 if [ "$count" -ne 1 ]; then
@@ -106,14 +104,20 @@ if [ "$count" -ne 1 ]; then
   verb="have"
 fi
 
-human="⚠️  ${count} other Claude ${plural} already ${verb} this worktree open:
+if ! command -v jq >/dev/null 2>&1; then
+  printf 'Session worktree guard detected %s other Claude %s launched from %s, but jq is unavailable; skipping JSON warning.\n' \
+    "$count" "$plural" "$mine" >&2
+  exit 0
+fi
+
+human="⚠️  ${count} other Claude ${plural} already ${verb} a matching launch-directory worktree:
 ${others}
   worktree: ${mine}
 
 Reading together is fine. If both sessions will EDIT code or run git state commands (reset/checkout/stash), give this task its own worktree:
   git worktree add .worktrees/<task> -b <branch> origin/main"
 
-agent="CONCURRENCY WARNING: ${count} other live Claude Code ${plural} currently ${verb} this same git worktree open (${mine}).
+agent="CONCURRENCY WARNING: ${count} other live Claude Code ${plural} currently ${verb} a matching launch-directory git worktree (${mine}).
 ${others}
 Consequences to respect this session:
 - Your git snapshot may go stale at any moment; re-check \`git status\` before reasoning about working-tree state, and never assume an unexpected change was an accident.

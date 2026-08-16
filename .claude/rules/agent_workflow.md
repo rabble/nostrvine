@@ -44,12 +44,14 @@ authorized `git reset --hard` while another reasons from a pre-reset
 snapshot is enough to lose, or wrongly "restore", a changeset.
 
 `.claude/hooks/session-start-worktree-guard.sh` warns at session start
-when another live session already holds the same worktree. It is opt-in
-(registration snippet is in the script header) and deliberately not
-registered in the team `settings.json`, so anyone already running it at
-user scope is not warned twice. It warns only — it never blocks a
-session, and it does not flag *different* worktrees of the same repo,
-since that is the pattern this rule asks for.
+when another live session appears to have been launched from the same
+git worktree root. It is opt-in (registration snippet is in the script
+header) and deliberately not registered in the team `settings.json`, so
+anyone already running it at user scope is not warned twice. It warns
+only — it never blocks a session. The signal comes from Claude's process
+cwd and `/tmp/cc-socks*/<pid>.sock`, so it cannot see later `cd` calls
+inside tool shells and can become a silent no-op if Claude changes that
+internal socket path.
 
 ---
 

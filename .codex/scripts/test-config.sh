@@ -314,7 +314,7 @@ EOF
 chmod +x "$GUARD_BIN_DIR/ps" "$GUARD_BIN_DIR/lsof"
 
 GUARD_OUTPUT=$(cd "$TEST_REPO" && \
-  env PATH="$GUARD_BIN_DIR:/usr/bin:/bin" \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
     TEST_REPO="$TEST_REPO" \
     OTHER_REPO="$OTHER_REPO" \
     CLAUDE_PROJECT_DIR="$TEST_REPO" \
@@ -323,7 +323,7 @@ GUARD_OUTPUT=$(cd "$TEST_REPO" && \
 
 if ! printf '%s\n' "$GUARD_OUTPUT" | jq -e '
   .systemMessage
-  | contains("2 other Claude sessions already have this worktree open")
+  | contains("2 other Claude sessions already have a matching launch-directory worktree")
     and contains("pid 111")
     and contains("pid 333")
     and (contains("pid 222") | not)
