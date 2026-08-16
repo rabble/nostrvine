@@ -1370,18 +1370,39 @@ void main() {
         },
       );
 
+      test('steps past a revision that lands exactly on the cap', () async {
+        // The boundary is inclusive: this is still a stamp the relay accepts,
+        // so it must be used rather than treated as over the line.
+        final theirs = bookmarkListEvent(
+          ['video-a'],
+          createdAt: nowSeconds + BookmarkService.maxPublishFutureSkew - 1,
+        );
+        stubRelay(events: [theirs]);
+        final service = createService(now: () => clock);
+
+        expect(
+          (await service.toggleVideoInGlobalBookmarks('video-b')).succeeded,
+          isTrue,
+        );
+
+        expect(
+          signedCreatedAt,
+          nowSeconds + BookmarkService.maxPublishFutureSkew,
+        );
+      });
+
       test(
-        'refuses to publish when it cannot stamp past the revision',
+        'still publishes, capped, against an implausible revision',
         () async {
-          // Their clock runs far enough ahead that stepping past it would land
-          // outside what the relay accepts. Publishing anyway would be accepted
-          // and then discarded by the merge, while the user is told "Saved".
+          // Milliseconds written as seconds. Refusing here would block every
+          // later write on this device until the wall clock caught up — and
+          // `_revision` is persisted, so a restart would not clear it. A capped
+          // stamp still wins everywhere the bogus revision is absent.
           stubRelay(
             events: [
               bookmarkListEvent(
                 ['video-a'],
-                createdAt:
-                    nowSeconds + BookmarkService.maxPublishFutureSkew + 5,
+                createdAt: clock.millisecondsSinceEpoch,
               ),
             ],
           );
@@ -1389,10 +1410,35 @@ void main() {
 
           final result = await service.toggleVideoInGlobalBookmarks('video-b');
 
-          expect(result.succeeded, isFalse);
-          verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+          expect(result.succeeded, isTrue);
+          expect(
+            signedCreatedAt,
+            nowSeconds + BookmarkService.maxPublishFutureSkew,
+          );
         },
       );
+
+      test('stays monotonic across two publishes in the same second', () async {
+        stubRelay(events: []);
+        final service = createService(now: () => clock);
+
+        expect(
+          (await service.toggleVideoInGlobalBookmarks('video-a')).succeeded,
+          isTrue,
+        );
+        final first = signedCreatedAt!;
+
+        expect(
+          (await service.toggleVideoInGlobalBookmarks('video-b')).succeeded,
+          isTrue,
+        );
+
+        expect(
+          signedCreatedAt,
+          greaterThan(first),
+          reason: 'the clock has not moved, so the revision has to carry it',
+        );
+      });
     });
 
     group('NIP-51 private items', () {
