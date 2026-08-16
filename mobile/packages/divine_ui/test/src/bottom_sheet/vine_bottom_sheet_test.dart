@@ -1354,6 +1354,39 @@ void main() {
       );
 
       testWidgets(
+        'close button in scrollable mode dismisses the sheet',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      title: const Text('Create'),
+                      onComplete: () async {},
+                      body: const Text('Sheet body'),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet body'), findsOneWidget);
+
+          await tester.tap(find.byType(DivineIconButton).first);
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet body'), findsNothing);
+        },
+      );
+
+      testWidgets(
         'check button invokes onComplete then dismisses the sheet',
         (tester) async {
           var completed = false;
@@ -1484,6 +1517,109 @@ void main() {
           expect(find.text('Sheet body'), findsNothing);
         },
       );
+    });
+
+    group('accessibility', () {
+      testWidgets(
+        'onComplete header buttons carry an accessible name',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: VineBottomSheet(
+                  scrollable: false,
+                  title: const Text('Create'),
+                  onComplete: () async {},
+                  body: const Text('Body'),
+                ),
+              ),
+            ),
+          );
+
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'onComplete header buttons meet the tap-target guidelines',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: VineBottomSheet(
+                  scrollable: false,
+                  title: const Text('Create'),
+                  onComplete: () async {},
+                  body: const Text('Body'),
+                ),
+              ),
+            ),
+          );
+
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          handle.dispose();
+        },
+      );
+
+      testWidgets('header button labels are caller-overridable', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: VineBottomSheet(
+                scrollable: false,
+                title: const Text('Create'),
+                onComplete: () async {},
+                closeSemanticLabel: 'Abbrechen',
+                completeSemanticLabel: 'Fertig',
+                body: const Text('Body'),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.bySemanticsLabel('Abbrechen'), findsOneWidget);
+        expect(find.bySemanticsLabel('Fertig'), findsOneWidget);
+        expect(find.bySemanticsLabel('Close'), findsNothing);
+        expect(find.bySemanticsLabel('Done'), findsNothing);
+      });
+
+      testWidgets('modal sheet leaves no unlabeled tappable scrim node', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => VineBottomSheet.show<void>(
+                    context: context,
+                    title: const Text('Create'),
+                    onComplete: () async {},
+                    body: const Text('Body'),
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        handle.dispose();
+      });
     });
   });
 }
