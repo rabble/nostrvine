@@ -446,9 +446,12 @@ CreatorAnalyticsFailureKind _classifyRequiredLoadFailure(Exception error) {
   if (error is FunnelcakeApiException && error.statusCode >= 500) {
     return CreatorAnalyticsFailureKind.serverUnavailable;
   }
+  // The client wraps every transport failure before it reaches here: a
+  // timeout becomes FunnelcakeTimeoutException, and a raw SocketException is
+  // carried as the `cause` of a FunnelcakeException. So we match the wrapped
+  // timeout type and unwrap the cause; a bare TimeoutException or an
+  // unwrapped network error never arrives on this path.
   if (error is FunnelcakeTimeoutException ||
-      error is TimeoutException ||
-      _isExpectedNetworkException(error) ||
       _isExpectedNetworkException(_funnelcakeCause(error))) {
     return CreatorAnalyticsFailureKind.connectionIssue;
   }
