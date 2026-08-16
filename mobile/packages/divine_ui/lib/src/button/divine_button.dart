@@ -304,8 +304,7 @@ class _DivineButtonContent extends StatelessWidget {
 
   Color _foregroundColor(VineThemeColors colors) => switch (type) {
     DivineButtonType.primary => VineTheme.onPrimary,
-    DivineButtonType.secondary =>
-      colors.isLight ? colors.onSurface : VineTheme.primary,
+    DivineButtonType.secondary => colors.accentBrand,
     DivineButtonType.tertiary => colors.inverseOnSurface,
     DivineButtonType.ghost => colors.onSurface,
     DivineButtonType.ghostSecondary =>

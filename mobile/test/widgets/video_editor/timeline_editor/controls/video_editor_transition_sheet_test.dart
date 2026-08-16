@@ -29,11 +29,13 @@ void main() {
       int overlapMaxMs = 2000,
       int dipMaxMs = 2000,
       bool limitedByNeighbor = false,
+      ThemeData? theme,
     }) async {
       result = null;
       returned = false;
       await tester.pumpWidget(
         MaterialApp(
+          theme: theme,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -323,6 +325,37 @@ void main() {
               w.properties.label == l10n.videoEditorTransitionDirectionUp &&
               w.properties.button == true,
         ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('selected tile ring and direction glyph share the light '
+        'selected-control token', (tester) async {
+      await openPicker(tester, theme: VineTheme.lightTheme);
+
+      await tester.tap(find.text(l10n.videoEditorTransitionSlide));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      const colors = VineTheme.lightColors;
+      final selectedDirectionIcon = tester.widget<DivineIcon>(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.arrowLeft,
+        ),
+      );
+      expect(selectedDirectionIcon.color, colors.accentBrand);
+
+      expect(
+        find.byWidgetPredicate((w) {
+          if (w is! DecoratedBox || w.decoration is! BoxDecoration) {
+            return false;
+          }
+          final decoration = w.decoration as BoxDecoration;
+          final border = decoration.border;
+          return border is Border &&
+              border.top.width == 2 &&
+              border.top.color == colors.accentBrand;
+        }),
         findsOneWidget,
       );
     });

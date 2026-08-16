@@ -104,10 +104,11 @@ void main() {
         tester,
         l10n.videoEditorLayerAnimationEnter,
       );
-      expect(enter.color, colors.primaryContainer);
-      // The two light fills are 1.001:1 apart, so the border is what marks
-      // the selection — it has to be the readable token, not `outline`.
-      expect((enter.border! as Border).top.color, colors.onSurface);
+      expect(enter.color, colors.controlSelectedFill);
+      expect(
+        (enter.border! as Border).top.color,
+        colors.accentBrand,
+      );
 
       final leave = _segmentDecoration(
         tester,
@@ -125,11 +126,32 @@ void main() {
             )
             .last,
       );
-      expect(
-        (toggle.decoration as BoxDecoration).color,
-        colors.containerLow,
-      );
+      expect((toggle.decoration as BoxDecoration).color, colors.controlFill);
     });
+
+    testWidgets(
+      'type tiles carry the selected-control ring language in light mode',
+      (tester) async {
+        await openPicker(tester, theme: VineTheme.lightTheme);
+
+        const colors = VineTheme.lightColors;
+        // The type tiles are the only width-2 borders in this sheet, so the
+        // rings can be asserted by predicate: "None" is selected initially,
+        // while Fade/Slide/Scale are not.
+        Finder tileRings(Color ring) => find.byWidgetPredicate((w) {
+          if (w is! DecoratedBox || w.decoration is! BoxDecoration) {
+            return false;
+          }
+          final border = (w.decoration as BoxDecoration).border;
+          return border is Border &&
+              border.top.width == 2 &&
+              border.top.color == ring;
+        });
+
+        expect(tileRings(colors.accentBrand), findsOneWidget);
+        expect(tileRings(colors.controlOutline), findsNWidgets(3));
+      },
+    );
 
     testWidgets('shows duration + curve even for None', (tester) async {
       await openPicker(tester);

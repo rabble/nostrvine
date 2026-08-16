@@ -462,23 +462,13 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                         for (final direction in _directionOptions)
                           AnimationPickerChip(
                             selected: direction == _direction,
-                            onTap: () => setState(
-                              () => _direction = direction,
-                            ),
+                            onTap: () => setState(() => _direction = direction),
                             semanticLabel: _directionLabel(l10n, direction),
                             child: DivineIcon(
                               icon: _directionIcon(direction),
                               size: 18,
-                              // Matches the curve glyphs directly above,
-                              // which already resolve `onSurface` in light.
-                              // Contrast is not the reason — `accentPositive`
-                              // is 5.78:1 on the chip's `primaryContainer`
-                              // fill — a lone green glyph beside neutral
-                              // siblings in one sheet is.
                               color: direction == _direction
-                                  ? context.vineColors.isLight
-                                        ? context.vineColors.onSurface
-                                        : VineTheme.primary
+                                  ? context.vineColors.accentBrand
                                   : context.vineColors.secondaryText,
                             ),
                           ),
@@ -569,8 +559,8 @@ class _TransitionTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: selected
-                        ? context.vineColors.accentPositive
-                        : Colors.transparent,
+                        ? context.vineColors.accentBrand
+                        : context.vineColors.controlOutline,
                     width: 2,
                   ),
                 ),
@@ -600,7 +590,7 @@ class _TransitionTile extends StatelessWidget {
                   label,
                   style: VineTheme.labelSmallFont(
                     color: selected
-                        ? context.vineColors.accentPositive
+                        ? context.vineColors.accentBrand
                         : context.vineColors.mutedText,
                   ),
                 ),

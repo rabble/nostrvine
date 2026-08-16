@@ -296,8 +296,7 @@ class _DivineIconButtonContent extends StatelessWidget {
       foregroundColor ??
       switch (type) {
         DivineIconButtonType.primary => VineTheme.onPrimary,
-        DivineIconButtonType.secondary =>
-          colors.isLight ? colors.onSurface : VineTheme.primary,
+        DivineIconButtonType.secondary => colors.accentBrand,
         DivineIconButtonType.tertiary => colors.inverseOnSurface,
         DivineIconButtonType.ghost => colors.onSurface,
         // A scrim over media stays dark in both modes, so its content stays

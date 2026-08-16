@@ -76,6 +76,10 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     required this.onErrorContainer,
     required this.accentPositive,
     required this.accentWarning,
+    required this.accentBrand,
+    required this.controlSelectedFill,
+    required this.controlFill,
+    required this.controlOutline,
     required this.accentChipOrange,
     required this.accentChipYellow,
     required this.accentChipBlue,
@@ -229,6 +233,42 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// re-darkening the orange to chase it was judged the larger brand change.
   final Color accentWarning;
 
+  /// Brand accent for foreground content — glyphs, labels, and the borders
+  /// that mark them.
+  ///
+  /// Dark is the brand green. Light substitutes [onSurface], because the
+  /// green only reaches 2.22:1 on light control fills and ~2.1:1 on the light
+  /// background, so it cannot carry content or mark a selection there.
+  ///
+  /// Its callers span three unrelated roles that share this one rule:
+  /// selected state in the dense editor controls, secondary button and
+  /// icon-button foregrounds, and small section-header labels.
+  ///
+  /// Not [accentPositive], which means positive *status*. The two share a
+  /// dark value and differ in light — pick by meaning, never by matching the
+  /// dark hex.
+  final Color accentBrand;
+
+  /// Selected fill for dense interactive controls.
+  ///
+  /// Dark keeps the shipped 18%-primary wash. Light uses [primaryContainer].
+  /// The light selected and unselected fills are only 1.001:1 apart, so pair
+  /// this with [accentBrand] as the selected border/content.
+  final Color controlSelectedFill;
+
+  /// Unselected fill for dense interactive controls.
+  ///
+  /// Dark keeps the shipped 8%-light-text wash. Light uses [containerLow],
+  /// matching the light editor chip surfaces already in use.
+  final Color controlFill;
+
+  /// Unselected border for dense interactive controls.
+  ///
+  /// Dark keeps the shipped transparent border. Light uses [outlineMuted],
+  /// whose pairing with [accentBrand] reads at 10.10:1 where
+  /// [outline] against [outlineMuted] would only reach 1.37:1.
+  final Color controlOutline;
+
   /// Decorative accent chips, drawn on [background] or [card] — notification
   /// type indicators, badge status pills, onboarding highlights.
   ///
@@ -310,6 +350,10 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     Color? onErrorContainer,
     Color? accentPositive,
     Color? accentWarning,
+    Color? accentBrand,
+    Color? controlSelectedFill,
+    Color? controlFill,
+    Color? controlOutline,
     VineAccentChip? accentChipOrange,
     VineAccentChip? accentChipYellow,
     VineAccentChip? accentChipBlue,
@@ -351,6 +395,10 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     onErrorContainer: onErrorContainer ?? this.onErrorContainer,
     accentPositive: accentPositive ?? this.accentPositive,
     accentWarning: accentWarning ?? this.accentWarning,
+    accentBrand: accentBrand ?? this.accentBrand,
+    controlSelectedFill: controlSelectedFill ?? this.controlSelectedFill,
+    controlFill: controlFill ?? this.controlFill,
+    controlOutline: controlOutline ?? this.controlOutline,
     accentChipOrange: accentChipOrange ?? this.accentChipOrange,
     accentChipYellow: accentChipYellow ?? this.accentChipYellow,
     accentChipBlue: accentChipBlue ?? this.accentChipBlue,
@@ -401,6 +449,18 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       onErrorContainer: Color.lerp(onErrorContainer, other.onErrorContainer, t),
       accentPositive: Color.lerp(accentPositive, other.accentPositive, t),
       accentWarning: Color.lerp(accentWarning, other.accentWarning, t),
+      accentBrand: Color.lerp(
+        accentBrand,
+        other.accentBrand,
+        t,
+      ),
+      controlSelectedFill: Color.lerp(
+        controlSelectedFill,
+        other.controlSelectedFill,
+        t,
+      ),
+      controlFill: Color.lerp(controlFill, other.controlFill, t),
+      controlOutline: Color.lerp(controlOutline, other.controlOutline, t),
       accentChipOrange: accentChipOrange.lerpTo(other.accentChipOrange, t),
       accentChipYellow: accentChipYellow.lerpTo(other.accentChipYellow, t),
       accentChipBlue: accentChipBlue.lerpTo(other.accentChipBlue, t),
@@ -452,6 +512,10 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
           onErrorContainer == other.onErrorContainer &&
           accentPositive == other.accentPositive &&
           accentWarning == other.accentWarning &&
+          accentBrand == other.accentBrand &&
+          controlSelectedFill == other.controlSelectedFill &&
+          controlFill == other.controlFill &&
+          controlOutline == other.controlOutline &&
           accentChipOrange == other.accentChipOrange &&
           accentChipYellow == other.accentChipYellow &&
           accentChipBlue == other.accentChipBlue &&
@@ -495,6 +559,10 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     onErrorContainer,
     accentPositive,
     accentWarning,
+    accentBrand,
+    controlSelectedFill,
+    controlFill,
+    controlOutline,
     accentChipOrange,
     accentChipYellow,
     accentChipBlue,
@@ -1181,6 +1249,10 @@ class VineTheme {
     onErrorContainer: error,
     accentPositive: vineGreen,
     accentWarning: accentOrange,
+    accentBrand: vineGreen,
+    controlSelectedFill: Color(0x2E27C58B),
+    controlFill: Color(0x14888888),
+    controlOutline: transparent,
     accentChipOrange: VineAccentChip(
       container: accentOrangeBackground,
       onContainer: accentOrange,
@@ -1247,6 +1319,10 @@ class VineTheme {
     onErrorContainer: Color(0xFF8C1D18),
     accentPositive: Color(0xFF1B553D),
     accentWarning: Color(0xFFAE3100),
+    accentBrand: Color(0xFF17382D),
+    controlSelectedFill: Color(0xFFE7F5EE),
+    controlFill: Color(0xFFEDF3EF),
+    controlOutline: Color(0xFFDCE7E2),
     // Pale tint / darkened accent. Each pair clears 4.5:1 foreground-on-
     // container (6.30–7.51) and holds 1.18–1.30 container-on-background, which
     // overlaps the dark palette's own low end (pink, 1.28).

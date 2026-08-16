@@ -884,14 +884,10 @@ class _AddElementFabContent extends StatelessWidget {
             ),
           ),
           child: Center(
-            // Hand-rolled twin of `DivineIconButtonType.secondary`, so it
-            // takes that variant's icon rule: the brand green only reaches
-            // 1.92:1 on the light `surfaceContainer` fill.
+            // Hand-rolled twin of `DivineIconButtonType.secondary`.
             child: DivineIcon(
               icon: .plus,
-              color: context.vineColors.isLight
-                  ? context.vineColors.onSurface
-                  : VineTheme.primary,
+              color: context.vineColors.accentBrand,
             ),
           ),
         ),
