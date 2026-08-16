@@ -394,6 +394,7 @@ void main() {
                 isDirectory: false,
               ),
             ],
+            childCount: 1,
           ),
         ],
       );

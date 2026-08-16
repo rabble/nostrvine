@@ -14,6 +14,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockCache extends Mock implements MediaCacheManager {}
 
+/// Whether [dir] can still be listed, i.e. the mode bits actually took.
+bool _isReadable(Directory dir) {
+  try {
+    dir.listSync();
+    return true;
+  } on FileSystemException {
+    return false;
+  }
+}
+
 class _MockClipLibrary extends Mock implements ClipLibraryService {}
 
 void main() {
@@ -357,21 +367,27 @@ void main() {
         expect(footprint.totalBytes, 4096);
       });
 
-      test('reports a root shared by two providers once', () async {
-        writeFile('${temp.path}/leftover.mp4', 500);
+      test(
+        'reports a root shared by two providers once, naming both',
+        () async {
+          writeFile('${temp.path}/leftover.mp4', 500);
 
-        // Android resolves the temporary and cache directories to the same
-        // getCacheDir(); counting both would double the reported total.
-        final footprint = await footprintService(
-          cacheDirectory: temp,
-        ).measureFootprint();
+          // Android resolves the temporary and cache directories to the same
+          // getCacheDir(); counting both would double the reported total.
+          final footprint = await footprintService(
+            cacheDirectory: temp,
+          ).measureFootprint();
 
-        expect(
-          footprint.roots.where((root) => root.path == temp.path),
-          hasLength(1),
-        );
-        expect(footprint.totalBytes, 500);
-      });
+          final shared = footprint.roots.where(
+            (root) => root.path == temp.path,
+          );
+          expect(shared, hasLength(1));
+          expect(footprint.totalBytes, 500);
+          // Both names appear, so a report with one root fewer than another
+          // platform's reads as a merge rather than as a failed walk.
+          expect(shared.single.label, 'Caches + Temporary');
+        },
+      );
 
       test('report text carries the totals and the biggest entries', () async {
         writeFile('${docs.path}/divine_big.mp4', 2048);
@@ -382,6 +398,59 @@ void main() {
         expect(report, contains('Total: 2.0 KB (2048 bytes)'));
         expect(report, contains('Documents: 2.0 KB (2048 bytes)'));
         expect(report, contains('divine_big.mp4'));
+      });
+
+      test('report accounts for the entries it did not list', () async {
+        for (var i = 0; i < 15; i++) {
+          writeFile('${docs.path}/divine_$i.mp4', 100 + i);
+        }
+
+        final report = (await footprintService().measureFootprint())
+            .toReportText();
+
+        // 15 children, 12 listed: the three smallest (100, 101, 102) are
+        // left out, so the report has to name them or the listed sizes look
+        // like they should add up to the root total and do not.
+        expect(report, contains('(3 smaller entries not listed)'));
+        expect(report, contains('303 B\t(3 smaller entries not listed)'));
+      });
+
+      test('an unreadable subdirectory does not zero its readable '
+          'siblings', () async {
+        if (Platform.isWindows) {
+          markTestSkipped(
+            'POSIX permission bits are needed to make a '
+            'directory unreadable.',
+          );
+          return;
+        }
+
+        writeFile('${docs.path}/media/locked/inside.mp4', 10);
+        writeFile('${docs.path}/media/keep.mp4', 400);
+        writeFile('${docs.path}/media/sub/also_keep.mp4', 600);
+        final locked = Directory('${docs.path}/media/locked');
+
+        Process.runSync('chmod', ['000', locked.path]);
+        // Restore before the group tearDown, which cannot delete an
+        // unreadable directory. addTearDown runs first.
+        addTearDown(() => Process.runSync('chmod', ['755', locked.path]));
+        if (_isReadable(locked)) {
+          markTestSkipped(
+            'Running with permissions that ignore the mode '
+            'bits (e.g. as root), so the walk cannot be made to fail.',
+          );
+          return;
+        }
+
+        final footprint = await footprintService().measureFootprint();
+        final documents = footprint.roots.firstWhere(
+          (root) => root.label == 'Documents',
+        );
+
+        // A single recursive listing surfaces the whole tree through one
+        // stream, so the throw on `locked` used to abandon everything not
+        // yet visited and report zero for the entire subtree (#7642).
+        expect(documents.totalBytes, 1000);
       });
     });
   });

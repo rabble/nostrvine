@@ -200,10 +200,13 @@ class StorageManagementService {
   /// documents directory (clip library, drafts, rendered videos) and the
   /// durable database, which even the repair wipe preserves.
   ///
-  /// Roots that resolve to the same directory are reported once — on Android
+  /// Roots that resolve to the same directory are measured once — on Android
   /// the temporary and cache directories are both `getCacheDir()` — so the
-  /// totals never double-count. A root the platform cannot resolve is omitted
-  /// rather than failing the whole measurement.
+  /// totals never double-count. Such a root is labelled with every name that
+  /// pointed at it (`Caches + Temporary`) rather than silently dropping the
+  /// later one, so a report that lists three roots on Android and four on iOS
+  /// says why. A root the platform cannot resolve is omitted rather than
+  /// failing the whole measurement.
   ///
   /// Walks the full tree of every root, so it is slow on a large install and
   /// belongs behind an explicit user action.
@@ -214,29 +217,41 @@ class StorageManagementService {
       'Caches': _applicationCacheDirectoryProvider,
       'Temporary': _temporaryDirectoryProvider,
     };
-    final roots = <StorageFootprintRoot>[];
-    final measuredPaths = <String>{};
+
+    // Resolve every root before measuring any, so the ones that share a
+    // directory can be collapsed into a single labelled walk.
+    final byPath = <String, ({Directory dir, List<String> labels})>{};
     for (final entry in providers.entries) {
-      final root = await _measureRoot(
-        label: entry.key,
-        provider: entry.value,
-        childrenPerRoot: childrenPerRoot,
-        measuredPaths: measuredPaths,
+      final dir = await _resolveRoot(entry.key, entry.value);
+      if (dir == null) continue;
+      final resolved = byPath.putIfAbsent(
+        _normalizePath(dir.path),
+        () => (dir: dir, labels: <String>[]),
       );
-      if (root != null) roots.add(root);
+      resolved.labels.add(entry.key);
+    }
+
+    final roots = <StorageFootprintRoot>[];
+    for (final resolved in byPath.values) {
+      roots.add(
+        await _measureRoot(
+          label: resolved.labels.join(' + '),
+          dir: resolved.dir,
+          childrenPerRoot: childrenPerRoot,
+        ),
+      );
     }
     return StorageFootprint(roots: roots);
   }
 
-  Future<StorageFootprintRoot?> _measureRoot({
-    required String label,
-    required Future<Directory> Function() provider,
-    required int childrenPerRoot,
-    required Set<String> measuredPaths,
-  }) async {
-    final Directory dir;
+  /// The directory [provider] points at, or null when the platform has no
+  /// such root — a missing root must not fail the whole measurement.
+  Future<Directory?> _resolveRoot(
+    String label,
+    Future<Directory> Function() provider,
+  ) async {
     try {
-      dir = await provider();
+      return await provider();
     } on Object catch (error) {
       Log.warning(
         '$_logName: resolving $label failed: $error',
@@ -245,8 +260,13 @@ class StorageManagementService {
       );
       return null;
     }
-    if (!measuredPaths.add(_normalizePath(dir.path))) return null;
+  }
 
+  Future<StorageFootprintRoot> _measureRoot({
+    required String label,
+    required Directory dir,
+    required int childrenPerRoot,
+  }) async {
     final children = <StorageFootprintEntry>[];
     var totalBytes = 0;
     if (dir.existsSync()) {
@@ -281,6 +301,7 @@ class StorageManagementService {
       path: dir.path,
       totalBytes: totalBytes,
       largestChildren: children.take(childrenPerRoot).toList(),
+      childCount: children.length,
     );
   }
 
@@ -329,22 +350,37 @@ class StorageManagementService {
     await _videoCache.enforceCacheLimits(force: true);
   }
 
+  /// Recursive size of [dir], counting every file the process can still read.
+  ///
+  /// Descends one level at a time rather than with `list(recursive: true)`,
+  /// because a recursive listing surfaces the whole tree through a single
+  /// stream: the first unreadable subdirectory throws and abandons everything
+  /// not yet visited, which silently reported zero for an otherwise readable
+  /// tree. Failures are isolated to the directory that caused them, and
+  /// [_fileLength] absorbs a file that vanished between listing and stat —
+  /// routine here, since the cache trim and the temp-render janitor delete
+  /// files while a walk of the same root is still running.
   Future<int> _dirSize(Directory dir) async {
     if (!dir.existsSync()) return 0;
     var size = 0;
-    try {
-      await for (final entity in dir.list(
-        recursive: true,
-        followLinks: false,
-      )) {
-        if (entity is File) size += await entity.length();
+    final pending = <Directory>[dir];
+    while (pending.isNotEmpty) {
+      final current = pending.removeLast();
+      try {
+        await for (final entity in current.list(followLinks: false)) {
+          if (entity is File) {
+            size += await _fileLength(entity);
+          } else if (entity is Directory) {
+            pending.add(entity);
+          }
+        }
+      } on Object catch (error) {
+        Log.warning(
+          '$_logName: sizing ${current.path} failed: $error',
+          name: _logName,
+          category: LogCategory.system,
+        );
       }
-    } on Object catch (error) {
-      Log.warning(
-        '$_logName: sizing ${dir.path} failed: $error',
-        name: _logName,
-        category: LogCategory.system,
-      );
     }
     return size;
   }

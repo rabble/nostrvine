@@ -32,6 +32,7 @@ void main() {
             isDirectory: true,
           ),
         ],
+        childCount: 2,
       ),
     ],
   );

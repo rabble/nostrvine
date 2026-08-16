@@ -35,6 +35,7 @@ class StorageFootprintRoot extends Equatable {
     required this.path,
     required this.totalBytes,
     required this.largestChildren,
+    required this.childCount,
   });
 
   /// Which platform directory this is, e.g. `Documents`.
@@ -49,8 +50,28 @@ class StorageFootprintRoot extends Equatable {
   /// The biggest immediate children, largest first.
   final List<StorageFootprintEntry> largestChildren;
 
+  /// How many immediate children the root has in total.
+  ///
+  /// [largestChildren] keeps only the biggest, so without this a reader
+  /// cannot tell whether the listed entries add up to [totalBytes] or
+  /// whether the rest is spread across entries that were left out.
+  final int childCount;
+
+  /// Bytes held by the children [largestChildren] left out.
+  int get omittedBytes =>
+      totalBytes - largestChildren.fold(0, (sum, child) => sum + child.bytes);
+
+  /// How many children [largestChildren] left out.
+  int get omittedCount => childCount - largestChildren.length;
+
   @override
-  List<Object?> get props => [label, path, totalBytes, largestChildren];
+  List<Object?> get props => [
+    label,
+    path,
+    totalBytes,
+    largestChildren,
+    childCount,
+  ];
 }
 
 /// The app's full on-disk footprint, split by root directory.
@@ -92,6 +113,15 @@ class StorageFootprint extends Equatable {
         final suffix = child.isDirectory ? '/' : '';
         buffer.writeln(
           '  ${formatByteSize(child.bytes)}\t${child.name}$suffix',
+        );
+      }
+      // Only the biggest children are listed, so say what the rest holds —
+      // otherwise the entries above look like they should add up to the
+      // root total and the difference reads as a measurement bug.
+      if (root.omittedCount > 0) {
+        buffer.writeln(
+          '  ${formatByteSize(root.omittedBytes)}\t'
+          '(${root.omittedCount} smaller entries not listed)',
         );
       }
     }
