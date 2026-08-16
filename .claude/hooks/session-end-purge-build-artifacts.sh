@@ -52,6 +52,28 @@ if [ -d "$trash" ]; then
     nohup rm -rf "$leftover" >/dev/null 2>&1 &
   fi
 fi
+
+# The gitdir lives in the main checkout's filesystem, which is not always the
+# worktree's: a cross-device mv degrades to a synchronous full copy that can
+# blow the hook timeout and, when killed, leaves the source intact to fail the
+# same way next run. Delete in place instead, still detached. When stat cannot
+# report a device id (non-GNU stat), both sides are empty and compare equal,
+# preserving the staging path.
+if [ "$(stat -c %d "$root/mobile" 2>/dev/null)" != "$(stat -c %d "$gitdir" 2>/dev/null)" ]; then
+  n=0
+  dirs=()
+  while IFS= read -r dir; do
+    dirs+=("$dir")
+    n=$((n + 1))
+  done < <(find "$root/mobile" -type d \( -name build -o -name .dart_tool \) -prune 2>/dev/null)
+  if [ "$n" -gt 0 ]; then
+    nohup rm -rf "${dirs[@]}" >/dev/null 2>&1 &
+    printf '{"systemMessage":"Purged %d build/.dart_tool dirs from %s"}\n' \
+      "$n" "$(basename "$root")"
+  fi
+  exit 0
+fi
+
 mkdir -p "$trash"
 
 n=0

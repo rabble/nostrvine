@@ -447,6 +447,7 @@ if [ -n "$(git -C "$WT_LINK" status --short)" ]; then
 fi
 
 gitdir=$(git -C "$WT_LINK" rev-parse --absolute-git-dir)
+
 mkdir -p "$gitdir/claude-purge/old"
 touch "$gitdir/claude-purge/old/artifact"
 NOOP_OUTPUT=$(cd "$WT_LINK" && \
@@ -456,5 +457,60 @@ if [ -n "$NOOP_OUTPUT" ] || [ -d "$gitdir/claude-purge" ]; then
   echo "Purge hook did not clean leftover staging on a no-op run." >&2
   exit 1
 fi
+
+# A linked worktree on a different filesystem from the main checkout must
+# still purge: the hook detects the cross-device gitdir and deletes in place
+# instead of staging (mv would degrade to a synchronous copy that can blow
+# the hook timeout). /dev/shm supplies a second filesystem when one exists.
+XDEV_MAIN="$SCRATCH_DIR/xdev-main"
+XDEV_LINK="/dev/shm/divine-purge-xdev-$$"
+mkdir -p "$XDEV_MAIN/mobile/packages/bar"
+git -C "$XDEV_MAIN" init -q
+cat > "$XDEV_MAIN/mobile/pubspec.yaml" <<'EOF'
+name: xdev_purge_test
+EOF
+touch "$XDEV_MAIN/mobile/packages/bar/.keep"
+git -C "$XDEV_MAIN" add mobile/pubspec.yaml mobile/packages/bar/.keep
+git -C "$XDEV_MAIN" \
+  -c user.email=test@example.com \
+  -c user.name=Test \
+  commit -q -m init
+git -C "$XDEV_MAIN" worktree add -q "$XDEV_LINK"
+mkdir -p "$XDEV_LINK/mobile/build" "$XDEV_LINK/mobile/.dart_tool"
+touch "$XDEV_LINK/mobile/build/output.o" \
+  "$XDEV_LINK/mobile/.dart_tool/package_config.json"
+XDEV_WORKTREE_DEV=$(stat -c %d "$XDEV_LINK/mobile" 2>/dev/null || echo no-dev-1)
+XDEV_GITDIR=$(git -C "$XDEV_LINK" rev-parse --absolute-git-dir)
+XDEV_GITDIR_DEV=$(stat -c %d "$XDEV_GITDIR" 2>/dev/null || echo no-dev-2)
+if [ "$XDEV_WORKTREE_DEV" != "$XDEV_GITDIR_DEV" ]; then
+  # A regular file at the staging path makes any staging attempt fail loudly
+  # (mkdir -p cannot succeed), so this test discriminates the in-place path
+  # from a cross-device mv even though both eventually delete the artifacts.
+  touch "$XDEV_GITDIR/claude-purge"
+  XDEV_NAME=$(basename "$XDEV_LINK")
+  XDEV_OUTPUT=$(cd "$XDEV_LINK" && \
+    env CLAUDE_PROJECT_DIR="$XDEV_LINK" "$CLAUDE_PURGE_HOOK" \
+      <<< '{"reason":"prompt_input_exit"}' || true)
+  printf '%s\n' "$XDEV_OUTPUT" | jq -e --arg name "$XDEV_NAME" \
+    '.systemMessage == ("Purged 2 build/.dart_tool dirs from " + $name)' >/dev/null || {
+    echo "Cross-device purge did not report removing both artifact dirs." >&2
+    exit 1
+  }
+  if [ ! -f "$XDEV_GITDIR/claude-purge" ]; then
+    echo "Cross-device purge touched the gitdir staging path instead of deleting in place." >&2
+    exit 1
+  fi
+  for _ in $(seq 1 100); do
+    [ ! -d "$XDEV_LINK/mobile/build" ] && [ ! -d "$XDEV_LINK/mobile/.dart_tool" ] && break
+    sleep 0.1
+  done
+  if [ -d "$XDEV_LINK/mobile/build" ] || [ -d "$XDEV_LINK/mobile/.dart_tool" ]; then
+    echo "Cross-device purge did not delete the artifact dirs." >&2
+    exit 1
+  fi
+else
+  echo "skip: /dev/shm shares a filesystem with the scratch dir; cross-device purge path not exercised."
+fi
+rm -rf "$XDEV_LINK" 2>/dev/null || true
 
 echo "Codex configuration checks passed."
