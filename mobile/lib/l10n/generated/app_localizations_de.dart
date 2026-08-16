@@ -7584,7 +7584,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoEditorOverLimitTimeline =>
-      'Schneide diesen Teil weg zum Posten';
+      'Schneide diesen Teil zum Posten weg';
 
   @override
   String publishErrorServerInternalError(String serverName) {

@@ -11,7 +11,7 @@
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "Die Videodatei ist zu groß für den Server. Kürze sie oder verringere die Qualität.",
     "videoEditorOverLimitCanvas": "Über dem Limit von 6,3 s — kürze zum Posten",
-    "videoEditorOverLimitTimeline": "Schneide diesen Teil weg zum Posten",
+    "videoEditorOverLimitTimeline": "Schneide diesen Teil zum Posten weg",
     "publishErrorServerInternalError": "Beim Medienserver ({serverName}) ist ein interner Fehler aufgetreten. In den Einstellungen kannst du einen anderen auswählen.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "Der Medienserver ({serverName}) ist vorübergehend nicht erreichbar. Versuch's gleich noch einmal oder wähle in den Einstellungen einen anderen.",

@@ -7534,11 +7534,11 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoEditorOverLimitCanvas =>
-      'Melebihi had 6.3s — pangkas untuk menyiarkan';
+      'Melebihi had 6.3s — pangkas untuk disiarkan';
 
   @override
   String get videoEditorOverLimitTimeline =>
-      'Pangkas bahagian ini untuk menyiarkan';
+      'Pangkas bahagian ini untuk disiarkan';
 
   @override
   String publishErrorServerInternalError(String serverName) {

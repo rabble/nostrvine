@@ -7580,7 +7580,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorOverLimitTimeline =>
-      'I-trim ang bahaging ito para maka-post';
+      'I-trim ang bahaging ito para makapag-post';
 
   @override
   String publishErrorServerInternalError(String serverName) {

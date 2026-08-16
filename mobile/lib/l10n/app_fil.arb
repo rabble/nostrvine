@@ -11,7 +11,7 @@
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "Masyadong malaki ang video file para sa server. Subukang i-trim ito o babaan ang quality.",
     "videoEditorOverLimitCanvas": "Lampas sa 6.3s na limit — i-trim para makapag-post",
-    "videoEditorOverLimitTimeline": "I-trim ang bahaging ito para maka-post",
+    "videoEditorOverLimitTimeline": "I-trim ang bahaging ito para makapag-post",
     "publishErrorServerInternalError": "Nagka-internal error ang media server ({serverName}). Puwede kang pumili ng iba sa iyong settings.",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorServerDown": "Pansamantalang down ang media server ({serverName}). Subukan ulit saglit o pumili ng iba sa iyong settings.",
