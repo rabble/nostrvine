@@ -37,7 +37,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Mag-sign in ulit para mabalik ang buong access';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

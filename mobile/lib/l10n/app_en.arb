@@ -27,7 +27,7 @@
   "settingsSecureAccount": "Secure Your Account",
   "settingsSessionExpired": "Session Expired",
   "settingsSessionExpiredSubtitle": "Sign in again to restore full access",
-  "settingsAccountRestoreFailed": "Sign in again",
+  "settingsAccountRestoreFailed": "Account Restore Failed",
   "@settingsAccountRestoreFailed": {
     "description": "Title of the account-switch confirmation sheet when local keys for the selected account cannot be restored on this device."
   },

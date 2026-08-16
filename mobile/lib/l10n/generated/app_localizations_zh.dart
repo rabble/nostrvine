@@ -36,7 +36,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSessionExpiredSubtitle => '重新登录即可恢复完整访问权限';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

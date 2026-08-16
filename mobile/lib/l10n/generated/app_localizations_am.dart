@@ -36,7 +36,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsSessionExpiredSubtitle => 'ሙሉ መዳረሻን ለመመለስ እንደገና ይግቡ';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

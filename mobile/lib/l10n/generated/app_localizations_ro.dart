@@ -38,7 +38,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Autentifică-te din nou ca să recapeți acces complet';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

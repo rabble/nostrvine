@@ -36,7 +36,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsSessionExpiredSubtitle => 'もう一回サインインして、フルアクセスを取り戻そう';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

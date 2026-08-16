@@ -39,3 +39,15 @@ Future<void> clearDivineLoginBannerDismissal(
 ) {
   return prefs.remove(divineLoginBannerDismissalKey(userIdHex));
 }
+
+Future<void> clearDismissedDivineLoginBannerForCurrentUser([
+  String? publicKeyHex,
+]) async {
+  final prefs = await SharedPreferences.getInstance();
+  final targetPubkey =
+      publicKeyHex ?? prefs.getString('current_user_pubkey_hex');
+  if (targetPubkey == null || targetPubkey.isEmpty) {
+    return;
+  }
+  await clearDivineLoginBannerDismissal(prefs, targetPubkey);
+}

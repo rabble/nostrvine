@@ -195,7 +195,7 @@ abstract class AppLocalizations {
   /// Title of the account-switch confirmation sheet when local keys for the selected account cannot be restored on this device.
   ///
   /// In en, this message translates to:
-  /// **'Sign in again'**
+  /// **'Account Restore Failed'**
   String get settingsAccountRestoreFailed;
 
   /// Body of the confirmation sheet shown when the account the user picked in the switcher cannot be restored from local keys. Confirming signs the current, working account out to reach the sign-in flow.

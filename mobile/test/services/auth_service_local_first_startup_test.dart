@@ -597,7 +597,7 @@ void main() {
     });
 
     test(
-      'startup refresh timeout releases OAuth refresh single-flight',
+      'startup refresh timeout keeps OAuth refresh single-flight occupied',
       () async {
         SharedPreferences.setMockInitialValues({
           'authentication_source': 'divineOAuth',
@@ -611,19 +611,12 @@ void main() {
         );
         secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
 
-        final startupRefreshCompleter = Completer<KeycastSession?>();
-        var refreshCalls = 0;
+        final refreshCompleter = Completer<KeycastSession?>();
         when(
           () => mockOAuthClient.refreshSession(
             userPubkey: any(named: 'userPubkey'),
           ),
-        ).thenAnswer((_) {
-          refreshCalls += 1;
-          if (refreshCalls == 1) {
-            return startupRefreshCompleter.future;
-          }
-          return Future<KeycastSession?>.value();
-        });
+        ).thenAnswer((_) => refreshCompleter.future);
 
         final authService = createAuthService(
           startupNetworkOperationTimeout: const Duration(milliseconds: 1),
@@ -639,9 +632,9 @@ void main() {
           () => mockOAuthClient.refreshSession(
             userPubkey: any(named: 'userPubkey'),
           ),
-        ).called(2);
+        ).called(1);
 
-        startupRefreshCompleter.complete(null);
+        refreshCompleter.complete(null);
         expect(await retry, isFalse);
         await authService.dispose();
       },

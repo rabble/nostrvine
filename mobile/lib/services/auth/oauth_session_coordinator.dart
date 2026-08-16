@@ -124,7 +124,6 @@ class OAuthSessionCoordinator {
       );
     }
 
-    final refreshTimeout = timeout ?? _oauthRefreshTimeout;
     late final Future<KeycastSession?> refresh;
     refresh =
         _doRefreshSession(
@@ -133,11 +132,11 @@ class OAuthSessionCoordinator {
               caller: caller,
             )
             .timeout(
-              refreshTimeout,
+              _oauthRefreshTimeout,
               onTimeout: () {
                 Log.warning(
                   '_refreshOAuthSession: timed out after '
-                  '${refreshTimeout.inMilliseconds}ms — '
+                  '${_oauthRefreshTimeout.inMilliseconds}ms — '
                   'treating as network failure',
                   name: 'OAuthSessionCoordinator',
                   category: LogCategory.auth,
@@ -164,29 +163,14 @@ class OAuthSessionCoordinator {
     final oauthClient = _oauthClient;
     if (oauthClient == null) return null;
     try {
-      if (expectedOwnerPubkey != null && storedSessionReader != null) {
-        final activeSession = await oauthClient.getSession();
-        if (activeSession != null &&
-            activeSession.userPubkey != expectedOwnerPubkey) {
-          _logOwnerMismatch(
-            caller,
+      if (expectedOwnerPubkey != null &&
+          storedSessionReader != null &&
+          !await _storedOwnerMatches(
             expectedOwnerPubkey,
-            activeSession.userPubkey,
-            'active',
-          );
-          return null;
-        }
-        final storedSession = await storedSessionReader();
-        if (storedSession != null &&
-            storedSession.userPubkey != expectedOwnerPubkey) {
-          _logOwnerMismatch(
+            storedSessionReader,
             caller,
-            expectedOwnerPubkey,
-            storedSession.userPubkey,
-            'stored',
-          );
-          return null;
-        }
+          )) {
+        return null;
       }
 
       final pubkey = expectedOwnerPubkey ?? _currentPubkeyFallback();
@@ -245,11 +229,12 @@ class OAuthSessionCoordinator {
           );
     final refreshed = await guardedRefresh;
     if (expectedOwnerPubkey != null &&
-        refreshed?.userPubkey != expectedOwnerPubkey) {
+        refreshed != null &&
+        refreshed.userPubkey != expectedOwnerPubkey) {
       _logOwnerMismatch(
         caller,
         expectedOwnerPubkey,
-        refreshed?.userPubkey,
+        refreshed.userPubkey,
         'refreshed',
       );
       return null;

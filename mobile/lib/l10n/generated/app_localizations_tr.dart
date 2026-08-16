@@ -37,7 +37,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tam erişimi geri almak için tekrar giriş yap';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

@@ -37,7 +37,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Reconnecte-toi pour récupérer l\'accès complet';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

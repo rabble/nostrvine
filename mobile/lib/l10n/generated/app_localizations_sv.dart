@@ -37,7 +37,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Logga in igen för att återfå full åtkomst';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

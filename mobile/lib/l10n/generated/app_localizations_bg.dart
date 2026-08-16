@@ -37,7 +37,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Влез отново, за да си върнеш пълния достъп';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

@@ -36,7 +36,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsSessionExpiredSubtitle => '다시 로그인해서 전체 접근 권한을 복구해보세요';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

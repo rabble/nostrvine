@@ -37,7 +37,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Masuk lagi untuk memulihkan akses penuh';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

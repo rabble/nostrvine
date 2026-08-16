@@ -37,7 +37,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đăng nhập lại để khôi phục toàn bộ quyền truy cập';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>

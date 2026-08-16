@@ -37,7 +37,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'مکمل رسائی بحال کرنے کے لیے دوبارہ سائن ان کریں';
 
   @override
-  String get settingsAccountRestoreFailed => 'Sign in again';
+  String get settingsAccountRestoreFailed => 'Account Restore Failed';
 
   @override
   String get settingsAccountRestoreFailedSwitchMessage =>
