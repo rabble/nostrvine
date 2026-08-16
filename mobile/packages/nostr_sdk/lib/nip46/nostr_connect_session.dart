@@ -17,6 +17,7 @@ import '../relay/relay_base.dart';
 import '../relay/relay_mode.dart';
 import '../relay/relay_status.dart';
 import '../signer/local_nostr_signer.dart';
+import '../utils/relay_url_policy.dart';
 import '../utils/string_util.dart';
 import 'nostr_remote_response.dart';
 import 'nostr_remote_signer_info.dart';
@@ -171,6 +172,10 @@ class NostrConnectSession {
   // Internal state
   LocalNostrSigner? _localSigner;
   final List<Relay> _relays = [];
+
+  /// How many of [_relays] a signer named in a callback rather than the
+  /// session advertising them. Bounded by [RelayListCaps.nip46Callback].
+  int _signerSuppliedRelayCount = 0;
   Completer<NostrConnectResult?>? _connectionCompleter;
   Timer? _timeoutTimer;
   bool _isClosed = false;
@@ -325,10 +330,23 @@ class NostrConnectSession {
   /// Some same-device signers return a callback relay after the user approves
   /// the connection. Connect to it in addition to the original nostrconnect://
   /// relays so the response event can arrive on the signer's chosen transport.
+  ///
+  /// At most [RelayListCaps.nip46Callback] of them are adopted per session:
+  /// the callback is a deep link, so anything on the device can deliver one,
+  /// and nothing else bounds how many arrive while a session is listening.
+  /// Only relays that actually connected count — a failed dial leaves the
+  /// budget for the signer's next attempt.
   Future<void> addRelay(String relayUrl) async {
     if (_isClosed || _state != NostrConnectState.listening) return;
     if (relays.contains(relayUrl) ||
         _relays.any((relay) => relay.relayStatus.addr == relayUrl)) {
+      return;
+    }
+    if (_signerSuppliedRelayCount >= RelayListCaps.nip46Callback) {
+      logger(
+        '[NostrConnectSession] Ignoring callback relay $relayUrl - '
+        'already holding ${RelayListCaps.nip46Callback}',
+      );
       return;
     }
 
@@ -339,6 +357,7 @@ class NostrConnectSession {
         return;
       }
       _relays.add(relay);
+      _signerSuppliedRelayCount++;
       logger('[NostrConnectSession] Added callback relay $relayUrl');
     } catch (e) {
       logger(

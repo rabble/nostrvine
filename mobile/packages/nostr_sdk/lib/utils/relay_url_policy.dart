@@ -23,6 +23,17 @@ abstract final class RelayListCaps {
   /// NIP-65: "Clients SHOULD guide users to keep `kind:10002` lists small
   /// (2-4 relays of each category)" — read and write, hence the larger bound.
   static const int nip65 = 16;
+
+  /// Cap on the relays a NIP-46 signer may add to one pairing session by
+  /// naming them in its deep-link callback.
+  ///
+  /// A signer returning control names the transport it answered on, so the
+  /// protocol-meaningful count is one. This sits above that for the same
+  /// reason the other two do — a signer retrying on a second transport is
+  /// plausible, and a cap that bites costs the user the pairing. It matches
+  /// the advertised set the session already dials, so one pairing opens at
+  /// most twice the sockets it started with.
+  static const int nip46Callback = 4;
 }
 
 /// Whether [url] is a relay URL the app may connect to.

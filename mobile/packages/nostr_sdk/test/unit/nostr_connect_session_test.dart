@@ -318,6 +318,58 @@ void main() {
       );
     });
 
+    test('addRelay stops admitting signer relays at the cap', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      final callbackRelays = <_TestRelayServer>[];
+      for (var i = 0; i <= RelayListCaps.nip46Callback; i++) {
+        final relay = await _TestRelayServer.start();
+        addTearDown(relay.close);
+        callbackRelays.add(relay);
+        await session.addRelay(relay.url);
+      }
+
+      for (final relay in callbackRelays.take(RelayListCaps.nip46Callback)) {
+        expect(relay.connectionCount, equals(1));
+      }
+      expect(
+        callbackRelays.last.connectionCount,
+        equals(0),
+        reason: 'a signer relay past the cap must never be dialed',
+      );
+    });
+
+    test('addRelay does not spend the cap on a relay that failed', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      final failedPort = await _unusedLoopbackPort();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      for (var i = 0; i < RelayListCaps.nip46Callback; i++) {
+        await session.addRelay('ws://127.0.0.1:$failedPort');
+      }
+
+      final callbackRelay = await _TestRelayServer.start();
+      addTearDown(callbackRelay.close);
+
+      await session.addRelay(callbackRelay.url);
+      expect(
+        callbackRelay.connectionCount,
+        equals(1),
+        reason: 'only retained relays count against the cap',
+      );
+    });
+
     test('addRelay is a no-op unless the session is listening', () async {
       final callbackRelay = await _TestRelayServer.start();
       addTearDown(callbackRelay.close);
