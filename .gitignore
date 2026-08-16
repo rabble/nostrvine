@@ -159,9 +159,6 @@ logs/
 .claude/worktrees/
 .claude/scheduled_tasks.lock
 
-# Orphan golden tests for missing lib/screens/live/ — preserved on disk, ignored
-mobile/test/goldens/screens/live/
-
 # Local-only zsp publish config (per-machine APK paths)
 mobile/zapstore.yaml
 mobile/macos/Runner/Configs/LocalRelease.xcconfig
