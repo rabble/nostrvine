@@ -17,11 +17,18 @@
 #                  without registering). Regenerate to register it.
 #
 # Manifest format (one binding per line, '#'-comments allowed):
-#   <arb_key><TAB><flow path relative to mobile/>[<TAB>rendered:<literal>]
-# The optional third column is for PARAMETERIZED ARB values (ICU placeholders
-# like {count}): flows assert the rendered string, not the template, so the
-# rendered literal is recorded by hand and checked verbatim instead. These
-# entries survive regeneration; everything else is auto-derived.
+#   <arb_key><TAB><flow path relative to mobile/>[<TAB>bound:<literal>]
+#   <arb_key><TAB><flow path relative to mobile/><TAB>rendered:<literal>]
+# The 'bound:' third column records the literal the flow asserted when the row
+# was auto-derived; it exists so that regeneration and the base-ref ratchet can
+# excuse ONLY removals where the flow genuinely stopped asserting that copy —
+# renaming an ARB key does not excuse a vanished binding while its literal is
+# still asserted. 'rendered:' rows are for PARAMETERIZED ARB values (ICU
+# placeholders like {count}): flows assert the rendered string, not the
+# template, so the rendered literal is recorded by hand and checked verbatim
+# against the flow AND against the template (every literal segment of the
+# template must still appear in it, in order). Rendered entries survive
+# regeneration; everything else is auto-derived.
 #
 # Element ids (id: ...) are NOT copy and are out of scope by design; regex
 # selectors (e.g. "Search.*") never exactly equal an ARB value and so never
@@ -36,16 +43,17 @@
 # Regenerate after an intentional copy change (review the printed diff of
 # added/removed bindings — regeneration re-blesses whatever ARB says today):
 #   UPDATE_BASELINE=1 bash mobile/scripts/check_maestro_copy_drift.sh
-# Regeneration REFUSES to drop a binding whose ARB key still exists and whose
-# flow file is still present: a vanished binding is drift being erased, not
-# cleanup. If the flow genuinely stopped asserting that key's copy, say so
-# explicitly: ACCEPT_REMOVALS=1 UPDATE_BASELINE=1 bash ...
+# Regeneration REFUSES to drop a binding while the flow still asserts its
+# recorded literal — a renamed or deleted ARB key does NOT excuse the removal.
+# If the flow genuinely stopped asserting that copy, say so explicitly:
+#   ACCEPT_REMOVALS=1 UPDATE_BASELINE=1 bash ...
 # The check also ratchets against the base ref (MAESTRO_COPY_DRIFT_BASE_REF,
 # default origin/main): a binding present on the base manifest may not vanish
-# from the branch manifest while its ARB key exists — that closes the bypass
-# where a PR regenerates away its own regression. Bootstrap: skipped with a
-# note until the manifest lands on the base ref. Fails closed when the base
-# is unloadable; MAESTRO_COPY_DRIFT_ALLOW_NO_BASE=1 is the local-only opt-out.
+# from the branch manifest while its literal is still asserted — that closes
+# the bypass where a PR regenerates away its own regression. Bootstrap:
+# skipped with a note until the manifest lands on the base ref. Fails closed
+# when the base is unloadable; MAESTRO_COPY_DRIFT_ALLOW_NO_BASE=1 is the
+# local-only opt-out.
 # Usage (from the repo root or mobile/): bash mobile/scripts/check_maestro_copy_drift.sh
 
 set -euo pipefail
@@ -56,7 +64,6 @@ MOBILE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ARB_FILE="$MOBILE_DIR/lib/l10n/app_en.arb"
 E2E_DIR="$MOBILE_DIR/e2e/maestro"
 MANIFEST_FILE="$SCRIPT_DIR/baseline/maestro_copy_manifest.txt"
-MANIFEST_REPO_PATH="mobile/scripts/baseline/maestro_copy_manifest.txt"
 
 MODE="check"
 if [[ "${UPDATE_BASELINE:-0}" == "1" ]]; then
@@ -161,14 +168,19 @@ for fpath in flows:
 # ---------- manifest load/save ----------
 
 def load_manifest(path):
-    bindings = {}  # (key, rel) -> rendered literal or None
     if not os.path.isfile(path):
-        return bindings
+        return {}
     with open(path, encoding="utf-8") as fh:
         return parse_manifest(fh.read())
 
 def parse_manifest(content):
-    bindings = {}  # (key, rel) -> rendered literal or None
+    # (key, rel) -> (rendered, bound): 'rendered' is the hand-maintained
+    # literal for a parameterized ARB value; 'bound' is the literal the flow
+    # asserted when the binding was auto-derived. The recorded literal is what
+    # lets the regen refusal / base-ref ratchet excuse ONLY removals where the
+    # flow genuinely stopped asserting the copy — a renamed ARB key does not
+    # excuse a vanished binding while its literal is still asserted.
+    bindings = {}
     for line in content.splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
@@ -176,10 +188,13 @@ def parse_manifest(content):
         if len(parts) < 2:
             continue
         key, rel = parts[0].strip(), parts[1].strip()
-        rendered = None
-        if len(parts) >= 3 and parts[2].startswith("rendered:"):
-            rendered = norm(parts[2][len("rendered:"):])
-        bindings[(key, rel)] = rendered
+        rendered = bound = None
+        if len(parts) >= 3:
+            if parts[2].startswith("rendered:"):
+                rendered = norm(parts[2][len("rendered:"):])
+            elif parts[2].startswith("bound:"):
+                bound = norm(parts[2][len("bound:"):])
+        bindings[(key, rel)] = (rendered, bound)
     return bindings
 
 # ---------- base-ref ratchet (B2) ----------
@@ -214,21 +229,58 @@ def load_base_manifest():
         return "unavailable", {}
     return "ok", parse_manifest(raw.stdout)
 
+def _flow_text(rel, _cache={}):
+    if rel not in _cache:
+        fpath = os.path.join(mobile_dir, rel)
+        if not os.path.isfile(fpath):
+            _cache[rel] = None
+        else:
+            with open(fpath, encoding="utf-8", errors="replace") as fh:
+                _cache[rel] = norm("\n".join(
+                    strip_comment(l.rstrip("\n")) for l in fh))
+    return _cache[rel]
+
+def _current_value(key):
+    return next((v for v, ks in exact_values.items() if key in ks), None)
+
 def vanished_bindings(old, new):
-    """Bindings in `old` but not `new` whose loss is not explained by the ARB
-    key or the flow file being gone — i.e. drift erased by regeneration."""
+    """Bindings in `old` but not `new` whose loss is NOT explained. A removal
+    is excused only when the flow file is gone, or the flow no longer asserts
+    the recorded literal (it genuinely stopped checking that copy), or the
+    same literal re-bound to another key (a pure rename with unchanged value).
+    A renamed/deleted ARB key does NOT excuse a vanished binding while its
+    literal is still asserted — that is drift being erased, not cleanup."""
     gone = []
     for key, rel in sorted(set(old) - set(new)):
-        if key in all_keys and os.path.isfile(os.path.join(mobile_dir, rel)):
+        text = _flow_text(rel)
+        if text is None:
+            continue  # flow file deleted
+        rendered, bound = old[(key, rel)]
+        lit = rendered or bound
+        if lit is None:
+            # legacy row without a recorded literal: fall back to key existence
+            if key not in all_keys:
+                continue
             gone.append((key, rel))
+            continue
+        if lit not in text:
+            continue  # flow stopped asserting this copy
+        if any(k2 != key and (k2, rel) in new and _current_value(k2) == lit
+               for k2 in all_keys):
+            continue  # literal re-bound to a renamed key, value unchanged
+        gone.append((key, rel))
     return gone
 
 HEADER = """# Binding baseline: each English literal the Maestro suite asserts or taps,
 # bound to the app_en.arb key it comes from. Generated by
 # scripts/check_maestro_copy_drift.sh. Format:
-#   <arb_key><TAB><flow path relative to mobile/>[<TAB>rendered:<literal>]
-# 'rendered:' rows are hand-maintained bindings for parameterized ARB values
-# (ICU placeholders) and survive regeneration; all other rows are auto-derived.
+#   <arb_key><TAB><flow path relative to mobile/>[<TAB>bound:<literal>]
+#   <arb_key><TAB><flow path relative to mobile/><TAB>rendered:<literal>]
+# 'bound:' records the literal the flow asserted when the row was derived —
+# a vanished row is excused only when the flow no longer asserts that literal
+# (key renames do NOT excuse it). 'rendered:' rows are hand-maintained bindings
+# for parameterized ARB values (ICU placeholders); they survive regeneration,
+# and the guard verifies the ARB template still produces the rendered literal.
 # Regenerate after intentional copy changes with UPDATE_BASELINE=1 and review
 # the printed diff — regeneration re-blesses whatever app_en.arb says today.
 # Known v1 limits are tracked in #7213: already-drifted flow literals do not
@@ -238,10 +290,12 @@ HEADER = """# Binding baseline: each English literal the Maestro suite asserts o
 
 def save_manifest(path, bindings):
     lines = [HEADER]
-    for (key, rel), rendered in sorted(bindings.items()):
+    for (key, rel), (rendered, bound) in sorted(bindings.items()):
         row = f"{key}\t{rel}"
         if rendered is not None:
             row += f"\trendered:{rendered}"
+        elif bound is not None:
+            row += f"\tbound:{bound}"
         lines.append(row)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
@@ -253,28 +307,33 @@ if mode == "regen":
     new = {}
     for (lit, rel), keys in found.items():
         key = sorted(keys)[0]  # duplicate ARB values bind to the first key
-        new[(key, rel)] = None
+        new[(key, rel)] = (None, lit)  # record the literal the flow asserts
     # hand-maintained rendered bindings cannot be auto-derived: carry them
     carried = 0
-    for (key, rel), rendered in old.items():
+    for (key, rel), (rendered, _bound) in old.items():
         if rendered is not None:
-            new[(key, rel)] = rendered
+            new[(key, rel)] = (rendered, None)
             carried += 1
     added = sorted(set(new) - set(old))
     removed = sorted(set(old) - set(new))
     # B1: regeneration rebuilds bindings only from literals that CURRENTLY
-    # match ARB, so on real drift (stale literal, key still in ARB, flow file
-    # still present) the binding silently drops out and the guard goes green
-    # with the flow still broken. Refuse that unless explicitly accepted.
+    # match ARB, so on real drift the stale binding silently drops out and
+    # the guard goes green with the flow still broken. A removal is refused
+    # while the flow still asserts the recorded literal — including when the
+    # ARB key was renamed away — unless ACCEPT_REMOVALS=1 is set explicitly.
     blocked = vanished_bindings(old, new)
     if blocked and os.environ.get("ACCEPT_REMOVALS", "0") != "1":
-        print("❌ regen refused: these bindings vanish while their ARB key "
-              "still exists and the flow file is still present:", file=sys.stderr)
+        print("❌ regen refused: these bindings vanish while their literal is "
+              "still asserted in the flow file:", file=sys.stderr)
         for key, rel in blocked:
-            current = next((v for v, ks in exact_values.items() if key in ks),
-                           param_values.get(key, "?"))
-            print(f"  - {key}\t{rel}\n      ARB now says: {current}",
-                  file=sys.stderr)
+            rendered, bound = old[(key, rel)]
+            lit = rendered or bound or "?"
+            where = ("key exists; ARB now says: " +
+                     (_current_value(key) or param_values.get(key, "?"))
+                     if key in all_keys else
+                     "key no longer exists in app_en.arb (renamed?)")
+            print(f"  - {key}\t{rel}\n      flow still asserts: {lit}\n"
+                  f"      {where}", file=sys.stderr)
         print("A vanished binding is drift being ERASED, not cleanup: the "
               "flow still asserts the old string and the guard would go "
               "permanently green. Update the flow to the current ARB copy "
@@ -292,9 +351,9 @@ if mode == "regen":
         print(f"  - {key}\t{rel}")
     if blocked:
         print(f"WARNING: {len(blocked)} binding(s) removed with "
-              "ACCEPT_REMOVALS=1 while their ARB key still exists — the "
-              "base-ref ratchet will still fail CI if the base manifest "
-              "carries them.")
+              "ACCEPT_REMOVALS=1 while their literal is still asserted in "
+              "the flow — the base-ref ratchet will still fail CI if the "
+              "base manifest carries them.")
     if added or removed:
         print("review the diff above: regeneration re-blesses today's ARB copy.")
     sys.exit(0)
@@ -310,26 +369,62 @@ if not os.path.isfile(manifest_path):
 bindings = load_manifest(manifest_path)
 failures = 0
 
-for (key, rel), rendered in sorted(bindings.items()):
+for (key, rel), (rendered, _bound) in sorted(bindings.items()):
     fpath = os.path.join(mobile_dir, rel)
     if not os.path.isfile(fpath):
         print(f"❌ DRIFT: bound flow file is missing: {rel} "
               f"(bound to ARB key '{key}')", file=sys.stderr)
         failures += 1
         continue
-    with open(fpath, encoding="utf-8", errors="replace") as fh:
-        # S4: strip comments like the extractor does — a commented-out
-        # assertion must not satisfy its binding.
-        text = norm("\n".join(strip_comment(l.rstrip("\n")) for l in fh))
+    text = _flow_text(rel)
 
     if key not in all_keys:
         print(f"❌ DRIFT: ARB key '{key}' no longer exists in "
-              f"lib/l10n/app_en.arb (bound from {rel}). Re-bind or regenerate.",
+              f"lib/l10n/app_en.arb (bound from {rel}). If the key was "
+              f"renamed, update the flow to the current copy under the new "
+              f"key — regenerating will refuse to drop this binding while "
+              f"the flow still asserts its recorded literal.",
               file=sys.stderr)
         failures += 1
         continue
 
     if rendered is not None:
+        if key in param_values:
+            # The ARB side is the template: every literal segment of it must
+            # still appear, in order, in the recorded rendered string —
+            # otherwise the copy changed under a hand-maintained binding.
+            segs = [norm(s) for s in re.split(r"\{[^}]*\}", param_values[key])
+                    if norm(s)]
+            pos = 0
+            missing = None
+            for s in segs:
+                i = rendered.find(s, pos)
+                if i < 0:
+                    missing = s
+                    break
+                pos = i + len(s)
+            if missing is not None:
+                print(f"❌ DRIFT: ARB template for '{key}' changed from under "
+                      f"the rendered binding in {rel}:\n"
+                      f"       template now: {param_values[key]}\n"
+                      f"       rendered row: {rendered}\n"
+                      f"       segment no longer produced: {missing}\n"
+                      f"     Update the flow to the new rendered copy and fix "
+                      f"the rendered: binding in "
+                      f"mobile/scripts/baseline/maestro_copy_manifest.txt",
+                      file=sys.stderr)
+                failures += 1
+                continue
+        else:
+            print(f"❌ DRIFT: ARB key '{key}' (bound from {rel}) no longer "
+                  f"interpolates a placeholder — the rendered: row is stale.\n"
+                  f"       ARB now says: {_current_value(key)}\n"
+                  f"     Update the flow if needed, then regenerate: "
+                  f"UPDATE_BASELINE=1 bash "
+                  f"mobile/scripts/check_maestro_copy_drift.sh",
+                  file=sys.stderr)
+            failures += 1
+            continue
         if rendered not in text:
             print(f"❌ DRIFT: {rel} no longer contains the rendered string "
                   f"for parameterized ARB key '{key}':\n"
@@ -350,7 +445,7 @@ for (key, rel), rendered in sorted(bindings.items()):
         failures += 1
         continue
 
-    current = next(v for v, ks in exact_values.items() if key in ks)
+    current = _current_value(key)
     if current not in text:
         print(f"❌ DRIFT: copy changed under the Maestro suite.\n"
               f"       ARB key:  {key}\n"
@@ -379,18 +474,21 @@ for rel, lit, keys in unregistered:
     failures += 1
 
 # B2: base-ref ratchet — a binding the base manifest carries may not vanish
-# from the branch while its ARB key and flow file still exist. This is what
-# makes a regen-erased regression visible in CI even when the branch's own
-# check is green. Bootstrap: the manifest does not exist on the base ref until
-# this guard merges, so the ratchet is skipped with a note until then.
+# from the branch while the flow still asserts its recorded literal. This is
+# what makes a regen-erased regression visible in CI even when the branch's
+# own check is green, and it keys on the literal, not the key name, so a
+# rename-plus-copy-change cannot slip through as a deletion. Bootstrap: the
+# manifest does not exist on the base ref until this guard merges, so the
+# ratchet is skipped with a note until then.
 base_status, base_bindings = load_base_manifest()
 if base_status == "ok":
     dropped = vanished_bindings(base_bindings, bindings)
     for key, rel in dropped:
         print(f"❌ ERODED: binding for '{key}' in {rel} exists on {BASE_REF} "
-              f"but is gone from this branch's manifest, and the ARB key "
-              f"still exists. Regenerating away a drifted binding does not "
-              f"fix the drift — update the flow to the current ARB copy.",
+              f"but is gone from this branch's manifest, and the flow still "
+              f"asserts its recorded literal. Regenerating away a drifted "
+              f"binding does not fix the drift — update the flow to the "
+              f"current ARB copy.",
               file=sys.stderr)
         failures += 1
 elif base_status == "bootstrap":
