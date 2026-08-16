@@ -227,7 +227,7 @@ void main() {
       expect(find.text('home'), findsOneWidget);
     });
 
-    testWidgets('non-iOS pushed route edge swipe can still tune', (
+    testWidgets('Android pushed route edge swipe can still tune', (
       tester,
     ) async {
       final tuned = await pumpPushedOverlay(
