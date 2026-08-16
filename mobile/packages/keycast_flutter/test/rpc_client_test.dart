@@ -106,14 +106,15 @@ void main() {
         );
       });
 
-      test('retries once when the first request has a socket error', () async {
-        var callCount = 0;
-        mockClient = MockClient((request) async {
-          callCount++;
-          if (callCount == 1) {
-            throw http.ClientException('Connection reset', request.url);
-          }
-
+      test('retries once on a fresh transport after a socket error', () async {
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        final firstClient = MockClient((request) async {
+          firstClientCalls++;
+          throw http.ClientException('Connection reset', request.url);
+        });
+        final retryClient = MockClient((request) async {
+          retryClientCalls++;
           final body = jsonDecode(request.body);
           expect(body['method'], 'get_public_key');
           return http.Response(
@@ -124,11 +125,16 @@ void main() {
             200,
           );
         });
+        var factoryCalls = 0;
 
         final rpc = KeycastRpc(
           nostrApi: 'https://login.divine.video/api/nostr',
           accessToken: 'test_token',
-          httpClient: mockClient,
+          httpClient: firstClient,
+          httpClientFactory: () {
+            factoryCalls++;
+            return retryClient;
+          },
         );
 
         final pubkey = await rpc.getPublicKey();
@@ -137,7 +143,36 @@ void main() {
           pubkey,
           '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
         );
-        expect(callCount, equals(2));
+        expect(firstClientCalls, equals(1));
+        expect(factoryCalls, equals(1));
+        expect(retryClientCalls, equals(1));
+      });
+
+      test('propagates socket error when the one retry also fails', () async {
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        final firstClient = MockClient((request) async {
+          firstClientCalls++;
+          throw http.ClientException('Bad file descriptor', request.url);
+        });
+        final retryClient = MockClient((request) async {
+          retryClientCalls++;
+          throw http.ClientException('Connection reset', request.url);
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: firstClient,
+          httpClientFactory: () => retryClient,
+        );
+
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(isA<http.ClientException>()),
+        );
+        expect(firstClientCalls, equals(1));
+        expect(retryClientCalls, equals(1));
       });
     });
 
@@ -747,6 +782,53 @@ void main() {
         expect(slots[0].rumor, rumor);
         expect(slots[1].isSuccess, isFalse);
         expect(slots[1].error, 'sender_mismatch');
+      });
+
+      test('retries batch request once on a fresh transport after a socket '
+          'error', () async {
+        final wraps = [giftWrap('11')];
+        final rumor = {
+          'id': 'c' * 64,
+          'pubkey': 'd' * 64,
+          'created_at': 1700000001,
+          'kind': 14,
+          'tags': <List<String>>[],
+          'content': 'hello',
+        };
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        final firstClient = MockClient((request) async {
+          firstClientCalls++;
+          throw http.ClientException('Bad file descriptor', request.url);
+        });
+        final retryClient = MockClient((request) async {
+          retryClientCalls++;
+          final body = jsonDecode(request.body);
+          expect(body['method'], 'nip17_unwrap_batch');
+          expect(body['params'], wraps);
+          return http.Response(
+            jsonEncode({
+              'result': [
+                {'rumor': rumor, 'sender': 'd' * 64},
+              ],
+            }),
+            200,
+          );
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: firstClient,
+          httpClientFactory: () => retryClient,
+        );
+
+        final slots = await rpc.nip17UnwrapBatch(wraps);
+
+        expect(slots, hasLength(1));
+        expect(slots![0].isSuccess, isTrue);
+        expect(firstClientCalls, equals(1));
+        expect(retryClientCalls, equals(1));
       });
 
       test('returns null when the backend lacks the verb', () async {

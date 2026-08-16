@@ -22,11 +22,14 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     required this.nostrApi,
     required String accessToken,
     http.Client? httpClient,
+    http.Client Function()? httpClientFactory,
     TokenRefreshCallback? onTokenRefresh,
     this.requestTimeout = defaultRequestTimeout,
     this.batchRequestTimeout = defaultBatchRequestTimeout,
   }) : _accessToken = accessToken,
-       _client = httpClient ?? http.Client(),
+       _clientFactory = httpClientFactory ?? http.Client.new,
+       _client = httpClient ?? (httpClientFactory ?? http.Client.new)(),
+       _ownsClient = httpClient == null,
        _onTokenRefresh = onTokenRefresh;
 
   factory KeycastRpc.fromSession(
@@ -107,7 +110,9 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
 
   final String nostrApi;
   String _accessToken;
-  final http.Client _client;
+  final http.Client Function() _clientFactory;
+  http.Client _client;
+  bool _ownsClient;
   final TokenRefreshCallback? _onTokenRefresh;
   bool _signCanonicalUnsupported = false;
 
@@ -129,7 +134,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     var response = await _sendRequestWithRetry(
       method,
       params,
-      timeout: timeout,
+      timeout: () => timeout,
       classifyLocalTimeout: classifyLocalTimeout,
     );
 
@@ -155,7 +160,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         response = await _sendRequestWithRetry(
           method,
           params,
-          timeout: timeout,
+          timeout: () => timeout,
           classifyLocalTimeout: classifyLocalTimeout,
         );
       }
@@ -190,31 +195,58 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     return fromResult(json['result']);
   }
 
+  /// Sends one RPC request and, for socket-level [http.ClientException] only,
+  /// resets the HTTP transport before retrying once.
+  ///
+  /// The retry is deliberately below RPC parsing and token-refresh handling:
+  /// a call that also gets one 401 refresh can issue up to four POSTs in the
+  /// worst case, but only for idempotent Keycast verbs.
   Future<http.Response> _sendRequestWithRetry(
     String method,
     List<dynamic> params, {
-    Duration? timeout,
+    Duration? Function()? timeout,
     bool classifyLocalTimeout = true,
   }) async {
     try {
       return await _sendRequest(
         method,
         params,
-        timeout: timeout,
+        timeout: timeout?.call(),
         classifyLocalTimeout: classifyLocalTimeout,
       );
-    } on http.ClientException {
+    } on http.ClientException catch (error) {
       Log.warning(
-        '[Keycast RPC] Socket error during $method; retrying once',
+        '[Keycast RPC] Socket error during $method: $error; '
+        'resetting HTTP transport and retrying once',
         name: 'KeycastRpc',
         category: LogCategory.auth,
       );
-      return _sendRequest(
-        method,
-        params,
-        timeout: timeout,
-        classifyLocalTimeout: classifyLocalTimeout,
-      );
+      _resetHttpClient();
+      try {
+        return await _sendRequest(
+          method,
+          params,
+          timeout: timeout?.call(),
+          classifyLocalTimeout: classifyLocalTimeout,
+        );
+      } on http.ClientException catch (retryError) {
+        Log.warning(
+          '[Keycast RPC] Socket retry failed during $method: $retryError',
+          name: 'KeycastRpc',
+          category: LogCategory.auth,
+        );
+        rethrow;
+      }
+    }
+  }
+
+  void _resetHttpClient() {
+    final previousClient = _client;
+    final shouldClosePrevious = _ownsClient;
+    _client = _clientFactory();
+    _ownsClient = true;
+    if (shouldClosePrevious) {
+      previousClient.close();
     }
   }
 
@@ -459,7 +491,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     var response = await _sendRequestWithRetry(
       method,
       params,
-      timeout: remaining(),
+      timeout: remaining,
       classifyLocalTimeout: classifyLocalTimeout,
     );
 
@@ -480,7 +512,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         response = await _sendRequestWithRetry(
           method,
           params,
-          timeout: remaining(),
+          timeout: remaining,
           classifyLocalTimeout: classifyLocalTimeout,
         );
       }
@@ -597,5 +629,9 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   }
 
   @override
-  void close() {}
+  void close() {
+    if (_ownsClient) {
+      _client.close();
+    }
+  }
 }
