@@ -1702,10 +1702,15 @@ class DmRepository {
     try {
       // Dedup: skip if already processed (message row or ledger). #5452.
       if (await _alreadyProcessed(giftWrapEvent.id)) {
-        Log.debug(
-          'Skipping already-processed gift wrap ${giftWrapEvent.id}',
-          category: LogCategory.system,
-        );
+        // History drain pass 2 re-routes already-persisted wraps through this
+        // handler (preDecrypted miss). Per-wrap debug would fill the 50k
+        // capture ring and evict the persist lines that diagnose #7631.
+        if (_historyDrain == null) {
+          Log.debug(
+            'Skipping already-processed gift wrap ${giftWrapEvent.id}',
+            category: LogCategory.system,
+          );
+        }
         return;
       }
 
@@ -2021,8 +2026,8 @@ class DmRepository {
       await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
 
       Log.debug(
-        'Persisted NIP-17 DM (kind ${rumor.kind}) in conversation '
-        '$conversationId from ${rumor.pubkey}',
+        'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
+        '$conversationId from ${rumor.pubkey} createdAt=$persistedCreatedAt',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
@@ -2454,10 +2459,12 @@ class DmRepository {
     try {
       // Dedup: use event ID as giftWrapId for the unique index.
       if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
-        Log.debug(
-          'Skipping already-persisted NIP-04 event ${nip04Event.id}',
-          category: LogCategory.system,
-        );
+        if (_historyDrain == null) {
+          Log.debug(
+            'Skipping already-persisted NIP-04 event ${nip04Event.id}',
+            category: LogCategory.system,
+          );
+        }
         return;
       }
 
@@ -2589,8 +2596,10 @@ class DmRepository {
       );
 
       Log.debug(
-        'Persisted NIP-04 DM (kind ${EventKind.directMessage}) in conversation '
-        '$conversationId from $senderPubkey',
+        'Persisted NIP-04 DM ${nip04Event.id} '
+        '(kind ${EventKind.directMessage}) in conversation '
+        '$conversationId from $senderPubkey '
+        'createdAt=${nip04Event.createdAt}',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
