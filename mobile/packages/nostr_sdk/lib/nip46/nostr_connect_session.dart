@@ -24,6 +24,7 @@ import 'nostr_remote_response.dart';
 import 'nostr_remote_signer_info.dart';
 
 const _relayConnectTimeout = Duration(seconds: 8);
+const _relayFailedConnectCleanupTimeout = Duration(seconds: 1);
 
 /// State of a nostrconnect:// session.
 enum NostrConnectState {
@@ -459,16 +460,24 @@ class NostrConnectSession {
       }
     };
 
-    // Add subscription for listening to responses
-    await _addSubscription(relay);
+    try {
+      // Add subscription for listening to responses
+      await _addSubscription(relay);
 
-    final connected = await relay.connect().timeout(_relayConnectTimeout);
-    if (!connected) {
-      throw StateError('Relay connect returned false');
+      final connected = await relay.connect().timeout(_relayConnectTimeout);
+      if (!connected) {
+        throw StateError('Relay connect returned false');
+      }
+      logger('[NostrConnectSession] Connected to $relayAddr');
+
+      return relay;
+    } catch (_) {
+      relay.onMessage = null;
+      try {
+        await relay.disconnect().timeout(_relayFailedConnectCleanupTimeout);
+      } catch (_) {}
+      rethrow;
     }
-    logger('[NostrConnectSession] Connected to $relayAddr');
-
-    return relay;
   }
 
   Future<void> _reconnectRelay(Relay relay) async {

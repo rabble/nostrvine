@@ -77,9 +77,7 @@ bool isPrivateOrLinkLocalHost(String host) {
   // Left in, the dot breaks every lookup below: it adds an empty fifth part
   // that defeats [_tryParseIPv4], and it misses both [isLoopbackHost] and
   // [_privateHostSuffixes] on the name comparison.
-  final bare = bracketless.endsWith('.')
-      ? bracketless.substring(0, bracketless.length - 1)
-      : bracketless;
+  final bare = bracketless.replaceFirst(RegExp(r'\.+$'), '');
   if (bare.isEmpty) return true;
 
   final ipv4 = _tryParseIPv4(bare);

@@ -470,7 +470,7 @@ class DeepLinkService {
     if (trimmed == null || trimmed.isEmpty) return null;
     if (!isSignerCallbackRelayUrlAllowed(trimmed)) {
       Log.warning(
-        'Refused signer callback relay $trimmed',
+        'Refused signer callback relay ${redactUriStringForLogs(trimmed)}',
         name: 'DeepLinkService',
         category: LogCategory.auth,
       );

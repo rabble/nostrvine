@@ -417,8 +417,11 @@ void main() {
         'wss://10.0.2.2:47777',
         // Root-anchored respellings of the same private targets.
         'wss://127.0.0.1.',
+        'wss://127.0.0.1..',
         'wss://192.168.1.10.',
+        'wss://192.168.1.10..',
         'wss://signer.local.',
+        'wss://signer.local..',
       ]) {
         test('drops the callback relay hint $relay', () {
           final result = parseCallback(relay);

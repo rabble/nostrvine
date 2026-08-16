@@ -512,6 +512,38 @@ void main() {
       },
       timeout: const Timeout(Duration(seconds: 20)),
     );
+
+    test(
+      'addRelay disconnects a relay that connects after the session timeout',
+      () async {
+        final primaryRelay = await _TestRelayServer.start();
+        final delayedRelay = await _DelayedUpgradeRelayServer.start(
+          delay: const Duration(seconds: 9),
+        );
+        addTearDown(primaryRelay.close);
+        addTearDown(delayedRelay.close);
+
+        final session = NostrConnectSession(relays: [primaryRelay.url]);
+        addTearDown(session.dispose);
+
+        await session.start();
+        await session.addRelay(delayedRelay.url);
+
+        await Future<void>.delayed(const Duration(seconds: 2));
+
+        expect(
+          delayedRelay.receivedMessages.where(_isReqMessage),
+          isEmpty,
+          reason: 'a relay that missed the session timeout must not subscribe',
+        );
+        expect(
+          delayedRelay.activeSocketCount,
+          equals(0),
+          reason: 'timed-out relays must not stay connected invisibly',
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
   });
 
   group('NostrConnectState enum', () {
@@ -1265,6 +1297,7 @@ class _TestRelayServer {
 
   final HttpServer _server;
   final _sockets = <WebSocket>[];
+  final receivedMessages = <List<dynamic>>[];
   late final StreamSubscription<HttpRequest> _requests;
   int connectionCount = 0;
   bool _closed = false;
@@ -1299,7 +1332,65 @@ class _TestRelayServer {
     final socket = await WebSocketTransformer.upgrade(request);
     _sockets.add(socket);
     connectionCount += 1;
-    socket.listen((_) {});
+    socket.listen((message) {
+      receivedMessages.add(jsonDecode(message as String) as List<dynamic>);
+    });
+  }
+
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    for (final socket in _sockets) {
+      await socket.close();
+    }
+    await _requests.cancel();
+    await _server.close(force: true);
+  }
+}
+
+bool _isReqMessage(List<dynamic> message) =>
+    message.isNotEmpty && message.first == 'REQ';
+
+class _DelayedUpgradeRelayServer {
+  _DelayedUpgradeRelayServer._(this._server, this._delay) {
+    _requests = _server.listen(_handleRequest);
+  }
+
+  final HttpServer _server;
+  final Duration _delay;
+  final _sockets = <WebSocket>[];
+  final receivedMessages = <List<dynamic>>[];
+  late final StreamSubscription<HttpRequest> _requests;
+  bool _closed = false;
+
+  String get url => 'ws://127.0.0.1:${_server.port}';
+  int get activeSocketCount => _sockets.where((socket) {
+    return socket.readyState == WebSocket.open ||
+        socket.readyState == WebSocket.connecting;
+  }).length;
+
+  static Future<_DelayedUpgradeRelayServer> start({
+    required Duration delay,
+  }) async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    return _DelayedUpgradeRelayServer._(server, delay);
+  }
+
+  Future<void> _handleRequest(HttpRequest request) async {
+    if (!WebSocketTransformer.isUpgradeRequest(request)) {
+      request.response.statusCode = HttpStatus.badRequest;
+      await request.response.close();
+      return;
+    }
+
+    await Future<void>.delayed(_delay);
+    if (_closed) return;
+
+    final socket = await WebSocketTransformer.upgrade(request);
+    _sockets.add(socket);
+    socket.listen((message) {
+      receivedMessages.add(jsonDecode(message as String) as List<dynamic>);
+    });
   }
 
   Future<void> close() async {

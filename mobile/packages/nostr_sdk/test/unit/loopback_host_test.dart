@@ -90,10 +90,13 @@ void main() {
       for (final host in [
         'localhost.',
         '127.0.0.1.',
+        '127.0.0.1..',
         '192.168.1.1.',
+        '192.168.1.1..',
         '10.0.2.2.',
         '169.254.169.254.',
         'printer.local.',
+        'printer.local..',
         'db.internal.',
       ]) {
         expect(isPrivateOrLinkLocalHost(host), isTrue, reason: host);
@@ -106,6 +109,7 @@ void main() {
 
     test('a trailing dot does not make a public host private', () {
       expect(isPrivateOrLinkLocalHost('relay.divine.video.'), isFalse);
+      expect(isPrivateOrLinkLocalHost('relay.divine.video..'), isFalse);
     });
 
     test('treats an empty or unparseable host as private', () {
