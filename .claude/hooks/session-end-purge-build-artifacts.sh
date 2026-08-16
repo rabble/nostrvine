@@ -43,6 +43,7 @@ active_worktree_peers() {
 
   local pid=""
   local command_name=""
+  local command_base=""
   local cwd=""
   local count=0
   local peers=""
@@ -51,7 +52,13 @@ active_worktree_peers() {
     case "$pid" in '' | *[!0-9]*) continue ;; esac
     is_ancestor_pid "$pid" && continue
 
-    cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)"
+    command_base="${command_name##*/}"
+    case "$command_base" in
+      bash|sh|zsh|fish|claude|codex|flutter|dart|java|gradle|xcodebuild|swift|node|npm|pnpm|yarn|mise|python|python3) ;;
+      *) continue ;;
+    esac
+
+    cwd="$(lsof -b -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)"
     [ -n "$cwd" ] || continue
     case "$cwd" in
       "$root"|"$root"/*) ;;
