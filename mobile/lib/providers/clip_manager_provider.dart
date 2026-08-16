@@ -442,10 +442,12 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     return insertedClip;
   }
 
-  /// Add multiple clips at once (e.g., from draft restoration).
+  /// Add multiple clips at once, each seeded with an import trim that keeps
+  /// the batch inside the editor budget.
   ///
   /// Appends all clips to the end of the current clip list and updates state.
-  /// Used when restoring drafts or importing multiple clips from library.
+  /// This is the library import that happens while the editor is already open
+  /// (`VideoEditorScreen`); draft restoration goes through [replaceClips].
   void addMultipleClips(List<DivineVideoClip> clips) {
     if (clips.isEmpty) {
       Log.debug(
@@ -457,7 +459,19 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     }
 
     final previousCount = _clips.length;
-    _clips.addAll(clips);
+    // Seed against the clips already accepted in this batch, so a batch that
+    // fills the budget partway through trims the rest — the same accumulation
+    // the other library import path gets from calling insertClip in a loop.
+    final seededClips = <DivineVideoClip>[];
+    for (final clip in clips) {
+      seededClips.add(
+        seedImportTrimForEditorBudget(
+          clip: clip,
+          existingClips: [..._clips, ...seededClips],
+        ),
+      );
+    }
+    _clips.addAll(seededClips);
 
     Log.info(
       '📎 Added ${clips.length} clips '

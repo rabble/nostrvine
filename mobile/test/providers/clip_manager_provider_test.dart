@@ -1144,6 +1144,29 @@ void main() {
         );
       });
 
+      test('addMultipleClips seeds each clip in the batch', () {
+        // VideoEditorScreen imports from the library through addMultipleClips
+        // while the editor is already open, so that path needs the same
+        // seeding the library screen gets from its insertClip loop.
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        notifier.addMultipleClips([
+          _budgetClip(id: 'first', duration: const Duration(seconds: 60)),
+          _budgetClip(id: 'second', duration: const Duration(seconds: 60)),
+        ]);
+
+        final clips = container.read(clipManagerProvider).clips;
+        expect(clips, hasLength(2));
+        expect(
+          clips[0].playbackDuration,
+          equals(VideoEditorConstants.maxDuration),
+        );
+        expect(
+          clips[1].trimmedDuration,
+          equals(TimelineConstants.minTrimDuration),
+        );
+      });
+
       test('applies the trim floor in source time on a slowed clip', () {
         // The floor has to be applied to the source window, not the playback
         // window: at 0.5x a 60ms playback window is only 30ms of source, which
