@@ -199,7 +199,8 @@ class ProfileSavedVideosBloc
     final firstPageIds = savedEventIds
         .take(ProfileTabPagination.pageSize)
         .toList();
-    final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+    final fetchResult = await _fetchVideos(firstPageIds, cacheResults: true);
+    final videos = fetchResult.videos;
     if (isClosed) return;
 
     final snapshot = ProfileVideoListSnapshot(
@@ -216,6 +217,9 @@ class ProfileSavedVideosBloc
         nextPageOffset: snapshot.nextPageOffset,
         hasMoreContent: snapshot.hasMoreContent,
         isRefreshing: false,
+        lastFetchResolvedVideoCount: videos.isEmpty
+            ? fetchResult.resolvedVideoCount
+            : null,
         clearError: true,
       ),
     );
@@ -245,6 +249,7 @@ class ProfileSavedVideosBloc
         nextPageOffset: reconciled.nextPageOffset,
         hasMoreContent: reconciled.hasMoreContent,
         isRefreshing: false,
+        lastFetchResolvedVideoCount: reconciled.resolvedVideoCount,
         clearError: true,
       ),
     );
@@ -261,12 +266,20 @@ class ProfileSavedVideosBloc
   /// Reconciles displayed videos against a fresh [freshIds] list: keeps saved
   /// videos still present, drops the rest, and fetches only the newly-saved
   /// IDs in the loaded window. Bounded so it never bulk-fetches.
-  Future<({List<VideoEvent> videos, int nextPageOffset, bool hasMoreContent})>
+  Future<
+    ({
+      List<VideoEvent> videos,
+      int nextPageOffset,
+      bool hasMoreContent,
+      int resolvedVideoCount,
+    })
+  >
   _reconcile(List<String> freshIds) async {
     final byId = {
       for (final video in state.videos)
         if (!_deletedVideoFilter(video)) video.id: video,
     };
+    var resolvedVideoCount = byId.length;
     // Anchor on the previous top ID rather than a length delta, so a capped
     // persisted ID list can't balloon the reconcile window into a full
     // re-fetch on reopen (see ProfileLikedVideosBloc for the rationale).
@@ -283,7 +296,9 @@ class ProfileSavedVideosBloc
 
     final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
     if (missingIds.isNotEmpty) {
-      for (final video in await _fetchVideos(missingIds, cacheResults: true)) {
+      final fetchResult = await _fetchVideos(missingIds, cacheResults: true);
+      resolvedVideoCount += fetchResult.resolvedVideoCount;
+      for (final video in fetchResult.videos) {
         byId[video.id] = video;
       }
     }
@@ -296,6 +311,7 @@ class ProfileSavedVideosBloc
       videos: videos,
       nextPageOffset: windowIds.length,
       hasMoreContent: windowIds.length < freshIds.length,
+      resolvedVideoCount: videos.isEmpty ? resolvedVideoCount : 0,
     );
   }
 
@@ -427,7 +443,8 @@ class ProfileSavedVideosBloc
           .skip(offset)
           .take(ProfileTabPagination.pageSize)
           .toList();
-      final newVideos = await _fetchVideos(nextPageIds, cacheResults: true);
+      final fetchResult = await _fetchVideos(nextPageIds, cacheResults: true);
+      final newVideos = fetchResult.videos;
 
       Log.info(
         'ProfileSavedVideosBloc: Loaded ${newVideos.length} more videos',
@@ -524,11 +541,13 @@ class ProfileSavedVideosBloc
   /// Returns videos in the same order as [eventIds], excluding videos not
   /// found in cache or relay and videos whose format is unsupported on the
   /// current platform.
-  Future<List<VideoEvent>> _fetchVideos(
+  Future<({List<VideoEvent> videos, int resolvedVideoCount})> _fetchVideos(
     List<String> eventIds, {
     bool cacheResults = false,
   }) async {
-    if (eventIds.isEmpty) return [];
+    if (eventIds.isEmpty) {
+      return (videos: <VideoEvent>[], resolvedVideoCount: 0);
+    }
 
     final videos = await _videosRepository.getVideosByIds(
       eventIds,
@@ -542,7 +561,10 @@ class ProfileSavedVideosBloc
       category: LogCategory.video,
     );
 
-    return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
+    return (
+      videos: videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      resolvedVideoCount: videos.length,
+    );
   }
 
   @override

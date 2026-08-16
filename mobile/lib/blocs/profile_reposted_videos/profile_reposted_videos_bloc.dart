@@ -217,7 +217,8 @@ class ProfileRepostedVideosBloc
     final firstPageIds = addressableIds
         .take(ProfileTabPagination.pageSize)
         .toList();
-    final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+    final fetchResult = await _fetchVideos(firstPageIds, cacheResults: true);
+    final videos = fetchResult.videos;
     if (isClosed) return;
 
     final snapshot = ProfileVideoListSnapshot(
@@ -234,6 +235,9 @@ class ProfileRepostedVideosBloc
         nextPageOffset: snapshot.nextPageOffset,
         hasMoreContent: snapshot.hasMoreContent,
         isRefreshing: false,
+        lastFetchResolvedVideoCount: videos.isEmpty
+            ? fetchResult.resolvedVideoCount
+            : null,
         clearError: true,
       ),
     );
@@ -269,6 +273,7 @@ class ProfileRepostedVideosBloc
         nextPageOffset: reconciled.nextPageOffset,
         hasMoreContent: reconciled.hasMoreContent,
         isRefreshing: false,
+        lastFetchResolvedVideoCount: reconciled.resolvedVideoCount,
         clearError: true,
       ),
     );
@@ -285,7 +290,14 @@ class ProfileRepostedVideosBloc
   /// Reconciles displayed videos against a fresh [freshIds] list: keeps reposts
   /// still present, drops the rest, and fetches only the newly-reposted IDs in
   /// the loaded window. Bounded so it never bulk-fetches.
-  Future<({List<VideoEvent> videos, int nextPageOffset, bool hasMoreContent})>
+  Future<
+    ({
+      List<VideoEvent> videos,
+      int nextPageOffset,
+      bool hasMoreContent,
+      int resolvedVideoCount,
+    })
+  >
   _reconcile(List<String> freshIds) async {
     final byId = <String, VideoEvent>{};
     for (final video in state.videos) {
@@ -293,6 +305,7 @@ class ProfileRepostedVideosBloc
       final id = _computeAddressableId(video);
       if (id != null) byId[id] = video;
     }
+    var resolvedVideoCount = byId.length;
     // Anchor on the previous top ID rather than a length delta, so a capped
     // persisted ID list can't balloon the reconcile window into a full
     // re-fetch on reopen (see ProfileLikedVideosBloc for the rationale).
@@ -309,7 +322,9 @@ class ProfileRepostedVideosBloc
 
     final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
     if (missingIds.isNotEmpty) {
-      for (final video in await _fetchVideos(missingIds, cacheResults: true)) {
+      final fetchResult = await _fetchVideos(missingIds, cacheResults: true);
+      resolvedVideoCount += fetchResult.resolvedVideoCount;
+      for (final video in fetchResult.videos) {
         final id = _computeAddressableId(video);
         if (id != null) byId[id] = video;
       }
@@ -323,6 +338,7 @@ class ProfileRepostedVideosBloc
       videos: videos,
       nextPageOffset: windowIds.length,
       hasMoreContent: windowIds.length < freshIds.length,
+      resolvedVideoCount: videos.isEmpty ? resolvedVideoCount : 0,
     );
   }
 
@@ -496,6 +512,7 @@ class ProfileRepostedVideosBloc
           repostedAddressableIds: freshIds,
           nextPageOffset: reconciled.nextPageOffset,
           hasMoreContent: reconciled.hasMoreContent,
+          lastFetchResolvedVideoCount: reconciled.resolvedVideoCount,
           clearError: true,
         ),
       );
@@ -544,7 +561,8 @@ class ProfileRepostedVideosBloc
           .skip(offset)
           .take(ProfileTabPagination.pageSize)
           .toList();
-      final newVideos = await _fetchVideos(nextPageIds, cacheResults: true);
+      final fetchResult = await _fetchVideos(nextPageIds, cacheResults: true);
+      final newVideos = fetchResult.videos;
 
       final existingIds = state.videos
           .map(_computeAddressableId)
@@ -643,11 +661,13 @@ class ProfileRepostedVideosBloc
   /// Returns videos in the same order as [addressableIds], excluding:
   /// - Videos not found in cache or relay
   /// - Unsupported video formats (WebM on iOS/macOS)
-  Future<List<VideoEvent>> _fetchVideos(
+  Future<({List<VideoEvent> videos, int resolvedVideoCount})> _fetchVideos(
     List<String> addressableIds, {
     bool cacheResults = false,
   }) async {
-    if (addressableIds.isEmpty) return [];
+    if (addressableIds.isEmpty) {
+      return (videos: <VideoEvent>[], resolvedVideoCount: 0);
+    }
 
     // VideosRepository handles relay + Funnelcake fallback internally
     final videos = await _videosRepository.getVideosByAddressableIds(
@@ -662,8 +682,10 @@ class ProfileRepostedVideosBloc
       category: LogCategory.video,
     );
 
-    // Filter unsupported formats
-    return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
+    return (
+      videos: videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      resolvedVideoCount: videos.length,
+    );
   }
 
   /// Compute the addressable ID for a video event.

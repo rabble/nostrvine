@@ -221,6 +221,7 @@ void main() {
           false, // isRefreshing
           false, // hasMoreContent
           0, // nextPageOffset
+          0, // lastFetchResolvedVideoCount
         ]);
       });
 

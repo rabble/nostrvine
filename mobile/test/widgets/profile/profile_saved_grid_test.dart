@@ -158,6 +158,27 @@ void main() {
         },
       );
 
+      testWidgets(
+        'empty state, not error, when saved IDs resolved before filtering',
+        (tester) async {
+          const savedId =
+              '615a098cbf969c0d73b28c8f25eb59b9745db95c19d7b1998068d9b31c3df1a0';
+          when(() => mockBloc.state).thenReturn(
+            const ProfileSavedVideosState(
+              status: ProfileSavedVideosStatus.success,
+              savedEventIds: [savedId],
+              lastFetchResolvedVideoCount: 1,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileNoSavedVideosTitle), findsOneWidget);
+          expect(find.text(l10n.profileErrorLoadingSaved), findsNothing);
+        },
+      );
+
       testWidgets('grid of saved videos when videos exist', (tester) async {
         final videos = _createTestVideos(count: 3);
         when(() => mockBloc.state).thenReturn(

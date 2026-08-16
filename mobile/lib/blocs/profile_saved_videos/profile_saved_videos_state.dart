@@ -38,6 +38,7 @@ final class ProfileSavedVideosState extends Equatable {
     this.isRefreshing = false,
     this.hasMoreContent = true,
     this.nextPageOffset = 0,
+    this.lastFetchResolvedVideoCount = 0,
   });
 
   /// The current loading status.
@@ -69,15 +70,20 @@ final class ProfileSavedVideosState extends Equatable {
   /// unsupported format filtering).
   final int nextPageOffset;
 
-  /// Whether the viewer has bookmarks that none of the fetches resolved.
+  /// Number of videos returned by the repository before platform filtering in
+  /// the last fetch that produced the current empty rendered list.
+  final int lastFetchResolvedVideoCount;
+
+  /// Whether the viewer has bookmarks that the repository did not resolve.
   ///
   /// `videos.isEmpty` on its own conflates "you have no bookmarks" with "we
-  /// could not load them", and only [savedEventIds] separates the two. The
-  /// distinction cannot be recovered further down: `getVideosByIds` returns an
-  /// empty list for a relay that never answered as readily as for an event
-  /// that does not exist, so the ID list is the only evidence the tab holds
-  /// that the viewer saved anything at all.
-  bool get hasUnresolvedSaves => videos.isEmpty && savedEventIds.isNotEmpty;
+  /// could not load them", and only [savedEventIds] separates the two. This is
+  /// deliberately gated on the pre-filter resolve count: an unsupported video
+  /// format can leave the rendered list empty after a successful fetch.
+  bool get hasUnresolvedSaves =>
+      videos.isEmpty &&
+      savedEventIds.isNotEmpty &&
+      lastFetchResolvedVideoCount == 0;
 
   /// Whether data has been successfully loaded.
   bool get isLoaded => status == ProfileSavedVideosStatus.success;
@@ -97,6 +103,7 @@ final class ProfileSavedVideosState extends Equatable {
     bool? isRefreshing,
     bool? hasMoreContent,
     int? nextPageOffset,
+    int? lastFetchResolvedVideoCount,
   }) {
     return ProfileSavedVideosState(
       status: status ?? this.status,
@@ -107,6 +114,8 @@ final class ProfileSavedVideosState extends Equatable {
       isRefreshing: isRefreshing ?? this.isRefreshing,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       nextPageOffset: nextPageOffset ?? this.nextPageOffset,
+      lastFetchResolvedVideoCount:
+          lastFetchResolvedVideoCount ?? this.lastFetchResolvedVideoCount,
     );
   }
 
@@ -120,5 +129,6 @@ final class ProfileSavedVideosState extends Equatable {
     isRefreshing,
     hasMoreContent,
     nextPageOffset,
+    lastFetchResolvedVideoCount,
   ];
 }

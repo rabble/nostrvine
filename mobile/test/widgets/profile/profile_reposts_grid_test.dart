@@ -189,6 +189,27 @@ void main() {
         },
       );
 
+      testWidgets(
+        'empty state, not error, when reposted IDs resolved before filtering',
+        (tester) async {
+          const coordinate =
+              '34236:fc7031a810ce4b02b6195a7e477cfe3d08c0386038bd45b4431f82d9b3f5ffb0:d112a519c0332008b88ffc0ad2bfb562b0001571b7e6bb82819005dffa8fa24b';
+          when(() => mockBloc.state).thenReturn(
+            const ProfileRepostedVideosState(
+              status: ProfileRepostedVideosStatus.success,
+              repostedAddressableIds: [coordinate],
+              lastFetchResolvedVideoCount: 1,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileNoRepostsTitle), findsOneWidget);
+          expect(find.text(l10n.profileErrorLoadingReposts), findsNothing);
+        },
+      );
+
       testWidgets('grid of reposted videos when videos exist', (
         tester,
       ) async {
