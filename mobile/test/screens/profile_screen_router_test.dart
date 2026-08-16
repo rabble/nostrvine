@@ -1,5 +1,7 @@
 // ABOUTME: Tests for router-driven ProfileScreen implementation
-// ABOUTME: Verifies URL ↔ PageView synchronization for profile feeds
+// ABOUTME: Verifies URL ↔ playback synchronization for profile feeds
+
+import 'dart:async';
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -8,13 +10,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/providers/app_lifecycle_provider.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -22,81 +27,121 @@ import '../helpers/test_provider_overrides.dart';
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
+const _npub = 'npub1424242424242424242424242424242424242424242424242424qamrcaj';
+const _authorPubkeyHex =
+    'aaaa552aaaa552aaaa552aaaa552aaaa552aaaa552aaaa552aaaa552aaaa552a';
+
 void main() {
-  Widget shell(ProviderContainer c) => UncontrolledProviderScope(
-    container: c,
-    child: MaterialApp.router(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      routerConfig: c.read(goRouterProvider),
-    ),
+  final now = DateTime.now();
+  final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
+
+  VideoEvent video(String id) => VideoEvent(
+    id: id,
+    pubkey: _authorPubkeyHex,
+    createdAt: nowUnix,
+    content: 'Profile video $id',
+    timestamp: now,
+    title: id,
+    videoUrl: 'https://example.com/$id.mp4',
   );
 
-  // The three skipped tests below used to seed the profile feed by overriding
-  // videosForProfileRouteProvider. #7680 deleted that provider — the profile
-  // feed is the REST-backed ProfileFeedCubit — so whoever re-enables them
-  // seeds through ProfileFeedScope instead.
-  testWidgets('PROFILE: URL ↔ PageView sync', (tester) async {
-    final c = ProviderContainer();
-    addTearDown(c.dispose);
+  final mockVideos = [
+    video('profile-video-0'),
+    video('profile-video-1'),
+    video('profile-video-2'),
+  ];
 
-    await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
-    await tester.pumpAndSettle();
+  // The URL is the source of truth for which profile video plays:
+  // routerLocationStreamProvider -> pageContextProvider -> activeVideoIdProvider.
+  // videosForProfileRouteProvider is the list that provider indexes into; the
+  // grid/feed widgets get their own copy from ProfileFeedCubit.
+  group('profile URL drives the active video', () {
+    ProviderContainer profileContainer({
+      required Stream<String> locations,
+      required List<VideoEvent> videos,
+    }) {
+      final container = ProviderContainer(
+        overrides: [
+          routerLocationStreamProvider.overrideWithValue(locations),
+          videosForProfileRouteProvider.overrideWithValue(
+            AsyncValue.data(
+              VideoFeedState(videos: videos, hasMoreContent: false),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      // Keep the location stream subscribed for the whole test; no widget
+      // tree is mounted here to do it.
+      container.listen(pageContextProvider, (_, _) {}, fireImmediately: true);
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
+      return container;
+    }
 
-    expect(find.byType(ProfileScreenRouter), findsOneWidget);
+    test('the index segment selects the matching video', () async {
+      final locations = StreamController<String>();
+      addTearDown(locations.close);
+      final container = profileContainer(
+        locations: locations.stream,
+        videos: mockVideos,
+      );
 
-    // Verify first video shown
-    expect(find.text('Profile 0/3'), findsOneWidget);
+      locations.add(ProfileScreenRouter.pathForIndex(_npub, 0));
+      await pumpEventQueue();
 
-    // Navigate to index 1
-    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
-    await tester.pumpAndSettle();
+      expect(container.read(activeVideoIdProvider), mockVideos[0].stableId);
 
-    // Verify second video shown
-    expect(find.text('Profile 1/3'), findsOneWidget);
-    // TODO(#7160): Fix and re-enable this test.
-  }, skip: true);
+      locations.add(ProfileScreenRouter.pathForIndex(_npub, 1));
+      await pumpEventQueue();
 
-  testWidgets('PROFILE: Empty state shows when no videos', (tester) async {
-    final c = ProviderContainer();
-    addTearDown(c.dispose);
+      expect(container.read(activeVideoIdProvider), mockVideos[1].stableId);
+    });
 
-    await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
-    await tester.pumpAndSettle();
+    test('an empty profile feed leaves nothing playing', () async {
+      final locations = StreamController<String>();
+      addTearDown(locations.close);
+      final container = profileContainer(
+        locations: locations.stream,
+        videos: const [],
+      );
 
-    expect(find.textContaining('No posts yet'), findsOneWidget);
-    // TODO(#7160): Fix and re-enable this test.
-  }, skip: true);
+      locations.add(ProfileScreenRouter.pathForIndex(_npub, 0));
+      await pumpEventQueue();
 
-  testWidgets('PROFILE: Lifecycle pause → activeVideoId becomes null', (
-    tester,
-  ) async {
-    final c = ProviderContainer(
-      overrides: [
-        appForegroundProvider.overrideWithValue(const AsyncValue.data(false)),
-      ],
+      expect(container.read(activeVideoIdProvider), isNull);
+    });
+
+    test(
+      'backgrounding clears the active video, resuming restores it',
+      () async {
+        final locations = StreamController<String>();
+        addTearDown(locations.close);
+        final container = profileContainer(
+          locations: locations.stream,
+          videos: mockVideos,
+        );
+
+        locations.add(ProfileScreenRouter.pathForIndex(_npub, 1));
+        await pumpEventQueue();
+
+        expect(container.read(activeVideoIdProvider), mockVideos[1].stableId);
+
+        container.read(appForegroundProvider.notifier).setForeground(false);
+
+        expect(container.read(activeVideoIdProvider), isNull);
+
+        container.read(appForegroundProvider.notifier).setForeground(true);
+
+        expect(container.read(activeVideoIdProvider), mockVideos[1].stableId);
+      },
     );
-    addTearDown(c.dispose);
-
-    await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
-    await tester.pumpAndSettle();
-
-    // When backgrounded, active video should be null
-    expect(c.read(activeVideoIdProvider), isNull);
-    // TODO(#7160): Fix and re-enable this test.
-  }, skip: true);
+  });
 
   // A divine:///profile/<npub> or https://divine.video/profile/<npub> deep
   // link lands on this route with a one-entry stack. When that account has
   // blocked or muted the viewer the screen swaps to BlockedUserScreen, whose
   // app-bar back used to be a raw context.pop — GoError, dead caret.
   group('$BlockedUserScreen back affordance', () {
-    const npub =
-        'npub1424242424242424242424242424242424242424242424242424qamrcaj';
-
     testWidgets('back lands on the feed when there is nothing to pop', (
       tester,
     ) async {
@@ -104,7 +149,7 @@ void main() {
       when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(true);
       when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
 
-      final profilePath = ProfileScreenRouter.pathForNpub(npub);
+      final profilePath = ProfileScreenRouter.pathForNpub(_npub);
       final router = GoRouter(
         initialLocation: profilePath,
         routes: [
