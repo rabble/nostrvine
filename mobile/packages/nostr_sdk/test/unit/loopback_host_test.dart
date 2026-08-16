@@ -54,6 +54,28 @@ void main() {
     });
   });
 
+  group('isOnDeviceLoopbackHost', () {
+    test('accepts the hosts that name this device', () {
+      for (final host in ['localhost', '127.0.0.1', '::1', 'LOCALHOST']) {
+        expect(isOnDeviceLoopbackHost(host), isTrue, reason: host);
+      }
+    });
+
+    test('rejects the emulator alias that isLoopbackHost admits', () {
+      // 10.0.2.2 is the developer's host machine, not this device, and it is
+      // an ordinary routable 10/8 address anywhere but the emulator.
+      expect(isLoopbackHost('10.0.2.2'), isTrue);
+      expect(isOnDeviceLoopbackHost('10.0.2.2'), isFalse);
+      expect(isPrivateOrLinkLocalHost('10.0.2.2'), isTrue);
+    });
+
+    test('rejects LAN and public hosts', () {
+      for (final host in ['192.168.1.10', 'relay.divine.video', '8.8.8.8']) {
+        expect(isOnDeviceLoopbackHost(host), isFalse, reason: host);
+      }
+    });
+  });
+
   group('isPrivateOrLinkLocalHost', () {
     test('covers every loopback host the local stack uses', () {
       for (final host in ['localhost', '127.0.0.1', '10.0.2.2', '::1']) {

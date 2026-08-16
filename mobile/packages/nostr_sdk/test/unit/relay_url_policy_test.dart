@@ -205,6 +205,16 @@ void main() {
       expect(isSignerCallbackRelayUrlAllowed('ws://192.168.1.10'), isFalse);
     });
 
+    test('rejects the emulator host alias the local stack uses', () {
+      // 10.0.2.2 is the developer's laptop seen from an Android emulator, and
+      // a routable 10/8 LAN address everywhere else. A signer on this device
+      // names 127.0.0.1, never this. The self-supplied rule keeps it.
+      for (final url in ['ws://10.0.2.2:7777', 'wss://10.0.2.2:7777']) {
+        expect(isSignerCallbackRelayUrlAllowed(url), isFalse, reason: url);
+      }
+      expect(isRelayUrlAllowed('ws://10.0.2.2:7777'), isTrue);
+    });
+
     test('rejects root-anchored respellings of loopback and LAN', () {
       for (final url in [
         'wss://localhost.',

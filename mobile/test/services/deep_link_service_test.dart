@@ -412,6 +412,9 @@ void main() {
         'wss://signer.local:28443',
         'ws://localrelay.link:28443',
         'http://localrelay.link:28443',
+        // The emulator's alias for the developer's laptop, not this device.
+        'ws://10.0.2.2:47777',
+        'wss://10.0.2.2:47777',
         // Root-anchored respellings of the same private targets.
         'wss://127.0.0.1.',
         'wss://192.168.1.10.',

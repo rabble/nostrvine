@@ -4,15 +4,14 @@
 
 import 'package:flutter/foundation.dart';
 
+/// The hosts that name an interface on this device. `::1` is the IPv6
+/// loopback.
+const Set<String> _onDeviceLoopbackHosts = {'localhost', '127.0.0.1', '::1'};
+
 /// The hosts the local Docker stack is reachable on (see AGENTS.md,
 /// "Local Stack Development"). `10.0.2.2` is the Android emulator's alias
-/// for the host machine; `::1` is the IPv6 loopback.
-const Set<String> _loopbackHosts = {
-  'localhost',
-  '127.0.0.1',
-  '::1',
-  '10.0.2.2',
-};
+/// for the host machine.
+const Set<String> _loopbackHosts = {..._onDeviceLoopbackHosts, '10.0.2.2'};
 
 /// Whether [host] is a local-stack loopback host.
 ///
@@ -21,6 +20,17 @@ const Set<String> _loopbackHosts = {
 /// these hosts, but remote hosts (the divine relay, the funnelcake API)
 /// must always pass platform certificate validation.
 bool isLoopbackHost(String host) => _loopbackHosts.contains(host.toLowerCase());
+
+/// Whether [host] names a loopback interface on this device.
+///
+/// Narrower than [isLoopbackHost], which also admits `10.0.2.2`. Only the
+/// Android emulator maps that alias to the host machine; everywhere else it is
+/// an ordinary routable 10/8 LAN address, and [isPrivateOrLinkLocalHost]
+/// refuses it. Use this where the point is "traffic here never leaves the
+/// device" — a same-device NIP-46 signer naming its own relay, say — rather
+/// than "the local stack is reachable here".
+bool isOnDeviceLoopbackHost(String host) =>
+    _onDeviceLoopbackHosts.contains(host.toLowerCase());
 
 /// Whether a bad TLS certificate may be tolerated for [host].
 ///

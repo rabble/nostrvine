@@ -86,11 +86,17 @@ bool isRemoteSuppliedRelayUrlAllowed(String url) {
 /// link, so whoever opened it chose this URL, and it must not be able to point
 /// the device at the user's LAN or VPN. Cleartext stays confined to loopback,
 /// where it never leaves the device.
+///
+/// That last claim is why the carve-out is [isOnDeviceLoopbackHost] rather
+/// than [isLoopbackHost]: the latter also admits `10.0.2.2`, which only the
+/// Android emulator maps to the host machine and which is a routable LAN
+/// address on a physical device. A signer running on this device reaches its
+/// own relay at `localhost` / `127.0.0.1` / `::1`, so nothing legitimate is
+/// lost, and the local-stack allowance in [isRelayUrlAllowed] is untouched.
 bool isSignerCallbackRelayUrlAllowed(String url) {
   final uri = _tryParseRelayUri(url);
   if (uri == null) return false;
-  final host = uri.host;
-  if (isLoopbackHost(host)) return isRelayUrlAllowed(url);
+  if (isOnDeviceLoopbackHost(uri.host)) return isRelayUrlAllowed(url);
   return _isRemoteSuppliedUriAllowed(uri);
 }
 
