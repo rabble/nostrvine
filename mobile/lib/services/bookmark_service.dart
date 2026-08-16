@@ -218,6 +218,12 @@ class BookmarkService {
   /// How long a full-settlement "this user has no list" answer is reused
   /// before the next empty answer is confirmed again.
   ///
+  /// Reuse, not a query budget. Every sync still queries; what the window
+  /// skips is the *second*, full-settlement query that confirms an empty
+  /// answer. And it is keyed on a confirmed absence rather than on having
+  /// tried: a confirmation that could not settle establishes nothing, so it
+  /// opens no window and the next empty answer is confirmed again.
+  ///
   /// Bounds two opposing costs: without it a user who genuinely has no
   /// bookmarks pays a full-settlement wait every time Saved opens, and with an
   /// unbounded latch a list created on another device stays invisible for the
@@ -286,12 +292,14 @@ class BookmarkService {
   ///
   /// A non-authoritative read still never *discards* a list on a partial
   /// answer. An empty answer is confirmed against every relay before it is
-  /// believed — always while this device holds bookmarks, otherwise at most
-  /// once per [absenceConfirmationTtl] counted from the last confirmed
-  /// absence. Seeing a list resets that count, so a list that keeps going
-  /// missing is re-confirmed each time rather than once per window. An answer
-  /// that stays unconfirmed changes nothing. A read that finds a list keeps
-  /// the fast trade and pays for none of this.
+  /// believed — always while this device holds bookmarks, otherwise whenever
+  /// the last confirmed absence is older than [absenceConfirmationTtl].
+  /// Inside that window an empty answer is believed on the strength of that
+  /// earlier confirmation instead of being re-confirmed; the sync itself is
+  /// never skipped. Seeing a list clears the confirmation, so a list that
+  /// keeps going missing is re-confirmed every time rather than once per
+  /// window. An answer that stays unconfirmed changes nothing. A read that
+  /// finds a list keeps the fast trade and pays for none of this.
   Future<bool> syncGlobalBookmarks({bool requireAuthoritative = false}) async =>
       // Equality to success, never `!= someFailure`: a blacklist would let any
       // failure member added later fall through as "reconciled" and publish
@@ -339,6 +347,9 @@ class BookmarkService {
         );
         events = confirmation.events;
         if (events == null) {
+          // The absence stamp is deliberately left alone. A confirmation that
+          // could not settle establishes nothing, so opening a window on it
+          // would let the next partial empty answer through unconfirmed.
           Log.warning(
             'Empty bookmark answer not confirmed by every relay - keeping '
             'the ${globalBookmarks.length} bookmarks this device has',

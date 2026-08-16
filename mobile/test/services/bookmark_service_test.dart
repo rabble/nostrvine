@@ -544,6 +544,34 @@ void main() {
         },
       );
 
+      test(
+        'does not start a window on a confirmation that could not settle',
+        () async {
+          // The window is keyed on a *confirmed* absence, not on having
+          // tried. A confirmation that times out establishes nothing, so
+          // suppressing the next one would leave the reinstall case resting
+          // on an empty answer nobody stood behind — #6627 all over again.
+          stubRelayForSettlementMode(fullSettlement: false, events: []);
+          stubRelayForSettlementMode(
+            fullSettlement: true,
+            events: [],
+            timedOut: true,
+          );
+          var clock = DateTime(2026);
+          final service = createService(now: () => clock);
+
+          expect(await service.syncGlobalBookmarks(), isFalse);
+          clock = clock.add(const Duration(minutes: 1));
+          expect(await service.syncGlobalBookmarks(), isFalse);
+
+          expect(
+            capturedSettlementDemands(),
+            equals([false, true, false, true]),
+            reason: 'well inside the TTL, but nothing was ever confirmed',
+          );
+        },
+      );
+
       test('reports failure when signed out, without throwing', () async {
         when(() => authService.isAuthenticated).thenReturn(false);
         when(() => authService.currentPublicKeyHex).thenReturn(null);
