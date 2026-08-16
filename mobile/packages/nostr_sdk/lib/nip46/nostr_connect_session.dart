@@ -17,6 +17,7 @@ import '../relay/relay_base.dart';
 import '../relay/relay_mode.dart';
 import '../relay/relay_status.dart';
 import '../signer/local_nostr_signer.dart';
+import '../utils/relay_addr_util.dart';
 import '../utils/relay_url_policy.dart';
 import '../utils/string_util.dart';
 import 'nostr_remote_response.dart';
@@ -175,7 +176,17 @@ class NostrConnectSession {
 
   /// How many of [_relays] a signer named in a callback rather than the
   /// session advertising them. Bounded by [RelayListCaps.nip46Callback].
+  ///
+  /// A slot is taken before the dial and released if the dial fails, so
+  /// callbacks that arrive inside one connect window cannot each observe a
+  /// pre-dial count and collectively overshoot the cap.
   int _signerSuppliedRelayCount = 0;
+
+  /// Dedupe keys of callback relays currently being dialed.
+  ///
+  /// [_relays] only holds relays that finished connecting, so without this a
+  /// second callback naming the same URL opens a second socket to it.
+  final Set<String> _pendingSignerRelays = {};
   Completer<NostrConnectResult?>? _connectionCompleter;
   Timer? _timeoutTimer;
   bool _isClosed = false;
@@ -336,10 +347,18 @@ class NostrConnectSession {
   /// and nothing else bounds how many arrive while a session is listening.
   /// Only relays that actually connected count — a failed dial leaves the
   /// budget for the signer's next attempt.
+  ///
+  /// Callers dispatch this without awaiting, so the cap is claimed before the
+  /// dial rather than after it: reading the count, awaiting, then incrementing
+  /// would let every call in one connect window see the same pre-dial count.
   Future<void> addRelay(String relayUrl) async {
     if (_isClosed || _state != NostrConnectState.listening) return;
-    if (relays.contains(relayUrl) ||
-        _relays.any((relay) => relay.relayStatus.addr == relayUrl)) {
+    final key = _relayDedupeKey(relayUrl);
+    if (relays.any((url) => _relayDedupeKey(url) == key) ||
+        _relays.any(
+          (relay) => _relayDedupeKey(relay.relayStatus.addr) == key,
+        ) ||
+        _pendingSignerRelays.contains(key)) {
       return;
     }
     if (_signerSuppliedRelayCount >= RelayListCaps.nip46Callback) {
@@ -350,20 +369,37 @@ class NostrConnectSession {
       return;
     }
 
+    _signerSuppliedRelayCount++;
+    _pendingSignerRelays.add(key);
     try {
       final relay = await _connectToRelay(relayUrl);
       if (_isClosed) {
         relay.disconnect();
+        _signerSuppliedRelayCount--;
         return;
       }
       _relays.add(relay);
-      _signerSuppliedRelayCount++;
       logger('[NostrConnectSession] Added callback relay $relayUrl');
     } catch (e) {
+      _signerSuppliedRelayCount--;
       logger(
         '[NostrConnectSession] Failed to add callback relay $relayUrl: $e',
       );
+    } finally {
+      _pendingSignerRelays.remove(key);
     }
+  }
+
+  /// The identity callback relays are deduplicated under.
+  ///
+  /// [RelayAddrUtil.handle] collapses a bare address to a root path for every
+  /// address this package dials, so `wss://h` and `wss://h/` are one relay to
+  /// the pool. Matching that here keeps a respelling from costing a second
+  /// slot of the cap. An unparseable address keys under itself.
+  String _relayDedupeKey(String url) {
+    final trimmed = url.trim();
+    if (Uri.tryParse(trimmed) == null) return trimmed;
+    return RelayAddrUtil.handle(trimmed);
   }
 
   /// Clean up resources.

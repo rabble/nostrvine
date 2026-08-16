@@ -370,6 +370,81 @@ void main() {
       );
     });
 
+    test('addRelay holds the cap when callbacks arrive together', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      final callbackRelays = <_TestRelayServer>[];
+      for (var i = 0; i < RelayListCaps.nip46Callback + 3; i++) {
+        final relay = await _TestRelayServer.start();
+        addTearDown(relay.close);
+        callbackRelays.add(relay);
+      }
+
+      // The coordinator dispatches every callback with `unawaited`, so these
+      // all land between the cap check and the first dial completing.
+      await Future.wait([
+        for (final relay in callbackRelays) session.addRelay(relay.url),
+      ]);
+
+      expect(
+        callbackRelays.fold<int>(0, (n, relay) => n + relay.connectionCount),
+        equals(RelayListCaps.nip46Callback),
+        reason: 'concurrent callbacks must not each spend the same free slot',
+      );
+    });
+
+    test('addRelay dials a repeated callback relay once', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      final callbackRelay = await _TestRelayServer.start();
+      addTearDown(callbackRelay.close);
+
+      await Future.wait([
+        for (var i = 0; i < RelayListCaps.nip46Callback; i++)
+          session.addRelay(callbackRelay.url),
+      ]);
+
+      expect(
+        callbackRelay.connectionCount,
+        equals(1),
+        reason: 'an in-flight dial must absorb a repeat of the same URL',
+      );
+    });
+
+    test('addRelay treats a trailing slash as the same relay', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      final callbackRelay = await _TestRelayServer.start();
+      addTearDown(callbackRelay.close);
+
+      await session.addRelay(callbackRelay.url);
+      await session.addRelay('${callbackRelay.url}/');
+
+      expect(
+        callbackRelay.connectionCount,
+        equals(1),
+        reason: 'a respelling must not cost a second slot of the cap',
+      );
+    });
+
     test('addRelay is a no-op unless the session is listening', () async {
       final callbackRelay = await _TestRelayServer.start();
       addTearDown(callbackRelay.close);
