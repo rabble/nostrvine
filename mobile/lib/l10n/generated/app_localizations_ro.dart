@@ -7656,6 +7656,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Fișierul video este prea mare pentru server. Încearcă să-l scurtezi sau să reduci calitatea.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'Serverul media ($serverName) a avut o eroare internă. Poți alege altul în setări.';
   }

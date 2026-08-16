@@ -7486,6 +7486,12 @@ class AppLocalizationsUr extends AppLocalizations {
       'ویڈیو فائل سرور کے لیے بہت بڑی ہے۔ اسے چھوٹا کریں یا کوالٹی کم کر کے دیکھیں۔';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'میڈیا سرور ($serverName) میں اندرونی خرابی آئی۔ آپ اپنی ترتیبات میں کوئی اور منتخب کر سکتے ہیں۔';
   }

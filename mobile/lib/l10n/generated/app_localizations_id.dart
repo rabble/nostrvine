@@ -7444,6 +7444,12 @@ class AppLocalizationsId extends AppLocalizations {
       'File video terlalu besar untuk server. Coba pangkas videonya atau turunkan kualitasnya.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'Server media ($serverName) mengalami kesalahan internal. Kamu bisa memilih yang lain di pengaturan.';
   }

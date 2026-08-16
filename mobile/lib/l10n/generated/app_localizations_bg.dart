@@ -7555,6 +7555,12 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеофайлът е твърде голям за сървъра. Опитай да го скъсиш или да намалиш качеството.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'Медийният сървър ($serverName) получи вътрешна грешка. Можеш да избереш друг в настройките.';
   }

@@ -420,6 +420,9 @@ void main() {
 const _knownUntranslatedDebt = <String>{
   // People-search video-count copy still needs a translation pass outside en.
   'searchUserVideoCount',
+  // Video-editor over-limit affordance needs a translation pass outside en.
+  'videoEditorOverLimitCanvas',
+  'videoEditorOverLimitTimeline',
 };
 
 const _profileBadgeSheetKeys = <String>{

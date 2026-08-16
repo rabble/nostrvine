@@ -65,6 +65,33 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
   }
 
+  /// Returns [clip] with an end trim that keeps its visible window within the
+  /// remaining editor budget after [existingClips].
+  static DivineVideoClip seedImportTrimForEditorBudget({
+    required DivineVideoClip clip,
+    required List<DivineVideoClip> existingClips,
+  }) {
+    final usedDuration = existingClips.fold<Duration>(
+      Duration.zero,
+      (sum, existing) => sum + existing.playbackDuration,
+    );
+    final remainingDuration = VideoEditorConstants.maxDuration - usedDuration;
+
+    if (remainingDuration <= Duration.zero) {
+      return clip.copyWith(trimEnd: clip.duration - clip.trimStart);
+    }
+
+    if (clip.playbackDuration <= remainingDuration) return clip;
+
+    final visibleSourceDuration = clip.playbackDurationToSourceDuration(
+      remainingDuration,
+    );
+    final trimEnd = clip.duration - clip.trimStart - visibleSourceDuration;
+    if (trimEnd <= clip.trimEnd) return clip;
+
+    return clip.copyWith(trimEnd: trimEnd);
+  }
+
   @override
   ClipManagerState build() {
     ref.onDispose(() {
@@ -381,11 +408,15 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Adds [clip] at [index], shifting subsequent clips forward.
   /// Returns the inserted clip.
   DivineVideoClip insertClip(int index, DivineVideoClip clip) {
-    _clips.insert(index, clip);
+    final insertedClip = seedImportTrimForEditorBudget(
+      clip: clip,
+      existingClips: _clips,
+    );
+    _clips.insert(index, insertedClip);
     Log.info(
-      '📎 Insert clip: ${clip.id}, '
+      '📎 Insert clip: ${insertedClip.id}, '
       'position: $index '
-      'duration: ${clip.durationInSeconds}s',
+      'duration: ${insertedClip.durationInSeconds}s',
       name: 'ClipManagerNotifier',
       category: .video,
     );
@@ -393,7 +424,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     state = state.copyWith(clips: List.unmodifiable(_clips));
 
     _triggerAutosave();
-    return clip;
+    return insertedClip;
   }
 
   /// Add multiple clips at once (e.g., from draft restoration).

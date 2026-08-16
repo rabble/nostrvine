@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bl
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
@@ -49,6 +50,7 @@ void main() {
   group(VideoEditorTimelineBody, () {
     late _MockVideoEditorMainBloc mainBloc;
     late _MockTimelineOverlayBloc overlayBloc;
+    final strings = AppLocalizationsEn();
 
     setUp(() {
       mainBloc = _MockVideoEditorMainBloc();
@@ -229,6 +231,10 @@ void main() {
         findsOneWidget,
       );
       expect(dimOverlayFinder, findsOneWidget);
+      expect(
+        find.text(strings.videoEditorOverLimitTimeline),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hides outside-area overlays when reordering', (tester) async {

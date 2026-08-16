@@ -7533,6 +7533,12 @@ class AppLocalizationsMs extends AppLocalizations {
       'Fail video terlalu besar untuk pelayan. Cuba memangkasnya atau mengurangkan kualiti.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'Pelayan media ($serverName) mengalami ralat dalaman. Anda boleh memilih yang lain dalam tetapan anda.';
   }

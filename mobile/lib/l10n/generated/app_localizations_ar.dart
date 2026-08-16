@@ -7429,6 +7429,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'ملف الفيديو أكبر من أن يقبله الخادم. جرّب قصّه أو خفض الجودة.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'واجه خادم الوسائط ($serverName) خطأً داخليًا. يمكنك اختيار خادم آخر من الإعدادات.';
   }

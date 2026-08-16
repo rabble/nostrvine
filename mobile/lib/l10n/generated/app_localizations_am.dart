@@ -7321,6 +7321,12 @@ class AppLocalizationsAm extends AppLocalizations {
       'የቪዲዮ ፋይሉ ለአገልጋዩ በጣም ትልቅ ነው። ቆርጠው ለማሳጠር ወይም ጥራቱን ለመቀነስ ይሞክሩ።';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'የሚዲያ አገልጋዩ ($serverName) የውስጥ ስህተት አጋጥሞታል። በቅንብሮችዎ ውስጥ ሌላ መምረጥ ይችላሉ።';
   }

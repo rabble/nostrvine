@@ -9,6 +9,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
@@ -458,7 +459,20 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
             color: context.vineColors.surfaceContainerHigh.withValues(
               alpha: 0.3,
             ),
-            child: const SizedBox.expand(),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8, top: 8),
+                child: Text(
+                  context.l10n.videoEditorOverLimitTimeline,
+                  style: VineTheme.labelSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
           ),
         ),
       ),

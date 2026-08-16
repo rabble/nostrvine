@@ -23,6 +23,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
@@ -1034,9 +1035,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (audio != null) {
       // Re-anchoring is a clock set, not a tick: a resume that lands mid-window
       // must re-seek even when it re-anchors only slightly ahead.
-      unawaited(
-        audio.syncTo(_stopMotionAnchor, isPlaying: true, isSeek: true),
-      );
+      unawaited(audio.syncTo(_stopMotionAnchor, isPlaying: true, isSeek: true));
     }
 
     context.read<VideoEditorMainBloc>()
@@ -1502,9 +1501,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     try {
       loaded = await _setClipsSafely(
         player,
-        [
-          ..._buildPlayerClips(clips),
-        ],
+        [..._buildPlayerClips(clips)],
         startPosition: startPosition != null && startPosition > Duration.zero
             ? _timelineToPlayer(startPosition)
             : null,
@@ -1895,11 +1892,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final tuneEditor = scope.tuneEditor;
     final active = scope.editor?.stateManager.activeTuneAdjustments;
     if (tuneEditor == null || active == null) return;
-    seedTuneEditorPreview(
-      tuneEditor: tuneEditor,
-      active: active,
-      setId: setId,
-    );
+    seedTuneEditorPreview(tuneEditor: tuneEditor, active: active, setId: setId);
   }
 
   /// Handles state history changes and exports the history to the provider.
@@ -2001,9 +1994,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final gate = _decoderReleaseGate = Completer<void>();
     _isMetadataRouteActive = true;
     final navigation = context.push(
-      VideoMetadataScreen.pathForDraft(
-        isStopMotion: _isStopMotionComposition,
-      ),
+      VideoMetadataScreen.pathForDraft(isStopMotion: _isStopMotionComposition),
     );
     try {
       await (awaitCover?.call() ??
@@ -2112,9 +2103,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           _setClipsForGeneration(
             generation,
             _videoPlayer,
-            [
-              ..._buildPlayerClips(clips),
-            ],
+            [..._buildPlayerClips(clips)],
             startPosition: _timelineToPlayer(currentPosition),
           ),
         );
@@ -2146,9 +2135,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           _setClipsForGeneration(
             generation,
             _videoPlayer,
-            [
-              ..._buildPlayerClips(clips),
-            ],
+            [..._buildPlayerClips(clips)],
             startPosition: _timelineToPlayer(currentPosition),
           ),
         );
@@ -2408,9 +2395,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               final loaded = await _setClipsForGeneration(
                 generation,
                 _videoPlayer,
-                [
-                  ..._buildPlayerClips(state.clips),
-                ],
+                [..._buildPlayerClips(state.clips)],
                 startPosition: _timelineToPlayer(currentPosition),
               );
               if (!loaded) return;
@@ -2469,9 +2454,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               final loaded = await _setClipsForGeneration(
                 generation,
                 _videoPlayer,
-                [
-                  ..._buildPlayerClips(state.clips),
-                ],
+                [..._buildPlayerClips(state.clips)],
                 startPosition: _timelineToPlayer(startPosition),
               );
               if (!loaded) return;
@@ -2641,10 +2624,34 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                               return IgnorePointer(
                                 child: ColoredBox(
                                   color: context.vineColors.background
-                                      .withAlpha(
-                                        128,
+                                      .withAlpha(160),
+                                  child: Center(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: context
+                                            .vineColors
+                                            .surfaceContainerHigh
+                                            .withAlpha(230),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                  child: const SizedBox.expand(),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 10,
+                                        ),
+                                        child: Text(
+                                          context
+                                              .l10n
+                                              .videoEditorOverLimitCanvas,
+                                          textAlign: TextAlign.center,
+                                          style: VineTheme.labelLargeFont(
+                                            color:
+                                                context.vineColors.primaryText,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               );
                             },

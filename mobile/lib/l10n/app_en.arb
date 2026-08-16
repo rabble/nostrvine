@@ -4528,6 +4528,8 @@
   "publishErrorServerNotFound": "The media server ({serverName}) is not available. You can choose another in your settings.",
   "@publishErrorServerNotFound": {"description": "Shown when the media (Blossom) server returns 404. {serverName} is the server host.", "placeholders": {"serverName": {"type": "String"}}},
   "publishErrorFileTooLarge": "The video file is too large for the server. Try trimming it or lowering the quality.",
+  "videoEditorOverLimitCanvas": "Over the 6.3s limit — trim to post",
+  "videoEditorOverLimitTimeline": "Trim this part out to post",
   "publishErrorServerInternalError": "The media server ({serverName}) had an internal error. You can choose another in your settings.",
   "@publishErrorServerInternalError": {"description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.", "placeholders": {"serverName": {"type": "String"}}},
   "publishErrorServerDown": "The media server ({serverName}) is temporarily down. Try again shortly or choose another in your settings.",

@@ -7444,6 +7444,12 @@ class AppLocalizationsTr extends AppLocalizations {
       'Video dosyası sunucu için fazla büyük. Kırpmayı ya da kaliteyi düşürmeyi dene.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'Medya sunucusunda ($serverName) dahili bir hata oluştu. Ayarlarından başka birini seçebilirsin.';
   }

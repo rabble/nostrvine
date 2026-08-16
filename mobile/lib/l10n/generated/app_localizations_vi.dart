@@ -7489,6 +7489,12 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tệp video quá lớn so với máy chủ. Thử cắt ngắn hoặc giảm chất lượng.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'Máy chủ media ($serverName) gặp lỗi nội bộ. Bạn có thể chọn máy chủ khác trong cài đặt.';
   }

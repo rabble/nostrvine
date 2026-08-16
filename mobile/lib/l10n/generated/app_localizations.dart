@@ -12974,6 +12974,18 @@ abstract class AppLocalizations {
   /// **'The video file is too large for the server. Try trimming it or lowering the quality.'**
   String get publishErrorFileTooLarge;
 
+  /// No description provided for @videoEditorOverLimitCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Over the 6.3s limit — trim to post'**
+  String get videoEditorOverLimitCanvas;
+
+  /// No description provided for @videoEditorOverLimitTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim this part out to post'**
+  String get videoEditorOverLimitTimeline;
+
   /// Shown when the media (Blossom) server returns 500. {serverName} is the server host.
   ///
   /// In en, this message translates to:

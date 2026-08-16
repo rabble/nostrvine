@@ -7538,6 +7538,12 @@ class AppLocalizationsPt extends AppLocalizations {
       'O arquivo de vídeo é grande demais para o servidor. Tente cortá-lo ou reduzir a qualidade.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return 'O servidor de mídia ($serverName) teve um erro interno. Você pode escolher outro nas configurações.';
   }

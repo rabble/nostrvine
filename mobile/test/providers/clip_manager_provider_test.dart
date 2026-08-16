@@ -19,6 +19,26 @@ class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
+DivineVideoClip _budgetClip({
+  required String id,
+  required Duration duration,
+  Duration trimStart = Duration.zero,
+  Duration trimEnd = Duration.zero,
+  double? playbackSpeed,
+}) {
+  return DivineVideoClip(
+    id: id,
+    video: EditorVideo.file('/tmp/$id.mp4'),
+    duration: duration,
+    recordedAt: DateTime(2026),
+    targetAspectRatio: .vertical,
+    originalAspectRatio: 9 / 16,
+    trimStart: trimStart,
+    trimEnd: trimEnd,
+    playbackSpeed: playbackSpeed,
+  );
+}
+
 void main() {
   group('ClipManagerProvider', () {
     late ProviderContainer container;
@@ -989,6 +1009,70 @@ void main() {
         verify(
           () => mockClipLibraryService.deleteClipRow('clip_sm_frame_0'),
         ).called(1);
+      });
+    });
+
+    group('seedImportTrimForEditorBudget', () {
+      test('trims a long imported clip to the full editor budget', () {
+        final clip = _budgetClip(
+          id: 'long',
+          duration: const Duration(seconds: 60),
+        );
+
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: clip,
+          existingClips: const [],
+        );
+
+        expect(seeded.duration, equals(clip.duration));
+        expect(seeded.trimStart, equals(Duration.zero));
+        expect(
+          seeded.trimEnd,
+          equals(clip.duration - VideoEditorConstants.maxDuration),
+        );
+        expect(
+          seeded.playbackDuration,
+          equals(VideoEditorConstants.maxDuration),
+        );
+      });
+
+      test('uses the remaining budget after existing clips', () {
+        final existing = _budgetClip(
+          id: 'existing',
+          duration: const Duration(seconds: 4),
+        );
+        final clip = _budgetClip(
+          id: 'long',
+          duration: const Duration(seconds: 10),
+        );
+
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: clip,
+          existingClips: [existing],
+        );
+
+        expect(
+          seeded.playbackDuration,
+          equals(const Duration(seconds: 2, milliseconds: 300)),
+        );
+        expect(
+          seeded.trimEnd,
+          equals(const Duration(seconds: 7, milliseconds: 700)),
+        );
+      });
+
+      test('keeps clips already within the remaining budget unchanged', () {
+        final clip = _budgetClip(
+          id: 'short',
+          duration: const Duration(seconds: 3),
+        );
+
+        final seeded = ClipManagerNotifier.seedImportTrimForEditorBudget(
+          clip: clip,
+          existingClips: const [],
+        );
+
+        expect(seeded, same(clip));
       });
     });
   });

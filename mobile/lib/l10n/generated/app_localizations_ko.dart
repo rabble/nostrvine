@@ -7169,6 +7169,12 @@ class AppLocalizationsKo extends AppLocalizations {
       '영상 파일이 서버에 올리기엔 너무 커요. 영상을 자르거나 화질을 낮춰서 시도해보세요.';
 
   @override
+  String get videoEditorOverLimitCanvas => 'Over the 6.3s limit — trim to post';
+
+  @override
+  String get videoEditorOverLimitTimeline => 'Trim this part out to post';
+
+  @override
   String publishErrorServerInternalError(String serverName) {
     return '미디어 서버($serverName)에 내부 오류가 발생했어요. 설정에서 다른 서버를 고를 수 있어요.';
   }
