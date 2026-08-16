@@ -54,11 +54,62 @@ void main() {
     });
   });
 
+  group('isOnDeviceLoopbackHost', () {
+    test('accepts the hosts that name this device', () {
+      for (final host in ['localhost', '127.0.0.1', '::1', 'LOCALHOST']) {
+        expect(isOnDeviceLoopbackHost(host), isTrue, reason: host);
+      }
+    });
+
+    test('rejects the emulator alias that isLoopbackHost admits', () {
+      // 10.0.2.2 is the developer's host machine, not this device, and it is
+      // an ordinary routable 10/8 address anywhere but the emulator.
+      expect(isLoopbackHost('10.0.2.2'), isTrue);
+      expect(isOnDeviceLoopbackHost('10.0.2.2'), isFalse);
+      expect(isPrivateOrLinkLocalHost('10.0.2.2'), isTrue);
+    });
+
+    test('rejects LAN and public hosts', () {
+      for (final host in ['192.168.1.10', 'relay.divine.video', '8.8.8.8']) {
+        expect(isOnDeviceLoopbackHost(host), isFalse, reason: host);
+      }
+    });
+  });
+
   group('isPrivateOrLinkLocalHost', () {
     test('covers every loopback host the local stack uses', () {
       for (final host in ['localhost', '127.0.0.1', '10.0.2.2', '::1']) {
         expect(isPrivateOrLinkLocalHost(host), isTrue, reason: host);
       }
+    });
+
+    test('root-anchored names are judged as their bare form', () {
+      // A trailing dot is a fully-qualified spelling of the same name. Left
+      // in, it adds an empty fifth part that defeats the IPv4 literal parse
+      // and misses both the loopback set and the private-suffix list.
+      for (final host in [
+        'localhost.',
+        '127.0.0.1.',
+        '127.0.0.1..',
+        '192.168.1.1.',
+        '192.168.1.1..',
+        '10.0.2.2.',
+        '169.254.169.254.',
+        'printer.local.',
+        'printer.local..',
+        'db.internal.',
+      ]) {
+        expect(isPrivateOrLinkLocalHost(host), isTrue, reason: host);
+      }
+    });
+
+    test('a bare root label carries no host at all', () {
+      expect(isPrivateOrLinkLocalHost('.'), isTrue);
+    });
+
+    test('a trailing dot does not make a public host private', () {
+      expect(isPrivateOrLinkLocalHost('relay.divine.video.'), isFalse);
+      expect(isPrivateOrLinkLocalHost('relay.divine.video..'), isFalse);
     });
 
     test('treats an empty or unparseable host as private', () {

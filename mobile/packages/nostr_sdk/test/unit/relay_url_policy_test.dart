@@ -101,6 +101,20 @@ void main() {
       }
     });
 
+    test('refuses root-anchored respellings of private targets', () {
+      for (final url in [
+        'wss://192.168.1.1.',
+        'wss://127.0.0.1.',
+        'wss://127.0.0.1..',
+        'wss://localhost.',
+        'wss://localhost..',
+        'wss://printer.local.',
+        'wss://printer.local..',
+      ]) {
+        expect(isRemoteSuppliedRelayUrlAllowed(url), isFalse, reason: url);
+      }
+    });
+
     test('refuses private-network hostname suffixes', () {
       for (final url in [
         'wss://printer.local',
@@ -155,6 +169,81 @@ void main() {
         }
       },
     );
+  });
+
+  group('isSignerCallbackRelayUrlAllowed', () {
+    test('accepts the loopback relay a same-device signer runs', () {
+      // Aegis hands back exactly these two after approving a pairing.
+      expect(isSignerCallbackRelayUrlAllowed('wss://127.0.0.1:28443'), isTrue);
+      expect(isSignerCallbackRelayUrlAllowed('ws://127.0.0.1:8081'), isTrue);
+      expect(isSignerCallbackRelayUrlAllowed('ws://localhost:8081'), isTrue);
+    });
+
+    test('accepts wss:// for a publicly routable host', () {
+      expect(
+        isSignerCallbackRelayUrlAllowed('wss://localrelay.link:28443'),
+        isTrue,
+      );
+      expect(isSignerCallbackRelayUrlAllowed('wss://relay.damus.io'), isTrue);
+    });
+
+    test('rejects the private network the signer does not live on', () {
+      for (final url in [
+        'wss://192.168.1.10:28443',
+        'wss://10.5.0.1:28443',
+        'wss://172.16.0.1:28443',
+        'wss://169.254.1.1:28443',
+        'wss://signer.local:28443',
+      ]) {
+        expect(isSignerCallbackRelayUrlAllowed(url), isFalse, reason: url);
+      }
+    });
+
+    test('rejects cleartext anywhere but loopback', () {
+      expect(
+        isSignerCallbackRelayUrlAllowed('ws://localrelay.link:28443'),
+        isFalse,
+      );
+      expect(isSignerCallbackRelayUrlAllowed('ws://relay.damus.io'), isFalse);
+      expect(isSignerCallbackRelayUrlAllowed('ws://192.168.1.10'), isFalse);
+    });
+
+    test('rejects the emulator host alias the local stack uses', () {
+      // 10.0.2.2 is the developer's laptop seen from an Android emulator, and
+      // a routable 10/8 LAN address everywhere else. A signer on this device
+      // names 127.0.0.1, never this. The self-supplied rule keeps it.
+      for (final url in ['ws://10.0.2.2:7777', 'wss://10.0.2.2:7777']) {
+        expect(isSignerCallbackRelayUrlAllowed(url), isFalse, reason: url);
+      }
+      expect(isRelayUrlAllowed('ws://10.0.2.2:7777'), isTrue);
+    });
+
+    test('rejects root-anchored respellings of loopback and LAN', () {
+      for (final url in [
+        'wss://localhost.',
+        'wss://localhost..',
+        'wss://127.0.0.1.',
+        'wss://127.0.0.1..',
+        'wss://192.168.1.1.',
+        'wss://192.168.1.1..',
+        'ws://localhost.',
+        'ws://localhost..',
+      ]) {
+        expect(isSignerCallbackRelayUrlAllowed(url), isFalse, reason: url);
+      }
+    });
+
+    test('rejects non-WebSocket, malformed, and mis-nested URLs', () {
+      for (final url in [
+        'https://localrelay.link:28443',
+        'http://127.0.0.1:8081',
+        '',
+        'wss://',
+        'wss://http://evil.example',
+      ]) {
+        expect(isSignerCallbackRelayUrlAllowed(url), isFalse, reason: url);
+      }
+    });
   });
 
   group('admitRemoteSuppliedRelays', () {

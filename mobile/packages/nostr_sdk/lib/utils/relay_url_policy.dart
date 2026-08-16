@@ -23,6 +23,17 @@ abstract final class RelayListCaps {
   /// NIP-65: "Clients SHOULD guide users to keep `kind:10002` lists small
   /// (2-4 relays of each category)" — read and write, hence the larger bound.
   static const int nip65 = 16;
+
+  /// Cap on the relays a NIP-46 signer may add to one pairing session by
+  /// naming them in its deep-link callback.
+  ///
+  /// A signer returning control names the transport it answered on, so the
+  /// protocol-meaningful count is one. This sits above that for the same
+  /// reason the other two do — a signer retrying on a second transport is
+  /// plausible, and a cap that bites costs the user the pairing. It matches
+  /// the advertised set the session already dials, so one pairing opens at
+  /// most twice the sockets it started with.
+  static const int nip46Callback = 4;
 }
 
 /// Whether [url] is a relay URL the app may connect to.
@@ -61,6 +72,32 @@ bool isRelayUrlAllowed(String url) {
 bool isRemoteSuppliedRelayUrlAllowed(String url) {
   final uri = _tryParseRelayUri(url);
   return uri != null && _isRemoteSuppliedUriAllowed(uri);
+}
+
+/// Whether [url] may be dialed when a NIP-46 signer named it in its callback.
+///
+/// Sits between the other two. A signer app on this device is not the stranger
+/// [isRemoteSuppliedRelayUrlAllowed] guards against — same-device signers run
+/// their relay on loopback and hand the client that address, and NIP-46 puts
+/// the signer "in control of what relays are being used", so refusing loopback
+/// would break the flow the callback exists to serve.
+///
+/// The rest of that predicate's reasoning still holds: the callback is a deep
+/// link, so whoever opened it chose this URL, and it must not be able to point
+/// the device at the user's LAN or VPN. Cleartext stays confined to loopback,
+/// where it never leaves the device.
+///
+/// That last claim is why the carve-out is [isOnDeviceLoopbackHost] rather
+/// than [isLoopbackHost]: the latter also admits `10.0.2.2`, which only the
+/// Android emulator maps to the host machine and which is a routable LAN
+/// address on a physical device. A signer running on this device reaches its
+/// own relay at `localhost` / `127.0.0.1` / `::1`, so nothing legitimate is
+/// lost, and the local-stack allowance in [isRelayUrlAllowed] is untouched.
+bool isSignerCallbackRelayUrlAllowed(String url) {
+  final uri = _tryParseRelayUri(url);
+  if (uri == null) return false;
+  if (isOnDeviceLoopbackHost(uri.host)) return isRelayUrlAllowed(url);
+  return _isRemoteSuppliedUriAllowed(uri);
 }
 
 bool _isRemoteSuppliedUriAllowed(Uri uri) =>

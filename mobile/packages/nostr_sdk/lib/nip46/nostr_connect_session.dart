@@ -17,11 +17,14 @@ import '../relay/relay_base.dart';
 import '../relay/relay_mode.dart';
 import '../relay/relay_status.dart';
 import '../signer/local_nostr_signer.dart';
+import '../utils/relay_addr_util.dart';
+import '../utils/relay_url_policy.dart';
 import '../utils/string_util.dart';
 import 'nostr_remote_response.dart';
 import 'nostr_remote_signer_info.dart';
 
 const _relayConnectTimeout = Duration(seconds: 8);
+const _relayFailedConnectCleanupTimeout = Duration(seconds: 1);
 
 /// State of a nostrconnect:// session.
 enum NostrConnectState {
@@ -171,6 +174,20 @@ class NostrConnectSession {
   // Internal state
   LocalNostrSigner? _localSigner;
   final List<Relay> _relays = [];
+
+  /// How many relays a signer named in a callback rather than the session
+  /// advertising them. Bounded by [RelayListCaps.nip46Callback].
+  ///
+  /// Counts slots, not entries in [_relays]: one is taken before the dial and
+  /// released if the dial fails, so callbacks arriving inside one connect
+  /// window cannot each observe a pre-dial count and overshoot the cap.
+  int _signerSuppliedRelayCount = 0;
+
+  /// Dedupe keys of callback relays currently being dialed.
+  ///
+  /// [_relays] only holds relays that finished connecting, so without this a
+  /// second callback naming the same URL opens a second socket to it.
+  final Set<String> _pendingSignerRelays = {};
   Completer<NostrConnectResult?>? _connectionCompleter;
   Timer? _timeoutTimer;
   bool _isClosed = false;
@@ -325,26 +342,65 @@ class NostrConnectSession {
   /// Some same-device signers return a callback relay after the user approves
   /// the connection. Connect to it in addition to the original nostrconnect://
   /// relays so the response event can arrive on the signer's chosen transport.
+  ///
+  /// At most [RelayListCaps.nip46Callback] of them are adopted per session:
+  /// the callback is a deep link, so anything on the device can deliver one,
+  /// and nothing else bounds how many arrive while a session is listening.
+  /// Only relays that actually connected count — a failed dial leaves the
+  /// budget for the signer's next attempt.
+  ///
+  /// Callers dispatch this without awaiting, so the cap is claimed before the
+  /// dial rather than after it: reading the count, awaiting, then incrementing
+  /// would let every call in one connect window see the same pre-dial count.
   Future<void> addRelay(String relayUrl) async {
     if (_isClosed || _state != NostrConnectState.listening) return;
-    if (relays.contains(relayUrl) ||
-        _relays.any((relay) => relay.relayStatus.addr == relayUrl)) {
+    final key = _relayDedupeKey(relayUrl);
+    if (relays.any((url) => _relayDedupeKey(url) == key) ||
+        _relays.any(
+          (relay) => _relayDedupeKey(relay.relayStatus.addr) == key,
+        ) ||
+        _pendingSignerRelays.contains(key)) {
+      return;
+    }
+    if (_signerSuppliedRelayCount >= RelayListCaps.nip46Callback) {
+      logger(
+        '[NostrConnectSession] Ignoring callback relay $relayUrl - '
+        'already holding ${RelayListCaps.nip46Callback}',
+      );
       return;
     }
 
+    _signerSuppliedRelayCount++;
+    _pendingSignerRelays.add(key);
     try {
       final relay = await _connectToRelay(relayUrl);
       if (_isClosed) {
         relay.disconnect();
+        _signerSuppliedRelayCount--;
         return;
       }
       _relays.add(relay);
       logger('[NostrConnectSession] Added callback relay $relayUrl');
     } catch (e) {
+      _signerSuppliedRelayCount--;
       logger(
         '[NostrConnectSession] Failed to add callback relay $relayUrl: $e',
       );
+    } finally {
+      _pendingSignerRelays.remove(key);
     }
+  }
+
+  /// The identity callback relays are deduplicated under.
+  ///
+  /// [RelayAddrUtil.handle] collapses a bare address to a root path for every
+  /// address this package dials, so `wss://h` and `wss://h/` are one relay to
+  /// the pool. Matching that here keeps a respelling from costing a second
+  /// slot of the cap. An unparseable address keys under itself.
+  String _relayDedupeKey(String url) {
+    final trimmed = url.trim();
+    if (Uri.tryParse(trimmed) == null) return trimmed;
+    return RelayAddrUtil.handle(trimmed);
   }
 
   /// Clean up resources.
@@ -404,16 +460,24 @@ class NostrConnectSession {
       }
     };
 
-    // Add subscription for listening to responses
-    await _addSubscription(relay);
+    try {
+      // Add subscription for listening to responses
+      await _addSubscription(relay);
 
-    final connected = await relay.connect().timeout(_relayConnectTimeout);
-    if (!connected) {
-      throw StateError('Relay connect returned false');
+      final connected = await relay.connect().timeout(_relayConnectTimeout);
+      if (!connected) {
+        throw StateError('Relay connect returned false');
+      }
+      logger('[NostrConnectSession] Connected to $relayAddr');
+
+      return relay;
+    } catch (_) {
+      relay.onMessage = null;
+      try {
+        await relay.disconnect().timeout(_relayFailedConnectCleanupTimeout);
+      } catch (_) {}
+      rethrow;
     }
-    logger('[NostrConnectSession] Connected to $relayAddr');
-
-    return relay;
   }
 
   Future<void> _reconnectRelay(Relay relay) async {

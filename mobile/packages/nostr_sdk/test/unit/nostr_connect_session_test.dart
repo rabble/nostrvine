@@ -318,6 +318,133 @@ void main() {
       );
     });
 
+    test('addRelay stops admitting signer relays at the cap', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      final callbackRelays = <_TestRelayServer>[];
+      for (var i = 0; i <= RelayListCaps.nip46Callback; i++) {
+        final relay = await _TestRelayServer.start();
+        addTearDown(relay.close);
+        callbackRelays.add(relay);
+        await session.addRelay(relay.url);
+      }
+
+      for (final relay in callbackRelays.take(RelayListCaps.nip46Callback)) {
+        expect(relay.connectionCount, equals(1));
+      }
+      expect(
+        callbackRelays.last.connectionCount,
+        equals(0),
+        reason: 'a signer relay past the cap must never be dialed',
+      );
+    });
+
+    test('addRelay does not spend the cap on a relay that failed', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      final failedPort = await _unusedLoopbackPort();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      for (var i = 0; i < RelayListCaps.nip46Callback; i++) {
+        await session.addRelay('ws://127.0.0.1:$failedPort');
+      }
+
+      final callbackRelay = await _TestRelayServer.start();
+      addTearDown(callbackRelay.close);
+
+      await session.addRelay(callbackRelay.url);
+      expect(
+        callbackRelay.connectionCount,
+        equals(1),
+        reason: 'only retained relays count against the cap',
+      );
+    });
+
+    test('addRelay holds the cap when callbacks arrive together', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      final callbackRelays = <_TestRelayServer>[];
+      for (var i = 0; i < RelayListCaps.nip46Callback + 3; i++) {
+        final relay = await _TestRelayServer.start();
+        addTearDown(relay.close);
+        callbackRelays.add(relay);
+      }
+
+      // The coordinator dispatches every callback with `unawaited`, so these
+      // all land between the cap check and the first dial completing.
+      await Future.wait([
+        for (final relay in callbackRelays) session.addRelay(relay.url),
+      ]);
+
+      expect(
+        callbackRelays.fold<int>(0, (n, relay) => n + relay.connectionCount),
+        equals(RelayListCaps.nip46Callback),
+        reason: 'concurrent callbacks must not each spend the same free slot',
+      );
+    });
+
+    test('addRelay dials a repeated callback relay once', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      final callbackRelay = await _TestRelayServer.start();
+      addTearDown(callbackRelay.close);
+
+      await Future.wait([
+        for (var i = 0; i < RelayListCaps.nip46Callback; i++)
+          session.addRelay(callbackRelay.url),
+      ]);
+
+      expect(
+        callbackRelay.connectionCount,
+        equals(1),
+        reason: 'an in-flight dial must absorb a repeat of the same URL',
+      );
+    });
+
+    test('addRelay treats a trailing slash as the same relay', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+
+      final callbackRelay = await _TestRelayServer.start();
+      addTearDown(callbackRelay.close);
+
+      await session.addRelay(callbackRelay.url);
+      await session.addRelay('${callbackRelay.url}/');
+
+      expect(
+        callbackRelay.connectionCount,
+        equals(1),
+        reason: 'a respelling must not cost a second slot of the cap',
+      );
+    });
+
     test('addRelay is a no-op unless the session is listening', () async {
       final callbackRelay = await _TestRelayServer.start();
       addTearDown(callbackRelay.close);
@@ -381,6 +508,38 @@ void main() {
           callbackRelay.connectionCount,
           equals(1),
           reason: 'timed-out relay attempts must not be retained as connected',
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
+
+    test(
+      'addRelay disconnects a relay that connects after the session timeout',
+      () async {
+        final primaryRelay = await _TestRelayServer.start();
+        final delayedRelay = await _DelayedUpgradeRelayServer.start(
+          delay: const Duration(seconds: 9),
+        );
+        addTearDown(primaryRelay.close);
+        addTearDown(delayedRelay.close);
+
+        final session = NostrConnectSession(relays: [primaryRelay.url]);
+        addTearDown(session.dispose);
+
+        await session.start();
+        await session.addRelay(delayedRelay.url);
+
+        await Future<void>.delayed(const Duration(seconds: 2));
+
+        expect(
+          delayedRelay.receivedMessages.where(_isReqMessage),
+          isEmpty,
+          reason: 'a relay that missed the session timeout must not subscribe',
+        );
+        expect(
+          delayedRelay.activeSocketCount,
+          equals(0),
+          reason: 'timed-out relays must not stay connected invisibly',
         );
       },
       timeout: const Timeout(Duration(seconds: 20)),
@@ -1138,6 +1297,7 @@ class _TestRelayServer {
 
   final HttpServer _server;
   final _sockets = <WebSocket>[];
+  final receivedMessages = <List<dynamic>>[];
   late final StreamSubscription<HttpRequest> _requests;
   int connectionCount = 0;
   bool _closed = false;
@@ -1172,7 +1332,65 @@ class _TestRelayServer {
     final socket = await WebSocketTransformer.upgrade(request);
     _sockets.add(socket);
     connectionCount += 1;
-    socket.listen((_) {});
+    socket.listen((message) {
+      receivedMessages.add(jsonDecode(message as String) as List<dynamic>);
+    });
+  }
+
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    for (final socket in _sockets) {
+      await socket.close();
+    }
+    await _requests.cancel();
+    await _server.close(force: true);
+  }
+}
+
+bool _isReqMessage(List<dynamic> message) =>
+    message.isNotEmpty && message.first == 'REQ';
+
+class _DelayedUpgradeRelayServer {
+  _DelayedUpgradeRelayServer._(this._server, this._delay) {
+    _requests = _server.listen(_handleRequest);
+  }
+
+  final HttpServer _server;
+  final Duration _delay;
+  final _sockets = <WebSocket>[];
+  final receivedMessages = <List<dynamic>>[];
+  late final StreamSubscription<HttpRequest> _requests;
+  bool _closed = false;
+
+  String get url => 'ws://127.0.0.1:${_server.port}';
+  int get activeSocketCount => _sockets.where((socket) {
+    return socket.readyState == WebSocket.open ||
+        socket.readyState == WebSocket.connecting;
+  }).length;
+
+  static Future<_DelayedUpgradeRelayServer> start({
+    required Duration delay,
+  }) async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    return _DelayedUpgradeRelayServer._(server, delay);
+  }
+
+  Future<void> _handleRequest(HttpRequest request) async {
+    if (!WebSocketTransformer.isUpgradeRequest(request)) {
+      request.response.statusCode = HttpStatus.badRequest;
+      await request.response.close();
+      return;
+    }
+
+    await Future<void>.delayed(_delay);
+    if (_closed) return;
+
+    final socket = await WebSocketTransformer.upgrade(request);
+    _sockets.add(socket);
+    socket.listen((message) {
+      receivedMessages.add(jsonDecode(message as String) as List<dynamic>);
+    });
   }
 
   Future<void> close() async {

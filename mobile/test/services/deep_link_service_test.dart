@@ -378,6 +378,69 @@ void main() {
           equals('wss://localrelay.link:28443'),
         );
       });
+
+      DeepLink parseCallback(String relay) => DeepLinkService.parseDeepLink(
+        'divine://nostrconnect?x-source=aegis&relay='
+        '${Uri.encodeComponent(relay)}',
+      );
+
+      // A same-device signer runs its relay on loopback and hands us that
+      // address; NIP-46 puts the signer in control of the relays. These are
+      // the two Aegis returns, and dropping them would break the pairing the
+      // callback exists to finish.
+      for (final relay in const [
+        'wss://127.0.0.1:28443',
+        'ws://127.0.0.1:8081',
+        'wss://localrelay.link:28443',
+      ]) {
+        test('keeps the callback relay hint $relay', () {
+          final result = parseCallback(relay);
+
+          expect(result.type, equals(DeepLinkType.signerCallback));
+          expect(result.signerCallbackRelay, equals(relay));
+        });
+      }
+
+      // Anything can open a deep link, so the hint must not point the device
+      // at the user's LAN, and cleartext must not leave the device. Dropping
+      // a hint leaves the callback itself intact — the handoff still
+      // reconnects the relays the session advertised.
+      for (final relay in const [
+        'wss://192.168.1.10:28443',
+        'wss://10.5.0.1:28443',
+        'wss://169.254.1.1:28443',
+        'wss://signer.local:28443',
+        'ws://localrelay.link:28443',
+        'http://localrelay.link:28443',
+        // The emulator's alias for the developer's laptop, not this device.
+        'ws://10.0.2.2:47777',
+        'wss://10.0.2.2:47777',
+        // Root-anchored respellings of the same private targets.
+        'wss://127.0.0.1.',
+        'wss://127.0.0.1..',
+        'wss://192.168.1.10.',
+        'wss://192.168.1.10..',
+        'wss://signer.local.',
+        'wss://signer.local..',
+      ]) {
+        test('drops the callback relay hint $relay', () {
+          final result = parseCallback(relay);
+
+          expect(result.type, equals(DeepLinkType.signerCallback));
+          expect(result.signerCallbackRelay, isNull);
+        });
+      }
+
+      test('hands on the address it checked, not the raw parameter', () {
+        final result = parseCallback('  wss://localrelay.link:28443  ');
+
+        // The policy validates a trimmed URL, so returning the raw one would
+        // dial and store a string that was never the one admitted.
+        expect(
+          result.signerCallbackRelay,
+          equals('wss://localrelay.link:28443'),
+        );
+      });
     });
 
     // The divine:// scheme splits three ways on the authority: `nostrconnect`
