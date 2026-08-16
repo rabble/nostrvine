@@ -7564,8 +7564,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Oltre il limite di 6,3 s — taglia per pubblicare';
 
   @override
-  String get videoEditorOverLimitTimeline =>
-      'Taglia via questa parte per pubblicare';
+  String get videoEditorOverLimitTimeline => 'Taglia via per pubblicare';
 
   @override
   String publishErrorServerInternalError(String serverName) {

@@ -7559,8 +7559,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Над лимита от 6,3 сек — скъси, за да публикуваш';
 
   @override
-  String get videoEditorOverLimitTimeline =>
-      'Отрежи тази част, за да публикуваш';
+  String get videoEditorOverLimitTimeline => 'Отрежи, за да публикуваш';
 
   @override
   String publishErrorServerInternalError(String serverName) {

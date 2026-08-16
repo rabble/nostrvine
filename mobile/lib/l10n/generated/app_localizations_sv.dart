@@ -7481,8 +7481,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Över gränsen på 6,3 s — korta ner för att posta';
 
   @override
-  String get videoEditorOverLimitTimeline =>
-      'Klipp bort den här delen för att posta';
+  String get videoEditorOverLimitTimeline => 'Trimma bort för att posta';
 
   @override
   String publishErrorServerInternalError(String serverName) {

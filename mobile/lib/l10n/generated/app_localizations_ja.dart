@@ -7145,7 +7145,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorOverLimitCanvas => '6.3秒の上限を超えてるよ。投稿するにはトリムしてね';
 
   @override
-  String get videoEditorOverLimitTimeline => '投稿するにはこの部分をカットしてね';
+  String get videoEditorOverLimitTimeline => 'この部分をカットして投稿';
 
   @override
   String publishErrorServerInternalError(String serverName) {

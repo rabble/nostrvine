@@ -7448,7 +7448,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Melebihi batas 6,3 dtk — pangkas untuk posting';
 
   @override
-  String get videoEditorOverLimitTimeline => 'Pangkas bagian ini untuk posting';
+  String get videoEditorOverLimitTimeline => 'Pangkas ini untuk posting';
 
   @override
   String publishErrorServerInternalError(String serverName) {

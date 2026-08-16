@@ -7490,7 +7490,7 @@ class AppLocalizationsUr extends AppLocalizations {
       '6.3 سیکنڈ کی حد سے زیادہ ہے۔ پوسٹ کرنے کے لیے چھوٹا کریں';
 
   @override
-  String get videoEditorOverLimitTimeline => 'پوسٹ کرنے کے لیے یہ حصہ نکالیں';
+  String get videoEditorOverLimitTimeline => 'پوسٹ کرنے کے لیے یہ نکالیں';
 
   @override
   String publishErrorServerInternalError(String serverName) {

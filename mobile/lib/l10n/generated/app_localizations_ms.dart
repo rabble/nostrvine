@@ -7537,8 +7537,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Melebihi had 6.3s — pangkas untuk disiarkan';
 
   @override
-  String get videoEditorOverLimitTimeline =>
-      'Pangkas bahagian ini untuk disiarkan';
+  String get videoEditorOverLimitTimeline => 'Pangkas ini untuk disiarkan';
 
   @override
   String publishErrorServerInternalError(String serverName) {

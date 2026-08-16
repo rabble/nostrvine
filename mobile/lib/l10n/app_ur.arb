@@ -4282,7 +4282,7 @@
   },
   "publishErrorFileTooLarge": "ویڈیو فائل سرور کے لیے بہت بڑی ہے۔ اسے چھوٹا کریں یا کوالٹی کم کر کے دیکھیں۔",
   "videoEditorOverLimitCanvas": "6.3 سیکنڈ کی حد سے زیادہ ہے۔ پوسٹ کرنے کے لیے چھوٹا کریں",
-  "videoEditorOverLimitTimeline": "پوسٹ کرنے کے لیے یہ حصہ نکالیں",
+  "videoEditorOverLimitTimeline": "پوسٹ کرنے کے لیے یہ نکالیں",
   "publishErrorServerInternalError": "میڈیا سرور ({serverName}) میں اندرونی خرابی آئی۔ آپ اپنی ترتیبات میں کوئی اور منتخب کر سکتے ہیں۔",
   "@publishErrorServerInternalError": {
     "description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.",

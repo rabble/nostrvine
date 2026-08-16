@@ -7579,8 +7579,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Lampas sa 6.3s na limit — i-trim para makapag-post';
 
   @override
-  String get videoEditorOverLimitTimeline =>
-      'I-trim ang bahaging ito para makapag-post';
+  String get videoEditorOverLimitTimeline => 'I-trim ito para makapag-post';
 
   @override
   String publishErrorServerInternalError(String serverName) {
