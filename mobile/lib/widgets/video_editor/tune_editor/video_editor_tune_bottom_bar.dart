@@ -74,10 +74,12 @@ class _TuneSlider extends StatelessWidget {
       child: SliderTheme(
         data: SliderTheme.of(context).copyWith(
           trackHeight: 3,
-          activeTrackColor: VineTheme.primary,
+          activeTrackColor: context.vineColors.accentPositive,
           inactiveTrackColor: context.vineColors.outlineMuted,
-          thumbColor: VineTheme.primary,
-          overlayColor: VineTheme.primary.withValues(alpha: 0.12),
+          thumbColor: context.vineColors.accentPositive,
+          overlayColor: context.vineColors.accentPositive.withValues(
+            alpha: 0.12,
+          ),
           overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
           valueIndicatorColor: context.vineColors.surfaceContainer,
           valueIndicatorTextStyle: VineTheme.bodySmallFont(

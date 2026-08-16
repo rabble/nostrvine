@@ -94,6 +94,15 @@ const _bodyPairs = <(String, String)>[
   // `accentWarning` labels the copy next to its icon ("Reconnect needed"), not
   // just the icon, so it is held to the body ratio rather than the 3:1 floor.
   ('accentWarning', 'background'),
+  // `accentPositive` was icon-only when this list was written. It now colors
+  // copy too — link text, active labels, the selected-row tick that is the
+  // only marker of which row is chosen — on every app surface it reaches, so
+  // it moved up from the 3:1 floor to the body ratio on each of them.
+  ('accentPositive', 'background'),
+  ('accentPositive', 'card'),
+  ('accentPositive', 'surface'),
+  ('accentPositive', 'surfaceContainer'),
+  ('accentPositive', 'surfaceContainerHigh'),
 ];
 
 /// Supporting copy — hints, placeholders, secondary labels — held to the
@@ -102,10 +111,6 @@ const _supportingPairs = <(String, String)>[
   ('onSurfaceVariant', 'surface'),
   ('onSurfaceMuted', 'surface'),
   ('onErrorContainer', 'errorContainer'),
-  // `accentPositive` only ever tints an icon — the connected row's label is
-  // `primaryText` and its identity line is `secondaryText` — so the non-text
-  // floor is the honest bar for it. Promote it if it ever colors copy.
-  ('accentPositive', 'background'),
 ];
 
 /// Token pairs that share a dark value while differing in light.

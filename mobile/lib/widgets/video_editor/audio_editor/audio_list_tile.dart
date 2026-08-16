@@ -196,7 +196,7 @@ class _AudioBars extends StatelessWidget {
 
           return DecoratedBox(
             decoration: BoxDecoration(
-              color: VineTheme.primary,
+              color: context.vineColors.accentPositive,
               borderRadius: BorderRadius.circular(999),
             ),
             child: SizedBox(width: 2, height: height),

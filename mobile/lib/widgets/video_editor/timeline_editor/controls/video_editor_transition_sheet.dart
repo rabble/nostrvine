@@ -469,9 +469,12 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                             child: DivineIcon(
                               icon: _directionIcon(direction),
                               size: 18,
-                              // Same rule as the curve glyphs directly above:
-                              // the chip's light fill leaves the accent at
-                              // 2.22:1, so light mode resolves `onSurface`.
+                              // Matches the curve glyphs directly above,
+                              // which already resolve `onSurface` in light.
+                              // Contrast is not the reason — `accentPositive`
+                              // is 5.78:1 on the chip's `primaryContainer`
+                              // fill — a lone green glyph beside neutral
+                              // siblings in one sheet is.
                               color: direction == _direction
                                   ? context.vineColors.isLight
                                         ? context.vineColors.onSurface

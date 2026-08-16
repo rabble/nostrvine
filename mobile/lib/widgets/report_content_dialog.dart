@@ -682,7 +682,12 @@ class _RadioIndicator extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isSelected ? VineTheme.vineGreen : VineTheme.transparent,
+          // Fill and ring resolve from the same token: a raw-green fill under
+          // an `accentPositive` ring reads two-tone in light (2.92:1 between
+          // them), and it left the white check at 2.11:1 on the fill.
+          color: isSelected
+              ? context.vineColors.accentPositive
+              : VineTheme.transparent,
           border: Border.all(
             color: context.vineColors.accentPositive,
             width: 2,

@@ -398,10 +398,12 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                                     child: DivineIcon(
                                       icon: _directionIcon(direction),
                                       size: 18,
-                                      // Same rule as the curve glyphs: the
-                                      // chip's light fill leaves the accent
-                                      // at 2.22:1, so light resolves
-                                      // `onSurface`.
+                                      // Matches the curve glyphs, which
+                                      // already resolve `onSurface` in
+                                      // light. Not a contrast call —
+                                      // `accentPositive` is 5.78:1 on the
+                                      // chip's `primaryContainer` fill —
+                                      // but a consistency one.
                                       color: direction == active.direction
                                           ? context.vineColors.isLight
                                                 ? context.vineColors.onSurface
