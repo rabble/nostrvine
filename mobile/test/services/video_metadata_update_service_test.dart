@@ -1526,4 +1526,55 @@ void main() {
       });
     });
   });
+
+  group('clip-source credit preservation', () {
+    test(
+      'preserves all clip-source a-tags and p-tags during metadata edit',
+      () async {
+        const sourceCreatorA = 'source_creator_a_pubkey';
+        const sourceAddressableIdA = '34236:source_creator_a_pubkey:clip-a';
+        const sourceCreatorB = 'source_creator_b_pubkey';
+        const sourceAddressableIdB = '34236:source_creator_b_pubkey:clip-b';
+
+        final video = _testVideo(
+          extraTags: [
+            // Clip-source tags for first creator (both a-tag and p-tag)
+            ['clip-source', sourceAddressableIdA],
+            ['clip-source', sourceCreatorA, 'p'],
+            // Clip-source tags for second creator (both a-tag and p-tag)
+            ['clip-source', sourceAddressableIdB],
+            ['clip-source', sourceCreatorB, 'p'],
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(
+            title: 'Updated title',
+          ),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+
+        // Verify all 4 clip-source tags are preserved
+        expect(
+          capturedTags,
+          contains(equals(['clip-source', sourceAddressableIdA])),
+        );
+        expect(
+          capturedTags,
+          contains(equals(['clip-source', sourceCreatorA, 'p'])),
+        );
+        expect(
+          capturedTags,
+          contains(equals(['clip-source', sourceAddressableIdB])),
+        );
+        expect(
+          capturedTags,
+          contains(equals(['clip-source', sourceCreatorB, 'p'])),
+        );
+      },
+    );
+  });
 }
