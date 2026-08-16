@@ -717,6 +717,37 @@ void main() {
 
         expect(result.noRelaysParticipated, isFalse);
       });
+
+      test(
+        'reports participation when only some relays took the REQ',
+        () async {
+          final nostr = _newNostr();
+          final answering = _SilentRelay('wss://answers.example');
+          final unreachable = _SilentRelay('wss://send-fails.example')
+            ..sendSucceeds = false;
+          expect(await nostr.relayPool.add(answering), isTrue);
+          expect(await nostr.relayPool.add(unreachable), isTrue);
+
+          final pending = nostr.queryEventsDetailed([
+            {
+              'kinds': [1],
+            },
+          ], timeout: _timeout);
+
+          final subId = await answering.awaitPendingQuery();
+          await answering.deliver(['EOSE', subId]);
+
+          final result = await pending;
+
+          expect(
+            result.noRelaysParticipated,
+            isFalse,
+            reason:
+                'one relay answered, so the box is what that relay holds — not '
+                'an answer nobody gave',
+          );
+        },
+      );
     });
 
     group('requireAllRelaysSettled', () {
@@ -761,6 +792,14 @@ void main() {
                 'complete answer, which a caller about to republish a '
                 'replaceable event would act on and truncate the list',
           );
+          expect(
+            result.noRelaysParticipated,
+            isFalse,
+            reason:
+                'both relays took the REQ — one is just slow. Conflating this '
+                'with "nobody was asked" tells the user their relays are '
+                'unreachable when they are reachable and mid-answer',
+          );
         },
       );
 
@@ -800,11 +839,14 @@ void main() {
           );
           expect(
             stopwatch.elapsed,
-            lessThan(_timeout),
+            // Well under the deadline rather than merely inside it: holding
+            // the query runs it to ~4.002s, which `lessThan(_timeout)` would
+            // reject by a margin thin enough to depend on the machine.
+            lessThan(_timeout ~/ 2),
             reason:
-                'no relay saved the REQ, so no terminal frame, post-AUTH '
-                'replay or reconnect can change the answer — waiting out the '
-                'deadline only delays the error the caller is going to show',
+                'no relay saved the REQ, so nothing it could still draw back '
+                'has a subscription to land in — waiting out the deadline '
+                'only delays the error the caller is going to show',
           );
         },
       );
@@ -846,6 +888,84 @@ void main() {
             reason:
                 'a relay refusal is not a data-bearing answer, so a '
                 'replaceable-event caller must treat it as inconclusive',
+          );
+          expect(
+            result.noRelaysParticipated,
+            isFalse,
+            reason: 'the relay took the REQ before refusing it',
+          );
+        },
+      );
+
+      // The fan-out can outlive its caller: `relayDoQuery` waits up to
+      // `perRelaySendTimeout` on a half-open socket, which is the default
+      // query deadline over again. Whatever it records on the way out must
+      // not land on an id the caller has already abandoned.
+      test(
+        'a fan-out that resolves after its caller gave up records nothing',
+        () async {
+          const reusedId = 'reused-one-shot-subscription-id';
+          final nostr = _newNostr();
+          final relay = _SilentRelay('wss://send-fails.example')
+            ..sendSucceeds = false
+            ..reqGate = Completer<void>();
+          expect(await nostr.relayPool.add(relay), isTrue);
+
+          final abandoned = nostr.relayPool.query(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            (_) {},
+            id: reusedId,
+            onComplete: () {},
+            requireAllRelaysSettled: true,
+          );
+
+          // Park inside the REQ write, then give the query up the way
+          // Nostr.queryEventsDetailed does when its deadline beats the
+          // fan-out.
+          for (var i = 0; i < 1000 && relay.capturedSubId == null; i++) {
+            await Future<void>.delayed(Duration.zero);
+          }
+          expect(relay.capturedSubId, equals(reusedId));
+          nostr.unsubscribe(reusedId);
+          relay.releaseReq();
+          expect((await abandoned).sentTo, isEmpty);
+
+          // A later query on that id must still get the full-settlement hold.
+          // A stale "no relay took it" would skip it and hand the empty box
+          // back as authoritative.
+          relay
+            ..sendSucceeds = true
+            ..reqGate = null;
+          final pending = nostr.queryEventsDetailed(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            id: reusedId,
+            timeout: unacceptedTimeout,
+            requireAllRelaysSettled: true,
+          );
+
+          final subId = await relay.awaitPendingQuery();
+          await relay.deliver([
+            'CLOSED',
+            subId,
+            'error: too many concurrent REQs',
+          ]);
+
+          final result = await pending;
+
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'the refusal is still inconclusive; the abandoned fan-out '
+                'must not have left anything behind that waives the hold',
           );
         },
       );

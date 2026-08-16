@@ -159,7 +159,7 @@ Create a one-time query subscription.
 - `sendAfterAuth`: Send query after relay authentication
 - `requireAllRelaysSettled`: Report an incomplete answer as incomplete rather than as a result — for callers about to replace what they read
 
-**Returns:** the subscription id, plus `sentTo` — the relays that took the REQ. The future resolves when the fan-out is done, ahead of `onComplete`. An empty `sentTo` means no relay was asked, which an empty result set on its own cannot distinguish from every relay holding nothing.
+**Returns:** the subscription id, plus `sentTo` — the relays that took the REQ, cache relays included. An empty `sentTo` means nothing was asked, which an empty result set on its own cannot distinguish from every relay holding nothing. The future resolves when the fan-out is done; `onComplete` may already have fired, since a fan-out that settles the query calls it inline.
 
 ##### queryEvents()
 ```dart

@@ -847,10 +847,17 @@ class NostrClient {
   /// way.
   ///
   /// `noRelays` says nothing was asked, whatever the flag. It covers a client
-  /// with no connected relay and no temp relay, a disposed client, and a
-  /// fan-out no relay took — the last of which a connected-relay snapshot
-  /// cannot see, since a write-only relay and one whose socket died since its
-  /// last status update both still count as connected.
+  /// with no connected relay and no temp relay, a client already disposed when
+  /// the call arrived, and a fan-out no relay took — the last of which a
+  /// connected-relay snapshot cannot see, since a write-only relay and one
+  /// whose socket died since its last status update both still count as
+  /// connected. A relay that answers only out of the local event cache counts
+  /// as participation, so this is "nothing took the REQ", not "no network
+  /// relay took it".
+  ///
+  /// A client disposed *mid-call* is deliberately not in that list: the relays
+  /// were reachable and only this one query was dropped, so it arrives as
+  /// `timedOut` for a full-settlement caller instead.
   Future<({List<Event> events, bool timedOut, bool noRelays})>
   queryEventsDetailed(
     List<Filter> filters, {

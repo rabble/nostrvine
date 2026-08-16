@@ -1576,6 +1576,14 @@ void main() {
         // a partial answer means.
         expect(result.events, equals(events));
         expect(result.timedOut, isTrue);
+        expect(
+          result.noRelays,
+          isFalse,
+          reason:
+              'the relays were reachable and slow. bookmark_service tests '
+              'noRelays first, so conflating the two tells the user their '
+              'relays are unreachable when they are not',
+        );
       });
 
       test('reports noRelays when nothing reconnected', () async {
