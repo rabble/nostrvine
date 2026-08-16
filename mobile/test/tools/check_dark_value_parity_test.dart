@@ -203,5 +203,47 @@ class VineTheme {
       expect(res.exitCode, 2);
       expect(res.stderr, contains('Theme file not found'));
     });
+
+    // A shallow clone has no merge base with its own base ref. The guard used
+    // to fall back to a two-dot diff there, which reads every commit the base
+    // has and HEAD lacks as a removal — pairing unrelated work against this
+    // branch's additions and reporting confident, wrong DARK MISMATCH lines.
+    // Two orphan roots reproduce "no merge base" without a shallow fixture.
+    test('refuses to guess when the base shares no history with HEAD', () {
+      void git(List<String> arguments) {
+        final res = Process.runSync(
+          'git',
+          arguments,
+          workingDirectory: sandbox.path,
+        );
+        expect(res.exitCode, 0, reason: 'git ${arguments.join(' ')}');
+      }
+
+      git(['init', '--initial-branch=main']);
+      git(['config', 'user.email', 'test@example.com']);
+      git(['config', 'user.name', 'Test']);
+      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// base\n');
+      git(['add', '.']);
+      git(['commit', '-m', 'base']);
+
+      git(['checkout', '--orphan', 'unrelated']);
+      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// other\n');
+      git(['add', '.']);
+      git(['commit', '-m', 'unrelated root']);
+
+      final res = Process.runSync('dart', [
+        'run',
+        scriptPath,
+        '--theme',
+        themePath,
+        '--base',
+        'main',
+      ], workingDirectory: sandbox.path);
+
+      expect(res.exitCode, 2);
+      expect(res.stderr, contains('No merge base between main and HEAD'));
+      expect(res.stderr, contains('git fetch --unshallow'));
+      expect(res.stdout, isNot(contains('DARK MISMATCH')));
+    });
   });
 }

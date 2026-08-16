@@ -381,25 +381,32 @@ void main(List<String> args) {
   if (diffArgument.isNotEmpty) {
     diff = File(diffArgument).readAsStringSync();
   } else {
-    // Three-dot needs a merge base, which a shallow clone (CI, and any
-    // `--depth` worktree) may not have; two-dot still answers "what does this
-    // branch look like next to that ref".
-    var result = Process.runSync('git', [
+    // Three-dot isolates what this branch changed, and needs a merge base —
+    // which a shallow clone (CI, and any `--depth` worktree) may not have.
+    // Two-dot still runs there, but answers a different question: every
+    // commit the base has and HEAD lacks reads as a removal, so unrelated
+    // work gets paired against this branch's additions and reported as dark
+    // mismatches. A guard that quietly returns wrong answers is worse than
+    // one that refuses, so refuse.
+    final mergeBase = Process.runSync('git', ['merge-base', base, 'HEAD']);
+    if (mergeBase.exitCode != 0) {
+      stderr.writeln(
+        'No merge base between $base and HEAD, so this branch\'s own '
+        'changes cannot be isolated.\n'
+        'This is usually a shallow clone. Pick one:\n'
+        '  git fetch --unshallow      then rerun\n'
+        '  --base <branch-point-sha>  the commit this branch started from\n'
+        '  --diff <patch>             a diff you produced yourself',
+      );
+      exit(2);
+    }
+    final result = Process.runSync('git', [
       'diff',
       '-U0',
       '$base...HEAD',
       '--',
       '*.dart',
     ]);
-    if (result.exitCode != 0) {
-      result = Process.runSync('git', [
-        'diff',
-        '-U0',
-        '$base..HEAD',
-        '--',
-        '*.dart',
-      ]);
-    }
     if (result.exitCode != 0) {
       stderr.writeln('git diff failed: ${result.stderr}');
       exit(2);
