@@ -168,6 +168,28 @@ void main() {
         );
       });
 
+      // Same archetype as #7587 in the Saved tab: liked IDs that did not
+      // resolve to videos were rendered as "nothing liked yet".
+      testWidgets(
+        'error message, not empty state, when liked IDs did not resolve',
+        (tester) async {
+          const likedId =
+              '615a098cbf969c0d73b28c8f25eb59b9745db95c19d7b1998068d9b31c3df1a0';
+          when(() => mockBloc.state).thenReturn(
+            const ProfileLikedVideosState(
+              status: ProfileLikedVideosStatus.success,
+              likedEventIds: [likedId],
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileErrorLoadingLiked), findsOneWidget);
+          expect(find.text(l10n.profileNoLikedVideosTitle), findsNothing);
+        },
+      );
+
       testWidgets('grid of liked videos when videos exist', (tester) async {
         final videos = _createTestVideos(count: 3);
         when(() => mockBloc.state).thenReturn(

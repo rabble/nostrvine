@@ -79,6 +79,15 @@ final class ProfileLikedVideosState extends Equatable {
   /// due to relay unavailability or unsupported format filtering).
   final int nextPageOffset;
 
+  /// Whether the profile has likes that none of the fetches resolved.
+  ///
+  /// `videos.isEmpty` on its own conflates "nothing liked" with "we could not
+  /// load them", and only [likedEventIds] separates the two. The distinction
+  /// cannot be recovered further down: `getVideosByIds` returns an empty list
+  /// for a relay that never answered as readily as for an event that does not
+  /// exist.
+  bool get hasUnresolvedLikes => videos.isEmpty && likedEventIds.isNotEmpty;
+
   /// Whether data has been successfully loaded
   bool get isLoaded => status == ProfileLikedVideosStatus.success;
 

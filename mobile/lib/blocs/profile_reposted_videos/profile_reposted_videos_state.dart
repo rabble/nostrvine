@@ -77,6 +77,16 @@ final class ProfileRepostedVideosState extends Equatable {
   /// Offset into [repostedAddressableIds] for the next page fetch.
   final int nextPageOffset;
 
+  /// Whether the profile has reposts that none of the fetches resolved.
+  ///
+  /// `videos.isEmpty` on its own conflates "nothing reposted" with "we could
+  /// not load them", and only [repostedAddressableIds] separates the two. The
+  /// distinction cannot be recovered further down: the repository returns an
+  /// empty list for a relay that never answered as readily as for a
+  /// coordinate that resolves to nothing.
+  bool get hasUnresolvedReposts =>
+      videos.isEmpty && repostedAddressableIds.isNotEmpty;
+
   /// Whether data has been successfully loaded
   bool get isLoaded => status == ProfileRepostedVideosStatus.success;
 

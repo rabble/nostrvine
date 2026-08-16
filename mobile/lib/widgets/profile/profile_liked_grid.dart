@@ -99,8 +99,13 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
 
         // Only surface the failure screen when there is nothing cached to
         // show; a failed background refresh keeps the cached grid on screen.
-        if (state.status == ProfileLikedVideosStatus.failure &&
-            likedVideos.isEmpty) {
+        //
+        // Likes that failed to resolve land here too: a settled-empty tab that
+        // still holds liked IDs is a load failure, not an empty list, and the
+        // empty copy would claim this profile has liked nothing.
+        if (likedVideos.isEmpty &&
+            (state.status == ProfileLikedVideosStatus.failure ||
+                state.hasUnresolvedLikes)) {
           return ProfileTabErrorState(
             message: context.l10n.profileErrorLoadingLiked,
           );

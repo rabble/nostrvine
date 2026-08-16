@@ -91,7 +91,11 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
           return const ProfileTabLoadingState();
         }
 
-        if (state.status == ProfileRepostedVideosStatus.failure) {
+        // Reposts that failed to resolve land here too: a settled-empty tab
+        // that still holds reposted coordinates is a load failure, not an
+        // empty list, and the empty copy would claim nothing was reposted.
+        if (state.status == ProfileRepostedVideosStatus.failure ||
+            state.hasUnresolvedReposts) {
           return ProfileTabErrorState(
             message: context.l10n.profileErrorLoadingReposts,
           );
