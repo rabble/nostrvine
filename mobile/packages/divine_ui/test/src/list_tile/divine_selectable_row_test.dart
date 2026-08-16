@@ -19,12 +19,17 @@ void main() {
       return MaterialApp(
         theme: theme ?? VineTheme.theme,
         home: Scaffold(
-          body: DivineSelectableRow(
-            title: 'Deutsch',
-            subtitle: subtitle,
-            leadingIcon: leadingIcon,
-            isSelected: isSelected,
-            onTap: onTap ?? () {},
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: DivineSelectableRow(
+                title: 'Deutsch',
+                subtitle: subtitle,
+                leadingIcon: leadingIcon,
+                isSelected: isSelected,
+                onTap: onTap ?? () {},
+              ),
+            ),
           ),
         ),
       );

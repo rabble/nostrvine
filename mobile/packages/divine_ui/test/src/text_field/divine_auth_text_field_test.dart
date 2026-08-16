@@ -24,20 +24,25 @@ void main() {
       return MaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
-          body: DivineAuthTextField(
-            label: label,
-            controller: controller,
-            focusNode: focusNode,
-            readOnly: readOnly,
-            obscureText: obscureText,
-            enabled: enabled,
-            keyboardType: keyboardType,
-            textInputAction: textInputAction,
-            onChanged: onChanged,
-            onSubmitted: onSubmitted,
-            onTap: onTap,
-            errorText: errorText,
-            validator: validator,
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: DivineAuthTextField(
+                label: label,
+                controller: controller,
+                focusNode: focusNode,
+                readOnly: readOnly,
+                obscureText: obscureText,
+                enabled: enabled,
+                keyboardType: keyboardType,
+                textInputAction: textInputAction,
+                onChanged: onChanged,
+                onSubmitted: onSubmitted,
+                onTap: onTap,
+                errorText: errorText,
+                validator: validator,
+              ),
+            ),
           ),
         ),
       );

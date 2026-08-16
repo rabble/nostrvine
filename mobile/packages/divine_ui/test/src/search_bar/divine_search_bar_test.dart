@@ -21,17 +21,22 @@ void main() {
       return MaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
-          body: DivineSearchBar(
-            controller: controller,
-            focusNode: focusNode,
-            hintText: hintText,
-            isLoading: isLoading,
-            readOnly: readOnly,
-            onTap: onTap,
-            suffixIcon: suffixIcon,
-            onChanged: onChanged,
-            onSubmitted: onSubmitted,
-            semanticIdentifier: semanticIdentifier,
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: DivineSearchBar(
+                controller: controller,
+                focusNode: focusNode,
+                hintText: hintText,
+                isLoading: isLoading,
+                readOnly: readOnly,
+                onTap: onTap,
+                suffixIcon: suffixIcon,
+                onChanged: onChanged,
+                onSubmitted: onSubmitted,
+                semanticIdentifier: semanticIdentifier,
+              ),
+            ),
           ),
         ),
       );

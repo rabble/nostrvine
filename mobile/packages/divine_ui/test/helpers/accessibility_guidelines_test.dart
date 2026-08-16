@@ -82,6 +82,27 @@ void main() {
       expect(failure, isNotNull);
     });
 
+    testWidgets('documents that boundary targets are skipped', (tester) async {
+      await tester.pumpWidget(
+        _plainApp(
+          Semantics(
+            label: 'Flush tiny target',
+            button: true,
+            child: GestureDetector(
+              onTap: _noop,
+              child: const SizedBox(width: double.infinity, height: 20),
+            ),
+          ),
+          background: Colors.white,
+        ),
+      );
+
+      await expectMeetsAccessibilityGuidelines(
+        tester,
+        guidelines: const [androidTapTargetGuideline],
+      );
+    });
+
     testWidgets('fails when a tap target is under 44pt', (tester) async {
       await tester.pumpWidget(_app(const _TapTarget(side: 20, label: 'Tiny')));
 

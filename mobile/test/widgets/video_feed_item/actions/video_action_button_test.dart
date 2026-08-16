@@ -26,16 +26,18 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: VideoActionButton(
-          icon: icon,
-          semanticIdentifier: semanticIdentifier,
-          semanticLabel: semanticLabel,
-          onPressed: onPressed,
-          iconColor: iconColor,
-          count: count,
-          isLoading: isLoading,
-          caption: caption,
-          labelWhenZero: labelWhenZero,
+        body: Center(
+          child: VideoActionButton(
+            icon: icon,
+            semanticIdentifier: semanticIdentifier,
+            semanticLabel: semanticLabel,
+            onPressed: onPressed,
+            iconColor: iconColor,
+            count: count,
+            isLoading: isLoading,
+            caption: caption,
+            labelWhenZero: labelWhenZero,
+          ),
         ),
       ),
     );

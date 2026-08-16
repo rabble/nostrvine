@@ -37,6 +37,11 @@ const divineAccessibilityGuidelines = <AccessibilityGuideline>[
 /// check and the handle is disposed afterwards, including when an assertion
 /// fails — a leaked handle would otherwise leave semantics on for every later
 /// suite in the merged test isolate.
+///
+/// Keep the subject away from the viewport and scrollable edges. Flutter's
+/// tap-target guidelines skip boundary-touching semantics nodes because they
+/// may be partially off-screen, so flush fixtures can pass without evaluating
+/// the intended target size.
 Future<void> expectMeetsAccessibilityGuidelines(
   WidgetTester tester, {
   Iterable<AccessibilityGuideline> guidelines = divineAccessibilityGuidelines,

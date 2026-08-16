@@ -97,13 +97,18 @@ void main() {
       return MaterialApp(
         theme: theme ?? VineTheme.theme,
         home: Scaffold(
-          body: DivineSwitchTile(
-            title: 'Autoplay',
-            subtitle: subtitle,
-            leadingIcon: leadingIcon,
-            leading: leading,
-            value: value,
-            onChanged: onChanged,
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: DivineSwitchTile(
+                title: 'Autoplay',
+                subtitle: subtitle,
+                leadingIcon: leadingIcon,
+                leading: leading,
+                value: value,
+                onChanged: onChanged,
+              ),
+            ),
           ),
         ),
       );
