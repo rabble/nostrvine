@@ -1,0 +1,28 @@
+# Routes review requests automatically when a pull request opens.
+#
+# This exists because requesting a reviewer was a step an author had to
+# remember. Branch protection already stops an unreviewed pull request from
+# merging, so nothing was landing unreviewed — but nothing decided *who* should
+# look, so pull requests sat until someone chased them. GitHub applies this file
+# the moment a pull request opens, for humans and agents alike, which is why it
+# replaces a convention that had to be read to be followed.
+#
+# Order matters: the LAST matching pattern wins. Keep the catch-all first.
+#
+# Paths here are only those that exist in this repository. Adding a pattern for
+# a path that does not exist is silently inert, as is naming a team without
+# write access to this repository — GitHub reports neither.
+
+* @divinevideo/reviewers
+
+# Platform-sensitive paths, per PR_REVIEW_TEAMS.md: an incorrect final state
+# here can affect production deployment, signing, or secrets rather than one
+# feature. `codemagic.yaml` builds and publishes the shipping app, and a single
+# bad line in it fails every workflow in the file before any step runs — that
+# took the whole pipeline down for ~21 hours in #7203.
+/.github/workflows/          @divinevideo/platform
+/codemagic.yaml              @divinevideo/platform
+/.github/dependabot.yml      @divinevideo/platform
+
+# Changing who reviews what is itself a platform decision.
+/.github/CODEOWNERS          @divinevideo/platform
