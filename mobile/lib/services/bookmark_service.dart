@@ -238,6 +238,57 @@ class BookmarkService {
   /// kind-10003 at all.
   DateTime? _absenceConfirmedAt;
 
+  /// The kind-10003 revision this device has established — the newest event it
+  /// adopted, or the one it last published. `null` once a confirmed-empty
+  /// answer established that no list exists.
+  ({int createdAt, String id})? _revision;
+
+  /// Tail of the serialized operation queue. See [_serialized].
+  Future<void> _queue = Future<void>.value();
+
+  /// Runs [operation] only after every operation queued before it.
+  ///
+  /// Reading and publishing both reach the relay, suspend, and then replace
+  /// the whole in-memory list and the persisted snapshot. Left overlapping,
+  /// the last one to resume wins whatever revision it happened to read, so a
+  /// display read issued before a save lands after it and undoes it (#7163).
+  ///
+  /// Only the public entry points take this. The private cores they compose
+  /// must not, or a toggle would wait on the queue slot it already holds.
+  Future<T> _serialized<T>(Future<T> Function() operation) {
+    final result = Completer<T>();
+    _queue = _queue.then((_) async {
+      try {
+        result.complete(await operation());
+      } catch (error, stackTrace) {
+        // Kept off the queue future: letting it reject would strand every
+        // operation queued behind this one.
+        result.completeError(error, stackTrace);
+      }
+    });
+    return result.future;
+  }
+
+  /// NIP-01's order for two versions of a replaceable event: newer
+  /// `created_at` first, and on a tie the lexically lower id — the one relays
+  /// are told to retain. Sorting the same way keeps this device's idea of the
+  /// current revision identical to theirs.
+  static int _newestRevisionFirst(Event a, Event b) =>
+      a.createdAt != b.createdAt
+      ? b.createdAt.compareTo(a.createdAt)
+      : a.id.compareTo(b.id);
+
+  /// Whether [event] is an older revision than the one this device already
+  /// holds, by that same comparison.
+  bool _isStaleRevision(Event event) {
+    final revision = _revision;
+    if (revision == null) return false;
+    if (event.createdAt != revision.createdAt) {
+      return event.createdAt < revision.createdAt;
+    }
+    return event.id.compareTo(revision.id) > 0;
+  }
+
   /// Whether an empty answer from a partial set of relays still has to be
   /// confirmed before it is believed.
   ///
@@ -300,12 +351,22 @@ class BookmarkService {
   /// keeps going missing is re-confirmed every time rather than once per
   /// window. An answer that stays unconfirmed changes nothing. A read that
   /// finds a list keeps the fast trade and pays for none of this.
-  Future<bool> syncGlobalBookmarks({bool requireAuthoritative = false}) async =>
-      // Equality to success, never `!= someFailure`: a blacklist would let any
-      // failure member added later fall through as "reconciled" and publish
-      // kind 10003 from an inconclusive read — the #6966 regression.
-      await _syncGlobalBookmarks(requireAuthoritative: requireAuthoritative) ==
-      null;
+  ///
+  /// Runs after any bookmark operation already in flight ([_serialized]), so
+  /// its answer is applied to — and observed against — that operation's
+  /// result rather than interleaved with it.
+  Future<bool> syncGlobalBookmarks({bool requireAuthoritative = false}) =>
+      _serialized(
+        () async =>
+            // Equality to success, never `!= someFailure`: a blacklist would
+            // let any failure member added later fall through as "reconciled"
+            // and publish kind 10003 from an inconclusive read — the #6966
+            // regression.
+            await _syncGlobalBookmarks(
+              requireAuthoritative: requireAuthoritative,
+            ) ==
+            null,
+      );
 
   /// [syncGlobalBookmarks], but reporting *why* it failed.
   ///
@@ -375,6 +436,7 @@ class BookmarkService {
         _privateTags = const [];
         _privateItemsState = _PrivateItemsState.none;
         _lastKnownRemoteContent = '';
+        _revision = null;
       } else {
         // Seeing the event disproves the absence, so the stamp cannot stand.
         // A list whose items are all private has no public tags, leaving
@@ -382,9 +444,24 @@ class BookmarkService {
         // another client's ciphertext — a stale stamp would let the next
         // partial empty answer through unconfirmed and wipe it.
         _absenceConfirmedAt = null;
-        final newestFirst = [...events]
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        await _adoptGlobalBookmarksFromEvent(newestFirst.first);
+        final newest = ([...events]..sort(_newestRevisionFirst)).first;
+
+        // A replaceable event has exactly one current version, so a revision
+        // older than the one this device established is never the user's list
+        // — it is a copy the relay had not replaced yet. The relay answers
+        // `OK` once the event is queued for storage rather than once it is
+        // stored, so that copy is what a read right after a save sees.
+        // Adopting it would undo the publish (#7163).
+        if (_isStaleRevision(newest)) {
+          Log.info(
+            'Ignoring kind 10003 ${newest.id} - older than the revision this '
+            'device holds, keeping ${globalBookmarks.length} bookmarks',
+            name: 'BookmarkService',
+            category: LogCategory.system,
+          );
+          return null;
+        }
+        await _adoptGlobalBookmarksFromEvent(newest);
       }
 
       await _saveBookmarksToSharedPreferences();
@@ -462,7 +539,23 @@ class BookmarkService {
   /// The returned [BookmarkToggleResult] carries both the reconciled
   /// before-state and the resulting state; callers must not assume the
   /// direction from their own pre-read.
+  ///
+  /// Reconcile and publish run as one serialized operation ([_serialized]), so
+  /// no other read can land between the direction being decided and the new
+  /// list being published.
   Future<BookmarkToggleResult> toggleVideoInGlobalBookmarks(
+    String videoEventId, {
+    String? relay,
+    String? petname,
+  }) => _serialized(
+    () => _toggleVideoInGlobalBookmarks(
+      videoEventId,
+      relay: relay,
+      petname: petname,
+    ),
+  );
+
+  Future<BookmarkToggleResult> _toggleVideoInGlobalBookmarks(
     String videoEventId, {
     String? relay,
     String? petname,
@@ -492,11 +585,11 @@ class BookmarkService {
     }
 
     final succeeded = wasBookmarked
-        ? await removeFromGlobalBookmarks(
+        ? await _removeFromGlobalBookmarks(
             BookmarkItem(type: 'e', id: videoEventId),
             alreadyReconciled: true,
           )
-        : await addToGlobalBookmarks(
+        : await _addToGlobalBookmarks(
             BookmarkItem(
               type: 'e',
               id: videoEventId,
@@ -527,13 +620,22 @@ class BookmarkService {
   /// [syncGlobalBookmarks] with `requireAuthoritative: true` and the extra
   /// round trip would be redundant. Callers that have not just completed that
   /// authoritative sync must leave it false so this method reconciles first.
+  ///
+  /// Reconcile and publish run as one serialized operation ([_serialized]).
   Future<bool> addToGlobalBookmarks(
     BookmarkItem item, {
     bool alreadyReconciled = false,
+  }) => _serialized(
+    () => _addToGlobalBookmarks(item, alreadyReconciled: alreadyReconciled),
+  );
+
+  Future<bool> _addToGlobalBookmarks(
+    BookmarkItem item, {
+    required bool alreadyReconciled,
   }) async {
     try {
       if (!alreadyReconciled &&
-          !await syncGlobalBookmarks(requireAuthoritative: true)) {
+          await _syncGlobalBookmarks(requireAuthoritative: true) != null) {
         Log.warning(
           'Not adding to global bookmarks: could not reconcile with relay',
           name: 'BookmarkService',
@@ -596,13 +698,23 @@ class BookmarkService {
   /// [syncGlobalBookmarks] with `requireAuthoritative: true` and the extra
   /// round trip would be redundant. Callers that have not just completed that
   /// authoritative sync must leave it false so this method reconciles first.
+  ///
+  /// Reconcile and publish run as one serialized operation ([_serialized]).
   Future<bool> removeFromGlobalBookmarks(
     BookmarkItem item, {
     bool alreadyReconciled = false,
+  }) => _serialized(
+    () =>
+        _removeFromGlobalBookmarks(item, alreadyReconciled: alreadyReconciled),
+  );
+
+  Future<bool> _removeFromGlobalBookmarks(
+    BookmarkItem item, {
+    required bool alreadyReconciled,
   }) async {
     try {
       if (!alreadyReconciled &&
-          !await syncGlobalBookmarks(requireAuthoritative: true)) {
+          await _syncGlobalBookmarks(requireAuthoritative: true) != null) {
         Log.warning(
           'Not removing from global bookmarks: could not reconcile with relay',
           name: 'BookmarkService',
@@ -757,6 +869,9 @@ class BookmarkService {
         return false;
       }
 
+      // The revision this device now holds. A read that still answers with the
+      // one this replaced is stale, not a correction — see [_isStaleRevision].
+      _revision = (createdAt: event.createdAt, id: event.id);
       _globalBookmarks
         ..clear()
         ..addAll(candidate);
@@ -864,6 +979,7 @@ class BookmarkService {
       ..clear()
       ..addAll(_itemsFromTags(private.tags));
     _privateItemsState = private.state;
+    _revision = (createdAt: event.createdAt, id: event.id);
   }
 
   /// The bookmark items among [tags], in order.

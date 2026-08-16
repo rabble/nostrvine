@@ -1,6 +1,7 @@
 // ABOUTME: Tests BookmarkService's NIP-51 kind 10003 read-modify-write contract
 // ABOUTME: Pins that an unreconciled publish can never truncate the relay list
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -45,7 +46,11 @@ void main() {
     List<List<String>>? signedTags;
     String? signedContent;
 
-    Event bookmarkListEvent(List<String> eventIds, {String content = ''}) {
+    Event bookmarkListEvent(
+      List<String> eventIds, {
+      String content = '',
+      int? createdAt,
+    }) {
       return Event(
         pubkey,
         10003,
@@ -53,6 +58,7 @@ void main() {
           for (final id in eventIds) ['e', id],
         ],
         content,
+        createdAt: createdAt,
       );
     }
 
@@ -1038,6 +1044,111 @@ void main() {
 
         expect(result.succeeded, isTrue);
         expect(result.failure, isNull);
+      });
+    });
+
+    group('concurrent syncs and publishes', () {
+      /// A revision published a minute ago — what a relay still answers with
+      /// while a newer one from this device has not replaced it yet.
+      Event supersededRevision(List<String> eventIds) => bookmarkListEvent(
+        eventIds,
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60,
+      );
+
+      test('a stale relay answer cannot undo a completed save', () async {
+        stubRelay(
+          events: [
+            supersededRevision(['video-a']),
+          ],
+        );
+        final service = createService();
+
+        final toggle = await service.toggleVideoInGlobalBookmarks('video-b');
+        expect(toggle.succeeded, isTrue);
+        expect(signedEventIds(), ['video-a', 'video-b']);
+
+        // The relay still answers with the revision the save replaced: `OK`
+        // means the new one is queued for storage, not that it is stored. This
+        // is the share sheet's display read landing after the toggle.
+        await service.syncGlobalBookmarks();
+
+        expect(service.globalBookmarks.map((item) => item.id), [
+          'video-a',
+          'video-b',
+        ]);
+        expect(
+          jsonDecode(
+            prefs.getString(BookmarkService.globalBookmarksStorageKey)!,
+          ),
+          [
+            {'type': 'e', 'id': 'video-a', 'relay': null, 'petname': null},
+            {'type': 'e', 'id': 'video-b', 'relay': null, 'petname': null},
+          ],
+        );
+      });
+
+      test('overlapping toggles do not publish from the same base', () async {
+        var relayHeld = supersededRevision(['video-a']);
+        final holdFirstPublish = Completer<void>();
+        var publishes = 0;
+
+        when(
+          () => nostrClient.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer(
+          (_) async => (events: [relayHeld], timedOut: false, noRelays: false),
+        );
+        when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          final event = invocation.positionalArguments.first as Event;
+          // Acknowledging the first publish only after the second toggle has
+          // had its chance to read is what an unserialized pair would see.
+          if (++publishes == 1) await holdFirstPublish.future;
+          relayHeld = event;
+          return PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const ['wss://relay.example'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          );
+        });
+
+        final service = createService();
+        final first = service.toggleVideoInGlobalBookmarks('video-b');
+        final second = service.toggleVideoInGlobalBookmarks('video-c');
+        holdFirstPublish.complete();
+        await Future.wait([first, second]);
+
+        final published = verify(
+          () => nostrClient.publishEventAwaitOk(captureAny()),
+        ).captured.cast<Event>();
+        expect(published, hasLength(2));
+        expect(
+          published.last.tags.map((tag) => tag[1]),
+          ['video-a', 'video-b', 'video-c'],
+          reason: "the second toggle must build on the first one's result",
+        );
+      });
+
+      test('keeps the lower id when two revisions share a timestamp', () async {
+        final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final one = bookmarkListEvent(['video-a'], createdAt: createdAt);
+        final other = bookmarkListEvent(['video-b'], createdAt: createdAt);
+        // NIP-01 tells relays to retain the lexically lower id on a tie, so
+        // reading the same way keeps this device and the relays agreeing.
+        final expected = one.id.compareTo(other.id) < 0 ? one : other;
+        stubRelay(events: [one, other]);
+        final service = createService();
+
+        await service.syncGlobalBookmarks();
+
+        expect(service.globalBookmarks.map((item) => item.id), [
+          expected.tags.first[1],
+        ]);
       });
     });
 
