@@ -466,8 +466,17 @@ class DeepLinkService {
   /// caller. Dropping it leaves the callback itself intact: the pairing
   /// handoff still reconnects the relays the session advertised.
   static String? _validSignerCallbackRelay(String? relay) {
-    if (relay == null || !isSignerCallbackRelayUrlAllowed(relay)) return null;
-    return relay;
+    final trimmed = relay?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    if (!isSignerCallbackRelayUrlAllowed(trimmed)) {
+      Log.warning(
+        'Refused signer callback relay $trimmed',
+        name: 'DeepLinkService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+    return trimmed;
   }
 
   static String _describeUriForLogs(Uri uri) {

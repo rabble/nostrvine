@@ -412,6 +412,10 @@ void main() {
         'wss://signer.local:28443',
         'ws://localrelay.link:28443',
         'http://localrelay.link:28443',
+        // Root-anchored respellings of the same private targets.
+        'wss://127.0.0.1.',
+        'wss://192.168.1.10.',
+        'wss://signer.local.',
       ]) {
         test('drops the callback relay hint $relay', () {
           final result = parseCallback(relay);
@@ -420,6 +424,17 @@ void main() {
           expect(result.signerCallbackRelay, isNull);
         });
       }
+
+      test('hands on the address it checked, not the raw parameter', () {
+        final result = parseCallback('  wss://localrelay.link:28443  ');
+
+        // The policy validates a trimmed URL, so returning the raw one would
+        // dial and store a string that was never the one admitted.
+        expect(
+          result.signerCallbackRelay,
+          equals('wss://localrelay.link:28443'),
+        );
+      });
     });
 
     // The divine:// scheme splits three ways on the authority: `nostrconnect`
