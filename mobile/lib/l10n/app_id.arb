@@ -1540,8 +1540,6 @@
     "shareMenuRemovedFromList": "Dihapus dari daftar",
     "shareMenuFailedToRemoveFromList": "Gagal menghapus dari daftar",
     "shareMenuBookmarks": "Bookmark",
-    "shareMenuAddToBookmarks": "Tambah ke Bookmark",
-    "shareMenuAddToBookmarksSubtitle": "Simpan untuk ditonton nanti",
     "shareMenuFollowSets": "Set Ikuti",
     "shareMenuCreateFollowSet": "Buat Set Ikuti",
     "shareMenuCreateFollowSetSubtitle": "Mulai koleksi baru dengan kreator ini",
@@ -1652,19 +1650,6 @@
     "shareMenuAddInspirationCredit": "Tambah kredit inspirasi",
     "shareMenuCreatorCannotBeReferenced": "Kreator ini tidak bisa dirujuk.",
     "shareMenuUnknown": "Tidak Dikenal",
-    "shareMenuSetName": "Nama Set",
-    "shareMenuSetNameHint": "contoh: Favorit, Tonton Nanti, dll.",
-    "shareMenuCreateNewSet": "Buat Set Baru",
-    "shareMenuStartNewBookmarkCollection": "Mulai koleksi bookmark baru",
-    "shareMenuError": "Kesalahan",
-    "shareMenuCreatedSetAndAddedVideo": "\"{name}\" dibuat dan video ditambahkan",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "Pakai suara ini",
     "shareMenuOriginalSound": "Suara asli",
     "authSessionExpired": "Sesimu sudah kedaluwarsa. Silakan masuk lagi.",

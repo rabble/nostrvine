@@ -1625,8 +1625,6 @@
     "shareMenuRemovedFromList": "Премахнато от списъка",
     "shareMenuFailedToRemoveFromList": "Неуспешно премахване от списъка",
     "shareMenuBookmarks": "Отметки",
-    "shareMenuAddToBookmarks": "Добави към отметки",
-    "shareMenuAddToBookmarksSubtitle": "Запази за по-късен преглед",
     "shareMenuFollowSets": "Списъци с хора",
     "shareMenuCreateFollowSet": "Създай списък за следване",
     "shareMenuCreateFollowSetSubtitle": "Започни нова колекция с този творец",
@@ -1838,19 +1836,6 @@
     "shareMenuAddInspirationCredit": "Добави кредит за вдъхновение",
     "shareMenuCreatorCannotBeReferenced": "Този създател не може да бъде цитиран.",
     "shareMenuUnknown": "Неизвестен",
-    "shareMenuSetName": "Задай име",
-    "shareMenuSetNameHint": "Напр. Любими, Гледай по-късно и т.н.",
-    "shareMenuCreateNewSet": "Създаване на нов набор",
-    "shareMenuStartNewBookmarkCollection": "Започни нова колекция от отметки",
-    "shareMenuError": "Грешка",
-    "shareMenuCreatedSetAndAddedVideo": "Създаде „{name}“ и добави видео",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "Използвай този звук",
     "shareMenuOriginalSound": "Оригинален звук",
     "authSessionExpired": "Сесията ти изтече. Влез отново.",

@@ -1540,8 +1540,6 @@
     "shareMenuRemovedFromList": "Listeden kaldırıldı",
     "shareMenuFailedToRemoveFromList": "Listeden kaldırılamadı",
     "shareMenuBookmarks": "Yer İmleri",
-    "shareMenuAddToBookmarks": "Yer İmlerine Ekle",
-    "shareMenuAddToBookmarksSubtitle": "Sonra izlemek için kaydet",
     "shareMenuFollowSets": "Takip Setleri",
     "shareMenuCreateFollowSet": "Takip Seti Oluştur",
     "shareMenuCreateFollowSetSubtitle": "Bu üretici ile yeni koleksiyon başlat",
@@ -1652,19 +1650,6 @@
     "shareMenuAddInspirationCredit": "İlham kaynağı ekle",
     "shareMenuCreatorCannotBeReferenced": "Bu üreticiye referans verilemez.",
     "shareMenuUnknown": "Bilinmeyen",
-    "shareMenuSetName": "Set Adı",
-    "shareMenuSetNameHint": "örn. Favoriler, Sonra İzle vb.",
-    "shareMenuCreateNewSet": "Yeni Set Oluştur",
-    "shareMenuStartNewBookmarkCollection": "Yeni bir yer imi koleksiyonu başlat",
-    "shareMenuError": "Hata",
-    "shareMenuCreatedSetAndAddedVideo": "\"{name}\" oluşturuldu ve video eklendi",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "Bu sesi kullan",
     "shareMenuOriginalSound": "Orijinal ses",
     "authSessionExpired": "Oturumun sona erdi. Lütfen tekrar giriş yap.",

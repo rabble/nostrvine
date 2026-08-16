@@ -1543,8 +1543,6 @@
     "shareMenuRemovedFromList": "Borttagen från listan",
     "shareMenuFailedToRemoveFromList": "Kunde inte ta bort från listan",
     "shareMenuBookmarks": "Bokmärken",
-    "shareMenuAddToBookmarks": "Lägg till i bokmärken",
-    "shareMenuAddToBookmarksSubtitle": "Spara för senare visning",
     "shareMenuFollowSets": "Följsamlingar",
     "shareMenuCreateFollowSet": "Skapa följsamling",
     "shareMenuCreateFollowSetSubtitle": "Starta en ny samling med den här kreatören",
@@ -1655,19 +1653,6 @@
     "shareMenuAddInspirationCredit": "Lägg till inspirationskredit",
     "shareMenuCreatorCannotBeReferenced": "Den här kreatören kan inte refereras.",
     "shareMenuUnknown": "Okänd",
-    "shareMenuSetName": "Samlingsnamn",
-    "shareMenuSetNameHint": "t.ex. Favoriter, Titta senare osv.",
-    "shareMenuCreateNewSet": "Skapa ny samling",
-    "shareMenuStartNewBookmarkCollection": "Starta en ny bokmärkessamling",
-    "shareMenuError": "Fel",
-    "shareMenuCreatedSetAndAddedVideo": "Skapade \"{name}\" och la till videon",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "Använd det här ljudet",
     "shareMenuOriginalSound": "Originalljud",
     "authSessionExpired": "Din session har löpt ut. Logga in igen.",

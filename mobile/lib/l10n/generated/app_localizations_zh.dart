@@ -3609,12 +3609,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuBookmarks => '收藏';
 
   @override
-  String get shareMenuAddToBookmarks => '加入收藏';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => '存起来稍后看';
-
-  @override
   String get shareMenuFollowSets => '人物列表';
 
   @override
@@ -3968,26 +3962,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => '未知';
-
-  @override
-  String get shareMenuSetName => '集合名称';
-
-  @override
-  String get shareMenuSetNameHint => '例如：最爱、稍后再看等';
-
-  @override
-  String get shareMenuCreateNewSet => '创建新集合';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection => '开始一个新的收藏合集';
-
-  @override
-  String get shareMenuError => '错误';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '已创建“$name”并添加视频';
-  }
 
   @override
   String get shareMenuUseThisSound => '使用这个声音';

@@ -3843,12 +3843,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuBookmarks => 'Favoritos';
 
   @override
-  String get shareMenuAddToBookmarks => 'Adicionar aos favoritos';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'Salvar para ver depois';
-
-  @override
   String get shareMenuFollowSets => 'Coleções de seguidos';
 
   @override
@@ -4222,27 +4216,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Desconhecido';
-
-  @override
-  String get shareMenuSetName => 'Nome da coleção';
-
-  @override
-  String get shareMenuSetNameHint => 'ex.: Favoritos, Ver depois, etc.';
-
-  @override
-  String get shareMenuCreateNewSet => 'Criar nova coleção';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Comece uma nova coleção de favoritos';
-
-  @override
-  String get shareMenuError => 'Erro';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '\"$name\" criada e vídeo adicionado';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Usar este som';

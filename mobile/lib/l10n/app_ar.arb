@@ -1533,8 +1533,6 @@
     "shareMenuRemovedFromList": "تمت الإزالة من القائمة",
     "shareMenuFailedToRemoveFromList": "فشلت الإزالة من القائمة",
     "shareMenuBookmarks": "الإشارات المرجعية",
-    "shareMenuAddToBookmarks": "إضافة إلى الإشارات المرجعية",
-    "shareMenuAddToBookmarksSubtitle": "حفظ للمشاهدة لاحقًا",
     "shareMenuFollowSets": "مجموعات المتابعة",
     "shareMenuCreateFollowSet": "إنشاء مجموعة متابعة",
     "shareMenuCreateFollowSetSubtitle": "ابدأ مجموعة جديدة بهذا الصانع",
@@ -1645,19 +1643,6 @@
     "shareMenuAddInspirationCredit": "إضافة تنويه الإلهام",
     "shareMenuCreatorCannotBeReferenced": "لا يمكن الإشارة إلى هذا الصانع.",
     "shareMenuUnknown": "غير معروف",
-    "shareMenuSetName": "اسم المجموعة",
-    "shareMenuSetNameHint": "مثل: المفضلة، مشاهدة لاحقًا، إلخ.",
-    "shareMenuCreateNewSet": "إنشاء مجموعة جديدة",
-    "shareMenuStartNewBookmarkCollection": "ابدأ مجموعة إشارات جديدة",
-    "shareMenuError": "خطأ",
-    "shareMenuCreatedSetAndAddedVideo": "تم إنشاء \"{name}\" وإضافة الفيديو",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "استخدم هذا الصوت",
     "shareMenuOriginalSound": "صوت أصلي",
     "authSessionExpired": "انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.",

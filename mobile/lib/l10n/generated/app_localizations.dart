@@ -6641,18 +6641,6 @@ abstract class AppLocalizations {
   /// **'Bookmarks'**
   String get shareMenuBookmarks;
 
-  /// No description provided for @shareMenuAddToBookmarks.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to Bookmarks'**
-  String get shareMenuAddToBookmarks;
-
-  /// No description provided for @shareMenuAddToBookmarksSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Save for later viewing'**
-  String get shareMenuAddToBookmarksSubtitle;
-
   /// No description provided for @shareMenuFollowSets.
   ///
   /// In en, this message translates to:
@@ -7270,42 +7258,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown'**
   String get shareMenuUnknown;
-
-  /// No description provided for @shareMenuSetName.
-  ///
-  /// In en, this message translates to:
-  /// **'Set Name'**
-  String get shareMenuSetName;
-
-  /// No description provided for @shareMenuSetNameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'e.g., Favorites, Watch Later, etc.'**
-  String get shareMenuSetNameHint;
-
-  /// No description provided for @shareMenuCreateNewSet.
-  ///
-  /// In en, this message translates to:
-  /// **'Create New Set'**
-  String get shareMenuCreateNewSet;
-
-  /// No description provided for @shareMenuStartNewBookmarkCollection.
-  ///
-  /// In en, this message translates to:
-  /// **'Start a new bookmark collection'**
-  String get shareMenuStartNewBookmarkCollection;
-
-  /// No description provided for @shareMenuError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error'**
-  String get shareMenuError;
-
-  /// No description provided for @shareMenuCreatedSetAndAddedVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Created \"{name}\" and added video'**
-  String shareMenuCreatedSetAndAddedVideo(String name);
 
   /// No description provided for @shareMenuUseThisSound.
   ///

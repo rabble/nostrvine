@@ -2089,8 +2089,6 @@
   "shareMenuRemovedFromList": "已从列表移除",
   "shareMenuFailedToRemoveFromList": "从列表移除失败",
   "shareMenuBookmarks": "收藏",
-  "shareMenuAddToBookmarks": "加入收藏",
-  "shareMenuAddToBookmarksSubtitle": "存起来稍后看",
   "shareMenuFollowSets": "人物列表",
   "shareMenuCreateFollowSet": "创建关注集合",
   "shareMenuCreateFollowSetSubtitle": "以这位创作者开始一个新合集",
@@ -2316,19 +2314,6 @@
   "shareMenuAddInspirationCredit": "添加灵感来源署名",
   "shareMenuCreatorCannotBeReferenced": "无法引用该创作者。",
   "shareMenuUnknown": "未知",
-  "shareMenuSetName": "集合名称",
-  "shareMenuSetNameHint": "例如：最爱、稍后再看等",
-  "shareMenuCreateNewSet": "创建新集合",
-  "shareMenuStartNewBookmarkCollection": "开始一个新的收藏合集",
-  "shareMenuError": "错误",
-  "shareMenuCreatedSetAndAddedVideo": "已创建“{name}”并添加视频",
-  "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "shareMenuUseThisSound": "使用这个声音",
   "shareMenuOriginalSound": "原声",
   "authSessionExpired": "你的登录已过期，请重新登录。",

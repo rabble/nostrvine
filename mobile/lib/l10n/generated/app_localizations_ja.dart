@@ -3611,12 +3611,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuBookmarks => 'ブックマーク';
 
   @override
-  String get shareMenuAddToBookmarks => 'ブックマークに追加';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'あとで見るために保存';
-
-  @override
   String get shareMenuFollowSets => 'フォローセット';
 
   @override
@@ -3972,26 +3966,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => '不明';
-
-  @override
-  String get shareMenuSetName => 'セット名';
-
-  @override
-  String get shareMenuSetNameHint => '例: お気に入り、あとで見るなど';
-
-  @override
-  String get shareMenuCreateNewSet => '新しいセットを作る';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection => '新しいブックマークコレクションを始めよう';
-
-  @override
-  String get shareMenuError => 'エラー';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '「$name」を作って動画を追加したよ';
-  }
 
   @override
   String get shareMenuUseThisSound => 'このサウンドを使う';

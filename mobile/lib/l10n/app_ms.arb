@@ -2089,8 +2089,6 @@
   "shareMenuRemovedFromList": "Dialih keluar daripada senarai",
   "shareMenuFailedToRemoveFromList": "Gagal mengalih keluar daripada senarai",
   "shareMenuBookmarks": "Penanda Buku",
-  "shareMenuAddToBookmarks": "Tambah ke Penanda Buku",
-  "shareMenuAddToBookmarksSubtitle": "Simpan untuk tontonan kemudian",
   "shareMenuFollowSets": "Senarai Orang",
   "shareMenuCreateFollowSet": "Cipta Set Ikutan",
   "shareMenuCreateFollowSetSubtitle": "Mulakan koleksi baharu dengan pencipta ini",
@@ -2316,19 +2314,6 @@
   "shareMenuAddInspirationCredit": "Tambah kredit inspirasi",
   "shareMenuCreatorCannotBeReferenced": "Pencipta ini tidak boleh dirujuk.",
   "shareMenuUnknown": "Tidak diketahui",
-  "shareMenuSetName": "Nama Set",
-  "shareMenuSetNameHint": "cth. Kegemaran, Tonton Nanti, dsb.",
-  "shareMenuCreateNewSet": "Cipta Set Baharu",
-  "shareMenuStartNewBookmarkCollection": "Mulakan koleksi penanda buku baharu",
-  "shareMenuError": "Ralat",
-  "shareMenuCreatedSetAndAddedVideo": "\"{name}\" dicipta dan video ditambah",
-  "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "shareMenuUseThisSound": "Guna bunyi ini",
   "shareMenuOriginalSound": "Bunyi asal",
   "authSessionExpired": "Sesi anda telah tamat tempoh. Sila log masuk semula.",
