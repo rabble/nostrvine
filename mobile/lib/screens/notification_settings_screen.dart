@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/blocs/notification_settings/notification_settings_cubit.dart';
 import 'package:openvine/blocs/notification_settings/notification_settings_state.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -34,49 +33,27 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final repository = ref.watch(notificationRepositoryProvider);
 
     return BlocProvider(
-      // notificationPreferencesServiceProvider watches authServiceProvider, so
-      // its identity can change on auth flip; re-key so the Cubit reloads with
-      // the fresh service instead of operating on a stale one.
-      key: ValueKey(preferencesService),
-      create: (_) =>
-          NotificationSettingsCubit(preferencesService: preferencesService)
-            ..load(),
+      // Both providers watch authServiceProvider, so their identities can
+      // change on auth flip; re-key so the Cubit reloads with the fresh
+      // dependencies instead of operating on stale ones.
+      key: ValueKey((preferencesService, repository)),
+      create: (_) => NotificationSettingsCubit(
+        preferencesService: preferencesService,
+        notificationRepository: repository,
+      )..load(),
       child: NotificationSettingsView(
-        onMarkAllAsRead: repository == null
-            ? null
-            : () => _markAllAsRead(repository),
         showNewPosts: ref.watch(
           isFeatureEnabledProvider(FeatureFlag.newPostNotifications),
         ),
       ),
     );
   }
-
-  Future<bool> _markAllAsRead(NotificationRepository repository) async {
-    try {
-      await repository.markAllAsRead();
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
 }
 
 /// View: renders the notification settings UI from the Cubit state.
-///
-/// [onMarkAllAsRead] performs the bridge-level repository call and resolves to
-/// whether it succeeded; `null` disables the mark-all-as-read action. That
-/// action stays out of the Cubit because it uses a separate, auth-nullable
-/// notification repository (see #4744 scope decision).
 class NotificationSettingsView extends StatelessWidget {
   @visibleForTesting
-  const NotificationSettingsView({
-    required this.onMarkAllAsRead,
-    required this.showNewPosts,
-    super.key,
-  });
-
-  final Future<bool> Function()? onMarkAllAsRead;
+  const NotificationSettingsView({required this.showNewPosts, super.key});
 
   /// Whether to offer the new-post ("bell") toggle. Hidden until the push
   /// service delivers kind 34236, since there is no bell to switch off and
@@ -98,117 +75,147 @@ class NotificationSettingsView extends StatelessWidget {
         ),
       ],
     ),
-    body: Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child:
-            BlocBuilder<NotificationSettingsCubit, NotificationSettingsState>(
-              builder: (context, state) {
-                final cubit = context.read<NotificationSettingsCubit>();
-                final prefs = state.preferences;
-                return ListView(
-                  padding: .fromLTRB(
-                    16,
-                    16,
-                    16,
-                    16 + MediaQuery.viewPaddingOf(context).bottom,
-                  ),
-                  children: [
-                    DivineSectionHeader(
-                      context.l10n.notificationSettingsTypes,
-                      padding: const EdgeInsets.only(bottom: 8),
+    body: BlocListener<NotificationSettingsCubit, NotificationSettingsState>(
+      listenWhen: (previous, current) =>
+          previous.markAllAsReadStatus != current.markAllAsReadStatus,
+      listener: _onMarkAllAsReadStatusChanged,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child:
+              BlocBuilder<NotificationSettingsCubit, NotificationSettingsState>(
+                builder: (context, state) {
+                  final cubit = context.read<NotificationSettingsCubit>();
+                  final prefs = state.preferences;
+                  return ListView(
+                    padding: .fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + MediaQuery.viewPaddingOf(context).bottom,
                     ),
-                    _NotificationCard(
-                      icon: DivineIconName.heart,
-                      iconColor: VineTheme.likeRed,
-                      title: context.l10n.notificationSettingsLikes,
-                      subtitle: context.l10n.notificationSettingsLikesSubtitle,
-                      value: prefs.likesEnabled,
-                      onChanged: (value) => cubit.setPreferences(
-                        prefs.copyWith(likesEnabled: value),
+                    children: [
+                      DivineSectionHeader(
+                        context.l10n.notificationSettingsTypes,
+                        padding: const EdgeInsets.only(bottom: 8),
                       ),
-                    ),
-                    _NotificationCard(
-                      icon: DivineIconName.chat,
-                      iconColor: VineTheme.commentBlue,
-                      title: context.l10n.notificationSettingsComments,
-                      subtitle:
-                          context.l10n.notificationSettingsCommentsSubtitle,
-                      value: prefs.commentsEnabled,
-                      onChanged: (value) => cubit.setPreferences(
-                        prefs.copyWith(commentsEnabled: value),
-                      ),
-                    ),
-                    _NotificationCard(
-                      icon: DivineIconName.user,
-                      iconColor: VineTheme.vineGreen,
-                      title: context.l10n.notificationSettingsFollows,
-                      subtitle:
-                          context.l10n.notificationSettingsFollowsSubtitle,
-                      value: prefs.followsEnabled,
-                      onChanged: (value) => cubit.setPreferences(
-                        prefs.copyWith(followsEnabled: value),
-                      ),
-                    ),
-                    _NotificationCard(
-                      icon: DivineIconName.chat,
-                      iconColor: VineTheme.warning,
-                      title: context.l10n.notificationSettingsMentions,
-                      subtitle:
-                          context.l10n.notificationSettingsMentionsSubtitle,
-                      value: prefs.mentionsEnabled,
-                      onChanged: (value) => cubit.setPreferences(
-                        prefs.copyWith(mentionsEnabled: value),
-                      ),
-                    ),
-                    _NotificationCard(
-                      icon: DivineIconName.repeat,
-                      iconColor: VineTheme.vineGreenDark,
-                      title: context.l10n.notificationSettingsReposts,
-                      subtitle:
-                          context.l10n.notificationSettingsRepostsSubtitle,
-                      value: prefs.repostsEnabled,
-                      onChanged: (value) => cubit.setPreferences(
-                        prefs.copyWith(repostsEnabled: value),
-                      ),
-                    ),
-                    if (showNewPosts)
                       _NotificationCard(
-                        icon: DivineIconName.bellSimple,
-                        iconColor: VineTheme.vineGreen,
-                        title: context.l10n.notificationSettingsNewPosts,
+                        icon: DivineIconName.heart,
+                        iconColor: VineTheme.likeRed,
+                        title: context.l10n.notificationSettingsLikes,
                         subtitle:
-                            context.l10n.notificationSettingsNewPostsSubtitle,
-                        value: prefs.newPostsEnabled,
+                            context.l10n.notificationSettingsLikesSubtitle,
+                        value: prefs.likesEnabled,
                         onChanged: (value) => cubit.setPreferences(
-                          prefs.copyWith(newPostsEnabled: value),
+                          prefs.copyWith(likesEnabled: value),
                         ),
                       ),
-                    DivineSectionHeader(
-                      context.l10n.notificationSettingsActions,
-                      padding: const EdgeInsets.only(top: 24, bottom: 8),
-                    ),
-                    _ActionCard(
-                      icon: DivineIconName.checkCircle,
-                      iconColor: VineTheme.vineGreenDark,
-                      title: context.l10n.notificationSettingsMarkAllAsRead,
-                      subtitle: context
-                          .l10n
-                          .notificationSettingsMarkAllAsReadSubtitle,
-                      onTap: onMarkAllAsRead == null
-                          ? null
-                          : () => _onMarkAllAsReadPressed(context),
-                    ),
-                    const SizedBox(height: 24),
-                    const _InfoCard(),
-                  ],
-                );
-              },
-            ),
+                      _NotificationCard(
+                        icon: DivineIconName.chat,
+                        iconColor: VineTheme.commentBlue,
+                        title: context.l10n.notificationSettingsComments,
+                        subtitle:
+                            context.l10n.notificationSettingsCommentsSubtitle,
+                        value: prefs.commentsEnabled,
+                        onChanged: (value) => cubit.setPreferences(
+                          prefs.copyWith(commentsEnabled: value),
+                        ),
+                      ),
+                      _NotificationCard(
+                        icon: DivineIconName.user,
+                        iconColor: VineTheme.vineGreen,
+                        title: context.l10n.notificationSettingsFollows,
+                        subtitle:
+                            context.l10n.notificationSettingsFollowsSubtitle,
+                        value: prefs.followsEnabled,
+                        onChanged: (value) => cubit.setPreferences(
+                          prefs.copyWith(followsEnabled: value),
+                        ),
+                      ),
+                      _NotificationCard(
+                        icon: DivineIconName.chat,
+                        iconColor: VineTheme.warning,
+                        title: context.l10n.notificationSettingsMentions,
+                        subtitle:
+                            context.l10n.notificationSettingsMentionsSubtitle,
+                        value: prefs.mentionsEnabled,
+                        onChanged: (value) => cubit.setPreferences(
+                          prefs.copyWith(mentionsEnabled: value),
+                        ),
+                      ),
+                      _NotificationCard(
+                        icon: DivineIconName.repeat,
+                        iconColor: VineTheme.vineGreenDark,
+                        title: context.l10n.notificationSettingsReposts,
+                        subtitle:
+                            context.l10n.notificationSettingsRepostsSubtitle,
+                        value: prefs.repostsEnabled,
+                        onChanged: (value) => cubit.setPreferences(
+                          prefs.copyWith(repostsEnabled: value),
+                        ),
+                      ),
+                      if (showNewPosts)
+                        _NotificationCard(
+                          icon: DivineIconName.bellSimple,
+                          iconColor: VineTheme.vineGreen,
+                          title: context.l10n.notificationSettingsNewPosts,
+                          subtitle:
+                              context.l10n.notificationSettingsNewPostsSubtitle,
+                          value: prefs.newPostsEnabled,
+                          onChanged: (value) => cubit.setPreferences(
+                            prefs.copyWith(newPostsEnabled: value),
+                          ),
+                        ),
+                      DivineSectionHeader(
+                        context.l10n.notificationSettingsActions,
+                        padding: const EdgeInsets.only(top: 24, bottom: 8),
+                      ),
+                      _ActionCard(
+                        icon: DivineIconName.checkCircle,
+                        iconColor: VineTheme.vineGreenDark,
+                        title: context.l10n.notificationSettingsMarkAllAsRead,
+                        subtitle: context
+                            .l10n
+                            .notificationSettingsMarkAllAsReadSubtitle,
+                        isBusy:
+                            state.markAllAsReadStatus ==
+                            MarkAllAsReadStatus.inProgress,
+                        onTap: state.canMarkAllAsRead
+                            ? cubit.markAllAsRead
+                            : null,
+                      ),
+                      const SizedBox(height: 24),
+                      const _InfoCard(),
+                    ],
+                  );
+                },
+              ),
+        ),
       ),
     ),
   );
+
+  void _onMarkAllAsReadStatusChanged(
+    BuildContext context,
+    NotificationSettingsState state,
+  ) {
+    final status = state.markAllAsReadStatus;
+    if (status != MarkAllAsReadStatus.success &&
+        status != MarkAllAsReadStatus.failure) {
+      return;
+    }
+    final failed = status == MarkAllAsReadStatus.failure;
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        failed
+            ? context.l10n.notificationSettingsMarkAllAsReadFailed
+            : context.l10n.notificationSettingsAllMarkedAsRead,
+        error: failed,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   Future<void> _onResetPressed(BuildContext context) async {
     await context.read<NotificationSettingsCubit>().resetToDefaults();
@@ -216,20 +223,6 @@ class NotificationSettingsView extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(
         context.l10n.notificationSettingsResetToDefaults,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Future<void> _onMarkAllAsReadPressed(BuildContext context) async {
-    final success = await onMarkAllAsRead!();
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(
-        success
-            ? context.l10n.notificationSettingsAllMarkedAsRead
-            : context.l10n.notificationSettingsMarkAllAsReadFailed,
-        error: !success,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -282,6 +275,7 @@ class _ActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isBusy = false,
   });
 
   final DivineIconName icon;
@@ -289,6 +283,9 @@ class _ActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
+
+  /// Swaps the trailing caret for a spinner while the action runs.
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -312,10 +309,18 @@ class _ActionCard extends StatelessWidget {
         subtitle,
         style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
       ),
-      trailing: const DivineIcon(
-        icon: DivineIconName.caretRight,
-        color: VineTheme.primary,
-      ),
+      trailing: isBusy
+          ? SizedBox.square(
+              dimension: DivineIcon.scaleSize(context, 24),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(VineTheme.primary),
+              ),
+            )
+          : const DivineIcon(
+              icon: DivineIconName.caretRight,
+              color: VineTheme.primary,
+            ),
       onTap: onTap,
     ),
   );

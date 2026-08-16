@@ -3,6 +3,8 @@
 // ABOUTME: snackbar, disabled-when-repo-null behaviour, and that toggling a
 // ABOUTME: notification-type switch persists the flipped preference.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -132,6 +134,87 @@ void main() {
           find.byType(DivineSnackbarContainer),
         );
         expect(banner.error, isTrue);
+      },
+    );
+
+    testWidgets(
+      'ignores repeat taps while markAllAsRead is still in flight',
+      (tester) async {
+        final inFlight = Completer<void>();
+        var callCount = 0;
+        when(mockRepo.markAllAsRead).thenAnswer((_) {
+          callCount++;
+          return inFlight.future;
+        });
+
+        await tester.pumpWidget(buildSubject(repo: mockRepo));
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(NotificationSettingsScreen)),
+        );
+
+        await scrollUntilTappable(
+          tester,
+          find.text(l10n.notificationSettingsMarkAllAsRead),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+
+        await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
+        await tester.pump();
+        await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
+        await tester.pump();
+
+        expect(callCount, equals(1));
+
+        inFlight.complete();
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'swaps the action card caret for a spinner while marking as read',
+      (tester) async {
+        final inFlight = Completer<void>();
+        when(mockRepo.markAllAsRead).thenAnswer((_) => inFlight.future);
+
+        await tester.pumpWidget(buildSubject(repo: mockRepo));
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(NotificationSettingsScreen)),
+        );
+
+        await scrollUntilTappable(
+          tester,
+          find.text(l10n.notificationSettingsMarkAllAsRead),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+
+        final actionTile = find
+            .ancestor(
+              of: find.text(l10n.notificationSettingsMarkAllAsRead),
+              matching: find.byType(ListTile),
+            )
+            .first;
+        final spinner = find.descendant(
+          of: actionTile,
+          matching: find.byType(CircularProgressIndicator),
+        );
+
+        expect(spinner, findsNothing);
+
+        await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
+        await tester.pump();
+
+        expect(spinner, findsOneWidget);
+
+        inFlight.complete();
+        await tester.pumpAndSettle();
+
+        expect(spinner, findsNothing);
       },
     );
 
