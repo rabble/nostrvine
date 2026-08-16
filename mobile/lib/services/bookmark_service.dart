@@ -170,6 +170,16 @@ class BookmarkService {
 
   static const String globalBookmarksStorageKey = 'global_bookmarks';
 
+  /// Storage key for [_revision].
+  ///
+  /// Persisted next to the snapshot because the writing surface builds a new
+  /// [BookmarkService] per sheet (#7596): an in-memory-only watermark is blank
+  /// again by the next save, which is the ordinary save/close/save loss in
+  /// #7163. Cleared with the snapshot on identity change — see
+  /// `UserDataCleanupService.userSpecificKeys`.
+  static const String globalBookmarksRevisionStorageKey =
+      'global_bookmarks_revision';
+
   /// NIP-51 kind for the uncategorized ("global") bookmark list.
   static const int globalBookmarksKind = 10003;
 
@@ -256,6 +266,11 @@ class BookmarkService {
   ({int createdAt, String id, DateTime acceptedAt})? _localPublishRevision;
 
   /// Tail of the serialized operation queue. See [_serialized].
+  ///
+  /// Depth is not capped. Every leg is individually bounded — a 5 s relay
+  /// query, a 20 s Keycast `sign_event`, a 15 s publish — so a caller cannot
+  /// wait on a hung operation, but it does wait for each one queued ahead of
+  /// it. Bounded is not the same as short.
   Future<void> _queue = Future<void>.value();
 
   /// Runs [operation] only after every operation queued before it.
@@ -1141,6 +1156,25 @@ class BookmarkService {
         );
       }
     }
+
+    final revisionJson = _prefs.getString(globalBookmarksRevisionStorageKey);
+    if (revisionJson != null) {
+      try {
+        final revision = jsonDecode(revisionJson) as Map<String, dynamic>;
+        _revision = (
+          createdAt: revision['createdAt'] as int,
+          id: revision['id'] as String,
+        );
+      } catch (e) {
+        // A corrupt watermark only costs the staleness guard, so drop it and
+        // let the next read establish one rather than failing the load.
+        Log.error(
+          'Failed to load the global bookmark revision: $e',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+      }
+    }
   }
 
   /// Save bookmarks to SharedPreferences cache
@@ -1154,6 +1188,18 @@ class BookmarkService {
         globalBookmarksStorageKey,
         jsonEncode(globalBookmarksJson),
       );
+
+      final revision = _revision;
+      if (revision == null) {
+        // A confirmed-empty answer established there is no list; leaving the
+        // old watermark behind would refuse the next one this device adopts.
+        await _prefs.remove(globalBookmarksRevisionStorageKey);
+      } else {
+        await _prefs.setString(
+          globalBookmarksRevisionStorageKey,
+          jsonEncode({'createdAt': revision.createdAt, 'id': revision.id}),
+        );
+      }
     } catch (e) {
       Log.error(
         'Failed to save bookmarks to SharedPreferences: $e',

@@ -1088,6 +1088,48 @@ void main() {
       });
 
       test(
+        'a service built after the save still refuses the revision it '
+        'replaced',
+        () async {
+          // The writing surface builds a fresh BookmarkService per sheet
+          // (#7596), so an in-memory-only watermark is blank again by the
+          // next save. That makes the ordinary save / close / save loop
+          // reproduce #7163 with no concurrency involved at all.
+          stubRelay(
+            events: [
+              supersededRevision(['video-a']),
+            ],
+          );
+
+          final firstSheet = createService();
+          expect(
+            (await firstSheet.toggleVideoInGlobalBookmarks(
+              'video-b',
+            )).succeeded,
+            isTrue,
+          );
+          expect(signedEventIds(), ['video-a', 'video-b']);
+
+          // The sheet closes and that instance is dropped. The relay still
+          // answers with the revision the save replaced, because `OK` means
+          // queued for storage, not readable back.
+          final secondSheet = createService();
+          expect(
+            (await secondSheet.toggleVideoInGlobalBookmarks(
+              'video-c',
+            )).succeeded,
+            isTrue,
+          );
+
+          expect(
+            signedEventIds(),
+            ['video-a', 'video-b', 'video-c'],
+            reason: 'the second sheet must not publish over video-b',
+          );
+        },
+      );
+
+      test(
         'a display read issued before a save cannot land after it',
         () async {
           final staleRead = supersededRevision(['video-a']);
@@ -1214,6 +1256,10 @@ void main() {
         final service = createService();
         final first = service.toggleVideoInGlobalBookmarks('video-b');
         final second = service.toggleVideoInGlobalBookmarks('video-c');
+        // _serialized schedules on a microtask, so completing synchronously
+        // here would resolve before the first publish ever awaits it and the
+        // hold would gate nothing. Let the queue reach the publish first.
+        await pumpEventQueue();
         holdFirstPublish.complete();
         await Future.wait([first, second]);
 
@@ -1234,14 +1280,18 @@ void main() {
         final other = bookmarkListEvent(['video-b'], createdAt: createdAt);
         // NIP-01 tells relays to retain the lexically lower id on a tie, so
         // reading the same way keeps this device and the relays agreeing.
-        final expected = one.id.compareTo(other.id) < 0 ? one : other;
-        stubRelay(events: [one, other]);
+        final lower = one.id.compareTo(other.id) < 0 ? one : other;
+        final higher = identical(lower, one) ? other : one;
+        // The ids are random per run, so the higher one has to go in first: a
+        // comparator that returns 0 on the tie leaves the pair in input order,
+        // which would otherwise match on about half of runs by luck.
+        stubRelay(events: [higher, lower]);
         final service = createService();
 
         await service.syncGlobalBookmarks();
 
         expect(service.globalBookmarks.map((item) => item.id), [
-          expected.tags.first[1],
+          lower.tags.first[1],
         ]);
       });
     });
