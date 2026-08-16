@@ -897,6 +897,55 @@ void main() {
         },
       );
 
+      // Participation is acceptance, not a successful write. `relayDoQuery`
+      // saves the query before sending on the auth-gated branch, so the REQ is
+      // replayed after NIP-42 even though the frame never landed — counting
+      // that relay out would waive the hold on one still about to answer.
+      test(
+        'an auth-gated relay whose send failed still holds the query open',
+        () async {
+          final nostr = _newNostr();
+          final authGated = _SilentRelay('wss://auth-gated.example')
+            ..sendSucceeds = false;
+          expect(await nostr.relayPool.add(authGated), isTrue);
+          authGated.relayStatus.alwaysAuth = true;
+
+          final stopwatch = Stopwatch()..start();
+          final result = await nostr.queryEventsDetailed(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            timeout: unacceptedTimeout,
+            requireAllRelaysSettled: true,
+          );
+          stopwatch.stop();
+
+          expect(result.timedOut, isTrue);
+          expect(
+            result.noRelaysParticipated,
+            isFalse,
+            reason:
+                'the query is saved for post-AUTH replay, so this relay can '
+                'still serve it — reporting nobody was asked would tell the '
+                'user their relays are unreachable when one is mid-handshake',
+          );
+          expect(
+            stopwatch.elapsed,
+            // Half the deadline, not the whole of it: the timeout fires off a
+            // Timer while this measures a Stopwatch, and the two disagree by
+            // microseconds — CI saw 399.958ms against a 400ms bound. Waived
+            // participation completes in single-digit ms, so nothing lands
+            // between the two readings and the margin costs no discrimination.
+            greaterThan(unacceptedTimeout ~/ 2),
+            reason:
+                'and a participant that has not answered holds the caller to '
+                'its own deadline, exactly as a relay gone quiet does',
+          );
+        },
+      );
+
       // The fan-out can outlive its caller: `relayDoQuery` waits up to
       // `perRelaySendTimeout` on a half-open socket, which is the default
       // query deadline over again. Whatever it records on the way out must
