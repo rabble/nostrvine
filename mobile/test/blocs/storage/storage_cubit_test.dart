@@ -8,6 +8,7 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/storage/storage_cubit.dart';
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/storage_footprint.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
 

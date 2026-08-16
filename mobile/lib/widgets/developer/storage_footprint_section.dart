@@ -7,8 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/storage/storage_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/storage_footprint.dart';
 import 'package:openvine/providers/storage_providers.dart';
-import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/byte_size_format.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 

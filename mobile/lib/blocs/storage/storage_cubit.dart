@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/storage_footprint.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 

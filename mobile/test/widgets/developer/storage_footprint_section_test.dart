@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/storage/storage_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/storage_footprint.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/widgets/developer/storage_footprint_section.dart';
 
