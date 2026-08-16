@@ -208,7 +208,7 @@ void main() {
 
         expect(spinner, findsOneWidget);
         expect(
-          tester.widget<CircularProgressIndicator>(spinner).semanticsLabel,
+          tester.getSemantics(spinner).getSemanticsData().label,
           equals(l10n.commonLoading),
         );
 
