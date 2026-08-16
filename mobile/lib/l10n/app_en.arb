@@ -28,7 +28,13 @@
   "settingsSessionExpired": "Session Expired",
   "settingsSessionExpiredSubtitle": "Sign in again to restore full access",
   "settingsAccountRestoreFailed": "Sign in again",
+  "@settingsAccountRestoreFailed": {
+    "description": "Title of the account-switch confirmation sheet when local keys for the selected account cannot be restored on this device."
+  },
   "settingsAccountRestoreFailedSwitchMessage": "We couldn't unlock that account on this device. Signing back into it means signing out of the one you're on now.",
+  "@settingsAccountRestoreFailedSwitchMessage": {
+    "description": "Body of the confirmation sheet shown when the account the user picked in the switcher cannot be restored from local keys. Confirming signs the current, working account out to reach the sign-in flow."
+  },
   "settingsCreatorAnalytics": "Creator Analytics",
   "settingsSupportCenter": "Support Center",
   "settingsNotifications": "Notifications",
@@ -2525,6 +2531,9 @@
   "shareMenuOriginalSound": "Original sound",
   "authSessionExpired": "Your session has expired. Please sign in again.",
   "authAccountRestoreFailed": "We couldn't unlock that account on this device. Sign in again.",
+  "@authAccountRestoreFailed": {
+    "description": "Snackbar shown on the welcome screen when a saved local-key account cannot be restored on this device."
+  },
   "authSignInFailed": "Failed to sign in. Please try again.",
   "localeAppLanguage": "App Language",
   "localeDeviceDefault": "Device default",

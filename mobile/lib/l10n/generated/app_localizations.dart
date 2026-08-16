@@ -192,13 +192,13 @@ abstract class AppLocalizations {
   /// **'Sign in again to restore full access'**
   String get settingsSessionExpiredSubtitle;
 
-  /// No description provided for @settingsAccountRestoreFailed.
+  /// Title of the account-switch confirmation sheet when local keys for the selected account cannot be restored on this device.
   ///
   /// In en, this message translates to:
   /// **'Sign in again'**
   String get settingsAccountRestoreFailed;
 
-  /// No description provided for @settingsAccountRestoreFailedSwitchMessage.
+  /// Body of the confirmation sheet shown when the account the user picked in the switcher cannot be restored from local keys. Confirming signs the current, working account out to reach the sign-in flow.
   ///
   /// In en, this message translates to:
   /// **'We couldn\'t unlock that account on this device. Signing back into it means signing out of the one you\'re on now.'**
@@ -7307,7 +7307,7 @@ abstract class AppLocalizations {
   /// **'Your session has expired. Please sign in again.'**
   String get authSessionExpired;
 
-  /// No description provided for @authAccountRestoreFailed.
+  /// Snackbar shown on the welcome screen when a saved local-key account cannot be restored on this device.
   ///
   /// In en, this message translates to:
   /// **'We couldn\'t unlock that account on this device. Sign in again.'**

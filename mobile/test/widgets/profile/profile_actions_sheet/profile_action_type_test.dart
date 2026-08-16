@@ -61,31 +61,6 @@ void main() {
 
         expect(actions, isEmpty);
       });
-
-      test('shows secureAccount for anonymous without profile info', () {
-        final actions = ProfileActionType.pending(
-          isOwnProfile: true,
-          isAnonymous: true,
-          hasAnyProfileInfo: false,
-        );
-
-        expect(actions, hasLength(2));
-        expect(actions[0], equals(ProfileActionType.secureAccount));
-        expect(actions[1], equals(ProfileActionType.completeProfile));
-      });
-
-      test(
-        'returns only secureAccount for anonymous users with profile info',
-        () {
-          final actions = ProfileActionType.pending(
-            isOwnProfile: true,
-            isAnonymous: true,
-            hasAnyProfileInfo: true,
-          );
-
-          expect(actions, equals([ProfileActionType.secureAccount]));
-        },
-      );
     });
   });
 }

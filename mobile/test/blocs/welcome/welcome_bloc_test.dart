@@ -199,66 +199,72 @@ void main() {
         errors: () => [isA<Exception>()],
       );
 
-      test('does not addError after close when _hydrateAccount completes '
-          'post-close (regression #4605)', () async {
-        // Pin the lifecycle race: _hydrateProfiles is dispatched
-        // fire-and-forget from _onWelcomeStarted. If the user navigates
-        // away before the in-flight getProfile resolves, the bloc closes
-        // and an unguarded addError in the catch arm would throw
-        // StateError. The guard added in #4605 must suppress the forward.
-        final completer = Completer<UserProfile?>();
-        when(
-          () => mockAuthService.getKnownAccounts(),
-        ).thenAnswer((_) async => [_testKnownAccount]);
-        when(
-          () => mockUserProfilesDao.getProfile(_testPubkeyHex),
-        ).thenAnswer((_) => completer.future);
+      test(
+        'does not addError after close when _hydrateAccount completes '
+        'post-close (regression #4605)',
+        () async {
+          // Pin the lifecycle race: _hydrateProfiles is dispatched
+          // fire-and-forget from _onWelcomeStarted. If the user navigates
+          // away before the in-flight getProfile resolves, the bloc closes
+          // and an unguarded addError in the catch arm would throw
+          // StateError. The guard added in #4605 must suppress the forward.
+          final completer = Completer<UserProfile?>();
+          when(
+            () => mockAuthService.getKnownAccounts(),
+          ).thenAnswer((_) async => [_testKnownAccount]);
+          when(
+            () => mockUserProfilesDao.getProfile(_testPubkeyHex),
+          ).thenAnswer((_) => completer.future);
 
-        final observer = _CapturingObserver();
-        final priorObserver = Bloc.observer;
-        Bloc.observer = observer;
-        addTearDown(() => Bloc.observer = priorObserver);
+          final observer = _CapturingObserver();
+          final priorObserver = Bloc.observer;
+          Bloc.observer = observer;
+          addTearDown(() => Bloc.observer = priorObserver);
 
-        final bloc = buildBloc()..add(const WelcomeStarted());
-        // Let the handler reach the await on getProfile.
-        await Future<void>.delayed(Duration.zero);
+          final bloc = buildBloc()..add(const WelcomeStarted());
+          // Let the handler reach the await on getProfile.
+          await Future<void>.delayed(Duration.zero);
 
-        // Close the bloc while _hydrateAccount is still awaiting.
-        await bloc.close();
+          // Close the bloc while _hydrateAccount is still awaiting.
+          await bloc.close();
 
-        // Now fail the in-flight future; the catch arm runs post-close.
-        completer.completeError(Exception('DB error'));
-        // Drain microtasks queued by the completion.
-        await Future<void>.delayed(Duration.zero);
+          // Now fail the in-flight future; the catch arm runs post-close.
+          completer.completeError(Exception('DB error'));
+          // Drain microtasks queued by the completion.
+          await Future<void>.delayed(Duration.zero);
 
-        expect(observer.errors, isEmpty);
-      });
+          expect(observer.errors, isEmpty);
+        },
+      );
 
-      test('does not add after close when _hydrateProfiles completes '
-          'successfully post-close (regression #4605)', () async {
-        final completer = Completer<UserProfile?>();
-        when(
-          () => mockAuthService.getKnownAccounts(),
-        ).thenAnswer((_) async => [_testKnownAccount]);
-        when(
-          () => mockUserProfilesDao.getProfile(_testPubkeyHex),
-        ).thenAnswer((_) => completer.future);
+      test(
+        'does not add after close when _hydrateProfiles completes '
+        'successfully post-close (regression #4605)',
+        () async {
+          final completer = Completer<UserProfile?>();
+          when(
+            () => mockAuthService.getKnownAccounts(),
+          ).thenAnswer((_) async => [_testKnownAccount]);
+          when(
+            () => mockUserProfilesDao.getProfile(_testPubkeyHex),
+          ).thenAnswer((_) => completer.future);
 
-        final observer = _CapturingObserver();
-        final priorObserver = Bloc.observer;
-        Bloc.observer = observer;
-        addTearDown(() => Bloc.observer = priorObserver);
+          final observer = _CapturingObserver();
+          final priorObserver = Bloc.observer;
+          Bloc.observer = observer;
+          addTearDown(() => Bloc.observer = priorObserver);
 
-        final bloc = buildBloc()..add(const WelcomeStarted());
-        await Future<void>.delayed(Duration.zero);
+          final bloc = buildBloc()..add(const WelcomeStarted());
+          await Future<void>.delayed(Duration.zero);
 
-        await bloc.close();
+          await bloc.close();
 
-        completer.complete(_testProfile);
-        await Future<void>.delayed(Duration.zero);
+          completer.complete(_testProfile);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(observer.errors, isEmpty);
-      });
+          expect(observer.errors, isEmpty);
+        },
+      );
 
       blocTest<WelcomeBloc, WelcomeState>(
         'emits loaded with multiple accounts then hydrates profiles',
@@ -448,7 +454,9 @@ void main() {
         'navigates to login options on $AccountRestoreFailedException '
         '(missing keys) instead of looping silently',
         setUp: () {
-          when(() => mockAuthService.signInForAccount(any(), any())).thenThrow(
+          when(
+            () => mockAuthService.signInForAccount(any(), any()),
+          ).thenThrow(
             const AccountRestoreFailedException(
               _testPubkeyHex,
               AuthState.unauthenticated,
@@ -558,7 +566,9 @@ void main() {
         'records addError and redirects to login options on '
         '$AccountRestoreFailedException',
         setUp: () {
-          when(() => mockAuthService.signInForAccount(any(), any())).thenThrow(
+          when(
+            () => mockAuthService.signInForAccount(any(), any()),
+          ).thenThrow(
             const AccountRestoreFailedException(
               _testPubkeyHex,
               AuthState.unauthenticated,
@@ -783,7 +793,9 @@ void main() {
       });
 
       test('is false when no accounts are present', () {
-        const state = WelcomeState(recoveryAnchorPubkeyHex: _testPubkeyHex);
+        const state = WelcomeState(
+          recoveryAnchorPubkeyHex: _testPubkeyHex,
+        );
         expect(state.hasCrossAccountMismatch, isFalse);
       });
 
@@ -813,16 +825,19 @@ void main() {
         },
       );
 
-      test('is true when selectedPubkeyHex is null (defaults to first account) '
-          'and first account differs from anchor', () {
-        // Anchor points to account 2, but no explicit selection so
-        // selectedAccount falls back to previousAccounts.first (account 1).
-        const state = WelcomeState(
-          previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
-          recoveryAnchorPubkeyHex: _testPubkeyHex2,
-        );
-        expect(state.hasCrossAccountMismatch, isTrue);
-      });
+      test(
+        'is true when selectedPubkeyHex is null (defaults to first account) '
+        'and first account differs from anchor',
+        () {
+          // Anchor points to account 2, but no explicit selection so
+          // selectedAccount falls back to previousAccounts.first (account 1).
+          const state = WelcomeState(
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            recoveryAnchorPubkeyHex: _testPubkeyHex2,
+          );
+          expect(state.hasCrossAccountMismatch, isTrue);
+        },
+      );
     });
   });
 
@@ -831,82 +846,88 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('WelcomeStarted with session recovery anchor', () {
-    test('pre-selects the anchor account when anchor differs from '
-        'most-recently-used first account (cross-account scenario)', () async {
-      // Simulate the incident: most-recently-used account is account 2
-      // (stamped by _redirectRecoveryToRemainingAccount), but the recovery
-      // anchor is account 1 (what the user was actually signed into).
-      // The bloc should pre-select account 1 so the welcome screen shows
-      // the right account by default.
+    test(
+      'pre-selects the anchor account when anchor differs from '
+      'most-recently-used first account (cross-account scenario)',
+      () async {
+        // Simulate the incident: most-recently-used account is account 2
+        // (stamped by _redirectRecoveryToRemainingAccount), but the recovery
+        // anchor is account 1 (what the user was actually signed into).
+        // The bloc should pre-select account 1 so the welcome screen shows
+        // the right account by default.
 
-      // _testKnownAccount has pubkey1, _testKnownAccount2 has pubkey2.
-      // Arrange the list so account2 is "first" (most recently used).
-      final knownAccounts = [_testKnownAccount2, _testKnownAccount];
-      when(
-        () => mockAuthService.getKnownAccounts(),
-      ).thenAnswer((_) async => knownAccounts);
+        // _testKnownAccount has pubkey1, _testKnownAccount2 has pubkey2.
+        // Arrange the list so account2 is "first" (most recently used).
+        final knownAccounts = [_testKnownAccount2, _testKnownAccount];
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) async => knownAccounts);
 
-      // Anchor points to account 1 (the user's actual active account).
-      final anchorNpub = NostrKeyUtils.encodePubKey(_testPubkeyHex);
-      when(
-        () => mockAuthService.getSessionRecoveryAnchorNpub(),
-      ).thenAnswer((_) async => anchorNpub);
+        // Anchor points to account 1 (the user's actual active account).
+        final anchorNpub = NostrKeyUtils.encodePubKey(_testPubkeyHex);
+        when(
+          () => mockAuthService.getSessionRecoveryAnchorNpub(),
+        ).thenAnswer((_) async => anchorNpub);
 
-      final bloc = WelcomeBloc(
-        userProfilesDao: mockUserProfilesDao,
-        authService: mockAuthService,
-      );
-      bloc.add(const WelcomeStarted());
-      // Wait for _onStarted to complete (accounts load is async).
-      await Future<void>.delayed(Duration.zero);
+        final bloc = WelcomeBloc(
+          userProfilesDao: mockUserProfilesDao,
+          authService: mockAuthService,
+        );
+        bloc.add(const WelcomeStarted());
+        // Wait for _onStarted to complete (accounts load is async).
+        await Future<void>.delayed(Duration.zero);
 
-      final state = bloc.state;
-      expect(
-        state.selectedPubkeyHex,
-        equals(_testPubkeyHex),
-        reason:
-            'The anchor account should be pre-selected on the welcome '
-            'screen even when it is not the most-recently-used account, '
-            'preventing the user from unknowingly signing into the wrong '
-            'account',
-      );
-      expect(
-        state.recoveryAnchorPubkeyHex,
-        equals(_testPubkeyHex),
-        reason: 'The recovery anchor pubkey should be stored in state',
-      );
-      expect(
-        state.hasCrossAccountMismatch,
-        isFalse,
-        reason:
-            'hasCrossAccountMismatch should be false because the '
-            'pre-selected account matches the anchor (safe default)',
-      );
+        final state = bloc.state;
+        expect(
+          state.selectedPubkeyHex,
+          equals(_testPubkeyHex),
+          reason:
+              'The anchor account should be pre-selected on the welcome '
+              'screen even when it is not the most-recently-used account, '
+              'preventing the user from unknowingly signing into the wrong '
+              'account',
+        );
+        expect(
+          state.recoveryAnchorPubkeyHex,
+          equals(_testPubkeyHex),
+          reason: 'The recovery anchor pubkey should be stored in state',
+        );
+        expect(
+          state.hasCrossAccountMismatch,
+          isFalse,
+          reason:
+              'hasCrossAccountMismatch should be false because the '
+              'pre-selected account matches the anchor (safe default)',
+        );
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
-    test('does not set recoveryAnchorPubkeyHex when no anchor is stored '
-        '(normal single-account flow)', () async {
-      when(
-        () => mockAuthService.getKnownAccounts(),
-      ).thenAnswer((_) async => [_testKnownAccount]);
-      when(
-        () => mockAuthService.getSessionRecoveryAnchorNpub(),
-      ).thenAnswer((_) async => null);
+    test(
+      'does not set recoveryAnchorPubkeyHex when no anchor is stored '
+      '(normal single-account flow)',
+      () async {
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) async => [_testKnownAccount]);
+        when(
+          () => mockAuthService.getSessionRecoveryAnchorNpub(),
+        ).thenAnswer((_) async => null);
 
-      final bloc = WelcomeBloc(
-        userProfilesDao: mockUserProfilesDao,
-        authService: mockAuthService,
-      );
-      bloc.add(const WelcomeStarted());
-      await Future<void>.delayed(Duration.zero);
+        final bloc = WelcomeBloc(
+          userProfilesDao: mockUserProfilesDao,
+          authService: mockAuthService,
+        );
+        bloc.add(const WelcomeStarted());
+        await Future<void>.delayed(Duration.zero);
 
-      expect(bloc.state.recoveryAnchorPubkeyHex, isNull);
-      expect(bloc.state.hasCrossAccountMismatch, isFalse);
+        expect(bloc.state.recoveryAnchorPubkeyHex, isNull);
+        expect(bloc.state.hasCrossAccountMismatch, isFalse);
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test(
       'event.initialSelectedPubkeyHex takes priority over the recovery anchor '

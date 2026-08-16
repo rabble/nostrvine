@@ -274,7 +274,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         expiredSessionRefreshTimeout: _expiredSessionRefreshTimeout,
         currentPubkeyFallback: () => _currentProfile?.publicKeyHex,
         hasExpiredSession: () => hasExpiredOAuthSession,
-        onRefreshSucceeded: () => _hasExpiredOAuthSession = false,
       );
   // Owns the client-initiated nostrconnect:// session + wait future + callback
   // handoff timers; the facade keeps _bunkerSigner and applies a successful
@@ -522,9 +521,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     };
   }
 
-  bool get hasExpiredOAuthSession =>
-      _hasExpiredOAuthSession &&
-      _authSource == AuthenticationSource.divineOAuth;
+  /// True when a Divine OAuth session expired and could not refresh.
+  bool get hasExpiredOAuthSession => _hasExpiredOAuthSession;
 
   /// True while a background OAuth RPC upgrade is in progress during startup.
   /// The session-expired sheet should be suppressed until this resolves so the
@@ -535,13 +533,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   @visibleForTesting
   static const rpcRefreshTimeout = Duration(seconds: 10);
 
-  /// Default bound for the single-flight OAuth token refresh. It is longer
-  /// than KeycastOAuth's own HTTP bound.
   @visibleForTesting
   static const defaultOAuthRefreshTimeout = Duration(seconds: 35);
 
-  /// Default bound for the full expired-session refresh flow (token refresh
-  /// plus session re-integration).
   @visibleForTesting
   static const defaultExpiredSessionRefreshTimeout = Duration(seconds: 40);
 
@@ -800,6 +794,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           onTokenRefresh: _refreshAccessToken,
         );
         _currentIdentity = _buildIdentity();
+        _hasExpiredOAuthSession = false;
         _setRpcCapability(AuthRpcCapability.rpcReady);
         didUpgrade = true;
         return;
@@ -1042,15 +1037,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     );
   }
 
-  /// Returns the npub that was actively signed in at the time of the most
-  /// recent sign-out, or null if no anchor has been recorded.
-  ///
-  /// The welcome screen uses this to detect when a cold-start session restore
-  /// would land on a different account than the one the user was just using,
-  /// and surfaces a confirmation banner before the switch completes silently.
-  ///
-  /// The anchor is written at the start of [signOut] and cleared by
-  /// [_setupUserSession] once the user has explicitly signed back in.
+  /// Returns the npub anchor WelcomeBloc uses to confirm cross-account
+  /// cold-start restores.
   Future<String?> getSessionRecoveryAnchorNpub() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_kSessionRecoveryAnchorKey);
@@ -1066,6 +1054,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     try {
       refreshed = await _oauthCoordinator.refreshSession(
         expectedOwnerPubkey: expectedOwnerPubkey,
+        storedSessionReader: () => KeycastSession.load(_flutterSecureStorage),
+        caller: caller,
       );
     } on OAuthNetworkException catch (e) {
       Log.warning(
@@ -1076,12 +1066,20 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       return false;
     }
     if (refreshed != null) {
+      if (expectedOwnerPubkey != null &&
+          currentPublicKeyHex != expectedOwnerPubkey) {
+        return false;
+      }
       Log.info(
         '$caller: refresh succeeded',
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      await _clearDismissedDivineLoginBannerForCurrentUser();
+      await _clearDismissedDivineLoginBannerForCurrentUser(expectedOwnerPubkey);
+      if (expectedOwnerPubkey != null &&
+          currentPublicKeyHex != expectedOwnerPubkey) {
+        return false;
+      }
       await signInWithDivineOAuth(refreshed);
       return true;
     }
@@ -1255,7 +1253,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           return;
 
         case AuthenticationSource.divineOAuth:
-          _authSource = AuthenticationSource.divineOAuth;
           await _initializeDivineOAuth();
           return;
 
@@ -3565,7 +3562,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _keycastSigner = null;
       _setRpcCapability(AuthRpcCapability.unavailable);
 
-      // Detach in-flight refreshes; the getter hides stale OAuth expiry state.
+      // Detach in-flight refreshes issued for the outgoing session, but leave
+      // the expired-session flag for unauthenticated UI until the next login.
       _oauthCoordinator.detach();
 
       await _clearOAuthSessionForSignOut();
@@ -4278,6 +4276,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // This prevents a Keycast RPC signer from a previous Divine OAuth session
     // from being used when signing events for an anonymous/imported-key account.
     if (source != AuthenticationSource.divineOAuth) {
+      _hasExpiredOAuthSession = false;
       _setRpcCapability(AuthRpcCapability.unavailable);
       if (_keycastSigner != null) {
         Log.info(

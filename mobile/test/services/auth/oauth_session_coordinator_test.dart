@@ -1,5 +1,5 @@
 // ABOUTME: Tests for OAuthSessionCoordinator — single-flight dedup, timeout
-// ABOUTME: slot release, expired-session guard, and the success/detach ports.
+// ABOUTME: slot release, expired-session guard, and detach behavior.
 
 import 'dart:async';
 
@@ -26,13 +26,11 @@ void main() {
   group(OAuthSessionCoordinator, () {
     late _MockKeycastOAuth oauthClient;
     late bool hasExpired;
-    late int refreshSucceededCalls;
     late String? pubkeyFallback;
 
     setUp(() {
       oauthClient = _MockKeycastOAuth();
       hasExpired = true;
-      refreshSucceededCalls = 0;
       pubkeyFallback = 'fallback_pubkey';
     });
 
@@ -43,12 +41,11 @@ void main() {
           expiredSessionRefreshTimeout: expiredTimeout,
           currentPubkeyFallback: () => pubkeyFallback,
           hasExpiredSession: () => hasExpired,
-          onRefreshSucceeded: () => refreshSucceededCalls++,
         );
 
     group('refreshSession', () {
       test(
-        'returns the refreshed session and fires onRefreshSucceeded',
+        'returns the refreshed session',
         () async {
           final session = _session(userPubkey: 'owner');
           when(
@@ -62,7 +59,6 @@ void main() {
           );
 
           expect(result, same(session));
-          expect(refreshSucceededCalls, equals(1));
           verify(
             () => oauthClient.refreshSession(userPubkey: 'owner'),
           ).called(1);
@@ -86,7 +82,7 @@ void main() {
         },
       );
 
-      test('returns null and does not fire the success port when the '
+      test('returns null when the '
           'refreshed session has no RPC access', () async {
         // No accessToken -> hasRpcAccess is false.
         when(
@@ -99,7 +95,6 @@ void main() {
         final result = await build().refreshSession();
 
         expect(result, isNull);
-        expect(refreshSucceededCalls, isZero);
       });
 
       test('returns null (never throws) when the client throws', () async {
@@ -111,7 +106,6 @@ void main() {
         final result = await build().refreshSession();
 
         expect(result, isNull);
-        expect(refreshSucceededCalls, isZero);
       });
 
       test('rethrows OAuthNetworkException from the client', () async {
@@ -124,7 +118,6 @@ void main() {
           build().refreshSession(),
           throwsA(isA<OAuthNetworkException>()),
         );
-        expect(refreshSucceededCalls, isZero);
       });
 
       test('returns null when no OAuth client is configured', () async {

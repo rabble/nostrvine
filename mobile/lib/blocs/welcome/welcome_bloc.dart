@@ -277,7 +277,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     Emitter<WelcomeState> emit,
     Object error,
     StackTrace stackTrace, {
-    WelcomeStatus? recoveryStatus,
+    required WelcomeStatus? recoveryStatus,
   }) async {
     // Recoverable auth-flow failure — matrix-NO (Auth/session row).
     addError(error, stackTrace);
@@ -324,7 +324,12 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         previous.authSource,
       );
     } on SessionExpiredException catch (e, stackTrace) {
-      await _recoverToLoginOptions(emit, e, stackTrace);
+      await _recoverToLoginOptions(
+        emit,
+        e,
+        stackTrace,
+        recoveryStatus: null,
+      );
     } on AccountRestoreFailedException catch (e, stackTrace) {
       Log.warning(
         'WelcomeBloc: restore failed while cancelling account switch for '
@@ -333,7 +338,12 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
-      await _recoverToLoginOptions(emit, e, stackTrace);
+      await _recoverToLoginOptions(
+        emit,
+        e,
+        stackTrace,
+        recoveryStatus: null,
+      );
     } catch (e, stackTrace) {
       // Same auth/network/IO failure surface as `_onLogBackIn` —
       // matrix-NO. YES-narrowing deferred per #4592.
