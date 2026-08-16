@@ -951,7 +951,11 @@ class _ErrorContent extends StatelessWidget {
                     onPressed: onRetry,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: VineTheme.vineGreen,
-                      foregroundColor: context.vineColors.background,
+                      // Ink on a fixed brand fill, so it is a constant rather
+                      // than a token: `background` follows the appearance and
+                      // turned the label near-white on the green in light
+                      // (1.9:1), beside an icon that was already `onPrimary`.
+                      foregroundColor: VineTheme.onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
