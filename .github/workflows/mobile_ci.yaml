@@ -492,6 +492,9 @@ jobs:
           key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-dart-hooks-
+      # `flutter test` builds the whole package's native assets regardless of
+      # which tests run, so this job pays the same unretried sqlite3mc
+      # download the Tests job does. Same warm-up, same reason.
       - name: Warm sqlite3mc native assets
         run: bash scripts/ci/warmup_sqlite3mc.sh
       # Separate from the sharded Tests job on purpose. That job runs
@@ -545,6 +548,7 @@ jobs:
           VGV_TAG_GATE_RESULT: ${{ needs.vgv-tag-gate.result }}
           GOLDENS_RESULT: ${{ needs.goldens.result }}
           APP_CI_REQUIRED: ${{ needs.changes.outputs.app }}
+          UPDATE_GOLDENS: ${{ inputs.update_goldens }}
         run: |
           echo "app-ci-required: ${APP_CI_REQUIRED}"
           echo "codemagic-groups: ${CODEMAGIC_GROUPS_RESULT}"
@@ -554,6 +558,20 @@ jobs:
           echo "tests: ${TESTS_RESULT}"
           echo "vgv-tag-gate: ${VGV_TAG_GATE_RESULT}"
           echo "goldens: ${GOLDENS_RESULT}"
+
+          # A regeneration dispatch skips `golden.sh verify`, so this run
+          # compared no pixels. It publishes a check run named "Mobile CI" on
+          # the same head SHA branch protection reads, so letting it report
+          # success would overwrite the PR's real verdict with one that never
+          # verified — at exactly the moment goldens are being changed. Fail
+          # closed; the follow-up push of the regenerated references produces
+          # the genuine verdict.
+          if [ "${UPDATE_GOLDENS}" = "true" ]; then
+            echo "Regeneration dispatch: goldens were not verified."
+            echo "This run is not a merge verdict. Commit the regenerated"
+            echo "references and push to get one."
+            exit 1
+          fi
 
           # Always required. This job is ungated so yaml-only PRs still run it;
           # skipped here would let those PRs merge without the guard.
