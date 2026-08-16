@@ -1389,65 +1389,70 @@ void main() {
 
         final authService = createAuthService();
 
-        await runZonedGuarded(
-          () async {
-            await authService.initialize();
+        // initialize() kicks off relay discovery against real sockets, which
+        // the test binding rejects with the UnsupportedError 'Mocked
+        // response'. Tolerate exactly that noise — but keep every assertion
+        // OUTSIDE the guarded zone: an expect() thrown inside a guarded zone
+        // is swallowed by the error handler and orphans the zone future, so
+        // the test can only ever time out instead of reporting the failure.
+        await runIgnoringMockedHttpErrors(() async {
+          await authService.initialize();
 
-            // After timeout, identity downgrades to PubkeyOnly
-            expect(
-              authService.currentIdentity,
-              isA<PubkeyOnlyNostrIdentity>(),
-              reason:
-                  'Terminal offline state downgrades to PubkeyOnlyNostrIdentity '
-                  'when no recovery path exists',
-            );
+          // initialize() returns while the unawaited background RPC upgrade
+          // (authRpcCapability: unavailable -> upgrading) is still in flight.
+          // Wait for it to fail on the offline refresh before asserting the
+          // terminal state.
+          final deadline = DateTime.now().add(const Duration(seconds: 2));
+          while (authService.isRpcUpgradeInProgress &&
+              DateTime.now().isBefore(deadline)) {
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+          }
+        });
 
-            // RPC capability is unavailable (no recovery possible)
-            expect(
-              authService.authRpcCapability,
-              equals(AuthRpcCapability.unavailable),
-              reason:
-                  'Terminal offline state sets authRpcCapability to unavailable '
-                  'since network is down and no fallback refresh can occur',
-            );
+        // After timeout, identity downgrades to PubkeyOnly
+        expect(
+          authService.currentIdentity,
+          isA<PubkeyOnlyNostrIdentity>(),
+          reason:
+              'Terminal offline state downgrades to PubkeyOnlyNostrIdentity '
+              'when no recovery path exists',
+        );
 
-            // Session is still flagged as expired
-            expect(
-              authService.hasExpiredOAuthSession,
-              isTrue,
-              reason:
-                  'Expired session flag persists even in terminal offline state '
-                  'for UI to show recovery affordances',
-            );
+        // RPC capability is unavailable (no recovery possible)
+        expect(
+          authService.authRpcCapability,
+          equals(AuthRpcCapability.unavailable),
+          reason:
+              'Terminal offline state sets authRpcCapability to unavailable '
+              'since network is down and no fallback refresh can occur',
+        );
 
-            // Refresh token is preserved for potential future recovery
-            expect(
-              secureStorage['keycast_refresh_token'],
-              equals('refresh_token_for_offline'),
-              reason:
-                  'Refresh token must be preserved in terminal offline state '
-                  'so user can manually retry login when network returns',
-            );
+        // Session is still flagged as expired
+        expect(
+          authService.hasExpiredOAuthSession,
+          isTrue,
+          reason:
+              'Expired session flag persists even in terminal offline state '
+              'for UI to show recovery affordances',
+        );
 
-            // Background upgrade does not loop indefinitely
-            // (i.e., no scheduled retry on purely offline state)
-            final deadline = DateTime.now().add(const Duration(seconds: 2));
-            while (authService.isRpcUpgradeInProgress &&
-                DateTime.now().isBefore(deadline)) {
-              await Future<void>.delayed(const Duration(milliseconds: 10));
-            }
+        // Refresh token is preserved for potential future recovery
+        expect(
+          secureStorage['keycast_refresh_token'],
+          equals('refresh_token_for_offline'),
+          reason:
+              'Refresh token must be preserved in terminal offline state '
+              'so user can manually retry login when network returns',
+        );
 
-            expect(
-              authService.isRpcUpgradeInProgress,
-              isFalse,
-              reason:
-                  'Terminal offline state must not schedule infinite upgrade '
-                  'retry — there is no recovery path on the network',
-            );
-          },
-          (error, stack) {
-            // Ignore background errors
-          },
+        // Background upgrade does not loop indefinitely
+        // (i.e., no scheduled retry on purely offline state)
+        expect(
+          authService.isRpcUpgradeInProgress,
+          isFalse,
+          reason:
+              'Terminal offline state must not schedule infinite upgrade '
+              'retry — there is no recovery path on the network',
         );
       },
     );
