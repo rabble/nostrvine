@@ -168,27 +168,29 @@ void main() {
         );
       });
 
-      // Same archetype as #7587 in the Saved tab: liked IDs that did not
-      // resolve to videos were rendered as "nothing liked yet".
-      testWidgets(
-        'error message, not empty state, when liked IDs did not resolve',
-        (tester) async {
-          const likedId =
-              '615a098cbf969c0d73b28c8f25eb59b9745db95c19d7b1998068d9b31c3df1a0';
-          when(() => mockBloc.state).thenReturn(
-            const ProfileLikedVideosState(
-              status: ProfileLikedVideosStatus.success,
-              likedEventIds: [likedId],
-            ),
-          );
+      // Deliberately unlike Saved and Reposts (#7587), which treat this shape
+      // as a load failure. `_onBlocklistChanged` emits videos without touching
+      // `likedEventIds`, so blocking the author of every liked video produces
+      // "IDs but no videos" with nothing having failed. Until that path stops
+      // breaking the invariant (#7627), the empty state is the safe render.
+      testWidgets('empty state when liked IDs resolved to no videos', (
+        tester,
+      ) async {
+        const likedId =
+            '615a098cbf969c0d73b28c8f25eb59b9745db95c19d7b1998068d9b31c3df1a0';
+        when(() => mockBloc.state).thenReturn(
+          const ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.success,
+            likedEventIds: [likedId],
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text(l10n.profileErrorLoadingLiked), findsOneWidget);
-          expect(find.text(l10n.profileNoLikedVideosTitle), findsNothing);
-        },
-      );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileNoLikedVideosTitle), findsOneWidget);
+        expect(find.text(l10n.profileErrorLoadingLiked), findsNothing);
+      });
 
       testWidgets('grid of liked videos when videos exist', (tester) async {
         final videos = _createTestVideos(count: 3);
