@@ -174,12 +174,12 @@ class NostrConnectSession {
   LocalNostrSigner? _localSigner;
   final List<Relay> _relays = [];
 
-  /// How many of [_relays] a signer named in a callback rather than the
-  /// session advertising them. Bounded by [RelayListCaps.nip46Callback].
+  /// How many relays a signer named in a callback rather than the session
+  /// advertising them. Bounded by [RelayListCaps.nip46Callback].
   ///
-  /// A slot is taken before the dial and released if the dial fails, so
-  /// callbacks that arrive inside one connect window cannot each observe a
-  /// pre-dial count and collectively overshoot the cap.
+  /// Counts slots, not entries in [_relays]: one is taken before the dial and
+  /// released if the dial fails, so callbacks arriving inside one connect
+  /// window cannot each observe a pre-dial count and overshoot the cap.
   int _signerSuppliedRelayCount = 0;
 
   /// Dedupe keys of callback relays currently being dialed.
