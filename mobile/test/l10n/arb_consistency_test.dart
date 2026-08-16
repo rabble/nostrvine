@@ -427,6 +427,11 @@ const _knownUntranslatedDebt = <String>{
   'authAccountRestoreFailed',
   'settingsAccountRestoreFailed',
   'settingsAccountRestoreFailedSwitchMessage',
+  // Social-proof identifier copy rides the #7632 pass.
+  'socialProofMutual',
+  'socialProofFollowsYou',
+  'socialProofYouFollow',
+  'socialProofFollowerCount',
 };
 
 const _profileBadgeSheetKeys = <String>{

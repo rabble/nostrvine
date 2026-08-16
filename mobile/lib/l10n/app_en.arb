@@ -7563,5 +7563,29 @@
                 "type": "String"
             }
         }
+    },
+  "socialProofMutual": "Mutual",
+  "@socialProofMutual": {
+    "description": "Secondary line on a user row: the viewer and this account follow each other. Shown in place of a truncated npub, which cannot tell two same-named people apart."
+  },
+  "socialProofFollowsYou": "Follows you",
+  "@socialProofFollowsYou": {
+    "description": "Secondary line on a user row: this account follows the viewer, who does not follow back."
+  },
+  "socialProofYouFollow": "You follow",
+  "@socialProofYouFollow": {
+    "description": "Secondary line on a user row: the viewer follows this account, which does not follow back."
+  },
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} follower} other{{formattedCount} followers}}",
+  "@socialProofFollowerCount": {
+    "description": "Secondary line on a user row: how many followers this account has. Joined to the relationship label with a middot.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "formattedCount": {
+        "type": "String"
+      }
     }
+  }
 }

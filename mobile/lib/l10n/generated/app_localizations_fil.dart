@@ -12290,4 +12290,24 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get socialProofMutual => 'Mutual';
+
+  @override
+  String get socialProofFollowsYou => 'Follows you';
+
+  @override
+  String get socialProofYouFollow => 'You follow';
+
+  @override
+  String socialProofFollowerCount(int count, String formattedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$formattedCount followers',
+      one: '$formattedCount follower',
+    );
+    return '$_temp0';
+  }
 }
