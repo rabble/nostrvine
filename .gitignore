@@ -170,7 +170,6 @@ mobile/macos/Runner/Configs/LocalDebug.xcconfig
 docs/superpowers/specs/.clearance-*/
 
 # Ephemeral working context / session notes — never tracked (any depth)
-.claude-purge/
 .context/
 .zcode/
 

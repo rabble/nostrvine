@@ -344,6 +344,7 @@ CLAUDE_ANALYZE_PAYLOAD=$(jq -n --arg path "$TEST_REPO/mobile/lib/clean.dart" \
 : > "$CALL_LOG"
 CLAUDE_ANALYZE_OUTPUT=$(cd "$TEST_REPO" && \
   env PATH="$BIN_DIR:/usr/bin:/bin" \
+    DART_CALL_LOG="$CALL_LOG" \
     "$CLAUDE_ANALYZE_HOOK" <<< "$CLAUDE_ANALYZE_PAYLOAD")
 if [ -n "$CLAUDE_ANALYZE_OUTPUT" ]; then
   echo "Claude post-edit analyze hook ran without package_config.json." >&2
@@ -354,13 +355,21 @@ if grep -q '^analyze ' "$CALL_LOG"; then
   exit 1
 fi
 
-NON_DIVINE_REPO="$SCRATCH_DIR/non-divine"
-mkdir -p "$NON_DIVINE_REPO"
-git -C "$NON_DIVINE_REPO" init -q
-NON_DIVINE_OUTPUT=$(cd "$NON_DIVINE_REPO" && \
-  env CLAUDE_PROJECT_DIR="$NON_DIVINE_REPO" "$CLAUDE_PURGE_HOOK" \
+NON_DIVINE_MAIN="$SCRATCH_DIR/non-divine-main"
+NON_DIVINE_LINK="$SCRATCH_DIR/non-divine-linked"
+mkdir -p "$NON_DIVINE_MAIN/mobile/build"
+git -C "$NON_DIVINE_MAIN" init -q
+touch "$NON_DIVINE_MAIN/mobile/build/output.o"
+git -C "$NON_DIVINE_MAIN" add mobile/build/output.o
+git -C "$NON_DIVINE_MAIN" \
+  -c user.email=test@example.com \
+  -c user.name=Test \
+  commit -q -m init
+git -C "$NON_DIVINE_MAIN" worktree add -q "$NON_DIVINE_LINK"
+NON_DIVINE_OUTPUT=$(cd "$NON_DIVINE_LINK" && \
+  env CLAUDE_PROJECT_DIR="$NON_DIVINE_LINK" "$CLAUDE_PURGE_HOOK" \
     <<< '{"reason":"prompt_input_exit"}')
-if [ -n "$NON_DIVINE_OUTPUT" ]; then
+if [ -n "$NON_DIVINE_OUTPUT" ] || [ ! -d "$NON_DIVINE_LINK/mobile/build" ]; then
   echo "Purge hook ran outside a divine-mobile checkout." >&2
   exit 1
 fi
@@ -420,10 +429,6 @@ printf '%s\n' "$PURGE_OUTPUT" | jq -e \
   '.systemMessage == "Purged 3 build/.dart_tool dirs from purge-linked"' >/dev/null
 if [ -d "$WT_LINK/mobile/build" ] || [ -d "$WT_LINK/mobile/.dart_tool" ] || [ -d "$WT_LINK/mobile/packages/bar/build" ]; then
   echo "Purge hook did not remove linked worktree build artifacts." >&2
-  exit 1
-fi
-if [ -e "$WT_LINK/.claude-purge" ]; then
-  echo "Purge hook staged artifacts inside the worktree." >&2
   exit 1
 fi
 if [ -n "$(git -C "$WT_LINK" status --short)" ]; then
