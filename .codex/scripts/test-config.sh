@@ -89,6 +89,8 @@ mkdir -p "$TEST_REPO/mobile/lib" "$BIN_DIR"
 git -C "$TEST_REPO" init -q
 
 touch "$TEST_REPO/mobile/mise.toml"
+mkdir -p "$TEST_REPO/mobile/.dart_tool"
+touch "$TEST_REPO/mobile/.dart_tool/package_config.json"
 cat > "$TEST_REPO/mobile/pubspec.yaml" <<'EOF'
 name: codex_hook_test
 environment:
@@ -244,6 +246,27 @@ MISSING_DART_OUTPUT=$(cd "$TEST_REPO" && \
 printf '%s\n' "$MISSING_DART_OUTPUT" | jq -e \
   '.decision == "block" and (.reason | contains("Unable to run the repository Dart SDK"))' >/dev/null
 
+rm -f "$TEST_REPO/mobile/.dart_tool/package_config.json"
+: > "$CALL_LOG"
+CODEX_PURGED_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$BIN_DIR:/usr/bin:/bin" \
+    TEST_DART="$BIN_DIR/test-dart" \
+    DART_CALL_LOG="$CALL_LOG" \
+    "$POST_EDIT_HOOK" <<< "$POST_PAYLOAD")
+if ! printf '%s\n' "$CODEX_PURGED_OUTPUT" | jq -e \
+  '.systemMessage
+   | contains("Skipped Dart format/analyze")
+     and contains("flutter pub get")' >/dev/null; then
+  echo "Codex post-edit hook did not explain the missing package_config.json skip." >&2
+  echo "Output was: $CODEX_PURGED_OUTPUT" >&2
+  exit 1
+fi
+if grep -q '^format \|^analyze ' "$CALL_LOG"; then
+  echo "Codex post-edit hook invoked dart without package_config.json." >&2
+  exit 1
+fi
+touch "$TEST_REPO/mobile/.dart_tool/package_config.json"
+
 CHAINED_COMMIT_PAYLOAD=$(jq -n --arg command '   git commit -m test && echo done' \
   '{tool_input: {command: $command}}')
 CODEX_GIT_OUTPUT=$(cd "$TEST_REPO" && \
@@ -398,12 +421,17 @@ fi
 CLAUDE_ANALYZE_PAYLOAD=$(jq -n --arg path "$TEST_REPO/mobile/lib/clean.dart" \
   '{tool_input: {file_path: $path}}')
 : > "$CALL_LOG"
+rm -f "$TEST_REPO/mobile/.dart_tool/package_config.json"
 CLAUDE_ANALYZE_OUTPUT=$(cd "$TEST_REPO" && \
   env PATH="$BIN_DIR:/usr/bin:/bin" \
     DART_CALL_LOG="$CALL_LOG" \
     "$CLAUDE_ANALYZE_HOOK" <<< "$CLAUDE_ANALYZE_PAYLOAD")
-if [ -n "$CLAUDE_ANALYZE_OUTPUT" ]; then
-  echo "Claude post-edit analyze hook ran without package_config.json." >&2
+if ! printf '%s\n' "$CLAUDE_ANALYZE_OUTPUT" | jq -e \
+  '.systemMessage
+   | contains("Skipped Dart analysis")
+     and contains("flutter pub get")' >/dev/null; then
+  echo "Claude post-edit analyze hook did not explain the missing package_config.json skip." >&2
+  echo "Output was: $CLAUDE_ANALYZE_OUTPUT" >&2
   exit 1
 fi
 if grep -q '^analyze ' "$CALL_LOG"; then
@@ -475,6 +503,56 @@ RESUME_OUTPUT=$(cd "$WT_LINK" && \
     <<< '{"reason":"resume"}')
 if [ -n "$CLEAR_OUTPUT$RESUME_OUTPUT" ] || [ ! -d "$WT_LINK/mobile/build" ] || [ ! -d "$WT_LINK/mobile/.dart_tool" ]; then
   echo "Purge hook did not skip clear/resume SessionEnd reasons." >&2
+  exit 1
+fi
+
+PURGE_PEER_BIN="$SCRATCH_DIR/purge-peer-bin"
+mkdir -p "$PURGE_PEER_BIN"
+for tool in bash cat jq git find stat mv rm mkdir rmdir basename nohup sed head tr; do
+  ln -s "$(command -v "$tool")" "$PURGE_PEER_BIN/$tool"
+done
+cat > "$PURGE_PEER_BIN/ps" <<'EOF'
+#!/bin/bash
+if [ "$1" = "-eo" ] && [ "$2" = "pid=,comm=" ]; then
+  echo "4242 zsh"
+  exit 0
+fi
+if [ "$1" = "-o" ] && [ "$2" = "ppid=" ] && [ "$3" = "-p" ]; then
+  exit 0
+fi
+exit 1
+EOF
+cat > "$PURGE_PEER_BIN/lsof" <<'EOF'
+#!/bin/bash
+pid=""
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "-p" ]; then
+    pid="$2"
+    break
+  fi
+  shift
+done
+[ "$pid" = "4242" ] || exit 1
+printf 'n%s\n' "$PURGE_PEER_CWD"
+EOF
+chmod +x "$PURGE_PEER_BIN/ps" "$PURGE_PEER_BIN/lsof"
+PEER_OUTPUT=$(cd "$WT_LINK" && \
+  env PATH="$PURGE_PEER_BIN" \
+    CLAUDE_PROJECT_DIR="$WT_LINK" \
+    PURGE_PEER_CWD="$WT_LINK/mobile" \
+    "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+if ! printf '%s\n' "$PEER_OUTPUT" | jq -e \
+  '.systemMessage
+   | contains("Skipped build-artifact purge")
+     and contains("pid 4242")
+     and contains("other live process")' >/dev/null; then
+  echo "Purge hook did not explain the shared-worktree skip." >&2
+  echo "Output was: $PEER_OUTPUT" >&2
+  exit 1
+fi
+if [ ! -d "$WT_LINK/mobile/build" ] || [ ! -d "$WT_LINK/mobile/.dart_tool" ]; then
+  echo "Purge hook deleted artifacts while another process was active in the worktree." >&2
   exit 1
 fi
 

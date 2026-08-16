@@ -13,6 +13,11 @@ emit_block() {
   exit 0
 }
 
+emit_system_message() {
+  jq -n --arg message "$1" '{systemMessage: $message}'
+  exit 0
+}
+
 INPUT=$(cat)
 PATCH=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.command // empty')
 FILES=$(printf '%s\n' "$PATCH" | sed -nE \
@@ -26,6 +31,22 @@ DART_READY=false
 while IFS= read -r FILE_PATH; do
   [[ "$FILE_PATH" =~ \.dart$ ]] || continue
   [ -f "$FILE_PATH" ] || continue
+
+  FILE_DIR=$(dirname "$FILE_PATH")
+  CANONICAL_FILE_PATH="$FILE_PATH"
+  if CANONICAL_FILE_DIR=$(cd -P "$FILE_DIR" 2>/dev/null && pwd); then
+    CANONICAL_FILE_PATH="$CANONICAL_FILE_DIR/$(basename "$FILE_PATH")"
+  fi
+  REPO_ROOT=$(git -C "$FILE_DIR" rev-parse --show-toplevel 2>/dev/null || true)
+  if [ -n "$REPO_ROOT" ]; then
+    case "$CANONICAL_FILE_PATH" in
+      "$REPO_ROOT"/mobile/*) ;;
+      *) REPO_ROOT="" ;;
+    esac
+  fi
+  if [ -n "$REPO_ROOT" ] && [ ! -f "$REPO_ROOT/mobile/.dart_tool/package_config.json" ]; then
+    emit_system_message "Skipped Dart format/analyze because $REPO_ROOT/mobile/.dart_tool/package_config.json is missing. Run \`cd mobile && flutter pub get\` before relying on post-edit analysis in this worktree."
+  fi
 
   if [ "$DART_READY" = false ]; then
     if ! resolve_dart_runner; then

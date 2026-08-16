@@ -20,6 +20,57 @@ set -euo pipefail
 
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
 
+is_ancestor_pid() {
+  local needle="$1"
+  local p="$$"
+  local parent=""
+
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+    [ -n "$p" ] || break
+    [ "$p" = "$needle" ] && return 0
+    parent="$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')"
+    [ -n "$parent" ] || break
+    [ "$parent" != "$p" ] || break
+    p="$parent"
+  done
+
+  return 1
+}
+
+active_worktree_peers() {
+  command -v ps >/dev/null 2>&1 || return 0
+  command -v lsof >/dev/null 2>&1 || return 0
+
+  local pid=""
+  local command_name=""
+  local cwd=""
+  local count=0
+  local peers=""
+
+  while read -r pid command_name; do
+    case "$pid" in '' | *[!0-9]*) continue ;; esac
+    is_ancestor_pid "$pid" && continue
+
+    cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)"
+    [ -n "$cwd" ] || continue
+    case "$cwd" in
+      "$root"|"$root"/*) ;;
+      *) continue ;;
+    esac
+
+    count=$((count + 1))
+    [ "$count" -le 5 ] && peers="${peers}  - pid ${pid} (${command_name:-unknown}, cwd ${cwd})"$'\n'
+  done < <(ps -eo pid=,comm= 2>/dev/null || true)
+
+  [ "$count" -gt 0 ] || return 0
+
+  if [ "$count" -gt 5 ]; then
+    peers="${peers}  - and $((count - 5)) more process(es)"$'\n'
+  fi
+
+  printf '%s\t%s' "$count" "$peers"
+}
+
 input=""
 if [ ! -t 0 ]; then
   input="$(cat || true)"
@@ -40,6 +91,18 @@ case "$gitdir" in
   */.git/worktrees/*) ;;
   *) exit 0 ;;
 esac
+
+peer_scan="$(active_worktree_peers)"
+if [ -n "$peer_scan" ]; then
+  peer_count="${peer_scan%%	*}"
+  peer_list="${peer_scan#*	}"
+  jq -n \
+    --arg count "$peer_count" \
+    --arg root "$root" \
+    --arg peers "$peer_list" \
+    '{systemMessage: ("Skipped build-artifact purge for " + $root + " because " + $count + " other live process(es) have cwd inside this worktree:\n" + $peers + "Run the purge after the other session or terminal exits.")}'
+  exit 0
+fi
 
 # Stage removals under the linked worktree gitdir, then delete detached.
 # Renaming within a filesystem is instant, so the session exits immediately
