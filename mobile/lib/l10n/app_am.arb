@@ -5342,5 +5342,10 @@
   "changeEmailSentTitle": "ሁለት ማገናኛዎች በመንገድ ላይ ናቸው",
   "changeEmailSentMessage": "ከ{email} እና በመለያህ ላይ ካለው አድራሻ አረጋግጥ። ሁለቱም ሲጠናቀቁ ኢሜይልህ ይቀየራል።",
   "changeEmailSentExpiry": "ማገናኛዎቹ ከ24 ሰዓት በኋላ አይሠሩም።",
-  "changeEmailSentDone": "ገባኝ"
+  "changeEmailSentDone": "ገባኝ",
+  "socialProofMutual": "እርስ በርስ",
+  "socialProofFollowsYou": "ይከተልዎታል",
+  "socialProofYouFollow": "ይከተላሉ",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} ተከታይ} other{{formattedCount} ተከታዮች}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} ቪዲዮ} other{{formattedCount} ቪዲዮዎች}}"
 }

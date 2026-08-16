@@ -140,5 +140,66 @@ void main() {
         expect(resolve(followerCount: 0), isNull);
       });
     });
+
+    group('localization', () {
+      String? resolveIn(
+        String locale, {
+        FollowRelationship relationship = FollowRelationship.none,
+        int? followerCount,
+      }) {
+        return resolveUserIdentifierLine(
+          l10n: lookupAppLocalizations(Locale(locale)),
+          locale: locale,
+          relationship: relationship,
+          followerCount: followerCount,
+        );
+      }
+
+      // One locale per plural shape the ARB files have to get right:
+      // Polish selects few/many, Japanese has no plural category at all,
+      // and Arabic is RTL with its own noun.
+      test('renders Polish, which selects a distinct few/many form', () {
+        expect(
+          resolveIn('pl', relationship: FollowRelationship.mutual),
+          equals('Obserwujecie się'),
+        );
+        expect(resolveIn('pl', followerCount: 1), equals('1 obserwujący'));
+        expect(resolveIn('pl', followerCount: 3), equals('3 obserwujących'));
+      });
+
+      test('renders Japanese, which has no plural distinction', () {
+        expect(
+          resolveIn('ja', relationship: FollowRelationship.followsYou),
+          equals('フォローされています'),
+        );
+        expect(resolveIn('ja', followerCount: 1), equals('フォロワー1人'));
+      });
+
+      test('renders Arabic', () {
+        expect(
+          resolveIn('ar', relationship: FollowRelationship.youFollow),
+          equals('تتابعه'),
+        );
+        expect(resolveIn('ar', followerCount: 12), equals('12 متابِع'));
+      });
+
+      test('translates every locale, leaving none on the English string', () {
+        final english = lookupAppLocalizations(const Locale('en'));
+        // 'fil' keeps the English loanword "Mutual" by design, matching how
+        // its sibling keys already borrow "Follower" and "video".
+        const sharesEnglishWording = {'fil'};
+
+        for (final locale in AppLocalizations.supportedLocales) {
+          final code = locale.languageCode;
+          if (code == 'en' || sharesEnglishWording.contains(code)) continue;
+
+          expect(
+            resolveIn(code, relationship: FollowRelationship.mutual),
+            isNot(equals(english.socialProofMutual)),
+            reason: '$code still falls back to the English "Mutual"',
+          );
+        }
+      });
+    });
   });
 }

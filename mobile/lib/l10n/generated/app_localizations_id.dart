@@ -12080,28 +12080,26 @@ class AppLocalizationsId extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount videos',
-      one: '$formattedCount video',
+      other: '$formattedCount video',
     );
     return '$_temp0';
   }
 
   @override
-  String get socialProofMutual => 'Mutual';
+  String get socialProofMutual => 'Saling mengikuti';
 
   @override
-  String get socialProofFollowsYou => 'Follows you';
+  String get socialProofFollowsYou => 'Mengikuti kamu';
 
   @override
-  String get socialProofYouFollow => 'You follow';
+  String get socialProofYouFollow => 'Kamu ikuti';
 
   @override
   String socialProofFollowerCount(int count, String formattedCount) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount followers',
-      one: '$formattedCount follower',
+      other: '$formattedCount pengikut',
     );
     return '$_temp0';
   }

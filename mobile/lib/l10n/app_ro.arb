@@ -5217,5 +5217,10 @@
   "changeEmailSentTitle": "Două linkuri sunt pe drum",
   "changeEmailSentMessage": "Confirmă din {email} și din adresa contului tău. E-mailul se schimbă după ce le faci pe amândouă.",
   "changeEmailSentExpiry": "Linkurile expiră după 24 de ore.",
-  "changeEmailSentDone": "Am înțeles"
+  "changeEmailSentDone": "Am înțeles",
+  "socialProofMutual": "Reciproc",
+  "socialProofFollowsYou": "Te urmărește",
+  "socialProofYouFollow": "Urmărești",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} urmăritor} other{{formattedCount} urmăritori}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} videoclip} other{{formattedCount} videoclipuri}}"
 }

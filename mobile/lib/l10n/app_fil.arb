@@ -3803,5 +3803,10 @@
   "changeEmailSentTitle": "Papunta na ang dalawang link",
   "changeEmailSentMessage": "I-confirm mula sa {email} at mula sa address na nasa account mo. Magpapalit ang email mo kapag tapos na pareho.",
   "changeEmailSentExpiry": "Titigil gumana ang mga link pagkatapos ng 24 oras.",
-  "changeEmailSentDone": "Sige"
+  "changeEmailSentDone": "Sige",
+  "socialProofMutual": "Mutual",
+  "socialProofFollowsYou": "Sinusundan ka",
+  "socialProofYouFollow": "Sinusundan mo",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} follower} other{{formattedCount} follower}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video}}"
 }

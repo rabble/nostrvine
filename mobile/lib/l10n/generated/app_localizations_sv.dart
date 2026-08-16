@@ -12134,28 +12134,28 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount videos',
+      other: '$formattedCount videor',
       one: '$formattedCount video',
     );
     return '$_temp0';
   }
 
   @override
-  String get socialProofMutual => 'Mutual';
+  String get socialProofMutual => 'Ömsesidigt';
 
   @override
-  String get socialProofFollowsYou => 'Follows you';
+  String get socialProofFollowsYou => 'Följer dig';
 
   @override
-  String get socialProofYouFollow => 'You follow';
+  String get socialProofYouFollow => 'Du följer';
 
   @override
   String socialProofFollowerCount(int count, String formattedCount) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount followers',
-      one: '$formattedCount follower',
+      other: '$formattedCount följare',
+      one: '$formattedCount följare',
     );
     return '$_temp0';
   }

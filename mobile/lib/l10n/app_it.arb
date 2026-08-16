@@ -5217,5 +5217,10 @@
   "changeEmailSentTitle": "Due link sono in arrivo",
   "changeEmailSentMessage": "Conferma da {email} e dall'indirizzo del tuo account. L'e-mail cambia quando hai fatto entrambi.",
   "changeEmailSentExpiry": "I link scadono dopo 24 ore.",
-  "changeEmailSentDone": "Ok, capito"
+  "changeEmailSentDone": "Ok, capito",
+  "socialProofMutual": "Reciproco",
+  "socialProofFollowsYou": "Ti segue",
+  "socialProofYouFollow": "Segui",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} follower} other{{formattedCount} follower}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video}}"
 }

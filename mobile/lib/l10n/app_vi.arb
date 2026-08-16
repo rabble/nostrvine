@@ -7047,5 +7047,10 @@
   "changeEmailSentTitle": "Hai liên kết đang trên đường tới",
   "changeEmailSentMessage": "Xác nhận từ {email} và từ địa chỉ trong tài khoản của bạn. Email đổi khi xong cả hai.",
   "changeEmailSentExpiry": "Liên kết hết hạn sau 24 giờ.",
-  "changeEmailSentDone": "Đã hiểu"
+  "changeEmailSentDone": "Đã hiểu",
+  "socialProofMutual": "Theo dõi lẫn nhau",
+  "socialProofFollowsYou": "Đang theo dõi bạn",
+  "socialProofYouFollow": "Bạn đang theo dõi",
+  "socialProofFollowerCount": "{count, plural, other{{formattedCount} người theo dõi}}",
+  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}"
 }

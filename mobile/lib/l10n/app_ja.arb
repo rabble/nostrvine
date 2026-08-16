@@ -5217,5 +5217,10 @@
   "changeEmailSentTitle": "確認リンクを2通送りました",
   "changeEmailSentMessage": "{email} と、アカウントに登録中のアドレスの両方で確認してください。両方が終わるとメールアドレスが切り替わります。",
   "changeEmailSentExpiry": "リンクは24時間で使えなくなります。",
-  "changeEmailSentDone": "わかりました"
+  "changeEmailSentDone": "わかりました",
+  "socialProofMutual": "相互フォロー",
+  "socialProofFollowsYou": "フォローされています",
+  "socialProofYouFollow": "フォロー中",
+  "socialProofFollowerCount": "{count, plural, other{フォロワー{formattedCount}人}}",
+  "searchUserVideoCount": "{count, plural, other{{formattedCount}本の動画}}"
 }

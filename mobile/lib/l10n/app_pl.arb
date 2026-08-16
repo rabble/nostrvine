@@ -5217,5 +5217,10 @@
   "changeEmailSentTitle": "Dwa linki są w drodze",
   "changeEmailSentMessage": "Potwierdź z {email} i z adresu na twoim koncie. E-mail zmieni się, gdy zrobisz oba.",
   "changeEmailSentExpiry": "Linki przestają działać po 24 godzinach.",
-  "changeEmailSentDone": "Jasne"
+  "changeEmailSentDone": "Jasne",
+  "socialProofMutual": "Obserwujecie się",
+  "socialProofFollowsYou": "Obserwuje Cię",
+  "socialProofYouFollow": "Obserwujesz",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} obserwujący} few{{formattedCount} obserwujących} many{{formattedCount} obserwujących} other{{formattedCount} obserwujących}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} film} few{{formattedCount} filmy} many{{formattedCount} filmów} other{{formattedCount} filmu}}"
 }

@@ -12273,21 +12273,21 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get socialProofMutual => 'Mutual';
+  String get socialProofMutual => 'Mutuo';
 
   @override
-  String get socialProofFollowsYou => 'Follows you';
+  String get socialProofFollowsYou => 'Te sigue';
 
   @override
-  String get socialProofYouFollow => 'You follow';
+  String get socialProofYouFollow => 'Siguiendo';
 
   @override
   String socialProofFollowerCount(int count, String formattedCount) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount followers',
-      one: '$formattedCount follower',
+      other: '$formattedCount seguidores',
+      one: '$formattedCount seguidor',
     );
     return '$_temp0';
   }

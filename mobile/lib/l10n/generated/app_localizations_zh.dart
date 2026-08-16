@@ -11453,28 +11453,26 @@ class AppLocalizationsZh extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount videos',
-      one: '$formattedCount video',
+      other: '$formattedCount 条视频',
     );
     return '$_temp0';
   }
 
   @override
-  String get socialProofMutual => 'Mutual';
+  String get socialProofMutual => '互相关注';
 
   @override
-  String get socialProofFollowsYou => 'Follows you';
+  String get socialProofFollowsYou => '关注了你';
 
   @override
-  String get socialProofYouFollow => 'You follow';
+  String get socialProofYouFollow => '已关注';
 
   @override
   String socialProofFollowerCount(int count, String formattedCount) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$formattedCount followers',
-      one: '$formattedCount follower',
+      other: '$formattedCount 位粉丝',
     );
     return '$_temp0';
   }

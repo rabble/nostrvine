@@ -5217,5 +5217,10 @@
   "changeEmailSentTitle": "Zwei Links sind unterwegs",
   "changeEmailSentMessage": "Bestätige über {email} und über die Adresse in deinem Konto. Deine E-Mail wechselt, sobald beides erledigt ist.",
   "changeEmailSentExpiry": "Die Links laufen nach 24 Stunden ab.",
-  "changeEmailSentDone": "Alles klar"
+  "changeEmailSentDone": "Alles klar",
+  "socialProofMutual": "Gegenseitig",
+  "socialProofFollowsYou": "Folgt dir",
+  "socialProofYouFollow": "Du folgst",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} Follower} other{{formattedCount} Follower}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} Video} other{{formattedCount} Videos}}"
 }

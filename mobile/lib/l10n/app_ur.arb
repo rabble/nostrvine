@@ -7047,5 +7047,10 @@
   "changeEmailSentTitle": "دو لنک بھیج دیے گئے ہیں",
   "changeEmailSentMessage": "{email} سے اور اپنے اکاؤنٹ والے پتے سے تصدیق کریں۔ دونوں مکمل ہونے پر ای میل بدل جائے گی۔",
   "changeEmailSentExpiry": "لنک 24 گھنٹے بعد کام کرنا بند کر دیتے ہیں۔",
-  "changeEmailSentDone": "سمجھ گیا"
+  "changeEmailSentDone": "سمجھ گیا",
+  "socialProofMutual": "باہمی",
+  "socialProofFollowsYou": "آپ کو فالو کرتا ہے",
+  "socialProofYouFollow": "آپ فالو کرتے ہیں",
+  "socialProofFollowerCount": "{count, plural, =1{{formattedCount} فالوور} other{{formattedCount} فالوورز}}",
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} ویڈیو} other{{formattedCount} ویڈیوز}}"
 }
