@@ -173,6 +173,64 @@ void main() {
       );
     });
 
+    test('renamed ARB key does not excuse a vanished binding', () {
+      writeArb({'authConnectSigner': 'Link a signer application'});
+      writeFlow(
+        'asserts/menu.yaml',
+        '- assertVisible: Connect with a signer app\n',
+      );
+      writeManifest(
+        'authConnectSignerApp\te2e/maestro/asserts/menu.yaml'
+        '\tbound:Connect with a signer app\n',
+      );
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 1);
+      expect(res.stderr, contains('regen refused'));
+      expect(res.stderr, contains('key no longer exists'));
+      expect(
+        manifest.readAsStringSync(),
+        contains('authConnectSignerApp'),
+      );
+    });
+
+    test('pure rename with unchanged value re-binds without a refusal', () {
+      writeArb({'authConnectSigner': 'Connect with a signer app'});
+      writeFlow(
+        'asserts/menu.yaml',
+        '- assertVisible: Connect with a signer app\n',
+      );
+      writeManifest(
+        'authConnectSignerApp\te2e/maestro/asserts/menu.yaml'
+        '\tbound:Connect with a signer app\n',
+      );
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(res.stdout, contains('1 added, 1 removed'));
+      expect(
+        manifest.readAsStringSync(),
+        contains('authConnectSigner\te2e/maestro/asserts/menu.yaml'),
+      );
+    });
+
+    test('rendered bindings fail when the ARB template changes', () {
+      writeArb({'profileVideoThumbnailLabel': 'Clip {number}'});
+      writeFlow('tests/searchTags.yaml', '- tapOn: Video thumbnail 1\n');
+      writeManifest(
+        'profileVideoThumbnailLabel\te2e/maestro/tests/searchTags.yaml'
+        '\trendered:Video thumbnail 1\n',
+      );
+
+      final res = run();
+
+      expect(res.exitCode, 1);
+      expect(res.stderr, contains('ARB template'));
+      expect(res.stderr, contains('Clip {number}'));
+    });
+
     test('base-ref ratchet fails when a branch erodes a base binding', () {
       writeArb({'settingsTitle': 'Preferences'});
       writeFlow('asserts/menu.yaml', '- assertVisible: Settings\n');
