@@ -38,6 +38,9 @@ Mechanics:
   `scripts/ci/select_test_shard.sh` removes `test/goldens/` from every shard
   of the `Tests` job, so goldens never run inside the merged
   `very_good test --optimization` isolate and never run twice.
+- Files under `test/goldens/` are tagged `golden` so the local `mise run test`
+  path can exclude the same directory from the merged optimizer run without
+  adding another `skip_very_good_optimization` opt-out.
 - **Reference images are generated on the Ubuntu runner**, not on a
   developer machine — see [Regenerating references](#regenerating-references).
 
@@ -88,7 +91,7 @@ Two related traps:
 # Verify golden tests pass
 ./scripts/golden.sh verify
 
-# Update a specific test file
+# Update a specific image golden test file
 ./scripts/golden.sh update test/goldens/widgets/design_system_gallery_golden_test.dart
 
 # List all golden test files

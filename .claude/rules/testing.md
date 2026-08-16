@@ -347,6 +347,34 @@ Goldens live under `mobile/test/goldens/`, which the CI `Tests` shards, the
 `mise run test` task, and the pre-push hook all exclude; the dedicated
 `Goldens` job owns them.
 
+Run and update goldens through the script from `mobile/`:
+
+```bash
+bash scripts/golden.sh verify
+bash scripts/golden.sh update test/goldens/widgets/design_system_gallery_golden_test.dart
+```
+
+The committed PNGs must be generated on the Ubuntu CI runner, not on a local
+Mac. For intentional image changes, dispatch `Mobile CI` with
+`update_goldens=true`, download the `goldens` artifact, inspect it, and commit
+those files. Do not commit locally generated references.
+
+Two invariants are load-bearing:
+
+- Every test under `test/goldens/` must carry the `golden` tag so
+  `mise run test` can exclude it from the local
+  `very_good test --optimization` run, matching CI's directory exclusion.
+- Every image golden must drain `google_fonts` before asserting:
+
+```dart
+await tester.pumpWidget(...);
+await tester.runAsync(GoogleFonts.pendingFonts);
+await tester.pumpAndSettle();
+```
+
+See `mobile/docs/GOLDEN_TESTING_GUIDE.md` for the current workflow and the
+cross-OS rendering drift details.
+
 ---
 
 ## Random Test Ordering

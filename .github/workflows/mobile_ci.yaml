@@ -514,6 +514,7 @@ jobs:
         with:
           name: goldens
           path: mobile/test/goldens/**/goldens/*.png
+          if-no-files-found: error
       # The diff is the only way to tell a real regression from a rendering
       # drift without a local Ubuntu run.
       - name: Upload golden failure diffs

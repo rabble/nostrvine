@@ -40,7 +40,7 @@ void main() {
         find.byKey(_galleryKey),
         matchesGoldenFile('goldens/divine_button_types.png'),
       );
-    });
+    }, tags: ['golden']);
 
     testWidgets('button sizes and disabled state', (tester) async {
       await _pumpGallery(
@@ -70,7 +70,7 @@ void main() {
         find.byKey(_galleryKey),
         matchesGoldenFile('goldens/divine_button_sizes.png'),
       );
-    });
+    }, tags: ['golden']);
 
     testWidgets('snackbars', (tester) async {
       await _pumpGallery(
@@ -98,7 +98,7 @@ void main() {
         find.byKey(_galleryKey),
         matchesGoldenFile('goldens/divine_snackbars.png'),
       );
-    });
+    }, tags: ['golden']);
   });
 }
 

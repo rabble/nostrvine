@@ -30,7 +30,6 @@ print_help() {
     echo "  clean               - Remove all golden images"
     echo "  diff                - Show git diff of golden images"
     echo "  list                - List all golden test files"
-    echo "  generate [widget]   - Generate golden tests for specific widget"
     echo "  help                - Show this help message"
     echo ""
     echo "Examples:"
@@ -139,36 +138,25 @@ list_golden_tests() {
 generate_golden_test() {
     local widget_name=$1
 
-    if [ -z "$widget_name" ]; then
-        echo -e "${RED}Error: Widget name required${NC}"
-        echo "Usage: $0 generate <widget_name>"
-        exit 1
+    echo -e "${RED}The generate command is no longer supported.${NC}"
+    if [ -n "$widget_name" ]; then
+        echo "Requested widget: $widget_name"
     fi
-
-    echo -e "${BLUE}Generating golden test for: $widget_name${NC}"
-
-    # Create test file path
-    test_file="test/goldens/widgets/${widget_name,,}_golden_test.dart"
-
-    if [ -f "$test_file" ]; then
-        echo -e "${YELLOW}Warning: Test file already exists at $test_file${NC}"
-        read -p "Overwrite? (y/n) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 0
-        fi
-    fi
-
-    echo "Creating golden test at: $test_file"
-    # Note: Template generation would go here
-    echo -e "${GREEN}✓ Golden test template created${NC}"
-    echo -e "${YELLOW}Remember to implement the test and run '$0 update $test_file'${NC}"
+    echo -e "${YELLOW}Start from test/goldens/widgets/design_system_gallery_golden_test.dart instead.${NC}"
+    exit 2
 }
 
 require_golden_tests() {
     if ! find "$GOLDEN_TEST_PATH" -name "*_test.dart" -type f | grep -q .; then
         echo -e "${RED}✗ No golden test files found under $GOLDEN_TEST_PATH${NC}"
         echo -e "${YELLOW}Pass a specific golden test file or add tests under $GOLDEN_TEST_PATH.${NC}"
+        exit 1
+    fi
+    if ! find "$GOLDEN_TEST_PATH" -name "*_test.dart" -type f \
+        -exec grep -E 'matchesGoldenFile|screenMatchesGolden|goldenTest[[:space:]]*\(|testGoldens[[:space:]]*\(' {} + \
+        | grep -q .; then
+        echo -e "${RED}✗ No image-comparison golden assertions found under $GOLDEN_TEST_PATH${NC}"
+        echo -e "${YELLOW}Add at least one matchesGoldenFile/screenMatchesGolden/testGoldens assertion.${NC}"
         exit 1
     fi
 }

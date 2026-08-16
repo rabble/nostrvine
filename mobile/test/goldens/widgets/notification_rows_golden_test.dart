@@ -74,7 +74,7 @@ void main() {
         );
         expect(tester.takeException(), isNull);
       });
-    });
+    }, tags: ['golden']);
 
     testWidgets('notification rows render max-font layout', (tester) async {
       await withClock(Clock(() => _goldenNow), () async {
@@ -122,7 +122,7 @@ void main() {
         );
         expect(tester.takeException(), isNull);
       });
-    });
+    }, tags: ['golden']);
   });
 }
 
