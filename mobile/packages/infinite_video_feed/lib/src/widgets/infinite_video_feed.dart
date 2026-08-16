@@ -13,6 +13,7 @@ import 'package:infinite_video_feed/src/services/disk_prefetcher.dart';
 import 'package:infinite_video_feed/src/services/load_watchdog.dart';
 import 'package:infinite_video_feed/src/services/playback_source_registry.dart';
 import 'package:infinite_video_feed/src/services/stale_playback_detector.dart';
+import 'package:infinite_video_feed/src/utils/playback_failure_log.dart';
 import 'package:infinite_video_feed/src/utils/playback_sources.dart';
 import 'package:infinite_video_feed/src/utils/source_loader.dart';
 import 'package:infinite_video_feed/src/widgets/video_item.dart';
@@ -1262,10 +1263,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           ? ''
           : ' failedSource=$lastFailedSource';
       _log('Error loading index $index (${video.id}):$sourceDetail $e');
-      Log.error(
+      logPlaybackFailure(
         'Player init failed$sourceDetail',
         name: _logName,
-        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );
@@ -1437,10 +1437,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       }
     } on Object catch (e, stackTrace) {
       _log('Source failover failed index $index source=$nextSource: $e');
-      Log.error(
+      logPlaybackFailure(
         'Source failover failed',
         name: _logName,
-        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );
@@ -1542,10 +1541,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         return;
       }
       _log('Processing retry failed index $index source=$source: $e');
-      Log.error(
+      logPlaybackFailure(
         'Processing retry failed',
         name: _logName,
-        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );

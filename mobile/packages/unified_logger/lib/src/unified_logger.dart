@@ -207,9 +207,22 @@ class UnifiedLogger {
     _log(message, name: name, category: category, level: LogLevel.info);
   }
 
-  /// Warning logging - potential issues
-  static void warning(String message, {String? name, LogCategory? category}) {
-    _log(message, name: name, category: category, level: LogLevel.warning);
+  /// Warning logging - potential issues with optional error object
+  static void warning(
+    String message, {
+    String? name,
+    LogCategory? category,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    _log(
+      message,
+      name: name,
+      category: category,
+      level: LogLevel.warning,
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   /// Error logging - actual errors with optional error object
