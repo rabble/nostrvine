@@ -5,7 +5,6 @@
 
 import 'dart:async';
 import 'dart:typed_data';
-
 import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +25,7 @@ import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Test doubles
@@ -64,7 +64,9 @@ _MockGoRouter _routerAt(String location) {
   return router;
 }
 
-const _ownNpub = 'npub1owner';
+const _ownHex =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+final String _ownNpub = NostrKeyUtils.encodePubKey(_ownHex);
 String get _ownProfileLocation => RoutePaths.profileForNpub(_ownNpub);
 
 class _NoOpAnalytics implements AnalyticsEventSink {
@@ -281,7 +283,7 @@ void main() {
     ) async {
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentNpub).thenReturn(_ownNpub);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
       final experiment = await _treatmentExperiment('draft-treatment');
 
       await tester.pumpWidget(
@@ -309,7 +311,7 @@ void main() {
     ) async {
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentNpub).thenReturn(_ownNpub);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
       final router = _routerAt(_ownProfileLocation);
       final experiment = await _treatmentExperiment('draft-treatment');
 
@@ -350,7 +352,7 @@ void main() {
       // modal sheet over the feed is an ambush; the snackbar is not.
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentNpub).thenReturn(_ownNpub);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
       final experiment = await _treatmentExperiment('draft-treatment');
 
       await tester.pumpWidget(
@@ -377,7 +379,7 @@ void main() {
       // would offer two dead buttons.
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentNpub).thenReturn(_ownNpub);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
       final experiment = await _treatmentExperiment('draft-treatment');
 
       await tester.pumpWidget(
@@ -404,7 +406,7 @@ void main() {
       // single target.
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentNpub).thenReturn(_ownNpub);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
       final experiment = await _treatmentExperiment('draft-treatment');
 
       await tester.pumpWidget(
@@ -431,7 +433,7 @@ void main() {
     ) async {
       stubPublishBloc(const BackgroundPublishState());
       when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentNpub).thenReturn(_ownNpub);
+      when(() => authService.currentPublicKeyHex).thenReturn(_ownHex);
       final experiment = PostPublishExperiment(analytics: _NoOpAnalytics());
       await experiment.screenShown(
         publishId: 'draft-control',

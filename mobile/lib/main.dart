@@ -3260,8 +3260,8 @@ bool _showPublishSuccess(
 
 /// Whether the router is currently showing the signed-in user's own profile.
 bool _isOnOwnProfile(ProviderContainer container) {
-  final npub = container.read(authServiceProvider).currentNpub;
-  if (npub == null) return false;
+  final pubkeyHex = container.read(authServiceProvider).currentPublicKeyHex;
+  if (pubkeyHex == null) return false;
   // Same primitive routerLocationStreamProvider reads, and unlike
   // routerDelegate.currentConfiguration it cannot assert on an empty stack.
   final location = container
@@ -3269,7 +3269,7 @@ bool _isOnOwnProfile(ProviderContainer container) {
       .routeInformationProvider
       .value
       .uri;
-  return isOwnProfileLocation(location.path, npub);
+  return isOwnProfileLocation(location.path, pubkeyHex);
 }
 
 void _onConfirmationView(
