@@ -3739,12 +3739,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuBookmarks => 'ዕልባቶች';
 
   @override
-  String get shareMenuAddToBookmarks => 'ወደ ዕልባቶች ያክሉ';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'በኋላ ለማየት ያስቀምጡ';
-
-  @override
   String get shareMenuFollowSets => 'የሰዎች ዝርዝሮች';
 
   @override
@@ -4105,26 +4099,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'ያልታወቀ';
-
-  @override
-  String get shareMenuSetName => 'ስም አዘጋጅ';
-
-  @override
-  String get shareMenuSetNameHint => 'ለምሳሌ፡ ተወዳጆች፡ በኋላ ይመልከቱ፡ ወዘተ';
-
-  @override
-  String get shareMenuCreateNewSet => 'አዲስ ስብስብ ይፍጠሩ';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection => 'አዲስ የዕልባት ስብስብ ጀምር';
-
-  @override
-  String get shareMenuError => 'ስህተት';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '\"$name\" ተፈጥሯል እና ቪዲዮ ታክሏል';
-  }
 
   @override
   String get shareMenuUseThisSound => 'ይህንን ድምጽ ይጠቀሙ';

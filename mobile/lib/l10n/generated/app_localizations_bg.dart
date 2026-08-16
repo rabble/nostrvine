@@ -3862,12 +3862,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuBookmarks => 'Отметки';
 
   @override
-  String get shareMenuAddToBookmarks => 'Добави към отметки';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'Запази за по-късен преглед';
-
-  @override
   String get shareMenuFollowSets => 'Списъци с хора';
 
   @override
@@ -4240,27 +4234,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Неизвестен';
-
-  @override
-  String get shareMenuSetName => 'Задай име';
-
-  @override
-  String get shareMenuSetNameHint => 'Напр. Любими, Гледай по-късно и т.н.';
-
-  @override
-  String get shareMenuCreateNewSet => 'Създаване на нов набор';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Започни нова колекция от отметки';
-
-  @override
-  String get shareMenuError => 'Грешка';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return 'Създаде „$name“ и добави видео';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Използвай този звук';

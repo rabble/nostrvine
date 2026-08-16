@@ -3785,12 +3785,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuBookmarks => 'Yer İmleri';
 
   @override
-  String get shareMenuAddToBookmarks => 'Yer İmlerine Ekle';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'Sonra izlemek için kaydet';
-
-  @override
   String get shareMenuFollowSets => 'Takip Setleri';
 
   @override
@@ -4163,27 +4157,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Bilinmeyen';
-
-  @override
-  String get shareMenuSetName => 'Set Adı';
-
-  @override
-  String get shareMenuSetNameHint => 'örn. Favoriler, Sonra İzle vb.';
-
-  @override
-  String get shareMenuCreateNewSet => 'Yeni Set Oluştur';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Yeni bir yer imi koleksiyonu başlat';
-
-  @override
-  String get shareMenuError => 'Hata';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '\"$name\" oluşturuldu ve video eklendi';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Bu sesi kullan';

@@ -3629,12 +3629,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuBookmarks => '북마크';
 
   @override
-  String get shareMenuAddToBookmarks => '북마크에 추가';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => '나중에 보려고 저장';
-
-  @override
   String get shareMenuFollowSets => '팔로우 세트';
 
   @override
@@ -3991,26 +3985,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => '알 수 없음';
-
-  @override
-  String get shareMenuSetName => '세트 이름';
-
-  @override
-  String get shareMenuSetNameHint => '예: 즐겨찾기, 나중에 보기 등';
-
-  @override
-  String get shareMenuCreateNewSet => '새 세트 만들기';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection => '새 북마크 컴렉션 시작';
-
-  @override
-  String get shareMenuError => '오류';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '\"$name\"을(를) 만들고 영상을 추가했어요';
-  }
 
   @override
   String get shareMenuUseThisSound => '이 사운드 쓰기';

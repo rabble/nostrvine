@@ -3875,12 +3875,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareMenuBookmarks => 'Mga Bookmark';
 
   @override
-  String get shareMenuAddToBookmarks => 'Idagdag sa Bookmarks';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'I-save para mapanood mamaya';
-
-  @override
   String get shareMenuFollowSets => 'Mga Listahan ng Tao';
 
   @override
@@ -4257,27 +4251,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Hindi alam';
-
-  @override
-  String get shareMenuSetName => 'Pangalan ng Set';
-
-  @override
-  String get shareMenuSetNameHint => 'hal., Favorites, Watch Later, atbp.';
-
-  @override
-  String get shareMenuCreateNewSet => 'Gumawa ng Bagong Set';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Magsimula ng bagong koleksyon ng bookmark';
-
-  @override
-  String get shareMenuError => 'Error';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return 'Nagawa ang \"$name\" at naidagdag ang video';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Gamitin ang sound na ito';

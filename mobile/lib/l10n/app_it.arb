@@ -1543,8 +1543,6 @@
     "shareMenuRemovedFromList": "Rimosso dalla lista",
     "shareMenuFailedToRemoveFromList": "Impossibile rimuovere dalla lista",
     "shareMenuBookmarks": "Segnalibri",
-    "shareMenuAddToBookmarks": "Aggiungi ai segnalibri",
-    "shareMenuAddToBookmarksSubtitle": "Salva per guardare dopo",
     "shareMenuFollowSets": "Set di follow",
     "shareMenuCreateFollowSet": "Crea set di follow",
     "shareMenuCreateFollowSetSubtitle": "Inizia una nuova collezione con questo creator",
@@ -1655,19 +1653,6 @@
     "shareMenuAddInspirationCredit": "Aggiungi credito ispirazione",
     "shareMenuCreatorCannotBeReferenced": "Questo creator non può essere menzionato.",
     "shareMenuUnknown": "Sconosciuto",
-    "shareMenuSetName": "Nome set",
-    "shareMenuSetNameHint": "es. Preferiti, Guarda dopo, ecc.",
-    "shareMenuCreateNewSet": "Crea nuovo set",
-    "shareMenuStartNewBookmarkCollection": "Inizia una nuova collezione di segnalibri",
-    "shareMenuError": "Errore",
-    "shareMenuCreatedSetAndAddedVideo": "Creato \"{name}\" e aggiunto il video",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "Usa questo audio",
     "shareMenuOriginalSound": "Audio originale",
     "authSessionExpired": "La tua sessione è scaduta. Accedi di nuovo.",

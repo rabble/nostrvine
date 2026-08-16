@@ -2089,8 +2089,6 @@
   "shareMenuRemovedFromList": "فہرست سے ہٹا دی گئی",
   "shareMenuFailedToRemoveFromList": "فہرست سے نہیں ہٹائی جا سکی",
   "shareMenuBookmarks": "بک مارکس",
-  "shareMenuAddToBookmarks": "بک مارکس میں شامل کریں",
-  "shareMenuAddToBookmarksSubtitle": "بعد میں دیکھنے کے لیے محفوظ کریں",
   "shareMenuFollowSets": "لوگوں کی فہرستیں",
   "shareMenuCreateFollowSet": "فالو سیٹ بنائیں",
   "shareMenuCreateFollowSetSubtitle": "اس کریئیٹر کے ساتھ نیا مجموعہ شروع کریں",
@@ -2316,19 +2314,6 @@
   "shareMenuAddInspirationCredit": "متاثر ہونے کا کریڈٹ شامل کریں",
   "shareMenuCreatorCannotBeReferenced": "اس کریئیٹر کا حوالہ نہیں دیا جا سکتا۔",
   "shareMenuUnknown": "نامعلوم",
-  "shareMenuSetName": "سیٹ کا نام",
-  "shareMenuSetNameHint": "مثلاً پسندیدہ، بعد میں دیکھیں وغیرہ",
-  "shareMenuCreateNewSet": "نیا سیٹ بنائیں",
-  "shareMenuStartNewBookmarkCollection": "نیا بک مارک مجموعہ شروع کریں",
-  "shareMenuError": "خرابی",
-  "shareMenuCreatedSetAndAddedVideo": "\"{name}\" بنایا اور ویڈیو شامل کی",
-  "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "shareMenuUseThisSound": "یہ آواز استعمال کریں",
   "shareMenuOriginalSound": "اصل آواز",
   "authSessionExpired": "آپ کا سیشن ختم ہو گیا ہے۔ براہ کرم دوبارہ سائن ان کریں۔",

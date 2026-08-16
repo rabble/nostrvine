@@ -1543,8 +1543,6 @@
     "shareMenuRemovedFromList": "Eliminat din listă",
     "shareMenuFailedToRemoveFromList": "N-am putut elimina din listă",
     "shareMenuBookmarks": "Semne de carte",
-    "shareMenuAddToBookmarks": "Adaugă la semne de carte",
-    "shareMenuAddToBookmarksSubtitle": "Salvează pentru vizualizare ulterioară",
     "shareMenuFollowSets": "Seturi de urmărire",
     "shareMenuCreateFollowSet": "Creează un set de urmărire",
     "shareMenuCreateFollowSetSubtitle": "Începe o colecție nouă cu acest creator",
@@ -1655,19 +1653,6 @@
     "shareMenuAddInspirationCredit": "Adaugă credit pentru inspirație",
     "shareMenuCreatorCannotBeReferenced": "Acest creator nu poate fi referit.",
     "shareMenuUnknown": "Necunoscut",
-    "shareMenuSetName": "Numele setului",
-    "shareMenuSetNameHint": "ex. Preferate, De vizionat mai târziu etc.",
-    "shareMenuCreateNewSet": "Creează un set nou",
-    "shareMenuStartNewBookmarkCollection": "Începe o colecție nouă de semne de carte",
-    "shareMenuError": "Eroare",
-    "shareMenuCreatedSetAndAddedVideo": "Set \"{name}\" creat și videoclipul adăugat",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "Folosește acest sunet",
     "shareMenuOriginalSound": "Sunet original",
     "authSessionExpired": "Sesiunea ta a expirat. Autentifică-te din nou.",

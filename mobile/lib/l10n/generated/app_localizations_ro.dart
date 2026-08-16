@@ -3914,13 +3914,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuBookmarks => 'Semne de carte';
 
   @override
-  String get shareMenuAddToBookmarks => 'Adaugă la semne de carte';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle =>
-      'Salvează pentru vizualizare ulterioară';
-
-  @override
   String get shareMenuFollowSets => 'Seturi de urmărire';
 
   @override
@@ -4313,28 +4306,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Necunoscut';
-
-  @override
-  String get shareMenuSetName => 'Numele setului';
-
-  @override
-  String get shareMenuSetNameHint =>
-      'ex. Preferate, De vizionat mai târziu etc.';
-
-  @override
-  String get shareMenuCreateNewSet => 'Creează un set nou';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Începe o colecție nouă de semne de carte';
-
-  @override
-  String get shareMenuError => 'Eroare';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return 'Set \"$name\" creat și videoclipul adăugat';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Folosește acest sunet';

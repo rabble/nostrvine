@@ -3820,12 +3820,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuBookmarks => 'Dấu trang';
 
   @override
-  String get shareMenuAddToBookmarks => 'Thêm vào dấu trang';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'Lưu để xem sau';
-
-  @override
   String get shareMenuFollowSets => 'Danh sách người';
 
   @override
@@ -4197,27 +4191,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Không xác định';
-
-  @override
-  String get shareMenuSetName => 'Tên bộ';
-
-  @override
-  String get shareMenuSetNameHint => 'VD: Yêu thích, Xem sau...';
-
-  @override
-  String get shareMenuCreateNewSet => 'Tạo bộ mới';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Bắt đầu bộ sưu tập dấu trang mới';
-
-  @override
-  String get shareMenuError => 'Lỗi';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return 'Đã tạo \"$name\" và thêm video';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Dùng âm thanh này';

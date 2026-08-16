@@ -3814,13 +3814,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get shareMenuBookmarks => 'بک مارکس';
 
   @override
-  String get shareMenuAddToBookmarks => 'بک مارکس میں شامل کریں';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle =>
-      'بعد میں دیکھنے کے لیے محفوظ کریں';
-
-  @override
   String get shareMenuFollowSets => 'لوگوں کی فہرستیں';
 
   @override
@@ -4196,27 +4189,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'نامعلوم';
-
-  @override
-  String get shareMenuSetName => 'سیٹ کا نام';
-
-  @override
-  String get shareMenuSetNameHint => 'مثلاً پسندیدہ، بعد میں دیکھیں وغیرہ';
-
-  @override
-  String get shareMenuCreateNewSet => 'نیا سیٹ بنائیں';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'نیا بک مارک مجموعہ شروع کریں';
-
-  @override
-  String get shareMenuError => 'خرابی';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '\"$name\" بنایا اور ویڈیو شامل کی';
-  }
 
   @override
   String get shareMenuUseThisSound => 'یہ آواز استعمال کریں';

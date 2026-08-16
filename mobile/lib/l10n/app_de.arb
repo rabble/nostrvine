@@ -1543,8 +1543,6 @@
     "shareMenuRemovedFromList": "Aus Liste entfernt",
     "shareMenuFailedToRemoveFromList": "Entfernen aus Liste fehlgeschlagen",
     "shareMenuBookmarks": "Lesezeichen",
-    "shareMenuAddToBookmarks": "Zu Lesezeichen hinzufügen",
-    "shareMenuAddToBookmarksSubtitle": "Für später speichern",
     "shareMenuFollowSets": "Follow-Sets",
     "shareMenuCreateFollowSet": "Follow-Set erstellen",
     "shareMenuCreateFollowSetSubtitle": "Neue Sammlung mit diesem Creator starten",
@@ -1655,19 +1653,6 @@
     "shareMenuAddInspirationCredit": "Inspirationsangabe hinzufügen",
     "shareMenuCreatorCannotBeReferenced": "Dieser Creator kann nicht referenziert werden.",
     "shareMenuUnknown": "Unbekannt",
-    "shareMenuSetName": "Set-Name",
-    "shareMenuSetNameHint": "z.B. Favoriten, Später ansehen usw.",
-    "shareMenuCreateNewSet": "Neues Set erstellen",
-    "shareMenuStartNewBookmarkCollection": "Eine neue Lesezeichen-Sammlung starten",
-    "shareMenuError": "Fehler",
-    "shareMenuCreatedSetAndAddedVideo": "\"{name}\" erstellt und Video hinzugefügt",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "Diesen Sound verwenden",
     "shareMenuOriginalSound": "Originalton",
     "authSessionExpired": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",

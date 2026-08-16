@@ -2089,8 +2089,6 @@
   "shareMenuRemovedFromList": "Đã xóa khỏi danh sách",
   "shareMenuFailedToRemoveFromList": "Không xóa được khỏi danh sách",
   "shareMenuBookmarks": "Dấu trang",
-  "shareMenuAddToBookmarks": "Thêm vào dấu trang",
-  "shareMenuAddToBookmarksSubtitle": "Lưu để xem sau",
   "shareMenuFollowSets": "Danh sách người",
   "shareMenuCreateFollowSet": "Tạo nhóm theo dõi",
   "shareMenuCreateFollowSetSubtitle": "Bắt đầu bộ sưu tập mới với nhà sáng tạo này",
@@ -2316,19 +2314,6 @@
   "shareMenuAddInspirationCredit": "Thêm ghi nhận cảm hứng",
   "shareMenuCreatorCannotBeReferenced": "Không thể tham chiếu nhà sáng tạo này.",
   "shareMenuUnknown": "Không xác định",
-  "shareMenuSetName": "Tên bộ",
-  "shareMenuSetNameHint": "VD: Yêu thích, Xem sau...",
-  "shareMenuCreateNewSet": "Tạo bộ mới",
-  "shareMenuStartNewBookmarkCollection": "Bắt đầu bộ sưu tập dấu trang mới",
-  "shareMenuError": "Lỗi",
-  "shareMenuCreatedSetAndAddedVideo": "Đã tạo \"{name}\" và thêm video",
-  "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "shareMenuUseThisSound": "Dùng âm thanh này",
   "shareMenuOriginalSound": "Âm thanh gốc",
   "authSessionExpired": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",

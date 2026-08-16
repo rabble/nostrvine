@@ -3811,12 +3811,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuBookmarks => 'Bookmarks';
 
   @override
-  String get shareMenuAddToBookmarks => 'Add to Bookmarks';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'Save for later viewing';
-
-  @override
   String get shareMenuFollowSets => 'People Lists';
 
   @override
@@ -4190,27 +4184,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Unknown';
-
-  @override
-  String get shareMenuSetName => 'Set Name';
-
-  @override
-  String get shareMenuSetNameHint => 'e.g., Favorites, Watch Later, etc.';
-
-  @override
-  String get shareMenuCreateNewSet => 'Create New Set';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Start a new bookmark collection';
-
-  @override
-  String get shareMenuError => 'Error';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return 'Created \"$name\" and added video';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Use this sound';

@@ -2284,8 +2284,6 @@
   "shareMenuRemovedFromList": "Removed from list",
   "shareMenuFailedToRemoveFromList": "Failed to remove from list",
   "shareMenuBookmarks": "Bookmarks",
-  "shareMenuAddToBookmarks": "Add to Bookmarks",
-  "shareMenuAddToBookmarksSubtitle": "Save for later viewing",
   "shareMenuFollowSets": "People Lists",
   "shareMenuCreateFollowSet": "Create Follow Set",
   "shareMenuCreateFollowSetSubtitle": "Start new collection with this creator",
@@ -2511,19 +2509,6 @@
   "shareMenuAddInspirationCredit": "Add inspiration credit",
   "shareMenuCreatorCannotBeReferenced": "This creator cannot be referenced.",
   "shareMenuUnknown": "Unknown",
-  "shareMenuSetName": "Set Name",
-  "shareMenuSetNameHint": "e.g., Favorites, Watch Later, etc.",
-  "shareMenuCreateNewSet": "Create New Set",
-  "shareMenuStartNewBookmarkCollection": "Start a new bookmark collection",
-  "shareMenuError": "Error",
-  "shareMenuCreatedSetAndAddedVideo": "Created \"{name}\" and added video",
-  "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "shareMenuUseThisSound": "Use this sound",
   "shareMenuOriginalSound": "Original sound",
   "authSessionExpired": "Your session has expired. Please sign in again.",

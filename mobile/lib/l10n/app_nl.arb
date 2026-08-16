@@ -1543,8 +1543,6 @@
     "shareMenuRemovedFromList": "Verwijderd uit lijst",
     "shareMenuFailedToRemoveFromList": "Verwijderen uit lijst mislukt",
     "shareMenuBookmarks": "Bladwijzers",
-    "shareMenuAddToBookmarks": "Toevoegen aan bladwijzers",
-    "shareMenuAddToBookmarksSubtitle": "Bewaar om later te bekijken",
     "shareMenuFollowSets": "Volgsets",
     "shareMenuCreateFollowSet": "Volgset maken",
     "shareMenuCreateFollowSetSubtitle": "Begin een nieuwe collectie met deze maker",
@@ -1655,19 +1653,6 @@
     "shareMenuAddInspirationCredit": "Inspiratiecredit toevoegen",
     "shareMenuCreatorCannotBeReferenced": "Naar deze maker kan niet verwezen worden.",
     "shareMenuUnknown": "Onbekend",
-    "shareMenuSetName": "Setnaam",
-    "shareMenuSetNameHint": "Bijv. favorieten, later bekijken, enz.",
-    "shareMenuCreateNewSet": "Nieuwe set maken",
-    "shareMenuStartNewBookmarkCollection": "Begin een nieuwe bladwijzercollectie",
-    "shareMenuError": "Fout",
-    "shareMenuCreatedSetAndAddedVideo": "\"{name}\" aangemaakt en video toegevoegd",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "Dit geluid gebruiken",
     "shareMenuOriginalSound": "Origineel geluid",
     "authSessionExpired": "Je sessie is verlopen. Log opnieuw in.",

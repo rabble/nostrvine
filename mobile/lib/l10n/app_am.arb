@@ -1813,8 +1813,6 @@
     "shareMenuRemovedFromList": "ከዝርዝሩ ተወግዷል",
     "shareMenuFailedToRemoveFromList": "ከዝርዝሩ ማስወገድ አልተሳካም።",
     "shareMenuBookmarks": "ዕልባቶች",
-    "shareMenuAddToBookmarks": "ወደ ዕልባቶች ያክሉ",
-    "shareMenuAddToBookmarksSubtitle": "በኋላ ለማየት ያስቀምጡ",
     "shareMenuFollowSets": "የሰዎች ዝርዝሮች",
     "shareMenuCreateFollowSet": "የክትትል ስብስብ ይፍጠሩ",
     "shareMenuCreateFollowSetSubtitle": "በዚህ ፈጣሪ አዲስ ስብስብ ጀምር",
@@ -2026,19 +2024,6 @@
     "shareMenuAddInspirationCredit": "ተመስጦ ክሬዲት ያክሉ",
     "shareMenuCreatorCannotBeReferenced": "ይህ ፈጣሪ ሊጠቀስ አይችልም።",
     "shareMenuUnknown": "ያልታወቀ",
-    "shareMenuSetName": "ስም አዘጋጅ",
-    "shareMenuSetNameHint": "ለምሳሌ፡ ተወዳጆች፡ በኋላ ይመልከቱ፡ ወዘተ",
-    "shareMenuCreateNewSet": "አዲስ ስብስብ ይፍጠሩ",
-    "shareMenuStartNewBookmarkCollection": "አዲስ የዕልባት ስብስብ ጀምር",
-    "shareMenuError": "ስህተት",
-    "shareMenuCreatedSetAndAddedVideo": "\"{name}\" ተፈጥሯል እና ቪዲዮ ታክሏል",
-    "@shareMenuCreatedSetAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuUseThisSound": "ይህንን ድምጽ ይጠቀሙ",
     "shareMenuOriginalSound": "ኦሪጅናል ድምጽ",
     "authSessionExpired": "ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።",

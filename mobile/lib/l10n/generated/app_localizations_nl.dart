@@ -3831,12 +3831,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuBookmarks => 'Bladwijzers';
 
   @override
-  String get shareMenuAddToBookmarks => 'Toevoegen aan bladwijzers';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'Bewaar om later te bekijken';
-
-  @override
   String get shareMenuFollowSets => 'Volgsets';
 
   @override
@@ -4211,27 +4205,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Onbekend';
-
-  @override
-  String get shareMenuSetName => 'Setnaam';
-
-  @override
-  String get shareMenuSetNameHint => 'Bijv. favorieten, later bekijken, enz.';
-
-  @override
-  String get shareMenuCreateNewSet => 'Nieuwe set maken';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Begin een nieuwe bladwijzercollectie';
-
-  @override
-  String get shareMenuError => 'Fout';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '\"$name\" aangemaakt en video toegevoegd';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Dit geluid gebruiken';

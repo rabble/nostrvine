@@ -3863,12 +3863,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareMenuBookmarks => 'Lesezeichen';
 
   @override
-  String get shareMenuAddToBookmarks => 'Zu Lesezeichen hinzufügen';
-
-  @override
-  String get shareMenuAddToBookmarksSubtitle => 'Für später speichern';
-
-  @override
   String get shareMenuFollowSets => 'Follow-Sets';
 
   @override
@@ -4246,27 +4240,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Unbekannt';
-
-  @override
-  String get shareMenuSetName => 'Set-Name';
-
-  @override
-  String get shareMenuSetNameHint => 'z.B. Favoriten, Später ansehen usw.';
-
-  @override
-  String get shareMenuCreateNewSet => 'Neues Set erstellen';
-
-  @override
-  String get shareMenuStartNewBookmarkCollection =>
-      'Eine neue Lesezeichen-Sammlung starten';
-
-  @override
-  String get shareMenuError => 'Fehler';
-
-  @override
-  String shareMenuCreatedSetAndAddedVideo(String name) {
-    return '\"$name\" erstellt und Video hinzugefügt';
-  }
 
   @override
   String get shareMenuUseThisSound => 'Diesen Sound verwenden';
