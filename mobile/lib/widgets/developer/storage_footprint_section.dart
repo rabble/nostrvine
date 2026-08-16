@@ -200,7 +200,7 @@ class _FootprintActions extends StatelessWidget {
               label: l10n.shareSheetCopy,
               type: DivineButtonType.secondary,
               expanded: true,
-              onPressed: () => ClipboardUtils.copy(
+              onPressed: () => ClipboardUtils.copyVerified(
                 context,
                 context.read<StorageCubit>().state.footprint.toReportText(),
                 message: l10n.devOptionsStorageFootprintCopied,

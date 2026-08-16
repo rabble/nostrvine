@@ -80,6 +80,13 @@ class CacheUsage extends Equatable {
   List<Object?> get props => [video, images, transitionSeams, tempRenders];
 }
 
+class _DirectorySize {
+  const _DirectorySize({required this.bytes, this.isIncomplete = false});
+
+  final int bytes;
+  final bool isIncomplete;
+}
+
 /// Clears re-downloadable / regenerable media caches and audits the clip
 /// library for broken entries.
 ///
@@ -107,6 +114,7 @@ class StorageManagementService {
     Future<Directory> Function()? applicationSupportDirectoryProvider,
     @visibleForTesting
     Future<Directory> Function()? applicationCacheDirectoryProvider,
+    @visibleForTesting Future<int> Function(File file)? fileLengthProvider,
     Set<String> Function()? protectedTempRenderPaths,
   }) : _videoCache = videoCache,
        _imageCache = imageCache,
@@ -121,6 +129,7 @@ class StorageManagementService {
            getApplicationSupportDirectory,
        _applicationCacheDirectoryProvider =
            applicationCacheDirectoryProvider ?? getApplicationCacheDirectory,
+       _fileLengthProvider = fileLengthProvider,
        _protectedTempRenderPaths =
            protectedTempRenderPaths ?? _noProtectedPaths;
 
@@ -132,6 +141,7 @@ class StorageManagementService {
   final Future<Directory> Function() _documentsDirectoryProvider;
   final Future<Directory> Function() _applicationSupportDirectoryProvider;
   final Future<Directory> Function() _applicationCacheDirectoryProvider;
+  final Future<int> Function(File file)? _fileLengthProvider;
   final Set<String> Function() _protectedTempRenderPaths;
 
   static const String _logName = 'StorageManagementService';
@@ -152,15 +162,21 @@ class StorageManagementService {
     final protectedPaths = _normalizedProtectedTempRenderPaths();
     return CacheUsage(
       video: CacheUsageCategory(
-        usedBytes: await _dirSize(Directory(p.join(temp.path, _videoCacheDir))),
+        usedBytes: (await _dirSize(
+          Directory(p.join(temp.path, _videoCacheDir)),
+        )).bytes,
         limitBytes: videoCacheLimitBytes(),
       ),
       images: CacheUsageCategory(
-        usedBytes: await _dirSize(Directory(p.join(temp.path, _imageCacheDir))),
+        usedBytes: (await _dirSize(
+          Directory(p.join(temp.path, _imageCacheDir)),
+        )).bytes,
         limitBytes: _imageCache.maxCacheSizeBytes,
       ),
       transitionSeams: CacheUsageCategory(
-        usedBytes: await _dirSize(Directory(p.join(docs.path, _seamDir))),
+        usedBytes: (await _dirSize(
+          Directory(p.join(docs.path, _seamDir)),
+        )).bytes,
         limitBytes: kSeamCacheLimitBytes,
       ),
       tempRenders: CacheUsageCategory(
@@ -269,15 +285,18 @@ class StorageManagementService {
   }) async {
     final children = <StorageFootprintEntry>[];
     var totalBytes = 0;
+    var isIncomplete = false;
     if (dir.existsSync()) {
       try {
         await for (final entity in dir.list(followLinks: false)) {
           final isDirectory = entity is Directory;
-          final bytes = switch (entity) {
+          final size = switch (entity) {
             Directory() => await _dirSize(entity),
-            File() => await _fileLength(entity),
-            _ => 0,
+            File() => _DirectorySize(bytes: await _fileLength(entity)),
+            _ => const _DirectorySize(bytes: 0),
           };
+          isIncomplete = isIncomplete || size.isIncomplete;
+          final bytes = size.bytes;
           totalBytes += bytes;
           children.add(
             StorageFootprintEntry(
@@ -288,6 +307,7 @@ class StorageManagementService {
           );
         }
       } on Object catch (error) {
+        isIncomplete = true;
         Log.warning(
           '$_logName: listing ${dir.path} failed: $error',
           name: _logName,
@@ -302,6 +322,7 @@ class StorageManagementService {
       totalBytes: totalBytes,
       largestChildren: children.take(childrenPerRoot).toList(),
       childCount: children.length,
+      isIncomplete: isIncomplete,
     );
   }
 
@@ -360,9 +381,10 @@ class StorageManagementService {
   /// [_fileLength] absorbs a file that vanished between listing and stat —
   /// routine here, since the cache trim and the temp-render janitor delete
   /// files while a walk of the same root is still running.
-  Future<int> _dirSize(Directory dir) async {
-    if (!dir.existsSync()) return 0;
+  Future<_DirectorySize> _dirSize(Directory dir) async {
+    if (!dir.existsSync()) return const _DirectorySize(bytes: 0);
     var size = 0;
+    var isIncomplete = false;
     final pending = <Directory>[dir];
     while (pending.isNotEmpty) {
       final current = pending.removeLast();
@@ -375,6 +397,7 @@ class StorageManagementService {
           }
         }
       } on Object catch (error) {
+        isIncomplete = true;
         Log.warning(
           '$_logName: sizing ${current.path} failed: $error',
           name: _logName,
@@ -382,13 +405,16 @@ class StorageManagementService {
         );
       }
     }
-    return size;
+    return _DirectorySize(bytes: size, isIncomplete: isIncomplete);
   }
 
   /// Length of [file], or zero when it vanished mid-walk or cannot be read.
   Future<int> _fileLength(File file) async {
     try {
-      return await file.length();
+      final lengthProvider = _fileLengthProvider;
+      return lengthProvider == null
+          ? await file.length()
+          : await lengthProvider(file);
     } on Object {
       return 0;
     }
@@ -402,7 +428,7 @@ class StorageManagementService {
     await _forEachTempRender(
       temp,
       protectedPaths: protectedPaths,
-      action: (file) async => size += await file.length(),
+      action: (file) async => size += await _fileLength(file),
     );
     return size;
   }

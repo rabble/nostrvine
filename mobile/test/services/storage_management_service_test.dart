@@ -7,6 +7,7 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/storage_footprint.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
@@ -140,6 +141,33 @@ void main() {
           ),
         );
         expect(usage.tempRenders, const CacheUsageCategory(usedBytes: 10));
+      });
+
+      test('keeps scanning temp renders when one vanishes mid-walk', () async {
+        final vanished = writeFile('${temp.path}/watermarked_vanished.mp4', 20);
+        final merged = writeFile('${temp.path}/merged_2.mp4', 10);
+        final audio = writeFile('${temp.path}/merged_audio_3.wav', 40);
+        service = StorageManagementService(
+          videoCache: videoCache,
+          imageCache: imageCache,
+          clipLibrary: clipLibrary,
+          prefs: prefs,
+          temporaryDirectoryProvider: () async => temp,
+          documentsDirectoryProvider: () async => docs,
+          fileLengthProvider: (file) async {
+            if (file.path == vanished.path) {
+              throw const FileSystemException('vanished');
+            }
+            return file.length();
+          },
+        );
+
+        final usage = await service.cacheUsage();
+
+        expect(
+          usage.tempRenders.usedBytes,
+          merged.lengthSync() + audio.lengthSync(),
+        );
       });
     });
 
@@ -346,10 +374,11 @@ void main() {
         );
 
         expect(documents.totalBytes, 1400);
-        expect(
-          documents.largestChildren.map((child) => child.name),
-          ['divine_big.mp4', 'transition_seams', 'divine_small.mp4'],
-        );
+        expect(documents.largestChildren.map((child) => child.name), [
+          'divine_big.mp4',
+          'transition_seams',
+          'divine_small.mp4',
+        ]);
         expect(documents.largestChildren.first.isDirectory, isFalse);
         expect(documents.largestChildren[1].isDirectory, isTrue);
         expect(footprint.totalBytes, 2100);
@@ -413,6 +442,27 @@ void main() {
         // like they should add up to the root total and do not.
         expect(report, contains('(3 smaller entries not listed)'));
         expect(report, contains('303 B\t(3 smaller entries not listed)'));
+      });
+
+      test('report marks a root when part of its walk was incomplete', () {
+        const footprint = StorageFootprint(
+          roots: [
+            StorageFootprintRoot(
+              label: 'Documents',
+              path: '/documents',
+              totalBytes: 0,
+              largestChildren: [],
+              childCount: 0,
+              isIncomplete: true,
+            ),
+          ],
+        );
+
+        final report = footprint.toReportText();
+
+        expect(report, contains('Documents: 0 B (0 bytes)'));
+        expect(report, contains('(walk incomplete; totals may be low)'));
+        expect(report, isNot(contains('(empty)')));
       });
 
       test('an unreadable subdirectory does not zero its readable '

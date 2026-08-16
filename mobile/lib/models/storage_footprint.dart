@@ -36,6 +36,7 @@ class StorageFootprintRoot extends Equatable {
     required this.totalBytes,
     required this.largestChildren,
     required this.childCount,
+    this.isIncomplete = false,
   });
 
   /// Which platform directory this is, e.g. `Documents`.
@@ -57,6 +58,12 @@ class StorageFootprintRoot extends Equatable {
   /// whether the rest is spread across entries that were left out.
   final int childCount;
 
+  /// Whether part of this root could not be walked.
+  ///
+  /// When true, [totalBytes] and child sizes are best-effort lower bounds
+  /// rather than a complete measurement.
+  final bool isIncomplete;
+
   /// Bytes held by the children [largestChildren] left out.
   int get omittedBytes =>
       totalBytes - largestChildren.fold(0, (sum, child) => sum + child.bytes);
@@ -71,6 +78,7 @@ class StorageFootprintRoot extends Equatable {
     totalBytes,
     largestChildren,
     childCount,
+    isIncomplete,
   ];
 }
 
@@ -105,8 +113,13 @@ class StorageFootprint extends Equatable {
           '(${root.totalBytes} bytes)',
         )
         ..writeln('  path: ${root.path}');
+      if (root.isIncomplete) {
+        buffer.writeln('  (walk incomplete; totals may be low)');
+      }
       if (root.largestChildren.isEmpty) {
-        buffer.writeln('  (empty)');
+        if (!root.isIncomplete) {
+          buffer.writeln('  (empty)');
+        }
         continue;
       }
       for (final child in root.largestChildren) {

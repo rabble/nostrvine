@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -95,5 +96,37 @@ void main() {
 
     expect(find.text(l10n.devOptionsStorageFootprintFailure), findsOneWidget);
     expect(find.text(l10n.shareSheetCopy), findsNothing);
+  });
+
+  testWidgets('copy does not claim success when the clipboard refuses it', (
+    tester,
+  ) async {
+    when(service.measureFootprint).thenAnswer((_) async => footprint);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          switch (call.method) {
+            case 'Clipboard.setData':
+              return null;
+            case 'Clipboard.getData':
+              return null;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    final cubit = StorageCubit(service: service);
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.tap(
+      find.widgetWithText(DivineButton, l10n.devOptionsStorageFootprintMeasure),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(DivineButton, l10n.shareSheetCopy));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.devOptionsStorageFootprintCopied), findsNothing);
   });
 }
