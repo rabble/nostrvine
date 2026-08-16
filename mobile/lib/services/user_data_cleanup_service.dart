@@ -47,6 +47,7 @@ class UserDataCleanupService {
     // Bookmark services
     'bookmark_sets',
     'global_bookmarks',
+    'global_bookmarks_revision',
     'bookmark_published_hashes',
     'bookmark_pending_changes',
     // Mute/moderation services
