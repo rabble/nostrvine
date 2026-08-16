@@ -33,8 +33,10 @@ class PostPublishConfirmationSheet extends StatelessWidget {
 
   /// Shows the confirmation over [context]'s navigator.
   ///
-  /// [onView] and [onShare] fire *after* the sheet closes, so the caller can
-  /// navigate without racing the dismissal animation.
+  /// [onView] and [onShare] pop the sheet and then fire. `Navigator.pop` only
+  /// starts the 200ms exit animation, so they run while it is still playing —
+  /// the pop is ordered first so the sheet is off the navigator before either
+  /// pushes a route.
   static Future<void> show({
     required BuildContext context,
     required VoidCallback onView,
@@ -44,11 +46,10 @@ class PostPublishConfirmationSheet extends StatelessWidget {
     return VineBottomSheet.show<void>(
       context: context,
       scrollable: false,
-      expanded: false,
-      // expanded:false alone would leave isScrollControlled false, which caps
-      // the sheet at 9/16 of the screen — short enough to clip the preview on
-      // a small display. Opting in keeps the wrap-to-content height without
-      // the cap.
+      // Explicit rather than left to default: `VineBottomSheet.show` reads
+      // `isScrollControlled ?? expanded`, and the default (false) caps the
+      // sheet at 9/16 of the screen — short enough to clip the preview on a
+      // small display. `_FixedContent` already wraps to content.
       isScrollControlled: true,
       showHeaderDivider: false,
       headerTrailingAction: DivineIconButton(
@@ -116,7 +117,8 @@ class PostPublishConfirmationSheet extends StatelessWidget {
   }
 }
 
-/// The published video's cover frame, letterboxed in a portrait tile.
+/// The published video's cover frame, centre-cropped into a square tile that
+/// echoes the profile grid.
 class _Preview extends StatelessWidget {
   const _Preview({this.thumbnailBytes});
 
@@ -134,9 +136,10 @@ class _Preview extends StatelessWidget {
         aspectRatio: 1,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          // mediaCard, not card: the letterbox sits behind a video frame and
-          // must read as media chrome rather than take the palette's green
-          // cast in either appearance.
+          // mediaCard, not card: `BoxFit.cover` fills the tile, so this only
+          // shows through the no-cover and decode-failure placeholders — it
+          // has to read as media chrome there rather than take the palette's
+          // green cast in either appearance.
           child: ColoredBox(
             color: context.vineColors.mediaCard,
             child: bytes == null
