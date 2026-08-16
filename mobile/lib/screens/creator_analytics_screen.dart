@@ -560,7 +560,8 @@ class _KpiGrid extends StatelessWidget {
             _KpiCard(
               width: cardWidth,
               label: context.l10n.analyticsEngagement,
-              value: summary.engagementRate == null
+              value:
+                  !summary.hasEngagementData || summary.engagementRate == null
                   ? context.l10n.analyticsNa
                   : '${NumberFormat.decimalPattern().format(summary.engagementRate! * 100)}%',
               icon: DivineIconName.trendUp,

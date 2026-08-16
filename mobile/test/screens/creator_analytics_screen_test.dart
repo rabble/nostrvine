@@ -330,6 +330,34 @@ void main() {
     },
   );
 
+  testWidgets(
+    'renders the engagement rate as unavailable when bulk stats fail',
+    (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpAnalyticsScreen(
+        tester,
+        videos: [
+          analyticsVideo(
+            id: 'engagement-rate-video',
+            views: 120,
+            nostrLikeCount: 19,
+            nostrCommentCount: 7,
+            nostrRepostCount: 1,
+          ),
+        ],
+        failedSources: const {AnalyticsDataSource.bulkVideoStats},
+      );
+
+      // Seed counts survive a bulk-stats failure, so the rate is computable
+      // (27/120). Bulk stats are authoritative, so the KPI must read N/A like
+      // every other engagement surface, not a confident percentage beside an
+      // "Interactions: N/A" card.
+      expect(find.textContaining('%'), findsNothing);
+      expect(find.text(l10n.analyticsNa), findsWidgets);
+    },
+  );
+
   testWidgets('renders non-empty failed sources diagnostics', (tester) async {
     final l10n = lookupAppLocalizations(const Locale('en'));
 
