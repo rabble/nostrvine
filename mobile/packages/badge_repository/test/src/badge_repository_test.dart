@@ -534,6 +534,85 @@ void main() {
       );
     });
 
+    test('a dismissal never hides a badge pinned to the profile', () async {
+      // Reachable from data an older build left behind: reject award A,
+      // the issuer re-awards the badge as B, the old per-award dismissal
+      // no longer matches so the row comes back, the user accepts it. The
+      // migration then maps A onto the badge — and hiding it would strand
+      // the badge on the profile, since the hidden section only restores.
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      await preferences.setStringList('dismissed_badge_awards_${_pubkey(1)}', [
+        _eventId(60),
+      ]);
+      _stubQueries(nostrClient, {
+        'awarded': [
+          _awardEvent(
+            id: _eventId(60),
+            issuerPubkey: _pubkey(2),
+            definitionCoordinate: coordinate,
+            recipients: [_pubkey(1)],
+          ),
+          _awardEvent(
+            id: _eventId(61),
+            issuerPubkey: _pubkey(2),
+            definitionCoordinate: coordinate,
+            recipients: [_pubkey(1)],
+            createdAt: 2000,
+          ),
+        ],
+        'profileCurrent:${_pubkey(1)}': [
+          _profileBadgesEvent(
+            id: _eventId(62),
+            pubkey: _pubkey(1),
+            createdAt: 3000,
+            tags: [
+              ['a', coordinate],
+              ['e', _eventId(61)],
+            ],
+          ),
+        ],
+      });
+
+      final awards = await repository.loadAwardedBadges();
+
+      expect(awards.single.isAccepted, isTrue);
+      expect(awards.single.isHidden, isFalse);
+    });
+
+    test(
+      'the dismissal takes effect again once the badge is unpinned',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(63),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(64),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate],
+                ['e', _eventId(63)],
+              ],
+            ),
+          ],
+        });
+        await repository.hideAward(coordinate);
+        expect((await repository.loadAwardedBadges()).single.isHidden, isFalse);
+
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+        });
+
+        expect((await repository.loadAwardedBadges()).single.isHidden, isTrue);
+      },
+    );
+
     test('a dismissal whose award is unavailable is kept for later', () async {
       await preferences.setStringList('dismissed_badge_awards_${_pubkey(1)}', [
         _eventId(15),

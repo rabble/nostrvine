@@ -432,7 +432,16 @@ class BadgeRepository {
           award: award,
           definition: definitions[award.definitionCoordinate],
           isAccepted: isAccepted,
-          isHidden: dismissedCoordinates.contains(award.definitionCoordinate),
+          // A pinned badge is never hidden, the same rule
+          // [BadgeAwardViewData.pinnedWithoutAward] hardcodes: the hidden
+          // section only offers a way back, so hiding a pinned badge leaves
+          // it on the profile with no row that can take it down. Rejecting
+          // unpins first, so this only bites on a dismissal made before it
+          // did — a legacy per-award one migrating onto a badge accepted
+          // since, or one carried over from another device.
+          isHidden:
+              !isAccepted &&
+              dismissedCoordinates.contains(award.definitionCoordinate),
         ),
       );
     }
