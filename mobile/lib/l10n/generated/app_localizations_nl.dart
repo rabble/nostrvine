@@ -7517,7 +7517,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoEditorOverLimitCanvas =>
-      'Boven de limiet van 6,3 s — knip in om te posten';
+      'Boven de limiet van 6,3 s — knip het in om te posten';
 
   @override
   String get videoEditorOverLimitTimeline => 'Knip dit stuk eruit om te posten';

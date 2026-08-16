@@ -7322,7 +7322,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorOverLimitCanvas =>
-      'ከ6.3 ሰከንድ ገደብ አልፏል። ለመለጠፍ ቆርጠው አሳጥሩ';
+      'ከ6.3 ሰከንድ ገደብ አልፏል። ለመለጠፍ ቆርጠው ያሳጥሩ';
 
   @override
   String get videoEditorOverLimitTimeline => 'ለመለጠፍ ይህን ክፍል ይቁረጡ';

@@ -7142,7 +7142,7 @@ class AppLocalizationsJa extends AppLocalizations {
       '動画ファイルがサーバーには大きすぎるよ。トリミングするか、画質を下げて試してみて。';
 
   @override
-  String get videoEditorOverLimitCanvas => '6.3秒の上限を超えてるよ。投稿するにはトリミングしてね';
+  String get videoEditorOverLimitCanvas => '6.3秒の上限を超えてるよ。投稿するにはトリムしてね';
 
   @override
   String get videoEditorOverLimitTimeline => '投稿するにはこの部分をカットしてね';

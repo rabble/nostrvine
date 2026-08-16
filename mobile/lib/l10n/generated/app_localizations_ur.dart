@@ -7487,7 +7487,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoEditorOverLimitCanvas =>
-      '6.3 سیکنڈ کی حد سے زیادہ۔ پوسٹ کرنے کے لیے چھوٹا کریں';
+      '6.3 سیکنڈ کی حد سے زیادہ ہے۔ پوسٹ کرنے کے لیے چھوٹا کریں';
 
   @override
   String get videoEditorOverLimitTimeline => 'پوسٹ کرنے کے لیے یہ حصہ نکالیں';

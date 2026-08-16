@@ -10,7 +10,7 @@
     "publishErrorServerNotFound": "メディアサーバー（{serverName}）が利用できないよ。設定で別のサーバーを選べるよ。",
     "@publishErrorServerNotFound": {"placeholders": {"serverName": {"type": "String"}}},
     "publishErrorFileTooLarge": "動画ファイルがサーバーには大きすぎるよ。トリミングするか、画質を下げて試してみて。",
-    "videoEditorOverLimitCanvas": "6.3秒の上限を超えてるよ。投稿するにはトリミングしてね",
+    "videoEditorOverLimitCanvas": "6.3秒の上限を超えてるよ。投稿するにはトリムしてね",
     "videoEditorOverLimitTimeline": "投稿するにはこの部分をカットしてね",
     "publishErrorServerInternalError": "メディアサーバー（{serverName}）で内部エラーが起きたよ。設定で別のサーバーを選べるよ。",
     "@publishErrorServerInternalError": {"placeholders": {"serverName": {"type": "String"}}},
