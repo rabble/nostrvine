@@ -410,8 +410,9 @@ class _RepostedByContentState extends ConsumerState<_RepostedByContent> {
       promisedCount,
       _RepostedByContent._maxVisibleReposters,
     );
-    return visibleCount +
-        (promisedCount > _RepostedByContent._maxVisibleReposters ? 1 : 0);
+    final hasMoreReposters =
+        promisedCount > _RepostedByContent._maxVisibleReposters;
+    return visibleCount + (hasMoreReposters ? 1 : 0);
   }
 
   void _syncGraceTimer(List<String> candidate, bool namesSettled) {
