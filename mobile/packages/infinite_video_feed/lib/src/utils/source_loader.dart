@@ -9,9 +9,6 @@ const _mediaProcessingRetryDelays = <Duration>[
   Duration(seconds: 8),
 ];
 
-/// Waits before a same-source retry after media returns HTTP 202.
-typedef SourceLoadDelay = Future<void> Function(Duration duration);
-
 /// Signals that source loading was cancelled because the owning controller
 /// window moved on while fallbacks were still in flight.
 class SourceLoadAborted implements Exception {
@@ -46,7 +43,7 @@ Future<(String, int)> setSourceWithFallbacks({
   Map<String, String>? Function(String source)? httpHeadersForSource,
   bool Function()? isLoadCurrent,
   Duration? maxPlaybackDuration,
-  SourceLoadDelay delay = Future<void>.delayed,
+  Future<void> Function(Duration duration) delay = Future<void>.delayed,
   void Function(String source)? onFailoverSourceFailure,
   void Function(String source)? onSourceLoadFailure,
 }) async {

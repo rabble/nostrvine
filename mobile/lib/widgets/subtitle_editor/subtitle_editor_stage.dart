@@ -24,6 +24,7 @@ typedef SubtitlePreviewSourceLoader =
       required DivineVideoPlayerController controller,
       required List<String> sources,
       required void Function(String message) log,
+      required bool Function() isLoadCurrent,
     });
 
 /// Initializes the preview player controller before source loading.
@@ -41,12 +42,14 @@ Future<void> _loadSubtitlePreviewSources({
   required DivineVideoPlayerController controller,
   required List<String> sources,
   required void Function(String message) log,
+  required bool Function() isLoadCurrent,
 }) async {
   await setSourceWithFallbacks(
     index: 0,
     controller: controller,
     sources: sources,
     log: log,
+    isLoadCurrent: isLoadCurrent,
   );
 }
 
@@ -280,12 +283,17 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
       await loadPreviewSources(
         controller: controller,
         sources: urls,
+        isLoadCurrent: () => mounted,
         log: (message) => Log.debug(
           message,
           name: 'SubtitleEditorStage',
           category: LogCategory.video,
         ),
       );
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
       await controller.setLooping(looping: true);
       if (!mounted) {
         await controller.dispose();

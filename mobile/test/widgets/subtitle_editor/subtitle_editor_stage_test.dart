@@ -219,7 +219,12 @@ void main() {
           ],
           initializePreviewController: (_) async {},
           loadPreviewSources:
-              ({required controller, required sources, required log}) async {
+              ({
+                required controller,
+                required sources,
+                required log,
+                required isLoadCurrent,
+              }) async {
                 loadedSources.add(sources);
               },
         ),
@@ -237,6 +242,42 @@ void main() {
           ],
         ]),
       );
+    });
+
+    testWidgets('cancels preview source loading after disposal', (
+      tester,
+    ) async {
+      late bool Function() currentLoadIsMounted;
+      final loaderEntered = Completer<void>();
+      final releaseLoader = Completer<void>();
+
+      await tester.pumpWidget(
+        pump(
+          cues: const [EditableCue(start: 0, end: 1000, text: 'one')],
+          initializePreviewController: (_) async {},
+          loadPreviewSources:
+              ({
+                required controller,
+                required sources,
+                required log,
+                required isLoadCurrent,
+              }) async {
+                currentLoadIsMounted = isLoadCurrent;
+                loaderEntered.complete();
+                await releaseLoader.future;
+              },
+        ),
+      );
+      for (var i = 0; i < 10 && !loaderEntered.isCompleted; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(loaderEntered.isCompleted, isTrue);
+      expect(currentLoadIsMounted(), isTrue);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(currentLoadIsMounted(), isFalse);
+      releaseLoader.complete();
     });
   });
 }
