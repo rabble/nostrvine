@@ -383,7 +383,7 @@ void main() {
         ) async {
           final handle = tester.ensureSemantics();
           await tester.pumpWidget(
-            buildThemed(theme, destructive: theme == VineTheme.theme),
+            buildThemed(theme, destructive: name == 'dark'),
           );
           await tester.tap(find.text('Show Menu'));
           await tester.pumpAndSettle();

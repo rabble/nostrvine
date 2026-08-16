@@ -1592,6 +1592,35 @@ void main() {
         expect(find.bySemanticsLabel('Done'), findsNothing);
       });
 
+      testWidgets('loading spinner keeps the complete button label', (
+        tester,
+      ) async {
+        final completer = Completer<void>();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: VineBottomSheet(
+                scrollable: false,
+                title: const Text('Create'),
+                onComplete: () => completer.future,
+                completeSemanticLabel: 'Save list',
+                body: const Text('Body'),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.bySemanticsLabel('Save list'));
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.bySemanticsLabel('Save list'), findsOneWidget);
+
+        completer.complete();
+        await tester.pumpAndSettle();
+      });
+
       testWidgets('modal sheet leaves no unlabeled tappable scrim node', (
         tester,
       ) async {
