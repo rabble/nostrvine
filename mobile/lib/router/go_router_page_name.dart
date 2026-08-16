@@ -2,7 +2,6 @@
 // ABOUTME: Keeps ShellRoute pages from falling back to unknown_route.
 
 import 'package:go_router/go_router.dart';
-import 'package:openvine/router/route_paths.dart';
 
 /// Returns the stable page name go_router would put on a regular [GoRoute].
 ///
@@ -41,11 +40,6 @@ String? _shellSurfaceNameForPath(String? path) {
     'inbox' => 'inbox',
     'profile' => 'profile',
     'liked-videos' => 'liked-videos',
-    _ when pathOnly == RoutePaths.explore => 'explore',
-    _ when pathOnly == RoutePaths.notifications => 'notifications',
-    _ when pathOnly == RoutePaths.inbox => 'inbox',
-    _ when pathOnly == RoutePaths.profile => 'profile',
-    _ when pathOnly == RoutePaths.likedVideos => 'liked-videos',
     _ => null,
   };
 }
