@@ -11,7 +11,7 @@ void main() {
       ThemeData? theme,
     }) {
       return MaterialApp(
-        theme: theme,
+        theme: theme ?? VineTheme.theme,
         home: Scaffold(
           body: Center(
             child: DivineSpriteCheckbox(
@@ -229,8 +229,10 @@ void main() {
       Widget label = const Text('Test label'),
       CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.center,
       Duration animationDuration = const Duration(milliseconds: 100),
+      ThemeData? theme,
     }) {
       return MaterialApp(
+        theme: theme,
         home: Scaffold(
           body: Center(
             child: DivineRowCheckbox(
@@ -390,6 +392,7 @@ void main() {
       testWidgets('has muted border when unselected', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
+            theme: VineTheme.theme,
             onChanged: (_) {},
           ),
         );
@@ -398,12 +401,17 @@ void main() {
           find.byType(AnimatedContainer),
         );
         final boxDecoration = container.decoration! as BoxDecoration;
-        expect(boxDecoration.border!.top.color, VineTheme.outlineMuted);
+        // Dark theme: outlineMuted maps to #FF032017
+        expect(
+          boxDecoration.border!.top.color,
+          VineTheme.darkColors.outlineMuted,
+        );
       });
 
       testWidgets('has primary border when selected', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
+            theme: VineTheme.theme,
             state: DivineCheckboxState.selected,
             onChanged: (_) {},
           ),
@@ -413,12 +421,14 @@ void main() {
           find.byType(AnimatedContainer),
         );
         final boxDecoration = container.decoration! as BoxDecoration;
+        // Dark theme: primary maps to accentPositive (#27C58B)
         expect(boxDecoration.border!.top.color, VineTheme.primary);
       });
 
       testWidgets('has primary border when intermediate', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
+            theme: VineTheme.theme,
             state: DivineCheckboxState.intermediate,
             onChanged: (_) {},
           ),
@@ -428,6 +438,7 @@ void main() {
           find.byType(AnimatedContainer),
         );
         final boxDecoration = container.decoration! as BoxDecoration;
+        // Dark theme: primary maps to accentPositive (#27C58B)
         expect(boxDecoration.border!.top.color, VineTheme.primary);
       });
     });
