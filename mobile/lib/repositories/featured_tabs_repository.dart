@@ -142,8 +142,12 @@ class FeaturedTabsRepository {
     );
   }
 
-  /// Clears the cached config when it has expired, forcing a network refresh
-  /// on the next [refresh] call.
+  /// Drops any cached config unconditionally, so a failed [refresh] can no
+  /// longer fall back to it and reports no tab until a fetch succeeds.
+  ///
+  /// Callers depend on the drop being unconditional: the provider clears on
+  /// dispose so a host swap cannot leave the previous environment's answer
+  /// behind, and [_fromCache] clears once the TTL has passed.
   void clearCache() {
     _cached = null;
     _cachedAt = null;
