@@ -306,34 +306,8 @@ class _BottomControls extends StatelessWidget {
   final VoidCallback onDragStart;
   final VoidCallback onDragEnd;
 
-  /// Calculates the selection width ratio based on video maxDuration vs audio duration.
-  ///
-  /// The selection always represents [VideoEditorConstants.maxDuration] (6.3s).
-  /// - If audio is shorter than maxDuration: returns 1.0 (100% width, fills entire area)
-  /// - If audio is longer: returns the proportional ratio (e.g., 33% for ~19s audio)
-  /// - Minimum 10% to keep the selection visible and draggable
-  double get _selectionWidthRatio {
-    final audioDurationSecs = audioDuration;
-    if (audioDurationSecs == null || audioDurationSecs <= 0) {
-      return 1.0; // Unknown duration, assume full width
-    }
-
-    final maxDurationSecs =
-        VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
-
-    // If audio is shorter than video max duration, use full width (100%)
-    if (audioDurationSecs <= maxDurationSecs) {
-      return 1.0;
-    }
-
-    // Ratio of video duration to audio duration, clamped to [0.1, 1.0]
-    return (maxDurationSecs / audioDurationSecs).clamp(0.1, 1.0);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final selectionRatio = _selectionWidthRatio;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -354,7 +328,6 @@ class _BottomControls extends StatelessWidget {
         // Video duration timeline (top bar with green segment)
         _VideoDurationTimeline(
           startOffset: startOffset,
-          selectionWidthRatio: selectionRatio,
           audioDuration: audioDuration,
           onOffsetChanged: onOffsetChanged,
           onFling: onFling,
@@ -367,7 +340,6 @@ class _BottomControls extends StatelessWidget {
         // Audio waveform with draggable selection
         _AudioWaveformSelector(
           startOffset: startOffset,
-          selectionWidthRatio: selectionRatio,
           audioDuration: audioDuration,
           onOffsetChanged: onOffsetChanged,
           onFling: onFling,
@@ -383,7 +355,6 @@ class _BottomControls extends StatelessWidget {
 class _VideoDurationTimeline extends StatelessWidget {
   const _VideoDurationTimeline({
     required this.startOffset,
-    required this.selectionWidthRatio,
     required this.audioDuration,
     required this.onOffsetChanged,
     required this.onFling,
@@ -391,10 +362,13 @@ class _VideoDurationTimeline extends StatelessWidget {
     required this.onDragEnd,
   });
 
-  final double startOffset;
+  /// Smallest the segment marker may be drawn.
+  ///
+  /// Keeps it visible on very long tracks, where its true share of the bar
+  /// falls below a few pixels.
+  static const double _minSegmentWidth = 12;
 
-  /// The ratio of the segment width to the total timeline width.
-  final double selectionWidthRatio;
+  final double startOffset;
 
   /// Audio duration in seconds, or null if unknown.
   final double? audioDuration;
@@ -407,8 +381,22 @@ class _VideoDurationTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width - 32;
-    final segmentWidth = screenWidth * selectionWidthRatio;
+    final maxDurationSecs =
+        VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
     final audioDurationSecs = audioDuration ?? 0;
+
+    // This bar spans the whole track, so the marker's share of it is the
+    // segment's true share of the audio — the waveform below owns scrub
+    // precision and sets its own zoom independently.
+    final minSegmentWidth = _minSegmentWidth < screenWidth
+        ? _minSegmentWidth
+        : screenWidth;
+    final segmentWidth = audioDurationSecs <= maxDurationSecs
+        ? screenWidth
+        : (screenWidth * maxDurationSecs / audioDurationSecs).clamp(
+            minSegmentWidth,
+            screenWidth,
+          );
 
     // Scrollable distance lets the segment's left edge reach
     // `audioDuration - minRemainingAudio`, so users can pick a late start
@@ -509,7 +497,6 @@ class _VideoDurationTimeline extends StatelessWidget {
 class _AudioWaveformSelector extends StatelessWidget {
   const _AudioWaveformSelector({
     required this.startOffset,
-    required this.selectionWidthRatio,
     required this.audioDuration,
     required this.onOffsetChanged,
     required this.onFling,
@@ -518,9 +505,6 @@ class _AudioWaveformSelector extends StatelessWidget {
   });
 
   final double startOffset;
-
-  /// The ratio of the selection width to the total waveform width.
-  final double selectionWidthRatio;
 
   /// Audio duration in seconds, or null if unknown.
   final double? audioDuration;
@@ -532,17 +516,32 @@ class _AudioWaveformSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width - 32;
-    // Selection area represents portion of audio that fits video duration
-    final selectionWidth = screenWidth * selectionWidthRatio;
+    final maxDurationSecs =
+        VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
+    final audioDurationSecs = audioDuration ?? 0;
+
+    // Zoom is chosen for scrub precision, not to mirror the overview bar above.
+    // `selectionWidth` pixels always represent [VideoEditorConstants.maxDuration]
+    // of audio, so one pixel of drag moves the in-point by
+    // `maxDuration / selectionWidth` seconds. Flooring that width at one pixel
+    // per frame keeps the in-point resolvable on the same grid the timeline
+    // ruler labels; a purely proportional width collapses on long tracks, where
+    // a single pixel used to jump roughly six frames.
+    final framePreciseWidth = maxDurationSecs * VideoEditorConstants.editorFps;
+    final minSelectionWidth = framePreciseWidth < screenWidth
+        ? framePreciseWidth
+        : screenWidth;
+    final selectionWidth = audioDurationSecs <= maxDurationSecs
+        ? screenWidth
+        : (screenWidth * maxDurationSecs / audioDurationSecs).clamp(
+            minSelectionWidth,
+            screenWidth,
+          );
     // Selection is always centered
     final selectionLeft = (screenWidth - selectionWidth) / 2;
 
     // Calculate actual waveform width based on audio duration
     final double fullWaveformWidth;
-    final maxDurationSecs =
-        VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
-    final audioDurationSecs = audioDuration ?? 0;
-
     if (audioDurationSecs <= 0 || audioDurationSecs <= maxDurationSecs) {
       // Short audio: waveform fits exactly within selection
       fullWaveformWidth = selectionWidth;

@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/widgets.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
@@ -95,7 +96,7 @@ class _RulerPainter extends CustomPainter {
   final Color labelColor;
 
   static const double _minLabelSpacing = 30;
-  static const int _fps = 30;
+  static const int _fps = VideoEditorConstants.editorFps;
   static const List<int> _frameSteps = [
     2,
     3,

@@ -67,6 +67,14 @@ class VideoEditorConstants {
   /// Maximum recording duration for videos.
   static const maxDuration = Duration(seconds: 6, milliseconds: 300);
 
+  /// Frame grid the editor presents to the user.
+  ///
+  /// The timeline ruler labels sub-second positions in frames at this rate, so
+  /// any control that has to line up against it — the audio in-point scrubber
+  /// included — must resolve at least this finely, or it promises a precision
+  /// it cannot deliver.
+  static const int editorFps = 30;
+
   /// Minimum duration a rendered stop-motion video must reach.
   ///
   /// Very short clips (a single still ≈ 83ms) make looping players stutter and
