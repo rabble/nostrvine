@@ -260,23 +260,19 @@ class ClipRecoveryService {
       if (referenced.contains(name)) continue;
       if (await _draftsDao.isDraftFileReferenced(name)) continue;
 
-      final FileStat stat;
-      try {
-        // One stat rather than a length + lastModified pair, so a file
-        // deleted mid-scan cannot report a size from before and a timestamp
-        // from after.
-        stat = file.statSync();
-      } on Object catch (error) {
-        // A file that vanished between listing and stat is not an orphan
-        // worth reporting.
-        Log.warning(
-          '$_logName: could not stat ${file.path}: $error',
-          name: _logName,
-          category: LogCategory.video,
-        );
+      // One stat rather than a length + lastModified pair, so a file deleted
+      // mid-scan cannot report a size from before and a timestamp from after.
+      final stat = file.statSync();
+      // statSync does not throw for a missing path — unlike lengthSync, it
+      // returns a notFound sentinel whose size is -1 and whose timestamp is
+      // the epoch. So a file that vanished between documents.list() and here
+      // has to be filtered on the sentinel: `== 0` let -1 through, and it was
+      // then listed as an orphan at "-1 B", dated 1970, subtracting from
+      // orphanBytes in the copied report and offering a rebuild that could
+      // only fail.
+      if (stat.type == FileSystemEntityType.notFound || stat.size <= 0) {
         continue;
       }
-      if (stat.size == 0) continue;
 
       orphans.add(
         OrphanClipFile(

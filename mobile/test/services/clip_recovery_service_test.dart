@@ -210,6 +210,50 @@ void main() {
         );
       });
 
+      test('drops a recording that vanished mid-scan', () async {
+        // statSync does not throw for a missing path — unlike lengthSync it
+        // returns a notFound sentinel sized -1, so the old `== 0` guard let it
+        // through and listed the file at "-1 B", dated 1970, subtracting from
+        // orphanBytes and offering a rebuild that could only fail.
+        //
+        // The race is reachable through a real seam: each file is stat'd, then
+        // its preview is extracted, before the next file is stat'd. So deleting
+        // the *other* file from the first preview callback leaves it missing at
+        // exactly the moment it gets stat'd, whichever order the directory
+        // listing returns them in.
+        final first = writeVideo('VID_1755400000000.mp4');
+        final second = writeVideo('VID_1755400000001.mp4');
+        final service = ClipRecoveryService(
+          clipsDao: db.clipsDao,
+          draftsDao: db.draftsDao,
+          clipCategoriesDao: db.clipCategoriesDao,
+          clipLibrary: libraryFor(_ownerA),
+          documentsDirectoryProvider: () async => docs,
+          metadataProvider: (_) async => VideoMetadata(
+            duration: const Duration(seconds: 3),
+            resolution: const Size(1080, 1920),
+            fileSize: 128,
+            extension: 'mp4',
+            rotation: 0,
+            bitrate: 2000000,
+          ),
+          thumbnailProvider: (path) async {
+            final other = path == first.path ? second : first;
+            if (other.existsSync()) other.deleteSync();
+            return '$path.jpg';
+          },
+        );
+
+        final report = await service.scanRecoverableClips();
+
+        expect(
+          report.orphanFiles,
+          hasLength(1),
+          reason: 'the file that vanished before its stat is not an orphan',
+        );
+        expect(report.orphanBytes, 128, reason: 'never a negative size');
+      });
+
       test('reports rows held by other owners, not the current one', () async {
         await saveClipOwnedBy(_ownerA, 'mine');
         await saveClipOwnedBy(_ownerB, 'theirs_1');
