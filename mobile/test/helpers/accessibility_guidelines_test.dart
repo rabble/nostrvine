@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 
 import 'accessibility_guidelines.dart';
 
@@ -21,6 +22,8 @@ Future<TestFailure?> _failureFrom(Future<void> Function() check) async {
 }
 
 Widget _app(Widget child, {ThemeData? theme, Color? background}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   theme: theme ?? VineTheme.theme,
   home: Scaffold(
     backgroundColor: background,
