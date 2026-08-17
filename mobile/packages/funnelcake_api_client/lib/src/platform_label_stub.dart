@@ -7,6 +7,6 @@ String get divinePlatformLabel => throw UnsupportedError(
 
 /// Fallback platform token for the `X-Divine-Platform` header; throws on
 /// platforms with no linked implementation.
-String get divinePlatformToken => throw UnsupportedError(
+String? get divinePlatformToken => throw UnsupportedError(
   'No platform token implementation linked for this build',
 );

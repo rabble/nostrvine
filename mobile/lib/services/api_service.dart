@@ -4,7 +4,6 @@ import 'dart:convert';
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart' as http;
-import 'package:meta/meta.dart';
 import 'package:openvine/config/app_version.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -48,11 +47,6 @@ class ApiService {
   /// Resolves the app version per request; captured once at construction so
   /// tests can inject a stable value instead of mutating [AppVersion.current].
   final String Function() _appVersion;
-
-  /// The User-Agent this service sends; exposed for tests.
-  @visibleForTesting
-  String get userAgentForTest =>
-      buildDivineUserAgent(appVersion: _appVersion());
 
   /// Get current account restriction and minor-account review status.
   Future<Map<String, dynamic>> getMinorAccountReviewStatus() async {

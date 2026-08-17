@@ -23,6 +23,18 @@ void main() {
       );
       expect(headers['X-Divine-Platform'], label.toLowerCase());
     });
+
+    test('omits X-Divine-Platform when the platform token is null (web)', () {
+      final headers = buildDivineClientHeaders(
+        appVersion: '1.0.20',
+        platformToken: null,
+      );
+      expect(
+        headers['User-Agent'],
+        matches(RegExp(r'^Divine-Mobile/1\.0\.20 \(\w[\w.]*\)$')),
+      );
+      expect(headers.containsKey('X-Divine-Platform'), isFalse);
+    });
   });
 
   group('buildDivineUserAgent', () {

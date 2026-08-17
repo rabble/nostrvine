@@ -251,24 +251,41 @@ void main() {
         },
       );
 
-      test('falls back to AppVersion.current when nothing is injected', () {
-        addTearDown(() => AppVersion.current = 'unknown');
-        AppVersion.current = '9.9.9';
+      test(
+        'falls back to AppVersion.current on the wire when nothing is injected',
+        () async {
+          addTearDown(() => AppVersion.current = 'unknown');
+          AppVersion.current = '9.9.9';
 
-        final fallback = ApiService(
-          client: mockClient,
-          relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
-        );
+          final fallback = ApiService(
+            client: mockClient,
+            relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
+          );
 
-        expect(
-          fallback.userAgentForTest,
-          matches(
-            RegExp(
-              r'^Divine-Mobile/9\.9\.9 \((iOS|Android|macOS|Linux|Windows|Web)\)$',
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.body).thenReturn('{}');
+
+          when(
+            () => mockClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => mockResponse);
+
+          await fallback.getMinorAccountReviewStatus();
+
+          final captured = verify(
+            () => mockClient.get(any(), headers: captureAny(named: 'headers')),
+          ).captured;
+          final headers = captured.whereType<Map<String, String>>().single;
+          expect(
+            headers['User-Agent'],
+            matches(
+              RegExp(
+                r'^Divine-Mobile/9\.9\.9 \((iOS|Android|macOS|Linux|Windows|Web)\)$',
+              ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
     });
 
     group('ApiException', () {
