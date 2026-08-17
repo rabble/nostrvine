@@ -24,16 +24,21 @@ void main() {
       expect(headers['X-Divine-Platform'], label.toLowerCase());
     });
 
-    test('omits X-Divine-Platform when the platform token is null (web)', () {
+    test('omits X-Divine-Platform when told to (the web behavior)', () {
       final headers = buildDivineClientHeaders(
         appVersion: '1.0.20',
-        platformToken: null,
+        omitPlatformToken: true,
       );
       expect(
         headers['User-Agent'],
         matches(RegExp(r'^Divine-Mobile/1\.0\.20 \(\w[\w.]*\)$')),
       );
       expect(headers.containsKey('X-Divine-Platform'), isFalse);
+    });
+
+    test('an explicit platform token overrides detection', () {
+      final headers = buildDivineClientHeaders(platformToken: 'android');
+      expect(headers['X-Divine-Platform'], 'android');
     });
   });
 
