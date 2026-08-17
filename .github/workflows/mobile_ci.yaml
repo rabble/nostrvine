@@ -207,6 +207,15 @@ jobs:
           # never test/unit/. Fails closed if the base baseline cannot load.
           # Test-org epic: #4337 (WS-7).
           bash scripts/check_test_unit_structure.sh
+      - name: 🧱 Verify no test declaration sits outside a group (test-structure ratchet)
+        run: |
+          # Issue #3615: a flat test file gives the runner nothing to nest, so
+          # failures print as an undifferentiated wall and a file cannot be run
+          # a slice at a time. Freezes the per-file count of test/testWidgets/
+          # blocTest/patrolTest declarations outside any group() so it can only
+          # shrink. Group by method name (repositories/services/clients), event
+          # name (blocs/cubits), or renders/interactions/navigation (widgets).
+          bash scripts/check_ungrouped_tests.sh
       - name: 🧱 Verify every package ships analysis options + a CI workflow (package CI floor)
         run: |
           # Issues #3574 / #3575: optionless packages silently inherit the
