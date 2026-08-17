@@ -37,9 +37,7 @@ void main() {
   // feed is the REST-backed ProfileFeedCubit — so whoever re-enables them
   // seeds through ProfileFeedScope instead.
   testWidgets('PROFILE: URL ↔ PageView sync', (tester) async {
-    final c = ProviderContainer(
-      overrides: [],
-    );
+    final c = ProviderContainer();
     addTearDown(c.dispose);
 
     await tester.pumpWidget(shell(c));
@@ -61,9 +59,7 @@ void main() {
   }, skip: true);
 
   testWidgets('PROFILE: Empty state shows when no videos', (tester) async {
-    final c = ProviderContainer(
-      overrides: [],
-    );
+    final c = ProviderContainer();
     addTearDown(c.dispose);
 
     await tester.pumpWidget(shell(c));
