@@ -15,7 +15,7 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../../helpers/contrast.dart';
 
-SavedSound _richSound() => const SavedSound(
+SavedSound _richSound() => SavedSound(
   audio: AudioEvent(
     id: 'sound-id',
     pubkey: 'creator',
@@ -24,10 +24,10 @@ SavedSound _richSound() => const SavedSound(
     duration: 6,
   ),
   personalLabel: 'Morning inspiration',
-  personalHashtags: ['ideas', 'funny'],
-  catalogTags: ['field recording', 'birds'],
-  waveformSamples: [0.1, 0.8, 0.4],
-  sourceContext: SavedSoundSourceContext(
+  personalHashtags: const ['ideas', 'funny'],
+  catalogTags: const ['field recording', 'birds'],
+  waveformSamples: const [0.1, 0.8, 0.4],
+  sourceContext: const SavedSoundSourceContext(
     title: 'A tiny bird visits',
     creatorName: 'Alice',
     description: 'Filmed outside before breakfast.',
@@ -115,16 +115,16 @@ void main() {
     (
       tester,
     ) async {
-      const sound = SavedSound(
+      final sound = SavedSound(
         audio: AudioEvent(
           id: 'music',
           pubkey: 'creator',
           createdAt: 1,
           title: 'Instrumental loop',
         ),
-        personalHashtags: [],
-        catalogTags: [],
-        waveformSamples: [],
+        personalHashtags: const [],
+        catalogTags: const [],
+        waveformSamples: const [],
       );
 
       await tester.pumpWidget(_app(sound));
@@ -144,11 +144,11 @@ void main() {
   );
 
   testWidgets('falls back to localized generic title shape', (tester) async {
-    const sound = SavedSound(
+    final sound = SavedSound(
       audio: AudioEvent(id: 'empty', pubkey: 'creator', createdAt: 1),
-      personalHashtags: [],
-      catalogTags: [],
-      waveformSamples: [],
+      personalHashtags: const [],
+      catalogTags: const [],
+      waveformSamples: const [],
     );
 
     await tester.pumpWidget(_app(sound));

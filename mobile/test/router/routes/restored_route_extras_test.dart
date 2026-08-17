@@ -71,7 +71,7 @@ void main() {
     });
 
     testWidgets('sound route accepts restored object maps', (tester) async {
-      const sound = AudioEvent(
+      final sound = AudioEvent(
         id: 'sound-1',
         pubkey: 'pubkey',
         createdAt: 1700000000,
@@ -86,7 +86,7 @@ void main() {
                   _FakeGoRouterState(
                     location: '/sound/sound-1',
                     pathParameters: const {'id': 'sound-1'},
-                    extra: const <Object?, Object?>{'sound': sound},
+                    extra: <Object?, Object?>{'sound': sound},
                   ),
                 )
                 as SoundDetailScreen;

@@ -135,6 +135,36 @@ void main() {
     });
   });
 
+  group(sanitizeUtf16List, () {
+    test('returns the identical list when every element is well-formed', () {
+      final input = List<String>.unmodifiable(['clean', '\u{1F600}']);
+
+      expect(sanitizeUtf16List(input), same(input));
+    });
+
+    test('returns the identical list when empty', () {
+      const input = <String>[];
+
+      expect(sanitizeUtf16List(input), same(input));
+    });
+
+    test('replaces lone surrogates and keeps well-formed neighbours', () {
+      final poisoned = String.fromCharCodes([0x61, 0xD83D]);
+      final input = ['before', poisoned, 'after'];
+
+      expect(sanitizeUtf16List(input), equals(['before', 'a�', 'after']));
+    });
+
+    test('leaves the source list untouched', () {
+      final poisoned = String.fromCharCodes([0xDC00]);
+      final input = [poisoned];
+
+      sanitizeUtf16List(input);
+
+      expect(input, equals([poisoned]));
+    });
+  });
+
   group(sanitizeForDisplay, () {
     test('replaces lone surrogates and caps combining chars', () {
       // lone high surrogate, then o + 4 combining chars

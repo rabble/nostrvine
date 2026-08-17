@@ -8,7 +8,7 @@ void main() {
   group(HashtagSearchResult, () {
     group('constructor', () {
       test('creates instance with required fields', () {
-        const result = HashtagSearchResult(tag: 'bitcoin');
+        final result = HashtagSearchResult(tag: 'bitcoin');
 
         expect(result.tag, equals('bitcoin'));
         expect(result.videoCount, isNull);
@@ -18,7 +18,7 @@ void main() {
       });
 
       test('creates instance with all optional fields', () {
-        const result = HashtagSearchResult(
+        final result = HashtagSearchResult(
           tag: 'nostr',
           videoCount: 156,
           score: 95.2,
@@ -214,12 +214,12 @@ void main() {
 
     group('equality', () {
       test('two instances with same tag are equal', () {
-        const result1 = HashtagSearchResult(
+        final result1 = HashtagSearchResult(
           tag: 'bitcoin',
           videoCount: 100,
         );
 
-        const result2 = HashtagSearchResult(
+        final result2 = HashtagSearchResult(
           tag: 'bitcoin',
           videoCount: 200,
         );
@@ -229,8 +229,8 @@ void main() {
       });
 
       test('two instances with different tags are not equal', () {
-        const result1 = HashtagSearchResult(tag: 'bitcoin');
-        const result2 = HashtagSearchResult(tag: 'nostr');
+        final result1 = HashtagSearchResult(tag: 'bitcoin');
+        final result2 = HashtagSearchResult(tag: 'nostr');
 
         expect(result1, isNot(equals(result2)));
       });
@@ -238,7 +238,7 @@ void main() {
 
     group('toString', () {
       test('returns formatted string with tag and videoCount', () {
-        const result = HashtagSearchResult(
+        final result = HashtagSearchResult(
           tag: 'bitcoin',
           videoCount: 156,
         );
@@ -250,12 +250,39 @@ void main() {
       });
 
       test('returns formatted string with null videoCount', () {
-        const result = HashtagSearchResult(tag: 'nostr');
+        final result = HashtagSearchResult(tag: 'nostr');
 
         expect(
           result.toString(),
           equals('HashtagSearchResult(tag: nostr, videoCount: null)'),
         );
+      });
+    });
+
+    group('UTF-16 well-formedness', () {
+      // The headless flutter_tester does not throw on a lone surrogate — only
+      // the real engine does — so this asserts the model value rather than the
+      // rendered chip label.
+      test('replaces a lone surrogate in tag', () {
+        final result = HashtagSearchResult(
+          tag: 'sun${String.fromCharCode(0xD83D)}set',
+        );
+
+        expect(result.tag, equals('sun\uFFFDset'));
+      });
+
+      test('keeps a well-formed tag identical', () {
+        const tag = 'sunset\u{1F600}';
+
+        expect(HashtagSearchResult(tag: tag).tag, same(tag));
+      });
+
+      test('sanitizes a tag parsed from JSON', () {
+        final result = HashtagSearchResult.fromJson({
+          'hashtag': 'sun${String.fromCharCode(0xD83D)}set',
+        });
+
+        expect(result.tag, equals('sun\uFFFDset'));
       });
     });
   });

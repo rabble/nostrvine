@@ -5,7 +5,7 @@ void main() {
   group(TrendingHashtag, () {
     group('constructor', () {
       test('creates instance with required fields', () {
-        const hashtag = TrendingHashtag(
+        final hashtag = TrendingHashtag(
           tag: 'flutter',
           videoCount: 42,
         );
@@ -128,16 +128,16 @@ void main() {
 
     group('equality', () {
       test('two hashtags with same tag are equal', () {
-        const a = TrendingHashtag(tag: 'flutter', videoCount: 1);
-        const b = TrendingHashtag(tag: 'flutter', videoCount: 99);
+        final a = TrendingHashtag(tag: 'flutter', videoCount: 1);
+        final b = TrendingHashtag(tag: 'flutter', videoCount: 99);
 
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
 
       test('two hashtags with different tags are not equal', () {
-        const a = TrendingHashtag(tag: 'flutter', videoCount: 1);
-        const b = TrendingHashtag(tag: 'dart', videoCount: 1);
+        final a = TrendingHashtag(tag: 'flutter', videoCount: 1);
+        final b = TrendingHashtag(tag: 'dart', videoCount: 1);
 
         expect(a, isNot(equals(b)));
       });
@@ -145,7 +145,7 @@ void main() {
 
     group('toString', () {
       test('returns readable representation', () {
-        const hashtag = TrendingHashtag(
+        final hashtag = TrendingHashtag(
           tag: 'flutter',
           videoCount: 42,
         );
@@ -156,6 +156,35 @@ void main() {
             'TrendingHashtag(tag: flutter, videoCount: 42)',
           ),
         );
+      });
+    });
+
+    group('UTF-16 well-formedness', () {
+      // The headless flutter_tester does not throw on a lone surrogate — only
+      // the real engine does — so this asserts the model value rather than the
+      // rendered chip label.
+      test('replaces a lone surrogate in tag', () {
+        final hashtag = TrendingHashtag(
+          tag: 'sun${String.fromCharCode(0xD83D)}set',
+          videoCount: 42,
+        );
+
+        expect(hashtag.tag, equals('sun\uFFFDset'));
+      });
+
+      test('keeps a well-formed tag identical', () {
+        const tag = 'sunset\u{1F600}';
+
+        expect(TrendingHashtag(tag: tag, videoCount: 42).tag, same(tag));
+      });
+
+      test('sanitizes a tag parsed from JSON', () {
+        final hashtag = TrendingHashtag.fromJson({
+          'hashtag': 'sun${String.fromCharCode(0xD83D)}set',
+          'video_count': 3,
+        });
+
+        expect(hashtag.tag, equals('sun\uFFFDset'));
       });
     });
   });

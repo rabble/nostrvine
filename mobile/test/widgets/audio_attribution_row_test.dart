@@ -25,7 +25,7 @@ void main() {
     late AudioEvent testAudio;
 
     setUp(() {
-      testAudio = const AudioEvent(
+      testAudio = AudioEvent(
         id: testAudioEventId,
         pubkey: testPubkey,
         createdAt: 1704067200,
@@ -148,7 +148,7 @@ void main() {
 
       testWidgets('displays fallback when sound has no title', (tester) async {
         final video = createVideoWithAudio();
-        const noTitleAudio = AudioEvent(
+        final noTitleAudio = AudioEvent(
           id: testAudioEventId,
           pubkey: testPubkey,
           createdAt: 1704067200,
@@ -448,7 +448,7 @@ void main() {
         tester,
       ) async {
         final video = createVideoWithAudio();
-        const bundledAudio = AudioEvent(
+        final bundledAudio = AudioEvent(
           id: 'bundled_freesound_crowd',
           pubkey: 'bundled',
           createdAt: 0,
@@ -472,7 +472,7 @@ void main() {
         tester,
       ) async {
         final video = createVideoWithAudio();
-        const bundledAudio = AudioEvent(
+        final bundledAudio = AudioEvent(
           id: 'bundled_freesound_crowd',
           pubkey: 'bundled',
           createdAt: 0,

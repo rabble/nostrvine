@@ -98,20 +98,20 @@ void main() {
     test('ignores non-local audio (bundled, network, original sound)', () {
       final draft = _draft(
         editorStateHistory: _historyWithAudio([
-          const AudioEvent(
+          AudioEvent(
             id: 'bundled_chime',
             pubkey: AudioEvent.bundledMarker,
             createdAt: 0,
             url: 'asset://sounds/chime.mp3',
           ),
-          const AudioEvent(
+          AudioEvent(
             id: 'remote-sound-id',
             pubkey: _testPubkey,
             createdAt: 1700000000,
             url: 'https://cdn.example.com/audio.mp3',
           ),
         ]),
-        selectedSound: const AudioEvent(
+        selectedSound: AudioEvent(
           id: 'video_remote',
           pubkey: _testPubkey,
           createdAt: 1700000000,

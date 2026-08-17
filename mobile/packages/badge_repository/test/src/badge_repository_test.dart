@@ -2891,6 +2891,33 @@ void main() {
       expect(viewData.description, isNull);
       expect(viewData.imageUrl, isNull);
     });
+
+    // The coordinate comes from someone else's `a` tag, so the fallback name
+    // is remote text too. The headless flutter_tester does not throw on a lone
+    // surrogate — only the real engine does — so this asserts the value.
+    test('replaces a lone surrogate in the coordinate-derived name', () {
+      final coordinate =
+          '30009:${_pubkey(5)}:daily${String.fromCharCode(0xD83D)}diviner';
+      final viewData = ProfileBadgeViewData(
+        badge: Nip58ProfileBadgeRef(
+          definitionCoordinate: coordinate,
+          awardEventId: _eventId(40),
+        ),
+      );
+
+      expect(viewData.displayName, 'daily�diviner');
+    });
+
+    test('replaces a lone surrogate in a coordinate with no d-tag', () {
+      final viewData = ProfileBadgeViewData(
+        badge: Nip58ProfileBadgeRef(
+          definitionCoordinate: 'broken${String.fromCharCode(0xDE00)}',
+          awardEventId: _eventId(40),
+        ),
+      );
+
+      expect(viewData.displayName, 'broken�');
+    });
   });
 
   group(BadgeAwardViewData, () {

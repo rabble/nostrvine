@@ -385,7 +385,16 @@ class ClassicViner {
   final String pubkey;
   final int totalLoops;
   final int videoCount;
-  final String? authorName; // Display name from classic Vine data
+
+  /// Display name carried over from the classic Vine archive.
+  ///
+  /// Already well-formed UTF-16: [topClassicViners] only ever copies this from
+  /// [VideoEvent.authorName], and that constructor is the sanitizing display
+  /// boundary. Feeding it from anything else would need its own boundary —
+  /// the viner slider renders this straight into a `Text`, and a lone
+  /// surrogate throws out of Flutter's paragraph builder.
+  final String? authorName;
+
   final String? authorAvatar; // Profile picture URL from API
 }
 

@@ -294,7 +294,7 @@ void main() {
     });
 
     testWidgets('renders with bundled sound', (tester) async {
-      const bundledSound = AudioEvent(
+      final bundledSound = AudioEvent(
         id: 'bundled__lofi-beat',
         pubkey: 'bundled_',
         createdAt: 0,

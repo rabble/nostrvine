@@ -4,6 +4,7 @@ import 'package:badge_repository/src/nip58_badge_parser.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 typedef BadgeCurrentPubkeyReader = String? Function();
 
@@ -1568,8 +1569,16 @@ class _DashboardLookupMemo {
   ) => _issuedAwards.putIfAbsent(pubkey, load);
 }
 
+/// Badge label to fall back on when no kind-30009 definition loaded: the
+/// d-tag half of the coordinate, or the whole coordinate when it has no
+/// d-tag.
+///
+/// The coordinate comes from an `a` tag on someone else's award or profile
+/// badges event, so it is remote text and it renders as a badge name.
+/// [Nip58BadgeDefinition] sanitizes the definition-backed path; this covers
+/// the one that bypasses it.
 String _definitionNameFromCoordinate(String coordinate) {
   final parts = coordinate.split(':');
-  if (parts.length < 3) return coordinate;
-  return parts.sublist(2).join(':');
+  if (parts.length < 3) return sanitizeUtf16(coordinate);
+  return sanitizeUtf16(parts.sublist(2).join(':'));
 }

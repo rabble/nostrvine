@@ -1307,12 +1307,16 @@ class FunnelcakeApiClient {
           jsonDecode(response.body),
         );
 
+        // Both branches go through HashtagSearchResult so a bare-string item
+        // gets the same UTF-16 normalization as a mapped one — these tags end
+        // up as chip labels, and a lone surrogate throws out of Flutter's
+        // paragraph builder.
         return items
             .map((item) {
               if (item is Map<String, dynamic>) {
                 return HashtagSearchResult.fromJson(item).tag;
               }
-              return item.toString();
+              return HashtagSearchResult(tag: item.toString()).tag;
             })
             .where((tag) => tag.isNotEmpty)
             .toList();

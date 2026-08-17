@@ -254,7 +254,7 @@ void main() {
       });
 
       test('returns a network-kind event for remote sounds', () {
-        const sound = AudioEvent(
+        final sound = AudioEvent(
           id: 'remote',
           pubkey: 'abc',
           createdAt: 0,
@@ -269,7 +269,7 @@ void main() {
       });
 
       test('returns null when the sound has no usable source', () {
-        const sound = AudioEvent(id: 'no-source', pubkey: 'abc', createdAt: 0);
+        final sound = AudioEvent(id: 'no-source', pubkey: 'abc', createdAt: 0);
 
         expect(SoundWaveformExtract.forSound(sound), isNull);
       });

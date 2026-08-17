@@ -1154,7 +1154,7 @@ void main() {
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'loads remote audio via loadAudio',
         build: () => buildBlocWithSound(
-          const model.AudioEvent(
+          model.AudioEvent(
             id: 'remote',
             pubkey: 'abc',
             createdAt: 0,

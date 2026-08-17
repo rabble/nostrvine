@@ -342,5 +342,58 @@ void main() {
         expect(a, isNot(equals(b)));
       });
     });
+
+    group('UTF-16 well-formedness', () {
+      // The headless flutter_tester does not throw on a lone surrogate — only
+      // the real engine does — so this asserts the model value rather than the
+      // rendered Text.rich span.
+      test('replaces lone surrogates in the quoted relay text', () {
+        final notification = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.listAdd,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          videoTitle: 'my clip${String.fromCharCode(0xD83D)}',
+          commentText: 'nice${String.fromCharCode(0xDE00)} one',
+          listTitle: 'Best of${String.fromCharCode(0xD83D)} 2025',
+        );
+
+        expect(notification.videoTitle, equals('my clip�'));
+        expect(notification.commentText, equals('nice� one'));
+        expect(notification.listTitle, equals('Best of� 2025'));
+      });
+
+      test('keeps well-formed text identical and nulls null', () {
+        const listTitle = 'Best of \u{1F600} 2025';
+        final notification = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.listAdd,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          listTitle: listTitle,
+        );
+
+        expect(notification.listTitle, same(listTitle));
+        expect(notification.videoTitle, isNull);
+        expect(notification.commentText, isNull);
+      });
+
+      test('survives copyWith', () {
+        final notification = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.listAdd,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+        ).copyWith(listTitle: 'Best of${String.fromCharCode(0xD83D)} 2025');
+
+        expect(notification.listTitle, equals('Best of� 2025'));
+      });
+    });
   });
 }

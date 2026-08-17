@@ -326,7 +326,7 @@ void main() {
       });
 
       test('isBundled returns false for Nostr sounds', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: testHexId,
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -350,7 +350,7 @@ void main() {
       });
 
       test('assetPath returns null for Nostr sounds', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: testHexId,
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -513,7 +513,7 @@ void main() {
       });
 
       test('defaults allowsReuse to true for a plain AudioEvent', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: testHexId,
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -658,7 +658,7 @@ void main() {
       });
 
       test('classifies remote sounds as a network source', () {
-        const event = AudioEvent(
+        final event = AudioEvent(
           id: 'remote',
           pubkey: 'abc',
           createdAt: 0,
@@ -677,7 +677,7 @@ void main() {
       test('classifies a bare absolute path as a file source', () {
         // Clip-extracted J-cut audio: not a `local_import_` id, `url` is a
         // raw on-disk path (clip_editor_bloc writes `result.audioFilePath`).
-        const event = AudioEvent(
+        final event = AudioEvent(
           id: 'local_extracted_1700000000000',
           pubkey: '',
           createdAt: 0,
@@ -694,7 +694,7 @@ void main() {
       });
 
       test('classifies a file:// URI as a file source', () {
-        const event = AudioEvent(
+        final event = AudioEvent(
           id: 'local_extracted_1700000000000',
           pubkey: '',
           createdAt: 0,
@@ -711,7 +711,7 @@ void main() {
       });
 
       test('returns null when no source url is present', () {
-        const event = AudioEvent(id: 'empty', pubkey: 'abc', createdAt: 0);
+        final event = AudioEvent(id: 'empty', pubkey: 'abc', createdAt: 0);
 
         expect(event.resolvedSource, isNull);
       });
@@ -719,7 +719,7 @@ void main() {
 
     group('external provider metadata', () {
       test('round trips external source and license metadata through JSON', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'freesound_502915',
           pubkey: AudioEvent.externalProviderMarker,
           createdAt: 1779120000,
@@ -736,7 +736,7 @@ void main() {
             creatorUrl: 'https://freesound.org/people/ThePauny/',
             sourceUrl: 'https://freesound.org/people/ThePauny/sounds/502915/',
             previewUrl: 'https://cdn.freesound.org/previews/502/502915.mp3',
-            catalogTags: ['crowd', 'field recording'],
+            catalogTags: const ['crowd', 'field recording'],
             license: AudioLicenseMetadata(
               type: 'cc0',
               name: 'Creative Commons 0',
@@ -766,7 +766,7 @@ void main() {
       });
 
       test('external source and license metadata use value equality', () {
-        const license = AudioLicenseMetadata(
+        final license = AudioLicenseMetadata(
           type: 'cc0',
           name: 'Creative Commons 0',
           url: 'https://creativecommons.org/publicdomain/zero/1.0/',
@@ -774,7 +774,7 @@ void main() {
           allowsDerivatives: true,
           requiresAttribution: false,
         );
-        const sameLicense = AudioLicenseMetadata(
+        final sameLicense = AudioLicenseMetadata(
           type: 'cc0',
           name: 'Creative Commons 0',
           url: 'https://creativecommons.org/publicdomain/zero/1.0/',
@@ -782,7 +782,7 @@ void main() {
           allowsDerivatives: true,
           requiresAttribution: false,
         );
-        const source = AudioExternalSource(
+        final source = AudioExternalSource(
           provider: 'freesound',
           providerSoundId: '502915',
           providerName: 'Freesound',
@@ -792,7 +792,7 @@ void main() {
           previewUrl: 'https://cdn.freesound.org/previews/502/502915.mp3',
           license: license,
         );
-        const sameSource = AudioExternalSource(
+        final sameSource = AudioExternalSource(
           provider: 'freesound',
           providerSoundId: '502915',
           providerName: 'Freesound',
@@ -810,7 +810,7 @@ void main() {
       });
 
       test('omits external source metadata when it is absent', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: testHexId,
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -824,7 +824,7 @@ void main() {
     group('toTags', () {
       test('generates complete tags list', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -863,7 +863,7 @@ void main() {
 
       test('generates minimal tags for sparse event', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'minimal-id-123456789012345678901234567890123456789012345678',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -894,7 +894,7 @@ void main() {
 
       test('generates a tag without relay when relay is null', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'no-relay-id-12345678901234567890123456789012345678901234567',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -911,7 +911,7 @@ void main() {
       });
 
       test('publishes explicit consent and durable public credit', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: testHexId,
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -921,7 +921,7 @@ void main() {
           creatorUrl: 'https://creator.example/profile',
           licenseName: 'CC BY 4.0',
           licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-          publicTags: ['birds', ' field-recording ', 'birds', ''],
+          publicTags: const ['birds', ' field-recording ', 'birds', ''],
           proxyId: '12345',
           proxyProtocol: 'freesound',
         );
@@ -963,12 +963,12 @@ void main() {
       });
 
       test('cannot leak private saved-library metadata into public tags', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: testHexId,
           pubkey: testPubkey,
           createdAt: 1700000000,
           title: 'Public title',
-          publicTags: ['public-tag'],
+          publicTags: const ['public-tag'],
         );
 
         final published = audioEvent.toTags().expand((tag) => tag).join(' ');
@@ -981,7 +981,7 @@ void main() {
     group('copyWith', () {
       test('creates copy with updated fields', () {
         // Arrange
-        const original = AudioEvent(
+        final original = AudioEvent(
           id: 'original-id-1234567890123456789012345678901234567890123456',
           pubkey: 'original-pubkey',
           createdAt: 1700000000,
@@ -1007,7 +1007,7 @@ void main() {
     group('equality', () {
       test('events with same id are equal', () {
         // Arrange
-        const event1 = AudioEvent(
+        final event1 = AudioEvent(
           id: 'same-id-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey1',
           createdAt: 1700000000,
@@ -1015,7 +1015,7 @@ void main() {
           mimeType: 'audio/aac',
         );
 
-        const event2 = AudioEvent(
+        final event2 = AudioEvent(
           id: 'same-id-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey2', // Different pubkey
           createdAt: 1700000001, // Different timestamp
@@ -1030,7 +1030,7 @@ void main() {
 
       test('events with different ids are not equal', () {
         // Arrange
-        const event1 = AudioEvent(
+        final event1 = AudioEvent(
           id: 'id-one-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey',
           createdAt: 1700000000,
@@ -1038,7 +1038,7 @@ void main() {
           mimeType: 'audio/aac',
         );
 
-        const event2 = AudioEvent(
+        final event2 = AudioEvent(
           id: 'id-two-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey',
           createdAt: 1700000000,
@@ -1052,7 +1052,7 @@ void main() {
 
       test('events with same id but different startOffset are not equal', () {
         // Arrange
-        const event1 = AudioEvent(
+        final event1 = AudioEvent(
           id: 'same-id-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey',
           createdAt: 1700000000,
@@ -1061,13 +1061,13 @@ void main() {
           // Using default startOffset (Duration.zero)
         );
 
-        const event2 = AudioEvent(
+        final event2 = AudioEvent(
           id: 'same-id-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey',
           createdAt: 1700000000,
           url: 'https://example.com/audio.aac',
           mimeType: 'audio/aac',
-          startOffset: Duration(seconds: 5),
+          startOffset: const Duration(seconds: 5),
         );
 
         // Assert - same audio with different start positions are distinct
@@ -1076,7 +1076,7 @@ void main() {
       });
 
       test('events with same id but different anchorClipId are not equal', () {
-        const event1 = AudioEvent(
+        final event1 = AudioEvent(
           id: 'same-id-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey',
           createdAt: 1700000000,
@@ -1085,7 +1085,7 @@ void main() {
           anchorClipId: 'clip-a',
         );
 
-        const event2 = AudioEvent(
+        final event2 = AudioEvent(
           id: 'same-id-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey',
           createdAt: 1700000000,
@@ -1101,7 +1101,7 @@ void main() {
     group('toString', () {
       test('returns readable debug string', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1130,7 +1130,7 @@ void main() {
     group('sourceVideoKind getter', () {
       test('extracts kind from sourceVideoReference', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1145,7 +1145,7 @@ void main() {
 
       test('returns null when sourceVideoReference is null', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1161,7 +1161,7 @@ void main() {
     group('sourceVideoPubkey getter', () {
       test('extracts pubkey from sourceVideoReference', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1178,7 +1178,7 @@ void main() {
     group('sourceVideoIdentifier getter', () {
       test('extracts d-tag identifier from sourceVideoReference', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1195,7 +1195,7 @@ void main() {
     group('formattedDuration getter', () {
       test('formats duration as mm:ss', () {
         // Arrange - 65.4 rounds to 65 seconds = 1:05
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1210,7 +1210,7 @@ void main() {
 
       test('handles sub-minute duration', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1225,7 +1225,7 @@ void main() {
 
       test('returns empty string when duration is null', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1241,7 +1241,7 @@ void main() {
     group('fileSizeKB getter', () {
       test('returns file size in KB', () {
         // Arrange
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -1257,7 +1257,7 @@ void main() {
 
     group('toJson', () {
       test('serializes all fields', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1270,7 +1270,7 @@ void main() {
           source: 'Original Sound',
           sourceVideoReference: '34236:pubkey:vine-id',
           sourceVideoRelay: 'wss://relay.example',
-          startOffset: Duration(milliseconds: 1500),
+          startOffset: const Duration(milliseconds: 1500),
           volume: 0.4,
         );
 
@@ -1298,7 +1298,7 @@ void main() {
       });
 
       test('omits null optional fields', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'minimal-id-123456789012345678901234567890123456789012345678',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1318,7 +1318,7 @@ void main() {
       });
 
       test('omits startOffsetMs when offset is zero', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'zero-offset-123456789012345678901234567890123456789012345678',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1330,7 +1330,7 @@ void main() {
       });
 
       test('always serializes volume for backward-compatible snapshots', () {
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'default-volume-123456789012345678901234567890123456789012345',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1434,7 +1434,7 @@ void main() {
 
     group('toJson/fromJson roundtrip', () {
       test('roundtrips complete AudioEvent preserving all data', () {
-        const original = AudioEvent(
+        final original = AudioEvent(
           id: 'roundtrip-1234567890123456789012345678901234567890123456789',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1447,7 +1447,7 @@ void main() {
           source: 'SoundCloud',
           sourceVideoReference: '34236:creator:vine-abc',
           sourceVideoRelay: 'wss://relay.example',
-          startOffset: Duration(milliseconds: 3200),
+          startOffset: const Duration(milliseconds: 3200),
         );
 
         final restored = AudioEvent.fromJson(original.toJson());
@@ -1471,7 +1471,7 @@ void main() {
       });
 
       test('roundtrips minimal AudioEvent', () {
-        const original = AudioEvent(
+        final original = AudioEvent(
           id: 'minimal-rt-12345678901234567890123456789012345678901234567',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1489,7 +1489,7 @@ void main() {
 
     group('copyWith startOffset', () {
       test('updates startOffset', () {
-        const original = AudioEvent(
+        final original = AudioEvent(
           id: 'offset-id-12345678901234567890123456789012345678901234567890',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1505,11 +1505,11 @@ void main() {
       });
 
       test('preserves startOffset when not specified in copyWith', () {
-        const original = AudioEvent(
+        final original = AudioEvent(
           id: 'preserve-id-1234567890123456789012345678901234567890123456789',
           pubkey: testPubkey,
           createdAt: 1700000000,
-          startOffset: Duration(seconds: 5),
+          startOffset: const Duration(seconds: 5),
         );
 
         final updated = original.copyWith(title: 'New Title');
@@ -1520,7 +1520,7 @@ void main() {
     });
 
     group('anchorClipId', () {
-      const anchored = AudioEvent(
+      final anchored = AudioEvent(
         id: 'anchor-id-123456789012345678901234567890123456789012345678901',
         pubkey: testPubkey,
         createdAt: 1700000000,
@@ -1552,7 +1552,7 @@ void main() {
       });
 
       test('is omitted from JSON when null', () {
-        const original = AudioEvent(
+        final original = AudioEvent(
           id: 'plain-id-1234567890123456789012345678901234567890123456789012',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1564,7 +1564,7 @@ void main() {
 
     group('isClipAnchoredOriginalSound', () {
       test('is true for an original sound anchored to a clip', () {
-        const event = AudioEvent(
+        final event = AudioEvent(
           id: 'video_source-abc_copy_1',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1580,7 +1580,7 @@ void main() {
         // A network "Original Sound" the user added from the sound browser:
         // its id is video_-prefixed but it is free-standing, so it keeps its
         // own volume arc.
-        const event = AudioEvent(
+        final event = AudioEvent(
           id: 'video_source-abc_copy_1',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1591,7 +1591,7 @@ void main() {
       });
 
       test('is false for a non-original (custom/imported) track', () {
-        const event = AudioEvent(
+        final event = AudioEvent(
           id: 'local_import_1234567890',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -1599,6 +1599,97 @@ void main() {
         );
         expect(event.isOriginalSound, isFalse);
         expect(event.isClipAnchoredOriginalSound, isFalse);
+      });
+    });
+
+    group('UTF-16 well-formedness', () {
+      // The headless flutter_tester does not throw on a lone surrogate — only
+      // the real engine does — so the assertion has to be on the model value
+      // rather than on a rendered widget.
+      String poisoned(String text) => '$text${String.fromCharCode(0xD83D)}!';
+
+      test('replaces lone surrogates in the display text tags', () {
+        final event = AudioEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          title: poisoned('Beat'),
+          source: poisoned('Freesound'),
+          creatorName: poisoned('ThePauny'),
+          licenseName: poisoned('CC0'),
+          publicTags: ['crowd', poisoned('field')],
+        );
+
+        expect(event.title, equals('Beat�!'));
+        expect(event.source, equals('Freesound�!'));
+        expect(event.creatorName, equals('ThePauny�!'));
+        expect(event.licenseName, equals('CC0�!'));
+        expect(event.publicTags, equals(['crowd', 'field�!']));
+      });
+
+      test('republishes the sanitized values rather than the raw ones', () {
+        final tags = AudioEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          title: poisoned('Beat'),
+          creatorName: poisoned('ThePauny'),
+          licenseName: poisoned('CC0'),
+        ).toTags();
+
+        expect(_findTag(tags, 'title'), equals(['title', 'Beat�!']));
+        expect(_findTag(tags, 'creator'), equals(['creator', 'ThePauny�!']));
+        expect(_findTag(tags, 'license'), equals(['license', 'CC0�!']));
+      });
+
+      test('leaves the playback source and identifiers untouched', () {
+        final url =
+            'https://cdn.example.com/${String.fromCharCode(0xD83D)}.mp3';
+        final event = AudioEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          url: url,
+          sha256: testSha256,
+        );
+
+        expect(event.url, same(url));
+        expect(event.sha256, equals(testSha256));
+      });
+
+      test('preserves valid emoji and keeps clean text identical', () {
+        const title = 'Beat \u{1F600}';
+        final event = AudioEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          title: title,
+        );
+
+        expect(event.title, same(title));
+      });
+
+      test('sanitizes external source and license display text', () {
+        final source = AudioExternalSource(
+          provider: 'freesound',
+          providerSoundId: '502915',
+          providerName: poisoned('Freesound'),
+          creatorName: poisoned('ThePauny'),
+          catalogTags: [poisoned('crowd')],
+          license: AudioLicenseMetadata(
+            type: 'cc0',
+            name: poisoned('CC0 1.0'),
+            url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+            allowsCommercialUse: true,
+            allowsDerivatives: true,
+            requiresAttribution: false,
+          ),
+        );
+
+        expect(source.providerName, equals('Freesound�!'));
+        expect(source.creatorName, equals('ThePauny�!'));
+        expect(source.catalogTags, equals(['crowd�!']));
+        expect(source.license.name, equals('CC0 1.0�!'));
       });
     });
   });

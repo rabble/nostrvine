@@ -2,6 +2,7 @@
 // ABOUTME: Represents hashtag data returned from the search/trending endpoints.
 
 import 'package:meta/meta.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// Hashtag result from Funnelcake search API.
 ///
@@ -12,14 +13,19 @@ import 'package:meta/meta.dart';
 /// - `/analytics/hashtags/trending`: `{"tag": "funny", "score": 95.2, ...}`
 @immutable
 class HashtagSearchResult {
-  /// Creates a new [HashtagSearchResult] instance.
-  const HashtagSearchResult({
-    required this.tag,
+  /// Creates a new [HashtagSearchResult], normalizing [tag] to well-formed
+  /// UTF-16.
+  ///
+  /// Same origin and same chip rendering as `TrendingHashtag`: the API
+  /// aggregates `t` tag values authored by anyone, and a lone surrogate in a
+  /// chip label throws out of Flutter's paragraph builder.
+  HashtagSearchResult({
+    required String tag,
     this.videoCount,
     this.score,
     this.totalViews,
     this.momentum,
-  });
+  }) : tag = sanitizeUtf16(tag);
 
   /// Creates a [HashtagSearchResult] from JSON response.
   ///

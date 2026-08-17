@@ -131,7 +131,7 @@ void main() {
         // library.
         final draft = _draft(
           editorEditingParameters: _persistedParameters(),
-          selectedSound: const AudioEvent(
+          selectedSound: AudioEvent(
             id: 'sound-1',
             pubkey: 'pubkey-1',
             createdAt: 1735689600,

@@ -310,13 +310,13 @@ void main() {
         'delegates to FunnelcakeApiClient with correct parameters',
         () async {
           final trendingHashtags = [
-            const TrendingHashtag(
+            TrendingHashtag(
               tag: 'bitcoin',
               videoCount: 42,
               uniqueCreators: 10,
               totalLoops: 1000,
             ),
-            const TrendingHashtag(
+            TrendingHashtag(
               tag: 'nostr',
               videoCount: 30,
               uniqueCreators: 8,
@@ -338,7 +338,7 @@ void main() {
       test('passes custom limit to client', () async {
         when(() => mockClient.fetchTrendingHashtags(limit: 50)).thenAnswer(
           (_) async => [
-            const TrendingHashtag(
+            TrendingHashtag(
               tag: 'bitcoin',
               videoCount: 42,
               uniqueCreators: 10,
@@ -418,7 +418,7 @@ void main() {
 
       test('fetches from client on cache miss', () async {
         final trendingHashtags = [
-          const TrendingHashtag(
+          TrendingHashtag(
             tag: 'bitcoin',
             videoCount: 42,
             uniqueCreators: 10,
@@ -439,7 +439,7 @@ void main() {
         'returns cached result on second call without force refresh',
         () async {
           final trendingHashtags = [
-            const TrendingHashtag(
+            TrendingHashtag(
               tag: 'nostr',
               videoCount: 30,
               uniqueCreators: 8,
@@ -461,7 +461,7 @@ void main() {
 
       test('bypasses cache when forceRefresh is true', () async {
         final firstBatch = [
-          const TrendingHashtag(
+          TrendingHashtag(
             tag: 'vine',
             videoCount: 10,
             uniqueCreators: 3,
@@ -469,7 +469,7 @@ void main() {
           ),
         ];
         final secondBatch = [
-          const TrendingHashtag(
+          TrendingHashtag(
             tag: 'openvine',
             videoCount: 20,
             uniqueCreators: 5,
@@ -499,7 +499,7 @@ void main() {
           cacheDuration: Duration.zero,
         );
         final hashtags = [
-          const TrendingHashtag(
+          TrendingHashtag(
             tag: 'bitcoin',
             videoCount: 42,
             uniqueCreators: 10,

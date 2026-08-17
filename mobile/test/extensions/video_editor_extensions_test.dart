@@ -86,14 +86,14 @@ void main() {
     });
 
     test('setClipAndAudioState carries current markers atomically', () {
-      const audio = AudioEvent(id: 'audio-1', pubkey: 'pub', createdAt: 1);
+      final audio = AudioEvent(id: 'audio-1', pubkey: 'pub', createdAt: 1);
       when(() => stateManager.activeMeta).thenReturn({
         VideoEditorConstants.timelineMarkersStateHistoryKey: [1500],
       });
 
       editor.setClipAndAudioState(
         clips: [_clip('clip-1')],
-        audioTracks: const [audio],
+        audioTracks: [audio],
       );
 
       final meta =
@@ -121,13 +121,13 @@ void main() {
       // when it was added, then the user shoots more stills from the editor's
       // camera (or merges a set in from the clips picker) and the composition
       // becomes 6s. Without the grow, publish muxes a 6s video with 3s audio.
-      const covering = AudioEvent(
+      final covering = AudioEvent(
         id: 'sound-1',
         pubkey: 'bundled',
         createdAt: 0,
         url: 'asset://sounds/loop.mp3',
         duration: 30,
-        endTime: Duration(seconds: 3),
+        endTime: const Duration(seconds: 3),
       );
 
       List<AudioEvent> capturedAudio() {
@@ -158,13 +158,13 @@ void main() {
       });
 
       test('leaves a sound the user trimmed short of the old end', () {
-        const trimmed = AudioEvent(
+        final trimmed = AudioEvent(
           id: 'sound-1',
           pubkey: 'bundled',
           createdAt: 0,
           url: 'asset://sounds/loop.mp3',
           duration: 30,
-          endTime: Duration(seconds: 1),
+          endTime: const Duration(seconds: 1),
         );
         when(() => stateManager.activeMeta).thenReturn({
           VideoEditorConstants.audioStateHistoryKey: [trimmed.toJson()],
@@ -219,16 +219,16 @@ void main() {
   });
 
   group('buildAppendedAudioMeta', () {
-    const existing = AudioEvent(id: 'existing', pubkey: 'p', createdAt: 1);
-    const incoming = AudioEvent(id: 'incoming', pubkey: 'p', createdAt: 2);
+    final existing = AudioEvent(id: 'existing', pubkey: 'p', createdAt: 1);
+    final incoming = AudioEvent(id: 'incoming', pubkey: 'p', createdAt: 2);
 
     test('appends new tracks after existing ones and carries other meta', () {
       final meta = buildAppendedAudioMeta(
         activeMeta: {
           VideoEditorConstants.timelineMarkersStateHistoryKey: [1200],
         },
-        existingTracks: const [existing],
-        newTracks: const [incoming],
+        existingTracks: [existing],
+        newTracks: [incoming],
       );
 
       expect(
@@ -246,8 +246,8 @@ void main() {
         activeMeta: {
           VideoEditorConstants.audioStateHistoryKey: ['stale'],
         },
-        existingTracks: const [existing],
-        newTracks: const [incoming],
+        existingTracks: [existing],
+        newTracks: [incoming],
       );
 
       expect(
@@ -259,7 +259,7 @@ void main() {
     test('keeps the existing tracks when no new tracks are appended', () {
       final meta = buildAppendedAudioMeta(
         activeMeta: const {},
-        existingTracks: const [existing],
+        existingTracks: [existing],
         newTracks: const [],
       );
 

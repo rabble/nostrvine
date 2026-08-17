@@ -2,21 +2,29 @@
 // ABOUTME: Contains pubkeys and metadata for lists of people.
 
 import 'package:equatable/equatable.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// Represents a user list (NIP-51 kind 30000) containing pubkeys.
 class UserList extends Equatable {
-  const UserList({
+  /// Creates a user list, normalizing [name] and [description] to well-formed
+  /// UTF-16.
+  ///
+  /// Both come from a kind-30000 event that any pubkey may author and both
+  /// render as plain `Text`; a lone surrogate throws out of Flutter's
+  /// paragraph builder. See `CuratedList` for the boundary rationale.
+  UserList({
     required this.id,
-    required this.name,
+    required String name,
     required this.pubkeys,
     required this.createdAt,
     required this.updatedAt,
-    this.description,
+    String? description,
     this.imageUrl,
     this.isPublic = true,
     this.nostrEventId,
     this.isEditable = true,
-  });
+  }) : name = sanitizeUtf16(name),
+       description = sanitizeUtf16OrNull(description);
 
   factory UserList.fromJson(Map<String, dynamic> json) => UserList(
     id: json['id'] as String,

@@ -681,13 +681,13 @@ void main() {
       late _MockProImageEditorState editor;
       late _MockStateManager stateManager;
 
-      const coveringSound = AudioEvent(
+      final coveringSound = AudioEvent(
         id: 'sound-1',
         pubkey: 'bundled',
         createdAt: 0,
         url: 'asset://sounds/loop.mp3',
         duration: 30,
-        endTime: Duration(seconds: 2),
+        endTime: const Duration(seconds: 2),
       );
 
       setUp(() {

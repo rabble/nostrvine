@@ -215,7 +215,7 @@ void main() {
         final clipBloc = _MockClipEditorBloc();
         final mockEditor = _MockProImageEditorState();
         final mockStateManager = _MockStateManager();
-        const audioEvent = AudioEvent(
+        final audioEvent = AudioEvent(
           id: 'audio-1',
           pubkey: '',
           createdAt: 1,

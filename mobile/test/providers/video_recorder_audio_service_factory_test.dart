@@ -60,7 +60,7 @@ void main() {
         );
         await mockCamera.initialize();
 
-        const selectedSound = AudioEvent(
+        final selectedSound = AudioEvent(
           id: 'sound_123',
           pubkey:
               'test_pubkey_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',

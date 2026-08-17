@@ -62,7 +62,7 @@ class SyncE2eHarness {
   /// and "after" edits apart by [label] alone.
   Map<String, dynamic> soundBody({required String label}) {
     return SavedSound(
-      audio: const AudioEvent(
+      audio: AudioEvent(
         id: _soundId,
         pubkey: _audioPubkey,
         createdAt: 1700000000,

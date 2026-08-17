@@ -123,7 +123,7 @@ void main() {
       ) async {
         await tester.pumpWidget(
           buildWidget(
-            selectedSound: const AudioEvent(
+            selectedSound: AudioEvent(
               id: 'sound-1',
               pubkey: 'pubkey',
               createdAt: 1704067200,

@@ -1330,7 +1330,7 @@ void main() {
     });
 
     test('leaves an unbounded window to the render clamp', () {
-      const track = AudioEvent(
+      final track = AudioEvent(
         id: 'sound',
         pubkey: '',
         createdAt: 0,
@@ -1419,7 +1419,7 @@ void main() {
         endTime: const Duration(milliseconds: 200),
         duration: 30,
       );
-      const unbounded = AudioEvent(
+      final unbounded = AudioEvent(
         id: 'ambience',
         pubkey: '',
         createdAt: 0,
