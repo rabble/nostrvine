@@ -184,7 +184,7 @@ final keycastSignalApplicableProvider = Provider<bool>((ref) {
 /// - persisted last-known `notProtected` -> unrestricted, so adults don't eat
 ///   a lockout on every network blip;
 /// - everything else (protected, unknown, loading, missing token, never
-///   resolved) -> restricted.
+///   resolved, unauthenticated, auth source not yet restored) -> restricted.
 ///
 /// Pure self-custody accounts that have never been associated with Keycast
 /// are never restricted — they are outside Keycast's verified-minor signal and
@@ -199,7 +199,9 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   final keycastApplicable = ref.watch(keycastSignalApplicableProvider);
 
   if (authSource == AuthenticationSource.divineOAuth) {
-    // Mark as Keycast account for future self-custody detection (fire-and-forget).
+    // Intentional fire-and-forget monotonic marker; SharedPreferences updates
+    // its in-memory cache before the Future completes, so later synchronous
+    // wasKeycastAccountFor() reads see it in-session.
     store.markKeycastAccount(pubkey);
   }
 
@@ -219,6 +221,11 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   final lastKnown = store.lastKnownFor(pubkey);
   if (lastKnown != null) return lastKnown;
   if (authState != AuthState.authenticated || pubkey == null) return true;
+
+  // The auth source is restored asynchronously after the pubkey, so `none`
+  // means we do not yet know whether Keycast applies to this account. Fail
+  // closed rather than guess in the permissive direction.
+  if (authSource == AuthenticationSource.none) return true;
 
   // Fail closed only when Keycast signals are applicable to this account.
   if (!keycastApplicable) return false;
