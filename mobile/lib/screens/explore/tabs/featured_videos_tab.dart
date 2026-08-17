@@ -126,10 +126,8 @@ class _FeaturedPartnershipLine extends StatelessWidget {
         alignment: AlignmentDirectional.centerStart,
         child: Text(
           l10n.exploreFeaturedPaidPartnership(sponsor),
-          // Wraps rather than truncating: a clipped disclosure has stopped
-          // disclosing. Two lines is the ceiling the server's length cap and
-          // the largest supported text scale need between them.
-          maxLines: 2,
+          // Wraps with no line ceiling: a clipped disclosure has stopped
+          // disclosing, and the grid below yields whatever the line needs.
           style: VineTheme.labelMediumFont(
             color: context.vineColors.onSurfaceVariant,
           ),
