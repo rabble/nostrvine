@@ -43,7 +43,7 @@ void main() {
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 
     setUpAll(() {
-      registerFallbackValue(Uri.parse('https://names.divine.video'));
+      registerFallbackValue(Uri.parse('https://names.test.example'));
       registerFallbackValue(<String, dynamic>{});
       registerFallbackValue(
         UserProfile(

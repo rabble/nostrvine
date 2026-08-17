@@ -11,6 +11,10 @@ class _MockUserProfilesDao extends Mock implements UserProfilesDao {}
 
 class _MockHttpClient extends Mock implements Client {}
 
+/// Injected name server: not the production host, so these tests prove the
+/// repository uses the injected endpoint rather than the default.
+const _testNameServer = 'https://names.test.example';
+
 void main() {
   group('ProfileRepository.resolveDivineIdentity', () {
     late _MockNostrClient mockNostrClient;
@@ -21,7 +25,7 @@ void main() {
     const pubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
     final byPubkeyUri = Uri.parse(
-      'https://names.divine.video/api/username/by-pubkey/$pubkey',
+      '$_testNameServer/api/username/by-pubkey/$pubkey',
     );
 
     setUpAll(() {
@@ -36,6 +40,7 @@ void main() {
         nostrClient: mockNostrClient,
         userProfilesDao: mockUserProfilesDao,
         httpClient: mockHttpClient,
+        nameServerBaseUrl: _testNameServer,
       );
     });
 
@@ -141,7 +146,7 @@ void main() {
       }
 
       final evictedUri = Uri.parse(
-        'https://names.divine.video/api/username/by-pubkey/'
+        '$_testNameServer/api/username/by-pubkey/'
         '${pubkeyForIndex(0)}',
       );
       await repository.resolveDivineIdentity(pubkeyForIndex(0));
