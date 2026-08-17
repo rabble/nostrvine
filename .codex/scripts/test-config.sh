@@ -649,6 +649,34 @@ EOF
       echo "Cross-device purge did not delete the artifact dirs." >&2
       exit 1
     fi
+    # The in-place branch has its own find loop, so the newline-splitting
+    # regression needs a pin here too, not only against the staging branch.
+    XDEV_NL_PKG="$XDEV_LINK/mobile/pkg
+age"
+    mkdir -p "$XDEV_NL_PKG/build" "$XDEV_LINK/mobile/pkg"
+    touch "$XDEV_NL_PKG/build/output.o" "$XDEV_LINK/mobile/pkg/PRECIOUS_SOURCE.dart"
+    XDEV_NL_OUTPUT=$(cd "$XDEV_LINK" && \
+      env CLAUDE_PROJECT_DIR="$XDEV_LINK" \
+        "$CLAUDE_PURGE_HOOK" \
+        <<< '{"reason":"prompt_input_exit"}' || true)
+    printf '%s\n' "$XDEV_NL_OUTPUT" | jq -e --arg name "$XDEV_NAME" \
+      '.systemMessage == ("Purged 1 build/.dart_tool dirs from " + $name)' >/dev/null || {
+      echo "Cross-device purge did not report purging the newline-named build dir." >&2
+      echo "Output was: $XDEV_NL_OUTPUT" >&2
+      exit 1
+    }
+    for _ in $(seq 1 100); do
+      [ ! -d "$XDEV_NL_PKG/build" ] && break
+      sleep 0.1
+    done
+    if [ ! -f "$XDEV_LINK/mobile/pkg/PRECIOUS_SOURCE.dart" ]; then
+      echo "Cross-device purge deleted a non-artifact path through a newline-split find line." >&2
+      exit 1
+    fi
+    if [ -d "$XDEV_NL_PKG/build" ]; then
+      echo "Cross-device purge left the newline-named build dir behind." >&2
+      exit 1
+    fi
   else
     echo "skip: /dev/shm shares a filesystem with the scratch dir; cross-device purge path not exercised."
   fi
