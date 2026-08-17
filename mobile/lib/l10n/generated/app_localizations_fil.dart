@@ -9,6 +9,54 @@ class AppLocalizationsFil extends AppLocalizations {
   AppLocalizationsFil([String locale = 'fil']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Pagbawi ng clip';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Naghahanap ng mga recording na nakaimbak sa ibang account at mga video file na wala nang tumutukoy na entry.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'I-scan';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'Nabigo ang pagbawi ng clip';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Nakikita ngayon: $clips clip, $drafts draft';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Nakatago sa ibang account';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips clip, $drafts draft';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Ilipat sa account na ito';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Mga file na walang tumutukoy: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Ibalik sa library';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Walang mababawi';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return 'Nabawi ang $count clip';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Nakopya ang recovery report';
+
+  @override
   String get devOptionsStorageFootprint => 'Paggamit ng storage';
 
   @override

@@ -9,6 +9,54 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => '片段恢复';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      '查找存储在其他账号下的录制内容，以及已无任何记录引用的视频文件。';
+
+  @override
+  String get devOptionsClipRecoveryScan => '扫描';
+
+  @override
+  String get devOptionsClipRecoveryFailure => '片段恢复失败';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return '当前可见：$clips 个片段，$drafts 个草稿';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => '隐藏在其他账号下';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips 个片段，$drafts 个草稿';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => '移至此账号';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return '无引用的文件：$count 个（$size）';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => '在库中重建';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => '没有可恢复的内容';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return '已恢复 $count 个片段';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => '已复制恢复报告';
+
+  @override
   String get devOptionsStorageFootprint => '存储占用';
 
   @override

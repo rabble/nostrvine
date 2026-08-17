@@ -9,6 +9,85 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Clipherstel';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Vindt opnamen die onder een ander account staan en videobestanden waarnaar geen enkel item meer verwijst.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Scannen';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'Clipherstel mislukt';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips clips',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts concepten',
+      one: '$drafts concept',
+    );
+    return 'Nu zichtbaar: $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts =>
+      'Verborgen onder andere accounts';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips clips',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts concepten',
+      one: '$drafts concept',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Naar dit account verplaatsen';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Bestanden zonder verwijzing: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Herstellen in bibliotheek';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Niets te herstellen';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips hersteld',
+      one: '$count clip hersteld',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Herstelrapport gekopieerd';
+
+  @override
   String get devOptionsStorageFootprint => 'Opslaggebruik';
 
   @override

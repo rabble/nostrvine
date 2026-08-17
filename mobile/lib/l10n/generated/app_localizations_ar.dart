@@ -9,6 +9,84 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'استرداد المقاطع';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'يعثر على التسجيلات المحفوظة ضمن حساب آخر وعلى ملفات الفيديو التي لم يعد أي سجل يشير إليها.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'فحص';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'فشل استرداد المقاطع';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips مقاطع',
+      one: 'مقطع واحد',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts مسودات',
+      one: 'مسودة واحدة',
+    );
+    return 'ظاهر الآن: $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'مخفية ضمن حسابات أخرى';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips مقاطع',
+      one: 'مقطع واحد',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts مسودات',
+      one: 'مسودة واحدة',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'نقل إلى هذا الحساب';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'ملفات غير مُشار إليها: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'إعادة البناء في المكتبة';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'لا يوجد ما يمكن استرداده';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم استرداد $count مقاطع',
+      one: 'تم استرداد مقطع واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'تم نسخ تقرير الاسترداد';
+
+  @override
   String get devOptionsStorageFootprint => 'مساحة التخزين المستخدمة';
 
   @override

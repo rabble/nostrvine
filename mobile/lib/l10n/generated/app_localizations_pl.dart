@@ -9,6 +9,90 @@ class AppLocalizationsPl extends AppLocalizations {
   AppLocalizationsPl([String locale = 'pl']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Odzyskiwanie klipów';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Znajduje nagrania zapisane na innym koncie oraz pliki wideo, do których nie odwołuje się już żaden wpis.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Skanuj';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Odzyskiwanie klipów nie udało się';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips klipów',
+      few: '$clips klipy',
+      one: '$clips klip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts wersji roboczych',
+      few: '$drafts wersje robocze',
+      one: '$drafts wersja robocza',
+    );
+    return 'Widoczne teraz: $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Ukryte na innych kontach';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips klipów',
+      few: '$clips klipy',
+      one: '$clips klip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts wersji roboczych',
+      few: '$drafts wersje robocze',
+      one: '$drafts wersja robocza',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Przenieś na to konto';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Pliki bez odwołań: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Odtwórz w bibliotece';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Nie ma czego odzyskiwać';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Odzyskano $count klipów',
+      few: 'Odzyskano $count klipy',
+      one: 'Odzyskano $count klip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Skopiowano raport odzyskiwania';
+
+  @override
   String get devOptionsStorageFootprint => 'Zajętość pamięci';
 
   @override

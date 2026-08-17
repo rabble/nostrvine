@@ -9,6 +9,85 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Clip Recovery';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Finds recordings stored under another account and video files no entry references any more.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Scan';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'Clip recovery failed';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips clips',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts drafts',
+      one: '$drafts draft',
+    );
+    return 'Visible now: $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts =>
+      'Hidden under other accounts';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips clips',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts drafts',
+      one: '$drafts draft',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Move to this account';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Unreferenced files: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Rebuild in library';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Nothing to recover';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Recovered $count clips',
+      one: 'Recovered $count clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Recovery report copied';
+
+  @override
   String get devOptionsStorageFootprint => 'Storage Footprint';
 
   @override

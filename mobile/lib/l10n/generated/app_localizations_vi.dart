@@ -9,6 +9,54 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Khôi phục clip';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Tìm các bản ghi được lưu dưới tài khoản khác và các tệp video không còn mục nào tham chiếu tới.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Quét';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'Khôi phục clip không thành công';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Đang hiển thị: $clips clip, $drafts bản nháp';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Bị ẩn dưới tài khoản khác';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips clip, $drafts bản nháp';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Chuyển sang tài khoản này';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Tệp không được tham chiếu: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Dựng lại trong thư viện';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Không có gì để khôi phục';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return 'Đã khôi phục $count clip';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Đã sao chép báo cáo khôi phục';
+
+  @override
   String get devOptionsStorageFootprint => 'Dung lượng đã dùng';
 
   @override

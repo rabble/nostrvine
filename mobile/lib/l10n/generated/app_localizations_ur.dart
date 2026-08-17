@@ -9,6 +9,85 @@ class AppLocalizationsUr extends AppLocalizations {
   AppLocalizationsUr([String locale = 'ur']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'کلپ کی بازیابی';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'کسی دوسرے اکاؤنٹ کے تحت محفوظ ریکارڈنگز اور ایسی ویڈیو فائلیں تلاش کرتا ہے جن کا اب کوئی اندراج حوالہ نہیں دیتا۔';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'اسکین کریں';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'کلپ بازیابی ناکام ہو گئی';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips کلپس',
+      one: '$clips کلپ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts مسودے',
+      one: '$drafts مسودہ',
+    );
+    return 'اس وقت نظر آنے والے: $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts =>
+      'دوسرے اکاؤنٹس میں چھپے ہوئے';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips کلپس',
+      one: '$clips کلپ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts مسودے',
+      one: '$drafts مسودہ',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'اس اکاؤنٹ میں منتقل کریں';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'بغیر حوالہ فائلیں: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'لائبریری میں دوبارہ بنائیں';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'بازیاب کرنے کو کچھ نہیں';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کلپس بازیاب ہو گئے',
+      one: '$count کلپ بازیاب ہو گیا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'بازیابی رپورٹ کاپی ہو گئی';
+
+  @override
   String get devOptionsStorageFootprint => 'اسٹوریج کا استعمال';
 
   @override

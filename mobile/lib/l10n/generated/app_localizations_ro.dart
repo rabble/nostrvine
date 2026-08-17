@@ -9,6 +9,89 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Recuperare clipuri';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Găsește înregistrări stocate în alt cont și fișiere video la care nu mai face referire nicio intrare.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Scanează';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'Recuperarea clipurilor a eșuat';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips de clipuri',
+      few: '$clips clipuri',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts de ciorne',
+      few: '$drafts ciorne',
+      one: '$drafts ciornă',
+    );
+    return 'Vizibile acum: $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Ascunse în alte conturi';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips de clipuri',
+      few: '$clips clipuri',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts de ciorne',
+      few: '$drafts ciorne',
+      one: '$drafts ciornă',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Mută în acest cont';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Fișiere fără referință: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Reconstruiește în bibliotecă';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Nimic de recuperat';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de clipuri recuperate',
+      few: '$count clipuri recuperate',
+      one: '$count clip recuperat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Raport de recuperare copiat';
+
+  @override
   String get devOptionsStorageFootprint => 'Spațiu ocupat';
 
   @override

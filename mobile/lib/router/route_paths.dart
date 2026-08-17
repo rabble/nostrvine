@@ -18,6 +18,7 @@ abstract final class RoutePaths {
   static const badges = '/badges';
   static const blossomSettings = '/blossom-settings';
   static const blueskySettings = '/bluesky-settings';
+  static const clipRecovery = '/clip-recovery';
   static const contentFilters = '/content-filters';
   static const contentPreferences = '/content-preferences';
   static const createPeopleList = '/people-lists/new';

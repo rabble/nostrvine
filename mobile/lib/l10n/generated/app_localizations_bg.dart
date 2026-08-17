@@ -9,6 +9,86 @@ class AppLocalizationsBg extends AppLocalizations {
   AppLocalizationsBg([String locale = 'bg']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Възстановяване на клипове';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Намира записи, съхранени под друг акаунт, и видеофайлове, към които вече не сочи никакъв запис.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Сканиране';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Възстановяването на клипове се провали';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips клипа',
+      one: '$clips клип',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts чернови',
+      one: '$drafts чернова',
+    );
+    return 'Видими сега: $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Скрити под други акаунти';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips клипа',
+      one: '$clips клип',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts чернови',
+      one: '$drafts чернова',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Преместване в този акаунт';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Файлове без връзка: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Възстановяване в библиотеката';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Няма какво да се възстанови';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Възстановени $count клипа',
+      one: 'Възстановен $count клип',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied =>
+      'Отчетът за възстановяване е копиран';
+
+  @override
   String get devOptionsStorageFootprint => 'Заето пространство';
 
   @override

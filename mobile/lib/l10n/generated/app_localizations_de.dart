@@ -9,6 +9,87 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Clip-Wiederherstellung';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Findet Aufnahmen unter einem anderen Konto und Videodateien, auf die kein Eintrag mehr verweist.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Scannen';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Clip-Wiederherstellung fehlgeschlagen';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips Clips',
+      one: '$clips Clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts Entwürfe',
+      one: '$drafts Entwurf',
+    );
+    return 'Jetzt sichtbar: $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts =>
+      'Unter anderen Konten verborgen';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips Clips',
+      one: '$clips Clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts Entwürfe',
+      one: '$drafts Entwurf',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Zu diesem Konto verschieben';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Nicht referenzierte Dateien: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'In Bibliothek wiederherstellen';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Nichts wiederherzustellen';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Clips wiederhergestellt',
+      one: '$count Clip wiederhergestellt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied =>
+      'Wiederherstellungsbericht kopiert';
+
+  @override
   String get devOptionsStorageFootprint => 'Speicherverbrauch';
 
   @override

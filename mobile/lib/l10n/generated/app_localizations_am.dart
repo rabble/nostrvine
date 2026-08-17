@@ -9,6 +9,84 @@ class AppLocalizationsAm extends AppLocalizations {
   AppLocalizationsAm([String locale = 'am']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'የክሊፕ መልሶ ማግኛ';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'በሌላ መለያ ስር የተቀመጡ ቀረጻዎችን እና ማንኛውም ግቤት የማይጠቅሳቸውን የቪዲዮ ፋይሎችን ያገኛል።';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'ቃኝ';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'የክሊፕ መልሶ ማግኘት አልተሳካም';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips ክሊፖች',
+      one: '$clips ክሊፕ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts ረቂቆች',
+      one: '$drafts ረቂቅ',
+    );
+    return 'አሁን የሚታዩ፦ $_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'በሌሎች መለያዎች ስር የተደበቁ';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips ክሊፖች',
+      one: '$clips ክሊፕ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts ረቂቆች',
+      one: '$drafts ረቂቅ',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'ወደዚህ መለያ አዛውር';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'ያልተጠቀሱ ፋይሎች፦ $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'በቤተ-መጻሕፍት ውስጥ መልሶ ገንባ';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'መልሶ የሚገኝ ነገር የለም';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ክሊፖች ተመልሰዋል',
+      one: '$count ክሊፕ ተመልሷል',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'የመልሶ ማግኛ ሪፖርት ተቀድቷል';
+
+  @override
   String get devOptionsStorageFootprint => 'የማከማቻ አጠቃቀም';
 
   @override
