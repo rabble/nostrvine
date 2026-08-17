@@ -93,6 +93,19 @@ void main() {
       expect(paginationState.eventsReceivedInCurrentQuery, equals(3));
     });
 
+    test('should record received count without lowering an existing tally', () {
+      // Arrange
+      final paginationState = PaginationState();
+      paginationState.startQuery();
+      paginationState.recordReceivedCount(5);
+
+      // Act
+      paginationState.recordReceivedCount(3);
+
+      // Assert
+      expect(paginationState.eventsReceivedInCurrentQuery, equals(5));
+    });
+
     test(
       'should set hasMore=false when fewer events received than requested',
       () {

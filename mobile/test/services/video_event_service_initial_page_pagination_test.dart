@@ -73,17 +73,10 @@ void main() {
       videoEventService.dispose();
     });
 
-    test('keeps hasMore when a full first page arrives before EOSE', () async {
-      // The initial subscription delivers stored events through the real-time
-      // handler, so the `isHistorical` counter — which only the load-more path
-      // drives — stays at zero. Before the fix, completeQuery read that zero
-      // and set hasMore=false however many events had actually landed.
-      //
-      // Runs on the real event loop rather than under fakeAsync: the subscribe
-      // future outlives a fake zone, and its continuation then schedules a real
-      // timer that strands whichever widget test runs next in CI's merged
-      // isolate.
-      const limit = 5;
+    Future<PaginationState> subscribeThroughEose({
+      required int eventCount,
+      required int limit,
+    }) async {
       void Function()? capturedOnEose;
       final controller = StreamController<Event>();
       addTearDown(controller.close);
@@ -101,7 +94,7 @@ void main() {
         limit: limit,
       );
 
-      for (var i = 0; i < limit; i++) {
+      for (var i = 0; i < eventCount; i++) {
         controller.add(_videoEvent(i));
       }
       await Future<void>.delayed(Duration.zero);
@@ -110,8 +103,22 @@ void main() {
       capturedOnEose!();
       await Future<void>.delayed(Duration.zero);
 
-      final state = videoEventService
+      return videoEventService
           .getPaginationStatesForTesting()[SubscriptionType.profile]!;
+    }
+
+    test('keeps hasMore when a full first page arrives before EOSE', () async {
+      // The initial subscription delivers stored events through the real-time
+      // handler, so the `isHistorical` counter — which only the load-more path
+      // drives — stays at zero. Before the fix, completeQuery read that zero
+      // and set hasMore=false however many events had actually landed.
+      //
+      // Runs on the real event loop rather than under fakeAsync: the subscribe
+      // future outlives a fake zone, and its continuation then schedules a real
+      // timer that strands whichever widget test runs next in CI's merged
+      // isolate.
+      const limit = 5;
+      final state = await subscribeThroughEose(eventCount: limit, limit: limit);
 
       expect(
         state.eventsReceivedInCurrentQuery,
@@ -128,5 +135,40 @@ void main() {
             'feed is exhausted',
       );
     });
+
+    test('clears stale query state before counting a first page', () async {
+      const limit = 5;
+      final stateBeforeSubscribe = videoEventService
+          .getPaginationStatesForTesting()[SubscriptionType.profile]!;
+      stateBeforeSubscribe.eventsReceivedInCurrentQuery = 500;
+      stateBeforeSubscribe.hasMore = false;
+
+      final state = await subscribeThroughEose(eventCount: limit, limit: limit);
+
+      expect(state.eventsReceivedInCurrentQuery, equals(limit));
+      expect(
+        state.hasMore,
+        isTrue,
+        reason:
+            'a fresh first-page subscription must not inherit the previous '
+            'profile query count or exhausted flag',
+      );
+    });
+
+    test(
+      'marks hasMore false when a short first page arrives before EOSE',
+      () async {
+        final state = await subscribeThroughEose(eventCount: 3, limit: 5);
+
+        expect(state.eventsReceivedInCurrentQuery, equals(3));
+        expect(
+          state.hasMore,
+          isFalse,
+          reason:
+              'a first page shorter than the requested limit still indicates '
+              'the feed is exhausted',
+        );
+      },
+    );
   });
 }

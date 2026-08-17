@@ -82,6 +82,7 @@ class PaginationState {
 
   void startQuery() {
     eventsReceivedInCurrentQuery = 0;
+    hasMore = true;
     isLoading = true;
   }
 
@@ -2202,12 +2203,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           nip50Sort: nip50Sort,
         );
 
-        // Set per-subscription loading state to show loading UI
-        final paginationState = _paginationStates[subscriptionType];
-        if (paginationState != null) {
-          paginationState.isLoading = true;
-        }
-
         // Generate deterministic subscription ID based on subscription parameters
         final subscriptionId = _generateSubscriptionId(
           subscriptionType: subscriptionType,
@@ -2241,6 +2236,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         }
         _pendingSubscriptionIds.add(subscriptionId);
         pendingClaimId = subscriptionId;
+
+        // Set per-subscription loading state after duplicate detection so a
+        // reused in-flight subscription keeps its current query tally intact.
+        final paginationState = _paginationStates[subscriptionType];
+        paginationState?.startQuery();
 
         // Create direct subscription using NostrService with proper filters
         final subscriptionStartTime = DateTime.now();
