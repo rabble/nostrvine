@@ -3480,9 +3480,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get authSending => 'Menghantar...';
 
   @override
-  String get authSendResetLink => 'Hantar pautan tetapan semula';
-
-  @override
   String get authSignInButton => 'Log masuk';
 
   @override

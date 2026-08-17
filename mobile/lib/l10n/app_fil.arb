@@ -917,7 +917,6 @@
     "authContinueToApp": "Magpatuloy sa App",
     "authFailedToSendResetEmail": "Hindi naipadala ang reset email.",
     "authSending": "Nagpapadala...",
-    "authSendResetLink": "Ipadala ang reset link",
     "authSignInButton": "Mag-sign in",
     "authVerificationErrorTimeout": "Nag-time out ang verification. Pakisubukang mag-register ulit.",
     "authVerificationErrorMissingCode": "Nabigo ang verification — kulang ang authorization code.",

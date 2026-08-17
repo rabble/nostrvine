@@ -3448,9 +3448,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSending => 'Sending...';
 
   @override
-  String get authSendResetLink => 'Send reset link';
-
-  @override
   String get authSignInButton => 'Sign in';
 
   @override

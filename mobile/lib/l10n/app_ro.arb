@@ -1373,7 +1373,6 @@
     "authContinueToApp": "Continuă în aplicație",
     "authFailedToSendResetEmail": "N-am putut trimite emailul de resetare.",
     "authSending": "Se trimite...",
-    "authSendResetLink": "Trimite linkul de resetare",
     "authSignInButton": "Autentificare",
     "authVerificationErrorTimeout": "Verificarea a expirat. Încearcă să te înregistrezi din nou.",
     "authVerificationErrorMissingCode": "Verificare eșuată — cod de autorizare lipsă.",

@@ -1878,7 +1878,6 @@
   "authContinueToApp": "进入应用",
   "authFailedToSendResetEmail": "重置邮件发送失败。",
   "authSending": "发送中...",
-  "authSendResetLink": "发送重置链接",
   "authSignInButton": "登录",
   "authVerificationErrorTimeout": "验证超时。请重新注册。",
   "authVerificationErrorMissingCode": "验证失败——缺少授权码。",

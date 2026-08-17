@@ -1373,7 +1373,6 @@
     "authContinueToApp": "Weiter zur App",
     "authFailedToSendResetEmail": "Reset-E-Mail konnte nicht gesendet werden.",
     "authSending": "Wird gesendet...",
-    "authSendResetLink": "Reset-Link senden",
     "authSignInButton": "Anmelden",
     "authVerificationErrorTimeout": "Verifizierung abgelaufen. Bitte registriere dich erneut.",
     "authVerificationErrorMissingCode": "Verifizierung fehlgeschlagen — Autorisierungscode fehlt.",

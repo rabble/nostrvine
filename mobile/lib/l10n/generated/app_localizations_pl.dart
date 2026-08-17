@@ -3538,9 +3538,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authSending => 'Wysyłanie...';
 
   @override
-  String get authSendResetLink => 'Wyślij link resetujący';
-
-  @override
   String get authSignInButton => 'Zaloguj się';
 
   @override

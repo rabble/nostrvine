@@ -1373,7 +1373,6 @@
     "authContinueToApp": "Continua nell'app",
     "authFailedToSendResetEmail": "Impossibile inviare l'email di reimpostazione.",
     "authSending": "Invio...",
-    "authSendResetLink": "Invia link di reimpostazione",
     "authSignInButton": "Accedi",
     "authVerificationErrorTimeout": "Verifica scaduta. Prova a registrarti di nuovo.",
     "authVerificationErrorMissingCode": "Verifica fallita — codice di autorizzazione mancante.",

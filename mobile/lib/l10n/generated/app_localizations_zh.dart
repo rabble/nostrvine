@@ -3276,9 +3276,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authSending => '发送中...';
 
   @override
-  String get authSendResetLink => '发送重置链接';
-
-  @override
   String get authSignInButton => '登录';
 
   @override

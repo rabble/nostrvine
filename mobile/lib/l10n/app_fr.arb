@@ -1373,7 +1373,6 @@
     "authContinueToApp": "Continuer vers l'app",
     "authFailedToSendResetEmail": "Échec de l'envoi de l'e-mail de réinitialisation.",
     "authSending": "Envoi...",
-    "authSendResetLink": "Envoyer le lien",
     "authSignInButton": "Se connecter",
     "authVerificationErrorTimeout": "Délai de vérification dépassé. Essaie de t'inscrire à nouveau.",
     "authVerificationErrorMissingCode": "Vérification échouée — code d'autorisation manquant.",

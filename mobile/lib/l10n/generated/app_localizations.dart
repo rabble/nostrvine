@@ -6005,12 +6005,6 @@ abstract class AppLocalizations {
   /// **'Sending...'**
   String get authSending;
 
-  /// No description provided for @authSendResetLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Send reset link'**
-  String get authSendResetLink;
-
   /// No description provided for @authSignInButton.
   ///
   /// In en, this message translates to:

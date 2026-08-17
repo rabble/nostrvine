@@ -1373,7 +1373,6 @@
     "authContinueToApp": "Ir para o app",
     "authFailedToSendResetEmail": "Falha ao enviar o e-mail de redefinição.",
     "authSending": "Enviando...",
-    "authSendResetLink": "Enviar link de redefinição",
     "authSignInButton": "Entrar",
     "authVerificationErrorTimeout": "A verificação expirou. Tente se registrar novamente.",
     "authVerificationErrorMissingCode": "Verificação falhou — código de autorização ausente.",

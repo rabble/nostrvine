@@ -3382,9 +3382,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authSending => 'በመላክ ላይ...';
 
   @override
-  String get authSendResetLink => 'ዳግም ማስጀመሪያ አገናኝ ላክ';
-
-  @override
   String get authSignInButton => 'ይግቡ';
 
   @override

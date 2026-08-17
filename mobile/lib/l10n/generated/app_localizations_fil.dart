@@ -3507,9 +3507,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get authSending => 'Nagpapadala...';
 
   @override
-  String get authSendResetLink => 'Ipadala ang reset link';
-
-  @override
   String get authSignInButton => 'Mag-sign in';
 
   @override

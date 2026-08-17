@@ -1878,7 +1878,6 @@
   "authContinueToApp": "ایپ پر جائیں",
   "authFailedToSendResetEmail": "ری سیٹ ای میل نہیں بھیجی جا سکی۔",
   "authSending": "بھیجا جا رہا ہے...",
-  "authSendResetLink": "ری سیٹ لنک بھیجیں",
   "authSignInButton": "سائن ان کریں",
   "authVerificationErrorTimeout": "تصدیق کا وقت ختم ہو گیا۔ براہ کرم دوبارہ رجسٹر کریں۔",
   "authVerificationErrorMissingCode": "تصدیق ناکام — اجازتی کوڈ غائب ہے۔",

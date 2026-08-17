@@ -3552,9 +3552,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authSending => 'Se trimite...';
 
   @override
-  String get authSendResetLink => 'Trimite linkul de resetare';
-
-  @override
   String get authSignInButton => 'Autentificare';
 
   @override

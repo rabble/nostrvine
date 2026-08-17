@@ -2098,7 +2098,6 @@
   "authContinueToApp": "Continue to App",
   "authFailedToSendResetEmail": "Failed to send reset email.",
   "authSending": "Sending...",
-  "authSendResetLink": "Send reset link",
   "authSignInButton": "Sign in",
   "authVerificationErrorTimeout": "Verification timed out. Please try registering again.",
   "authVerificationErrorMissingCode": "Verification failed — missing authorization code.",

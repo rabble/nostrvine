@@ -3507,9 +3507,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authSending => 'Envoi...';
 
   @override
-  String get authSendResetLink => 'Envoyer le lien';
-
-  @override
   String get authSignInButton => 'Se connecter';
 
   @override

@@ -1373,7 +1373,6 @@
     "authContinueToApp": "Przejdź do aplikacji",
     "authFailedToSendResetEmail": "Nie udało się wysłać e-maila z resetem.",
     "authSending": "Wysyłanie...",
-    "authSendResetLink": "Wyślij link resetujący",
     "authSignInButton": "Zaloguj się",
     "authVerificationErrorTimeout": "Weryfikacja przekroczyła czas. Spróbuj zarejestrować się ponownie.",
     "authVerificationErrorMissingCode": "Weryfikacja nieudana — brak kodu autoryzacyjnego.",

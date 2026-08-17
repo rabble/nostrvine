@@ -3464,9 +3464,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authSending => 'Versturen...';
 
   @override
-  String get authSendResetLink => 'Resetlink versturen';
-
-  @override
   String get authSignInButton => 'Inloggen';
 
   @override

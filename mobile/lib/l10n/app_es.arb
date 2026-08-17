@@ -1377,7 +1377,6 @@
     "authContinueToApp": "Ir a la app",
     "authFailedToSendResetEmail": "No se pudo enviar el email de restablecimiento.",
     "authSending": "Enviando...",
-    "authSendResetLink": "Enviar link de restablecimiento",
     "authSignInButton": "Iniciar sesión",
     "authVerificationErrorTimeout": "Se agotó el tiempo de verificación. Registrate de nuevo.",
     "authVerificationErrorMissingCode": "Falló la verificación — falta el código de autorización.",

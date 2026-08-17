@@ -1370,7 +1370,6 @@
     "authContinueToApp": "Uygulamaya Devam Et",
     "authFailedToSendResetEmail": "Sıfırlama e-postası gönderilemedi.",
     "authSending": "Gönderiliyor...",
-    "authSendResetLink": "Sıfırlama bağlantısı gönder",
     "authSignInButton": "Giriş yap",
     "authVerificationErrorTimeout": "Doğrulama zaman aşımına uğradı. Lütfen tekrar kaydolmayı dene.",
     "authVerificationErrorMissingCode": "Doğrulama başarısız — yetkilendirme kodu eksik.",

@@ -3265,9 +3265,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authSending => '送信中...';
 
   @override
-  String get authSendResetLink => 'リセットリンクを送る';
-
-  @override
   String get authSignInButton => 'サインイン';
 
   @override

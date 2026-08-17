@@ -3498,9 +3498,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authSending => 'Изпращаме...';
 
   @override
-  String get authSendResetLink => 'Изпрати линк за нулиране';
-
-  @override
   String get authSignInButton => 'Вход';
 
   @override

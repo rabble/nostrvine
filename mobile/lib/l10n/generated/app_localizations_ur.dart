@@ -3451,9 +3451,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get authSending => 'بھیجا جا رہا ہے...';
 
   @override
-  String get authSendResetLink => 'ری سیٹ لنک بھیجیں';
-
-  @override
   String get authSignInButton => 'سائن ان کریں';
 
   @override

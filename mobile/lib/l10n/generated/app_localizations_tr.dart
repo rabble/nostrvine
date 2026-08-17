@@ -3421,9 +3421,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authSending => 'Gönderiliyor...';
 
   @override
-  String get authSendResetLink => 'Sıfırlama bağlantısı gönder';
-
-  @override
   String get authSignInButton => 'Giriş yap';
 
   @override

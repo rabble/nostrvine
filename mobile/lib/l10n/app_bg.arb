@@ -1449,7 +1449,6 @@
     "authContinueToApp": "Продължи към приложението",
     "authFailedToSendResetEmail": "Не успяхме да изпратим имейл за нулиране.",
     "authSending": "Изпращаме...",
-    "authSendResetLink": "Изпрати линк за нулиране",
     "authSignInButton": "Вход",
     "authVerificationErrorTimeout": "Потвърждението изтече. Опитай да се регистрираш отново.",
     "authVerificationErrorMissingCode": "Потвърждението не мина - липсва код за оторизация.",

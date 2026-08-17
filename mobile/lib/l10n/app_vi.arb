@@ -1878,7 +1878,6 @@
   "authContinueToApp": "Tiếp tục vào ứng dụng",
   "authFailedToSendResetEmail": "Không gửi được email đặt lại.",
   "authSending": "Đang gửi...",
-  "authSendResetLink": "Gửi liên kết đặt lại",
   "authSignInButton": "Đăng nhập",
   "authVerificationErrorTimeout": "Xác minh hết thời gian chờ. Vui lòng đăng ký lại.",
   "authVerificationErrorMissingCode": "Xác minh thất bại — thiếu mã ủy quyền.",

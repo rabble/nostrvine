@@ -3282,9 +3282,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authSending => '보내는 중...';
 
   @override
-  String get authSendResetLink => '재설정 링크 보내기';
-
-  @override
   String get authSignInButton => '로그인';
 
   @override

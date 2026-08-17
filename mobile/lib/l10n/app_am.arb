@@ -1637,7 +1637,6 @@
     "authContinueToApp": "ወደ መተግበሪያ ይቀጥሉ",
     "authFailedToSendResetEmail": "ዳግም ማስጀመር ኢሜይል መላክ አልተሳካም።",
     "authSending": "በመላክ ላይ...",
-    "authSendResetLink": "ዳግም ማስጀመሪያ አገናኝ ላክ",
     "authSignInButton": "ይግቡ",
     "authVerificationErrorTimeout": "የማረጋገጫ ጊዜ አልቋል። እባክዎ እንደገና ለመመዝገብ ይሞክሩ።",
     "authVerificationErrorMissingCode": "ማረጋገጥ አልተሳካም - የፈቀዳ ኮድ ጠፍቷል።",

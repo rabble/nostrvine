@@ -1363,7 +1363,6 @@
     "authContinueToApp": "المتابعة إلى التطبيق",
     "authFailedToSendResetEmail": "فشل إرسال بريد إعادة التعيين.",
     "authSending": "جاري الإرسال...",
-    "authSendResetLink": "إرسال رابط التعيين",
     "authSignInButton": "تسجيل الدخول",
     "authVerificationErrorTimeout": "انتهت مهلة التحقق. حاول التسجيل مرّة أخرى.",
     "authVerificationErrorMissingCode": "فشل التحقق — رمز التفويض مفقود.",

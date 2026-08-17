@@ -3457,9 +3457,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get authSending => 'Đang gửi...';
 
   @override
-  String get authSendResetLink => 'Gửi liên kết đặt lại';
-
-  @override
   String get authSignInButton => 'Đăng nhập';
 
   @override

@@ -3416,9 +3416,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get authSending => 'Mengirim...';
 
   @override
-  String get authSendResetLink => 'Kirim tautan reset';
-
-  @override
   String get authSignInButton => 'Masuk';
 
   @override

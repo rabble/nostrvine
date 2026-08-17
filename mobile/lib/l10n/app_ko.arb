@@ -842,7 +842,6 @@
     "authContinueToApp": "앱으로 계속",
     "authFailedToSendResetEmail": "재설정 이메일을 보내지 못했어요.",
     "authSending": "보내는 중...",
-    "authSendResetLink": "재설정 링크 보내기",
     "authSignInButton": "로그인",
     "authVerificationErrorTimeout": "인증 시간이 초과됐어요. 다시 가입해보세요.",
     "authVerificationErrorMissingCode": "인증 실패 — 인증 코드가 없어요.",

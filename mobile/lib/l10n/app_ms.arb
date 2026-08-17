@@ -1878,7 +1878,6 @@
   "authContinueToApp": "Teruskan ke Apl",
   "authFailedToSendResetEmail": "Gagal menghantar e-mel tetapan semula.",
   "authSending": "Menghantar...",
-  "authSendResetLink": "Hantar pautan tetapan semula",
   "authSignInButton": "Log masuk",
   "authVerificationErrorTimeout": "Pengesahan tamat masa. Sila cuba mendaftar semula.",
   "authVerificationErrorMissingCode": "Pengesahan gagal — kod kebenaran hilang.",

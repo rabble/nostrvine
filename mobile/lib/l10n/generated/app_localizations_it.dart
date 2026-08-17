@@ -3495,9 +3495,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authSending => 'Invio...';
 
   @override
-  String get authSendResetLink => 'Invia link di reimpostazione';
-
-  @override
   String get authSignInButton => 'Accedi';
 
   @override

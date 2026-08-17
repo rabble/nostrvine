@@ -3446,9 +3446,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authSending => 'Skickar...';
 
   @override
-  String get authSendResetLink => 'Skicka återställningslänk';
-
-  @override
   String get authSignInButton => 'Logga in';
 
   @override

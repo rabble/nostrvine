@@ -3418,9 +3418,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authSending => 'جاري الإرسال...';
 
   @override
-  String get authSendResetLink => 'إرسال رابط التعيين';
-
-  @override
   String get authSignInButton => 'تسجيل الدخول';
 
   @override

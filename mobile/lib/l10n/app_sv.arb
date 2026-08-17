@@ -1373,7 +1373,6 @@
     "authContinueToApp": "Fortsätt till appen",
     "authFailedToSendResetEmail": "Kunde inte skicka återställningsmejl.",
     "authSending": "Skickar...",
-    "authSendResetLink": "Skicka återställningslänk",
     "authSignInButton": "Logga in",
     "authVerificationErrorTimeout": "Verifieringen tog slut på tid. Försök registrera dig igen.",
     "authVerificationErrorMissingCode": "Verifiering misslyckades – auktoriseringskod saknas.",

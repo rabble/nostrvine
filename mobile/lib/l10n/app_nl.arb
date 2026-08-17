@@ -1373,7 +1373,6 @@
     "authContinueToApp": "Door naar de app",
     "authFailedToSendResetEmail": "Resetmail versturen mislukt.",
     "authSending": "Versturen...",
-    "authSendResetLink": "Resetlink versturen",
     "authSignInButton": "Inloggen",
     "authVerificationErrorTimeout": "Verificatie duurde te lang. Probeer opnieuw te registreren.",
     "authVerificationErrorMissingCode": "Verificatie mislukt — autorisatiecode ontbreekt.",
