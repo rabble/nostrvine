@@ -1,4 +1,4 @@
-// ABOUTME: Widget tests for the developer clip-recovery section.
+// ABOUTME: Widget tests for the developer clip-recovery screen.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,8 +7,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/clip_recovery/clip_recovery_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_recovery.dart';
+import 'package:openvine/screens/clip_recovery_screen.dart';
 import 'package:openvine/services/clip_recovery_service.dart';
-import 'package:openvine/widgets/developer/clip_recovery_section.dart';
 
 class _MockService extends Mock implements ClipRecoveryService {}
 
@@ -25,12 +25,14 @@ void main() {
   Widget wrap(ClipRecoveryCubit cubit) => MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(
-      body: BlocProvider.value(
-        value: cubit,
-        child: const SingleChildScrollView(child: ClipRecoveryView()),
-      ),
-    ),
+    home: BlocProvider.value(value: cubit, child: const ClipRecoveryView()),
+  );
+
+  OrphanClipFile orphan(int index, {Duration? duration}) => OrphanClipFile(
+    path: '/documents/VID_2026010${index}_090000.mp4',
+    sizeBytes: 1024 * index,
+    modifiedAt: DateTime(2026, 8, 17),
+    duration: duration,
   );
 
   testWidgets('shows a hidden owner with its untruncated pubkey', (
@@ -68,16 +70,12 @@ void main() {
 
   testWidgets('restores only the file whose button was tapped', (tester) async {
     final wanted = OrphanClipFile(
-      path: '/documents/VID_1755400000000.mp4',
+      path: '/documents/VID_20260101_090001.mp4',
       sizeBytes: 2 * 1024 * 1024,
       modifiedAt: DateTime(2026, 8, 17),
       duration: const Duration(milliseconds: 6033),
     );
-    final other = OrphanClipFile(
-      path: '/documents/VID_1755400000001.mp4',
-      sizeBytes: 1024,
-      modifiedAt: DateTime(2026, 8, 16),
-    );
+    final other = orphan(2);
     when(service.scanRecoverableClips).thenAnswer(
       (_) async => ClipRecoveryReport(
         currentOwnerPubkey: 'bb',
@@ -99,12 +97,46 @@ void main() {
     // Size and length let the operator tell two recordings apart before
     // restoring one; a file that would not decode shows the size alone.
     expect(find.text('2.0 MB · 6.0s'), findsOneWidget);
-    expect(find.text('1.0 KB'), findsOneWidget);
+    expect(find.text('2.0 KB'), findsOneWidget);
 
     await tester.tap(find.text(l10n.devOptionsClipRecoveryImport).first);
     await tester.pumpAndSettle();
 
     verify(() => service.importOrphanFiles([wanted])).called(1);
+  });
+
+  testWidgets('builds orphan rows lazily so a long list stays cheap', (
+    tester,
+  ) async {
+    // The whole reason this is a screen rather than a section: a database
+    // reset can strand hundreds of recordings, each row decoding its own
+    // preview frame.
+    when(service.scanRecoverableClips).thenAnswer(
+      (_) async => ClipRecoveryReport(
+        currentOwnerPubkey: 'bb',
+        ownedClipCount: 0,
+        ownedDraftCount: 0,
+        foreignGroups: const [],
+        orphanFiles: [for (var i = 1; i <= 200; i++) orphan(i)],
+      ),
+    );
+    final cubit = ClipRecoveryCubit(service: service);
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.tap(find.text(l10n.devOptionsClipRecoveryScan));
+    await tester.pumpAndSettle();
+
+    final built = find
+        .text(l10n.devOptionsClipRecoveryImport)
+        .evaluate()
+        .length;
+    expect(built, greaterThan(0), reason: 'the first rows render');
+    expect(
+      built,
+      lessThan(200),
+      reason: 'offscreen rows are not built at all',
+    );
   });
 
   testWidgets('says so when there is nothing to recover', (tester) async {

@@ -18,6 +18,7 @@ import 'package:openvine/screens/badges/badge_detail_screen.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/clip_recovery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
@@ -241,6 +242,11 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: ContentFiltersScreen.path,
       name: ContentFiltersScreen.routeName,
       builder: (_, _) => const ContentFiltersScreen(),
+    ),
+    GoRoute(
+      path: ClipRecoveryScreen.path,
+      name: ClipRecoveryScreen.routeName,
+      builder: (_, _) => const ClipRecoveryScreen(),
     ),
     GoRoute(
       path: DeveloperOptionsScreen.path,

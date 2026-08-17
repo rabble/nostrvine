@@ -7,14 +7,16 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clip_recovery/clip_recovery_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/clip_recovery.dart';
 import 'package:openvine/providers/storage_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/utils/byte_size_format.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 
-/// Developer Options section that finds and reattaches missing recordings.
+/// Page: finds and reattaches recordings the app can no longer show.
 ///
 /// Two things make a library look empty while the recordings are still on the
 /// device: rows stamped with a different account (every query filters by
@@ -24,9 +26,19 @@ import 'package:openvine/utils/clipboard_utils.dart';
 /// The report comes first on purpose — both actions write, and the owner
 /// restamp in particular takes rows away from whichever account currently
 /// holds them, so the operator sees the pubkey before deciding.
-class ClipRecoverySection extends ConsumerWidget {
-  /// Creates the section.
-  const ClipRecoverySection({super.key});
+///
+/// It gets a screen rather than a section inside Developer Options because the
+/// unreferenced-file list is unbounded: one row per recording a database reset
+/// stranded, each with its own preview frame.
+class ClipRecoveryScreen extends ConsumerWidget {
+  /// Creates the page.
+  const ClipRecoveryScreen({super.key});
+
+  /// Route name for this screen.
+  static const routeName = 'clip-recovery';
+
+  /// Path for this route.
+  static const String path = RoutePaths.clipRecovery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,8 +51,8 @@ class ClipRecoverySection extends ConsumerWidget {
   }
 }
 
-/// The section UI. Split from [ClipRecoverySection] so it can be tested with a
-/// stubbed [ClipRecoveryCubit].
+/// View: renders the scan result. Split from [ClipRecoveryScreen] so it can be
+/// tested with a stubbed [ClipRecoveryCubit].
 class ClipRecoveryView extends StatelessWidget {
   /// Creates the view.
   @visibleForTesting
@@ -49,44 +61,64 @@ class ClipRecoveryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final orphanFiles = context.select(
+      (ClipRecoveryCubit c) => c.state.report.orphanFiles,
+    );
+
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: l10n.devOptionsClipRecovery,
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      backgroundColor: context.vineColors.background,
+      // A CustomScrollView so the unreferenced-file rows can be a lazy sliver:
+      // a reset can strand hundreds of recordings, and each row decodes its own
+      // preview frame.
+      body: CustomScrollView(
+        slivers: [
+          const SliverToBoxAdapter(child: _Header()),
+          SliverList.builder(
+            itemCount: orphanFiles.length,
+            itemBuilder: (context, index) => _OrphanFileRow(orphanFiles[index]),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final status = context.select((ClipRecoveryCubit c) => c.state.status);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            l10n.devOptionsClipRecovery,
-            style: VineTheme.titleMediumFont(
-              color: context.vineColors.accentPositive,
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
+        children: [
+          Text(
+            l10n.devOptionsClipRecoveryDescription,
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 12,
-            children: [
-              Text(
-                l10n.devOptionsClipRecoveryDescription,
-                style: VineTheme.bodyMediumFont(
-                  color: context.vineColors.secondaryText,
-                ),
-              ),
-              if (status == ClipRecoveryStatus.failure)
-                Text(
-                  l10n.devOptionsClipRecoveryFailure,
-                  style: VineTheme.titleMediumFont(color: VineTheme.error),
-                )
-              else
-                const _RecoveryResult(),
-              const _RecoveryActions(),
-            ],
-          ),
-        ),
-      ],
+          const _RecoveryActions(),
+          if (status == ClipRecoveryStatus.failure)
+            Text(
+              l10n.devOptionsClipRecoveryFailure,
+              style: VineTheme.titleMediumFont(color: VineTheme.error),
+            )
+          else
+            const _RecoveryResult(),
+        ],
+      ),
     );
   }
 }
@@ -140,7 +172,16 @@ class _RecoveryResult extends StatelessWidget {
           ),
           ...report.foreignGroups.map(_OwnerGroupRow.new),
         ],
-        if (report.orphanFiles.isNotEmpty) const _OrphanFiles(),
+        if (report.orphanFiles.isNotEmpty)
+          Text(
+            l10n.devOptionsClipRecoveryOrphanFiles(
+              report.orphanFiles.length,
+              formatByteSize(report.orphanBytes),
+            ),
+            style: VineTheme.labelLargeFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
       ],
     );
   }
@@ -202,32 +243,6 @@ class _OwnerGroupRow extends StatelessWidget {
   }
 }
 
-class _OrphanFiles extends StatelessWidget {
-  const _OrphanFiles();
-
-  @override
-  Widget build(BuildContext context) {
-    final report = context.select((ClipRecoveryCubit c) => c.state.report);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 8,
-      children: [
-        Text(
-          context.l10n.devOptionsClipRecoveryOrphanFiles(
-            report.orphanFiles.length,
-            formatByteSize(report.orphanBytes),
-          ),
-          style: VineTheme.labelLargeFont(
-            color: context.vineColors.primaryText,
-          ),
-        ),
-        ...report.orphanFiles.map(_OrphanFileRow.new),
-      ],
-    );
-  }
-}
-
 class _OrphanFileRow extends StatelessWidget {
   const _OrphanFileRow(this.file);
 
@@ -236,46 +251,49 @@ class _OrphanFileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBusy = context.select((ClipRecoveryCubit c) => c.state.isBusy);
-    final metaStyle = VineTheme.bodySmallFont(
-      color: context.vineColors.secondaryText,
-    );
 
-    return Row(
-      spacing: 12,
-      children: [
-        _OrphanPreview(file),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                file.name,
-                style: VineTheme.bodyMediumFont(
-                  color: context.vineColors.primaryText,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        spacing: 12,
+        children: [
+          _OrphanPreview(file),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  file.name,
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
-              ),
-              // Symbols and numbers only, so the line needs no translation:
-              // "2.1 MB · 6.0s", or just the size when the file would not
-              // decode.
-              Text(
-                [
-                  formatByteSize(file.sizeBytes),
-                  if (file.duration != null)
-                    '${(file.duration!.inMilliseconds / 1000).toStringAsFixed(1)}s',
-                ].join(' · '),
-                style: metaStyle,
-              ),
-            ],
+                // Symbols and numbers only, so the line needs no translation:
+                // "2.1 MB · 6.0s", or just the size when the file would not
+                // decode.
+                Text(
+                  [
+                    formatByteSize(file.sizeBytes),
+                    if (file.duration != null)
+                      '${(file.duration!.inMilliseconds / 1000).toStringAsFixed(1)}s',
+                  ].join(' · '),
+                  style: VineTheme.bodySmallFont(
+                    color: context.vineColors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        DivineButton(
-          label: context.l10n.devOptionsClipRecoveryImport,
-          type: DivineButtonType.secondary,
-          onPressed: isBusy
-              ? null
-              : () => context.read<ClipRecoveryCubit>().importOrphanFile(file),
-        ),
-      ],
+          DivineButton(
+            label: context.l10n.devOptionsClipRecoveryImport,
+            type: DivineButtonType.secondary,
+            onPressed: isBusy
+                ? null
+                : () =>
+                      context.read<ClipRecoveryCubit>().importOrphanFile(file),
+          ),
+        ],
+      ),
     );
   }
 }
