@@ -461,10 +461,42 @@ MaterialApp(
 )
 ```
 
+Most tests should reach for `testMaterialApp(...)` from
+`test/helpers/test_provider_overrides.dart` instead of hand-rolling one —
+it already sets both, plus the common provider overrides.
+
 A common symptom of the missing setup is an assertion that passes when
 the string is hardcoded but fails after an l10n migration with
 `Found 0 widgets with text "…"`. The widget tree built correctly; only
-the text child failed to resolve.
+the text child failed to resolve. The other symptom is a hard
+`Null check operator used on a null value`, because `context.l10n` is
+`Localizations.of<AppLocalizations>(context, AppLocalizations)!` and the
+framework's own fallbacks (`DefaultMaterialLocalizations` and friends)
+never satisfy the app's delegate.
+
+### Delegate ceiling ratchet
+
+`scripts/check_l10n_delegates_ceiling.sh` freezes the per-file count of
+`MaterialApp` / `CupertinoApp` / `WidgetsApp` constructions under
+`mobile/test` that register no `AppLocalizations` delegate — passing
+some other delegate list, such as `GlobalMaterialLocalizations.delegates`,
+does not clear the count — in
+`mobile/scripts/baseline/l10n_delegates.txt` — a ceiling that may only
+shrink. It runs in CI (the `generated-files` job), not the pre-push hook.
+
+```bash
+cd mobile && dart run scripts/lib/l10n_delegate_detector.dart test --detail
+UPDATE_BASELINE=1 bash mobile/scripts/check_l10n_delegates_ceiling.sh
+```
+
+The detector is a Dart AST, not a regex, and #3613 is why. That issue was
+filed off `grep MaterialApp | grep -v localizationsDelegates`, which
+reported 39 offending screen tests — **31 of them already correct**,
+matched only because `testMaterialApp` *contains* the substring
+`MaterialApp`. The same grep is blind in the other direction too: it
+cannot see an unconfigured construction inside a file that mentions
+`localizationsDelegates` somewhere else, which is where 6 of the real
+ones were hiding.
 
 ---
 

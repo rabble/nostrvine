@@ -513,7 +513,13 @@ void main() {
 
           // Replace the widget tree entirely so the screen unmounts without
           // GoRouter being involved.
-          await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+          await tester.pumpWidget(
+            const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: SizedBox.shrink(),
+            ),
+          );
           await tester.pump();
 
           verify(() => mockCubit.stopPolling()).called(greaterThan(0));
@@ -638,7 +644,13 @@ void main() {
           await tester.pump();
 
           // Unmount the screen while the persistence load is still in flight.
-          await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+          await tester.pumpWidget(
+            const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: SizedBox.shrink(),
+            ),
+          );
           await tester.pump();
 
           // Resolve the load after dispose — the mounted guard must stop the

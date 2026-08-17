@@ -314,6 +314,8 @@ void main() {
       Widget child = const SizedBox.shrink(),
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<CommentsListBloc>.value(
             value: mockListBloc,
@@ -1038,6 +1040,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: DraggableScrollableSheet(
                 controller: controller,

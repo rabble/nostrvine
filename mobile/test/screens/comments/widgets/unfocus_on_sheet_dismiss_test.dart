@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/widgets/unfocus_on_sheet_dismiss.dart';
 
 void main() {
@@ -13,6 +14,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => Center(
@@ -233,7 +236,11 @@ void main() {
 
     testWidgets('renders its child unchanged', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: UnfocusOnSheetDismiss(child: Text('hello'))),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: UnfocusOnSheetDismiss(child: Text('hello')),
+        ),
       );
 
       expect(find.text('hello'), findsOneWidget);
