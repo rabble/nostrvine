@@ -8,16 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -35,49 +32,12 @@ void main() {
     ),
   );
 
-  final now = DateTime.now();
-  final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
-
-  final mockVideos = [
-    VideoEvent(
-      id: 'p0',
-      pubkey: 'npubXYZ',
-      createdAt: nowUnix,
-      content: 'Profile Video 0',
-      timestamp: now,
-      title: 'Profile 0',
-      videoUrl: 'https://example.com/p0.mp4',
-    ),
-    VideoEvent(
-      id: 'p1',
-      pubkey: 'npubXYZ',
-      createdAt: nowUnix,
-      content: 'Profile Video 1',
-      timestamp: now,
-      title: 'Profile 1',
-      videoUrl: 'https://example.com/p1.mp4',
-    ),
-    VideoEvent(
-      id: 'p2',
-      pubkey: 'npubXYZ',
-      createdAt: nowUnix,
-      content: 'Profile Video 2',
-      timestamp: now,
-      title: 'Profile 2',
-      videoUrl: 'https://example.com/p2.mp4',
-    ),
-  ];
-
+  // The three skipped tests below used to seed the profile feed by overriding
+  // videosForProfileRouteProvider. #7680 deleted that provider — the profile
+  // feed is the REST-backed ProfileFeedCubit — so whoever re-enables them
+  // seeds through ProfileFeedScope instead.
   testWidgets('PROFILE: URL ↔ PageView sync', (tester) async {
-    final c = ProviderContainer(
-      overrides: [
-        videosForProfileRouteProvider.overrideWith((ref) {
-          return AsyncValue.data(
-            VideoFeedState(videos: mockVideos, hasMoreContent: false),
-          );
-        }),
-      ],
-    );
+    final c = ProviderContainer();
     addTearDown(c.dispose);
 
     await tester.pumpWidget(shell(c));
@@ -99,15 +59,7 @@ void main() {
   }, skip: true);
 
   testWidgets('PROFILE: Empty state shows when no videos', (tester) async {
-    final c = ProviderContainer(
-      overrides: [
-        videosForProfileRouteProvider.overrideWith((ref) {
-          return const AsyncValue.data(
-            VideoFeedState(videos: [], hasMoreContent: false),
-          );
-        }),
-      ],
-    );
+    final c = ProviderContainer();
     addTearDown(c.dispose);
 
     await tester.pumpWidget(shell(c));
@@ -124,11 +76,6 @@ void main() {
     final c = ProviderContainer(
       overrides: [
         appForegroundProvider.overrideWithValue(const AsyncValue.data(false)),
-        videosForProfileRouteProvider.overrideWith((ref) {
-          return AsyncValue.data(
-            VideoFeedState(videos: mockVideos, hasMoreContent: false),
-          );
-        }),
       ],
     );
     addTearDown(c.dispose);

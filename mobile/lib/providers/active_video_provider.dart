@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
-import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/providers/page_context_provider.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -71,7 +70,14 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       );
       return null;
     case RouteType.profile:
-      videosAsync = ref.watch(videosForProfileRouteProvider);
+      // Profile video mode hands off to the pooled fullscreen screen, which
+      // self-manages playback — same as hashtag, likedVideos and
+      // pooledVideoFeed below. Resolving an active video here needed a second
+      // video list, and the only source available to a Riverpod provider was a
+      // raw relay subscription: a list that could disagree with the
+      // REST-backed ProfileFeedCubit the screen actually renders, so an index
+      // could point at a different video than the one on screen (#7680).
+      return null;
     case RouteType.hashtag:
       // Hashtag feed uses PooledFullscreenVideoFeedScreen pushed as overlay,
       // which manages its own playback. Return null to let it handle internally.
