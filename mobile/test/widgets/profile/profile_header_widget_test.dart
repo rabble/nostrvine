@@ -36,6 +36,7 @@ import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/og_viner_cache_service.dart';
+import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
@@ -204,7 +205,8 @@ const issuerUserHex =
     '4f071cf08328c9d9dbb21f5d9d1e51fe2ecf4e7de5a4e59ecdf356f6a6f49f22';
 const recipientUserHex =
     '4ac3abe4d7c0bdfb3e5f2f904f4c7e7f60cd4b4ebe1f8b6eea9e969fbac0b7aa';
-const _dismissedDivineLoginBannerPrefix = 'dismissed_divine_login_banner_';
+final String _dismissedDivineLoginBannerKey =
+    DivineLoginBannerDismissalStore.keyFor(testUserHex);
 
 /// Minimal fake [DivineVideoDraft] for use in [BackgroundUpload] test fixtures.
 class _FakeDraft extends Fake implements DivineVideoDraft {
@@ -2289,7 +2291,7 @@ void main() {
               .millisecondsSinceEpoch;
 
           SharedPreferences.setMockInitialValues({
-            '$_dismissedDivineLoginBannerPrefix$testUserHex': dismissedAt,
+            _dismissedDivineLoginBannerKey: dismissedAt,
           });
           final prefs = await SharedPreferences.getInstance();
 
@@ -2687,10 +2689,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        expect(
-          prefs.getInt('$_dismissedDivineLoginBannerPrefix$testUserHex'),
-          isNotNull,
-        );
+        expect(prefs.getInt(_dismissedDivineLoginBannerKey), isNotNull);
         expect(find.byType(VineBottomSheetPrompt), findsNothing);
       });
 
@@ -2740,10 +2739,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        expect(
-          prefs.getInt('$_dismissedDivineLoginBannerPrefix$testUserHex'),
-          isNotNull,
-        );
+        expect(prefs.getInt(_dismissedDivineLoginBannerKey), isNotNull);
         expect(find.byType(VineBottomSheetPrompt), findsNothing);
       });
 
