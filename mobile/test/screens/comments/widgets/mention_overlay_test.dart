@@ -24,7 +24,10 @@ void main() {
           home: Scaffold(
             body: MentionOverlay(
               suggestions: const [
-                MentionSuggestion(pubkey: pubkey, displayName: 'GaryVee'),
+                MentionSuggestion(
+                  pubkey: pubkey,
+                  displayName: 'GaryVee',
+                ),
               ],
               onSelect: (_, _) {},
             ),
@@ -47,9 +50,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          mentionNip05VerificationProvider(
-            claim,
-          ).overrideWith((ref) async => Nip05VerificationStatus.verified),
+          mentionNip05VerificationProvider(claim).overrideWith(
+            (ref) async => Nip05VerificationStatus.verified,
+          ),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -87,9 +90,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          mentionNip05VerificationProvider(
-            claim,
-          ).overrideWith((ref) async => Nip05VerificationStatus.failed),
+          mentionNip05VerificationProvider(claim).overrideWith(
+            (ref) async => Nip05VerificationStatus.failed,
+          ),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
