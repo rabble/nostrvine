@@ -443,6 +443,26 @@ class RelayPool {
     }
   }
 
+  void _flushPendingAuthedMessages(Relay relay) {
+    for (var message in relay.pendingAuthedMessages) {
+      relay.send(message);
+    }
+    relay.pendingAuthedMessages.clear();
+  }
+
+  /// Fire-and-forget frames parked behind a NIP-42 handshake that failed.
+  /// Nothing will ever flush them, so drop them rather than growing the queue
+  /// without bound — and, for temp relays, pinning a dead socket that the
+  /// reaper treats a non-empty queue as reason to keep.
+  void _dropPendingAuthedMessages(Relay relay) {
+    if (relay.pendingAuthedMessages.isEmpty) return;
+    log(
+      '🔐 Dropping ${relay.pendingAuthedMessages.length} messages parked for '
+      'auth on ${relay.url}: auth failed',
+    );
+    relay.pendingAuthedMessages.clear();
+  }
+
   List<MapEntry<String, _AuthRequiredPublishRetry>> _retryEntriesForRelay(
     Relay relay,
   ) {
@@ -1538,6 +1558,12 @@ class RelayPool {
             '🔐 Queueing untracked auth-required EVENT for post-AUTH retry '
             'eventId=$eventId relay=${relay.url}',
           );
+          // Mirror the tracked branch: an auth-required rejection on a relay
+          // we already authed means no fresh challenge is coming to drain the
+          // queue, so flush it right away.
+          if (relay.relayStatus.authed) {
+            _flushPendingAuthedMessages(relay);
+          }
         }
       } else {
         relay.forgetSentEvent(eventId);
@@ -1553,10 +1579,7 @@ class RelayPool {
           log('🔐 AUTH succeeded for ${relay.url}');
 
           // Send pending messages
-          for (var message in relay.pendingAuthedMessages) {
-            relay.send(message);
-          }
-          relay.pendingAuthedMessages.clear();
+          _flushPendingAuthedMessages(relay);
 
           // Send subscriptions
           if (relay.hasSubscription()) {
@@ -1591,6 +1614,7 @@ class RelayPool {
           relay.relayStatus.authed = false;
           log('🔐 AUTH failed for ${relay.url}: $message');
           _rejectAuthRequiredPublishesForRelay(relay, message);
+          _dropPendingAuthedMessages(relay);
           // The gate stayed shut, so the queries parked for the post-AUTH
           // replay will never be replayed.
           _closeAuthGate(relay);
@@ -1651,11 +1675,13 @@ class RelayPool {
         } else {
           log('🔐 AUTH signing returned null for ${relay.url}');
           _rejectAuthRequiredPublishesForRelay(relay, '');
+          _dropPendingAuthedMessages(relay);
           _closeAuthGate(relay);
         }
       } catch (err, stackTrace) {
         log('🔐 AUTH handling failed for ${relay.url}: $err\n$stackTrace');
         _rejectAuthRequiredPublishesForRelay(relay, '');
+        _dropPendingAuthedMessages(relay);
         _closeAuthGate(relay);
       }
     } else if (messageType == 'COUNT') {
@@ -2286,16 +2312,13 @@ class RelayPool {
         if (timeout == Duration.zero) break;
 
         var tempRelay = checkAndGenTempRelay(tempRelayAddr);
-        if (tempRelay.relayStatus.alwaysAuth &&
-            !tempRelay.relayStatus.authed &&
-            deadline == null) {
-          log(
-            '🔐 Queueing temp relay message for authentication: ${message[0]}',
-          );
-          tempRelay.pendingAuthedMessages.add(message);
-          sentTo.add(tempRelay.url);
-          continue;
-        }
+        // A known-auth unauthed temp relay still gets the frame on the wire
+        // rather than a queue slot: temp relays carry no subscriptions or
+        // queries, so nothing else can trigger the AUTH challenge the
+        // post-AUTH flush depends on, and a parked frame would strand the
+        // publish while send() reports success. Sending the retained frame
+        // is what prompts the relay to challenge (or accept); an
+        // auth-required rejection re-queues it via the retained-copy path.
 
         // Same skipReconnect rationale as the main loop above: a fresh
         // tempRelay whose initial connection is still in-flight must not
