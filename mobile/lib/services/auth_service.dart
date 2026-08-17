@@ -804,6 +804,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           return;
         }
+        // Deliberately does NOT close the previous signer, unlike the
+        // sign-out/dispose sites. The live NostrClient still holds it: #5909
+        // keeps that client across a same-pubkey re-emission, so nothing
+        // swaps its injected signer and the old RPC must stay usable until
+        // the client is rebuilt or disposed. Closing it here strands every
+        // publish on the retained client. See [KeycastRpc.close].
         _setKeycastSigner(_newKeycastSigner(refreshed), closePrevious: false);
         _currentIdentity = _buildIdentity();
         _hasExpiredOAuthSession = false;
@@ -4517,13 +4523,21 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<void> debugDiscoverUserRelays(String npub) =>
       _discoveryOrchestrator.discoverUserRelays(npub, _currentIdentity?.pubkey);
 
-  /// Test seam for code paths that need [currentIdentity] without full sign-in.
+  /// Test seam that lets unit tests install a [NostrIdentity] without
+  /// going through the full sign-in pipeline. Used by tests that exercise
+  /// code paths (e.g. the bootstrap kind:10002 publish) which depend on
+  /// [currentIdentity] being set.
   @visibleForTesting
   void debugSetIdentity(NostrIdentity? identity) {
     _currentIdentity = identity;
   }
 
-  /// Test seam for signer lifecycle policy.
+  /// Test seam that installs a [KeycastRpc] signer without a real OAuth flow.
+  ///
+  /// Arrange the *starting* signer here and drive the real code path for the
+  /// transition under test: a test that supplies [closePrevious] itself pins
+  /// this seam's parameter rather than the production call site's choice, so
+  /// it cannot fail when that call site stops passing it.
   @visibleForTesting
   void debugSetKeycastSigner(
     KeycastRpc? signer, {
@@ -4535,8 +4549,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// keyed on the current pubkey) can be exercised without driving the
   /// full sign-in pipeline.
   ///
-  /// Scope warning: this sets only `_currentKeyContainer`; tests needing
-  /// identity, auth state, or signer wiring must install those separately.
+  /// **Scope warning**: this only sets `_currentKeyContainer`. It does
+  /// not touch `_authSource`, `_currentIdentity`, signer wiring, auth
+  /// state, or any other field that real sign-in initialises. Safe for
+  /// tests that exercise branches keyed solely on `_currentKeyContainer`
+  /// (e.g. the pubkey-capture step in `signOut`); using it as a general
+  /// "pretend to be signed in" shim will produce inconsistent state.
   @visibleForTesting
   void debugSetCurrentKeyContainer(SecureKeyContainer? container) {
     _currentKeyContainer = container;
