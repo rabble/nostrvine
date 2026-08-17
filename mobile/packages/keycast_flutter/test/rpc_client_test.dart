@@ -287,7 +287,7 @@ void main() {
         var retryClientCalls = 0;
         final firstClient = MockClient((request) async {
           firstClientCalls++;
-          await Future<void>.delayed(const Duration(milliseconds: 150));
+          await Future<void>.delayed(const Duration(milliseconds: 200));
           throw http.ClientException('Connection reset', request.url);
         });
         final retryClient = MockClient((request) {
@@ -299,7 +299,7 @@ void main() {
           accessToken: 'test_token',
           httpClient: firstClient,
           httpClientFactory: () => retryClient,
-          requestTimeout: const Duration(milliseconds: 250),
+          requestTimeout: const Duration(milliseconds: 300),
         );
         final stopwatch = Stopwatch()..start();
 
@@ -310,7 +310,10 @@ void main() {
 
         expect(firstClientCalls, equals(1));
         expect(retryClientCalls, equals(1));
-        expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 330)));
+        // Shared deadline: ~300ms. A doubled (per-attempt) deadline would take
+        // ~500ms, so this bound fails for the regression it guards while
+        // leaving slack for loaded CI runners.
+        expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 400)));
       });
 
       test(
@@ -320,7 +323,7 @@ void main() {
           mockClient = MockClient((request) async {
             callCount++;
             if (callCount == 1) {
-              await Future<void>.delayed(const Duration(milliseconds: 150));
+              await Future<void>.delayed(const Duration(milliseconds: 200));
               return http.Response('Unauthorized', 401);
             }
             return Completer<http.Response>().future;
@@ -330,7 +333,7 @@ void main() {
             accessToken: 'expired_token',
             httpClient: mockClient,
             onTokenRefresh: () async => 'fresh_token',
-            requestTimeout: const Duration(milliseconds: 250),
+            requestTimeout: const Duration(milliseconds: 300),
           );
           final stopwatch = Stopwatch()..start();
 
@@ -340,9 +343,10 @@ void main() {
           );
 
           expect(callCount, equals(2));
+          // Shared deadline: ~300ms; a doubled deadline would take ~500ms.
           expect(
             stopwatch.elapsed,
-            lessThan(const Duration(milliseconds: 330)),
+            lessThan(const Duration(milliseconds: 400)),
           );
         },
       );
