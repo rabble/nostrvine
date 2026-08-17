@@ -188,7 +188,8 @@ class FeaturedTabsRepository {
     if (!tab.hasContent) return false;
     if (!tab.isWithinWindow(now)) return false;
     if (viewerIsMinor && !tab.visibleToMinors) return false;
-    // A tab with no resolvable label cannot be rendered in the tab bar.
-    return tab.labelFor(null).isNotEmpty;
+    // The tab bar's label is compiled client-side, so the renderability floor
+    // is an id to fetch and attribute the tab with.
+    return tab.id.isNotEmpty;
   }
 }

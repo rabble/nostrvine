@@ -15,14 +15,13 @@ FeaturedTabConfig _tab({
   bool enabled = true,
   bool hasContent = true,
   bool visibleToMinors = false,
-  Map<String, String> label = const {'default': 'Featured'},
   DateTime? startsAt,
   DateTime? endsAt,
 }) {
   return FeaturedTabConfig(
     id: id,
     slug: 'featured-slug',
-    label: label,
+    label: const {'default': 'Featured'},
     startsAt: startsAt,
     endsAt: endsAt,
     enabled: enabled,
@@ -121,8 +120,8 @@ void main() {
         expect(snapshot.hasTab, isTrue);
       });
 
-      test('drops a tab with no resolvable label', () async {
-        stubTabs([_tab(label: const {})]);
+      test('drops a tab with no id to fetch or attribute', () async {
+        stubTabs([_tab(id: '')]);
 
         final snapshot = await buildRepository().refresh(viewerIsMinor: false);
 
