@@ -20,27 +20,19 @@ tags:
 - tapOn:
     id: like_button
 - runFlow: "../asserts/assertVideoLiked.yaml"
-# Back button on iOS devices
+# Leave via the app bar's back control, addressed by identifier.
+# This used to be two platform branches matching display text: iOS merged the
+# back button's semantic label and tooltip into one accessibility string
+# ("Go back" + "Back") while Android exposed only the label. Both are now the
+# localized MaterialLocalizations.backButtonTooltip, so text matching would
+# also break in every non-English locale. The identifier is stable across both.
 - runFlow:
     when:
-      visible: |-
-        Go back
-        Back
+      visible:
+        id: "back_button"
     commands:
-      - assertVisible: |-
-          Go back
-          Back
-      - tapOn: |-
-          Go back
-          Back
-
-# Back button on Android devices
-- runFlow:
-    when:
-      visible: Go back
-    commands:
-      - assertVisible: Go back
-      - tapOn: Go back
+      - tapOn:
+          id: "back_button"
 
 # 3. Tap on the profile: Validate profile is loaded
 - tapOn:
@@ -56,6 +48,6 @@ tags:
 # The liked-grid tap opens PooledFullscreenVideoFeedScreen, which has no
 # "Close video player" control -- that label belongs to VideoDetailScreen,
 # a different route. This screen dismisses through the app bar's back
-# button, whose default label is "Go back".
+# button, addressed by identifier rather than its localized label.
 - tapOn:
     id: "back_button"

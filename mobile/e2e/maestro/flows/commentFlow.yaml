@@ -8,7 +8,7 @@ appId: co.openvine.app
 - runFlow: ../tests/deleteComment.yaml
 
 # Leave the player. DiVineAppBar's back control is addressed by identifier;
-# its label ("Go back") is copy that has already moved once.
+# its label is localized, so text matching would break outside English.
 - tapOn:
     id: back_button
 - assertVisible:
