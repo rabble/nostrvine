@@ -5,11 +5,22 @@ import 'package:http/http.dart' as http;
 
 /// Component ids the app asks about. Mirrors the status page's own ids.
 abstract final class DivineStatusComponents {
+  /// The public REST API.
   static const api = 'api';
+
+  /// The Nostr relay.
   static const relay = 'relay';
+
+  /// The upload and publishing path.
   static const uploads = 'uploads';
+
+  /// Playback and public media delivery.
   static const playback = 'playback';
+
+  /// The media CDN.
   static const cdn = 'cdn';
+
+  /// Account login and authentication.
   static const login = 'login';
 }
 
@@ -19,6 +30,8 @@ abstract final class DivineStatusComponents {
 /// reports on (Cloudflare vs Fastly), which is what makes asking it during an
 /// outage worthwhile — it is expected to answer when the API cannot.
 class DivineStatusClient {
+  /// Creates a client. Both parameters exist for tests; production uses the
+  /// real HTTP client and [defaultEndpoint].
   DivineStatusClient({http.Client? httpClient, Uri? endpoint})
     : _httpClient = httpClient ?? http.Client(),
       _endpoint = endpoint ?? defaultEndpoint;

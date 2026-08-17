@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 /// A snapshot of the Divine status page.
 @immutable
 class DivineStatus extends Equatable {
+  /// Creates a status snapshot.
   const DivineStatus({
     required this.components,
     this.updatedAt,

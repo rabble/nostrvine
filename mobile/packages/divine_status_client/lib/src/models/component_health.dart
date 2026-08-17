@@ -35,6 +35,7 @@ enum ComponentHealth {
 /// One component of the Divine platform, as the status page sees it.
 @immutable
 class StatusComponent extends Equatable {
+  /// Creates a component snapshot.
   const StatusComponent({
     required this.id,
     required this.health,
@@ -45,6 +46,7 @@ class StatusComponent extends Equatable {
   /// Stable identifier, such as `api` or `relay`.
   final String id;
 
+  /// How healthy the status page reports this component to be.
   final ComponentHealth health;
 
   /// Human-readable name, such as `Video Playback`.
