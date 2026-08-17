@@ -516,6 +516,46 @@ void main() {
         );
       },
     );
+
+    test(
+      'keeps the retained EVENT when a deadline-free send is queued',
+      () async {
+        const eventId =
+            '8888888888888888888888888888888888888888888888888888888888888888';
+        // A deadline-free send passes `queueIfFailed: true`, so a failed write is
+        // still parked in `pendingMessages` and replayed on reconnect. Dropping
+        // the retained copy here would leave that replay unrecoverable when the
+        // relay answers `auth-required`, which is the bug this PR fixes.
+        relay.failSends = true;
+
+        final sent = await nostr.relayPool.send(eventMessage(eventId));
+
+        expect(sent, isFalse);
+        expect(relay.hasRetainedSentEvent(eventId), isTrue);
+
+        relay.failSends = false;
+        await relay.deliver([
+          'OK',
+          eventId,
+          false,
+          'auth-required: you must auth',
+        ]);
+
+        expect(relay.pendingAuthedMessages, hasLength(1));
+        expect(relay.hasRetainedSentEvent(eventId), isFalse);
+
+        await relay.deliver(['AUTH', challenge]);
+        final authEventId = sentAuthEventId(relay);
+        await relay.deliver(['OK', authEventId, true, '']);
+
+        expect(
+          sentMessagesOfType(relay, 'EVENT'),
+          hasLength(2),
+          reason: 'the queued EVENT should still be retried after AUTH',
+        );
+        expect(relay.pendingAuthedMessages, isEmpty);
+      },
+    );
   });
 
   group('RelayPool temp relay auth-required publish retry', () {
