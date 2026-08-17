@@ -59,6 +59,8 @@ void main() {
       RouteType.hashtag,
       RouteType.likedVideos,
       RouteType.pooledVideoFeed,
+      RouteType.videoDetail,
+      RouteType.videoFeed,
       RouteType.home,
     ]) {
       test('returns null for $type even at a video index', () {
