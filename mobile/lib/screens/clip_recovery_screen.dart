@@ -7,8 +7,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clip_recovery/clip_recovery_cubit.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/clip_recovery.dart';
 import 'package:openvine/providers/storage_providers.dart';
@@ -69,7 +69,11 @@ class ClipRecoveryView extends StatelessWidget {
       appBar: DiVineAppBar(
         title: l10n.devOptionsClipRecovery,
         showBackButton: true,
-        onBackPressed: context.pop,
+        // Not a raw pop: reached cold via a deep link this screen has a
+        // one-entry stack and context.pop() throws (#6112). Falls back to the
+        // screen that offers it.
+        onBackPressed: () =>
+            context.safePop(fallback: RoutePaths.developerOptions),
       ),
       backgroundColor: context.vineColors.background,
       // A CustomScrollView so the unreferenced-file rows can be a lazy sliver:
