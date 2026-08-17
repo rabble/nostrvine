@@ -2,6 +2,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineCheckboxTile, () {
     Widget buildSubject({
@@ -12,11 +14,16 @@ void main() {
       return MaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
-          body: DivineCheckboxTile(
-            title: 'I am 18 or older',
-            subtitle: subtitle,
-            value: value,
-            onChanged: onChanged,
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: DivineCheckboxTile(
+                title: 'I am 18 or older',
+                subtitle: subtitle,
+                value: value,
+                onChanged: onChanged,
+              ),
+            ),
           ),
         ),
       );
@@ -125,36 +132,39 @@ void main() {
     // than the absence of an exception — the layout assertion needs a
     // paragraph that remeasures, which the deterministic test font never
     // produces.
-    testWidgets(
-      'keeps its text styles across a disabled → enabled flip',
-      (tester) async {
-        const longSubtitle =
-            'You must confirm you are over 18 before adult content can be '
-            'shown in your feed on this device.';
+    testWidgets('keeps its text styles across a disabled → enabled flip', (
+      tester,
+    ) async {
+      const longSubtitle =
+          'You must confirm you are over 18 before adult content can be '
+          'shown in your feed on this device.';
 
-        TextStyle styleOf(String data) =>
-            tester.widget<Text>(find.text(data)).style!;
+      TextStyle styleOf(String data) =>
+          tester.widget<Text>(find.text(data)).style!;
 
-        await tester.pumpWidget(
-          buildSubject(value: false, subtitle: longSubtitle),
-        );
-        await tester.pump();
-        final disabledTitle = styleOf('I am 18 or older');
-        final disabledSubtitle = styleOf(longSubtitle);
+      await tester.pumpWidget(
+        buildSubject(value: false, subtitle: longSubtitle),
+      );
+      await tester.pump();
+      final disabledTitle = styleOf('I am 18 or older');
+      final disabledSubtitle = styleOf(longSubtitle);
 
-        await tester.pumpWidget(
-          buildSubject(
-            value: false,
-            subtitle: longSubtitle,
-            onChanged: (_) {},
-          ),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        buildSubject(value: false, subtitle: longSubtitle, onChanged: (_) {}),
+      );
+      await tester.pumpAndSettle();
 
-        expect(styleOf('I am 18 or older'), equals(disabledTitle));
-        expect(styleOf(longSubtitle), equals(disabledSubtitle));
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(styleOf('I am 18 or older'), equals(disabledTitle));
+      expect(styleOf(longSubtitle), equals(disabledSubtitle));
+      expect(tester.takeException(), isNull);
+    });
+
+    group('accessibility', () {
+      testWidgets('meets the accessibility guidelines', (tester) async {
+        await tester.pumpWidget(buildSubject(value: true, onChanged: (_) {}));
+
+        await expectMeetsAccessibilityGuidelines(tester);
+      });
+    });
   });
 }

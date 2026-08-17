@@ -2,6 +2,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineListTile, () {
     Widget buildSubject({
@@ -18,17 +20,22 @@ void main() {
       return MaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
-          body: DivineListTile(
-            title: 'Notifications',
-            subtitle: subtitle,
-            icon: icon,
-            leading: leading,
-            iconColor: iconColor,
-            titleColor: titleColor,
-            trailingIcon: trailingIcon,
-            trailingIconSize: trailingIconSize,
-            semanticIdentifier: semanticIdentifier,
-            onTap: onTap ?? () {},
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: DivineListTile(
+                title: 'Notifications',
+                subtitle: subtitle,
+                icon: icon,
+                leading: leading,
+                iconColor: iconColor,
+                titleColor: titleColor,
+                trailingIcon: trailingIcon,
+                trailingIconSize: trailingIconSize,
+                semanticIdentifier: semanticIdentifier,
+                onTap: onTap ?? () {},
+              ),
+            ),
           ),
         ),
       );
@@ -44,10 +51,7 @@ void main() {
         ),
       );
 
-      expect(
-        find.bySemanticsIdentifier('notifications_tile'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsIdentifier('notifications_tile'), findsOneWidget);
       // The wrapper must not swallow the ListTile's own semantics.
       expect(find.text('Notifications'), findsOneWidget);
       expect(find.text('Pings and mentions'), findsOneWidget);
@@ -98,9 +102,7 @@ void main() {
     });
 
     testWidgets('renders an arbitrary leading widget', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(leading: const Icon(Icons.gavel)),
-      );
+      await tester.pumpWidget(buildSubject(leading: const Icon(Icons.gavel)));
 
       expect(find.byIcon(Icons.gavel), findsOneWidget);
     });
@@ -150,10 +152,15 @@ void main() {
         MaterialApp(
           theme: VineTheme.theme,
           home: Scaffold(
-            body: DivineListTile(
-              title: 'Take photo',
-              trailingIcon: null,
-              onTap: () {},
+            body: Center(
+              child: SizedBox(
+                width: 360,
+                child: DivineListTile(
+                  title: 'Take photo',
+                  trailingIcon: null,
+                  onTap: () {},
+                ),
+              ),
             ),
           ),
         ),
@@ -179,6 +186,14 @@ void main() {
         tester.getSize(find.byType(ListTile)).height,
         greaterThanOrEqualTo(DivineListTile.minHeight),
       );
+    });
+
+    group('accessibility', () {
+      testWidgets('meets the accessibility guidelines', (tester) async {
+        await tester.pumpWidget(buildSubject(subtitle: 'Push and email'));
+
+        await expectMeetsAccessibilityGuidelines(tester);
+      });
     });
   });
 

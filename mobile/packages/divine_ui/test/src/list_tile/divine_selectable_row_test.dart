@@ -5,6 +5,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineSelectableRow, () {
     Widget buildSubject({
@@ -17,12 +19,17 @@ void main() {
       return MaterialApp(
         theme: theme ?? VineTheme.theme,
         home: Scaffold(
-          body: DivineSelectableRow(
-            title: 'Deutsch',
-            subtitle: subtitle,
-            leadingIcon: leadingIcon,
-            isSelected: isSelected,
-            onTap: onTap ?? () {},
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: DivineSelectableRow(
+                title: 'Deutsch',
+                subtitle: subtitle,
+                leadingIcon: leadingIcon,
+                isSelected: isSelected,
+                onTap: onTap ?? () {},
+              ),
+            ),
           ),
         ),
       );
@@ -120,6 +127,16 @@ void main() {
         isNot(VineTheme.vineGreen),
         reason: 'light mode must not fall back to the dark-only brand green',
       );
+    });
+
+    group('accessibility', () {
+      testWidgets('meets the accessibility guidelines when selected', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(isSelected: true, subtitle: 'DE'));
+
+        await expectMeetsAccessibilityGuidelines(tester);
+      });
     });
   });
 }

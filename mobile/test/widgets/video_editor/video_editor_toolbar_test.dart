@@ -6,14 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(VideoEditorToolbar, () {
     Widget buildWidget({
       required VoidCallback onClose,
       VoidCallback? onDone,
       Widget? center,
+      ThemeData? theme,
     }) {
       return MaterialApp(
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -71,6 +75,20 @@ void main() {
       );
 
       expect(find.text('Center Content'), findsOneWidget);
+    });
+
+    group('accessibility', () {
+      testWidgets('meets the guidelines in both appearances', (tester) async {
+        await expectMeetsAccessibilityGuidelinesInBothAppearances(
+          tester,
+          (theme) => buildWidget(
+            onClose: () {},
+            onDone: () {},
+            center: const Text('Trim'),
+            theme: theme,
+          ),
+        );
+      });
     });
   });
 }

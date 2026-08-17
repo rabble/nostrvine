@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group('DivineAppBarIconButton', () {
     Widget buildTestWidget({
@@ -303,6 +305,20 @@ void main() {
           svgPicture.colorFilter,
           const ColorFilter.mode(Colors.red, BlendMode.srcIn),
         );
+      });
+    });
+
+    group('accessibility', () {
+      testWidgets('meets the accessibility guidelines', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            icon: SvgIconSource(DivineIconName.x.assetPath),
+            semanticLabel: 'Close',
+            onPressed: () {},
+          ),
+        );
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
     });
   });

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void _noop() {}
 
 void main() {
@@ -612,29 +614,23 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('small meets the 48dp / 44pt tap-target guidelines', (
-        tester,
-      ) async {
-        final handle = tester.ensureSemantics();
+      testWidgets('small meets the accessibility guidelines', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(size: DivineButtonSize.small, onPressed: () {}),
         );
-        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-        handle.dispose();
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
 
-      testWidgets('base meets the 48dp tap-target guideline', (tester) async {
-        final handle = tester.ensureSemantics();
+      testWidgets('base meets the accessibility guidelines', (tester) async {
         await tester.pumpWidget(buildTestWidget(onPressed: () {}));
-        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        handle.dispose();
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
 
       testWidgets(
-        'icon-only with semanticLabel meets the labeled-tap-target guideline',
+        'icon-only with semanticLabel meets the accessibility guidelines',
         (tester) async {
-          final handle = tester.ensureSemantics();
           await tester.pumpWidget(
             const MaterialApp(
               home: Scaffold(
@@ -649,8 +645,8 @@ void main() {
               ),
             ),
           );
-          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-          handle.dispose();
+
+          await expectMeetsAccessibilityGuidelines(tester);
         },
       );
 

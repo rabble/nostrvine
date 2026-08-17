@@ -2,6 +2,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
+
 void main() {
   group(DivineAuthTextField, () {
     Widget buildTestWidget({
@@ -22,48 +24,47 @@ void main() {
       return MaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
-          body: DivineAuthTextField(
-            label: label,
-            controller: controller,
-            focusNode: focusNode,
-            readOnly: readOnly,
-            obscureText: obscureText,
-            enabled: enabled,
-            keyboardType: keyboardType,
-            textInputAction: textInputAction,
-            onChanged: onChanged,
-            onSubmitted: onSubmitted,
-            onTap: onTap,
-            errorText: errorText,
-            validator: validator,
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: DivineAuthTextField(
+                label: label,
+                controller: controller,
+                focusNode: focusNode,
+                readOnly: readOnly,
+                obscureText: obscureText,
+                enabled: enabled,
+                keyboardType: keyboardType,
+                textInputAction: textInputAction,
+                onChanged: onChanged,
+                onSubmitted: onSubmitted,
+                onTap: onTap,
+                errorText: errorText,
+                validator: validator,
+              ),
+            ),
           ),
         ),
       );
     }
 
     group('accessibility', () {
-      testWidgets('password field meets 48dp / 44pt tap-target guidelines', (
+      testWidgets('password field meets the accessibility guidelines', (
         tester,
       ) async {
-        final handle = tester.ensureSemantics();
         await tester.pumpWidget(
           buildTestWidget(label: 'Password', obscureText: true),
         );
-        await tester.pump();
-        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-        handle.dispose();
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
 
-      testWidgets('text field meets 48dp / 44pt tap-target guidelines', (
+      testWidgets('text field meets the accessibility guidelines', (
         tester,
       ) async {
-        final handle = tester.ensureSemantics();
         await tester.pumpWidget(buildTestWidget(label: 'Email'));
-        await tester.pump();
-        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-        handle.dispose();
+
+        await expectMeetsAccessibilityGuidelines(tester);
       });
     });
 
