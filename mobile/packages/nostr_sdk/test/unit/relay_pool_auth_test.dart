@@ -761,6 +761,74 @@ void main() {
     );
   });
 
+  group('fire-and-forget pool-relay publish across NIP-42', () {
+    late LocalNostrSigner signer;
+    late Nostr nostr;
+    late _AuthFakeRelay relay;
+
+    setUp(() async {
+      signer = LocalNostrSigner(testPrivateKey);
+      nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
+      await nostr.refreshPublicKey();
+      relay = _AuthFakeRelay('wss://pool-auth.example');
+      expect(await nostr.relayPool.add(relay), isTrue);
+    });
+
+    List<dynamic> eventFrame(String id) => [
+      'EVENT',
+      {'id': id, 'kind': EventKind.giftWrap},
+    ];
+
+    // A user's NIP-65 list can put a NIP-42 relay in the configured pool, so
+    // the main-relay loop needs the same first-round retention the temp loop
+    // has. Without it this publish is dropped exactly as in #7701 — and no
+    // other test in the suite covers that loop's `_retainForAuthRetry` call.
+    test('replays the first-round frame a pool relay refused', () async {
+      const eventId =
+          'cccc111111111111111111111111111111111111111111111111111111111111';
+
+      final sent = await nostr.relayPool.send(eventFrame(eventId));
+
+      expect(sent, isTrue);
+      expect(sentMessagesOfType(relay, 'EVENT'), hasLength(1));
+
+      await relay.deliver([
+        'OK',
+        eventId,
+        false,
+        'auth-required: you must auth',
+      ]);
+      await relay.deliver(['AUTH', challenge]);
+      await relay.deliver(['OK', sentAuthEventId(relay), true, '']);
+
+      expect(
+        sentMessagesOfType(relay, 'EVENT'),
+        hasLength(2),
+        reason: 'the retained first-round frame must be replayed after AUTH',
+      );
+      expect(
+        sentMessagesOfType(relay, 'EVENT').last,
+        equals(eventFrame(eventId)),
+      );
+    });
+
+    test('does not replay a pool-relay event the relay accepted', () async {
+      const eventId =
+          'cccc222222222222222222222222222222222222222222222222222222222222';
+
+      await nostr.relayPool.send(eventFrame(eventId));
+      await relay.deliver(['OK', eventId, true, '']);
+      await relay.deliver(['AUTH', challenge]);
+      await relay.deliver(['OK', sentAuthEventId(relay), true, '']);
+
+      expect(
+        sentMessagesOfType(relay, 'EVENT'),
+        hasLength(1),
+        reason: 'an accepted event must not be replayed by a later AUTH',
+      );
+    });
+  });
+
   group('Relay.recordSentFrame', () {
     test('only retains client publish frames', () {
       final relay = _AuthFakeRelay('wss://shape.example');
