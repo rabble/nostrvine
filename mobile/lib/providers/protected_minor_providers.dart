@@ -152,10 +152,9 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
 /// must not be permanently restricted by an unanswerable check).
 final keycastSignalApplicableProvider = Provider<bool>((ref) {
   // AuthService mutates its pubkey and auth-source fields in place, so watch
-  // the auth state to recompute on every account transition (sign-out,
-  // sign-in, account swap). Without this a cached value survives into the
-  // next account's session, and a stale `false` would lift the fail-closed
-  // DM restriction for a Keycast-backed account.
+  // the auth state so applicability recomputes across the current account-swap
+  // invariant: every swap transits a non-authenticated state. A future silent
+  // same-state pubkey swap must also invalidate this provider explicitly.
   ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);
   final pubkey = authService.currentPublicKeyHex;
@@ -168,17 +167,27 @@ final keycastSignalApplicableProvider = Provider<bool>((ref) {
   }
 
   // Self-custody accounts that were previously seen by Keycast must stay
-  // fail-closed, since a pubkey can flip between auth sources on the same device.
+  // fail-closed, since a pubkey can flip between auth sources on the same
+  // device.
   if (pubkey != null && store.wasKeycastAccountFor(pubkey)) {
     return true;
   }
 
-  // Pure self-custody accounts that have never been seen by Keycast are not
-  // subject to Keycast signals.
-  return false;
+  // Keep this exhaustive so every new auth source requires an explicit
+  // fail-direction decision at this child-safety boundary.
+  return switch (authSource) {
+    AuthenticationSource.divineOAuth => true,
+    AuthenticationSource.none ||
+    AuthenticationSource.automatic ||
+    AuthenticationSource.importedKeys ||
+    AuthenticationSource.bunker ||
+    AuthenticationSource.amber ||
+    AuthenticationSource.nip07 => false,
+  };
 });
 
-/// The #176 DM-restriction seam — fail CLOSED conditionally, a deliberate divergence from
+/// The #176 DM-restriction seam — fail CLOSED conditionally, a deliberate
+/// divergence from
 /// [isProtectedMinorProvider] (which #175's content lock consumes fail-open):
 /// the restricted party can trivially suppress the input that produces an
 /// absent answer (airplane mode, cleared storage, blocked keycast domain,
@@ -234,9 +243,7 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   if (authSource == AuthenticationSource.none) return true;
 
   // Fail closed only when Keycast signals are applicable to this account.
-  if (!keycastApplicable) return false;
-
-  return true;
+  return keycastApplicable;
 });
 
 /// Whether the current DM restriction comes from a confirmed protected-minor

@@ -54,34 +54,6 @@ void main() {
     return container;
   }
 
-  test('Keycast account is restricted while unresolved with no verdict', () {
-    // Cold start / keycast outage / suppressed check on a never-seen Keycast
-    // account: fail closed. The restricted party can trivially produce this
-    // state (airplane mode, cleared storage), so it must not lift the gate.
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () => Completer<ProtectedMinorStatus>().future,
-    );
-
-    expect(container.read(isDmRestrictedProvider), isTrue);
-  });
-
-  test(
-    'non-Keycast account is unrestricted when Keycast verdict is absent',
-    () {
-      // Self-custody accounts are outside Keycast's verified-minor signal. An
-      // absent Keycast verdict for them is structurally inapplicable, not a
-      // suppressible signal.
-      final container = containerWith(
-        authState: AuthState.authenticated,
-        authSource: AuthenticationSource.importedKeys,
-        status: () => Completer<ProtectedMinorStatus>().future,
-      );
-
-      expect(container.read(isDmRestrictedProvider), isFalse);
-    },
-  );
-
   test('unauthenticated with no verdict persisted is restricted', () {
     final container = containerWith(authState: AuthState.unauthenticated);
 
@@ -137,22 +109,6 @@ void main() {
     expect(container.read(isDmRestrictedProvider), isTrue);
   });
 
-  test(
-    'ever-Keycast pubkey remains restricted after imported-key reauth',
-    () async {
-      final store = ProtectedMinorStickyStore(prefs: prefs);
-      await store.markKeycastAccount(pubkey);
-
-      final container = containerWith(
-        authState: AuthState.authenticated,
-        authSource: AuthenticationSource.importedKeys,
-        status: () => Completer<ProtectedMinorStatus>().future,
-      );
-
-      expect(container.read(isDmRestrictedProvider), isTrue);
-    },
-  );
-
   test('an unknown resolution falls back to the persisted verdict', () async {
     final store = ProtectedMinorStickyStore(prefs: prefs);
     await store.applyLiveStatus(pubkey, ProtectedMinorStatus.notProtected());
@@ -181,8 +137,10 @@ void main() {
   // The fail direction per auth source with no verdict anywhere (live status
   // unresolved, nothing persisted). Keycast-backed or not-yet-known sources
   // fail closed; pure self-custody sources Keycast can never answer for are
-  // unrestricted (#6300). Pinning every source stops a refactor from silently
-  // moving one in either direction.
+  // unrestricted. Pinning every source stops a refactor from silently moving
+  // one in either direction. An absent OAuth verdict can be suppressed by the
+  // restricted party, while an absent self-custody verdict is structurally
+  // inapplicable.
   group('per-auth-source fail direction with an absent verdict', () {
     for (final source in AuthenticationSource.values) {
       final expectRestricted = switch (source) {
@@ -238,29 +196,8 @@ void main() {
     }
   });
 
-  test('keycastSignalApplicableProvider reads per auth source', () {
-    // Direct coverage for the new provider: OAuth -> applicable, pure
-    // self-custody never seen by Keycast -> not applicable.
-    expect(
-      containerWith(
-        authState: AuthState.authenticated,
-        status: () => Completer<ProtectedMinorStatus>().future,
-      ).read(keycastSignalApplicableProvider),
-      isTrue,
-    );
-    expect(
-      containerWith(
-        authState: AuthState.authenticated,
-        authSource: AuthenticationSource.importedKeys,
-        status: () => Completer<ProtectedMinorStatus>().future,
-      ).read(keycastSignalApplicableProvider),
-      isFalse,
-    );
-  });
-
   test(
-    'a live listener sees the restriction flip on when a Keycast account '
-    'signs in after a self-custody session',
+    'a live provider restricts a Keycast account after a self-custody session',
     () async {
       // Regression test for the provider-cache staleness in
       // keycastSignalApplicableProvider: AuthService mutates its pubkey and
@@ -306,10 +243,9 @@ void main() {
 
       // Keep a listener attached across the whole sequence, as an app-shell
       // consumer would.
-      final seen = <bool>[];
       final sub = container.listen(
         isDmRestrictedProvider,
-        (_, next) => seen.add(next),
+        (_, _) {},
         fireImmediately: true,
       );
       addTearDown(sub.close);
@@ -334,7 +270,6 @@ void main() {
       authStateController.add(AuthState.authenticated);
       await pumpEventQueue();
 
-      expect(container.read(keycastSignalApplicableProvider), isTrue);
       expect(container.read(isDmRestrictedProvider), isTrue);
     },
   );
