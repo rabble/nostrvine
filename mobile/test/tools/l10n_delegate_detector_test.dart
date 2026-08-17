@@ -83,6 +83,38 @@ void main() {
       expect(sites, isEmpty);
     });
 
+    test('counts a MaterialApp with delegates that omit AppLocalizations', () {
+      final sites = scan('''
+void main() {
+  pumpWidget(
+    MaterialApp(
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      home: Foo(),
+    ),
+  );
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.line, 3);
+    });
+
+    test('counts a MaterialApp with an empty delegate list', () {
+      final sites = scan('''
+void main() {
+  pumpWidget(
+    MaterialApp(
+      localizationsDelegates: const [],
+      home: Foo(),
+    ),
+  );
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.line, 3);
+    });
+
     test('does not count testMaterialApp — the #3613 false positive', () {
       // 31 of the 39 files the issue named were only ever this.
       final sites = scan('''
@@ -161,6 +193,34 @@ void main() {
 
       expect(sites, hasLength(1));
       expect(sites.single.widget, 'MaterialApp');
+    });
+
+    test('counts import-prefixed MaterialApp with no delegates', () {
+      final sites = scan('''
+import 'package:flutter/material.dart' as material;
+
+void main() {
+  pumpWidget(material.MaterialApp(home: Foo()));
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.widget, 'MaterialApp');
+      expect(sites.single.line, 4);
+    });
+
+    test('counts import-prefixed MaterialApp.router with no delegates', () {
+      final sites = scan('''
+import 'package:flutter/material.dart' as material;
+
+void main() {
+  pumpWidget(material.MaterialApp.router(routerConfig: router));
+}
+''');
+
+      expect(sites, hasLength(1));
+      expect(sites.single.widget, 'MaterialApp');
+      expect(sites.single.line, 4);
     });
 
     test('does not count MaterialApp.router that registers delegates', () {

@@ -26,9 +26,10 @@
 //
 // So a site counts when, and only when, it is an actual `MaterialApp(...)` or
 // `MaterialApp.router(...)` construction whose argument list has no
-// `localizationsDelegates:` named argument. Anything that merely *contains* the
-// identifier — `testMaterialApp`, `MyMaterialAppWrapper`, a doc comment, a
-// string literal — is not a construction and is never counted.
+// `localizationsDelegates:` value that references `AppLocalizations`. Anything
+// that merely *contains* the identifier — `testMaterialApp`,
+// `MyMaterialAppWrapper`, a doc comment, a string literal — is not a
+// construction and is never counted.
 //
 // Why this matters: `context.l10n` is `AppLocalizations.of(context)`, which is
 // `Localizations.of<AppLocalizations>(context, AppLocalizations)!`. With no
@@ -110,11 +111,12 @@ class _Visitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    // `X.router(...)` arrives as a MethodInvocation whose target is `X`.
-    final target = node.target;
-    final name = target is SimpleIdentifier
-        ? target.name
-        : node.methodName.name;
+    // `X.router(...)` arrives as a MethodInvocation whose target is `X`;
+    // prefixed `material.MaterialApp(...)` arrives with methodName MaterialApp.
+    final methodName = node.methodName.name;
+    final name = methodName == 'router'
+        ? _lastIdentifierName(node.target) ?? methodName
+        : methodName;
     _check(name, node.argumentList, node.offset);
     super.visitMethodInvocation(node);
   }
@@ -124,10 +126,7 @@ class _Visitor extends RecursiveAstVisitor<void> {
     // never counted — that substring collision is what made #3613 report 39
     // offenders when 31 of them were already correct.
     if (!appWidgets.contains(name)) return;
-    final hasDelegates = args.arguments.any(
-      (a) => a is NamedExpression && a.name.label.name == _delegatesArg,
-    );
-    if (hasDelegates) return;
+    if (_hasAppLocalizationsDelegate(args)) return;
     sites.add(
       DelegatelessSite(
         path: _path,
@@ -135,6 +134,40 @@ class _Visitor extends RecursiveAstVisitor<void> {
         widget: name,
       ),
     );
+  }
+
+  bool _hasAppLocalizationsDelegate(ArgumentList args) {
+    for (final argument in args.arguments) {
+      if (argument is! NamedExpression) continue;
+      if (argument.name.label.name != _delegatesArg) continue;
+      return _referencesAppLocalizations(argument.expression);
+    }
+    return false;
+  }
+
+  bool _referencesAppLocalizations(Expression expression) {
+    final visitor = _AppLocalizationsReferenceVisitor();
+    expression.accept(visitor);
+    return visitor.found;
+  }
+}
+
+String? _lastIdentifierName(Expression? expression) {
+  return switch (expression) {
+    SimpleIdentifier(:final name) => name,
+    PrefixedIdentifier(:final identifier) => identifier.name,
+    PropertyAccess(:final propertyName) => propertyName.name,
+    _ => null,
+  };
+}
+
+class _AppLocalizationsReferenceVisitor extends RecursiveAstVisitor<void> {
+  bool found = false;
+
+  @override
+  void visitSimpleIdentifier(SimpleIdentifier node) {
+    if (node.name == 'AppLocalizations') found = true;
+    super.visitSimpleIdentifier(node);
   }
 }
 
