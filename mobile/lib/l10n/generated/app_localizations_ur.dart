@@ -12168,4 +12168,50 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'آپ آف لائن ہیں۔\nاپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String get dbFailureTitle => 'آپ کا مقامی ڈیٹابیس کھولا نہیں جا سکا';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'دوبارہ شروع کرنے سے یہ ٹھیک نہیں ہوگا۔ نیچے مقامی ڈیٹابیس ری سیٹ کرنے سے Divine کو صاف آغاز ملتا ہے — آپ کا اکاؤنٹ برقرار رہتا ہے۔';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'اپنا ڈیوائس اَن لاک کرنے کے بعد Divine دوبارہ شروع کریں۔ اگر یہ ہوتا رہے تو ایپ اپ ڈیٹ کریں یا سپورٹ سے رابطہ کریں۔';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'تشخیص: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'Divine بند کریں';
+
+  @override
+  String get dbFailureResetAction => 'مقامی ڈیٹابیس ری سیٹ کریں';
+
+  @override
+  String get dbFailureConfirmTitle => 'اپنا مقامی ڈیٹابیس ری سیٹ کریں؟';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'آپ کا اکاؤنٹ برقرار رہتا ہے۔ اس ڈیوائس پر محفوظ ڈرافٹس اور کلپس حذف ہو جائیں گے — پیغامات اور فیڈز نیٹ ورک سے واپس آ جاتے ہیں۔';
+
+  @override
+  String get dbFailureResetConfirm => 'ری سیٹ کریں اور بند کریں';
+
+  @override
+  String get dbFailureCancel => 'منسوخ کریں';
+
+  @override
+  String get dbFailureResetFailed =>
+      'یہ کام نہیں کیا۔ Divine بند کریں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String get dbFailureResetDoneTitle => 'مقامی ڈیٹابیس ری سیٹ ہو گیا';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Divine بند کریں اور دوبارہ کھولیں — اگلی بار شروع ہونے پر نیا مقامی ڈیٹابیس بنے گا۔';
 }

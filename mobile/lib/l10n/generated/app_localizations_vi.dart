@@ -12163,4 +12163,50 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Bạn đang ngoại tuyến.\nKiểm tra kết nối rồi thử lại.';
+
+  @override
+  String get dbFailureTitle => 'không thể mở khóa cơ sở dữ liệu cục bộ của bạn';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Khởi động lại sẽ không khắc phục được. Đặt lại cơ sở dữ liệu cục bộ bên dưới giúp Divine bắt đầu lại từ đầu — tài khoản của bạn vẫn còn.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Khởi động lại Divine sau khi mở khóa thiết bị. Nếu vẫn tiếp diễn, hãy cập nhật ứng dụng hoặc liên hệ bộ phận hỗ trợ.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Chẩn đoán: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'đóng Divine';
+
+  @override
+  String get dbFailureResetAction => 'đặt lại cơ sở dữ liệu cục bộ';
+
+  @override
+  String get dbFailureConfirmTitle => 'đặt lại cơ sở dữ liệu cục bộ của bạn?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Tài khoản của bạn vẫn còn. Bản nháp và clip đã lưu trên thiết bị này sẽ bị xóa — tin nhắn và bảng tin sẽ được tải lại từ mạng.';
+
+  @override
+  String get dbFailureResetConfirm => 'đặt lại và đóng';
+
+  @override
+  String get dbFailureCancel => 'hủy';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Không thành công. Hãy đóng Divine và thử lại.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'đã đặt lại cơ sở dữ liệu cục bộ';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới.';
 }

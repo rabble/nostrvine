@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} متابِع} other{{formattedCount} متابِع}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} فيديو} other{{formattedCount} فيديو}}",
   "feedOutageMessage": "الفيديوهات لا تُحمَّل الآن.\nالمشكلة من عندنا، ونحن نصلحها.",
-  "feedOfflineMessage": "أنت غير متصل.\nتحقق من اتصالك وحاول مرة أخرى."
+  "feedOfflineMessage": "أنت غير متصل.\nتحقق من اتصالك وحاول مرة أخرى.",
+    "dbFailureTitle": "تعذّر فتح قاعدة البيانات المحلية",
+    "dbFailureAdviceResettable": "إعادة التشغيل لن تحل هذه المشكلة. إعادة تعيين قاعدة البيانات المحلية أدناه تمنح Divine بداية نظيفة — يبقى حسابك كما هو.",
+    "dbFailureAdviceRestart": "أعد تشغيل Divine بعد فتح قفل جهازك. إذا استمر هذا، فحدّث التطبيق أو تواصل مع الدعم.",
+    "dbFailureDiagnostic": "التشخيص: {code}",
+    "dbFailureCloseApp": "إغلاق Divine",
+    "dbFailureResetAction": "إعادة تعيين قاعدة البيانات المحلية",
+    "dbFailureConfirmTitle": "إعادة تعيين قاعدة البيانات المحلية؟",
+    "dbFailureConfirmBody": "يبقى حسابك. تُحذف المسودات والمقاطع المحفوظة على هذا الجهاز — أما الرسائل والخلاصات فتعود من الشبكة.",
+    "dbFailureResetConfirm": "إعادة التعيين والإغلاق",
+    "dbFailureCancel": "إلغاء",
+    "dbFailureResetFailed": "لم ينجح ذلك. أغلق Divine وحاول مرة أخرى.",
+    "dbFailureResetDoneTitle": "تمت إعادة تعيين قاعدة البيانات المحلية",
+    "dbFailureResetDoneBody": "أغلق Divine ثم افتحه مجددًا — سيبني التشغيل التالي قاعدة بيانات محلية جديدة."
 }

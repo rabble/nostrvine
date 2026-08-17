@@ -7047,5 +7047,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} فالوور} other{{formattedCount} فالوورز}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} ویڈیو} other{{formattedCount} ویڈیوز}}",
   "feedOutageMessage": "ابھی ویڈیوز لوڈ نہیں ہو رہیں۔\nمسئلہ ہماری طرف سے ہے، ہم اسے ٹھیک کر رہے ہیں۔",
-  "feedOfflineMessage": "آپ آف لائن ہیں۔\nاپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔"
+  "feedOfflineMessage": "آپ آف لائن ہیں۔\nاپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
+  "dbFailureTitle": "آپ کا مقامی ڈیٹابیس کھولا نہیں جا سکا",
+  "dbFailureAdviceResettable": "دوبارہ شروع کرنے سے یہ ٹھیک نہیں ہوگا۔ نیچے مقامی ڈیٹابیس ری سیٹ کرنے سے Divine کو صاف آغاز ملتا ہے — آپ کا اکاؤنٹ برقرار رہتا ہے۔",
+  "dbFailureAdviceRestart": "اپنا ڈیوائس اَن لاک کرنے کے بعد Divine دوبارہ شروع کریں۔ اگر یہ ہوتا رہے تو ایپ اپ ڈیٹ کریں یا سپورٹ سے رابطہ کریں۔",
+  "dbFailureDiagnostic": "تشخیص: {code}",
+  "dbFailureCloseApp": "Divine بند کریں",
+  "dbFailureResetAction": "مقامی ڈیٹابیس ری سیٹ کریں",
+  "dbFailureConfirmTitle": "اپنا مقامی ڈیٹابیس ری سیٹ کریں؟",
+  "dbFailureConfirmBody": "آپ کا اکاؤنٹ برقرار رہتا ہے۔ اس ڈیوائس پر محفوظ ڈرافٹس اور کلپس حذف ہو جائیں گے — پیغامات اور فیڈز نیٹ ورک سے واپس آ جاتے ہیں۔",
+  "dbFailureResetConfirm": "ری سیٹ کریں اور بند کریں",
+  "dbFailureCancel": "منسوخ کریں",
+  "dbFailureResetFailed": "یہ کام نہیں کیا۔ Divine بند کریں اور دوبارہ کوشش کریں۔",
+  "dbFailureResetDoneTitle": "مقامی ڈیٹابیس ری سیٹ ہو گیا",
+  "dbFailureResetDoneBody": "Divine بند کریں اور دوبارہ کھولیں — اگلی بار شروع ہونے پر نیا مقامی ڈیٹابیس بنے گا۔"
 }

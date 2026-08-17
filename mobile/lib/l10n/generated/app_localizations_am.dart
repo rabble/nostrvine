@@ -11862,4 +11862,49 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get feedOfflineMessage => 'ከመስመር ውጭ ነዎት።\nግንኙነትዎን አረጋግጠው እንደገና ይሞክሩ።';
+
+  @override
+  String get dbFailureTitle => 'የአካባቢ ዳታቤዝዎን መክፈት አልተቻለም';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'እንደገና ማስጀመር ይህን አያስተካክለውም። ከታች ያለውን የአካባቢ ዳታቤዝ ዳግም ማስጀመር ለDivine ንጹህ ጅምር ይሰጣል — መለያዎ ይቀራል።';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'መሣሪያዎን ከከፈቱ በኋላ Divineን እንደገና ያስጀምሩ። ይህ የሚቀጥል ከሆነ መተግበሪያውን ያዘምኑ ወይም ድጋፍን ያግኙ።';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'ምርመራ: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'Divineን ዝጋ';
+
+  @override
+  String get dbFailureResetAction => 'የአካባቢ ዳታቤዝ ዳግም አስጀምር';
+
+  @override
+  String get dbFailureConfirmTitle => 'የአካባቢ ዳታቤዝዎን ዳግም ያስጀምሩ?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'መለያዎ ይቀራል። በዚህ መሣሪያ ላይ የተቀመጡ ረቂቆች እና ክሊፖች ይሰረዛሉ — መልእክቶች እና ምግቦች ከአውታረ መረቡ ይመለሳሉ።';
+
+  @override
+  String get dbFailureResetConfirm => 'ዳግም አስጀምር እና ዝጋ';
+
+  @override
+  String get dbFailureCancel => 'ሰርዝ';
+
+  @override
+  String get dbFailureResetFailed => 'ያ አልሰራም። Divineን ዘግተው እንደገና ይሞክሩ።';
+
+  @override
+  String get dbFailureResetDoneTitle => 'የአካባቢ ዳታቤዝ ዳግም ተጀምሯል';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Divineን ዝጋ እና እንደገና ክፈተው — ቀጣዩ ጅምር አዲስ የአካባቢ ዳታቤዝ ይገነባል።';
 }

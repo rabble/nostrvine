@@ -5348,5 +5348,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} последовател} other{{formattedCount} последователи}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} видео} other{{formattedCount} видеа}}",
   "feedOutageMessage": "Видеата не се зареждат в момента.\nПроблемът е от нас и вече го оправяме.",
-  "feedOfflineMessage": "Няма връзка с интернет.\nПровери връзката си и опитай пак."
+  "feedOfflineMessage": "Няма връзка с интернет.\nПровери връзката си и опитай пак.",
+    "dbFailureTitle": "локалната база данни не може да се отключи",
+    "dbFailureAdviceResettable": "Рестартирането няма да помогне. Нулирането на локалната база данни по-долу дава на Divine чист старт — акаунтът ти остава.",
+    "dbFailureAdviceRestart": "Рестартирай Divine, след като отключиш устройството си. Ако това продължава, обнови приложението или се свържи с поддръжката.",
+    "dbFailureDiagnostic": "Диагностика: {code}",
+    "dbFailureCloseApp": "затвори Divine",
+    "dbFailureResetAction": "нулирай локалната база данни",
+    "dbFailureConfirmTitle": "да нулираме ли локалната база данни?",
+    "dbFailureConfirmBody": "Акаунтът ти остава. Черновите и клиповете, запазени на това устройство, се изтриват — съобщенията и емисиите се връщат от мрежата.",
+    "dbFailureResetConfirm": "нулирай и затвори",
+    "dbFailureCancel": "отказ",
+    "dbFailureResetFailed": "Това не сработи. Затвори Divine и опитай отново.",
+    "dbFailureResetDoneTitle": "локалната база данни е нулирана",
+    "dbFailureResetDoneBody": "Затвори Divine и го отвори отново — следващото стартиране изгражда нова локална база данни."
 }

@@ -12180,4 +12180,50 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Du är offline.\nKolla din anslutning och försök igen.';
+
+  @override
+  String get dbFailureTitle => 'kunde inte låsa upp din lokala databas';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'En omstart löser inte det här. Att återställa den lokala databasen nedan ger Divine en ren start — ditt konto finns kvar.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Starta om Divine när du har låst upp din enhet. Om det fortsätter, uppdatera appen eller kontakta supporten.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostik: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'stäng Divine';
+
+  @override
+  String get dbFailureResetAction => 'återställ lokal databas';
+
+  @override
+  String get dbFailureConfirmTitle => 'återställa din lokala databas?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Ditt konto finns kvar. Utkast och klipp som sparats på den här enheten raderas — meddelanden och flöden hämtas tillbaka från nätverket.';
+
+  @override
+  String get dbFailureResetConfirm => 'återställ och stäng';
+
+  @override
+  String get dbFailureCancel => 'avbryt';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Det fungerade inte. Stäng Divine och försök igen.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'lokal databas återställd';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Stäng Divine och öppna det igen — nästa start skapar en ny lokal databas.';
 }

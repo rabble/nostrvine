@@ -12139,4 +12139,50 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Çevrimdışısın.\nBağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get dbFailureTitle => 'yerel veritabanınız açılamadı';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Yeniden başlatmak bunu düzeltmez. Aşağıdaki yerel veritabanını sıfırlamak Divine’a temiz bir başlangıç verir — hesabınız kalır.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Cihazınızın kilidini açtıktan sonra Divine’ı yeniden başlatın. Bu sürerse uygulamayı güncelleyin veya destekle iletişime geçin.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Tanılama: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'Divine’ı kapat';
+
+  @override
+  String get dbFailureResetAction => 'yerel veritabanını sıfırla';
+
+  @override
+  String get dbFailureConfirmTitle => 'yerel veritabanınız sıfırlansın mı?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Hesabınız kalır. Bu cihazda kayıtlı taslaklar ve klipler silinir — mesajlar ve akışlar ağdan geri gelir.';
+
+  @override
+  String get dbFailureResetConfirm => 'sıfırla ve kapat';
+
+  @override
+  String get dbFailureCancel => 'iptal';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Bu işe yaramadı. Divine’ı kapatıp tekrar deneyin.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'yerel veritabanı sıfırlandı';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Divine’ı kapatıp yeniden açın — sonraki başlatmada yeni bir yerel veritabanı oluşturulur.';
 }

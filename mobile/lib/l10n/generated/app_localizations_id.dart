@@ -12125,4 +12125,50 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Kamu sedang offline.\nPeriksa koneksimu lalu coba lagi.';
+
+  @override
+  String get dbFailureTitle => 'tidak dapat membuka basis data lokalmu';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Memulai ulang tidak akan memperbaikinya. Mengatur ulang basis data lokal di bawah memberi Divine awal yang bersih — akunmu tetap ada.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Mulai ulang Divine setelah membuka kunci perangkatmu. Jika ini terus terjadi, perbarui aplikasi atau hubungi dukungan.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostik: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'tutup Divine';
+
+  @override
+  String get dbFailureResetAction => 'atur ulang basis data lokal';
+
+  @override
+  String get dbFailureConfirmTitle => 'atur ulang basis data lokalmu?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Akunmu tetap ada. Draf dan klip yang tersimpan di perangkat ini akan dihapus — pesan dan feed kembali dari jaringan.';
+
+  @override
+  String get dbFailureResetConfirm => 'atur ulang dan tutup';
+
+  @override
+  String get dbFailureCancel => 'batal';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Itu tidak berhasil. Tutup Divine dan coba lagi.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'basis data lokal telah diatur ulang';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Tutup Divine lalu buka lagi — peluncuran berikutnya membangun basis data lokal yang baru.';
 }

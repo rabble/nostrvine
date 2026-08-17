@@ -1286,7 +1286,15 @@ Future<void> _startOpenVineApp() async {
         onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
       );
 
+  // The fail-closed screen below renders before the app's own MaterialApp
+  // exists, so it cannot inherit a locale — pass the user's language override
+  // through. Null falls back to the device locales, same as the running app.
+  final savedUiLocale = LocalePreferenceService(
+    sharedPreferences: sharedPreferences,
+  ).getLocale();
+
   final dbCipherKeyResult = await resolveDatabaseBootstrapForAppStart(
+    locale: savedUiLocale == null ? null : Locale(savedUiLocale),
     resolveCipherKey: () => resolveStartupDatabaseCipherKey(
       // resetOnError MUST stay false here: the cipher key is the one secret
       // whose loss makes the encrypted DB unrecoverable. A transient keystore

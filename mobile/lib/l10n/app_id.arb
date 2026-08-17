@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} pengikut}}",
   "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}",
   "feedOutageMessage": "Video sedang tidak bisa dimuat.\nIni dari kami, bukan kamu — sedang kami perbaiki.",
-  "feedOfflineMessage": "Kamu sedang offline.\nPeriksa koneksimu lalu coba lagi."
+  "feedOfflineMessage": "Kamu sedang offline.\nPeriksa koneksimu lalu coba lagi.",
+    "dbFailureTitle": "tidak dapat membuka basis data lokalmu",
+    "dbFailureAdviceResettable": "Memulai ulang tidak akan memperbaikinya. Mengatur ulang basis data lokal di bawah memberi Divine awal yang bersih — akunmu tetap ada.",
+    "dbFailureAdviceRestart": "Mulai ulang Divine setelah membuka kunci perangkatmu. Jika ini terus terjadi, perbarui aplikasi atau hubungi dukungan.",
+    "dbFailureDiagnostic": "Diagnostik: {code}",
+    "dbFailureCloseApp": "tutup Divine",
+    "dbFailureResetAction": "atur ulang basis data lokal",
+    "dbFailureConfirmTitle": "atur ulang basis data lokalmu?",
+    "dbFailureConfirmBody": "Akunmu tetap ada. Draf dan klip yang tersimpan di perangkat ini akan dihapus — pesan dan feed kembali dari jaringan.",
+    "dbFailureResetConfirm": "atur ulang dan tutup",
+    "dbFailureCancel": "batal",
+    "dbFailureResetFailed": "Itu tidak berhasil. Tutup Divine dan coba lagi.",
+    "dbFailureResetDoneTitle": "basis data lokal telah diatur ulang",
+    "dbFailureResetDoneBody": "Tutup Divine lalu buka lagi — peluncuran berikutnya membangun basis data lokal yang baru."
 }

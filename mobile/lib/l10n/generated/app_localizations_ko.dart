@@ -11625,4 +11625,49 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get feedOfflineMessage => '오프라인 상태예요.\n연결을 확인하고 다시 시도해 주세요.';
+
+  @override
+  String get dbFailureTitle => '로컬 데이터베이스를 열지 못했습니다';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      '재시작으로는 해결되지 않습니다. 아래에서 로컬 데이터베이스를 초기화하면 Divine을 깨끗한 상태로 시작할 수 있습니다. 계정은 그대로 유지됩니다.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      '기기 잠금을 해제한 뒤 Divine을 다시 실행하세요. 계속 발생하면 앱을 업데이트하거나 고객지원에 문의하세요.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return '진단: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'Divine 닫기';
+
+  @override
+  String get dbFailureResetAction => '로컬 데이터베이스 초기화';
+
+  @override
+  String get dbFailureConfirmTitle => '로컬 데이터베이스를 초기화할까요?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      '계정은 그대로 유지됩니다. 이 기기에 저장된 초안과 클립은 삭제됩니다. 메시지와 피드는 네트워크에서 다시 불러옵니다.';
+
+  @override
+  String get dbFailureResetConfirm => '초기화하고 닫기';
+
+  @override
+  String get dbFailureCancel => '취소';
+
+  @override
+  String get dbFailureResetFailed => '실패했습니다. Divine을 닫고 다시 시도하세요.';
+
+  @override
+  String get dbFailureResetDoneTitle => '로컬 데이터베이스가 초기화되었습니다';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Divine을 닫았다가 다시 여세요. 다음 실행에서 새 로컬 데이터베이스가 만들어집니다.';
 }

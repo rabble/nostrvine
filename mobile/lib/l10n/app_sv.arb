@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} följare} other{{formattedCount} följare}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} videor}}",
   "feedOutageMessage": "Videor laddas inte just nu.\nDet är vårt fel, inte ditt – vi jobbar på det.",
-  "feedOfflineMessage": "Du är offline.\nKolla din anslutning och försök igen."
+  "feedOfflineMessage": "Du är offline.\nKolla din anslutning och försök igen.",
+    "dbFailureTitle": "kunde inte låsa upp din lokala databas",
+    "dbFailureAdviceResettable": "En omstart löser inte det här. Att återställa den lokala databasen nedan ger Divine en ren start — ditt konto finns kvar.",
+    "dbFailureAdviceRestart": "Starta om Divine när du har låst upp din enhet. Om det fortsätter, uppdatera appen eller kontakta supporten.",
+    "dbFailureDiagnostic": "Diagnostik: {code}",
+    "dbFailureCloseApp": "stäng Divine",
+    "dbFailureResetAction": "återställ lokal databas",
+    "dbFailureConfirmTitle": "återställa din lokala databas?",
+    "dbFailureConfirmBody": "Ditt konto finns kvar. Utkast och klipp som sparats på den här enheten raderas — meddelanden och flöden hämtas tillbaka från nätverket.",
+    "dbFailureResetConfirm": "återställ och stäng",
+    "dbFailureCancel": "avbryt",
+    "dbFailureResetFailed": "Det fungerade inte. Stäng Divine och försök igen.",
+    "dbFailureResetDoneTitle": "lokal databas återställd",
+    "dbFailureResetDoneBody": "Stäng Divine och öppna det igen — nästa start skapar en ny lokal databas."
 }

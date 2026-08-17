@@ -12420,4 +12420,50 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Jesteś offline.\nSprawdź połączenie i spróbuj ponownie.';
+
+  @override
+  String get dbFailureTitle => 'nie można odblokować lokalnej bazy danych';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Ponowne uruchomienie tego nie naprawi. Zresetowanie lokalnej bazy danych poniżej da Divine czysty start — Twoje konto zostaje.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Uruchom Divine ponownie po odblokowaniu urządzenia. Jeśli to się powtarza, zaktualizuj aplikację lub skontaktuj się z pomocą techniczną.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostyka: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'zamknij Divine';
+
+  @override
+  String get dbFailureResetAction => 'zresetuj lokalną bazę danych';
+
+  @override
+  String get dbFailureConfirmTitle => 'zresetować lokalną bazę danych?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Twoje konto zostaje. Wersje robocze i klipy zapisane na tym urządzeniu zostaną usunięte — wiadomości i kanały wrócą z sieci.';
+
+  @override
+  String get dbFailureResetConfirm => 'zresetuj i zamknij';
+
+  @override
+  String get dbFailureCancel => 'anuluj';
+
+  @override
+  String get dbFailureResetFailed =>
+      'To nie zadziałało. Zamknij Divine i spróbuj ponownie.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'lokalna baza danych zresetowana';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Zamknij Divine i otwórz go ponownie — następne uruchomienie utworzy nową lokalną bazę danych.';
 }

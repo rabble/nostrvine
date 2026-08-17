@@ -12086,4 +12086,50 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'أنت غير متصل.\nتحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get dbFailureTitle => 'تعذّر فتح قاعدة البيانات المحلية';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'إعادة التشغيل لن تحل هذه المشكلة. إعادة تعيين قاعدة البيانات المحلية أدناه تمنح Divine بداية نظيفة — يبقى حسابك كما هو.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'أعد تشغيل Divine بعد فتح قفل جهازك. إذا استمر هذا، فحدّث التطبيق أو تواصل مع الدعم.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'التشخيص: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'إغلاق Divine';
+
+  @override
+  String get dbFailureResetAction => 'إعادة تعيين قاعدة البيانات المحلية';
+
+  @override
+  String get dbFailureConfirmTitle => 'إعادة تعيين قاعدة البيانات المحلية؟';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'يبقى حسابك. تُحذف المسودات والمقاطع المحفوظة على هذا الجهاز — أما الرسائل والخلاصات فتعود من الشبكة.';
+
+  @override
+  String get dbFailureResetConfirm => 'إعادة التعيين والإغلاق';
+
+  @override
+  String get dbFailureCancel => 'إلغاء';
+
+  @override
+  String get dbFailureResetFailed => 'لم ينجح ذلك. أغلق Divine وحاول مرة أخرى.';
+
+  @override
+  String get dbFailureResetDoneTitle =>
+      'تمت إعادة تعيين قاعدة البيانات المحلية';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'أغلق Divine ثم افتحه مجددًا — سيبني التشغيل التالي قاعدة بيانات محلية جديدة.';
 }

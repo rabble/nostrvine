@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} volger} other{{formattedCount} volgers}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video''s}}",
   "feedOutageMessage": "Er laden nu geen video's.\nHet ligt aan ons, niet aan jou — we zijn ermee bezig.",
-  "feedOfflineMessage": "Je bent offline.\nControleer je verbinding en probeer het opnieuw."
+  "feedOfflineMessage": "Je bent offline.\nControleer je verbinding en probeer het opnieuw.",
+    "dbFailureTitle": "kan je lokale database niet ontgrendelen",
+    "dbFailureAdviceResettable": "Opnieuw opstarten lost dit niet op. De lokale database hieronder resetten geeft Divine een schone start — je account blijft behouden.",
+    "dbFailureAdviceRestart": "Start Divine opnieuw nadat je je apparaat hebt ontgrendeld. Blijft dit gebeuren, werk de app dan bij of neem contact op met support.",
+    "dbFailureDiagnostic": "Diagnose: {code}",
+    "dbFailureCloseApp": "Divine sluiten",
+    "dbFailureResetAction": "lokale database resetten",
+    "dbFailureConfirmTitle": "je lokale database resetten?",
+    "dbFailureConfirmBody": "Je account blijft behouden. Concepten en clips die op dit apparaat zijn opgeslagen worden verwijderd — berichten en feeds komen terug van het netwerk.",
+    "dbFailureResetConfirm": "resetten en sluiten",
+    "dbFailureCancel": "annuleren",
+    "dbFailureResetFailed": "Dat werkte niet. Sluit Divine en probeer het opnieuw.",
+    "dbFailureResetDoneTitle": "lokale database gereset",
+    "dbFailureResetDoneBody": "Sluit Divine en open het opnieuw — bij de volgende start wordt een nieuwe lokale database aangemaakt."
 }

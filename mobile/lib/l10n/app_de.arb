@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} Follower} other{{formattedCount} Follower}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} Video} other{{formattedCount} Videos}}",
   "feedOutageMessage": "Videos laden gerade nicht.\nDas liegt an uns, nicht an dir – wir sind dran.",
-  "feedOfflineMessage": "Du bist offline.\nPrüfe deine Verbindung und versuch es nochmal."
+  "feedOfflineMessage": "Du bist offline.\nPrüfe deine Verbindung und versuch es nochmal.",
+    "dbFailureTitle": "Lokale Datenbank konnte nicht entsperrt werden",
+    "dbFailureAdviceResettable": "Ein Neustart hilft hier nicht. Das Zurücksetzen der lokalen Datenbank unten gibt Divine einen sauberen Start — dein Konto bleibt bestehen.",
+    "dbFailureAdviceRestart": "Starte Divine neu, nachdem du dein Gerät entsperrt hast. Wenn das weiterhin passiert, aktualisiere die App oder wende dich an den Support.",
+    "dbFailureDiagnostic": "Diagnose: {code}",
+    "dbFailureCloseApp": "Divine schließen",
+    "dbFailureResetAction": "Lokale Datenbank zurücksetzen",
+    "dbFailureConfirmTitle": "Lokale Datenbank zurücksetzen?",
+    "dbFailureConfirmBody": "Dein Konto bleibt. Auf diesem Gerät gespeicherte Entwürfe und Clips werden gelöscht — Nachrichten und Feeds kommen aus dem Netzwerk zurück.",
+    "dbFailureResetConfirm": "Zurücksetzen und schließen",
+    "dbFailureCancel": "Abbrechen",
+    "dbFailureResetFailed": "Das hat nicht geklappt. Schließe Divine und versuche es erneut.",
+    "dbFailureResetDoneTitle": "Lokale Datenbank zurückgesetzt",
+    "dbFailureResetDoneBody": "Schließe Divine und öffne es erneut — der nächste Start legt eine frische lokale Datenbank an."
 }

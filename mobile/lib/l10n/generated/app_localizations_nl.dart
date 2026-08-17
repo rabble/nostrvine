@@ -12241,4 +12241,50 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Je bent offline.\nControleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String get dbFailureTitle => 'kan je lokale database niet ontgrendelen';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Opnieuw opstarten lost dit niet op. De lokale database hieronder resetten geeft Divine een schone start — je account blijft behouden.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Start Divine opnieuw nadat je je apparaat hebt ontgrendeld. Blijft dit gebeuren, werk de app dan bij of neem contact op met support.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnose: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'Divine sluiten';
+
+  @override
+  String get dbFailureResetAction => 'lokale database resetten';
+
+  @override
+  String get dbFailureConfirmTitle => 'je lokale database resetten?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Je account blijft behouden. Concepten en clips die op dit apparaat zijn opgeslagen worden verwijderd — berichten en feeds komen terug van het netwerk.';
+
+  @override
+  String get dbFailureResetConfirm => 'resetten en sluiten';
+
+  @override
+  String get dbFailureCancel => 'annuleren';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Dat werkte niet. Sluit Divine en probeer het opnieuw.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'lokale database gereset';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Sluit Divine en open het opnieuw — bij de volgende start wordt een nieuwe lokale database aangemaakt.';
 }

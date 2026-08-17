@@ -11496,4 +11496,47 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get feedOfflineMessage => '你当前处于离线状态。\n请检查网络后重试。';
+
+  @override
+  String get dbFailureTitle => '无法解锁你的本地数据库';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      '重启无法解决这个问题。重置下方的本地数据库可以让 Divine 全新开始 — 你的账号会保留。';
+
+  @override
+  String get dbFailureAdviceRestart => '解锁设备后重新启动 Divine。如果问题持续出现，请更新应用或联系支持。';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return '诊断：$code';
+  }
+
+  @override
+  String get dbFailureCloseApp => '关闭 Divine';
+
+  @override
+  String get dbFailureResetAction => '重置本地数据库';
+
+  @override
+  String get dbFailureConfirmTitle => '重置你的本地数据库？';
+
+  @override
+  String get dbFailureConfirmBody =>
+      '你的账号会保留。保存在此设备上的草稿和片段将被删除 — 消息和信息流会从网络重新获取。';
+
+  @override
+  String get dbFailureResetConfirm => '重置并关闭';
+
+  @override
+  String get dbFailureCancel => '取消';
+
+  @override
+  String get dbFailureResetFailed => '没有成功。请关闭 Divine 后重试。';
+
+  @override
+  String get dbFailureResetDoneTitle => '本地数据库已重置';
+
+  @override
+  String get dbFailureResetDoneBody => '关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。';
 }

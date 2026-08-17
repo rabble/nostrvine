@@ -7047,5 +7047,18 @@
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} 位粉丝}}",
   "searchUserVideoCount": "{count, plural, other{{formattedCount} 条视频}}",
   "feedOutageMessage": "视频暂时加载不出来。\n是我们的问题，正在修复。",
-  "feedOfflineMessage": "你当前处于离线状态。\n请检查网络后重试。"
+  "feedOfflineMessage": "你当前处于离线状态。\n请检查网络后重试。",
+  "dbFailureTitle": "无法解锁你的本地数据库",
+  "dbFailureAdviceResettable": "重启无法解决这个问题。重置下方的本地数据库可以让 Divine 全新开始 — 你的账号会保留。",
+  "dbFailureAdviceRestart": "解锁设备后重新启动 Divine。如果问题持续出现，请更新应用或联系支持。",
+  "dbFailureDiagnostic": "诊断：{code}",
+  "dbFailureCloseApp": "关闭 Divine",
+  "dbFailureResetAction": "重置本地数据库",
+  "dbFailureConfirmTitle": "重置你的本地数据库？",
+  "dbFailureConfirmBody": "你的账号会保留。保存在此设备上的草稿和片段将被删除 — 消息和信息流会从网络重新获取。",
+  "dbFailureResetConfirm": "重置并关闭",
+  "dbFailureCancel": "取消",
+  "dbFailureResetFailed": "没有成功。请关闭 Divine 后重试。",
+  "dbFailureResetDoneTitle": "本地数据库已重置",
+  "dbFailureResetDoneBody": "关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。"
 }

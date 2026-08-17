@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} obserwujący} few{{formattedCount} obserwujących} many{{formattedCount} obserwujących} other{{formattedCount} obserwujących}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} film} few{{formattedCount} filmy} many{{formattedCount} filmów} other{{formattedCount} filmu}}",
   "feedOutageMessage": "Filmy się teraz nie ładują.\nTo po naszej stronie — już to naprawiamy.",
-  "feedOfflineMessage": "Jesteś offline.\nSprawdź połączenie i spróbuj ponownie."
+  "feedOfflineMessage": "Jesteś offline.\nSprawdź połączenie i spróbuj ponownie.",
+    "dbFailureTitle": "nie można odblokować lokalnej bazy danych",
+    "dbFailureAdviceResettable": "Ponowne uruchomienie tego nie naprawi. Zresetowanie lokalnej bazy danych poniżej da Divine czysty start — Twoje konto zostaje.",
+    "dbFailureAdviceRestart": "Uruchom Divine ponownie po odblokowaniu urządzenia. Jeśli to się powtarza, zaktualizuj aplikację lub skontaktuj się z pomocą techniczną.",
+    "dbFailureDiagnostic": "Diagnostyka: {code}",
+    "dbFailureCloseApp": "zamknij Divine",
+    "dbFailureResetAction": "zresetuj lokalną bazę danych",
+    "dbFailureConfirmTitle": "zresetować lokalną bazę danych?",
+    "dbFailureConfirmBody": "Twoje konto zostaje. Wersje robocze i klipy zapisane na tym urządzeniu zostaną usunięte — wiadomości i kanały wrócą z sieci.",
+    "dbFailureResetConfirm": "zresetuj i zamknij",
+    "dbFailureCancel": "anuluj",
+    "dbFailureResetFailed": "To nie zadziałało. Zamknij Divine i spróbuj ponownie.",
+    "dbFailureResetDoneTitle": "lokalna baza danych zresetowana",
+    "dbFailureResetDoneBody": "Zamknij Divine i otwórz go ponownie — następne uruchomienie utworzy nową lokalną bazę danych."
 }
