@@ -134,13 +134,20 @@ class ClipRecoveryService {
     var ownedDraftCount = 0;
     final clipCounts = <String, int>{};
     final newestRecordedAt = <String, DateTime>{};
+    // Counted per recording, not per row: one recording occupies two clip rows
+    // while the editor's autosave draft holds it, and reporting both would put
+    // the tool at odds with the library it is meant to explain.
+    final seenVisible = <String>{};
+    final seenPerOwner = <String, Set<String>>{};
     for (final row in clipRows) {
       final owner = row.ownerPubkey;
+      final clipId = _clipIdOf(row);
       if (_isVisibleTo(currentOwner, owner)) {
-        ownedClipCount++;
+        if (seenVisible.add(clipId)) ownedClipCount++;
         continue;
       }
-      clipCounts.update(owner!, (v) => v + 1, ifAbsent: () => 1);
+      if (!(seenPerOwner[owner!] ??= <String>{}).add(clipId)) continue;
+      clipCounts.update(owner, (v) => v + 1, ifAbsent: () => 1);
       final newest = newestRecordedAt[owner];
       if (newest == null || row.recordedAt.isAfter(newest)) {
         newestRecordedAt[owner] = row.recordedAt;
@@ -191,6 +198,22 @@ class ClipRecoveryService {
   /// it either.
   static bool _isVisibleTo(String? currentOwner, String? rowOwner) =>
       currentOwner == null || rowOwner == null || rowOwner == currentOwner;
+
+  /// The recording a clip row belongs to.
+  ///
+  /// A library row is keyed by the plain clip id, while a draft-held copy is
+  /// keyed `<draftId>:<clipId>` (`DraftsDao.saveDraftWithClips`). The editor
+  /// autosaves right after a recording, so for most of a clip's life *both*
+  /// rows exist and a per-row count reports one recording as two.
+  /// `ClipLibraryService.getAllClips` collapses the pair for the same reason;
+  /// this derives the id from the row key rather than decoding the JSON blob,
+  /// since the scan reads every row in the database.
+  static String _clipIdOf(ClipRow row) {
+    final draftId = row.draftId;
+    if (draftId == null) return row.id;
+    final prefix = '$draftId:';
+    return row.id.startsWith(prefix) ? row.id.substring(prefix.length) : row.id;
+  }
 
   /// Camera recordings in the documents directory that no clip or draft row
   /// references, newest first, each with a preview frame and its length.
@@ -311,8 +334,10 @@ class ClipRecoveryService {
   /// visible to this account (see [_isVisibleTo]) and the scan counts them as
   /// such, so the claim only attributes them.
   ///
-  /// Returns the number of clip rows moved, which for that reason can exceed
-  /// [ClipOwnerGroup.clipCount].
+  /// Returns how many recordings became visible — counted per recording rather
+  /// than per row, and over [group]'s own rows only, so it matches both the
+  /// group's reported count and what the library gains. The swept-up unowned
+  /// rows are excluded because they were already visible.
   ///
   /// Throws [NoAccountToRecoverToException] when there is no account to move
   /// the rows to.
@@ -331,7 +356,14 @@ class ClipRecoveryService {
     }
 
     final source = group.ownerPubkey;
-    final movedClips = await _clipsDao.claimLegacyRows(
+    // Counted before the write, because afterwards the rows are
+    // indistinguishable from everything else the account owns.
+    final recordings = <String>{
+      for (final row in await _clipsDao.getAllClips(includeTrashed: true))
+        if (row.ownerPubkey == source) _clipIdOf(row),
+    };
+
+    final movedRows = await _clipsDao.claimLegacyRows(
       newOwner,
       sourceOwnerPubkey: source,
     );
@@ -342,12 +374,12 @@ class ClipRecoveryService {
     );
 
     Log.info(
-      '$_logName: claimed $movedClips clip row(s) from '
-      '$source (plus any unowned) for $newOwner',
+      '$_logName: claimed ${recordings.length} recording(s) across '
+      '$movedRows clip row(s) from $source (plus any unowned) for $newOwner',
       name: _logName,
       category: LogCategory.video,
     );
-    return movedClips;
+    return recordings.length;
   }
 
   /// Rebuilds a library clip for each of [files] and saves it to the signed-in

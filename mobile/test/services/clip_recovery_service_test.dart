@@ -86,6 +86,40 @@ void main() {
           ),
         );
 
+    /// Saves a draft owned by [owner] holding [clipIds].
+    ///
+    /// Writes real draft rows plus the `<draftId>:<clipId>` clip rows the
+    /// editor's autosave produces, which is the shape the report has to handle
+    /// and the likeliest one for the reported failure.
+    Future<void> saveDraftOwnedBy(
+      String? owner,
+      String draftId, {
+      List<String> clipIds = const [],
+    }) => db.draftsDao.saveDraftWithClips(
+      id: draftId,
+      title: draftId,
+      description: '',
+      publishStatus: 'draft',
+      createdAt: DateTime(2026, 8, 17),
+      lastModified: DateTime(2026, 8, 17),
+      data: '{}',
+      renderedFilePath: null,
+      renderedThumbnailPath: null,
+      customThumbnailPath: null,
+      ownerPubkey: owner,
+      clipDataList: [
+        for (final (index, clipId) in clipIds.indexed)
+          DraftClipData(
+            id: clipId,
+            orderIndex: index,
+            durationMs: 2000,
+            recordedAt: DateTime(2026, 8, 17),
+            data: '{"id":"$clipId"}',
+            filePath: '$clipId.mp4',
+          ),
+      ],
+    );
+
     File writeVideo(String name, {int bytes = 128}) {
       final file = File(p.join(docs.path, name));
       return file..writeAsBytesSync(List<int>.filled(bytes, 0));
@@ -110,6 +144,70 @@ void main() {
         expect(report.ownedClipCount, 1);
         expect(report.foreignGroups, isEmpty);
         expect(report.hasRecoverableContent, isFalse);
+      });
+
+      test('counts one recording once while a draft also holds it', () async {
+        // The editor autosaves straight after a recording, so for most of a
+        // clip's life it owns two rows: the library row keyed by the clip id,
+        // and the draft's `<draftId>:<clipId>` copy. ClipLibraryService
+        // collapses the pair, so a per-row count here would report double the
+        // clips the library shows.
+        await saveClipOwnedBy(_ownerA, 'shared');
+        await saveDraftOwnedBy(_ownerA, 'autosave', clipIds: ['shared']);
+        expect(
+          await db.clipsDao.getAllClips(includeTrashed: true),
+          hasLength(2),
+          reason: 'two rows is the precondition this guards against',
+        );
+
+        final report = await serviceFor(_ownerA).scanRecoverableClips();
+
+        expect(report.ownedClipCount, 1);
+        expect(
+          (await libraryFor(_ownerA).getAllClips()).length,
+          report.ownedClipCount,
+          reason: 'the report must agree with the library it explains',
+        );
+      });
+
+      test('reports a hidden owner per recording, not per row', () async {
+        await saveClipOwnedBy(_ownerB, 'shared');
+        await saveDraftOwnedBy(_ownerB, 'autosave', clipIds: ['shared']);
+
+        final service = serviceFor(_ownerA);
+        final group =
+            (await service.scanRecoverableClips()).foreignGroups.single;
+        expect(group.clipCount, 1);
+
+        // The confirmation the UI renders has to match: claiming moved two rows
+        // but restored one recording.
+        expect(await service.claimOwnerGroup(group), 1);
+        expect(await libraryFor(_ownerA).getAllClips(), hasLength(1));
+      });
+
+      test('reports and claims drafts held under another owner', () async {
+        // saveClipOwnedBy only writes clips, so without this the drafts half of
+        // the report — and DraftsDao.claimLegacyRows — go unexercised, even
+        // though a draft-held recording is the likeliest shape for the
+        // reported failure.
+        await saveDraftOwnedBy(_ownerB, 'theirs');
+        expect(await db.draftsDao.getAllDrafts(ownerPubkey: _ownerA), isEmpty);
+
+        final service = serviceFor(_ownerA);
+        final report = await service.scanRecoverableClips();
+
+        expect(report.ownedDraftCount, 0);
+        expect(report.foreignGroups.single.draftCount, 1);
+
+        await service.claimOwnerGroup(report.foreignGroups.single);
+
+        expect(
+          (await db.draftsDao.getAllDrafts(
+            ownerPubkey: _ownerA,
+          )).map((d) => d.id),
+          ['theirs'],
+          reason: 'a claim has to move the drafts, not just the clips',
+        );
       });
 
       test('reports rows held by other owners, not the current one', () async {

@@ -30,7 +30,11 @@ class ClipOwnerGroup extends Equatable {
   /// and the scan counts them that way instead of grouping them here.
   final String ownerPubkey;
 
-  /// Clip rows under this owner, including trashed and draft-owned ones.
+  /// Recordings under this owner, including trashed ones.
+  ///
+  /// Counted per recording, not per row: a recording held by the editor's
+  /// autosave draft occupies a second clip row, and counting both would
+  /// disagree with the library the operator is comparing against.
   final int clipCount;
 
   /// Draft rows under this owner.
