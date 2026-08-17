@@ -161,12 +161,12 @@ class _ForgotPasswordSheetContentState
                     setState(() => _sendFailed = false);
                   }
                 },
-                style: VineTheme.bodyMediumFont(
+                style: VineTheme.bodyLargeFont(
                   color: context.vineColors.primaryText,
                 ),
                 decoration: InputDecoration(
                   labelText: context.l10n.forgotPasswordEmailLabel,
-                  labelStyle: VineTheme.bodyMediumFont(
+                  labelStyle: VineTheme.bodyLargeFont(
                     color: context.vineColors.mutedText,
                   ),
                   prefixIcon: DivineIcon(
