@@ -29,6 +29,9 @@ if [ ! -t 0 ]; then
   input="$(cat || true)"
 fi
 reason="$(printf '%s' "$input" | jq -r '.reason // empty' 2>/dev/null || true)"
+# Purge only for reasons Claude identifies as terminal. In particular, `other`
+# is ambiguous (including headless exits), so deleting build state for it would
+# trade more cleanup coverage for a risk of purging a session that may continue.
 case "$reason" in
   logout|prompt_input_exit|bypass_permissions_disabled) ;;
   *) exit 0 ;;
@@ -62,7 +65,8 @@ fi
 # blow the hook timeout and, when killed, leaves the source intact to fail the
 # same way next run. Delete in place instead, still detached. When stat cannot
 # report a device id, both sides are empty and compare equal, preserving the
-# staging path.
+# staging path. Unlike the staging branch, this in-place background deletion is
+# not restart-atomic: an immediate rebuild can briefly race a half-removed tree.
 if [ "$(device_id "$root/mobile")" != "$(device_id "$gitdir")" ]; then
   n=0
   dirs=()
