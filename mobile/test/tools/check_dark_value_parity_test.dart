@@ -245,5 +245,40 @@ class VineTheme {
       expect(res.stderr, contains('git fetch --unshallow'));
       expect(res.stdout, isNot(contains('DARK MISMATCH')));
     });
+
+    // A missing or misspelled base ref is a different failure than a missing
+    // merge base: git merge-base exits 128, not 1. Blaming a shallow clone
+    // and suggesting `git fetch --unshallow` sends the reader after a fix
+    // that cannot resolve a ref that was never there. Surface git's error.
+    test('surfaces the git error when the base ref does not exist', () {
+      void git(List<String> arguments) {
+        final res = Process.runSync(
+          'git',
+          arguments,
+          workingDirectory: sandbox.path,
+        );
+        expect(res.exitCode, 0, reason: 'git ${arguments.join(' ')}');
+      }
+
+      git(['init', '--initial-branch=main']);
+      git(['config', 'user.email', 'test@example.com']);
+      git(['config', 'user.name', 'Test']);
+      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// base\n');
+      git(['add', '.']);
+      git(['commit', '-m', 'base']);
+
+      final res = Process.runSync('dart', [
+        'run',
+        scriptPath,
+        '--theme',
+        themePath,
+        '--base',
+        'no-such-ref',
+      ], workingDirectory: sandbox.path);
+
+      expect(res.exitCode, 2);
+      expect(res.stderr, contains('git merge-base failed'));
+      expect(res.stderr, isNot(contains('shallow clone')));
+    });
   });
 }

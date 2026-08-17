@@ -389,15 +389,24 @@ void main(List<String> args) {
     // mismatches. A guard that quietly returns wrong answers is worse than
     // one that refuses, so refuse.
     final mergeBase = Process.runSync('git', ['merge-base', base, 'HEAD']);
-    if (mergeBase.exitCode != 0) {
+    // merge-base exits 1 for a genuine no-common-ancestor (the shallow
+    // clone / unrelated-history case) and 128 for an error like a missing
+    // or misspelled ref. Only the first is "no merge base" — sending an
+    // unfetched origin/main to `git fetch --unshallow` points at a fix
+    // that cannot work, so surface git's real error for the rest.
+    if (mergeBase.exitCode == 1) {
       stderr.writeln(
-        'No merge base between $base and HEAD, so this branch\'s own '
+        "No merge base between $base and HEAD, so this branch's own "
         'changes cannot be isolated.\n'
         'This is usually a shallow clone. Pick one:\n'
         '  git fetch --unshallow      then rerun\n'
         '  --base <branch-point-sha>  the commit this branch started from\n'
         '  --diff <patch>             a diff you produced yourself',
       );
+      exit(2);
+    }
+    if (mergeBase.exitCode != 0) {
+      stderr.writeln('git merge-base failed: ${mergeBase.stderr}');
       exit(2);
     }
     final result = Process.runSync('git', [
