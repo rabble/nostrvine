@@ -556,6 +556,35 @@ void main() {
         expect(relay.pendingAuthedMessages, isEmpty);
       },
     );
+
+    test(
+      'flushes an untracked auth-required rejection immediately when already authed',
+      () async {
+        const eventId =
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        relay.relayStatus.alwaysAuth = true;
+        relay.relayStatus.authed = true;
+
+        final sent = await nostr.relayPool.send(eventMessage(eventId));
+
+        expect(sent, isTrue);
+        expect(sentMessagesOfType(relay, 'EVENT'), hasLength(1));
+
+        // The relay drops our auth session without reconnecting and rejects
+        // with auth-required. No fresh challenge will arrive (there is none
+        // in this test), so the parked frame must flush on its own instead
+        // of waiting in pendingAuthedMessages forever.
+        await relay.deliver([
+          'OK',
+          eventId,
+          false,
+          'auth-required: you must auth',
+        ]);
+
+        expect(sentMessagesOfType(relay, 'EVENT'), hasLength(2));
+        expect(relay.pendingAuthedMessages, isEmpty);
+      },
+    );
   });
 
   group('RelayPool temp relay auth-required publish retry', () {
@@ -612,34 +641,79 @@ void main() {
       },
     );
 
-    test('parks known-auth temp relay EVENT until AUTH succeeds', () async {
-      const relayUrl = 'wss://temp-known-auth.example';
-      const eventId =
-          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      nostr = Nostr(signer, [], (url) {
-        tempRelay = _AuthFakeRelay(url)
-          ..relayStatus.alwaysAuth = true
-          ..relayStatus.authed = false;
-        return tempRelay;
-      });
-      await nostr.refreshPublicKey();
+    test(
+      'sends to a known-auth unauthed temp relay instead of parking',
+      () async {
+        const relayUrl = 'wss://temp-known-auth.example';
+        const eventId =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        nostr = Nostr(signer, [], (url) {
+          tempRelay = _AuthFakeRelay(url)
+            ..relayStatus.alwaysAuth = true
+            ..relayStatus.authed = false;
+          return tempRelay;
+        });
+        await nostr.refreshPublicKey();
 
-      final sent = await nostr.relayPool.send(
-        eventMessage(eventId),
-        tempRelays: [relayUrl],
-      );
+        final sent = await nostr.relayPool.send(
+          eventMessage(eventId),
+          tempRelays: [relayUrl],
+        );
 
-      expect(sent, isTrue);
-      expect(sentMessagesOfType(tempRelay, 'EVENT'), isEmpty);
-      expect(tempRelay.pendingAuthedMessages, hasLength(1));
+        // A temp relay carries no other traffic, so nothing but the frame
+        // itself can trigger the AUTH challenge the post-AUTH flush waits
+        // for. Parking it here would strand the publish forever while
+        // send() reports success.
+        expect(sent, isTrue);
+        expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(1));
+        expect(tempRelay.pendingAuthedMessages, isEmpty);
 
-      await tempRelay.deliver(['AUTH', challenge]);
-      final authEventId = sentAuthEventId(tempRelay);
-      await tempRelay.deliver(['OK', authEventId, true, '']);
+        await tempRelay.deliver([
+          'OK',
+          eventId,
+          false,
+          'auth-required: you must auth',
+        ]);
+        expect(tempRelay.pendingAuthedMessages, hasLength(1));
 
-      expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(1));
-      expect(tempRelay.pendingAuthedMessages, isEmpty);
-    });
+        await tempRelay.deliver(['AUTH', challenge]);
+        final authEventId = sentAuthEventId(tempRelay);
+        await tempRelay.deliver(['OK', authEventId, true, '']);
+
+        expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(2));
+        expect(tempRelay.pendingAuthedMessages, isEmpty);
+      },
+    );
+
+    test(
+      'drops parked untracked frames when the AUTH handshake fails',
+      () async {
+        const relayUrl = 'wss://temp-auth-failed.example';
+        const eventId =
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+
+        final sent = await nostr.relayPool.send(
+          eventMessage(eventId),
+          tempRelays: [relayUrl],
+        );
+        expect(sent, isTrue);
+
+        await tempRelay.deliver([
+          'OK',
+          eventId,
+          false,
+          'auth-required: you must auth',
+        ]);
+        expect(tempRelay.pendingAuthedMessages, hasLength(1));
+
+        await tempRelay.deliver(['AUTH', challenge]);
+        final authEventId = sentAuthEventId(tempRelay);
+        await tempRelay.deliver(['OK', authEventId, false, 'unauthorized']);
+
+        expect(tempRelay.pendingAuthedMessages, isEmpty);
+        expect(tempRelay.relayStatus.authed, isFalse);
+      },
+    );
 
     test(
       'drops retained fire-and-forget temp relay EVENT on OK true',
