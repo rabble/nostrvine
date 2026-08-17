@@ -26,6 +26,16 @@ abstract class Relay {
   // to hold the message when the ws haven't authed and should be send after auth.
   List<List<dynamic>> pendingAuthedMessages = [];
 
+  /// Cap on [_sentFramesForAuthRetry]. Sized for the burst a single user action
+  /// can fan out (a gift-wrapped DM writes one frame per recipient relay), not
+  /// for a backlog: anything still held past that is a relay that never
+  /// answered, and replaying it is no longer useful.
+  static const int _maxSentFramesForAuthRetry = 32;
+
+  /// Written EVENT frames held for a possible post-NIP-42 replay, keyed by
+  /// event id. Insertion-ordered, so eviction drops the oldest first.
+  final Map<String, List<dynamic>> _sentFramesForAuthRetry = {};
+
   Function(Relay, List<dynamic>)? onMessage;
 
   // subscriptions
@@ -164,13 +174,67 @@ abstract class Relay {
     info ??= await RelayInfoUtil.get(url);
   }
 
+  /// Retains an already-written EVENT frame so it can be replayed if the relay
+  /// turns out to want NIP-42 first.
+  ///
+  /// [RelayStatus.alwaysAuth] only flips once a challenge has landed, so the
+  /// very first publish on a connection cannot be parked in
+  /// [pendingAuthedMessages] — it has to go out to provoke the challenge. A
+  /// fire-and-forget caller keeps no handle on that frame, so without a copy
+  /// here the post-AUTH flush has nothing to replay and the event is gone.
+  ///
+  /// Bounded by [_maxSentFramesForAuthRetry], evicting oldest-first: this holds
+  /// frames the relay has not answered, and a peer that stays silent must not
+  /// grow the map without limit.
+  void recordSentFrame(List<dynamic> frame) {
+    final eventId = _extractEventId(frame);
+    if (eventId == null) return;
+    // Re-insert last so the eviction order below stays newest-last.
+    _sentFramesForAuthRetry
+      ..remove(eventId)
+      ..[eventId] = frame;
+    while (_sentFramesForAuthRetry.length > _maxSentFramesForAuthRetry) {
+      _sentFramesForAuthRetry.remove(_sentFramesForAuthRetry.keys.first);
+    }
+  }
+
+  /// Retrieves and removes a previously recorded frame by event ID.
+  ///
+  /// Called once the relay has spoken for that event — accepted it, or refused
+  /// it for a reason NIP-42 cannot fix — so it is never replayed.
+  List<dynamic>? takeSentFrame(String eventId) {
+    return _sentFramesForAuthRetry.remove(eventId);
+  }
+
+  /// Returns all retained frames and clears the map.
+  List<List<dynamic>> drainSentFramesForAuthRetry() {
+    final frames = _sentFramesForAuthRetry.values.toList();
+    _sentFramesForAuthRetry.clear();
+    return frames;
+  }
+
+  /// Extracts the event id from a client-to-relay EVENT frame.
+  ///
+  /// Only the publish shape `["EVENT", <event>]` is recognised. The three-element
+  /// `["EVENT", <subId>, <event>]` shape is the relay-to-client direction and is
+  /// never something this client sent, so it is not a retry candidate.
+  String? _extractEventId(List<dynamic> frame) {
+    if (frame.length != 2 || frame[0] != 'EVENT') {
+      return null;
+    }
+    final event = frame[1];
+    if (event is Map && event['id'] is String) {
+      return event['id'] as String;
+    }
+    return null;
+  }
+
   /// Sends [message] to this relay.
   ///
   /// [deadline] is a hard send deadline: implementations must not write or
   /// queue the message after it has expired.
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,

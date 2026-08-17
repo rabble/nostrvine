@@ -481,6 +481,16 @@ class RelayPool {
     }
   }
 
+  /// Fails everything that was waiting on [relay]'s NIP-42 handshake, after
+  /// that handshake has definitively concluded without authenticating.
+  ///
+  /// Fire-and-forget publishes are dropped rather than held. Nothing will flush
+  /// them now, and a temp relay is reaped only once
+  /// [Relay.pendingAuthedMessages] is empty (see [_isTempRelayReapable]) — so
+  /// holding them would pin the socket open for the life of the pool and grow
+  /// the queue on every later publish. A fresh challenge on this connection
+  /// reopens the gate and re-parks whatever is published after it, so the loss
+  /// is bounded to frames no caller is awaiting.
   void _rejectAuthRequiredPublishesForRelay(Relay relay, String authMessage) {
     for (final entry in _retryEntriesForRelay(relay)) {
       entry.value.tracker.onRejected(
@@ -489,6 +499,33 @@ class RelayPool {
       );
       _removeAuthRequiredPublish(entry.key, relay.url);
     }
+    if (relay.pendingAuthedMessages.isNotEmpty) {
+      log(
+        '🔐 Dropping ${relay.pendingAuthedMessages.length} message(s) parked '
+        'behind the failed auth handshake for ${relay.url}',
+      );
+      relay.pendingAuthedMessages.clear();
+    }
+    relay.drainSentFramesForAuthRetry();
+  }
+
+  /// Keeps a copy of a just-written fire-and-forget EVENT in case [relay]
+  /// answers it with a NIP-42 challenge.
+  ///
+  /// Only the first publish on a connection needs this. Once a challenge has
+  /// landed, [RelayStatus.alwaysAuth] is set and [_sendCollect] parks
+  /// subsequent frames in [Relay.pendingAuthedMessages] instead — and once the
+  /// handshake succeeds, `authed` is set and nothing needs replaying at all.
+  /// Deadline-bound publishes are excluded because [PublishTracker] already
+  /// carries their message through [_trackAuthRequiredPublish]; retaining them
+  /// here as well would republish the same event twice after AUTH.
+  void _retainForAuthRetry(
+    Relay relay,
+    List<dynamic> message,
+    DateTime? deadline,
+  ) {
+    if (deadline != null || relay.relayStatus.authed) return;
+    relay.recordSentFrame(message);
   }
 
   Future<bool> add(
@@ -622,7 +659,7 @@ class RelayPool {
         log('🔐 Auth-required query - sending to trigger AUTH challenge');
         relay.saveQuery(subscription);
         final result = await relay
-            .send(message, forceSend: true)
+            .send(message)
             .timeout(perRelaySendTimeout, onTimeout: () => false);
         if (!result) {
           log(
@@ -1460,6 +1497,18 @@ class RelayPool {
       );
       if (message == null) return;
 
+      // The relay has spoken for this event. Unless it refused for a reason
+      // NIP-42 can fix, a frame retained by [_retainForAuthRetry] has served
+      // its purpose and must not be replayed after a later, unrelated AUTH.
+      if (success ||
+          !_shouldRetryPublishAfterAuth(
+            relay: relay,
+            eventId: eventId,
+            message: message,
+          )) {
+        relay.takeSentFrame(eventId);
+      }
+
       // Check if this OK is for a publish we are awaiting.
       //
       // Trackers are keyed on event id alone, so without the membership check
@@ -1521,6 +1570,11 @@ class RelayPool {
             relay.send(message);
           }
           relay.pendingAuthedMessages.clear();
+
+          // Flush and re-send frames that were retained while waiting for auth
+          for (final frame in relay.drainSentFramesForAuthRetry()) {
+            relay.send(frame);
+          }
 
           // Send subscriptions
           if (relay.hasSubscription()) {
@@ -1604,7 +1658,7 @@ class RelayPool {
           // Track this AUTH event to match with OK response
           _pendingAuthEvents[event.id] = relay.url;
 
-          relay.send(["AUTH", event.toJson()], forceSend: true);
+          relay.send(["AUTH", event.toJson()]);
           log('🔐 AUTH response sent, waiting for relay confirmation...');
 
           if (relay.pendingAuthedMessages.isNotEmpty) {
@@ -1817,7 +1871,7 @@ class RelayPool {
           '🔐 Auth-required subscription - sending to trigger AUTH challenge',
         );
         final result = await relay
-            .send(message, forceSend: true)
+            .send(message)
             .timeout(perRelaySendTimeout, onTimeout: () => false);
         if (result) {
           return true;
@@ -2156,12 +2210,7 @@ class RelayPool {
             );
             var timedOut = false;
             var result = await relay
-                .send(
-                  message,
-                  forceSend: true,
-                  queueIfFailed: false,
-                  deadline: deadline,
-                )
+                .send(message, queueIfFailed: false, deadline: deadline)
                 .timeout(
                   timeout,
                   onTimeout: () {
@@ -2220,6 +2269,9 @@ class RelayPool {
                   return false;
                 },
               );
+          if (result) {
+            _retainForAuthRetry(relay, message, deadline);
+          }
           if (result ||
               timedOut ||
               sendStartedWhileConnecting ||
@@ -2252,6 +2304,19 @@ class RelayPool {
         // Same skipReconnect rationale as the main loop above: a fresh
         // tempRelay whose initial connection is still in-flight must not
         // block the publish.
+
+        // A known-auth relay that has not authed yet would answer this frame
+        // with `auth-required`, and a fire-and-forget publish has no tracker to
+        // notice. Park it behind the handshake instead, exactly as the main
+        // loop above does; `_onEvent` flushes the queue once AUTH lands.
+        if (tempRelay.relayStatus.alwaysAuth &&
+            !tempRelay.relayStatus.authed &&
+            deadline == null) {
+          tempRelay.pendingAuthedMessages.add(message);
+          sentTo.add(tempRelay.url);
+          continue;
+        }
+
         var result = await tempRelay
             .send(
               message,
@@ -2274,6 +2339,7 @@ class RelayPool {
           removeExpiredTempRelay(tempRelay);
         }
         if (result) {
+          _retainForAuthRetry(tempRelay, message, deadline);
           sentTo.add(tempRelay.url);
         }
       }
