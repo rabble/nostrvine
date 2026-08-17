@@ -121,6 +121,28 @@ void main() {
       expect(icon.size, kDivineHeartFallbackFontSize * kDivineHeartFontScale);
     });
 
+    testWidgets('grows the heart with the text scaler', (tester) async {
+      // A WidgetSpan child is laid out at its intrinsic size, so the scaler
+      // that doubles the surrounding run does not reach the glyph on its own.
+      // Without scaling here the heart shrinks to a dot beside large text.
+      final spans = divineHeartSpans(
+        divineGreenHeart,
+        style: const TextStyle(fontSize: 16),
+      );
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: MaterialApp(
+            home: Scaffold(body: Text.rich(TextSpan(children: spans))),
+          ),
+        ),
+      );
+
+      final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
+      expect(icon.size, 16 * 2 * kDivineHeartFontScale);
+    });
+
     testWidgets('keeps the heart readable to screen readers', (tester) async {
       final handle = tester.ensureSemantics();
       final spans = divineHeartSpans(divineGreenHeart, style: style);
