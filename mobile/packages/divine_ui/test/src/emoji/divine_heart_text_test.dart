@@ -18,7 +18,7 @@ void main() {
     });
 
     testWidgets('paints a green heart in the brand green', (tester) async {
-      await pump(tester, DivineHeartText('hi $divineGreenHeart'));
+      await pump(tester, const DivineHeartText('hi $divineGreenHeart'));
 
       final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
       expect(icon.color, VineTheme.vineGreen);
@@ -29,8 +29,8 @@ void main() {
     ) async {
       await pump(
         tester,
-        DefaultTextStyle(
-          style: const TextStyle(fontSize: 30),
+        const DefaultTextStyle(
+          style: TextStyle(fontSize: 30),
           child: DivineHeartText(divineGreenHeart),
         ),
       );
@@ -44,11 +44,11 @@ void main() {
     ) async {
       await pump(
         tester,
-        DefaultTextStyle(
-          style: const TextStyle(fontSize: 30),
+        const DefaultTextStyle(
+          style: TextStyle(fontSize: 30),
           child: DivineHeartText(
             divineGreenHeart,
-            style: const TextStyle(fontSize: 10),
+            style: TextStyle(fontSize: 10),
           ),
         ),
       );
