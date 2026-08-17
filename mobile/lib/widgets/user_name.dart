@@ -172,7 +172,7 @@ class UserName extends ConsumerWidget {
                   style: textStyle,
                   maxLines: maxLines ?? 1,
                 )
-              : Text(
+              : DivineHeartText(
                   displayName,
                   style: textStyle,
                   maxLines: maxLines ?? 1,

@@ -331,7 +331,7 @@ class _PoppingEmojiState extends State<_PoppingEmoji>
   Widget build(BuildContext context) {
     return ScaleTransition(
       scale: _scale,
-      child: Text(widget.emoji, style: _emojiTextStyle),
+      child: DivineHeartText(widget.emoji, style: _emojiTextStyle),
     );
   }
 }

@@ -295,7 +295,7 @@ class _ConversationPreviewText extends StatelessWidget {
         ? VineTheme.labelLargeFont(color: context.vineColors.primaryText)
         : VineTheme.bodyMediumFont(color: context.vineColors.onSurfaceVariant);
     if (!payload.isDivineVideoShare) {
-      return Text(
+      return DivineHeartText(
         payload.text,
         style: style,
         maxLines: 2,

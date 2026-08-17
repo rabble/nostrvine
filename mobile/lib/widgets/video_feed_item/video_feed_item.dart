@@ -453,7 +453,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                 onInteracted?.call();
                                 MetadataExpandedSheet.show(context, video);
                               },
-                        child: Text(
+                        child: DivineHeartText(
                           titleText,
                           style: VineTheme.labelMediumFont(
                             color: VineTheme.whiteText,

@@ -23,7 +23,10 @@ void main() {
       // The plain-text fast path returns a bare Text and drops the spans,
       // so a heart with no neighbouring link/mention/hashtag is the case
       // most likely to regress.
-      await pump(tester, LinkifiedText(text: 'so good $divineGreenHeart'));
+      await pump(
+        tester,
+        const LinkifiedText(text: 'so good $divineGreenHeart'),
+      );
 
       expect(find.byType(DivineIcon), findsOneWidget);
       final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
@@ -31,7 +34,7 @@ void main() {
     });
 
     testWidgets('paints a green heart alongside a hashtag', (tester) async {
-      await pump(tester, LinkifiedText(text: '#vine $divineGreenHeart'));
+      await pump(tester, const LinkifiedText(text: '#vine $divineGreenHeart'));
 
       expect(find.byType(DivineIcon), findsOneWidget);
     });
@@ -56,7 +59,7 @@ void main() {
     testWidgets('paints a green heart in selectable text', (tester) async {
       await pump(
         tester,
-        SelectableLinkifiedText(text: 'bio $divineGreenHeart'),
+        const SelectableLinkifiedText(text: 'bio $divineGreenHeart'),
       );
 
       expect(find.byType(DivineIcon), findsOneWidget);
