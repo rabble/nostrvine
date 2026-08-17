@@ -10,9 +10,9 @@ void main() {
   group('web platform label contract', () {
     // The web implementation is only compiled into a browser build, so this
     // asserts on its source the way the Apple threading contract test does.
-    final source = File('lib/src/platform_label_web.dart').readAsStringSync();
-
     test('web sends no X-Divine-Platform token', () {
+      final source = _webPlatformLabelFile().readAsStringSync();
+
       expect(
         source,
         contains('String? get divinePlatformToken => null'),
@@ -24,4 +24,17 @@ void main() {
       );
     });
   });
+}
+
+/// Resolves the web platform label source whether the suite runs from the
+/// package root (package CI) or from `mobile/` (the repo pre-push hook).
+File _webPlatformLabelFile() {
+  final packageRelative = File('lib/src/platform_label_web.dart');
+  if (packageRelative.existsSync()) {
+    return packageRelative;
+  }
+
+  return File(
+    'packages/funnelcake_api_client/lib/src/platform_label_web.dart',
+  );
 }
