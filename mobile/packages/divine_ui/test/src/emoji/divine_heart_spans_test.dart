@@ -139,8 +139,40 @@ void main() {
         ),
       );
 
-      final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
-      expect(icon.size, 16 * 2 * kDivineHeartFontScale);
+      // Measured, not read off the constructor. DivineIcon scales `size` by
+      // the ambient scaler again, so asserting `icon.size` stays green even
+      // when the glyph paints 1.3x larger than it was asked for.
+      expect(
+        tester.getSize(find.byType(DivineIcon)).width,
+        16 * 2 * kDivineHeartFontScale,
+      );
+    });
+
+    testWidgets('pins the heart under MediaQuery.withNoTextScaling', (
+      tester,
+    ) async {
+      final spans = divineHeartSpans(
+        divineGreenHeart,
+        style: const TextStyle(fontSize: 16),
+      );
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: MaterialApp(
+            home: Scaffold(
+              body: MediaQuery.withNoTextScaling(
+                child: Text.rich(TextSpan(children: spans)),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSize(find.byType(DivineIcon)).width,
+        16 * kDivineHeartFontScale,
+      );
     });
 
     testWidgets('keeps the heart readable to screen readers', (tester) async {

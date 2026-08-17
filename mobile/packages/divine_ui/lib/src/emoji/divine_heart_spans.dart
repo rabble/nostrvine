@@ -51,21 +51,29 @@ InlineSpan _heartSpan(double fontSize) => WidgetSpan(
 
 /// The heart glyph, sized off the run's *scaled* font size.
 ///
-/// A [WidgetSpan] child is laid out at its own intrinsic size, so the text
-/// scaler that grows the surrounding run never reaches it. Reading the scaler
-/// here keeps the heart in proportion at every accessibility font size
-/// instead of shrinking to a dot beside doubled text.
+/// A [WidgetSpan] child is laid out at its own intrinsic size, so the run's
+/// font size arrives here unscaled — hence the explicit scaler read. Chrome
+/// caps how far it grows; a glyph standing in for a character must not, so
+/// this tracks the run 1:1 rather than [DivineIcon.maxScaleFactor].
 class _DivineHeartGlyph extends StatelessWidget {
   const _DivineHeartGlyph({required this.fontSize});
 
   final double fontSize;
 
   @override
-  Widget build(BuildContext context) => DivineIcon(
-    icon: DivineIconName.heartFill,
-    size:
+  Widget build(BuildContext context) {
+    final size =
         MediaQuery.textScalerOf(context).scale(fontSize) *
-        kDivineHeartFontScale,
-    color: VineTheme.vineGreen,
-  );
+        kDivineHeartFontScale;
+
+    // [DivineIcon] scales `size` by the ambient scaler itself, which would
+    // apply it a second time on top of the one already baked into [size].
+    return MediaQuery.withNoTextScaling(
+      child: DivineIcon(
+        icon: DivineIconName.heartFill,
+        size: size,
+        color: VineTheme.vineGreen,
+      ),
+    );
+  }
 }
