@@ -233,6 +233,18 @@ It pairs each removed reference with its replacement per hunk and compares
 **dark** values. It cannot catch a wrong pick among tokens that share a dark
 value (trap 1) — that part still needs eyes, and a light-mode contrast check.
 
+**Shallow clones need an explicit base.** Isolating your branch's own changes
+needs a merge base, and a `--depth` clone or worktree may not have one against
+`origin/main`. The script refuses rather than guessing — an earlier version
+silently fell back to a two-dot diff, which reads every commit `main` has and
+your branch lacks as a *removal* and reports unrelated work as your dark
+mismatches. If it exits with `No merge base`, either `git fetch --unshallow`,
+or pass the commit your branch started from:
+
+```bash
+dart run scripts/check_dark_value_parity.dart --base <branch-point-sha>
+```
+
 ### Adding a token
 
 If the semantically right token would change dark, do **not** accept the

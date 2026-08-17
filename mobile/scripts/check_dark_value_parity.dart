@@ -381,25 +381,41 @@ void main(List<String> args) {
   if (diffArgument.isNotEmpty) {
     diff = File(diffArgument).readAsStringSync();
   } else {
-    // Three-dot needs a merge base, which a shallow clone (CI, and any
-    // `--depth` worktree) may not have; two-dot still answers "what does this
-    // branch look like next to that ref".
-    var result = Process.runSync('git', [
+    // Three-dot isolates what this branch changed, and needs a merge base —
+    // which a shallow clone (CI, and any `--depth` worktree) may not have.
+    // Two-dot still runs there, but answers a different question: every
+    // commit the base has and HEAD lacks reads as a removal, so unrelated
+    // work gets paired against this branch's additions and reported as dark
+    // mismatches. A guard that quietly returns wrong answers is worse than
+    // one that refuses, so refuse.
+    final mergeBase = Process.runSync('git', ['merge-base', base, 'HEAD']);
+    // merge-base exits 1 for a genuine no-common-ancestor (the shallow
+    // clone / unrelated-history case) and 128 for an error like a missing
+    // or misspelled ref. Only the first is "no merge base" — sending an
+    // unfetched origin/main to `git fetch --unshallow` points at a fix
+    // that cannot work, so surface git's real error for the rest.
+    if (mergeBase.exitCode == 1) {
+      stderr.writeln(
+        "No merge base between $base and HEAD, so this branch's own "
+        'changes cannot be isolated.\n'
+        'This is usually a shallow clone. Pick one:\n'
+        '  git fetch --unshallow      then rerun\n'
+        '  --base <branch-point-sha>  the commit this branch started from\n'
+        '  --diff <patch>             a diff you produced yourself',
+      );
+      exit(2);
+    }
+    if (mergeBase.exitCode != 0) {
+      stderr.writeln('git merge-base failed: ${mergeBase.stderr}');
+      exit(2);
+    }
+    final result = Process.runSync('git', [
       'diff',
       '-U0',
       '$base...HEAD',
       '--',
       '*.dart',
     ]);
-    if (result.exitCode != 0) {
-      result = Process.runSync('git', [
-        'diff',
-        '-U0',
-        '$base..HEAD',
-        '--',
-        '*.dart',
-      ]);
-    }
     if (result.exitCode != 0) {
       stderr.writeln('git diff failed: ${result.stderr}');
       exit(2);

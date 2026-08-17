@@ -203,5 +203,82 @@ class VineTheme {
       expect(res.exitCode, 2);
       expect(res.stderr, contains('Theme file not found'));
     });
+
+    // A shallow clone has no merge base with its own base ref. The guard used
+    // to fall back to a two-dot diff there, which reads every commit the base
+    // has and HEAD lacks as a removal — pairing unrelated work against this
+    // branch's additions and reporting confident, wrong DARK MISMATCH lines.
+    // Two orphan roots reproduce "no merge base" without a shallow fixture.
+    test('refuses to guess when the base shares no history with HEAD', () {
+      void git(List<String> arguments) {
+        final res = Process.runSync(
+          'git',
+          arguments,
+          workingDirectory: sandbox.path,
+        );
+        expect(res.exitCode, 0, reason: 'git ${arguments.join(' ')}');
+      }
+
+      git(['init', '--initial-branch=main']);
+      git(['config', 'user.email', 'test@example.com']);
+      git(['config', 'user.name', 'Test']);
+      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// base\n');
+      git(['add', '.']);
+      git(['commit', '-m', 'base']);
+
+      git(['checkout', '--orphan', 'unrelated']);
+      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// other\n');
+      git(['add', '.']);
+      git(['commit', '-m', 'unrelated root']);
+
+      final res = Process.runSync('dart', [
+        'run',
+        scriptPath,
+        '--theme',
+        themePath,
+        '--base',
+        'main',
+      ], workingDirectory: sandbox.path);
+
+      expect(res.exitCode, 2);
+      expect(res.stderr, contains('No merge base between main and HEAD'));
+      expect(res.stderr, contains('git fetch --unshallow'));
+      expect(res.stdout, isNot(contains('DARK MISMATCH')));
+    });
+
+    // A missing or misspelled base ref is a different failure than a missing
+    // merge base: git merge-base exits 128, not 1. Blaming a shallow clone
+    // and suggesting `git fetch --unshallow` sends the reader after a fix
+    // that cannot resolve a ref that was never there. Surface git's error.
+    test('surfaces the git error when the base ref does not exist', () {
+      void git(List<String> arguments) {
+        final res = Process.runSync(
+          'git',
+          arguments,
+          workingDirectory: sandbox.path,
+        );
+        expect(res.exitCode, 0, reason: 'git ${arguments.join(' ')}');
+      }
+
+      git(['init', '--initial-branch=main']);
+      git(['config', 'user.email', 'test@example.com']);
+      git(['config', 'user.name', 'Test']);
+      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// base\n');
+      git(['add', '.']);
+      git(['commit', '-m', 'base']);
+
+      final res = Process.runSync('dart', [
+        'run',
+        scriptPath,
+        '--theme',
+        themePath,
+        '--base',
+        'no-such-ref',
+      ], workingDirectory: sandbox.path);
+
+      expect(res.exitCode, 2);
+      expect(res.stderr, contains('git merge-base failed'));
+      expect(res.stderr, isNot(contains('shallow clone')));
+    });
   });
 }
