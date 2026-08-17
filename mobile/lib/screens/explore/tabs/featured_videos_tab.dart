@@ -60,7 +60,8 @@ class FeaturedVideosTab extends ConsumerWidget {
 
 /// Refetches the page when a config poll lands while the tab is empty.
 ///
-/// `has_content` runs on a 15-minute snapshot cadence and can lead the videos
+/// `has_content` refreshes every 15 minutes and the composed videos every 30,
+/// so the eligibility flag leads the videos
 /// endpoint, so funnelcake's integration guide asks clients to treat an empty
 /// page as transient and retry on the next poll.
 /// [FeaturedTabVideosState.isEmpty] already says as much; this is what acts on
