@@ -36,6 +36,15 @@ class MockVanishedProfilesDao extends Mock implements VanishedProfilesDao {}
 
 class MockIdentityEventsDao extends Mock implements IdentityEventsDao {}
 
+/// Injected endpoints for the username tests.
+///
+/// Deliberately not the production hosts: these tests must prove the
+/// repository uses the *injected* endpoints, which a production literal
+/// cannot distinguish from the default. Distinct per backend so a call site
+/// that reads the wrong one fails loudly.
+const _testNameServer = 'https://names.test.example';
+const _testKeycastNip05 = 'https://login.test.example/.well-known/nostr.json';
+
 void main() {
   group('ProfileRepository', () {
     late MockNostrClient mockNostrClient;
@@ -77,6 +86,8 @@ void main() {
         nostrClient: mockNostrClient,
         userProfilesDao: mockUserProfilesDao,
         httpClient: mockHttpClient,
+        nameServerBaseUrl: _testNameServer,
+        keycastNip05Url: _testKeycastNip05,
       );
 
       // The publish seed falls back to the signing key when the caller
@@ -5243,7 +5254,7 @@ void main() {
         ).captured;
         expect(
           (captured[0] as Uri).toString(),
-          equals('https://names.divine.video/api/username/release'),
+          equals('$_testNameServer/api/username/release'),
         );
         expect(captured[1], equals(jsonEncode({'name': 'alice'})));
       });
@@ -5425,7 +5436,7 @@ void main() {
                 as Uri;
         expect(
           captured.toString(),
-          equals('https://names.divine.video/api/username/by-pubkey/$pubkey'),
+          equals('$_testNameServer/api/username/by-pubkey/$pubkey'),
         );
       });
 
@@ -5772,7 +5783,7 @@ void main() {
           expect(result, equals(const UsernameClaimSuccess()));
           verify(
             () => mockHttpClient.post(
-              Uri.parse('https://names.divine.video/api/username/claim'),
+              Uri.parse('$_testNameServer/api/username/claim'),
               headers: any(named: 'headers'),
               body: expectedPayload,
             ),
@@ -5942,7 +5953,7 @@ void main() {
         when(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://names.divine.video/api/username/check/$username',
+              '$_testNameServer/api/username/check/$username',
             ),
           ),
         ).thenAnswer(
@@ -5966,7 +5977,7 @@ void main() {
         when(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://login.divine.video/.well-known/nostr.json'
+              '$_testKeycastNip05'
               '?name=$username',
             ),
           ),
@@ -6025,7 +6036,7 @@ void main() {
         when(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://login.divine.video/.well-known/nostr.json'
+              '$_testKeycastNip05'
               '?name=testuser',
             ),
           ),
@@ -6062,7 +6073,7 @@ void main() {
         );
         verifyNever(
           () => mockHttpClient.get(
-            Uri.parse('https://names.divine.video/api/username/check/ab'),
+            Uri.parse('$_testNameServer/api/username/check/ab'),
           ),
         );
       });
@@ -6103,7 +6114,7 @@ void main() {
       test('returns UsernameCheckError when name-server returns 500', () async {
         when(
           () => mockHttpClient.get(
-            Uri.parse('https://names.divine.video/api/username/check/testuser'),
+            Uri.parse('$_testNameServer/api/username/check/testuser'),
           ),
         ).thenAnswer((_) async => Response('Server error', 500));
 
@@ -6124,7 +6135,7 @@ void main() {
       test('returns UsernameCheckError on network exception', () async {
         when(
           () => mockHttpClient.get(
-            Uri.parse('https://names.divine.video/api/username/check/testuser'),
+            Uri.parse('$_testNameServer/api/username/check/testuser'),
           ),
         ).thenThrow(Exception('Connection timeout'));
 
@@ -6154,7 +6165,7 @@ void main() {
 
         verify(
           () => mockHttpClient.get(
-            Uri.parse('https://names.divine.video/api/username/check/alice'),
+            Uri.parse('$_testNameServer/api/username/check/alice'),
           ),
         ).called(1);
       });
@@ -6262,7 +6273,7 @@ void main() {
         // Simulate the name-server returning pubkey for an active name
         when(
           () => mockHttpClient.get(
-            Uri.parse('https://names.divine.video/api/username/check/vipuser'),
+            Uri.parse('$_testNameServer/api/username/check/vipuser'),
           ),
         ).thenAnswer(
           (_) async => Response(
@@ -6289,7 +6300,7 @@ void main() {
           'current user', () async {
         when(
           () => mockHttpClient.get(
-            Uri.parse('https://names.divine.video/api/username/check/vipuser'),
+            Uri.parse('$_testNameServer/api/username/check/vipuser'),
           ),
         ).thenAnswer(
           (_) async => Response(
@@ -6316,7 +6327,7 @@ void main() {
           'provided (backwards compatible)', () async {
         when(
           () => mockHttpClient.get(
-            Uri.parse('https://names.divine.video/api/username/check/vipuser'),
+            Uri.parse('$_testNameServer/api/username/check/vipuser'),
           ),
         ).thenAnswer(
           (_) async => Response(
@@ -6343,7 +6354,7 @@ void main() {
           when(
             () => mockHttpClient.get(
               Uri.parse(
-                'https://names.divine.video/api/username/check/testuser',
+                '$_testNameServer/api/username/check/testuser',
               ),
             ),
           ).thenAnswer((_) async {
