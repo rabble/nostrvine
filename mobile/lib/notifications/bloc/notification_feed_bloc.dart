@@ -187,6 +187,7 @@ class NotificationFeedBloc
         ),
       );
       _flushPendingEmptyPageContinuation();
+      _loadMoreFailed = false;
       if (markSucceeded) {
         unawaited(_clearAppBadge());
       }
@@ -309,12 +310,10 @@ class NotificationFeedBloc
 
   /// Handle scroll pagination.
   ///
-  /// Deliberately does NOT consult [_loadMoreFailed]: that flag only stops
-  /// the automatic empty-page continuation from re-arming. A load-more
-  /// failure emits no snapshot (`_markRefreshError` is first-page-only) and
-  /// surfaces no error affordance, so gating this handler on it would leave
-  /// a user who hit one transient 5xx at the bottom of the list unable to
-  /// paginate for the rest of the session.
+  /// Manual user scrolls always attempt to paginate. The [_loadMoreFailed]
+  /// flag only prevents automatic empty-page continuation from retrying
+  /// endlessly after a transient failure (see [_continuePastEmptyPageIfNeeded]).
+  /// Manual scrolls can retry immediately even after previous failures.
   Future<void> _onLoadMore(
     NotificationFeedLoadMore event,
     Emitter<NotificationFeedState> emit,
@@ -333,6 +332,7 @@ class NotificationFeedBloc
       // could ever fire, and a Comments feed whose pages are mostly video
       // mentions would get one extra page of runway instead of three.
       _flushPendingEmptyPageContinuation();
+      _loadMoreFailed = false;
     } on Exception catch (e, s) {
       _loadMoreFailed = true;
       // `NotificationRepository.loadNextPage` (single-attempt
@@ -381,6 +381,7 @@ class NotificationFeedBloc
         ),
       );
       _flushPendingEmptyPageContinuation();
+      _loadMoreFailed = false;
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout). Per

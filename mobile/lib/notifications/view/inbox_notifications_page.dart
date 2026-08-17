@@ -131,45 +131,41 @@ class _InboxNotificationsScaffoldState
               ),
             ),
             Expanded(
-              child: TabBarView(
-                controller: tabController,
-                children: [
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    child: const Column(
-                      children: [
-                        _InvitesBanner(),
-                        Expanded(child: NotificationsView()),
-                      ],
+              child: _BlocProvidersWrapper(
+                notificationRepository: widget.notificationRepository,
+                followRepository: widget.followRepository,
+                isVisible: widget.isVisible,
+                tabController: tabController,
+                child: TabBarView(
+                  controller: tabController,
+                  children: [
+                    _NotificationTabContent(
+                      isVisible: widget.isVisible,
+                      child: const Column(
+                        children: [
+                          _InvitesBanner(),
+                          Expanded(child: NotificationsView()),
+                        ],
+                      ),
                     ),
-                  ),
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    filter: NotificationKind.like,
-                  ),
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    filter: NotificationKind.comment,
-                  ),
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    filter: NotificationKind.follow,
-                  ),
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    filter: NotificationKind.repost,
-                  ),
-                ],
+                    _NotificationTabContent(
+                      isVisible: widget.isVisible,
+                      filter: NotificationKind.like,
+                    ),
+                    _NotificationTabContent(
+                      isVisible: widget.isVisible,
+                      filter: NotificationKind.comment,
+                    ),
+                    _NotificationTabContent(
+                      isVisible: widget.isVisible,
+                      filter: NotificationKind.follow,
+                    ),
+                    _NotificationTabContent(
+                      isVisible: widget.isVisible,
+                      filter: NotificationKind.repost,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -179,51 +175,196 @@ class _InboxNotificationsScaffoldState
   }
 }
 
-class _NotificationTab extends ConsumerStatefulWidget {
-  const _NotificationTab({
+/// Wrapper that creates all 5 notification feed BLoCs outside TabBarView.
+///
+/// This ensures BLoCs survive TabBarView visibility changes and only
+/// dispose when Riverpod-provided dependencies actually change identity
+/// (auth flip, account switch). Uses a nested BlocProvider pattern to
+/// create one BLoC per filter, all keyed on repository identity.
+class _BlocProvidersWrapper extends ConsumerWidget {
+  const _BlocProvidersWrapper({
     required this.notificationRepository,
     required this.followRepository,
     required this.isVisible,
-    this.filter,
-    this.child = const NotificationsView(),
+    required this.tabController,
+    required this.child,
   });
 
   final NotificationRepository notificationRepository;
   final FollowRepository followRepository;
   final bool isVisible;
-  final NotificationKind? filter;
+  final TabController tabController;
   final Widget child;
 
   @override
-  ConsumerState<_NotificationTab> createState() => _NotificationTabState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appBadgeClearer = ref.watch(appBadgeServiceProvider);
+    // Key on the watched dependency identities so all blocs
+    // rebuild when repositories swap.
+    final repoDependencyKey = ValueKey((
+      notificationRepository,
+      followRepository,
+    ));
+
+    return _AllNotificationBlocProviders(
+      notificationRepository: notificationRepository,
+      followRepository: followRepository,
+      appBadgeClearer: appBadgeClearer,
+      repoDependencyKey: repoDependencyKey,
+      isVisible: isVisible,
+      tabController: tabController,
+      child: child,
+    );
+  }
 }
 
-class _NotificationTabState extends ConsumerState<_NotificationTab>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
+/// Builds a nested stack of BlocProviders for all 5 notification filters.
+class _AllNotificationBlocProviders extends StatelessWidget {
+  const _AllNotificationBlocProviders({
+    required this.notificationRepository,
+    required this.followRepository,
+    required this.appBadgeClearer,
+    required this.repoDependencyKey,
+    required this.isVisible,
+    required this.tabController,
+    required this.child,
+  });
+
+  final NotificationRepository notificationRepository;
+  final FollowRepository followRepository;
+  final dynamic appBadgeClearer;
+  final ValueKey repoDependencyKey;
+  final bool isVisible;
+  final TabController tabController;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    final appBadgeClearer = ref.watch(appBadgeServiceProvider);
-    // Key on the watched dependency identities plus filter so each tab's bloc
-    // rebuilds when repositories swap and keeps an independent pagination
-    // stream for its server-side category.
+    // Build nested BlocProviders for each filter (null, like, comment, follow, repost)
+    // Nesting them allows each tab to read its corresponding BLoC from context.
+    return _NotificationBlocProviderLayer(
+      filter: null,
+      tabIndex: 0,
+      notificationRepository: notificationRepository,
+      followRepository: followRepository,
+      appBadgeClearer: appBadgeClearer,
+      repoDependencyKey: repoDependencyKey,
+      isVisible: isVisible,
+      tabController: tabController,
+      child: _NotificationBlocProviderLayer(
+        filter: NotificationKind.like,
+        tabIndex: 1,
+        notificationRepository: notificationRepository,
+        followRepository: followRepository,
+        appBadgeClearer: appBadgeClearer,
+        repoDependencyKey: repoDependencyKey,
+        isVisible: isVisible,
+        tabController: tabController,
+        child: _NotificationBlocProviderLayer(
+          filter: NotificationKind.comment,
+          tabIndex: 2,
+          notificationRepository: notificationRepository,
+          followRepository: followRepository,
+          appBadgeClearer: appBadgeClearer,
+          repoDependencyKey: repoDependencyKey,
+          isVisible: isVisible,
+          tabController: tabController,
+          child: _NotificationBlocProviderLayer(
+            filter: NotificationKind.follow,
+            tabIndex: 3,
+            notificationRepository: notificationRepository,
+            followRepository: followRepository,
+            appBadgeClearer: appBadgeClearer,
+            repoDependencyKey: repoDependencyKey,
+            isVisible: isVisible,
+            tabController: tabController,
+            child: _NotificationBlocProviderLayer(
+              filter: NotificationKind.repost,
+              tabIndex: 4,
+              notificationRepository: notificationRepository,
+              followRepository: followRepository,
+              appBadgeClearer: appBadgeClearer,
+              repoDependencyKey: repoDependencyKey,
+              isVisible: isVisible,
+              tabController: tabController,
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A single layer of the BlocProvider nesting for one notification filter.
+class _NotificationBlocProviderLayer extends StatefulWidget {
+  const _NotificationBlocProviderLayer({
+    required this.filter,
+    required this.tabIndex,
+    required this.notificationRepository,
+    required this.followRepository,
+    required this.appBadgeClearer,
+    required this.repoDependencyKey,
+    required this.isVisible,
+    required this.tabController,
+    required this.child,
+  });
+
+  final NotificationKind? filter;
+  final int tabIndex;
+  final NotificationRepository notificationRepository;
+  final FollowRepository followRepository;
+  final dynamic appBadgeClearer;
+  final ValueKey repoDependencyKey;
+  final bool isVisible;
+  final TabController tabController;
+  final Widget child;
+
+  @override
+  State<_NotificationBlocProviderLayer> createState() =>
+      _NotificationBlocProviderLayerState();
+}
+
+class _NotificationBlocProviderLayerState
+    extends State<_NotificationBlocProviderLayer> {
+  late final _tabVisibilityListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabVisibilityListener = () {
+      setState(() {
+        // Rebuild to pass updated isVisible to visibility dispatcher
+      });
+    };
+    widget.tabController.addListener(_tabVisibilityListener);
+  }
+
+  @override
+  void dispose() {
+    widget.tabController.removeListener(_tabVisibilityListener);
+    super.dispose();
+  }
+
+  bool get _isTabVisible {
+    return widget.tabController.index == widget.tabIndex;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return BlocProvider(
       key: ValueKey((
-        widget.notificationRepository,
-        widget.followRepository,
+        widget.repoDependencyKey,
         widget.filter,
       )),
       create: (_) => NotificationFeedBloc(
         notificationRepository: widget.notificationRepository,
         followRepository: widget.followRepository,
-        appBadgeClearer: appBadgeClearer,
+        appBadgeClearer: widget.appBadgeClearer,
         filter: widget.filter,
       )..add(const NotificationFeedStarted()),
       child: _NotificationVisibilityDispatcher(
-        isVisible: widget.isVisible,
+        isVisible: widget.isVisible && _isTabVisible,
         child: widget.child,
       ),
     );
@@ -266,6 +407,32 @@ class _NotificationVisibilityDispatcherState
   Widget build(BuildContext context) {
     _observeVisibility();
     return widget.child;
+  }
+}
+
+/// Simple UI widget that renders notification content for a tab.
+///
+/// Does not manage the BLoC lifecycle - that is handled by
+/// [_NotificationBlocProviderLayer] outside TabBarView. This widget
+/// simply reads the BLoC from context and renders either custom content
+/// or [NotificationsView] depending on the filter.
+class _NotificationTabContent extends StatelessWidget {
+  const _NotificationTabContent({
+    required this.isVisible,
+    this.filter,
+    this.child,
+  });
+
+  final bool isVisible;
+  final NotificationKind? filter;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (child != null) {
+      return child!;
+    }
+    return const NotificationsView();
   }
 }
 
