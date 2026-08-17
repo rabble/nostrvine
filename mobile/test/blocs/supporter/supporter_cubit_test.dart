@@ -262,7 +262,7 @@ void main() {
     });
   });
 
-  group('additional cubit behavior', () {
+  group('close safety', () {
     test(
       'does not emit after close when tier loading completes late',
       () async {
@@ -279,7 +279,9 @@ void main() {
         await expectLater(load, completes);
       },
     );
+  });
 
+  group('purchase lifecycle', () {
     test('surfaces pending and confirming purchase lifecycle', () async {
       final lifecycle = StreamController<EntitlementLifecycle>.broadcast();
       addTearDown(lifecycle.close);
