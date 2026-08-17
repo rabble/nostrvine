@@ -233,13 +233,15 @@ cd mobile
 flutter pub get
 flutter analyze
 flutter test test/path/to/foo_test.dart     # one file or directory
-mise run test           # whole suite, the way CI runs it
+mise run test           # non-golden suite, matching CI's Tests job
 ```
 
 Use `flutter test test/path/to/foo_test.dart` while iterating on a specific
 file, and `mise run test` for the full suite. `mise run test` wraps `very_good test
---optimization`, which is what Mobile CI runs: it bundles the untagged test
-files into a single isolate instead of compiling and spinning one per file.
+--optimization`, matching Mobile CI's sharded `Tests` job: it bundles untagged,
+non-golden test files into a single isolate instead of compiling and spinning
+one per file. Golden tests run separately through the `Goldens` job and
+`mobile/scripts/golden.sh`.
 Measured on an identical 31-file / 277-test subset, same machine, back to
 back: **60s for `flutter test`, 17s for the optimized run**.
 
@@ -279,12 +281,14 @@ Core checks:
 cd mobile
 flutter analyze
 flutter test test/path/to/foo_test.dart     # while iterating
-mise run test           # before pushing — whole suite, as CI runs it
+mise run test           # before pushing — CI's non-golden Tests job locally
 ```
 
 Additional expectations:
 
-- Run `mobile/scripts/golden.sh verify` for visual changes.
+- Run `mobile/scripts/golden.sh verify` for visual changes. Golden
+  references are regenerated on the CI runner, not locally — see
+  `mobile/docs/GOLDEN_TESTING_GUIDE.md`.
 - If you touch `mobile/packages/videos_repository`, run
   `flutter test --coverage` from that package.
 - Add or update tests next to the changed feature or package.

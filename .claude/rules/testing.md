@@ -322,52 +322,42 @@ blocTest<MyBloc, MyState>(
 
 ## Golden File Testing
 
-Golden tests compare widget rendering against master images.
+Golden tests compare widget rendering against master images. Divine keeps a
+deliberately small image-golden suite; the full contract lives in
+[`mobile/docs/GOLDEN_TESTING_GUIDE.md`](../../mobile/docs/GOLDEN_TESTING_GUIDE.md)
+and you should read it before adding one. The three rules that bite hardest:
 
-### Tag Golden Tests
-Run them separately:
+1. **Drain google_fonts before asserting.** `VineTheme` resolves the bundled
+   fonts asynchronously *per variant*, so without
+   `await tester.runAsync(GoogleFonts.pendingFonts)` the first test in an
+   isolate captures Ahem blocks. It still "passes" when regenerated — the
+   failure mode is a wrong reference, not a red test.
+2. **Never commit locally-generated references.** Skia antialiases
+   differently per OS (2.7–3.7% of pixels here), so references are produced
+   on the Ubuntu runner via the `update_goldens` workflow dispatch.
+   `golden.sh verify` is therefore expected to show a pixel diff on macOS.
+3. **Put `tags: ['golden']` on every test under `test/goldens/`.** An image
+   golden cannot survive `very_good test --optimization`: the merged bundle's
+   entrypoint moves the comparator basedir to `test/`, so `goldens/x.png`
+   resolves to `test/goldens/x.png` and does not exist. Test-level `tags:`
+   are ordinary Dart arguments, so unlike a file-level `@Tags` annotation
+   they survive bundling — `mise run test` passes
+   `--exclude-tags "integration || golden"` and the tests never run there.
+   That is why no `skip_very_good_optimization` opt-out is needed.
 
-```dart
-testWidgets(
-  'render matches golden file',
-  tags: TestTag.golden,
-  (WidgetTester tester) async {
-    await tester.pumpWidget(MyWidget());
+Goldens live under `mobile/test/goldens/`, which the CI `Tests` shards (by
+deleting the directory), `mise run test` (by tag), and the pre-push hook (by
+path) all exclude; the dedicated `Goldens` job owns them and filters nothing.
 
-    await expectLater(
-      find.byType(MyWidget),
-      matchesGoldenFile('my_widget.png'),
-    );
-  },
-);
-```
-
-### Configure Tags
-In `dart_test.yaml`:
-
-```yaml
-tags:
-  golden:
-    description: "Tests that compare golden files."
-```
-
-### Running Golden Tests
+Run and update them through the script, from `mobile/`:
 
 ```bash
-# Run only golden tests
-flutter test --tags golden
-
-# Update golden files
-flutter test --tags golden --update-goldens
+bash scripts/golden.sh verify
+bash scripts/golden.sh update test/goldens/widgets/design_system_gallery_golden_test.dart
 ```
 
-### Define Tag Constants
-
-```dart
-abstract class TestTag {
-  static const golden = 'golden';
-}
-```
+See `mobile/docs/GOLDEN_TESTING_GUIDE.md` for the full workflow and the
+cross-OS drift details.
 
 ---
 

@@ -6,8 +6,8 @@ import 'package:openvine/widgets/blurhash_display.dart';
 
 void main() {
   group(BlurhashDisplay, () {
-    // Real blurhash already used elsewhere in the test suite
-    // (test/goldens/widgets/video_thumbnail_golden_test.dart).
+    // A real, decodable blurhash — the decode path under test rejects
+    // malformed strings before it ever produces an image.
     const validBlurhash = 'L5H2EC=PM+yV0g-mq.wG9c010J}I';
 
     testWidgets('keeps decode future stable across parent rebuilds', (

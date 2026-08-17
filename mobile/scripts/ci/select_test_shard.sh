@@ -77,12 +77,28 @@ fi
 cd "$PROJECT_ROOT"
 
 all_tests_file="$(mktemp)"
-trap 'rm -f "$all_tests_file"' EXIT
-find test -type f -name '*_test.dart' | LC_ALL=C sort > "$all_tests_file"
+golden_tests_file="$(mktemp)"
+trap 'rm -f "$all_tests_file" "$golden_tests_file"' EXIT
+
+# test/goldens/ belongs to the dedicated `goldens` job, not to any shard.
+# Image goldens cannot survive this job: `very_good test --optimization`
+# merges every file into one isolate, google_fonts registers its families
+# asynchronously, and whichever test runs first lays out with the fallback
+# font — so the same golden renders at a different size run-to-run. The
+# goldens job runs them with `flutter test` instead (one isolate per file,
+# fonts loaded up front). Remove them from every shard so the merged bundle
+# cannot pick them up, rather than leaving them to run four times.
+: > "$golden_tests_file"
+if [ -d test/goldens ]; then
+  find test/goldens -type f -name '*_test.dart' | LC_ALL=C sort > "$golden_tests_file"
+fi
+find test -type f -name '*_test.dart' -not -path 'test/goldens/*' \
+  | LC_ALL=C sort > "$all_tests_file"
 
 total_files=$(wc -l < "$all_tests_file" | tr -d '[:space:]')
 if [ "$total_files" -eq 0 ]; then
-  echo "❌ Found no *_test.dart files under test/. Refusing to proceed." >&2
+  echo "❌ Found no shardable *_test.dart files under test/ (goldens are
+excluded and run by the Goldens job). Refusing to proceed." >&2
   exit 1
 fi
 
@@ -106,6 +122,19 @@ if [ "$kept" -eq 0 ]; then
   exit 1
 fi
 
+goldens=0
+while IFS= read -r file; do
+  goldens=$((goldens + 1))
+  if [ "$DRY_RUN" -eq 0 ]; then
+    rm -f "$file"
+  fi
+done < "$golden_tests_file"
+
 verb="Kept"
 [ "$DRY_RUN" -eq 1 ] && verb="Would keep"
 echo "${verb} ${kept} of ${total_files} test files for shard ${INDEX} of ${TOTAL} (${removed} removed)."
+# Announce the goldens rather than dropping them quietly: a silent exclusion
+# reads as "the shards cover everything" when they deliberately do not.
+excluded_verb="Excluded"
+[ "$DRY_RUN" -eq 1 ] && excluded_verb="Would exclude"
+echo "${excluded_verb} ${goldens} golden test file(s) under test/goldens/ — run by the 'goldens' job."

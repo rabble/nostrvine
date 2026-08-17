@@ -33,6 +33,15 @@ int _unixSecondsAgo(Duration duration) {
   return _fixedNow.subtract(duration).millisecondsSinceEpoch ~/ 1000;
 }
 
+String _localizedLocalDate(String locale, int unixSeconds) {
+  return DateFormat.yMMMd(locale).format(
+    DateTime.fromMillisecondsSinceEpoch(
+      unixSeconds * 1000,
+      isUtc: true,
+    ).toLocal(),
+  );
+}
+
 T _withFixedClock<T>(T Function() callback) {
   return withClock(Clock.fixed(_fixedNow), callback);
 }
@@ -659,12 +668,7 @@ void main() {
         // 2014-04-22T00:00Z. Anywhere west of UTC this is still Apr 21
         // locally, so formatting the UTC value would print the wrong day.
         const midnightUtc = 1398124800;
-        final expected = DateFormat.yMMMd('en').format(
-          DateTime.fromMillisecondsSinceEpoch(
-            midnightUtc * 1000,
-            isUtc: true,
-          ).toLocal(),
-        );
+        final expected = _localizedLocalDate('en', midnightUtc);
 
         expect(
           _withFixedClock(
@@ -676,16 +680,18 @@ void main() {
 
       testWidgets('localizes the absolute date', (tester) async {
         final de = await _loadL10n(tester, const Locale('de'));
+        const midnightUtc = 1398124800;
+        final expected = _localizedLocalDate('de', midnightUtc);
 
         expect(
           _withFixedClock(
             () => LocalizedTimeFormatter.formatPostAge(
               de,
-              1398124800,
+              midnightUtc,
               locale: 'de',
             ),
           ),
-          equals('22. Apr. 2014'),
+          equals(expected),
         );
       });
 

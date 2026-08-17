@@ -7,6 +7,14 @@ on:
     branches: [main]
   merge_group:
   workflow_dispatch:
+    inputs:
+      update_goldens:
+        description: >-
+          Regenerate golden references on the runner and upload them as an
+          artifact instead of verifying. Download and commit the result — the
+          references must be produced on the same OS that checks them.
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -459,6 +467,64 @@ jobs:
             exit 1
           fi
           echo "✅ No integration-only file-level @Tags"
+  goldens:
+    name: Goldens
+    needs: changes
+    if: ${{ needs.changes.outputs.app == 'true' }}
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v7
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
+      - name: Restore dart hook downloads
+        uses: actions/cache/restore@v4
+        with:
+          path: mobile/.dart_tool/hooks_runner/shared
+          key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-dart-hooks-
+      # `flutter test` builds the whole package's native assets regardless of
+      # which tests run, so this job pays the same unretried sqlite3mc
+      # download the Tests job does. Same warm-up, same reason.
+      - name: Warm sqlite3mc native assets
+        run: bash scripts/ci/warmup_sqlite3mc.sh
+      # Separate from the sharded Tests job on purpose. That job runs
+      # `very_good test --optimization`, which merges every file into one
+      # isolate; goldens need `flutter test` (one isolate per file) plus the
+      # DIVINE_GOLDEN_TESTS font setup, and select_test_shard.sh drops
+      # test/goldens/ from every shard so nothing runs twice.
+      - name: 🖼️ Verify goldens
+        if: ${{ !inputs.update_goldens }}
+        run: bash scripts/golden.sh verify
+      - name: 🖼️ Regenerate goldens
+        if: ${{ inputs.update_goldens }}
+        run: bash scripts/golden.sh update
+      - name: Upload regenerated goldens
+        if: ${{ inputs.update_goldens }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: goldens
+          path: mobile/test/goldens/**/goldens/*.png
+          if-no-files-found: error
+      # The diff is the only way to tell a real regression from a rendering
+      # drift without a local Ubuntu run.
+      - name: Upload golden failure diffs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: mobile/test/goldens/**/failures/*.png
+          if-no-files-found: ignore
+
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}
@@ -470,6 +536,7 @@ jobs:
       - analyze
       - tests
       - vgv-tag-gate
+      - goldens
     runs-on: ubuntu-24.04
     steps:
       - name: Verify upstream jobs
@@ -480,7 +547,9 @@ jobs:
           ANALYZE_RESULT: ${{ needs.analyze.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
           VGV_TAG_GATE_RESULT: ${{ needs.vgv-tag-gate.result }}
+          GOLDENS_RESULT: ${{ needs.goldens.result }}
           APP_CI_REQUIRED: ${{ needs.changes.outputs.app }}
+          UPDATE_GOLDENS: ${{ inputs.update_goldens }}
         run: |
           echo "app-ci-required: ${APP_CI_REQUIRED}"
           echo "codemagic-groups: ${CODEMAGIC_GROUPS_RESULT}"
@@ -489,6 +558,21 @@ jobs:
           echo "analyze: ${ANALYZE_RESULT}"
           echo "tests: ${TESTS_RESULT}"
           echo "vgv-tag-gate: ${VGV_TAG_GATE_RESULT}"
+          echo "goldens: ${GOLDENS_RESULT}"
+
+          # A regeneration dispatch skips `golden.sh verify`, so this run
+          # compared no pixels. It publishes a check run named "Mobile CI" on
+          # the same head SHA branch protection reads, so letting it report
+          # success would overwrite the PR's real verdict with one that never
+          # verified — at exactly the moment goldens are being changed. Fail
+          # closed; the follow-up push of the regenerated references produces
+          # the genuine verdict.
+          if [ "${UPDATE_GOLDENS}" = "true" ]; then
+            echo "Regeneration dispatch: goldens were not verified."
+            echo "This run is not a merge verdict. Commit the regenerated"
+            echo "references and push to get one."
+            exit 1
+          fi
 
           # Always required. This job is ungated so yaml-only PRs still run it;
           # skipped here would let those PRs merge without the guard.
@@ -503,6 +587,7 @@ jobs:
             "${ANALYZE_RESULT}"
             "${TESTS_RESULT}"
             "${VGV_TAG_GATE_RESULT}"
+            "${GOLDENS_RESULT}"
           )
 
           if [ "${APP_CI_REQUIRED}" = "false" ]; then

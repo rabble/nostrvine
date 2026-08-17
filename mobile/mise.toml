@@ -131,6 +131,6 @@ flutter pub get
 PATH="$PUB_CACHE_BIN:$PATH" "$VERY_GOOD_BIN" test \
   --optimization \
   --concurrency=4 \
-  --exclude-tags integration \
+  --exclude-tags "integration || golden" \
   --test-randomize-ordering-seed random
 """

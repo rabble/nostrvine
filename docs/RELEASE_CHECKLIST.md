@@ -43,7 +43,9 @@ bash scripts/check_ios_shipping_versions.sh
 Run these when relevant:
 
 - `dart run build_runner build --delete-conflicting-outputs`
-- `./scripts/golden.sh verify`
+- `./scripts/golden.sh verify` (off Linux this reports a pixel diff by
+  design — references are Ubuntu-rendered; the `Goldens` CI job is the
+  authority. See `mobile/docs/GOLDEN_TESTING_GUIDE.md`.)
 - `cd packages/videos_repository && flutter test --coverage`
 
 ## 4. Verify Reviewer-Facing Behavior
