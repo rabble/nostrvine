@@ -3100,13 +3100,19 @@ class DmRepository {
             conversationId,
             ownerPubkey: _userPubkey,
           );
-          protocol = existingSend?.dmProtocol;
           // Mark the conversation as NIP-17 once we successfully publish
           // a NIP-17 message ourselves. Without this, `dmProtocol` only
           // ever flips when the peer sends us a NIP-17 message, so a
           // send-first conversation stayed `null` forever and every
           // subsequent send fired the NIP-04 fallback (#3663).
-          final nextProtocol = protocol ?? 'nip17';
+          //
+          // `protocol` carries that decision out to the fallback gate
+          // below, which runs after this transaction. Reading the
+          // pre-upsert row there left it null on a conversation the user
+          // initiates, so message #1 of every self-initiated thread also
+          // published a cleartext kind-4 copy (#7342).
+          final nextProtocol = existingSend?.dmProtocol ?? 'nip17';
+          protocol = nextProtocol;
           await _upsertSentConversationAndMarkRead(
             id: conversationId,
             participantPubkeys: jsonEncode(participants),
@@ -3141,10 +3147,10 @@ class DmRepository {
         // when the conversation is known NIP-17-only, or when the caller
         // opts out — structured DMs that cannot be represented in NIP-04
         // (e.g. collaborator invites) would degrade to a plaintext
-        // duplicate. Also skip when the cancel interlock fired: `protocol`
-        // stays null on that path, and a plaintext copy of a message the
-        // user just deleted must not go out.
-        if (persistedLocally && nextProtocol != 'nip17' && !skipNip04Fallback) {
+        // duplicate. `persistedLocally` also covers the cancel interlock:
+        // it stays false when the transaction bailed out, and a plaintext
+        // copy of a message the user just deleted must not go out.
+        if (persistedLocally && protocol != 'nip17' && !skipNip04Fallback) {
           unawaited(
             _sendNip04Message(
               recipientPubkey: recipientPubkey,

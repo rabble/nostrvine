@@ -1296,8 +1296,8 @@ void main() {
             () => mockNostrClient.publishEvent(any()),
           ).thenAnswer((_) async => const PublishFailed());
 
-          // First send: conversation does not exist yet → NIP-04
-          // fallback fires (safe legacy interop).
+          // First send: conversation does not exist yet, and this send is
+          // the one that makes it NIP-17 — so no cleartext copy (#7342).
           when(
             () => mockConversationsDao.getConversation(
               any(),
@@ -1312,7 +1312,7 @@ void main() {
           );
           await pumpEventQueue();
 
-          verify(() => mockNostrClient.publishEvent(any())).called(1);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
 
           // Capture the dmProtocol the repository wrote on first send.
           final upsertCall = verify(
@@ -9517,7 +9517,7 @@ void main() {
       }
 
       test(
-        'sends NIP-04 fallback when protocol is unknown',
+        'sends NIP-04 fallback when conversation is known NIP-04',
         () async {
           stubSendRumor(
             (_, recipientPubkey) async => NIP17SendResult.success(
@@ -9528,13 +9528,33 @@ void main() {
           );
           stubDaoInserts();
 
-          // Return null (unknown protocol)
+          // An inbound legacy message stamped this thread 'nip04', so the
+          // peer is known not to speak NIP-17 — the fallback is the only
+          // copy they can read.
           when(
             () => mockConversationsDao.getConversation(
               any(),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: DmRepository.computeConversationId(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              participantPubkeys: jsonEncode(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              isGroup: false,
+              createdAt: 1699999000,
+              lastMessageContent: 'Previous',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: true,
+              currentUserHasSent: true,
+              ownerPubkey: _validPubkeyA,
+              dmProtocol: 'nip04',
+            ),
+          );
 
           // Stub publishEvent — NIP-04 fallback will call this
           when(
@@ -9581,6 +9601,76 @@ void main() {
           verify(
             () => mockNostrClient.publishEvent(any()),
           ).called(1);
+        },
+      );
+
+      test(
+        'skips NIP-04 fallback on the first send of a new conversation '
+        '(#7342)',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+
+          // No row yet — the user is starting this thread.
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          // Stub the publish so a kind-4 fallback would succeed and be
+          // recorded; the assertion below must fail on a real leak, not
+          // on an exception swallowed by the fallback's catchError.
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer(
+            (_) async => PublishSuccess(
+              event: Event.fromJson({
+                'id': _giftWrapEventId,
+                'pubkey': _validPubkeyA,
+                'created_at': 1700000000,
+                'kind': EventKind.directMessage,
+                'tags': [
+                  ['p', _validPubkeyB],
+                ],
+                'content': 'encrypted',
+                'sig': 'sig',
+              }),
+            ),
+          );
+
+          final repository = createRepository();
+
+          final _ = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+
+          // Allow an unawaited NIP-04 future to land if one was started.
+          await Future<void>.delayed(Duration.zero);
+
+          // The gift wrap still goes out.
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+
+          // No cleartext kind-4 copy naming the recipient in a `p` tag.
+          verifyNever(() => mockNostrClient.publishEvent(any()));
         },
       );
 
