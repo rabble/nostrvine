@@ -89,6 +89,21 @@ class PaginationState {
     eventsReceivedInCurrentQuery++;
   }
 
+  /// Records a per-query tally the caller counted for itself.
+  ///
+  /// [incrementEventCount] only fires for events flagged `isHistorical`, which
+  /// is set on the load-more path alone. An initial subscription delivers its
+  /// stored backlog through the real-time handler, so its tally stays at zero
+  /// and [completeQuery] would call the feed exhausted however much arrived.
+  ///
+  /// Takes the larger of the two counts so a load-more query that is already
+  /// counting for itself is never revised downward.
+  void recordReceivedCount(int count) {
+    if (count > eventsReceivedInCurrentQuery) {
+      eventsReceivedInCurrentQuery = count;
+    }
+  }
+
   void completeQuery(int requestedLimit) {
     isLoading = false;
     // If we received fewer events than requested, assume no more content
@@ -2481,6 +2496,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             // and the UI never transitions from spinner to empty state.
             final paginationState = _paginationStates[subscriptionType];
             if (paginationState != null) {
+              // Everything up to EOSE is stored history by definition, but the
+              // initial subscription routes it through the real-time handler,
+              // so the per-query tally never sees it. `eventCount` is this
+              // subscription's own count of those events; it spans every kind
+              // in the filter set rather than videos alone, which can only
+              // keep `hasMore` true a page longer than needed — the safe
+              // direction, and the load-more path re-queries from there.
+              paginationState.recordReceivedCount(eventCount);
               paginationState.completeQuery(limit);
               notifyListeners();
             }
