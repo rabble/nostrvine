@@ -4,16 +4,92 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/outage_notice/outage_notice_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/outage_diagnosis_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page/feed_error_widget.dart';
+import 'package:openvine/services/outage_diagnosis_service.dart';
 
 class _MockOutageNoticeCubit extends MockCubit<OutageNoticeState>
     implements OutageNoticeCubit {}
 
+class _MockOutageDiagnosisService extends Mock
+    implements OutageDiagnosisService {}
+
 void main() {
+  group(FeedErrorWidget, () {
+    testWidgets('starts diagnosis when mounted', (tester) async {
+      final diagnosisService = _MockOutageDiagnosisService();
+      when(
+        () => diagnosisService.diagnose(
+          components: any(named: 'components'),
+        ),
+      ).thenAnswer((_) async => OutageDiagnosis.indeterminate);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            outageDiagnosisServiceProvider.overrideWithValue(diagnosisService),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: FeedErrorWidget(onRetry: () async {})),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      verify(
+        () => diagnosisService.diagnose(
+          components: any(named: 'components'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('starts a fresh diagnosis when the service changes', (
+      tester,
+    ) async {
+      final firstService = _MockOutageDiagnosisService();
+      final secondService = _MockOutageDiagnosisService();
+      for (final service in [firstService, secondService]) {
+        when(
+          () => service.diagnose(components: any(named: 'components')),
+        ).thenAnswer((_) async => OutageDiagnosis.indeterminate);
+      }
+
+      Future<void> pumpWithService(OutageDiagnosisService service) {
+        return tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              outageDiagnosisServiceProvider.overrideWithValue(service),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: FeedErrorWidget(onRetry: () async {})),
+            ),
+          ),
+        );
+      }
+
+      await pumpWithService(firstService);
+      await tester.pump();
+      await pumpWithService(secondService);
+      await tester.pump();
+
+      verify(
+        () => firstService.diagnose(components: any(named: 'components')),
+      ).called(1);
+      verify(
+        () => secondService.diagnose(components: any(named: 'components')),
+      ).called(1);
+    });
+  });
+
   group(FeedErrorView, () {
     final l10n = lookupAppLocalizations(const Locale('en'));
     late _MockOutageNoticeCubit cubit;

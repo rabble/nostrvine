@@ -101,6 +101,29 @@ void main() {
         expect(await client.fetchStatus(), isNull);
       });
 
+      test('ignores non-string optional fields rather than throwing', () async {
+        stubResponse(
+          jsonEncode({
+            'updatedAt': {'value': '2026-08-17T03:18:41.874Z'},
+            'components': {
+              'api': {
+                'id': 'api',
+                'label': {'text': 'API'},
+                'status': 'operational',
+                'message': {'text': 'ready'},
+              },
+            },
+          }),
+        );
+
+        final status = await client.fetchStatus();
+
+        expect(status, isNotNull);
+        expect(status!.updatedAt, isNull);
+        expect(status.components['api']?.label, isNull);
+        expect(status.components['api']?.message, isNull);
+      });
+
       test(
         'returns null rather than throwing when the request fails',
         () async {

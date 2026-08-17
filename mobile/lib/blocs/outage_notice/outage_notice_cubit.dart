@@ -27,7 +27,16 @@ class OutageNoticeCubit extends Cubit<OutageNoticeState>
   final List<String> components;
 
   Future<void> diagnose() async {
-    final diagnosis = await _diagnosisService.diagnose(components: components);
+    final OutageDiagnosis diagnosis;
+    try {
+      diagnosis = await _diagnosisService.diagnose(components: components);
+    } on Object catch (error, stackTrace) {
+      addError(error, stackTrace);
+      emitIfOpen(
+        const OutageNoticeState(status: OutageNoticeStatus.indeterminate),
+      );
+      return;
+    }
 
     emitIfOpen(
       OutageNoticeState(

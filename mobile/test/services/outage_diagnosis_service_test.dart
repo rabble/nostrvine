@@ -28,6 +28,7 @@ void main() {
   group(OutageDiagnosisService, () {
     late _MockHttpClient httpClient;
     final endpoint = Uri.parse('https://status.example/api/status');
+    const spaShell = '<!doctype html><html><body>Operational</body></html>';
 
     setUpAll(() {
       registerFallbackValue(Uri.parse('https://status.example'));
@@ -113,20 +114,25 @@ void main() {
       verifyNever(() => httpClient.get(any(), headers: any(named: 'headers')));
     });
 
-    test(
-      'blames the network when the status page is unreachable too',
-      () async {
-        // The status host is on a different CDN from the API. Both failing
-        // points at the one thing they share: the user's own connection.
-        when(
-          () => httpClient.get(endpoint, headers: any(named: 'headers')),
-        ).thenThrow(http.ClientException('unreachable'));
+    test('stays indeterminate when the status page is unreachable', () async {
+      // The client returns null for both transport failure and invalid payloads.
+      // Only the connectivity probe may produce a user-network claim.
+      when(
+        () => httpClient.get(endpoint, headers: any(named: 'headers')),
+      ).thenThrow(http.ClientException('unreachable'));
 
-        final diagnosis = await buildService().diagnose();
+      final diagnosis = await buildService().diagnose();
 
-        expect(diagnosis.verdict, equals(OutageVerdict.noConnection));
-      },
-    );
+      expect(diagnosis.verdict, equals(OutageVerdict.indeterminate));
+    });
+
+    test('stays indeterminate for a non-status document', () async {
+      stubStatus(spaShell);
+
+      final diagnosis = await buildService().diagnose();
+
+      expect(diagnosis.verdict, equals(OutageVerdict.indeterminate));
+    });
 
     test('surfaces the operator message over canned copy', () async {
       stubStatus(
@@ -184,6 +190,22 @@ void main() {
       ).called(1);
     });
 
+    test('caches verdicts by component set', () async {
+      stubStatus(_statusBody());
+      final service = buildService();
+
+      final feedDiagnosis = await service.diagnose();
+      final uploadsDiagnosis = await service.diagnose(
+        components: const [DivineStatusComponents.uploads],
+      );
+
+      expect(feedDiagnosis.verdict, equals(OutageVerdict.indeterminate));
+      expect(uploadsDiagnosis.verdict, equals(OutageVerdict.divineOutage));
+      verify(
+        () => httpClient.get(endpoint, headers: any(named: 'headers')),
+      ).called(2);
+    });
+
     test(
       'falls through to the status check when connectivity throws',
       () async {
@@ -202,18 +224,5 @@ void main() {
         );
       },
     );
-
-    test('invalidateCache forces a fresh diagnosis', () async {
-      stubStatus(_statusBody(apiStatus: 'down'));
-      final service = buildService();
-
-      await service.diagnose();
-      service.invalidateCache();
-      await service.diagnose();
-
-      verify(
-        () => httpClient.get(endpoint, headers: any(named: 'headers')),
-      ).called(2);
-    });
   });
 }

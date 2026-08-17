@@ -69,11 +69,7 @@ class OutageDiagnosisService {
   final ConnectivityProbe _connectivityProbe;
   final DateTime Function() _now;
 
-  // Keyed by component set: a verdict for [api, relay] does not answer a
-  // question about [uploads]. Sharing one entry across sets would hand a
-  // second surface the feed's verdict.
-  final Map<String, OutageDiagnosis> _cached = {};
-  final Map<String, DateTime> _cachedAt = {};
+  final Map<String, _CachedDiagnosis> _cached = {};
   final Map<String, Future<OutageDiagnosis>> _inFlight = {};
 
   /// Diagnoses why a load of [components] failed.
@@ -81,28 +77,23 @@ class OutageDiagnosisService {
   /// Concurrent callers asking about the same components share one request, so
   /// several failing surfaces do not multiply into several status fetches.
   Future<OutageDiagnosis> diagnose({List<String> components = feedComponents}) {
-    final key = _cacheKey(components);
-    final cached = _cached[key];
-    final cachedAt = _cachedAt[key];
-    if (cached != null &&
-        cachedAt != null &&
-        _now().difference(cachedAt) < cacheDuration) {
-      return Future.value(cached);
+    final cacheKey = _cacheKey(components);
+    final cached = _cached[cacheKey];
+    if (cached != null && _now().difference(cached.cachedAt) < cacheDuration) {
+      return Future.value(cached.diagnosis);
     }
 
-    return _inFlight[key] ??= _diagnose(key, components).whenComplete(() {
-      _inFlight.remove(key);
+    return _inFlight[cacheKey] ??= _diagnose(components).whenComplete(() {
+      _inFlight.remove(cacheKey);
     });
   }
 
-  /// Order-independent key for a component set.
-  static String _cacheKey(List<String> components) =>
-      (components.toSet().toList()..sort()).join(',');
-
-  Future<OutageDiagnosis> _diagnose(String key, List<String> components) async {
+  Future<OutageDiagnosis> _diagnose(List<String> components) async {
     final diagnosis = await _resolve(components);
-    _cached[key] = diagnosis;
-    _cachedAt[key] = _now();
+    _cached[_cacheKey(components)] = _CachedDiagnosis(
+      diagnosis: diagnosis,
+      cachedAt: _now(),
+    );
     return diagnosis;
   }
 
@@ -113,10 +104,11 @@ class OutageDiagnosisService {
 
     final status = await _statusClient.fetchStatus();
     if (status == null) {
-      // The status page lives on a different host and CDN from the services
-      // that just failed. Both being unreachable points at the path they
-      // share — the user's own connection — rather than at Divine.
-      return const OutageDiagnosis(OutageVerdict.noConnection);
+      // A null status read is no opinion: it can be a transport failure, but it
+      // can also be a malformed payload, a wrong endpoint serving the SPA shell,
+      // or another status-page problem. Do not blame the user's network unless
+      // the connectivity probe gives direct evidence.
+      return OutageDiagnosis.indeterminate;
     }
 
     if (status.anyImpaired(components)) {
@@ -143,12 +135,18 @@ class OutageDiagnosisService {
     }
   }
 
-  /// Drops every cached verdict, so the next diagnosis re-checks.
-  @visibleForTesting
-  void invalidateCache() {
-    _cached.clear();
-    _cachedAt.clear();
-  }
-
   void dispose() => _statusClient.close();
+
+  /// Order-independent key for a component set.
+  static String _cacheKey(Iterable<String> components) {
+    final normalized = components.toSet().toList()..sort();
+    return normalized.join(',');
+  }
+}
+
+final class _CachedDiagnosis {
+  const _CachedDiagnosis({required this.diagnosis, required this.cachedAt});
+
+  final OutageDiagnosis diagnosis;
+  final DateTime cachedAt;
 }
