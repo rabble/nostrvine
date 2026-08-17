@@ -38,6 +38,38 @@ class KnownAccountsRegistry {
   final SignerSecureStore _signerStore;
   final FlutterSecureStorage? _flutterSecureStorage;
 
+  /// The pubkey of the account this device was most recently active as, or
+  /// null when the registry has never been written.
+  ///
+  /// Every successful session bumps `lastUsedAt` through [upsert] — including
+  /// the bunker and Amber *reconnect* paths, which is what makes this a
+  /// signal that holds for every authentication source.
+  ///
+  /// Synchronous, and therefore deliberately not [getKnownAccounts]: that one
+  /// is async because a first read runs the one-time legacy migration, and a
+  /// caller that only wants to know which account was last active must not
+  /// trigger a migration as a side effect. A device whose registry has never
+  /// been written simply has no answer here.
+  static String? mostRecentlyUsedPubkeyHex(SharedPreferences preferences) {
+    final raw = preferences.getString(kKnownAccountsKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = (jsonDecode(raw) as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+      if (decoded.isEmpty) return null;
+      final accounts = decoded.map(KnownAccount.fromJson).toList()
+        ..sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
+      return accounts.first.pubkeyHex;
+    } on Object catch (e) {
+      Log.warning(
+        'mostRecentlyUsedPubkeyHex: unreadable known accounts: $e',
+        name: 'KnownAccountsRegistry',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+  }
+
   /// Returns all previously used accounts, most-recently-used first.
   ///
   /// On first read (the `known_accounts` key has never been written) runs a
