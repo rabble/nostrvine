@@ -31,7 +31,8 @@ const divineSemanticsGuidelines = <AccessibilityGuideline>[
 /// Keep the subject away from the viewport and scrollable edges. Flutter's
 /// tap-target guidelines skip boundary-touching semantics nodes because they
 /// may be partially off-screen, so flush fixtures can pass without evaluating
-/// the intended target size.
+/// the intended target size. `Center` alone does not achieve this for a
+/// subject that still resolves to full width — constrain the width as well.
 Future<void> expectMeetsAccessibilityGuidelines(
   WidgetTester tester, {
   Iterable<AccessibilityGuideline> guidelines = divineSemanticsGuidelines,
