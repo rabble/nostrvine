@@ -250,7 +250,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       _followRepository.followingPubkeys,
     );
 
-    await _loadVideos(source, emit);
+    await _loadVideos(source, emit, revalidate: true);
     if (emit.isDone) return;
 
     // After the initial load, check for the "no follows" CTA. Needed for
@@ -691,12 +691,21 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedSource source,
     Emitter<VideoFeedBlocState> emit, {
     bool skipCache = false,
+    bool revalidate = false,
   }) async {
     final servedCache = await _maybeServeCachedFeed(source, emit, skipCache);
     if (!_canEmitForSource(source, emit)) return;
 
     try {
-      final result = await _fetchVideosForSource(source, skipCache: skipCache);
+      // `revalidate` serves the cached window *and* forces a fresh fetch.
+      // `skipCache` alone cannot express that: it also suppresses the served
+      // window, which would blank the screen. Without it a warm start reads
+      // the repository's in-memory feed cache — which carries no TTL — so the
+      // follow-up fetch answers from the same entry it is meant to refresh.
+      final result = await _fetchVideosForSource(
+        source,
+        skipCache: skipCache || revalidate,
+      );
       if (!_canEmitForSource(source, emit)) return;
 
       // Filter out videos without valid URLs
@@ -727,6 +736,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         state.copyWith(
           status: VideoFeedStatus.success,
           videos: displayedVideos,
+          isRefreshing: false,
           // Only stop pagination when no results at all.
           // Fewer than _pageSize can happen due to server-side filtering.
           hasMore: _hasMoreForSource(
@@ -786,6 +796,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
             error: VideoFeedError.loadFailed,
           ),
         );
+      } else if (state.isRefreshing) {
+        // Revalidation failed over content already on screen. Keep showing it,
+        // but stop reporting a refresh that is no longer running.
+        emit(state.copyWith(isRefreshing: false));
       }
     }
   }
@@ -821,6 +835,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         videos: cachedValid,
         currentIndex: 0,
         hasMore: true,
+        isRefreshing: true,
         clearPaginationCursor: true,
         clearError: true,
       ),

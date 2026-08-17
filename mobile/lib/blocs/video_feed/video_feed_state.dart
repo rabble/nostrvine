@@ -200,6 +200,8 @@ final class VideoFeedTuningAction extends Equatable {
 /// - [mode]: The active feed mode (forYou, following, latest)
 /// - [hasMore]: Whether more videos can be loaded
 /// - [isLoadingMore]: Whether pagination is in progress
+/// - [isRefreshing]: Whether a background revalidation is in flight over
+///   already-displayed content
 /// - [error]: Any error that occurred
 final class VideoFeedBlocState extends Equatable {
   const VideoFeedBlocState({
@@ -210,6 +212,7 @@ final class VideoFeedBlocState extends Equatable {
     this.subscribedLists = const [],
     this.hasMore = true,
     this.isLoadingMore = false,
+    this.isRefreshing = false,
     this.error,
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
@@ -249,6 +252,14 @@ final class VideoFeedBlocState extends Equatable {
 
   /// Whether a load-more operation is in progress.
   final bool isLoadingMore;
+
+  /// Whether a background revalidation is running over content already on
+  /// screen.
+  ///
+  /// Distinct from [VideoFeedStatus.loading], which means there is nothing to
+  /// show yet. A cache-served feed paints immediately with this `true` so the
+  /// screen never blanks while the fresh page is fetched.
+  final bool isRefreshing;
 
   /// Index of the currently active video in [videos].
   ///
@@ -324,6 +335,7 @@ final class VideoFeedBlocState extends Equatable {
     List<CuratedList>? subscribedLists,
     bool? hasMore,
     bool? isLoadingMore,
+    bool? isRefreshing,
     VideoFeedError? error,
     bool clearError = false,
     Map<String, Set<String>>? videoListSources,
@@ -345,6 +357,7 @@ final class VideoFeedBlocState extends Equatable {
       subscribedLists: subscribedLists ?? this.subscribedLists,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       error: clearError ? null : (error ?? this.error),
       videoListSources: videoListSources ?? this.videoListSources,
       listOnlyVideoIds: listOnlyVideoIds ?? this.listOnlyVideoIds,
@@ -367,6 +380,7 @@ final class VideoFeedBlocState extends Equatable {
     subscribedLists,
     hasMore,
     isLoadingMore,
+    isRefreshing,
     error,
     videoListSources,
     listOnlyVideoIds,

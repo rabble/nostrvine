@@ -3947,8 +3947,14 @@ void main() {
           const VideoFeedBlocState(mode: FeedMode.following),
           isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.videos.length, 'cached count', 2),
-          // No failure state — cached data stays visible.
+              .having((s) => s.videos.length, 'cached count', 2)
+              .having((s) => s.isRefreshing, 'isRefreshing', isTrue),
+          // The revalidation failed, so the flag clears while the cached
+          // videos stay on screen. No failure state — cached data survives.
+          isA<VideoFeedBlocState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'cached count', 2)
+              .having((s) => s.isRefreshing, 'isRefreshing', isFalse),
         ],
       );
 

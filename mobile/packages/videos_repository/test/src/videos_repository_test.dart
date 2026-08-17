@@ -1034,6 +1034,33 @@ void main() {
           expect(cached.first.id, equals('v1'));
         });
 
+        test('marks a cache-served result so callers can revalidate', () async {
+          // VideoFeedBloc paints a cache hit immediately and then refetches.
+          // Without this flag it cannot tell a cache hit from a fresh fetch,
+          // and the in-memory feed cache carries no TTL (#7719).
+          when(
+            () => mockFunnelcakeClient.getRecentVideosPage(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => _recentPage([
+              _createVideoStats(
+                id: 'v1',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/v1.mp4',
+              ),
+            ]),
+          );
+
+          final fresh = await repoWithCache.getNewVideos();
+          expect(fresh.isFromCache, isFalse);
+
+          final cached = await repoWithCache.getNewVideos();
+          expect(cached.isFromCache, isTrue);
+        });
+
         test('skipCache bypasses the in-memory cache', () async {
           when(
             () => mockFunnelcakeClient.getRecentVideosPage(
@@ -11337,6 +11364,53 @@ void main() {
       setUp(() {
         mockFunnelcakeClient = MockFunnelcakeApiClient();
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+      });
+
+      test('marks a cache-served recommendation page', () async {
+        // The recommended feed reaches the cache through
+        // _withSeenFreshnessOrdering rather than constructing the result
+        // directly, so it needs its own coverage of the isFromCache marking
+        // VideoFeedBloc revalidates on (#7719).
+        final recommended = _createVideoStats(
+          id: 'recommended-video',
+          pubkey: 'recommended-pubkey',
+          dTag: 'recommended-dtag',
+          videoUrl: 'https://example.com/recommended.mp4',
+        );
+        when(
+          () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer(
+          (_) async => RecommendationsResponse(
+            videos: [recommended],
+            source: 'personalized',
+            rawBody: '{"videos":[{"id":"recommended-video"}]}',
+          ),
+        );
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          inMemoryFeedCache: InMemoryFeedCache(),
+        );
+
+        final fresh = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+        );
+        expect(fresh.isFromCache, isFalse);
+
+        final cached = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+        );
+        expect(cached.isFromCache, isTrue);
+        expect(cached.videos, hasLength(fresh.videos.length));
       });
 
       test('returns home feed result from recommendations endpoint', () async {
