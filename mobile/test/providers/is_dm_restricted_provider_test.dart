@@ -177,4 +177,64 @@ void main() {
     final store = ProtectedMinorStickyStore(prefs: prefs);
     expect(store.lastKnownFor(pubkey), isNull);
   });
+
+  // The fail direction per auth source with no verdict anywhere (live status
+  // unresolved, nothing persisted). Keycast-backed or not-yet-known sources
+  // fail closed; pure self-custody sources Keycast can never answer for are
+  // unrestricted (#6300). Pinning every source stops a refactor from silently
+  // moving one in either direction.
+  group('per-auth-source fail direction with an absent verdict', () {
+    for (final source in AuthenticationSource.values) {
+      final expectRestricted = switch (source) {
+        // `none` is the initial value while the source restores after the
+        // pubkey on cold start: not yet known whether Keycast applies.
+        AuthenticationSource.none => true,
+        AuthenticationSource.divineOAuth => true,
+        AuthenticationSource.automatic ||
+        AuthenticationSource.importedKeys ||
+        AuthenticationSource.bunker ||
+        AuthenticationSource.amber ||
+        AuthenticationSource.nip07 => false,
+      };
+
+      test(
+        '$source -> ${expectRestricted ? 'restricted' : 'unrestricted'}',
+        () {
+          final container = containerWith(
+            authState: AuthState.authenticated,
+            authSource: source,
+            status: () => Completer<ProtectedMinorStatus>().future,
+          );
+
+          expect(container.read(isDmRestrictedProvider), expectRestricted);
+        },
+      );
+    }
+  });
+
+  // A pubkey previously seen by Keycast stays fail-closed under any
+  // self-custody source, since the same pubkey can flip auth sources on one
+  // device and Keycast may hold a verdict for it.
+  group('ever-Keycast pubkey stays restricted under self-custody sources', () {
+    for (final source in [
+      AuthenticationSource.automatic,
+      AuthenticationSource.importedKeys,
+      AuthenticationSource.bunker,
+      AuthenticationSource.amber,
+      AuthenticationSource.nip07,
+    ]) {
+      test('$source with Keycast marker -> restricted', () async {
+        final store = ProtectedMinorStickyStore(prefs: prefs);
+        await store.markKeycastAccount(pubkey);
+
+        final container = containerWith(
+          authState: AuthState.authenticated,
+          authSource: source,
+          status: () => Completer<ProtectedMinorStatus>().future,
+        );
+
+        expect(container.read(isDmRestrictedProvider), isTrue);
+      });
+    }
+  });
 }
