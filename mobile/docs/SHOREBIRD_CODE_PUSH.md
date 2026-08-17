@@ -63,6 +63,11 @@ duplicates the workflow's `flutter:` setting and is passed to
 bumping Flutter, confirm the target is in `shorebird flutter versions list`
 first — Shorebird supports a subset.
 
+The current 3.44.9 pin is deliberate. Shorebird's 3.44.0 engine crashed at
+launch in the Dart async FFI path used by `cupertino_http`, so the repo and all
+CI workflows moved together to the refreshed 3.44.9 Shorebird engine. Do not
+move the pin back independently in one workflow.
+
 Patch commands take no `--flutter-version`. A patch is compiled against
 whatever version its release used, which Shorebird resolves from the release.
 
@@ -148,6 +153,11 @@ The same group holds patch-signing key material:
 - `SHOREBIRD_PATCH_PUBLIC_KEY` — public PEM passed to `shorebird release`
 - `SHOREBIRD_PATCH_PRIVATE_KEY` — secure private PEM passed to `shorebird patch`
 
+Store both keys as single-line values with literal `\n` sequences between PEM
+lines. CI decodes and validates that envelope before invoking Shorebird. Release
+jobs only materialize the public key; patch jobs only materialize the private
+key.
+
 The token is currently generated from an individual's account. Moving it to a
 Divine service identity is tracked in #7200.
 
@@ -174,6 +184,12 @@ for them: a patch should be compiled in the same environment as the release it
 targets.
 
 ### Known gotchas
+
+**A release build is not idempotent after `shorebird release` succeeds.** If a
+later upload or symbol step fails, the store build-number lookup can derive the
+same version again, but Shorebird will refuse to create it twice. The preflight
+stops that retry before the long build. Delete the failed Shorebird release or
+bump the store build number before rerunning; do not bypass the preflight.
 
 **`shorebird init` fails with "Unable to initialize gradlew".** `gradlew` is
 gitignored, so a fresh worktree has no wrapper, and `init` calls it directly

@@ -52,7 +52,7 @@ class ShorebirdReleasePreflightTest(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("No existing active Shorebird ios release", result.stdout)
+        self.assertIn("No existing Shorebird ios release", result.stdout)
 
     def test_blocks_active_platform_release(self) -> None:
         result = self.run_preflight(
@@ -70,7 +70,25 @@ class ShorebirdReleasePreflightTest(unittest.TestCase):
         )
 
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("already exists and is active", result.stderr)
+        self.assertIn("already exists with status active", result.stderr)
+
+    def test_blocks_non_active_platform_release(self) -> None:
+        result = self.run_preflight(
+            {
+                "status": "success",
+                "data": {
+                    "releases": [
+                        {
+                            "version": "1.0.20+841",
+                            "platform_statuses": {"ios": "failed"},
+                        }
+                    ]
+                },
+            }
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("already exists with status failed", result.stderr)
 
     def test_allows_same_version_for_different_platform(self) -> None:
         result = self.run_preflight(
@@ -110,6 +128,24 @@ class ShorebirdReleasePreflightTest(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing releases array", result.stderr)
+
+    def test_fails_closed_on_unreadable_platform_statuses(self) -> None:
+        result = self.run_preflight(
+            {
+                "status": "success",
+                "data": {
+                    "releases": [
+                        {
+                            "version": "1.0.20+841",
+                            "platform_statuses": ["ios", "active"],
+                        }
+                    ]
+                },
+            }
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unreadable platform_statuses", result.stderr)
 
 
 if __name__ == "__main__":

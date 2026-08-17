@@ -24,14 +24,23 @@ unless releases.is_a?(Array)
 end
 
 release = releases.find { |item| item['version'] == release_version }
-platform_statuses = release && release['platform_statuses']
-status = platform_statuses[platform] if platform_statuses.is_a?(Hash)
-
-if status == 'active'
-  abort(
-    "ERROR: #{platform} Shorebird release #{release_version} already exists and is active.\n" \
-    'Bump the build number/version or delete the failed Shorebird release before retrying.',
-  )
+unless release
+  puts "No existing Shorebird #{platform} release found for #{release_version}; continuing."
+  exit 0
 end
 
-puts "No existing active Shorebird #{platform} release found for #{release_version}; continuing."
+platform_statuses = release['platform_statuses']
+unless platform_statuses.is_a?(Hash)
+  abort("ERROR: Shorebird release #{release_version} has unreadable platform_statuses.")
+end
+
+status = platform_statuses[platform]
+unless status
+  puts "No existing Shorebird #{platform} release found for #{release_version}; continuing."
+  exit 0
+end
+
+abort(
+  "ERROR: #{platform} Shorebird release #{release_version} already exists with status #{status}.\n" \
+  'Bump the build number/version or delete the failed Shorebird release before retrying.',
+)
