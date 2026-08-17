@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:developer';
 
+import 'package:meta/meta.dart';
+
 import '../count_response.dart';
 import '../subscription.dart';
 import 'client_connected.dart';
@@ -157,6 +159,7 @@ abstract class Relay {
     _recentSentEvents.remove(eventId);
   }
 
+  @visibleForTesting
   bool hasRetainedSentEvent(String eventId) =>
       _recentSentEvents.containsKey(eventId);
 
