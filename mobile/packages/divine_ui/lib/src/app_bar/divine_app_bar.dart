@@ -59,7 +59,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBackButton = false,
     this.onBackPressed,
     this.backButtonSemanticLabel,
-    this.backButtonTooltip = 'Back',
+    this.backButtonTooltip,
     this.backButtonHeroTag,
     this.showMenuButton = false,
     this.onMenuPressed,
@@ -158,14 +158,16 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Custom semantic label for the back button.
   ///
-  /// When provided, overrides the default 'Go back' label and suppresses the
-  /// tooltip to avoid iOS merging both into the accessibility text.
+  /// When provided, overrides the default label and suppresses the tooltip to
+  /// avoid iOS merging both into the accessibility text.
   final String? backButtonSemanticLabel;
 
   /// Tooltip for the back button.
   ///
-  /// Shown when [backButtonSemanticLabel] is null. Defaults to `'Back'`.
-  final String backButtonTooltip;
+  /// Shown when [backButtonSemanticLabel] is null. Defaults to
+  /// [MaterialLocalizations.backButtonTooltip], which Flutter translates for
+  /// every supported locale.
+  final String? backButtonTooltip;
 
   /// Optional hero tag to wrap the back button in a [Hero] animation.
   ///

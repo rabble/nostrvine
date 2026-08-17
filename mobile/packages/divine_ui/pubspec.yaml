@@ -18,6 +18,8 @@ dependencies:
   skeletonizer: ^2.1.2
 
 dev_dependencies:
+  flutter_localizations:
+    sdk: flutter
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.4

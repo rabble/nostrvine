@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -367,7 +368,9 @@ void main() {
           final node = tester.getSemantics(
             find.bySemanticsIdentifier('back_button'),
           );
-          expect(node.label, 'Go back');
+          // MaterialLocalizations.backButtonTooltip — 'Back' in English,
+          // translated by flutter_localizations everywhere else.
+          expect(node.label, 'Back');
           expect(
             node.getSemanticsData().hasAction(SemanticsAction.tap),
             isTrue,
@@ -1001,7 +1004,7 @@ void main() {
           await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
 
           // ...and the labelled button is still there afterwards.
-          expect(find.bySemanticsLabel('Go back'), findsOneWidget);
+          expect(find.bySemanticsLabel('Back'), findsOneWidget);
           handle.dispose();
         },
       );
@@ -1024,6 +1027,62 @@ void main() {
 
         expect(pressed, 1);
       });
+    });
+  });
+
+  group('DiVineAppBar back button localization', () {
+    // The default back label used to be a hardcoded 'Go back', which shipped
+    // untranslated to 21 locales because only 6 of 92 call sites passed
+    // backButtonSemanticLabel. It now defaults to
+    // MaterialLocalizations.backButtonTooltip, which flutter_localizations
+    // translates. This test is the thing that would catch a regression back to
+    // a constant: a hardcoded English default cannot produce 'Atrás'.
+    Widget buildLocalized(Locale locale) => MaterialApp(
+      locale: locale,
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      supportedLocales: const [Locale('en'), Locale('es'), Locale('nl')],
+      theme: VineTheme.theme,
+      home: const Scaffold(
+        appBar: DiVineAppBar(title: 'Test', showBackButton: true),
+        body: SizedBox.shrink(),
+      ),
+    );
+
+    testWidgets('uses the English MaterialLocalizations label', (tester) async {
+      await tester.pumpWidget(buildLocalized(const Locale('en')));
+
+      expect(find.bySemanticsLabel('Back'), findsOneWidget);
+    });
+
+    testWidgets('translates the back label for es', (tester) async {
+      await tester.pumpWidget(buildLocalized(const Locale('es')));
+
+      expect(find.bySemanticsLabel('Atrás'), findsOneWidget);
+      expect(find.bySemanticsLabel('Back'), findsNothing);
+    });
+
+    testWidgets('an explicit label still wins over the localized default', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          supportedLocales: const [Locale('en'), Locale('es')],
+          theme: VineTheme.theme,
+          home: const Scaffold(
+            appBar: DiVineAppBar(
+              title: 'Test',
+              showBackButton: true,
+              backButtonSemanticLabel: 'Volver al perfil',
+            ),
+            body: SizedBox.shrink(),
+          ),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Volver al perfil'), findsOneWidget);
+      expect(find.bySemanticsLabel('Atrás'), findsNothing);
     });
   });
 }

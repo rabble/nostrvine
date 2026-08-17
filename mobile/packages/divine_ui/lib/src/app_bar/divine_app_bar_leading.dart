@@ -19,7 +19,7 @@ class DiVineAppBarLeading extends StatelessWidget {
     required this.onLeadingPressed,
     required this.style,
     this.backButtonSemanticLabel,
-    this.backButtonTooltip = 'Back',
+    this.backButtonTooltip,
     this.backButtonHeroTag,
     this.menuButtonSemanticLabel = 'Open menu',
     this.menuButtonTooltip = 'Menu',
@@ -48,14 +48,16 @@ class DiVineAppBarLeading extends StatelessWidget {
 
   /// Custom semantic label for the back button.
   ///
-  /// When provided, overrides the default 'Go back' label and suppresses the
-  /// tooltip to avoid iOS merging both into the accessibility text.
+  /// When provided, overrides the default label and suppresses the tooltip to
+  /// avoid iOS merging both into the accessibility text.
   final String? backButtonSemanticLabel;
 
   /// Tooltip for the back button.
   ///
-  /// Shown when [backButtonSemanticLabel] is null. Defaults to `'Back'`.
-  final String backButtonTooltip;
+  /// Shown when [backButtonSemanticLabel] is null. Defaults to
+  /// [MaterialLocalizations.backButtonTooltip], which Flutter translates for
+  /// every supported locale.
+  final String? backButtonTooltip;
 
   /// Optional hero tag to wrap the back button in a [Hero] widget.
   final Object? backButtonHeroTag;
@@ -103,12 +105,23 @@ class DiVineAppBarLeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (showBackButton) {
+      // divine_ui stays free of the app's AppLocalizations, but Flutter's own
+      // MaterialLocalizations is already translated for every supported locale
+      // and is registered by any app that ships GlobalMaterialLocalizations.
+      // Defaulting here fixes all 92 call sites at once; before this the
+      // hardcoded 'Go back' shipped untranslated to 21 locales because only 6
+      // callers passed backButtonSemanticLabel.
+      final defaultBackLabel = MaterialLocalizations.of(
+        context,
+      ).backButtonTooltip;
       final button = _LeadingIconButton(
         icon: const SvgIconSource(backIconAsset),
         onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-        semanticLabel: backButtonSemanticLabel ?? 'Go back',
+        semanticLabel: backButtonSemanticLabel ?? defaultBackLabel,
         semanticIdentifier: backButtonSemanticId,
-        tooltip: backButtonSemanticLabel == null ? backButtonTooltip : null,
+        tooltip: backButtonSemanticLabel == null
+            ? (backButtonTooltip ?? defaultBackLabel)
+            : null,
         style: style,
         expandHitArea: expandHitArea,
       );
