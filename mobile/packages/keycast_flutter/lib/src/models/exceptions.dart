@@ -75,14 +75,15 @@ class InvalidKeyException extends KeycastException {
 
 /// Thrown when an RPC is attempted on a KeycastRpc after close().
 ///
-/// Extends [RpcException] — not [StateError] — deliberately: close racing an
+/// Extends [KeycastException] — not [StateError] — deliberately: close racing an
 /// in-flight call (e.g. sign-out while a token refresh is parked) is expected
 /// teardown, not a programming-invariant violation. The error-handling matrix
 /// classifies `StateError` as Crashlytics-reportable, and as an `Error` it also
 /// escapes `on Exception` handlers, which would turn routine teardown into an
-/// uncaught error. Without [TransientSignerFailure] it stays terminal: a
-/// closed signer is never retried.
-class KeycastRpcClosedException extends RpcException {
+/// uncaught error. It deliberately stays outside [RpcException] so capability
+/// fallbacks do not mistake a closed client for an unsupported method. Without
+/// [TransientSignerFailure] it stays terminal: a closed signer is never retried.
+class KeycastRpcClosedException extends KeycastException {
   KeycastRpcClosedException([String? message])
     : super(message ?? 'KeycastRpc is closed');
 }

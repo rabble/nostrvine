@@ -917,6 +917,19 @@ void main() {
         'sig': 'b' * 128,
       };
 
+      test('throws when the RPC is closed', () async {
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        )..close();
+
+        await expectLater(
+          rpc.nip17UnwrapBatch([giftWrap('1')]),
+          throwsA(isA<KeycastRpcClosedException>()),
+        );
+      });
+
       test('posts the verb with the gift-wrap list and parses ordered '
           'slots', () async {
         final wraps = [giftWrap('11'), giftWrap('22')];

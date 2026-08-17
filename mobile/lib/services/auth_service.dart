@@ -804,11 +804,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           return;
         }
-        // Deliberately does NOT close the previous signer, unlike the
-        // sign-out/dispose sites: the live NostrClient still holds it (#5909
-        // keeps that client across a same-pubkey re-emission), so closing it
-        // here strands every publish on the retained client until the client
-        // is rebuilt or disposed. See [KeycastRpc.close].
+        // Keep the signer held by the live NostrClient across #5909's
+        // same-pubkey re-emission; closing it strands the retained client.
         _setKeycastSigner(_newKeycastSigner(refreshed), closePrevious: false);
         _currentIdentity = _buildIdentity();
         _hasExpiredOAuthSession = false;
@@ -2812,11 +2809,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _hasExpiredOAuthSession = false;
 
     try {
-      // Closing is safe: no live NostrClient holds the replaced signer on any caller of this path.
+      final closePrevious = session.userPubkey != currentPublicKeyHex;
       if (session.hasRpcAccess) {
-        _setKeycastSigner(_newKeycastSigner(session));
+        _setKeycastSigner(
+          _newKeycastSigner(session),
+          closePrevious: closePrevious,
+        );
       } else {
-        _setKeycastSigner(null);
+        _setKeycastSigner(null, closePrevious: closePrevious);
       }
 
       // Prefer the pubkey stored in the session over an RPC call.

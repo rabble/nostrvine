@@ -497,5 +497,48 @@ void main() {
         expect(retainedCalls, equals(1));
       },
     );
+
+    test(
+      'same-pubkey OAuth re-sign-in keeps signer retained by live client open',
+      () async {
+        var retainedCalls = 0;
+        final retainedRpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'retained_token',
+          httpClient: MockClient((request) async {
+            retainedCalls++;
+            return http.Response(jsonEncode({'result': 'ciphertext'}), 200);
+          }),
+        );
+        addTearDown(retainedRpc.close);
+
+        authService = createAuthService();
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(session),
+        );
+
+        authService.debugSetKeycastSigner(retainedRpc);
+        final retainedIdentity = KeycastNostrIdentity(
+          pubkey: matchingContainer.publicKeyHex,
+          rpcSigner: retainedRpc,
+        );
+        authService.debugSetIdentity(retainedIdentity);
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(
+            session.copyWith(accessToken: 'refreshed_access_token'),
+          ),
+        );
+
+        expect(
+          await retainedIdentity.nip44Encrypt(
+            otherContainer.publicKeyHex,
+            'hello',
+          ),
+          equals('ciphertext'),
+        );
+        expect(retainedCalls, equals(1));
+      },
+    );
   });
 }
