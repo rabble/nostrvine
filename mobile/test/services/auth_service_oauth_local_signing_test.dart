@@ -429,15 +429,21 @@ void main() {
         );
         addTearDown(retainedRpc.close);
 
-        final upgradedRpc = KeycastRpc(
-          nostrApi: 'https://login.divine.video/api/nostr',
-          accessToken: 'upgraded_token',
-          httpClient: MockClient((request) async {
-            return http.Response(jsonEncode({'result': 'unused'}), 200);
-          }),
-        );
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            matchingContainer.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => matchingContainer);
 
         authService = createAuthService();
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(session),
+        );
+
+        // Stand in for the signer the live NostrClient was built with: #5909
+        // keeps that client across a same-pubkey re-emission, so it holds this
+        // identity — and this RPC — after AuthService moves on.
         authService.debugSetKeycastSigner(retainedRpc);
         final retainedIdentity = KeycastNostrIdentity(
           pubkey: matchingContainer.publicKeyHex,
@@ -445,18 +451,48 @@ void main() {
         );
         authService.debugSetIdentity(retainedIdentity);
 
-        // Same-pubkey RPC upgrade replaces AuthService's current signer, but
-        // NostrService deliberately retains its live client and the identity
-        // object injected into that client. That retained identity's RPC must
-        // stay usable until the client is actually rebuilt or disposed.
-        authService.debugSetKeycastSigner(upgradedRpc, closePrevious: false);
+        // Drive the real upgrade rather than calling the seam with
+        // `closePrevious: false` ourselves: the behaviour under test is
+        // _upgradeDivineRpcInBackground *choosing* not to close, so the test
+        // must go red if that call site stops passing the flag.
+        // No stored RPC session on resume forces the refresh branch.
+        when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => KeycastSession(
+            bunkerUrl: 'https://keycast.example.com',
+            accessToken: 'refreshed_access_token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+            refreshToken: 'refreshed_refresh_token',
+            userPubkey: matchingContainer.publicKeyHex,
+          ),
+        );
 
+        await _ignoringDiscoveryErrors(() async {
+          authService.onAppResumed();
+          await pumpEventQueue();
+        });
+
+        expect(
+          authService.currentIdentity,
+          isNot(same(retainedIdentity)),
+          reason:
+              'The upgrade must have reached the signer swap and rebuilt the '
+              'identity — otherwise this test passes vacuously without ever '
+              'exercising the close decision.',
+        );
         expect(
           await retainedIdentity.nip44Encrypt(
             otherContainer.publicKeyHex,
             'hello',
           ),
           equals('ciphertext'),
+          reason:
+              'The RPC still held by the live NostrClient must survive the '
+              'upgrade; closing it strands every publish on that client.',
         );
         expect(retainedCalls, equals(1));
       },
