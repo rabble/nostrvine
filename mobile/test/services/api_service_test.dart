@@ -210,12 +210,16 @@ void main() {
       );
     });
 
-    group('User-Agent header', () {
+    group('client identity headers', () {
       test(
-        'sends app version and platform, not the old divine-Mobile literal',
+        'sends app version, platform, and X-Divine-Platform via injection, '
+        'not the old divine-Mobile literal',
         () async {
-          addTearDown(() => AppVersion.current = 'unknown');
-          AppVersion.current = '1.0.20';
+          final injected = ApiService(
+            client: mockClient,
+            relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
+            appVersion: () => '1.0.20',
+          );
 
           final mockResponse = MockResponse();
           when(() => mockResponse.statusCode).thenReturn(200);
@@ -225,7 +229,7 @@ void main() {
             () => mockClient.get(any(), headers: any(named: 'headers')),
           ).thenAnswer((_) async => mockResponse);
 
-          await apiService.getMinorAccountReviewStatus();
+          await injected.getMinorAccountReviewStatus();
 
           final captured = verify(
             () => mockClient.get(any(), headers: captureAny(named: 'headers')),
@@ -240,8 +244,31 @@ void main() {
             ),
           );
           expect(headers['User-Agent'], isNot('divine-Mobile/1.0'));
+          expect(
+            headers['X-Divine-Platform'],
+            matches(RegExp(r'^(ios|android|macos|linux|windows|web)$')),
+          );
         },
       );
+
+      test('falls back to AppVersion.current when nothing is injected', () {
+        addTearDown(() => AppVersion.current = 'unknown');
+        AppVersion.current = '9.9.9';
+
+        final fallback = ApiService(
+          client: mockClient,
+          relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
+        );
+
+        expect(
+          fallback.userAgentForTest,
+          matches(
+            RegExp(
+              r'^Divine-Mobile/9\.9\.9 \((iOS|Android|macOS|Linux|Windows|Web)\)$',
+            ),
+          ),
+        );
+      });
     });
 
     group('ApiException', () {

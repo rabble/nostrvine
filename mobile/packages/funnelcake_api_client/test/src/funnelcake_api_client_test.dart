@@ -1269,7 +1269,41 @@ void main() {
           matches(RegExp(r'^Divine-Mobile/\S+ \(\w[\w.]*\)$')),
         );
         expect(headers['User-Agent'], isNot('OpenVine-Mobile/1.0'));
+        expect(
+          headers['X-Divine-Platform'],
+          matches(RegExp(r'^[a-z][a-z0-9_]*$')),
+        );
       });
+
+      test(
+        'wires the appVersion constructor parameter into the header',
+        () async {
+          final versionedClient = FunnelcakeApiClient(
+            baseUrl: 'https://api.divine.video',
+            httpClient: mockHttpClient,
+            appVersion: '1.0.20',
+          );
+          addTearDown(versionedClient.dispose);
+
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response('[]', 200));
+
+          await versionedClient.getVideosByAuthor(pubkey: testPubkey);
+
+          final captured = verify(
+            () => mockHttpClient.get(
+              any(),
+              headers: captureAny(named: 'headers'),
+            ),
+          ).captured;
+          final headers = captured.whereType<Map<String, String>>().last;
+          expect(
+            headers['User-Agent'],
+            matches(RegExp(r'^Divine-Mobile/1\.0\.20 \(\w[\w.]*\)$')),
+          );
+        },
+      );
 
       test('filters out videos with empty id', () async {
         const responseWithEmptyId =
@@ -5090,6 +5124,10 @@ void main() {
           matches(RegExp(r'^Divine-Mobile/\S+ \(\w[\w.]*\)$')),
         );
         expect(headers['User-Agent'], isNot('OpenVine-Mobile/1.0'));
+        expect(
+          headers['X-Divine-Platform'],
+          matches(RegExp(r'^[a-z][a-z0-9_]*$')),
+        );
       });
 
       test('throws FunnelcakeNotConfiguredException when not available', () {

@@ -11,3 +11,8 @@ String get divinePlatformLabel => switch (Platform.operatingSystem) {
   'linux' => 'Linux',
   _ => Platform.operatingSystem,
 };
+
+/// Machine platform token for the `X-Divine-Platform` header on io platforms.
+/// `dart:io` already reports lowercase tokens (`ios`, `android`, …), which is
+/// the casing Funnelcake compares against (case-insensitively).
+String get divinePlatformToken => Platform.operatingSystem;

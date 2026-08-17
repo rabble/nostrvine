@@ -76,8 +76,6 @@ class FunnelcakeApiClient {
 
   final String? _appVersion;
 
-  String get _userAgent => buildDivineUserAgent(appVersion: _appVersion);
-
   /// Total attempts an idempotent GET makes before giving up.
   ///
   /// Reads retry because a flaky last mile is far more likely than the API
@@ -182,7 +180,7 @@ class FunnelcakeApiClient {
               uri,
               headers: {
                 'Accept': 'application/json',
-                'User-Agent': _userAgent,
+                ...buildDivineClientHeaders(appVersion: _appVersion),
               },
             )
             .timeout(remaining());
@@ -243,7 +241,7 @@ class FunnelcakeApiClient {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'User-Agent': _userAgent,
+            ...buildDivineClientHeaders(appVersion: _appVersion),
           },
           body: jsonEncode(body),
         )
@@ -2796,7 +2794,7 @@ class FunnelcakeApiClient {
             url,
             headers: {
               'Accept': 'application/json',
-              'User-Agent': _userAgent,
+              ...buildDivineClientHeaders(appVersion: _appVersion),
               ...?authHeaders,
             },
           )
@@ -2863,7 +2861,7 @@ class FunnelcakeApiClient {
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
-              'User-Agent': _userAgent,
+              ...buildDivineClientHeaders(appVersion: _appVersion),
               ...?authHeaders,
             },
             body: payload,

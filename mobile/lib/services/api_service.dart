@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:openvine/config/app_version.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -27,9 +28,11 @@ class ApiService {
     required String relayManagerBaseUrl,
     http.Client? client,
     Nip98AuthService? authService,
+    String Function()? appVersion,
   }) : _relayManagerBaseUrl = relayManagerBaseUrl,
        _client = client ?? http.Client(),
-       _authService = authService;
+       _authService = authService,
+       _appVersion = appVersion ?? (() => AppVersion.current);
 
   /// Relay-manager worker base URL (minor-account-review endpoints live
   /// there, not on the main backend — divine-relay-manager#108). Injected
@@ -41,6 +44,15 @@ class ApiService {
 
   final http.Client _client;
   final Nip98AuthService? _authService;
+
+  /// Resolves the app version per request; captured once at construction so
+  /// tests can inject a stable value instead of mutating [AppVersion.current].
+  final String Function() _appVersion;
+
+  /// The User-Agent this service sends; exposed for tests.
+  @visibleForTesting
+  String get userAgentForTest =>
+      buildDivineUserAgent(appVersion: _appVersion());
 
   /// Get current account restriction and minor-account review status.
   Future<Map<String, dynamic>> getMinorAccountReviewStatus() async {
@@ -128,7 +140,7 @@ class ApiService {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': buildDivineUserAgent(appVersion: AppVersion.current),
+      ...buildDivineClientHeaders(appVersion: _appVersion()),
     };
 
     // Add NIP-98 authentication if available
