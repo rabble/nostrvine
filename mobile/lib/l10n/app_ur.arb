@@ -7045,5 +7045,7 @@
   "socialProofFollowsYou": "آپ کو فالو کرتا ہے",
   "socialProofYouFollow": "آپ فالو کرتے ہیں",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} فالوور} other{{formattedCount} فالوورز}}",
-  "searchUserVideoCount": "{count, plural, =1{{formattedCount} ویڈیو} other{{formattedCount} ویڈیوز}}"
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} ویڈیو} other{{formattedCount} ویڈیوز}}",
+  "feedOutageMessage": "ابھی ویڈیوز لوڈ نہیں ہو رہیں۔\nمسئلہ ہماری طرف سے ہے، ہم اسے ٹھیک کر رہے ہیں۔",
+  "feedOfflineMessage": "آپ آف لائن ہیں۔\nاپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔"
 }

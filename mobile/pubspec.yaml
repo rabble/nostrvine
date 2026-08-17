@@ -46,6 +46,7 @@ workspace:
   - packages/db_client
   - packages/divine_camera
   - packages/divine_quick_actions
+  - packages/divine_status_client
   - packages/dm_repository
   - packages/divine_video_player
   - packages/feed_repository
@@ -252,6 +253,9 @@ dependencies:
   nostr_key_manager:
 
   keycast_flutter:
+
+  # Divine Status Client - component health from status.divine.video
+  divine_status_client:
 
   # Follow Repository - Follow relationship management
   follow_repository:

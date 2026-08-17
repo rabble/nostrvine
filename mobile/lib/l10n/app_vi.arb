@@ -7045,5 +7045,7 @@
   "socialProofFollowsYou": "Đang theo dõi bạn",
   "socialProofYouFollow": "Bạn đang theo dõi",
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} người theo dõi}}",
-  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}"
+  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}",
+  "feedOutageMessage": "Hiện không tải được video.\nLỗi từ phía chúng tôi — chúng tôi đang khắc phục.",
+  "feedOfflineMessage": "Bạn đang ngoại tuyến.\nKiểm tra kết nối rồi thử lại."
 }

@@ -11855,4 +11855,11 @@ class AppLocalizationsAm extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'ቪዲዮዎች አሁን እየተጫኑ አይደሉም።\nችግሩ የእኛ ነው፤ እየሠራንበት ነው።';
+
+  @override
+  String get feedOfflineMessage => 'ከመስመር ውጭ ነዎት።\nግንኙነትዎን አረጋግጠው እንደገና ይሞክሩ።';
 }

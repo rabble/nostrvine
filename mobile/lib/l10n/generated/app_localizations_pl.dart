@@ -12412,4 +12412,12 @@ class AppLocalizationsPl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Filmy się teraz nie ładują.\nTo po naszej stronie — już to naprawiamy.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Jesteś offline.\nSprawdź połączenie i spróbuj ponownie.';
 }

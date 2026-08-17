@@ -12117,4 +12117,12 @@ class AppLocalizationsId extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Video sedang tidak bisa dimuat.\nIni dari kami, bukan kamu — sedang kami perbaiki.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Kamu sedang offline.\nPeriksa koneksimu lalu coba lagi.';
 }

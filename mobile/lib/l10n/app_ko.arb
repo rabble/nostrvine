@@ -4561,5 +4561,7 @@
   "socialProofFollowsYou": "나를 팔로우함",
   "socialProofYouFollow": "팔로우 중",
   "socialProofFollowerCount": "{count, plural, other{팔로워 {formattedCount}명}}",
-  "searchUserVideoCount": "{count, plural, other{영상 {formattedCount}개}}"
+  "searchUserVideoCount": "{count, plural, other{영상 {formattedCount}개}}",
+  "feedOutageMessage": "지금 영상을 불러올 수 없어요.\n저희 문제예요. 고치는 중이에요.",
+  "feedOfflineMessage": "오프라인 상태예요.\n연결을 확인하고 다시 시도해 주세요."
 }

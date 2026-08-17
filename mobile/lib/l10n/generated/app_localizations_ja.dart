@@ -11594,4 +11594,10 @@ class AppLocalizationsJa extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage => 'いま動画を読み込めません。\nこちらの不具合だよ。すぐ直すね。';
+
+  @override
+  String get feedOfflineMessage => 'オフラインだよ。\n接続を確認して、もう一度試してね。';
 }

@@ -12322,4 +12322,12 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Hindi nagloload ang mga video ngayon.\nSa amin ito, hindi sa iyo — inaayos na namin.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Offline ka.\nTingnan ang koneksyon mo at subukan ulit.';
 }

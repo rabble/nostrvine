@@ -5215,5 +5215,7 @@
   "socialProofFollowsYou": "Seni takip ediyor",
   "socialProofYouFollow": "Takip ediyorsun",
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} takipçi}}",
-  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}"
+  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}",
+  "feedOutageMessage": "Videolar şu anda yüklenmiyor.\nSorun bizde, sende değil — üzerinde çalışıyoruz.",
+  "feedOfflineMessage": "Çevrimdışısın.\nBağlantını kontrol edip tekrar dene."
 }

@@ -5215,5 +5215,7 @@
   "socialProofFollowsYou": "フォローされています",
   "socialProofYouFollow": "フォロー中",
   "socialProofFollowerCount": "{count, plural, other{フォロワー{formattedCount}人}}",
-  "searchUserVideoCount": "{count, plural, other{{formattedCount}本の動画}}"
+  "searchUserVideoCount": "{count, plural, other{{formattedCount}本の動画}}",
+  "feedOutageMessage": "いま動画を読み込めません。\nこちらの不具合だよ。すぐ直すね。",
+  "feedOfflineMessage": "オフラインだよ。\n接続を確認して、もう一度試してね。"
 }

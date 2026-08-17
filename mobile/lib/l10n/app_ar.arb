@@ -5215,5 +5215,7 @@
   "socialProofFollowsYou": "يتابعك",
   "socialProofYouFollow": "تتابعه",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} متابِع} other{{formattedCount} متابِع}}",
-  "searchUserVideoCount": "{count, plural, =1{{formattedCount} فيديو} other{{formattedCount} فيديو}}"
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} فيديو} other{{formattedCount} فيديو}}",
+  "feedOutageMessage": "الفيديوهات لا تُحمَّل الآن.\nالمشكلة من عندنا، ونحن نصلحها.",
+  "feedOfflineMessage": "أنت غير متصل.\nتحقق من اتصالك وحاول مرة أخرى."
 }

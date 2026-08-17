@@ -11619,4 +11619,10 @@ class AppLocalizationsKo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage => '지금 영상을 불러올 수 없어요.\n저희 문제예요. 고치는 중이에요.';
+
+  @override
+  String get feedOfflineMessage => '오프라인 상태예요.\n연결을 확인하고 다시 시도해 주세요.';
 }

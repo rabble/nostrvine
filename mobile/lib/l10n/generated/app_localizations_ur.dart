@@ -12160,4 +12160,12 @@ class AppLocalizationsUr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'ابھی ویڈیوز لوڈ نہیں ہو رہیں۔\nمسئلہ ہماری طرف سے ہے، ہم اسے ٹھیک کر رہے ہیں۔';
+
+  @override
+  String get feedOfflineMessage =>
+      'آپ آف لائن ہیں۔\nاپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔';
 }

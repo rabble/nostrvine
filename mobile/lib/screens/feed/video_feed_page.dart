@@ -450,10 +450,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
                 // Error state
                 if (state.status == VideoFeedStatus.failure) {
-                  return FeedErrorWidget(
-                    error: state.error,
-                    onRetry: () => _refreshFeed(context),
-                  );
+                  return FeedErrorWidget(onRetry: () => _refreshFeed(context));
                 }
 
                 // Empty state
