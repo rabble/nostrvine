@@ -48,10 +48,12 @@ class FeedErrorView extends StatelessWidget {
     final state = context.watch<OutageNoticeCubit>().state;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+      // Scrollable so a long operator message — an operator writes this, and
+      // could paste a paragraph — cannot push the Retry button off-screen or
+      // overflow the column during the incident it is explaining.
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           spacing: 16,
           children: [
