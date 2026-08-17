@@ -2,6 +2,7 @@
 // ABOUTME: Manages subscriptions, queries, COUNT queries, and pending messages.
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:developer';
 
 import '../count_response.dart';
@@ -14,6 +15,8 @@ import 'relay_status.dart';
 enum WriteAccess { readOnly, writeOnly, readWrite, nothing }
 
 abstract class Relay {
+  static const int _recentSentEventLimit = 64;
+
   final String url;
 
   RelayStatus relayStatus;
@@ -33,6 +36,9 @@ abstract class Relay {
 
   // queries
   final Map<String, Subscription> _queries = {};
+
+  final LinkedHashMap<String, List<dynamic>> _recentSentEvents =
+      LinkedHashMap<String, List<dynamic>>();
 
   // NIP-45 COUNT queries
   final Map<String, Completer<CountResponse>> _countQueries = {};
@@ -136,6 +142,24 @@ abstract class Relay {
   bool _isReqNaming(List<dynamic> message, Set<String> ids) =>
       message.length > 1 && message[0] == 'REQ' && ids.contains(message[1]);
 
+  void retainSentEvent(String eventId, List<dynamic> message) {
+    _recentSentEvents.remove(eventId);
+    _recentSentEvents[eventId] = List<dynamic>.from(message);
+    while (_recentSentEvents.length > _recentSentEventLimit) {
+      _recentSentEvents.remove(_recentSentEvents.keys.first);
+    }
+  }
+
+  List<dynamic>? takeSentEvent(String eventId) =>
+      _recentSentEvents.remove(eventId);
+
+  void forgetSentEvent(String eventId) {
+    _recentSentEvents.remove(eventId);
+  }
+
+  bool hasRetainedSentEvent(String eventId) =>
+      _recentSentEvents.containsKey(eventId);
+
   /// Re-sends every REQ this relay is still holding on the fresh socket.
   ///
   /// `skipReconnect` matches how these REQs were sent the first time
@@ -170,7 +194,6 @@ abstract class Relay {
   /// queue the message after it has expired.
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,

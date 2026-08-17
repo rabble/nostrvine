@@ -333,7 +333,7 @@ class NostrRemoteSigner extends NostrSigner {
           );
           for (var entry in _pendingRequestEvents.entries) {
             log('[NIP46] _reconnectRelay: resending request id=${entry.key}');
-            relay.send(entry.value, forceSend: true);
+            relay.send(entry.value);
           }
         }
       } else {
@@ -466,7 +466,7 @@ class NostrRemoteSigner extends NostrSigner {
           log(
             '[NIP46] sendAndWaitForResult: sending to ${relay.relayStatus.addr}, connected=${relay.relayStatus.connected}',
           );
-          relay.send(json, forceSend: true);
+          relay.send(json);
         }
 
         log(

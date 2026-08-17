@@ -60,7 +60,6 @@ class _AuthFakeRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -101,6 +100,11 @@ void main() {
     expect(id, isA<String>());
     return id as String;
   }
+
+  List<dynamic> eventMessage(String eventId) => [
+    'EVENT',
+    {'id': eventId, 'kind': EventKind.giftWrap},
+  ];
 
   group('RelayPool AUTH branch empty-pubkey guard', () {
     Relay dummyTempRelay(String url) => RelayBase(url, RelayStatus(url));
@@ -197,10 +201,7 @@ void main() {
       const eventId =
           '1111111111111111111111111111111111111111111111111111111111111111';
       final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
-        [
-          'EVENT',
-          {'id': eventId, 'kind': EventKind.giftWrap},
-        ],
+        eventMessage(eventId),
         eventId: eventId,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
@@ -267,10 +268,7 @@ void main() {
       const eventId =
           '3333333333333333333333333333333333333333333333333333333333333333';
       final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
-        [
-          'EVENT',
-          {'id': eventId, 'kind': EventKind.giftWrap},
-        ],
+        eventMessage(eventId),
         eventId: eventId,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
@@ -299,10 +297,7 @@ void main() {
       const eventId =
           '2222222222222222222222222222222222222222222222222222222222222222';
       final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
-        [
-          'EVENT',
-          {'id': eventId, 'kind': EventKind.giftWrap},
-        ],
+        eventMessage(eventId),
         eventId: eventId,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
@@ -342,10 +337,7 @@ void main() {
       const eventId =
           '4444444444444444444444444444444444444444444444444444444444444444';
       final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
-        [
-          'EVENT',
-          {'id': eventId, 'kind': EventKind.giftWrap},
-        ],
+        eventMessage(eventId),
         eventId: eventId,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
@@ -378,10 +370,7 @@ void main() {
       const eventId =
           '5555555555555555555555555555555555555555555555555555555555555555';
       final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
-        [
-          'EVENT',
-          {'id': eventId, 'kind': EventKind.giftWrap},
-        ],
+        eventMessage(eventId),
         eventId: eventId,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
@@ -420,10 +409,7 @@ void main() {
       const eventId =
           '7777777777777777777777777777777777777777777777777777777777777777';
       final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
-        [
-          'EVENT',
-          {'id': eventId, 'kind': EventKind.giftWrap},
-        ],
+        eventMessage(eventId),
         eventId: eventId,
         targetRelays: [relay.url],
         timeout: const Duration(milliseconds: 10),
@@ -462,10 +448,7 @@ void main() {
       );
       expect(added, isTrue);
       final outcomeFuture = unauthenticatedNostr.relayPool.sendEventAwaitOk(
-        [
-          'EVENT',
-          {'id': eventId, 'kind': EventKind.giftWrap},
-        ],
+        eventMessage(eventId),
         eventId: eventId,
         targetRelays: [unauthenticatedRelay.url],
         timeout: const Duration(seconds: 1),
@@ -495,10 +478,7 @@ void main() {
         const eventId =
             '6666666666666666666666666666666666666666666666666666666666666666';
         final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
-          [
-            'EVENT',
-            {'id': eventId, 'kind': EventKind.giftWrap},
-          ],
+          eventMessage(eventId),
           eventId: eventId,
           targetRelays: [relay.url],
           timeout: const Duration(seconds: 1),
@@ -534,6 +514,149 @@ void main() {
           hasLength(2),
           reason: 'the resend is attempted once before giving up',
         );
+      },
+    );
+  });
+
+  group('RelayPool temp relay auth-required publish retry', () {
+    late LocalNostrSigner signer;
+    late Nostr nostr;
+    late _AuthFakeRelay tempRelay;
+
+    setUp(() async {
+      signer = LocalNostrSigner(testPrivateKey);
+      nostr = Nostr(signer, [], (url) {
+        tempRelay = _AuthFakeRelay(url);
+        return tempRelay;
+      });
+      await nostr.refreshPublicKey();
+    });
+
+    test(
+      'republishes a fire-and-forget temp relay EVENT after NIP-42 succeeds',
+      () async {
+        const relayUrl = 'wss://temp-auth-required.example';
+        const eventId =
+            '9999999999999999999999999999999999999999999999999999999999999999';
+
+        final sent = await nostr.relayPool.send(
+          eventMessage(eventId),
+          tempRelays: [relayUrl],
+        );
+
+        expect(sent, isTrue);
+        expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(1));
+        expect(tempRelay.hasRetainedSentEvent(eventId), isTrue);
+
+        await tempRelay.deliver([
+          'OK',
+          eventId,
+          false,
+          'auth-required: you must auth',
+        ]);
+        expect(tempRelay.pendingAuthedMessages, hasLength(1));
+        expect(tempRelay.hasRetainedSentEvent(eventId), isFalse);
+
+        await tempRelay.deliver(['AUTH', challenge]);
+        final authEventId = sentAuthEventId(tempRelay);
+        await tempRelay.deliver(['OK', authEventId, true, '']);
+
+        expect(
+          sentMessagesOfType(tempRelay, 'EVENT'),
+          hasLength(2),
+          reason: 'the original EVENT should be retried once after AUTH',
+        );
+
+        await tempRelay.deliver(['OK', eventId, true, '']);
+        expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(2));
+      },
+    );
+
+    test('parks known-auth temp relay EVENT until AUTH succeeds', () async {
+      const relayUrl = 'wss://temp-known-auth.example';
+      const eventId =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      nostr = Nostr(signer, [], (url) {
+        tempRelay = _AuthFakeRelay(url)
+          ..relayStatus.alwaysAuth = true
+          ..relayStatus.authed = false;
+        return tempRelay;
+      });
+      await nostr.refreshPublicKey();
+
+      final sent = await nostr.relayPool.send(
+        eventMessage(eventId),
+        tempRelays: [relayUrl],
+      );
+
+      expect(sent, isTrue);
+      expect(sentMessagesOfType(tempRelay, 'EVENT'), isEmpty);
+      expect(tempRelay.pendingAuthedMessages, hasLength(1));
+
+      await tempRelay.deliver(['AUTH', challenge]);
+      final authEventId = sentAuthEventId(tempRelay);
+      await tempRelay.deliver(['OK', authEventId, true, '']);
+
+      expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(1));
+      expect(tempRelay.pendingAuthedMessages, isEmpty);
+    });
+
+    test(
+      'drops retained fire-and-forget temp relay EVENT on OK true',
+      () async {
+        const relayUrl = 'wss://temp-no-auth.example';
+        const eventId =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+        final sent = await nostr.relayPool.send(
+          eventMessage(eventId),
+          tempRelays: [relayUrl],
+        );
+
+        expect(sent, isTrue);
+        expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(1));
+        expect(tempRelay.hasRetainedSentEvent(eventId), isTrue);
+
+        await tempRelay.deliver(['OK', eventId, true, '']);
+
+        expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(1));
+        expect(tempRelay.hasRetainedSentEvent(eventId), isFalse);
+      },
+    );
+
+    test(
+      'republishes an awaited temp relay EVENT after NIP-42 succeeds',
+      () async {
+        const relayUrl = 'wss://temp-awaited-auth-required.example';
+        const eventId =
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+        final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+          eventMessage(eventId),
+          eventId: eventId,
+          tempRelays: [relayUrl],
+          timeout: const Duration(seconds: 1),
+        );
+
+        expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(1));
+
+        await tempRelay.deliver([
+          'OK',
+          eventId,
+          false,
+          'auth-required: you must auth',
+        ]);
+        await tempRelay.deliver(['AUTH', challenge]);
+        final authEventId = sentAuthEventId(tempRelay);
+        await tempRelay.deliver(['OK', authEventId, true, '']);
+
+        expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(2));
+
+        await tempRelay.deliver(['OK', eventId, true, '']);
+        final outcome = await outcomeFuture;
+
+        expect(outcome.confirmed, isTrue);
+        expect(outcome.acceptedBy, equals([relayUrl]));
+        expect(outcome.rejectedBy, isEmpty);
       },
     );
   });

@@ -26,7 +26,6 @@ class _RequeueingRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,

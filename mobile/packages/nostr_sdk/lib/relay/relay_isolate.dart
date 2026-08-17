@@ -98,7 +98,6 @@ class RelayIsolate extends Relay {
   @override
   Future<bool> send(
     List message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,

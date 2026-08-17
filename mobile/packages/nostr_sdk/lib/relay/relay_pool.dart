@@ -395,6 +395,24 @@ class RelayPool {
         !relay.relayStatus.authed;
   }
 
+  String? _untrackedEventId(List<dynamic> message) {
+    if (message.length < 2 || message[0] != 'EVENT') return null;
+    final event = message[1];
+    if (event is! Map) return null;
+    final eventId = event['id'];
+    if (eventId is! String) return null;
+    if (_pendingPublishes.containsKey(eventId)) return null;
+    return eventId;
+  }
+
+  String? _retainUntrackedEvent(Relay relay, List<dynamic> message) {
+    final eventId = _untrackedEventId(message);
+    if (eventId != null) {
+      relay.retainSentEvent(eventId, message);
+    }
+    return eventId;
+  }
+
   void _trackAuthRequiredPublish({
     required Relay relay,
     required List<dynamic> message,
@@ -622,7 +640,7 @@ class RelayPool {
         log('🔐 Auth-required query - sending to trigger AUTH challenge');
         relay.saveQuery(subscription);
         final result = await relay
-            .send(message, forceSend: true)
+            .send(message)
             .timeout(perRelaySendTimeout, onTimeout: () => false);
         if (!result) {
           log(
@@ -1505,6 +1523,24 @@ class RelayPool {
           _removeAuthRequiredPublish(eventId, relay.url);
           publishTracker.onRejected(relay.url, message);
         }
+      } else if (success) {
+        relay.forgetSentEvent(eventId);
+      } else if (_shouldRetryPublishAfterAuth(
+        relay: relay,
+        eventId: eventId,
+        message: message,
+      )) {
+        final originalMessage = relay.takeSentEvent(eventId);
+        if (originalMessage != null) {
+          relay.relayStatus.alwaysAuth = true;
+          relay.pendingAuthedMessages.add(originalMessage);
+          log(
+            '🔐 Queueing untracked auth-required EVENT for post-AUTH retry '
+            'eventId=$eventId relay=${relay.url}',
+          );
+        }
+      } else {
+        relay.forgetSentEvent(eventId);
       }
 
       // Check if this is responding to our AUTH event
@@ -1604,7 +1640,7 @@ class RelayPool {
           // Track this AUTH event to match with OK response
           _pendingAuthEvents[event.id] = relay.url;
 
-          relay.send(["AUTH", event.toJson()], forceSend: true);
+          relay.send(["AUTH", event.toJson()]);
           log('🔐 AUTH response sent, waiting for relay confirmation...');
 
           if (relay.pendingAuthedMessages.isNotEmpty) {
@@ -1817,7 +1853,7 @@ class RelayPool {
           '🔐 Auth-required subscription - sending to trigger AUTH challenge',
         );
         final result = await relay
-            .send(message, forceSend: true)
+            .send(message)
             .timeout(perRelaySendTimeout, onTimeout: () => false);
         if (result) {
           return true;
@@ -2154,14 +2190,10 @@ class RelayPool {
             log(
               '🔐 Deadline-bound auth publish - sending to trigger AUTH challenge',
             );
+            final retainedEventId = _retainUntrackedEvent(relay, message);
             var timedOut = false;
             var result = await relay
-                .send(
-                  message,
-                  forceSend: true,
-                  queueIfFailed: false,
-                  deadline: deadline,
-                )
+                .send(message, queueIfFailed: false, deadline: deadline)
                 .timeout(
                   timeout,
                   onTimeout: () {
@@ -2182,6 +2214,8 @@ class RelayPool {
             }
             if (result) {
               sentTo.add(relay.url);
+            } else if (retainedEventId != null) {
+              relay.forgetSentEvent(retainedEventId);
             }
           } else {
             log('🔐 Queueing message for authentication: ${message[0]}');
@@ -2200,6 +2234,7 @@ class RelayPool {
           // while one dead relay tries exponential backoff (can hang the
           // publish for many minutes). Same convention as relayDoQuery /
           // relayDoSubscribe above.
+          final retainedEventId = _retainUntrackedEvent(relay, message);
           var timedOut = false;
           var result = await relay
               .send(
@@ -2228,6 +2263,8 @@ class RelayPool {
           }
           if (result) {
             sentTo.add(relay.url);
+          } else if (retainedEventId != null && deadline != null) {
+            relay.forgetSentEvent(retainedEventId);
           }
         }
       } catch (err) {
@@ -2249,9 +2286,21 @@ class RelayPool {
         if (timeout == Duration.zero) break;
 
         var tempRelay = checkAndGenTempRelay(tempRelayAddr);
+        if (tempRelay.relayStatus.alwaysAuth &&
+            !tempRelay.relayStatus.authed &&
+            deadline == null) {
+          log(
+            '🔐 Queueing temp relay message for authentication: ${message[0]}',
+          );
+          tempRelay.pendingAuthedMessages.add(message);
+          sentTo.add(tempRelay.url);
+          continue;
+        }
+
         // Same skipReconnect rationale as the main loop above: a fresh
         // tempRelay whose initial connection is still in-flight must not
         // block the publish.
+        final retainedEventId = _retainUntrackedEvent(tempRelay, message);
         var result = await tempRelay
             .send(
               message,
@@ -2271,6 +2320,9 @@ class RelayPool {
               },
             );
         if (!result) {
+          if (retainedEventId != null) {
+            tempRelay.forgetSentEvent(retainedEventId);
+          }
           removeExpiredTempRelay(tempRelay);
         }
         if (result) {
