@@ -52,6 +52,13 @@ void main() {
       return file;
     }
 
+    List<String> signedLeftovers() => tempDir
+        .listSync()
+        .whereType<File>()
+        .map((file) => file.uri.pathSegments.last)
+        .where((name) => name.startsWith('c2pa_signed_'))
+        .toList();
+
     group('failure classification', () {
       test('classifies iOS secure connection failures as TLS errors', () {
         final reason = C2paSigningService.classifyFailureReason(
@@ -163,13 +170,8 @@ void main() {
           // writing the signed file and for the cleanup to remove the orphan.
           await Future<void>.delayed(const Duration(milliseconds: 150));
 
-          final orphans = tempDir
-              .listSync()
-              .whereType<File>()
-              .where((f) => f.uri.pathSegments.last.startsWith('c2pa_signed_'))
-              .toList();
           expect(
-            orphans,
+            signedLeftovers(),
             isEmpty,
             reason:
                 'a signing call that finishes past the timeout must not leave '
@@ -180,13 +182,6 @@ void main() {
     });
 
     group('signVideo', () {
-      List<String> signedLeftovers() => tempDir
-          .listSync()
-          .whereType<File>()
-          .map((file) => file.uri.pathSegments.last)
-          .where((name) => name.startsWith('c2pa_signed_'))
-          .toList();
-
       test(
         'deletes the partial output when the native call throws (#7739)',
         () async {

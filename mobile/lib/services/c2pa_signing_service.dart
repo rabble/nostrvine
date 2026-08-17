@@ -29,6 +29,10 @@ abstract class C2paEditActions {
 /// High-level reason a C2PA signing operation failed.
 enum C2paSigningFailureReason {
   inputMissing,
+
+  /// Signing produced no usable output: either nothing was written, or the
+  /// file it wrote was empty. Both are reported here because neither can
+  /// replace the recording.
   outputMissing,
   tls,
   network,
