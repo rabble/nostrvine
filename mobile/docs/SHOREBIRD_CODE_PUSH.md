@@ -39,6 +39,25 @@ them. If a fix needs native changes, it needs a store release.
 The app is `mobile/shorebird.yaml` → `app_id`, owned by the **Divine**
 organization in Shorebird (not an individual's account).
 
+### Privacy disclosure
+
+Shorebird checks for patches when the app launches. The request includes a
+random identifier unique to that app installation, the app, release, and patch
+versions, update channel, platform, and device architecture. Shorebird also
+records patch download, installation, and failure status. This information is
+used to deliver updates, diagnose update failures, and produce aggregated
+update and active-install analytics. The installation identifier is not an
+advertising identifier and is not used for advertising or cross-app tracking.
+
+Keep the public privacy policy and store disclosures aligned with this
+behavior. In App Store Connect, disclose Device ID, Product Interaction, and
+Other Diagnostic Data for App Functionality and Analytics, without tracking.
+Mark them as not linked only while neither Divine nor Shorebird joins the
+installation identifier to Divine account data. In Google Play, disclose Device
+or other IDs, App interactions, and Diagnostics as required collection for App
+functionality and Analytics. Mark the Google Play data as not shared only while
+Shorebird is contractually acting as Divine's service provider or processor.
+
 | Artifact | Built by | Patchable |
 |---|---|---|
 | Play AAB | `shorebird release android` | Yes |
