@@ -654,6 +654,100 @@ void main() {
       expect(result.timedOut, isFalse);
     });
 
+    test('default read with two relays: one CLOSED, one silent, arms the '
+        'settle window', () async {
+      final nostr = _newNostr();
+      final answering = _SilentRelay('wss://answers.example');
+      final mute = _SilentRelay('wss://never-eoses.example');
+      expect(await nostr.relayPool.add(answering), isTrue);
+      expect(await nostr.relayPool.add(mute), isTrue);
+
+      final stopwatch = Stopwatch()..start();
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: _timeout);
+
+      final subId = await answering.awaitPendingQuery();
+      await mute.awaitPendingQuery();
+      // `answering` answers outright with CLOSED (not EOSE). This triggers
+      // `_armQuerySettleWindow` and starts the settle window while `mute` is
+      // still connected and silent. The pool must not hold the caller past
+      // the window bound.
+      await answering.deliver(['CLOSED', subId, 'error: not found']);
+
+      final result = await pending;
+      stopwatch.stop();
+
+      expect(
+        result.timedOut,
+        isFalse,
+        reason: 'settle window must bound the silent relay',
+      );
+      expect(
+        stopwatch.elapsed,
+        lessThan(_timeout),
+        reason: 'the caller must not pay the full query timeout',
+      );
+      expect(
+        stopwatch.elapsed,
+        greaterThanOrEqualTo(RelayPool.querySettleWindow),
+        reason: 'the silent relay still gets its grace period',
+      );
+    });
+
+    test('requireAllRelaysSettled with two relays: EOSE then CLOSED refusal '
+        'on second relay times out', () async {
+      final nostr = _newNostr();
+      final answering = _SilentRelay('wss://answers.example');
+      final refusing = _SilentRelay('wss://refuses-req.example');
+      expect(await nostr.relayPool.add(answering), isTrue);
+      expect(await nostr.relayPool.add(refusing), isTrue);
+
+      final stopwatch = Stopwatch()..start();
+      final pending = nostr.queryEventsDetailed(
+        [
+          {
+            'kinds': [1],
+          },
+        ],
+        timeout: const Duration(milliseconds: 800),
+        requireAllRelaysSettled: true,
+      );
+
+      final answeringSubId = await answering.awaitPendingQuery();
+      final refusingSubId = await refusing.awaitPendingQuery();
+      // `answering` provides a complete answer with EOSE. For
+      // `requireAllRelaysSettled`, this is not enough — we must wait for
+      // the second relay to also settle. The second relay then refuses the
+      // query outright with CLOSED. This creates the two-relay CLOSED
+      // scenario: one relay answered (driving settle-window logic on a
+      // default read), but `requireAllRelaysSettled` demands both relays
+      // settle before returning.
+      await answering.deliver(['EOSE', answeringSubId]);
+      await refusing.deliver([
+        'CLOSED',
+        refusingSubId,
+        'error: too many concurrent REQs',
+      ]);
+
+      final result = await pending;
+      stopwatch.stop();
+
+      expect(result.timedOut, isTrue);
+      expect(
+        result.noRelaysParticipated,
+        isFalse,
+        reason: 'both relays took the REQ',
+      );
+      expect(
+        stopwatch.elapsed,
+        lessThan(const Duration(seconds: 1)),
+        reason: 'must not hold to full timeout once both relays settle',
+      );
+    });
+
     // A relay-participation count is the only thing that separates "every
     // relay says there is nothing" from "nobody was asked". A connected-relay
     // snapshot cannot: a relay counts as connected while being write-only, or
