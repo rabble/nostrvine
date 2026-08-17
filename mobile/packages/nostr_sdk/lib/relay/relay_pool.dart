@@ -2249,6 +2249,16 @@ class RelayPool {
         if (timeout == Duration.zero) break;
 
         var tempRelay = checkAndGenTempRelay(tempRelayAddr);
+
+        // Check if temp relay requires authentication (same logic as main relays)
+        if (tempRelay.relayStatus.alwaysAuth && !tempRelay.relayStatus.authed) {
+          log(
+            '🔐 Temp relay ${tempRelay.url} requires auth '
+            '(alwaysAuth=${tempRelay.relayStatus.alwaysAuth}, '
+            'authed=${tempRelay.relayStatus.authed})',
+          );
+        }
+
         // Same skipReconnect rationale as the main loop above: a fresh
         // tempRelay whose initial connection is still in-flight must not
         // block the publish.
