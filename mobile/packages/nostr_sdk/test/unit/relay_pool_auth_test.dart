@@ -1,6 +1,7 @@
 // ABOUTME: Regression tests for RelayPool AUTH branch empty-pubkey race.
 // ABOUTME: Ensures NIP-42 AUTH challenges do not crash when the cached
-// ABOUTME: public key is empty (post-signOut, mid-init, account switch).
+// ABOUTME: public key is empty (post-signOut, mid-init, account switch), and
+// ABOUTME: that fire-and-forget temp-relay publishes survive the handshake.
 
 import 'dart:async';
 
@@ -60,7 +61,6 @@ class _AuthFakeRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -536,5 +536,271 @@ void main() {
         );
       },
     );
+  });
+
+  // Regression coverage for #7701: a fire-and-forget `RelayPool.send` to a temp
+  // relay creates no PublishTracker, so the auth-required recovery the awaited
+  // path relies on never runs and the event used to vanish silently.
+  group('fire-and-forget temp-relay publish across NIP-42', () {
+    const tempRelayUrl = 'wss://temp-auth.example';
+    late LocalNostrSigner signer;
+    late Nostr nostr;
+    late _AuthFakeRelay tempRelay;
+
+    setUp(() async {
+      signer = LocalNostrSigner(testPrivateKey);
+      tempRelay = _AuthFakeRelay(tempRelayUrl);
+      nostr = Nostr(signer, [], (_) => tempRelay);
+      await nostr.refreshPublicKey();
+    });
+
+    List<dynamic> eventFrame(String id) => [
+      'EVENT',
+      {'id': id, 'kind': EventKind.giftWrap},
+    ];
+
+    /// Completes the NIP-42 handshake the relay is asking for, returning the
+    /// id of the AUTH event the pool signed.
+    Future<String> completeHandshake({bool succeed = true}) async {
+      await tempRelay.deliver(['AUTH', challenge]);
+      final authEventId = sentAuthEventId(tempRelay);
+      await tempRelay.deliver([
+        'OK',
+        authEventId,
+        succeed,
+        succeed ? '' : 'auth failed: bad signature',
+      ]);
+      return authEventId;
+    }
+
+    test('replays the first-round frame the relay answered with '
+        'auth-required', () async {
+      const eventId =
+          'aaaa111111111111111111111111111111111111111111111111111111111111';
+
+      final sent = await nostr.relayPool.send(
+        eventFrame(eventId),
+        tempRelays: [tempRelayUrl],
+      );
+
+      expect(sent, isTrue);
+      // alwaysAuth is still false on a fresh connection, so the frame has to go
+      // out to provoke the challenge — it cannot be parked up front.
+      expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(1));
+
+      await tempRelay.deliver([
+        'OK',
+        eventId,
+        false,
+        'auth-required: you must auth',
+      ]);
+      await completeHandshake();
+
+      // BEFORE FIX: nothing recorded the written frame, so the post-AUTH flush
+      // had nothing to replay and the event was gone.
+      expect(
+        sentMessagesOfType(tempRelay, 'EVENT'),
+        hasLength(2),
+        reason: 'the retained first-round frame must be replayed after AUTH',
+      );
+      expect(
+        sentMessagesOfType(tempRelay, 'EVENT').last,
+        equals(eventFrame(eventId)),
+      );
+    });
+
+    test('replays even when the relay challenges without answering the '
+        'EVENT', () async {
+      const eventId =
+          'aaaa222222222222222222222222222222222222222222222222222222222222';
+
+      await nostr.relayPool.send(
+        eventFrame(eventId),
+        tempRelays: [tempRelayUrl],
+      );
+      // Some relays send the challenge and never OK the frame that provoked it.
+      await completeHandshake();
+
+      expect(sentMessagesOfType(tempRelay, 'EVENT'), hasLength(2));
+    });
+
+    test(
+      'parks instead of sending once the relay is known to need auth',
+      () async {
+        const firstEventId =
+            'aaaa333333333333333333333333333333333333333333333333333333333333';
+        const parkedEventId =
+            'aaaa444444444444444444444444444444444444444444444444444444444444';
+
+        // First publish creates the temp relay and provokes the challenge.
+        await nostr.relayPool.send(
+          eventFrame(firstEventId),
+          tempRelays: [tempRelayUrl],
+        );
+        await tempRelay.deliver(['AUTH', challenge]);
+        expect(tempRelay.relayStatus.alwaysAuth, isTrue);
+        expect(tempRelay.relayStatus.authed, isFalse);
+
+        final sent = await nostr.relayPool.send(
+          eventFrame(parkedEventId),
+          tempRelays: [tempRelayUrl],
+        );
+
+        expect(
+          sent,
+          isTrue,
+          reason: 'a parked frame is queued for delivery, not dropped',
+        );
+        expect(
+          tempRelay.pendingAuthedMessages,
+          contains(equals(eventFrame(parkedEventId))),
+        );
+        expect(
+          sentMessagesOfType(tempRelay, 'EVENT'),
+          hasLength(1),
+          reason: 'the parked frame must not be written before AUTH completes',
+        );
+
+        final authEventId = sentAuthEventId(tempRelay);
+        await tempRelay.deliver(['OK', authEventId, true, '']);
+
+        expect(tempRelay.pendingAuthedMessages, isEmpty);
+        expect(
+          sentMessagesOfType(
+            tempRelay,
+            'EVENT',
+          ).where((e) => (e[1] as Map)['id'] == parkedEventId),
+          hasLength(1),
+          reason: 'the parked frame is sent exactly once, after AUTH',
+        );
+      },
+    );
+
+    test('does not replay an event the relay already accepted', () async {
+      const eventId =
+          'aaaa555555555555555555555555555555555555555555555555555555555555';
+
+      await nostr.relayPool.send(
+        eventFrame(eventId),
+        tempRelays: [tempRelayUrl],
+      );
+      await tempRelay.deliver(['OK', eventId, true, '']);
+      // A challenge for some later frame must not resurrect an accepted event.
+      await completeHandshake();
+
+      expect(
+        sentMessagesOfType(tempRelay, 'EVENT'),
+        hasLength(1),
+        reason: 'an accepted event must not be published twice',
+      );
+    });
+
+    test('does not replay an event rejected for a non-auth reason', () async {
+      const eventId =
+          'aaaa666666666666666666666666666666666666666666666666666666666666';
+
+      await nostr.relayPool.send(
+        eventFrame(eventId),
+        tempRelays: [tempRelayUrl],
+      );
+      await tempRelay.deliver(['OK', eventId, false, 'invalid: bad signature']);
+      await completeHandshake();
+
+      expect(
+        sentMessagesOfType(tempRelay, 'EVENT'),
+        hasLength(1),
+        reason: 'NIP-42 cannot fix an invalid event, so it must not be resent',
+      );
+    });
+
+    test(
+      'releases parked and retained frames when the handshake fails',
+      () async {
+        const retainedEventId =
+            'aaaa777777777777777777777777777777777777777777777777777777777777';
+        const parkedEventId =
+            'aaaa888888888888888888888888888888888888888888888888888888888888';
+
+        await nostr.relayPool.send(
+          eventFrame(retainedEventId),
+          tempRelays: [tempRelayUrl],
+        );
+        await tempRelay.deliver([
+          'OK',
+          retainedEventId,
+          false,
+          'auth-required: you must auth',
+        ]);
+        // The challenge is what flips alwaysAuth, so only publishes after it
+        // take the parking branch.
+        await tempRelay.deliver(['AUTH', challenge]);
+        await nostr.relayPool.send(
+          eventFrame(parkedEventId),
+          tempRelays: [tempRelayUrl],
+        );
+        expect(tempRelay.pendingAuthedMessages, isNotEmpty);
+
+        await tempRelay.deliver([
+          'OK',
+          sentAuthEventId(tempRelay),
+          false,
+          'auth failed: bad signature',
+        ]);
+
+        // `_isTempRelayReapable` refuses to close a relay while
+        // pendingAuthedMessages is non-empty, so a handshake that fails without
+        // clearing the queue would pin this socket open for the life of the pool.
+        expect(tempRelay.pendingAuthedMessages, isEmpty);
+        expect(tempRelay.drainSentFramesForAuthRetry(), isEmpty);
+        expect(
+          sentMessagesOfType(tempRelay, 'EVENT'),
+          hasLength(1),
+          reason: 'a failed handshake must not replay anything',
+        );
+      },
+    );
+  });
+
+  group('Relay.recordSentFrame', () {
+    test('only retains client publish frames', () {
+      final relay = _AuthFakeRelay('wss://shape.example');
+      const eventId =
+          'bbbb111111111111111111111111111111111111111111111111111111111111';
+
+      // The three-element shape is the relay-to-client direction; this client
+      // never sends it, so it is not a retry candidate.
+      relay.recordSentFrame([
+        'EVENT',
+        'sub-id',
+        {'id': eventId},
+      ]);
+      relay.recordSentFrame(['REQ', 'sub-id', <String, dynamic>{}]);
+      expect(relay.drainSentFramesForAuthRetry(), isEmpty);
+
+      relay.recordSentFrame([
+        'EVENT',
+        {'id': eventId},
+      ]);
+      expect(relay.drainSentFramesForAuthRetry(), hasLength(1));
+    });
+
+    test('is bounded, evicting the oldest frame first', () {
+      final relay = _AuthFakeRelay('wss://bounded.example');
+      // One past the cap, so the very first frame must have been evicted.
+      for (var i = 0; i <= 32; i++) {
+        relay.recordSentFrame([
+          'EVENT',
+          {'id': 'event-$i'},
+        ]);
+      }
+
+      final retained = relay.drainSentFramesForAuthRetry();
+      expect(retained, hasLength(32));
+      expect(
+        retained.map((f) => (f[1] as Map)['id']),
+        isNot(contains('event-0')),
+      );
+      expect(retained.map((f) => (f[1] as Map)['id']), contains('event-32'));
+    });
   });
 }
