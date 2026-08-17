@@ -667,27 +667,33 @@ class _AudioWaveformSelector extends StatelessWidget {
                       duration: WaveformConstants.animationDuration,
                       curve: WaveformConstants.animationCurve,
                       builder: (context, heightFactor, child) {
-                        return ClipRRect(
-                          borderRadius: .circular(24),
-                          child: SizedBox.expand(
-                            child: CustomPaint(
-                              painter: StereoWaveformPainter(
-                                leftChannel: leftChannel ?? Float32List(0),
-                                rightChannel: rightChannel,
-                                progress: 1.0, // No progress indicator needed
-                                activeColor: VineTheme.whiteText,
-                                inactiveColor: VineTheme.whiteText,
-                                audioDuration: _secondsToDuration(
-                                  audioDurationSecs,
+                        // The strip only translates while the user scrubs, so
+                        // the boundary lets its raster be reused instead of
+                        // re-running a paint that draws one bar per 5px of a
+                        // strip many screens wide.
+                        return RepaintBoundary(
+                          child: ClipRRect(
+                            borderRadius: .circular(24),
+                            child: SizedBox.expand(
+                              child: CustomPaint(
+                                painter: StereoWaveformPainter(
+                                  leftChannel: leftChannel ?? Float32List(0),
+                                  rightChannel: rightChannel,
+                                  progress: 1.0, // No progress indicator needed
+                                  activeColor: VineTheme.whiteText,
+                                  inactiveColor: VineTheme.whiteText,
+                                  audioDuration: _secondsToDuration(
+                                    audioDurationSecs,
+                                  ),
+                                  // The canvas is `waveformSpanSecs` wide, not
+                                  // one video duration wide — telling the
+                                  // painter otherwise stretches the opening
+                                  // 6.3s across the whole track.
+                                  maxDuration: _secondsToDuration(
+                                    waveformSpanSecs,
+                                  ),
+                                  heightFactor: heightFactor,
                                 ),
-                                // The canvas is `waveformSpanSecs` wide, not
-                                // one video duration wide — telling the painter
-                                // otherwise stretches the opening 6.3s across
-                                // the whole track.
-                                maxDuration: _secondsToDuration(
-                                  waveformSpanSecs,
-                                ),
-                                heightFactor: heightFactor,
                               ),
                             ),
                           ),
