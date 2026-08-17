@@ -26,13 +26,15 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       clips,
       locale: localeName,
-      other: '$clips clipuri',
+      other: '$clips de clipuri',
+      few: '$clips clipuri',
       one: '$clips clip',
     );
     String _temp1 = intl.Intl.pluralLogic(
       drafts,
       locale: localeName,
-      other: '$drafts ciorne',
+      other: '$drafts de ciorne',
+      few: '$drafts ciorne',
       one: '$drafts ciornă',
     );
     return 'Vizibile acum: $_temp0, $_temp1';
@@ -46,13 +48,15 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       clips,
       locale: localeName,
-      other: '$clips clipuri',
+      other: '$clips de clipuri',
+      few: '$clips clipuri',
       one: '$clips clip',
     );
     String _temp1 = intl.Intl.pluralLogic(
       drafts,
       locale: localeName,
-      other: '$drafts ciorne',
+      other: '$drafts de ciorne',
+      few: '$drafts ciorne',
       one: '$drafts ciornă',
     );
     return '$_temp0, $_temp1';
@@ -77,7 +81,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count clipuri recuperate',
+      other: '$count de clipuri recuperate',
+      few: '$count clipuri recuperate',
       one: '$count clip recuperat',
     );
     return '$_temp0';

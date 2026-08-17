@@ -28,12 +28,14 @@ class AppLocalizationsPl extends AppLocalizations {
       clips,
       locale: localeName,
       other: '$clips klipów',
+      few: '$clips klipy',
       one: '$clips klip',
     );
     String _temp1 = intl.Intl.pluralLogic(
       drafts,
       locale: localeName,
       other: '$drafts wersji roboczych',
+      few: '$drafts wersje robocze',
       one: '$drafts wersja robocza',
     );
     return 'Widoczne teraz: $_temp0, $_temp1';
@@ -48,12 +50,14 @@ class AppLocalizationsPl extends AppLocalizations {
       clips,
       locale: localeName,
       other: '$clips klipów',
+      few: '$clips klipy',
       one: '$clips klip',
     );
     String _temp1 = intl.Intl.pluralLogic(
       drafts,
       locale: localeName,
       other: '$drafts wersji roboczych',
+      few: '$drafts wersje robocze',
       one: '$drafts wersja robocza',
     );
     return '$_temp0, $_temp1';
@@ -79,6 +83,7 @@ class AppLocalizationsPl extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Odzyskano $count klipów',
+      few: 'Odzyskano $count klipy',
       one: 'Odzyskano $count klip',
     );
     return '$_temp0';
