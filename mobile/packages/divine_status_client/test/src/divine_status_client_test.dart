@@ -160,6 +160,37 @@ void main() {
         );
       });
 
+      test('tolerates non-string updatedAt, label, and message', () async {
+        // The status page owns the payload shape. A numeric epoch or a
+        // non-string label must degrade to null — a bare cast would throw a
+        // TypeError (an Error, not an Exception) past the on-Exception guard
+        // and collapse the whole document instead of one field.
+        stubResponse(
+          jsonEncode({
+            'updatedAt': 1723800000,
+            'components': {
+              'api': {
+                'id': 'api',
+                'status': 'down',
+                'label': 3,
+                'message': false,
+              },
+            },
+          }),
+        );
+
+        final status = await client.fetchStatus();
+
+        expect(status, isNotNull);
+        expect(status!.updatedAt, isNull);
+        expect(status.components['api']?.label, isNull);
+        expect(status.components['api']?.message, isNull);
+        expect(
+          status.healthOf(DivineStatusComponents.api),
+          equals(ComponentHealth.impaired),
+        );
+      });
+
       test('defaults to the status host, which is not the API host', () {
         // Hosting the status page away from the services it reports on is
         // the whole reason asking it during an outage is worth anything.

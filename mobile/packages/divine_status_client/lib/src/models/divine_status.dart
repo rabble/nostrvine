@@ -53,18 +53,32 @@ class DivineStatus extends Equatable {
       components[entry.key] = StatusComponent(
         id: entry.key,
         health: ComponentHealth.parse(value['status']),
-        label: value['label'] as String?,
-        message: value['message'] as String?,
+        label: _asString(value['label']),
+        message: _asString(value['message']),
       );
     }
     if (components.isEmpty) return null;
 
     return DivineStatus(
       components: components,
-      updatedAt: DateTime.tryParse(body['updatedAt'] as String? ?? ''),
+      updatedAt: _dateTime(body['updatedAt']),
       incidentMessage: _incidentMessage(body['incident']),
     );
   }
+
+  /// The value as a `String`, or `null` when it is any other JSON type.
+  ///
+  /// The status page owns the payload shape and can emit a number, bool, or
+  /// object where a string was expected. A bare `as String?` would throw a
+  /// `TypeError` — an `Error`, not an `Exception` — escaping the caller's
+  /// `on Exception` guard and breaking the never-throws contract. Every field
+  /// here is read the same defensive way for that reason.
+  static String? _asString(Object? value) => value is String ? value : null;
+
+  /// Parses a timestamp only when the page gave a string, tolerating a
+  /// numeric or missing `updatedAt` rather than throwing on the cast.
+  static DateTime? _dateTime(Object? value) =>
+      value is String ? DateTime.tryParse(value) : null;
 
   /// Pulls a displayable sentence out of the `incident` field.
   ///
