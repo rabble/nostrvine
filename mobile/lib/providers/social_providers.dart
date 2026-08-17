@@ -42,6 +42,7 @@ import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/view_event_retry_service.dart';
+import 'package:openvine/utils/local_content_owner.dart';
 import 'package:openvine/utils/open_vine_image_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -634,9 +635,10 @@ DraftStorageService draftStorageService(Ref ref) {
   // Rebuild when account changes so ownerPubkey stays current
   ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);
-  final ownerPubkey =
-      authService.currentPublicKeyHex ??
-      DraftStorageService.anonymousOwnerPubkey;
+  final ownerPubkey = resolveLocalContentOwnerPubkey(
+    currentPubkeyHex: authService.currentPublicKeyHex,
+    preferences: ref.watch(sharedPreferencesProvider),
+  );
   return DraftStorageService(
     draftsDao: db.draftsDao,
     clipsDao: db.clipsDao,
@@ -651,9 +653,10 @@ ClipLibraryService clipLibraryService(Ref ref) {
   // Rebuild when account changes so ownerPubkey stays current
   ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);
-  final ownerPubkey =
-      authService.currentPublicKeyHex ??
-      DraftStorageService.anonymousOwnerPubkey;
+  final ownerPubkey = resolveLocalContentOwnerPubkey(
+    currentPubkeyHex: authService.currentPublicKeyHex,
+    preferences: ref.watch(sharedPreferencesProvider),
+  );
   return ClipLibraryService(
     clipsDao: db.clipsDao,
     draftsDao: db.draftsDao,
