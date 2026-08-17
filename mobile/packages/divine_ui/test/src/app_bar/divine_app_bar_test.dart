@@ -78,9 +78,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            titleWidget: const Text('Custom Widget'),
-          ),
+          buildTestWidget(titleWidget: const Text('Custom Widget')),
         );
 
         expect(find.text('Custom Widget'), findsOneWidget);
@@ -88,10 +86,7 @@ void main() {
 
       testWidgets('renders subtitle when provided', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Title',
-            subtitle: 'Subtitle text',
-          ),
+          buildTestWidget(title: 'Title', subtitle: 'Subtitle text'),
         );
 
         expect(find.text('Title'), findsOneWidget);
@@ -100,10 +95,7 @@ void main() {
 
       testWidgets('renders titleSuffix after title', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-            titleSuffix: const Text('SUFFIX'),
-          ),
+          buildTestWidget(title: 'Test', titleSuffix: const Text('SUFFIX')),
         );
 
         expect(find.text('Test'), findsOneWidget);
@@ -115,10 +107,7 @@ void main() {
       testWidgets('simple mode is not tappable', (tester) async {
         var tapped = false;
         await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-            onTitleTap: () => tapped = true,
-          ),
+          buildTestWidget(title: 'Test', onTitleTap: () => tapped = true),
         );
 
         await tester.tap(find.text('Test'));
@@ -171,10 +160,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-            showBackButton: true,
-          ),
+          buildTestWidget(title: 'Test', showBackButton: true),
         );
 
         expect(find.byType(DivineAppBarIconButton), findsOneWidget);
@@ -265,88 +251,78 @@ void main() {
       });
 
       testWidgets('no leading when all options are false', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-          ),
-        );
+        await tester.pumpWidget(buildTestWidget(title: 'Test'));
 
         expect(find.byType(DivineAppBarIconButton), findsNothing);
       });
 
-      testWidgets(
-        'default leading variants are anchored to their own ids',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(
-              title: 'Test',
-              showBackButton: true,
-              onBackPressed: () {},
+      testWidgets('default leading variants are anchored to their own ids', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            showBackButton: true,
+            onBackPressed: () {},
+          ),
+        );
+
+        expect(find.bySemanticsIdentifier('back_button'), findsOneWidget);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            showMenuButton: true,
+            onMenuPressed: () {},
+          ),
+        );
+
+        expect(find.bySemanticsIdentifier('menu_button'), findsOneWidget);
+        expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            leadingIcon: const SvgIconSource(DiVineAppBarLeading.menuIconAsset),
+            onLeadingPressed: () {},
+          ),
+        );
+
+        expect(
+          find.bySemanticsIdentifier('leading_action_button'),
+          findsOneWidget,
+        );
+        expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+      });
+
+      testWidgets('expandLeadingHitArea routes taps in the empty part of the '
+          'leading slot to onBackPressed', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            showBackButton: true,
+            onBackPressed: () => pressed = true,
+            expandLeadingHitArea: true,
+            style: DiVineAppBarStyle.overMediaStyle.copyWith(
+              horizontalPadding: 12,
+              leadingWidth: 72,
             ),
-          );
+          ),
+        );
 
-          expect(find.bySemanticsIdentifier('back_button'), findsOneWidget);
-
-          await tester.pumpWidget(
-            buildTestWidget(
-              title: 'Test',
-              showMenuButton: true,
-              onMenuPressed: () {},
-            ),
-          );
-
-          expect(find.bySemanticsIdentifier('menu_button'), findsOneWidget);
-          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
-
-          await tester.pumpWidget(
-            buildTestWidget(
-              title: 'Test',
-              leadingIcon: const SvgIconSource(
-                DiVineAppBarLeading.menuIconAsset,
-              ),
-              onLeadingPressed: () {},
-            ),
-          );
-
-          expect(
-            find.bySemanticsIdentifier('leading_action_button'),
-            findsOneWidget,
-          );
-          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'expandLeadingHitArea routes taps in the empty part of the '
-        'leading slot to onBackPressed',
-        (tester) async {
-          var pressed = false;
-          await tester.pumpWidget(
-            buildTestWidget(
-              title: 'Test',
-              showBackButton: true,
-              onBackPressed: () => pressed = true,
-              expandLeadingHitArea: true,
-              style: DiVineAppBarStyle.overMediaStyle.copyWith(
-                horizontalPadding: 12,
-                leadingWidth: 72,
-              ),
-            ),
-          );
-
-          // Tap inside the slot but outside the visible 48 × 48 icon
-          // button (which lives at x ∈ [12, 60]).
-          final iconButtonRect = tester.getRect(
-            find.byType(DivineAppBarIconButton),
-          );
-          final tapPoint = Offset(
-            iconButtonRect.right + 4,
-            iconButtonRect.center.dy,
-          );
-          await tester.tapAt(tapPoint);
-          expect(pressed, isTrue);
-        },
-      );
+        // Tap inside the slot but outside the visible 48 × 48 icon
+        // button (which lives at x ∈ [12, 60]).
+        final iconButtonRect = tester.getRect(
+          find.byType(DivineAppBarIconButton),
+        );
+        final tapPoint = Offset(
+          iconButtonRect.right + 4,
+          iconButtonRect.center.dy,
+        );
+        await tester.tapAt(tapPoint);
+        expect(pressed, isTrue);
+      });
 
       testWidgets(
         'expandLeadingHitArea keeps the label on the node that is actually '
@@ -510,11 +486,7 @@ void main() {
           buildTestWidget(
             title: 'Test',
             customActions: const [
-              SizedBox(
-                key: Key('custom-trailing'),
-                width: 24,
-                height: 24,
-              ),
+              SizedBox(key: Key('custom-trailing'), width: 24, height: 24),
             ],
           ),
         );
@@ -535,11 +507,7 @@ void main() {
               ),
             ],
             customActions: const [
-              SizedBox(
-                key: Key('custom-trailing'),
-                width: 24,
-                height: 24,
-              ),
+              SizedBox(key: Key('custom-trailing'), width: 24, height: 24),
             ],
           ),
         );
@@ -555,16 +523,8 @@ void main() {
           buildTestWidget(
             title: 'Test',
             customActions: const [
-              SizedBox(
-                key: Key('custom-1'),
-                width: 24,
-                height: 24,
-              ),
-              SizedBox(
-                key: Key('custom-2'),
-                width: 24,
-                height: 24,
-              ),
+              SizedBox(key: Key('custom-1'), width: 24, height: 24),
+              SizedBox(key: Key('custom-2'), width: 24, height: 24),
             ],
           ),
         );
@@ -575,9 +535,7 @@ void main() {
     });
 
     group('status bar style', () {
-      testWidgets('gradient mode keeps light icons over media', (
-        tester,
-      ) async {
+      testWidgets('gradient mode keeps light icons over media', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
             title: 'Test',
@@ -624,11 +582,7 @@ void main() {
 
     group('background modes', () {
       testWidgets('solid mode uses navGreen by default', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-          ),
-        );
+        await tester.pumpWidget(buildTestWidget(title: 'Test'));
 
         final appBar = tester.widget<AppBar>(find.byType(AppBar));
         expect(appBar.backgroundColor, VineTheme.navGreen);
@@ -636,10 +590,7 @@ void main() {
 
       testWidgets('solid mode uses custom backgroundColor', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-            backgroundColor: Colors.purple,
-          ),
+          buildTestWidget(title: 'Test', backgroundColor: Colors.purple),
         );
 
         final appBar = tester.widget<AppBar>(find.byType(AppBar));
@@ -775,10 +726,7 @@ void main() {
     group('style', () {
       testWidgets('uses default style when not provided', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-            showBackButton: true,
-          ),
+          buildTestWidget(title: 'Test', showBackButton: true),
         );
 
         final appBar = tester.widget<AppBar>(find.byType(AppBar));
@@ -793,10 +741,7 @@ void main() {
           buildTestWidget(
             title: 'Test',
             showBackButton: true,
-            style: const DiVineAppBarStyle(
-              height: 64,
-              leadingWidth: 72,
-            ),
+            style: const DiVineAppBarStyle(height: 64, leadingWidth: 72),
           ),
         );
 
@@ -807,10 +752,7 @@ void main() {
 
       testWidgets('preferredSize uses style height', (tester) async {
         const customStyle = DiVineAppBarStyle(height: 64);
-        const appBar = DiVineAppBar(
-          title: 'Test',
-          style: customStyle,
-        );
+        const appBar = DiVineAppBar(title: 'Test', style: customStyle);
 
         expect(appBar.preferredSize.height, 64);
       });
@@ -827,10 +769,7 @@ void main() {
     group('background mode auto-style', () {
       testWidgets('solid mode applies solidStyle icon color', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            title: 'Test',
-            showBackButton: true,
-          ),
+          buildTestWidget(title: 'Test', showBackButton: true),
         );
 
         final iconButton = tester.widget<DivineAppBarIconButton>(
@@ -903,10 +842,7 @@ void main() {
 
     group('assertions', () {
       test('throws when neither title nor titleWidget is provided', () {
-        expect(
-          DiVineAppBar.new,
-          throwsA(isA<AssertionError>()),
-        );
+        expect(DiVineAppBar.new, throwsA(isA<AssertionError>()));
       });
 
       test('throws when both showBackButton and showMenuButton are true', () {
@@ -984,30 +920,29 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets(
-        'expandLeadingHitArea leaves no unlabeled tappable node',
-        (tester) async {
-          final handle = tester.ensureSemantics();
-          await tester.pumpWidget(
-            buildTestWidget(
-              title: 'Feed',
-              showBackButton: true,
-              onBackPressed: () {},
-              expandLeadingHitArea: true,
-            ),
-          );
+      testWidgets('expandLeadingHitArea leaves no unlabeled tappable node', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Feed',
+            showBackButton: true,
+            onBackPressed: () {},
+            expandLeadingHitArea: true,
+          ),
+        );
 
-          // The stretching GestureDetector declares the same tap action as
-          // the Semantics wrapping it, and two configs declaring one action
-          // cannot merge — so without excludeFromSemantics the tree carries
-          // an anonymous button nested inside the labelled one.
-          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        // The stretching GestureDetector declares the same tap action as
+        // the Semantics wrapping it, and two configs declaring one action
+        // cannot merge — so without excludeFromSemantics the tree carries
+        // an anonymous button nested inside the labelled one.
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
 
-          // ...and the labelled button is still there afterwards.
-          expect(find.bySemanticsLabel('Back'), findsOneWidget);
-          handle.dispose();
-        },
-      );
+        // ...and the labelled button is still there afterwards.
+        expect(find.bySemanticsLabel('Back'), findsOneWidget);
+        handle.dispose();
+      });
 
       testWidgets('expandLeadingHitArea still activates the callback', (
         tester,
@@ -1083,6 +1018,73 @@ void main() {
 
       expect(find.bySemanticsLabel('Volver al perfil'), findsOneWidget);
       expect(find.bySemanticsLabel('Atrás'), findsNothing);
+    });
+  });
+
+  group('DiVineAppBar menu button localization', () {
+    // Same defect as the back button: the defaults were the hardcoded English
+    // 'Open menu' / 'Menu'. They now come from
+    // MaterialLocalizations.openAppDrawerTooltip — the string Flutter's own
+    // DrawerButton uses for this slot — so a constant regression cannot
+    // produce 'Abrir el menú de navegación'.
+    Widget buildLocalized(Locale locale) => MaterialApp(
+      locale: locale,
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      supportedLocales: const [Locale('en'), Locale('es')],
+      theme: VineTheme.theme,
+      home: Scaffold(
+        appBar: DiVineAppBar(
+          title: 'Test',
+          showMenuButton: true,
+          onMenuPressed: () {},
+        ),
+        body: const SizedBox.shrink(),
+      ),
+    );
+
+    testWidgets('uses the English MaterialLocalizations label', (tester) async {
+      await tester.pumpWidget(buildLocalized(const Locale('en')));
+
+      expect(find.bySemanticsLabel('Open navigation menu'), findsOneWidget);
+    });
+
+    testWidgets('translates the menu label for es', (tester) async {
+      await tester.pumpWidget(buildLocalized(const Locale('es')));
+
+      expect(
+        find.bySemanticsLabel('Abrir el menú de navegación'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('Open navigation menu'), findsNothing);
+    });
+
+    testWidgets('an explicit label still wins over the localized default', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          supportedLocales: const [Locale('en'), Locale('es')],
+          theme: VineTheme.theme,
+          home: Scaffold(
+            appBar: DiVineAppBar(
+              title: 'Test',
+              showMenuButton: true,
+              onMenuPressed: () {},
+              menuButtonSemanticLabel: 'Abrir ajustes',
+              menuButtonTooltip: 'Ajustes',
+            ),
+            body: const SizedBox.shrink(),
+          ),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Abrir ajustes'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Abrir el menú de navegación'),
+        findsNothing,
+      );
     });
   });
 }

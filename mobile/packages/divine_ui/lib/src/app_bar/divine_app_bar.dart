@@ -63,8 +63,8 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.backButtonHeroTag,
     this.showMenuButton = false,
     this.onMenuPressed,
-    this.menuButtonSemanticLabel = 'Open menu',
-    this.menuButtonTooltip = 'Menu',
+    this.menuButtonSemanticLabel,
+    this.menuButtonTooltip,
     this.leadingIcon,
     this.onLeadingPressed,
     this.leadingActionSemanticLabel = 'Leading action',
@@ -185,13 +185,15 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Semantic label for the menu button.
   ///
-  /// Defaults to `'Open menu'`. Pass a localized string to override.
-  final String menuButtonSemanticLabel;
+  /// Defaults to [MaterialLocalizations.openAppDrawerTooltip], which Flutter
+  /// translates for every supported locale.
+  final String? menuButtonSemanticLabel;
 
   /// Tooltip for the menu button.
   ///
-  /// Defaults to `'Menu'`. Pass a localized string to override.
-  final String menuButtonTooltip;
+  /// Defaults to [MaterialLocalizations.openAppDrawerTooltip], which Flutter
+  /// translates for every supported locale.
+  final String? menuButtonTooltip;
 
   /// Custom leading icon.
   ///

@@ -21,8 +21,8 @@ class DiVineAppBarLeading extends StatelessWidget {
     this.backButtonSemanticLabel,
     this.backButtonTooltip,
     this.backButtonHeroTag,
-    this.menuButtonSemanticLabel = 'Open menu',
-    this.menuButtonTooltip = 'Menu',
+    this.menuButtonSemanticLabel,
+    this.menuButtonTooltip,
     this.leadingActionSemanticLabel = 'Leading action',
     this.expandHitArea = false,
     super.key,
@@ -64,13 +64,15 @@ class DiVineAppBarLeading extends StatelessWidget {
 
   /// Semantic label for the menu button.
   ///
-  /// Defaults to `'Open menu'`. Pass a localized string to override.
-  final String menuButtonSemanticLabel;
+  /// Defaults to [MaterialLocalizations.openAppDrawerTooltip], which Flutter
+  /// translates for every supported locale.
+  final String? menuButtonSemanticLabel;
 
   /// Tooltip for the menu button.
   ///
-  /// Defaults to `'Menu'`. Pass a localized string to override.
-  final String menuButtonTooltip;
+  /// Defaults to [MaterialLocalizations.openAppDrawerTooltip], which Flutter
+  /// translates for every supported locale.
+  final String? menuButtonTooltip;
 
   /// Semantic label for a custom leading icon.
   ///
@@ -132,12 +134,19 @@ class DiVineAppBarLeading extends StatelessWidget {
     }
 
     if (showMenuButton) {
+      // Same reasoning as the back button above. openAppDrawerTooltip is what
+      // Flutter's own DrawerButton announces for this exact leading-hamburger
+      // slot, so it is the translated equivalent of the 'Open menu' / 'Menu'
+      // constants it replaces.
+      final defaultMenuLabel = MaterialLocalizations.of(
+        context,
+      ).openAppDrawerTooltip;
       return _LeadingIconButton(
         icon: const SvgIconSource(menuIconAsset),
         onPressed: onMenuPressed,
-        semanticLabel: menuButtonSemanticLabel,
+        semanticLabel: menuButtonSemanticLabel ?? defaultMenuLabel,
         semanticIdentifier: menuButtonSemanticId,
-        tooltip: menuButtonTooltip,
+        tooltip: menuButtonTooltip ?? defaultMenuLabel,
         style: style,
         expandHitArea: expandHitArea,
       );
