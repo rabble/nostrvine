@@ -237,4 +237,105 @@ void main() {
       });
     }
   });
+
+  test('keycastSignalApplicableProvider reads per auth source', () {
+    // Direct coverage for the new provider: OAuth -> applicable, pure
+    // self-custody never seen by Keycast -> not applicable.
+    expect(
+      containerWith(
+        authState: AuthState.authenticated,
+        status: () => Completer<ProtectedMinorStatus>().future,
+      ).read(keycastSignalApplicableProvider),
+      isTrue,
+    );
+    expect(
+      containerWith(
+        authState: AuthState.authenticated,
+        authSource: AuthenticationSource.importedKeys,
+        status: () => Completer<ProtectedMinorStatus>().future,
+      ).read(keycastSignalApplicableProvider),
+      isFalse,
+    );
+  });
+
+  test(
+    'a live listener sees the restriction flip on when a Keycast account '
+    'signs in after a self-custody session',
+    () async {
+      // Regression test for the provider-cache staleness in
+      // keycastSignalApplicableProvider: AuthService mutates its pubkey and
+      // auth source in place, so without a currentAuthStateProvider watch the
+      // extracted provider keeps a stale value into the next account's
+      // session — and a stale `false` unrestricts a Keycast-backed account.
+      //
+      // Uses the REAL currentAuthStateProvider (stream + invalidateSelf) over
+      // a mock AuthService so an auth transition propagates exactly as in
+      // production; overriding currentAuthStateProvider with a value would
+      // hide the defect.
+      const pubkeyA =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const pubkeyB =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+      final authStateController = StreamController<AuthState>.broadcast();
+      addTearDown(authStateController.close);
+
+      var state = AuthState.authenticated;
+      var source = AuthenticationSource.importedKeys;
+      var key = pubkeyA;
+
+      final liveAuth = _MockAuthService();
+      when(() => liveAuth.authState).thenAnswer((_) => state);
+      when(
+        () => liveAuth.authStateStream,
+      ).thenAnswer((_) => authStateController.stream);
+      when(() => liveAuth.authenticationSource).thenAnswer((_) => source);
+      when(() => liveAuth.currentPublicKeyHex).thenAnswer((_) => key);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          authServiceProvider.overrideWithValue(liveAuth),
+          protectedMinorStatusProvider.overrideWith(
+            // Never resolves: Keycast unreachable for both accounts.
+            (ref) => Completer<ProtectedMinorStatus>().future,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Keep a listener attached across the whole sequence, as an app-shell
+      // consumer would.
+      final seen = <bool>[];
+      final sub = container.listen(
+        isDmRestrictedProvider,
+        (_, next) => seen.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+      await pumpEventQueue();
+
+      // Account A: pure self-custody, never seen by Keycast -> unrestricted.
+      expect(container.read(isDmRestrictedProvider), isFalse);
+
+      // Sign out.
+      state = AuthState.unauthenticated;
+      key = '';
+      authStateController.add(AuthState.unauthenticated);
+      await pumpEventQueue();
+      expect(container.read(isDmRestrictedProvider), isTrue);
+
+      // Sign in as account B: divineOAuth, protected minor, Keycast
+      // unreachable, nothing persisted for B. Must fail closed — a stale
+      // `applicable=false` from A's session would leave B unrestricted.
+      state = AuthState.authenticated;
+      source = AuthenticationSource.divineOAuth;
+      key = pubkeyB;
+      authStateController.add(AuthState.authenticated);
+      await pumpEventQueue();
+
+      expect(container.read(keycastSignalApplicableProvider), isTrue);
+      expect(container.read(isDmRestrictedProvider), isTrue);
+    },
+  );
 }

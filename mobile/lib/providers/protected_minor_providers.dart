@@ -151,6 +151,12 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
 /// self-custody accounts that Keycast can never produce a verdict for (and
 /// must not be permanently restricted by an unanswerable check).
 final keycastSignalApplicableProvider = Provider<bool>((ref) {
+  // AuthService mutates its pubkey and auth-source fields in place, so watch
+  // the auth state to recompute on every account transition (sign-out,
+  // sign-in, account swap). Without this a cached value survives into the
+  // next account's session, and a stale `false` would lift the fail-closed
+  // DM restriction for a Keycast-backed account.
+  ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);
   final pubkey = authService.currentPublicKeyHex;
   final authSource = authService.authenticationSource;
