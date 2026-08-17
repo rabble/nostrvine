@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -74,11 +73,16 @@ void main() {
       videoEventService.dispose();
     });
 
-    test('keeps hasMore when a full first page arrives before EOSE', () {
+    test('keeps hasMore when a full first page arrives before EOSE', () async {
       // The initial subscription delivers stored events through the real-time
       // handler, so the `isHistorical` counter — which only the load-more path
       // drives — stays at zero. Before the fix, completeQuery read that zero
       // and set hasMore=false however many events had actually landed.
+      //
+      // Runs on the real event loop rather than under fakeAsync: the subscribe
+      // future outlives a fake zone, and its continuation then schedules a real
+      // timer that strands whichever widget test runs next in CI's merged
+      // isolate.
       const limit = 5;
       void Function()? capturedOnEose;
       final controller = StreamController<Event>();
@@ -91,41 +95,38 @@ void main() {
         return controller.stream;
       });
 
-      fakeAsync((async) {
-        videoEventService.subscribeToVideoFeed(
-          subscriptionType: SubscriptionType.profile,
-          authors: [_author],
-          limit: limit,
-        );
-        async.flushMicrotasks();
+      await videoEventService.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.profile,
+        authors: [_author],
+        limit: limit,
+      );
 
-        for (var i = 0; i < limit; i++) {
-          controller.add(_videoEvent(i));
-        }
-        async.flushMicrotasks();
+      for (var i = 0; i < limit; i++) {
+        controller.add(_videoEvent(i));
+      }
+      await Future<void>.delayed(Duration.zero);
 
-        expect(capturedOnEose, isNotNull, reason: 'onEose should be set');
-        capturedOnEose!();
-        async.flushMicrotasks();
+      expect(capturedOnEose, isNotNull, reason: 'onEose should be set');
+      capturedOnEose!();
+      await Future<void>.delayed(Duration.zero);
 
-        final state = videoEventService
-            .getPaginationStatesForTesting()[SubscriptionType.profile]!;
+      final state = videoEventService
+          .getPaginationStatesForTesting()[SubscriptionType.profile]!;
 
-        expect(
-          state.eventsReceivedInCurrentQuery,
-          greaterThanOrEqualTo(limit),
-          reason:
-              'the tally must reflect the events that actually arrived before '
-              'EOSE, not the load-more-only isHistorical count',
-        );
-        expect(
-          state.hasMore,
-          isTrue,
-          reason:
-              'a first page that filled the requested limit cannot prove the '
-              'feed is exhausted',
-        );
-      });
+      expect(
+        state.eventsReceivedInCurrentQuery,
+        greaterThanOrEqualTo(limit),
+        reason:
+            'the tally must reflect the events that actually arrived before '
+            'EOSE, not the load-more-only isHistorical count',
+      );
+      expect(
+        state.hasMore,
+        isTrue,
+        reason:
+            'a first page that filled the requested limit cannot prove the '
+            'feed is exhausted',
+      );
     });
   });
 }
