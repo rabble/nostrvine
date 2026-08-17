@@ -1,11 +1,16 @@
 // ABOUTME: Tests for ClipRecoveryCubit — scan, claim, and rebuild flows.
 
+import 'dart:io';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/clip_recovery/clip_recovery_cubit.dart';
 import 'package:openvine/models/clip_recovery.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_recovery_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockService extends Mock implements ClipRecoveryService {}
 
@@ -51,6 +56,15 @@ final _withOrphans = ClipRecoveryReport(
   orphanFiles: [_firstOrphan, _secondOrphan],
 );
 
+final _rebuiltClip = DivineVideoClip(
+  id: 'recovered_VID_1755400000001',
+  video: EditorVideo.file(File(_secondOrphan.path)),
+  duration: const Duration(seconds: 3),
+  recordedAt: _secondOrphan.modifiedAt,
+  targetAspectRatio: model.AspectRatio.vertical,
+  originalAspectRatio: 9 / 16,
+);
+
 final _afterClaim = ClipRecoveryReport(
   currentOwnerPubkey: _found.currentOwnerPubkey,
   ownedClipCount: 3,
@@ -81,6 +95,7 @@ void main() {
         const ClipRecoveryState(
           status: ClipRecoveryStatus.scanned,
           report: _found,
+          hasReport: true,
         ),
       ],
     );
@@ -118,17 +133,79 @@ void main() {
         const ClipRecoveryState(
           status: ClipRecoveryStatus.claiming,
           report: _found,
+          hasReport: true,
         ),
         ClipRecoveryState(
           status: ClipRecoveryStatus.claimed,
           report: _afterClaim,
           lastRecoveredCount: 3,
+          hasReport: true,
         ),
       ],
     );
 
     blocTest<ClipRecoveryCubit, ClipRecoveryState>(
+      'keeps the scan findings when a claim fails',
+      // The report is the whole output of the tool — the thing the operator
+      // copies into the support thread. A failed claim must not take it off
+      // screen.
+      build: () {
+        when(service.scanRecoverableClips).thenAnswer((_) async => _found);
+        when(
+          () => service.claimOwnerGroup(any()),
+        ).thenThrow(StateError('write failed'));
+        return ClipRecoveryCubit(service: service);
+      },
+      act: (cubit) async {
+        await cubit.scan();
+        await cubit.claimOwnerGroup(_group);
+      },
+      skip: 3,
+      expect: () => [
+        const ClipRecoveryState(
+          status: ClipRecoveryStatus.failure,
+          report: _found,
+          hasReport: true,
+        ),
+      ],
+      errors: () => [isA<StateError>()],
+    );
+
+    blocTest<ClipRecoveryCubit, ClipRecoveryState>(
       'rebuilding restores only the file the operator picked',
+      build: () {
+        when(
+          service.scanRecoverableClips,
+        ).thenAnswer((_) async => _withOrphans);
+        when(
+          () => service.importOrphanFiles(any()),
+        ).thenAnswer((_) async => [_rebuiltClip]);
+        return ClipRecoveryCubit(service: service);
+      },
+      act: (cubit) async {
+        await cubit.scan();
+        await cubit.importOrphanFile(_secondOrphan);
+      },
+      skip: 3,
+      expect: () => [
+        ClipRecoveryState(
+          status: ClipRecoveryStatus.imported,
+          report: _withOrphans,
+          lastRecoveredCount: 1,
+          hasReport: true,
+        ),
+      ],
+      verify: (_) => verify(
+        () => service.importOrphanFiles([_secondOrphan]),
+      ).called(1),
+    );
+
+    blocTest<ClipRecoveryCubit, ClipRecoveryState>(
+      'a rebuild that restored nothing is a failure, not "recovered 0"',
+      // importOrphanFiles logs a file it cannot rebuild and carries on, so an
+      // empty result is a swallowed failure. Since a rebuild is always one file
+      // at a time, empty means the file the operator picked did not come back —
+      // reporting it as a successful import of zero clips reads as success.
       build: () {
         when(
           service.scanRecoverableClips,
@@ -143,9 +220,13 @@ void main() {
         await cubit.importOrphanFile(_secondOrphan);
       },
       skip: 3,
-      verify: (_) => verify(
-        () => service.importOrphanFiles([_secondOrphan]),
-      ).called(1),
+      expect: () => [
+        ClipRecoveryState(
+          status: ClipRecoveryStatus.failure,
+          report: _withOrphans,
+          hasReport: true,
+        ),
+      ],
     );
   });
 }

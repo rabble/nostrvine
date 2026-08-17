@@ -27,7 +27,11 @@ class ClipRecoveryCubit extends Cubit<ClipRecoveryState>
     try {
       final report = await _service.scanRecoverableClips();
       emitIfOpen(
-        state.copyWith(status: ClipRecoveryStatus.scanned, report: report),
+        state.copyWith(
+          status: ClipRecoveryStatus.scanned,
+          report: report,
+          hasReport: true,
+        ),
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
@@ -46,6 +50,7 @@ class ClipRecoveryCubit extends Cubit<ClipRecoveryState>
           status: ClipRecoveryStatus.claimed,
           report: report,
           lastRecoveredCount: claimed,
+          hasReport: true,
         ),
       );
     } catch (error, stackTrace) {
@@ -68,12 +73,20 @@ class ClipRecoveryCubit extends Cubit<ClipRecoveryState>
     emit(state.copyWith(status: ClipRecoveryStatus.importing));
     try {
       final imported = await _service.importOrphanFiles(files);
+      // The service logs a file it could not rebuild and carries on, so an
+      // empty result is a failure it swallowed rather than a successful import
+      // of nothing. Reporting "recovered 0" for it would read as success —
+      // and since a rebuild is always one file at a time, empty means *the*
+      // file the operator picked did not come back.
       final report = await _service.scanRecoverableClips();
       emitIfOpen(
         state.copyWith(
-          status: ClipRecoveryStatus.imported,
+          status: imported.isEmpty
+              ? ClipRecoveryStatus.failure
+              : ClipRecoveryStatus.imported,
           report: report,
           lastRecoveredCount: imported.length,
+          hasReport: true,
         ),
       );
     } catch (error, stackTrace) {

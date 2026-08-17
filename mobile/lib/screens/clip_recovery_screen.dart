@@ -114,13 +114,16 @@ class _Header extends StatelessWidget {
             ),
           ),
           const _RecoveryActions(),
+          // Both, not one or the other: a claim or rebuild can fail with the
+          // scan's findings still on screen and still worth copying, and the
+          // unreferenced-file rows below stay listed either way — hiding only
+          // the summary would leave the two halves contradicting each other.
           if (status == ClipRecoveryStatus.failure)
             Text(
               l10n.devOptionsClipRecoveryFailure,
               style: VineTheme.titleMediumFont(color: VineTheme.error),
-            )
-          else
-            const _RecoveryResult(),
+            ),
+          const _RecoveryResult(),
         ],
       ),
     );
@@ -141,7 +144,8 @@ class _RecoveryResult extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 12,
       children: [
-        if (state.status != ClipRecoveryStatus.scanned)
+        if (state.status == ClipRecoveryStatus.claimed ||
+            state.status == ClipRecoveryStatus.imported)
           Text(
             l10n.devOptionsClipRecoveryRecovered(state.lastRecoveredCount),
             style: VineTheme.titleMediumFont(
