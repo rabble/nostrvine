@@ -103,11 +103,10 @@ class ExploreTabBar extends StatelessWidget {
   }
 }
 
-/// One tab's label, with the featured tab's optional disclosure marker.
+/// One tab's label, with the featured tab's optional collection pill.
 ///
-/// The marker exists so a labeling requirement discovered mid-campaign can be
-/// met by configuration rather than an app store review cycle. It renders
-/// only when the server supplies one.
+/// The featured tab itself always reads "Featured"; the collection's own name
+/// rides beside it in a pill whose colour carries the sponsorship state.
 class _ExploreTabLabel extends StatelessWidget {
   const _ExploreTabLabel({required this.name, this.featuredTab});
 
@@ -117,28 +116,66 @@ class _ExploreTabLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final colors = context.vineColors;
     final label = labelForExploreTabName(l10n, name, featuredTab: featuredTab);
-    // Same untrusted-input path as the label beside it, so same treatment.
-    final rawDisclosure = name == exploreFeaturedTabName
-        ? featuredTab?.disclosureLabelFor(l10n.localeName)
-        : null;
-    final disclosure = rawDisclosure == null
-        ? null
-        : sanitizeFeaturedTabText(rawDisclosure);
+    final featured = featuredTab;
+    if (name != exploreFeaturedTabName || featured == null) {
+      return Text(label);
+    }
 
-    if (disclosure == null || disclosure.isEmpty) return Text(label);
+    // Same untrusted-input path as the label beside it, so same treatment,
+    // against a tighter budget because the pill shares the tab's width.
+    final rawPill = featured.pillLabelFor(l10n.localeName);
+    final pill = rawPill == null
+        ? null
+        : sanitizeFeaturedTabText(rawPill, maxLength: featuredTabPillMaxLength);
+    if (pill == null || pill.isEmpty) return Text(label);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      spacing: 4,
+      spacing: 6,
       children: [
         Text(label),
-        Text(
-          disclosure,
-          style: VineTheme.labelSmallFont(color: colors.onSurfaceMuted),
-        ),
+        _FeaturedTabPill(text: pill, isSponsored: featured.isSponsored),
       ],
+    );
+  }
+}
+
+/// The collection-name pill beside the featured tab's label.
+///
+/// Yellow normally, pink when sponsored. The colour is a secondary cue only —
+/// it is unreliable for anyone with a colour vision deficiency, and yellow
+/// against pink is a hard pair — so the state is also spoken here and written
+/// out in full by the partnership line above the grid.
+class _FeaturedTabPill extends StatelessWidget {
+  const _FeaturedTabPill({required this.text, required this.isSponsored});
+
+  final String text;
+  final bool isSponsored;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.vineColors;
+    final chip = isSponsored ? colors.accentChipPink : colors.accentChipYellow;
+
+    return Semantics(
+      label: isSponsored
+          ? context.l10n.exploreFeaturedSponsoredPillSemanticLabel(text)
+          : text,
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: chip.container,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          child: Text(
+            text,
+            style: VineTheme.labelSmallFont(color: chip.onContainer),
+          ),
+        ),
+      ),
     );
   }
 }

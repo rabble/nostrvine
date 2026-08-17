@@ -1227,6 +1227,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Apl Bersepadu';
 
   @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
+
+  @override
   String get featuredTabEmpty =>
       'Belum ada apa-apa di sini. Datang semula tidak lama lagi.';
 

@@ -426,6 +426,11 @@ const _knownUntranslatedDebt = <String>{
   'authAccountRestoreFailed',
   'settingsAccountRestoreFailed',
   'settingsAccountRestoreFailedSwitchMessage',
+  // Commercial disclosure copy, deliberately not machine-translated: "paid"
+  // is load-bearing and a softened rendering discloses nothing. Translation
+  // pass tracked in #7673, and required before any non-English campaign.
+  'exploreFeaturedPaidPartnership',
+  'exploreFeaturedSponsoredPillSemanticLabel',
   // The four social-proof keys and searchUserVideoCount left this list when
   // this branch translated them into every locale.
 };

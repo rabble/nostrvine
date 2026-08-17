@@ -1144,6 +1144,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exploreTabIntegratedApps => '연동된 앱';
 
   @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
+
+  @override
   String get featuredTabEmpty => '아직 아무것도 없어요. 곧 다시 확인해 주세요.';
 
   @override

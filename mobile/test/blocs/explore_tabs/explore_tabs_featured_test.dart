@@ -1,20 +1,34 @@
-// ABOUTME: Tests for splicing the server-configured featured tab into the
+// ABOUTME: Tests for placing the server-configured featured tab in the
 // ABOUTME: Explore tab order without shifting the user's selected tab.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 
-FeaturedTabConfig _featured({String? after, String? before}) {
-  return FeaturedTabConfig(
+FeaturedTabConfig _featured() {
+  return const FeaturedTabConfig(
     id: 'ft_a1b2c3d4',
     slug: 'featured-slug',
-    label: const {'default': 'Featured'},
-    position: FeaturedTabPosition(after: after, before: before),
+    label: {'default': 'Featured'},
     startsAt: null,
     endsAt: null,
     enabled: true,
     hasContent: true,
+  );
+}
+
+/// Asserts the featured tab sits in the slot between New and Popular.
+void _expectBetweenNewAndPopular(ExploreTabsState state) {
+  final names = state.tabNames;
+  expect(
+    names.indexOf(exploreFeaturedTabName),
+    equals(names.indexOf(exploreDefaultTabName) + 1),
+    reason: 'featured must sit immediately after New',
+  );
+  expect(
+    names.indexOf(exploreFeaturedTabName) + 1,
+    equals(names.indexOf(explorePopularTabName)),
+    reason: 'featured must sit immediately before Popular',
   );
 }
 
@@ -26,55 +40,30 @@ void main() {
       expect(state.tabNames, isNot(contains(exploreFeaturedTabName)));
     });
 
-    test('places the tab directly after its named anchor', () {
-      final state = ExploreTabsState(
-        featuredTab: _featured(after: explorePopularTabName),
-      );
+    test('sits between New and Popular', () {
+      _expectBetweenNewAndPopular(ExploreTabsState(featuredTab: _featured()));
+    });
 
-      final names = state.tabNames;
+    test('sits between New and Popular when Classics is hidden', () {
+      // Classics is optional, so the slot cannot be a literal index: without
+      // it every tab shifts up one and a hard-coded 2 lands on Popular.
+      _expectBetweenNewAndPopular(
+        ExploreTabsState(featuredTab: _featured()),
+      );
       expect(
-        names.indexOf(exploreFeaturedTabName),
-        equals(names.indexOf(explorePopularTabName) + 1),
+        ExploreTabsState(featuredTab: _featured()).tabNames.first,
+        equals(exploreDefaultTabName),
       );
     });
 
-    test('places the tab directly before its named anchor', () {
-      final state = ExploreTabsState(
-        featuredTab: _featured(before: exploreListsTabName),
-      );
-
-      final names = state.tabNames;
-      expect(
-        names.indexOf(exploreFeaturedTabName) + 1,
-        equals(names.indexOf(exploreListsTabName)),
-      );
-    });
-
-    test('appends the tab when its anchor names an absent tab', () {
-      final state = ExploreTabsState(
-        featuredTab: _featured(after: exploreAppsTabName),
-      );
-
-      expect(state.tabNames.last, equals(exploreFeaturedTabName));
-    });
-
-    test('appends the tab when no anchor is configured', () {
-      final state = ExploreTabsState(featuredTab: _featured());
-
-      expect(state.tabNames.last, equals(exploreFeaturedTabName));
-    });
-
-    test('honours the anchor once an optional tab shifts indices', () {
-      final state = ExploreTabsState(
-        classicsAvailable: true,
-        forYouAvailable: true,
-        featuredTab: _featured(after: explorePopularTabName),
-      );
-
-      final names = state.tabNames;
-      expect(
-        names.indexOf(exploreFeaturedTabName),
-        equals(names.indexOf(explorePopularTabName) + 1),
+    test('sits between New and Popular when every optional tab is on', () {
+      _expectBetweenNewAndPopular(
+        ExploreTabsState(
+          classicsAvailable: true,
+          forYouAvailable: true,
+          appsAvailable: true,
+          featuredTab: _featured(),
+        ),
       );
     });
 
@@ -88,7 +77,7 @@ void main() {
     test('keeps name lookup stable when the tab is added', () {
       const before = ExploreTabsState();
       final after = ExploreTabsState(
-        featuredTab: _featured(after: exploreDefaultTabName),
+        featuredTab: _featured(),
       );
 
       // The user sitting on Lists must still resolve to Lists, not to the
@@ -104,7 +93,7 @@ void main() {
 
     test('keeps name lookup stable when the tab is removed', () {
       final before = ExploreTabsState(
-        featuredTab: _featured(after: exploreDefaultTabName),
+        featuredTab: _featured(),
       );
       const after = ExploreTabsState();
 
@@ -119,7 +108,7 @@ void main() {
 
     test('tracks the banner anchors past an inserted featured tab', () {
       final state = ExploreTabsState(
-        featuredTab: _featured(before: exploreDefaultTabName),
+        featuredTab: _featured(),
       );
 
       expect(

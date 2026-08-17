@@ -1153,6 +1153,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exploreTabIntegratedApps => '集成应用';
 
   @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
+
+  @override
   String get featuredTabEmpty => '这里还没有内容。稍后再来看看。';
 
   @override

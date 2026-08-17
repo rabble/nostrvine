@@ -16,6 +16,7 @@ import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
+import 'package:openvine/screens/explore/explore_tab_labels.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -87,6 +88,62 @@ class _FeaturedVideosRetryOnPoll extends StatelessWidget {
 
 class _FeaturedVideosView extends StatelessWidget {
   const _FeaturedVideosView({required this.config});
+
+  final FeaturedTabConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    // The disclosure is pinned rather than scrolled into the grid, and sits
+    // outside the videos state so it survives an empty or failed page: it
+    // describes the tab's commercial arrangement, not its contents.
+    return Column(
+      children: [
+        _FeaturedPartnershipLine(config: config),
+        Expanded(child: _FeaturedVideosContent(config: config)),
+      ],
+    );
+  }
+}
+
+/// The commercial disclosure pinned above a sponsored collection's grid.
+///
+/// Renders nothing when the collection has no sponsor.
+class _FeaturedPartnershipLine extends StatelessWidget {
+  const _FeaturedPartnershipLine({required this.config});
+
+  final FeaturedTabConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final rawSponsor = config.sponsorNameFor(l10n.localeName);
+    // Same untrusted-input path as the tab label, so same treatment.
+    final sponsor = rawSponsor == null
+        ? null
+        : sanitizeFeaturedTabText(rawSponsor);
+    if (sponsor == null || sponsor.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(
+          l10n.exploreFeaturedPaidPartnership(sponsor),
+          // Wraps rather than truncating: a clipped disclosure has stopped
+          // disclosing. Two lines is the ceiling the server's length cap and
+          // the largest supported text scale need between them.
+          maxLines: 2,
+          style: VineTheme.labelMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeaturedVideosContent extends StatelessWidget {
+  const _FeaturedVideosContent({required this.config});
 
   final FeaturedTabConfig config;
 

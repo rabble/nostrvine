@@ -13,6 +13,13 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 /// the scrollable tab bar.
 const featuredTabLabelMaxLength = 24;
 
+/// Longest collection-name pill the tab bar will render beside the label.
+///
+/// Shorter than the label's own limit because the pill is laid out *next to*
+/// "Featured" on a scrollable bar: at 24 characters the pill runs past the
+/// right edge of a 390 px screen, so the tab opens partly off-screen.
+const featuredTabPillMaxLength = 16;
+
 /// Returns the localized display label for an Explore tab [name].
 ///
 /// The shell uses a little more context for video mode ("New Videos",
@@ -66,15 +73,18 @@ String _clampFeaturedLabel(String label, AppLocalizations l10n) {
 /// outside this repo, so both go through here.
 ///
 /// Returns an empty string when nothing renderable survives.
-String sanitizeFeaturedTabText(String raw) {
+String sanitizeFeaturedTabText(
+  String raw, {
+  int maxLength = featuredTabLabelMaxLength,
+}) {
   final collapsed = raw
       .replaceAll(_featuredTabControlCharacters, ' ')
       .replaceAll(_repeatedWhitespace, ' ')
       .trim();
   if (collapsed.isEmpty) return '';
   final characters = collapsed.characters;
-  if (characters.length <= featuredTabLabelMaxLength) return collapsed;
-  return '${characters.take(featuredTabLabelMaxLength - 1).toString().trimRight()}…';
+  if (characters.length <= maxLength) return collapsed;
+  return '${characters.take(maxLength - 1).toString().trimRight()}…';
 }
 
 /// C0/C1 controls, line/paragraph separators, and bidi formatting overrides.

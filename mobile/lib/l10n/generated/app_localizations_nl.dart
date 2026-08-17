@@ -1228,6 +1228,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Geïntegreerde apps';
 
   @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
+
+  @override
   String get featuredTabEmpty => 'Hier staat nog niets. Kom binnenkort terug.';
 
   @override

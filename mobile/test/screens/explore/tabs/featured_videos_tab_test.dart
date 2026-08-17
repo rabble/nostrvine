@@ -9,6 +9,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/featured_tabs/featured_tabs_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
@@ -26,17 +27,27 @@ class _MockFeaturedTabsRepository extends Mock
 
 class _MockFeedRepository extends Mock implements FeedRepository {}
 
-FeaturedTabConfig _config() {
-  return const FeaturedTabConfig(
+FeaturedTabConfig _config({Map<String, String> disclosureLabel = const {}}) {
+  return FeaturedTabConfig(
     id: 'ft_a1b2c3d4',
     slug: 'featured-slug',
-    label: {'default': 'Featured'},
+    label: const {'default': 'Featured'},
+    disclosureLabel: disclosureLabel,
     startsAt: null,
     endsAt: null,
     enabled: true,
     hasContent: true,
   );
 }
+
+/// A sponsored configuration. The brand is invented — real partner names stay
+/// in server config and out of this repository.
+FeaturedTabConfig _sponsoredConfig() =>
+    _config(disclosureLabel: const {'default': 'Acme Bikes'});
+
+String _partnershipLine(String sponsor) => lookupAppLocalizations(
+  const Locale('en'),
+).exploreFeaturedPaidPartnership(sponsor);
 
 VideoEvent _video(String id) {
   return VideoEvent(
@@ -211,6 +222,59 @@ void main() {
       verify(
         () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
       ).called(1);
+    });
+    testWidgets('discloses the sponsor above the grid', (tester) async {
+      await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
+      await tester.pumpAndSettle();
+
+      final line = find.text(_partnershipLine('Acme Bikes'));
+      expect(line, findsOneWidget);
+      // Pinned above the grid rather than scrolled into it.
+      expect(
+        tester.getCenter(line).dy,
+        lessThan(tester.getCenter(find.byType(VideoThumbnailWidget).first).dy),
+      );
+    });
+
+    testWidgets('discloses nothing when the collection is unsponsored', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('paid partnership'), findsNothing);
+    });
+
+    testWidgets('keeps the disclosure above an empty grid', (tester) async {
+      // The tab can be scheduled ahead of its content snapshot, so a live
+      // partnership is reachable with nothing to show.
+      when(
+        () => featuredRepository.loadVideos(
+          tabId: 'ft_a1b2c3d4',
+          cursor: any(named: 'cursor'),
+        ),
+      ).thenAnswer((_) async => const FeaturedTabVideosPage(videos: []));
+
+      await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(_partnershipLine('Acme Bikes')), findsOneWidget);
+    });
+
+    testWidgets('keeps the disclosure when the videos request fails', (
+      tester,
+    ) async {
+      when(
+        () => featuredRepository.loadVideos(
+          tabId: 'ft_a1b2c3d4',
+          cursor: any(named: 'cursor'),
+        ),
+      ).thenThrow(const FunnelcakeException('network down'));
+
+      await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
+      await tester.pumpAndSettle();
+      // It describes the tab's commercial arrangement, not its contents.
+      expect(find.text(_partnershipLine('Acme Bikes')), findsOneWidget);
     });
   });
 }

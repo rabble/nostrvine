@@ -1242,6 +1242,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Mga Integrated App';
 
   @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
+
+  @override
   String get featuredTabEmpty => 'Wala pa rito. Balikan mo mamaya.';
 
   @override

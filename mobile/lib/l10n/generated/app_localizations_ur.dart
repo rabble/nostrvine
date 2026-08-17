@@ -1227,6 +1227,16 @@ class AppLocalizationsUr extends AppLocalizations {
   String get exploreTabIntegratedApps => 'مربوط ایپس';
 
   @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
+
+  @override
   String get featuredTabEmpty => 'یہاں ابھی کچھ نہیں ہے۔ جلد دوبارہ دیکھیں۔';
 
   @override

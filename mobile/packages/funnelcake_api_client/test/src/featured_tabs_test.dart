@@ -70,45 +70,82 @@ void main() {
       expect(tab.labelFor('en'), isEmpty);
     });
 
-    test('reads a bare string disclosure label as the default entry', () {
+    test('reads a bare string sponsor name as the default entry', () {
       final tab = FeaturedTabConfig.fromJson(const {
         'id': 'ft_a1b2c3d4',
-        'disclosure_label': 'Sponsored',
+        'disclosure_label': 'Acme Bikes',
       });
 
-      expect(tab.disclosureLabelFor('en'), equals('Sponsored'));
+      expect(tab.sponsorNameFor('en'), equals('Acme Bikes'));
+      expect(tab.isSponsored, isTrue);
     });
 
-    test('returns a null disclosure label when the server omits it', () {
+    test('reads a per-locale sponsor name', () {
+      final tab = FeaturedTabConfig.fromJson(const {
+        'id': 'ft_a1b2c3d4',
+        'disclosure_label': {'default': 'Acme Bikes', 'pt': 'Acme Bicicletas'},
+      });
+
+      expect(tab.sponsorNameFor('pt-BR'), equals('Acme Bicicletas'));
+    });
+
+    test('is unsponsored when the server sends a null sponsor name', () {
       final tab = FeaturedTabConfig.fromJson(const {
         'id': 'ft_a1b2c3d4',
         'disclosure_label': null,
       });
 
-      expect(tab.disclosureLabelFor('en'), isNull);
+      expect(tab.sponsorNameFor('en'), isNull);
+      expect(tab.isSponsored, isFalse);
     });
 
-    test('parses the mobile position anchor', () {
+    test('is unsponsored when the server omits the key entirely', () {
+      // What an older backend returns, before the sponsorship fields ship.
+      final tab = FeaturedTabConfig.fromJson(const {'id': 'ft_a1b2c3d4'});
+
+      expect(tab.sponsorNameFor('en'), isNull);
+      expect(tab.isSponsored, isFalse);
+    });
+
+    test('is unsponsored when the sponsor name is an empty string', () {
+      // Funnelcake normalises empty to null on write, but a sponsored tab
+      // with nobody to credit cannot be disclosed and must not be styled as
+      // one, so the client does not depend on that normalisation.
+      final tab = FeaturedTabConfig.fromJson(const {
+        'id': 'ft_a1b2c3d4',
+        'disclosure_label': '',
+      });
+
+      expect(tab.isSponsored, isFalse);
+    });
+
+    test('reads a bare string pill label as the default entry', () {
+      final tab = FeaturedTabConfig.fromJson(const {
+        'id': 'ft_a1b2c3d4',
+        'pill_label': 'Skate Week',
+      });
+
+      expect(tab.pillLabelFor('en'), equals('Skate Week'));
+    });
+
+    test('returns a null pill label when the server omits it', () {
+      final tab = FeaturedTabConfig.fromJson(const {'id': 'ft_a1b2c3d4'});
+
+      expect(tab.pillLabelFor('en'), isNull);
+    });
+
+    test('ignores the position object entirely', () {
+      // Placement is fixed on mobile so it cannot drift from web, and the
+      // payload carries per-platform anchors that need not name a tab this
+      // client has. Parsing it at all would be dead weight.
       final tab = FeaturedTabConfig.fromJson(const {
         'id': 'ft_a1b2c3d4',
         'position': {
-          'mobile': {'after': 'popular'},
+          'web': {'after': 'classics'},
         },
       });
 
-      expect(tab.position.after, equals('popular'));
-      expect(tab.position.before, isNull);
-    });
-
-    test('ignores a position that carries no mobile entry', () {
-      final tab = FeaturedTabConfig.fromJson(const {
-        'id': 'ft_a1b2c3d4',
-        'position': {
-          'web': {'after': 'popular'},
-        },
-      });
-
-      expect(tab.position, equals(const FeaturedTabPosition()));
+      expect(tab.id, equals('ft_a1b2c3d4'));
     });
 
     test('is outside the window before it starts', () {
