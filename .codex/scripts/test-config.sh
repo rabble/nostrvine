@@ -251,21 +251,33 @@ printf '%s\n' "$MISSING_DART_OUTPUT" | jq -e \
 
 rm -f "$TEST_REPO/mobile/.dart_tool/package_config.json"
 : > "$CALL_LOG"
+TWO_FILE_PURGED_PAYLOAD=$(jq -n --arg command $'*** Begin Patch\n*** Update File: mobile/lib/warning file.dart\n*** Update File: mobile/lib/clean.dart\n*** End Patch' \
+  '{tool_input: {command: $command}}')
 CODEX_PURGED_OUTPUT=$(cd "$TEST_REPO" && \
   env PATH="$BIN_DIR:/usr/bin:/bin" \
     TEST_DART="$BIN_DIR/test-dart" \
     DART_CALL_LOG="$CALL_LOG" \
-    "$POST_EDIT_HOOK" <<< "$POST_PAYLOAD")
+    "$POST_EDIT_HOOK" <<< "$TWO_FILE_PURGED_PAYLOAD")
 if ! printf '%s\n' "$CODEX_PURGED_OUTPUT" | jq -e \
   '.systemMessage
-   | contains("Skipped Dart format/analyze")
+   | contains("Skipped Dart analysis")
      and contains("flutter pub get")' >/dev/null; then
   echo "Codex post-edit hook did not explain the missing package_config.json skip." >&2
   echo "Output was: $CODEX_PURGED_OUTPUT" >&2
   exit 1
 fi
-if grep -q '^format \|^analyze ' "$CALL_LOG"; then
-  echo "Codex post-edit hook invoked dart without package_config.json." >&2
+# Format needs no package resolution and must still run; only analyze skips.
+if grep -q '^analyze ' "$CALL_LOG"; then
+  echo "Codex post-edit hook invoked dart analyze without package_config.json." >&2
+  exit 1
+fi
+if ! grep -q '^format ' "$CALL_LOG"; then
+  echo "Codex post-edit hook skipped dart format, which needs no package_config.json." >&2
+  exit 1
+fi
+# A skip must not abort the patch loop: both files still get formatted.
+if [ "$(grep -c '^format ' "$CALL_LOG")" -ne 2 ]; then
+  echo "Codex post-edit hook aborted the file loop at the first purged-worktree file." >&2
   exit 1
 fi
 touch "$TEST_REPO/mobile/.dart_tool/package_config.json"
