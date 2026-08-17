@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/painting.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
@@ -93,14 +94,14 @@ class LinkifiedTextSpanBuilder {
   /// references. This is the one point every span passes through, so guarding
   /// it covers both. Sanitizing is code-unit-for-code-unit, so match offsets
   /// stay valid.
-  List<TextSpan> build() {
+  List<InlineSpan> build() {
     final safeText = sanitizeUtf16(text);
-    final spans = <TextSpan>[];
+    final spans = <InlineSpan>[];
     var lastEnd = 0;
 
     for (final match in _combinedRegex.allMatches(safeText)) {
       if (match.start > lastEnd) {
-        spans.add(_plainSpan(safeText.substring(lastEnd, match.start)));
+        spans.addAll(_plainSpans(safeText.substring(lastEnd, match.start)));
       }
 
       final matchedUrl = match.group(1);
@@ -125,17 +126,19 @@ class LinkifiedTextSpanBuilder {
     }
 
     if (lastEnd < safeText.length) {
-      spans.add(_plainSpan(safeText.substring(lastEnd)));
+      spans.addAll(_plainSpans(safeText.substring(lastEnd)));
     }
 
-    if (spans.isEmpty) return [_plainSpan(safeText)];
+    if (spans.isEmpty) return _plainSpans(safeText);
     return spans;
   }
 
-  TextSpan _plainSpan(String value) =>
-      TextSpan(text: value, style: defaultStyle);
+  /// Plain runs are split on the green heart so Divine paints it in the
+  /// brand green rather than the platform emoji font's own green.
+  List<InlineSpan> _plainSpans(String value) =>
+      divineHeartSpans(value, style: defaultStyle);
 
-  List<TextSpan> _buildUrlSpans(String matchedUrl) {
+  List<InlineSpan> _buildUrlSpans(String matchedUrl) {
     final linkText = _trimTrailingUrlPunctuation(matchedUrl);
     final trailingText = matchedUrl.substring(linkText.length);
     return [
@@ -148,7 +151,7 @@ class LinkifiedTextSpanBuilder {
             if (callback != null) unawaited(callback(linkText));
           },
       ),
-      if (trailingText.isNotEmpty) _plainSpan(trailingText),
+      if (trailingText.isNotEmpty) ..._plainSpans(trailingText),
     ];
   }
 
