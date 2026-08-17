@@ -66,36 +66,40 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
-        expect(find.text('Reset Password'), findsOneWidget);
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
       });
 
       testWidgets('displays instructional text', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
-        expect(
-          find.textContaining("Enter your email address and we'll send you"),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.forgotPasswordDescription), findsOneWidget);
       });
 
       testWidgets('displays Cancel button', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
-        expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);
+        expect(
+          find.widgetWithText(TextButton, l10n.forgotPasswordCancel),
+          findsOneWidget,
+        );
       });
 
       testWidgets('displays Email Reset Link button', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         expect(
-          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
           findsOneWidget,
         );
       });
@@ -116,19 +120,23 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
-        expect(find.text('Reset Password'), findsOneWidget);
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
 
-        await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+        await tester.tap(
+          find.widgetWithText(TextButton, l10n.forgotPasswordCancel),
+        );
         await tester.pumpAndSettle();
 
-        expect(find.text('Reset Password'), findsNothing);
+        expect(find.text(l10n.forgotPasswordTitle), findsNothing);
       });
 
       testWidgets('shows validation error for invalid email', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         // Clear and enter invalid email
         await tester.enterText(find.byType(TextFormField), 'not-an-email');
@@ -136,12 +144,12 @@ void main() {
 
         // Tap send
         await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
         );
         await tester.pumpAndSettle();
 
         // Dialog should still be open (validation failed)
-        expect(find.text('Reset Password'), findsOneWidget);
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
         expect(resetEmails, isEmpty);
       });
 
@@ -151,9 +159,10 @@ void main() {
         );
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
         );
         await tester.pumpAndSettle();
 
@@ -166,14 +175,15 @@ void main() {
         );
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
         );
         await tester.pumpAndSettle();
 
         // Dialog should be closed
-        expect(find.text('Reset Password'), findsNothing);
+        expect(find.text(l10n.forgotPasswordTitle), findsNothing);
       });
 
       testWidgets('notifies after an accepted reset closes the sheet', (
@@ -188,13 +198,14 @@ void main() {
         );
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Reset Password'), findsNothing);
+        expect(find.text(l10n.forgotPasswordTitle), findsNothing);
         expect(acceptedCount, 1);
       });
 
@@ -268,9 +279,7 @@ void main() {
         );
       });
 
-      testWidgets('ignores a second submit tap before rebuild', (
-        tester,
-      ) async {
+      testWidgets('ignores a second submit tap before rebuild', (tester) async {
         final sendCompleter = Completer<bool>();
         var sendCount = 0;
         await tester.pumpWidget(
@@ -362,14 +371,14 @@ void main() {
         );
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
         );
         await tester.pumpAndSettle();
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text('Reset Password'), findsOneWidget);
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
         expect(find.text(l10n.authFailedToSendResetEmail), findsOneWidget);
         expect(
           find.widgetWithText(ElevatedButton, l10n.authTryAgain),
@@ -389,13 +398,13 @@ void main() {
         );
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
         );
         await tester.pumpAndSettle();
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
         expect(find.text(l10n.authFailedToSendResetEmail), findsOneWidget);
         expect(
@@ -413,12 +422,12 @@ void main() {
         );
         await tester.pumpAndSettle();
         await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Email Reset Link'),
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
         );
         await tester.pumpAndSettle();
-        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.text(l10n.authFailedToSendResetEmail), findsOneWidget);
 
         await tester.enterText(find.byType(TextFormField), 'other@example.com');

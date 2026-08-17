@@ -3415,31 +3415,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authContinueToApp => 'Uygulamaya Devam Et';
 
   @override
-  String get authResetPassword => 'Parolayı sıfırla';
-
-  @override
-  String get authResetPasswordDescription =>
-      'E-posta adresini gir, parolanı sıfırlamak için sana bir bağlantı gönderelim.';
-
-  @override
   String get authFailedToSendResetEmail => 'Sıfırlama e-postası gönderilemedi.';
-
-  @override
-  String get authUnexpectedErrorShort => 'Beklenmeyen bir hata oluştu.';
 
   @override
   String get authSending => 'Gönderiliyor...';
 
   @override
   String get authSendResetLink => 'Sıfırlama bağlantısı gönder';
-
-  @override
-  String get authEmailSent => 'E-posta gönderildi!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return '$email adresine bir parola sıfırlama bağlantısı gönderdik. Parolanı güncellemek için lütfen e-postandaki bağlantıya tıkla.';
-  }
 
   @override
   String get authSignInButton => 'Giriş yap';

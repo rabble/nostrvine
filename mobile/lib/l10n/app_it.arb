@@ -1371,22 +1371,9 @@
     "authClickLinkContinue": "Clicca sul link nella tua email per completare la registrazione. Nel frattempo puoi continuare a usare l'app.",
     "authWaitingForVerificationEllipsis": "In attesa di verifica...",
     "authContinueToApp": "Continua nell'app",
-    "authResetPassword": "Reimposta password",
-    "authResetPasswordDescription": "Inserisci il tuo indirizzo email e ti manderemo un link per reimpostare la password.",
     "authFailedToSendResetEmail": "Impossibile inviare l'email di reimpostazione.",
-    "authUnexpectedErrorShort": "Si è verificato un errore imprevisto.",
     "authSending": "Invio...",
     "authSendResetLink": "Invia link di reimpostazione",
-    "authEmailSent": "Email inviata!",
-    "authResetLinkSentTo": "Abbiamo inviato un link per reimpostare la password a {email}. Clicca sul link nella tua email per aggiornare la password.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Accedi",
     "authVerificationErrorTimeout": "Verifica scaduta. Prova a registrarti di nuovo.",
     "authVerificationErrorMissingCode": "Verifica fallita — codice di autorizzazione mancante.",

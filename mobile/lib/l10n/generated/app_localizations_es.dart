@@ -3488,32 +3488,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authContinueToApp => 'Ir a la app';
 
   @override
-  String get authResetPassword => 'Restablecer contraseña';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Ingresá tu email y te mandamos un link para restablecer la contraseña.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'No se pudo enviar el email de restablecimiento.';
-
-  @override
-  String get authUnexpectedErrorShort => 'Ocurrió un error inesperado.';
 
   @override
   String get authSending => 'Enviando...';
 
   @override
   String get authSendResetLink => 'Enviar link de restablecimiento';
-
-  @override
-  String get authEmailSent => '¡Email enviado!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Te mandamos un link de restablecimiento de contraseña a $email. Tocá el link en tu email para actualizar la contraseña.';
-  }
 
   @override
   String get authSignInButton => 'Iniciar sesión';

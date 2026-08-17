@@ -3473,32 +3473,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get authContinueToApp => 'Teruskan ke Apl';
 
   @override
-  String get authResetPassword => 'Tetapkan semula kata laluan';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Masukkan alamat e-mel anda dan kami akan menghantar pautan untuk menetapkan semula kata laluan anda.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Gagal menghantar e-mel tetapan semula.';
-
-  @override
-  String get authUnexpectedErrorShort => 'Ralat tidak dijangka berlaku.';
 
   @override
   String get authSending => 'Menghantar...';
 
   @override
   String get authSendResetLink => 'Hantar pautan tetapan semula';
-
-  @override
-  String get authEmailSent => 'E-mel dihantar!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Kami menghantar pautan tetapan semula kata laluan ke $email. Sila klik pautan dalam e-mel anda untuk mengemas kini kata laluan anda.';
-  }
 
   @override
   String get authSignInButton => 'Log masuk';

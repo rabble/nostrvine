@@ -3491,32 +3491,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authContinueToApp => 'Продължи към приложението';
 
   @override
-  String get authResetPassword => 'Нулирай паролата';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Въведи имейл адреса си и ще ти изпратим линк за възстановяване на паролата.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Не успяхме да изпратим имейл за нулиране.';
-
-  @override
-  String get authUnexpectedErrorShort => 'Стана неочаквана грешка.';
 
   @override
   String get authSending => 'Изпращаме...';
 
   @override
   String get authSendResetLink => 'Изпрати линк за нулиране';
-
-  @override
-  String get authEmailSent => 'Имейлът е изпратен!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Изпратихме линк за нулиране на паролата до $email. Натисни линка в имейла, за да обновиш паролата си.';
-  }
 
   @override
   String get authSignInButton => 'Вход';

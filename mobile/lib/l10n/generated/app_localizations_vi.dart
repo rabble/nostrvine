@@ -3451,31 +3451,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get authContinueToApp => 'Tiếp tục vào ứng dụng';
 
   @override
-  String get authResetPassword => 'Đặt lại mật khẩu';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Nhập địa chỉ email của bạn và bọn mình sẽ gửi liên kết để đặt lại mật khẩu.';
-
-  @override
   String get authFailedToSendResetEmail => 'Không gửi được email đặt lại.';
-
-  @override
-  String get authUnexpectedErrorShort => 'Đã xảy ra lỗi bất ngờ.';
 
   @override
   String get authSending => 'Đang gửi...';
 
   @override
   String get authSendResetLink => 'Gửi liên kết đặt lại';
-
-  @override
-  String get authEmailSent => 'Đã gửi email!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Bọn mình đã gửi liên kết đặt lại mật khẩu tới $email. Hãy bấm vào liên kết trong email để cập nhật mật khẩu của bạn.';
-  }
 
   @override
   String get authSignInButton => 'Đăng nhập';

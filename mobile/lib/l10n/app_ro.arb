@@ -1371,22 +1371,9 @@
     "authClickLinkContinue": "Apasă linkul din email ca să finalizezi înregistrarea. Poți continua să folosești aplicația între timp.",
     "authWaitingForVerificationEllipsis": "Se așteaptă verificarea...",
     "authContinueToApp": "Continuă în aplicație",
-    "authResetPassword": "Resetează parola",
-    "authResetPasswordDescription": "Introdu adresa ta de email și âți trimitem un link de resetare a parolei.",
     "authFailedToSendResetEmail": "N-am putut trimite emailul de resetare.",
-    "authUnexpectedErrorShort": "A apărut o eroare neașteptată.",
     "authSending": "Se trimite...",
     "authSendResetLink": "Trimite linkul de resetare",
-    "authEmailSent": "Email trimis!",
-    "authResetLinkSentTo": "Am trimis un link de resetare a parolei la {email}. Apasă linkul din email ca să-ți actualizezi parola.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Autentificare",
     "authVerificationErrorTimeout": "Verificarea a expirat. Încearcă să te înregistrezi din nou.",
     "authVerificationErrorMissingCode": "Verificare eșuată — cod de autorizare lipsă.",

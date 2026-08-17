@@ -3270,30 +3270,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authContinueToApp => '进入应用';
 
   @override
-  String get authResetPassword => '重置密码';
-
-  @override
-  String get authResetPasswordDescription => '输入你的邮箱地址，我们会发送密码重置链接。';
-
-  @override
   String get authFailedToSendResetEmail => '重置邮件发送失败。';
-
-  @override
-  String get authUnexpectedErrorShort => '发生意外错误。';
 
   @override
   String get authSending => '发送中...';
 
   @override
   String get authSendResetLink => '发送重置链接';
-
-  @override
-  String get authEmailSent => '邮件已发送！';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return '我们已将密码重置链接发送至 $email。请点击邮件中的链接更新密码。';
-  }
 
   @override
   String get authSignInButton => '登录';

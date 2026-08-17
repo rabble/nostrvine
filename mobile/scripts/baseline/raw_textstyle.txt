@@ -51,7 +51,6 @@ lib/widgets/audio_waveform.dart	2
 lib/widgets/auth/auth_error_box.dart	1
 lib/widgets/auth/auth_form_scaffold.dart	1
 lib/widgets/auth/auth_hero_section.dart	2
-lib/widgets/auth/forgot_password_dialog.dart	4
 lib/widgets/categories/category_glyph.dart	1
 lib/widgets/classic_vines_tab.dart	7
 lib/widgets/composable_video_grid.dart	8

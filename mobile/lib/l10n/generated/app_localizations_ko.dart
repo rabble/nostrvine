@@ -3276,31 +3276,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authContinueToApp => '앱으로 계속';
 
   @override
-  String get authResetPassword => '비밀번호 재설정';
-
-  @override
-  String get authResetPasswordDescription =>
-      '이메일 주소를 입력하면 비밀번호 재설정 링크를 보내드릴게요.';
-
-  @override
   String get authFailedToSendResetEmail => '재설정 이메일을 보내지 못했어요.';
-
-  @override
-  String get authUnexpectedErrorShort => '예상치 못한 오류가 발생했어요.';
 
   @override
   String get authSending => '보내는 중...';
 
   @override
   String get authSendResetLink => '재설정 링크 보내기';
-
-  @override
-  String get authEmailSent => '이메일을 보냈어요!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return '$email로 비밀번호 재설정 링크를 보냈어요. 이메일의 링크를 클릭해서 비밀번호를 변경해주세요.';
-  }
 
   @override
   String get authSignInButton => '로그인';

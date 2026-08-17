@@ -1371,22 +1371,9 @@
     "authClickLinkContinue": "Klick auf den Link in deiner E-Mail, um die Registrierung abzuschließen. Du kannst die App in der Zwischenzeit weiter nutzen.",
     "authWaitingForVerificationEllipsis": "Warte auf Verifizierung...",
     "authContinueToApp": "Weiter zur App",
-    "authResetPassword": "Passwort zurücksetzen",
-    "authResetPasswordDescription": "Gib deine E-Mail-Adresse ein, und wir schicken dir einen Link zum Passwort-Zurücksetzen.",
     "authFailedToSendResetEmail": "Reset-E-Mail konnte nicht gesendet werden.",
-    "authUnexpectedErrorShort": "Ein unerwarteter Fehler ist aufgetreten.",
     "authSending": "Wird gesendet...",
     "authSendResetLink": "Reset-Link senden",
-    "authEmailSent": "E-Mail gesendet!",
-    "authResetLinkSentTo": "Wir haben einen Link zum Passwort-Zurücksetzen an {email} gesendet. Bitte klick auf den Link in deiner E-Mail, um dein Passwort zu aktualisieren.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Anmelden",
     "authVerificationErrorTimeout": "Verifizierung abgelaufen. Bitte registriere dich erneut.",
     "authVerificationErrorMissingCode": "Verifizierung fehlgeschlagen — Autorisierungscode fehlt.",

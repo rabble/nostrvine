@@ -1371,22 +1371,9 @@
     "authClickLinkContinue": "Klicka på länken i din e-post för att slutföra registreringen. Du kan fortsätta använda appen under tiden.",
     "authWaitingForVerificationEllipsis": "Väntar på verifiering...",
     "authContinueToApp": "Fortsätt till appen",
-    "authResetPassword": "Återställ lösenord",
-    "authResetPasswordDescription": "Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.",
     "authFailedToSendResetEmail": "Kunde inte skicka återställningsmejl.",
-    "authUnexpectedErrorShort": "Ett oväntat fel uppstod.",
     "authSending": "Skickar...",
     "authSendResetLink": "Skicka återställningslänk",
-    "authEmailSent": "E-post skickad!",
-    "authResetLinkSentTo": "Vi skickade en återställningslänk till {email}. Klicka på länken i din e-post för att uppdatera ditt lösenord.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Logga in",
     "authVerificationErrorTimeout": "Verifieringen tog slut på tid. Försök registrera dig igen.",
     "authVerificationErrorMissingCode": "Verifiering misslyckades – auktoriseringskod saknas.",

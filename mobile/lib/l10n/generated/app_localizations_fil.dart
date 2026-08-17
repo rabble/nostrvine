@@ -3501,32 +3501,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get authContinueToApp => 'Magpatuloy sa App';
 
   @override
-  String get authResetPassword => 'I-reset ang password';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Ilagay ang iyong email address at magpapadala kami ng link para i-reset ang iyong password.';
-
-  @override
   String get authFailedToSendResetEmail => 'Hindi naipadala ang reset email.';
-
-  @override
-  String get authUnexpectedErrorShort =>
-      'May hindi inaasahang error na nangyari.';
 
   @override
   String get authSending => 'Nagpapadala...';
 
   @override
   String get authSendResetLink => 'Ipadala ang reset link';
-
-  @override
-  String get authEmailSent => 'Naipadala ang email!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Nagpadala kami ng password reset link sa $email. Pakiclick ang link sa iyong email para i-update ang iyong password.';
-  }
 
   @override
   String get authSignInButton => 'Mag-sign in';

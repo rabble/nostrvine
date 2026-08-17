@@ -1368,22 +1368,9 @@
     "authClickLinkContinue": "Kaydı tamamlamak için e-postandaki bağlantıya tıkla. Bu arada uygulamayı kullanmaya devam edebilirsin.",
     "authWaitingForVerificationEllipsis": "Doğrulama bekleniyor...",
     "authContinueToApp": "Uygulamaya Devam Et",
-    "authResetPassword": "Parolayı sıfırla",
-    "authResetPasswordDescription": "E-posta adresini gir, parolanı sıfırlamak için sana bir bağlantı gönderelim.",
     "authFailedToSendResetEmail": "Sıfırlama e-postası gönderilemedi.",
-    "authUnexpectedErrorShort": "Beklenmeyen bir hata oluştu.",
     "authSending": "Gönderiliyor...",
     "authSendResetLink": "Sıfırlama bağlantısı gönder",
-    "authEmailSent": "E-posta gönderildi!",
-    "authResetLinkSentTo": "{email} adresine bir parola sıfırlama bağlantısı gönderdik. Parolanı güncellemek için lütfen e-postandaki bağlantıya tıkla.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Giriş yap",
     "authVerificationErrorTimeout": "Doğrulama zaman aşımına uğradı. Lütfen tekrar kaydolmayı dene.",
     "authVerificationErrorMissingCode": "Doğrulama başarısız — yetkilendirme kodu eksik.",

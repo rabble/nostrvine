@@ -45,7 +45,7 @@ void showForgotPasswordDialog({
         })
         .onError<Object>((error, stackTrace) {
           Log.error(
-            'Forgot password reset accepted callback failed: $error',
+            'Forgot password reset sheet completion failed: $error',
             name: 'ForgotPasswordDialog',
             category: LogCategory.auth,
             stackTrace: stackTrace,
@@ -112,9 +112,7 @@ class _ForgotPasswordSheetContentState
 
     final bool wasAccepted;
     try {
-      wasAccepted = await widget.onSendResetEmail(
-        _emailController.text.trim(),
-      );
+      wasAccepted = await widget.onSendResetEmail(_emailController.text.trim());
     } catch (error, stackTrace) {
       Log.error(
         'Forgot password reset callback failed: $error',
@@ -149,9 +147,8 @@ class _ForgotPasswordSheetContentState
             children: [
               Text(
                 context.l10n.forgotPasswordDescription,
-                style: TextStyle(
+                style: VineTheme.bodyMediumFont(
                   color: context.vineColors.secondaryText,
-                  fontSize: 14,
                 ),
               ),
               const SizedBox(height: 20),
@@ -164,11 +161,18 @@ class _ForgotPasswordSheetContentState
                     setState(() => _sendFailed = false);
                   }
                 },
-                style: TextStyle(color: context.vineColors.primaryText),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
                 decoration: InputDecoration(
                   labelText: context.l10n.forgotPasswordEmailLabel,
-                  labelStyle: TextStyle(color: context.vineColors.mutedText),
-                  prefixIcon: const Icon(Icons.email_outlined),
+                  labelStyle: VineTheme.bodyMediumFont(
+                    color: context.vineColors.mutedText,
+                  ),
+                  prefixIcon: DivineIcon(
+                    icon: DivineIconName.envelope,
+                    color: context.vineColors.mutedText,
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: context.vineColors.outline),
@@ -203,7 +207,7 @@ class _ForgotPasswordSheetContentState
                     onPressed: _isSubmitting ? null : () => context.pop(),
                     child: Text(
                       context.l10n.forgotPasswordCancel,
-                      style: TextStyle(
+                      style: VineTheme.labelLargeFont(
                         color: context.vineColors.onSurfaceMuted,
                       ),
                     ),

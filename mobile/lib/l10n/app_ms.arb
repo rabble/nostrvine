@@ -1876,22 +1876,9 @@
   "authClickLinkContinue": "Klik pautan dalam e-mel anda untuk melengkapkan pendaftaran. Anda boleh terus menggunakan apl sementara itu.",
   "authWaitingForVerificationEllipsis": "Menunggu pengesahan...",
   "authContinueToApp": "Teruskan ke Apl",
-  "authResetPassword": "Tetapkan semula kata laluan",
-  "authResetPasswordDescription": "Masukkan alamat e-mel anda dan kami akan menghantar pautan untuk menetapkan semula kata laluan anda.",
   "authFailedToSendResetEmail": "Gagal menghantar e-mel tetapan semula.",
-  "authUnexpectedErrorShort": "Ralat tidak dijangka berlaku.",
   "authSending": "Menghantar...",
   "authSendResetLink": "Hantar pautan tetapan semula",
-  "authEmailSent": "E-mel dihantar!",
-  "authResetLinkSentTo": "Kami menghantar pautan tetapan semula kata laluan ke {email}. Sila klik pautan dalam e-mel anda untuk mengemas kini kata laluan anda.",
-  "@authResetLinkSentTo": {
-    "description": "Confirmation message after reset link sent",
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
   "authSignInButton": "Log masuk",
   "authVerificationErrorTimeout": "Pengesahan tamat masa. Sila cuba mendaftar semula.",
   "authVerificationErrorMissingCode": "Pengesahan gagal — kod kebenaran hilang.",

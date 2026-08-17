@@ -1361,22 +1361,9 @@
     "authClickLinkContinue": "メール内のリンクをクリックして登録を完了してね。その間もアプリは使えるよ。",
     "authWaitingForVerificationEllipsis": "認証を待ってるよ...",
     "authContinueToApp": "アプリに進む",
-    "authResetPassword": "パスワードをリセット",
-    "authResetPasswordDescription": "メールアドレスを入れてね。パスワードをリセットするリンクを送るよ。",
     "authFailedToSendResetEmail": "リセットメールの送信がうまくいかなかった。",
-    "authUnexpectedErrorShort": "予期しないエラーが起きた。",
     "authSending": "送信中...",
     "authSendResetLink": "リセットリンクを送る",
-    "authEmailSent": "メールを送ったよ！",
-    "authResetLinkSentTo": "{email} にパスワードリセットリンクを送ったよ。メール内のリンクをクリックしてパスワードを更新してね。",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "サインイン",
     "authVerificationErrorTimeout": "認証がタイムアウトした。もう一回登録を試してみて。",
     "authVerificationErrorMissingCode": "認証がうまくいかなかった — 認可コードがないよ。",

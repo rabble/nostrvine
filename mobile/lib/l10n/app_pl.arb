@@ -1371,22 +1371,9 @@
     "authClickLinkContinue": "Kliknij link w e-mailu, żeby dokończyć rejestrację. W międzyczasie możesz dalej korzystać z aplikacji.",
     "authWaitingForVerificationEllipsis": "Czekam na weryfikację...",
     "authContinueToApp": "Przejdź do aplikacji",
-    "authResetPassword": "Zresetuj hasło",
-    "authResetPasswordDescription": "Wprowadź swój adres e-mail, a wyślemy ci link do zresetowania hasła.",
     "authFailedToSendResetEmail": "Nie udało się wysłać e-maila z resetem.",
-    "authUnexpectedErrorShort": "Wystąpił nieoczekiwany błąd.",
     "authSending": "Wysyłanie...",
     "authSendResetLink": "Wyślij link resetujący",
-    "authEmailSent": "E-mail wysłany!",
-    "authResetLinkSentTo": "Wysłaliśmy link do zresetowania hasła na {email}. Kliknij link w e-mailu, żeby zaktualizować hasło.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Zaloguj się",
     "authVerificationErrorTimeout": "Weryfikacja przekroczyła czas. Spróbuj zarejestrować się ponownie.",
     "authVerificationErrorMissingCode": "Weryfikacja nieudana — brak kodu autoryzacyjnego.",

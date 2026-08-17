@@ -3531,32 +3531,14 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authContinueToApp => 'Przejdź do aplikacji';
 
   @override
-  String get authResetPassword => 'Zresetuj hasło';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Wprowadź swój adres e-mail, a wyślemy ci link do zresetowania hasła.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Nie udało się wysłać e-maila z resetem.';
-
-  @override
-  String get authUnexpectedErrorShort => 'Wystąpił nieoczekiwany błąd.';
 
   @override
   String get authSending => 'Wysyłanie...';
 
   @override
   String get authSendResetLink => 'Wyślij link resetujący';
-
-  @override
-  String get authEmailSent => 'E-mail wysłany!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Wysłaliśmy link do zresetowania hasła na $email. Kliknij link w e-mailu, żeby zaktualizować hasło.';
-  }
 
   @override
   String get authSignInButton => 'Zaloguj się';

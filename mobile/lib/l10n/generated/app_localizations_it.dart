@@ -3488,33 +3488,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authContinueToApp => 'Continua nell\'app';
 
   @override
-  String get authResetPassword => 'Reimposta password';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Inserisci il tuo indirizzo email e ti manderemo un link per reimpostare la password.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Impossibile inviare l\'email di reimpostazione.';
-
-  @override
-  String get authUnexpectedErrorShort =>
-      'Si è verificato un errore imprevisto.';
 
   @override
   String get authSending => 'Invio...';
 
   @override
   String get authSendResetLink => 'Invia link di reimpostazione';
-
-  @override
-  String get authEmailSent => 'Email inviata!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Abbiamo inviato un link per reimpostare la password a $email. Clicca sul link nella tua email per aggiornare la password.';
-  }
 
   @override
   String get authSignInButton => 'Accedi';

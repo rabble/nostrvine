@@ -1371,22 +1371,9 @@
     "authClickLinkContinue": "Klik op de link in je e-mail om registratie af te ronden. Je kunt ondertussen de app blijven gebruiken.",
     "authWaitingForVerificationEllipsis": "Wachten op verificatie...",
     "authContinueToApp": "Door naar de app",
-    "authResetPassword": "Wachtwoord resetten",
-    "authResetPasswordDescription": "Voer je e-mailadres in en we sturen je een link om je wachtwoord te resetten.",
     "authFailedToSendResetEmail": "Resetmail versturen mislukt.",
-    "authUnexpectedErrorShort": "Er is een onverwachte fout opgetreden.",
     "authSending": "Versturen...",
     "authSendResetLink": "Resetlink versturen",
-    "authEmailSent": "E-mail verstuurd!",
-    "authResetLinkSentTo": "We hebben een resetlink naar {email} gestuurd. Klik op de link in je e-mail om je wachtwoord bij te werken.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Inloggen",
     "authVerificationErrorTimeout": "Verificatie duurde te lang. Probeer opnieuw te registreren.",
     "authVerificationErrorMissingCode": "Verificatie mislukt — autorisatiecode ontbreekt.",

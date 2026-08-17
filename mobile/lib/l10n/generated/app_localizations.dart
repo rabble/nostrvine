@@ -5993,29 +5993,11 @@ abstract class AppLocalizations {
   /// **'Continue to App'**
   String get authContinueToApp;
 
-  /// No description provided for @authResetPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Reset password'**
-  String get authResetPassword;
-
-  /// No description provided for @authResetPasswordDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your email address and we\'ll send you a link to reset your password.'**
-  String get authResetPasswordDescription;
-
   /// No description provided for @authFailedToSendResetEmail.
   ///
   /// In en, this message translates to:
   /// **'Failed to send reset email.'**
   String get authFailedToSendResetEmail;
-
-  /// No description provided for @authUnexpectedErrorShort.
-  ///
-  /// In en, this message translates to:
-  /// **'An unexpected error occurred.'**
-  String get authUnexpectedErrorShort;
 
   /// No description provided for @authSending.
   ///
@@ -6028,18 +6010,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send reset link'**
   String get authSendResetLink;
-
-  /// No description provided for @authEmailSent.
-  ///
-  /// In en, this message translates to:
-  /// **'Email sent!'**
-  String get authEmailSent;
-
-  /// Confirmation message after reset link sent
-  ///
-  /// In en, this message translates to:
-  /// **'We sent a password reset link to {email}. Please click the link in your email to update your password.'**
-  String authResetLinkSentTo(String email);
 
   /// No description provided for @authSignInButton.
   ///

@@ -1371,22 +1371,9 @@
     "authClickLinkContinue": "Clique no link no seu e-mail para completar o registro. Você pode continuar usando o app enquanto isso.",
     "authWaitingForVerificationEllipsis": "Aguardando verificação...",
     "authContinueToApp": "Ir para o app",
-    "authResetPassword": "Redefinir senha",
-    "authResetPasswordDescription": "Digite seu endereço de e-mail e enviaremos um link para redefinir sua senha.",
     "authFailedToSendResetEmail": "Falha ao enviar o e-mail de redefinição.",
-    "authUnexpectedErrorShort": "Ocorreu um erro inesperado.",
     "authSending": "Enviando...",
     "authSendResetLink": "Enviar link de redefinição",
-    "authEmailSent": "E-mail enviado!",
-    "authResetLinkSentTo": "Enviamos um link de redefinição de senha para {email}. Clique no link do e-mail para atualizar sua senha.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Entrar",
     "authVerificationErrorTimeout": "A verificação expirou. Tente se registrar novamente.",
     "authVerificationErrorMissingCode": "Verificação falhou — código de autorização ausente.",
