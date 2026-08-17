@@ -39,6 +39,12 @@ void main() {
         ..writeAsStringSync(body);
     }
 
+    void writeDart(String relative, String body) {
+      final file = File('${mobile.path}/lib/$relative');
+      file.parent.createSync(recursive: true);
+      file.writeAsStringSync(body);
+    }
+
     ProcessResult run({
       bool update = false,
       bool acceptRemovals = false,
@@ -88,6 +94,65 @@ void main() {
       expect(
         res.stdout,
         contains('1 bindings verified (of 1 asserted literals extracted)'),
+      );
+    });
+
+    test('does not count YAML block scalar markers as copy', () {
+      writeArb({'settingsTitle': 'Settings'});
+      writeFlow(
+        'asserts/menu.yaml',
+        '- assertVisible: |-\n'
+            '    Settings\n',
+      );
+      writeManifest('# no extractable literal binding yet\n');
+
+      final res = run();
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        res.stdout,
+        contains('0 bindings verified (of 0 asserted literals extracted)'),
+      );
+    });
+
+    test('fails when ARB-backed flow copy is unregistered', () {
+      writeArb({'settingsTitle': 'Settings', 'privacyTitle': 'Privacy'});
+      writeFlow(
+        'asserts/menu.yaml',
+        '- assertVisible: Settings\n'
+            '- assertVisible: Privacy\n',
+      );
+      writeManifest('settingsTitle\te2e/maestro/asserts/menu.yaml\n');
+
+      final res = run();
+
+      expect(res.exitCode, 1);
+      expect(res.stderr, contains('UNREGISTERED'));
+      expect(res.stderr, contains('Privacy'));
+    });
+
+    test('regen prefers live Dart references for duplicate ARB values', () {
+      writeArb({
+        'libraryClipSelectionTitle': 'Clips',
+        'libraryTabClips': 'Clips',
+      });
+      writeDart(
+        'screens/library_screen.dart',
+        'final label = context.l10n.libraryTabClips;\n',
+      );
+      writeFlow('asserts/library.yaml', '- assertVisible: Clips\n');
+      writeManifest('# generated below\n');
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        contains('libraryTabClips\te2e/maestro/asserts/library.yaml'),
+      );
+      expect(
+        manifest.readAsStringSync(),
+        isNot(contains('libraryClipSelectionTitle')),
       );
     });
 
@@ -189,10 +254,7 @@ void main() {
       expect(res.exitCode, 1);
       expect(res.stderr, contains('regen refused'));
       expect(res.stderr, contains('key no longer exists'));
-      expect(
-        manifest.readAsStringSync(),
-        contains('authConnectSignerApp'),
-      );
+      expect(manifest.readAsStringSync(), contains('authConnectSignerApp'));
     });
 
     test('pure rename with unchanged value re-binds without a refusal', () {
@@ -278,6 +340,18 @@ void main() {
 
       expect(res.exitCode, 1);
       expect(res.stderr, contains('ERODED'));
+    });
+
+    test('fails closed when the base ref cannot be loaded', () {
+      writeArb({'settingsTitle': 'Settings'});
+      writeFlow('asserts/menu.yaml', '- assertVisible: Settings\n');
+      writeManifest('settingsTitle\te2e/maestro/asserts/menu.yaml\n');
+
+      final res = run(baseRef: 'refs/heads/does-not-exist', allowNoBase: false);
+
+      expect(res.exitCode, 1);
+      expect(res.stderr, contains('could not load the manifest'));
+      expect(res.stderr, contains('failing closed'));
     });
   });
 }

@@ -104,6 +104,7 @@ COMMAND_SCALAR = re.compile(
     r"^\s*-\s*(?:assertVisible|assertNotVisible|tapOn|longPressOn):\s*(?P<v>.+?)\s*$"
 )
 TEXT_PROP = re.compile(r"^\s*text:\s*(?P<v>.+?)\s*$")
+BLOCK_SCALAR_MARKERS = {"|", "|-", ">", ">-"}
 
 def strip_comment(line):
     out = []
@@ -139,13 +140,43 @@ def flow_literals(path):
                 if not m:
                     continue
                 v = unquote(m.group("v"))
-                if not v or "${" in v or v.startswith("{") or ":" in v and " " not in v:
+                if (not v or v in BLOCK_SCALAR_MARKERS or "${" in v or
+                        v.startswith("{") or ":" in v and " " not in v):
                     continue
                 lits.append(norm(v))
                 break
     return lits
 
 mobile_dir = os.path.abspath(os.path.join(e2e_dir, "..", ".."))
+
+# Duplicate English values are common, but generated localization files make
+# every ARB key look referenced. Only consider hand-written Dart under the app
+# and package lib trees. Prefer a live candidate before using the stable
+# alphabetical fallback; otherwise a row can watch a key the app cannot change.
+referenced_keys = set()
+source_roots = [os.path.join(mobile_dir, "lib"),
+                os.path.join(mobile_dir, "packages")]
+generated_suffixes = (".g.dart", ".freezed.dart", ".mocks.dart")
+for source_root in source_roots:
+    if not os.path.isdir(source_root):
+        continue
+    for root, dirs, names in os.walk(source_root):
+        dirs[:] = [d for d in dirs if d not in {"test", ".dart_tool", "build"}]
+        rel_root = os.path.relpath(root, mobile_dir)
+        if rel_root == "lib/l10n" or rel_root.startswith("lib/l10n" + os.sep):
+            dirs[:] = []
+            continue
+        for name in names:
+            if not name.endswith(".dart") or name.endswith(generated_suffixes):
+                continue
+            with open(os.path.join(root, name), encoding="utf-8",
+                      errors="replace") as fh:
+                tokens = set(re.findall(r"\b[A-Za-z_]\w*\b", fh.read()))
+            referenced_keys.update(tokens & all_keys)
+
+def binding_keys(keys):
+    live = sorted(set(keys) & referenced_keys)
+    return [live[0] if live else sorted(keys)[0]]
 
 flows = []
 for root, _dirs, names in os.walk(e2e_dir):
@@ -306,8 +337,8 @@ if mode == "regen":
     old = load_manifest(manifest_path)
     new = {}
     for (lit, rel), keys in found.items():
-        key = sorted(keys)[0]  # duplicate ARB values bind to the first key
-        new[(key, rel)] = (None, lit)  # record the literal the flow asserts
+        for key in binding_keys(keys):
+            new[(key, rel)] = (None, lit)  # record the literal the flow asserts
     # hand-maintained rendered bindings cannot be auto-derived: carry them
     carried = 0
     for (key, rel), (rendered, _bound) in old.items():
