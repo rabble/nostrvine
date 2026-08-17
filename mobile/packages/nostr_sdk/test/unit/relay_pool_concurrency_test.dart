@@ -29,7 +29,6 @@ class _MutatingRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -65,7 +64,6 @@ class _SucceedingRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -106,7 +104,6 @@ class _CountRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -149,7 +146,6 @@ class _FailingSendRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -190,7 +186,6 @@ class _StallingReconnectRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -233,7 +228,6 @@ class _AlwaysHangingRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -266,7 +260,6 @@ class _DeferredSendRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -319,7 +312,6 @@ class _ConnectionAwareTempRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
@@ -348,7 +340,6 @@ class _HangingSendRelay extends Relay {
   @override
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,
