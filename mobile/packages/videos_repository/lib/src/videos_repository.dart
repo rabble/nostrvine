@@ -286,9 +286,7 @@ class VideosRepository {
     // Return in-memory cached result when available (initial page only).
     if (!skipCache && until == null) {
       final cached = _inMemoryFeedCache?.get('home');
-      if (cached != null) {
-        return _withSeenFreshnessOrdering(cached, isFromCache: true);
-      }
+      if (cached != null) return _withSeenFreshnessOrdering(cached);
     }
 
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
@@ -747,7 +745,6 @@ class VideosRepository {
           videos: ordered,
           hasMore: cached.hasMore,
           paginationCursor: cached.paginationCursor,
-          isFromCache: true,
         );
       }
     }
@@ -945,7 +942,7 @@ class VideosRepository {
         );
         // If drop would empty it, return cached as-is to avoid empty feed.
         if (filtered.isEmpty || filtered.length == cached.videos.length) {
-          return _withSeenFreshnessOrdering(cached, isFromCache: true);
+          return cached;
         }
         // For drop policy, filtered cache may be short; return filtered and
         // let pagination deep-fetch on next page rather than blocking here.
@@ -953,7 +950,6 @@ class VideosRepository {
           videos: filtered..shuffle(_random),
           paginationCursor: cached.paginationCursor,
           hasMore: cached.hasMore,
-          isFromCache: true,
         );
       }
     }
@@ -2802,9 +2798,7 @@ class VideosRepository {
         '$preferenceCacheSuffix';
     if (!skipCache && until == null && cursor == null) {
       final cached = _inMemoryFeedCache?.get(cacheKey);
-      if (cached != null) {
-        return _withSeenFreshnessOrdering(cached, isFromCache: true);
-      }
+      if (cached != null) return _withSeenFreshnessOrdering(cached);
     }
 
     final isFirstPage = until == null && cursor == null;
@@ -3022,22 +3016,11 @@ class VideosRepository {
     );
   }
 
-  /// Re-orders [result] by seen-freshness, stamping [isFromCache] on the way
-  /// through.
-  ///
-  /// [isFromCache] is authoritative rather than merged with
-  /// `result.isFromCache`: every caller passes a freshly-fetched or
-  /// freshly-read-from-cache result, so the stored value is always `false`
-  /// and merging would only add an unreachable branch.
   Future<HomeFeedResult> _withSeenFreshnessOrdering(
-    HomeFeedResult result, {
-    bool isFromCache = false,
-  }) async {
+    HomeFeedResult result,
+  ) async {
     final orderedVideos = await _orderBySeenFreshness(result.videos);
-    if (identical(orderedVideos, result.videos) &&
-        isFromCache == result.isFromCache) {
-      return result;
-    }
+    if (identical(orderedVideos, result.videos)) return result;
     return HomeFeedResult(
       videos: orderedVideos,
       videoListSources: result.videoListSources,
@@ -3046,7 +3029,6 @@ class VideosRepository {
       nextCursor: result.nextCursor,
       paginationCursor: result.paginationCursor,
       hasMore: result.hasMore,
-      isFromCache: isFromCache,
     );
   }
 

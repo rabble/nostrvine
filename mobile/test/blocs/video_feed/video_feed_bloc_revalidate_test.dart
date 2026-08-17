@@ -96,8 +96,12 @@ void main() {
         },
       );
 
+      // Switching *to* a mode mid-session reaches the feed through
+      // `_selectSource`, a second route to the same stale page: the cache it
+      // reads has no TTL either. Fixing only the cold start left #7719's
+      // symptom alive here.
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'settles with isRefreshing false once the fresh page lands',
+        'fetches past the cache when the user switches modes',
         setUp: () {
           when(
             () => videosRepository.getNewVideos(
@@ -106,13 +110,29 @@ void main() {
               skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: [_video('fresh')]));
+          when(
+            () => videosRepository.getClassicVideos(
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: [_video('c')]));
         },
         build: buildBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
-        wait: const Duration(milliseconds: 50),
-        verify: (bloc) {
-          expect(bloc.state.isRefreshing, isFalse);
-          expect(bloc.state.status, VideoFeedStatus.success);
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.classic));
+          await Future<void>.delayed(const Duration(milliseconds: 30));
+          bloc.add(const VideoFeedModeChanged(FeedMode.latest));
+        },
+        wait: const Duration(milliseconds: 80),
+        verify: (_) {
+          verify(
+            () => videosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: true,
+            ),
+          ).called(1);
         },
       );
     });

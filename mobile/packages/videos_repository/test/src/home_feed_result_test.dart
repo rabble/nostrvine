@@ -166,10 +166,9 @@ void main() {
         nextCursor: 1234,
         paginationCursor: 'o:2',
         hasMore: true,
-        isFromCache: true,
       );
 
-      expect(result.props, hasLength(8));
+      expect(result.props, hasLength(7));
       expect(result.props[0], equals([video]));
       expect(result.props[1], equals(sources));
       expect(result.props[2], equals(listOnly));
@@ -177,13 +176,6 @@ void main() {
       expect(result.props[4], 1234);
       expect(result.props[5], 'o:2');
       expect(result.props[6], isTrue);
-      expect(result.props[7], isTrue);
-    });
-
-    test('isFromCache defaults to false', () {
-      // Consumers use this to decide whether to revalidate; a fresh fetch
-      // must never be mistaken for a cache hit.
-      expect(const HomeFeedResult(videos: []).isFromCache, isFalse);
     });
   });
 }

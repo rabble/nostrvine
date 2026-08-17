@@ -27,7 +27,6 @@ class HomeFeedResult extends Equatable {
     this.nextCursor,
     this.paginationCursor,
     this.hasMore,
-    this.isFromCache = false,
   });
 
   /// All videos (following + list), sorted by createdAt descending.
@@ -60,11 +59,6 @@ class HomeFeedResult extends Equatable {
   /// Whether the upstream feed has more data to fetch.
   final bool? hasMore;
 
-  /// Whether this result was served from the repository's in-memory feed
-  /// cache. Consumers use it to paint immediately and revalidate in the
-  /// background, rather than guessing staleness from timestamps.
-  final bool isFromCache;
-
   @override
   List<Object?> get props => [
     videos,
@@ -74,6 +68,5 @@ class HomeFeedResult extends Equatable {
     nextCursor,
     paginationCursor,
     hasMore,
-    isFromCache,
   ];
 }

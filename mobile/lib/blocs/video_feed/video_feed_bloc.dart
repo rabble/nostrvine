@@ -364,7 +364,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       ),
     );
 
-    await _loadVideos(source, emit);
+    await _loadVideos(source, emit, revalidate: true);
   }
 
   bool _listsEqual(List<String> a, List<String> b) {
@@ -736,7 +736,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         state.copyWith(
           status: VideoFeedStatus.success,
           videos: displayedVideos,
-          isRefreshing: false,
           // Only stop pagination when no results at all.
           // Fewer than _pageSize can happen due to server-side filtering.
           hasMore: _hasMoreForSource(
@@ -796,10 +795,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
             error: VideoFeedError.loadFailed,
           ),
         );
-      } else if (state.isRefreshing) {
-        // Revalidation failed over content already on screen. Keep showing it,
-        // but stop reporting a refresh that is no longer running.
-        emit(state.copyWith(isRefreshing: false));
       }
     }
   }
@@ -835,7 +830,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         videos: cachedValid,
         currentIndex: 0,
         hasMore: true,
-        isRefreshing: true,
         clearPaginationCursor: true,
         clearError: true,
       ),
