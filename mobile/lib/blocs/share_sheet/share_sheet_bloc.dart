@@ -472,9 +472,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       final result = await bookmarkService.toggleVideoInGlobalBookmarks(
         _video.id,
       );
-      if (isClosed) {
-        return;
-      }
+      if (isClosed) return;
 
       wasBookmarked = result.wasBookmarked;
       emit(
@@ -507,9 +505,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      if (isClosed) {
-        return;
-      }
+      if (isClosed) return;
 
       emit(
         state.copyWith(
