@@ -106,7 +106,9 @@ enum BookmarkToggleFailure {
   /// Relays were reachable but did not answer before the query deadline.
   timedOut,
 
-  /// The list reconciled, but the new version was not published.
+  /// The list reconciled, but the change failed to complete: auth
+  /// disappeared mid-flow, signing failed, a relay never sent OK, or the
+  /// publish path threw for another reason.
   publishDidNotComplete,
 
   /// There is no signed-in identity to read or publish as.
