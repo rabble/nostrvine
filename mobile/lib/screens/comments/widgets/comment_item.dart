@@ -252,11 +252,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
   }) async {
     if (!mounted) return;
 
-    // Prevent options modal on placeholder comments (in-flight video replies).
-    // IDs like "pending_comment_1234" should never reach here, as the long-press
-    // is gated upstream, but guard defensively.
-    if (widget.comment.id.startsWith(commentPlaceholderIdPrefix)) return;
-
     // Capture BLoC references before async gap to avoid using context
     // after the widget may have been unmounted.
     final reactionsBloc = context.read<CommentReactionsBloc>();

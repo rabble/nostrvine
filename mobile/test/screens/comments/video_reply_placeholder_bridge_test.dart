@@ -232,6 +232,81 @@ void main() {
       expect(rollbacks.single.placeholderId, pendingVideoReplyId('draft-1'));
     });
 
+    test('grace window is pinned to 10 seconds', () {
+      // This test ensures that videoReplyRelayEchoGrace is exactly
+      // Duration(seconds: 10). The grace window is a product decision
+      // to hold relay echo swaps for relay confirmation before rolling
+      // the placeholder back. If this value changes, the decision should
+      // be intentional and documented in the PR.
+      expect(videoReplyRelayEchoGrace, equals(const Duration(seconds: 10)));
+    });
+
+    testWidgets(
+      'keeps placeholder before grace window expires (boundary: -1ms)',
+      (tester) async {
+        final draft = _replyDraft(id: 'draft-1', rootEventId: _rootEventId);
+        whenListen(
+          publish,
+          Stream.fromIterable([
+            _publishing([draft]),
+            const BackgroundPublishState(
+              recentlyPublished: [PublishedVideo(draftId: 'draft-1')],
+            ),
+          ]),
+          initialState: _publishing([draft]),
+        );
+
+        await pumpBridge(tester);
+        await tester.pump();
+        // Pump just before the grace window expires
+        await tester.pump(
+          videoReplyRelayEchoGrace - const Duration(milliseconds: 1),
+        );
+
+        final events = verify(() => list.add(captureAny())).captured;
+        expect(events.whereType<OptimisticCommentInserted>(), hasLength(1));
+        expect(
+          events.whereType<OptimisticCommentRolledBack>(),
+          isEmpty,
+          reason: 'placeholder should be kept before grace window expires',
+        );
+      },
+    );
+
+    testWidgets(
+      'rolls placeholder back when grace window expires (boundary: +1ms)',
+      (tester) async {
+        final draft = _replyDraft(id: 'draft-1', rootEventId: _rootEventId);
+        whenListen(
+          publish,
+          Stream.fromIterable([
+            _publishing([draft]),
+            const BackgroundPublishState(
+              recentlyPublished: [PublishedVideo(draftId: 'draft-1')],
+            ),
+          ]),
+          initialState: _publishing([draft]),
+        );
+
+        await pumpBridge(tester);
+        await tester.pump();
+        // Pump just past the grace window expiration
+        await tester.pump(
+          videoReplyRelayEchoGrace + const Duration(milliseconds: 1),
+        );
+
+        final rollbacks = verify(
+          () => list.add(captureAny()),
+        ).captured.whereType<OptimisticCommentRolledBack>().toList();
+        expect(
+          rollbacks,
+          hasLength(1),
+          reason: 'placeholder should roll back after grace window expires',
+        );
+        expect(rollbacks.single.placeholderId, pendingVideoReplyId('draft-1'));
+      },
+    );
+
     testWidgets('keeps a successful publish placeholder for relay echo swap', (
       tester,
     ) async {
