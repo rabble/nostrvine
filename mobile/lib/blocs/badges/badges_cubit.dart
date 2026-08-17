@@ -46,19 +46,28 @@ class BadgesCubit extends Cubit<BadgesState> {
     );
   }
 
-  /// Locally hides an awarded badge without publishing anything.
-  Future<void> hideAward(BadgeAwardViewData award) {
-    return _runAction(
-      BadgeActionStatus.hiding,
-      () => _repository.hideAward(award.awardEventId),
-    );
+  /// Rejects an awarded badge: unpins it from the profile when it was
+  /// accepted, then hides it from the awarded list.
+  ///
+  /// Hiding alone would leave an accepted badge on the profile while it is
+  /// gone from the dashboard — the user asked to be rid of it, so both
+  /// halves have to go.
+  Future<void> rejectAward(BadgeAwardViewData award) {
+    return _runAction(BadgeActionStatus.hiding, () async {
+      if (award.isAccepted) await _repository.removeAward(award);
+      await _repository.hideAward(award.definitionCoordinate);
+    });
   }
 
   /// Restores a locally hidden award.
+  ///
+  /// Undoes the hiding only. A rejection that also unpinned the badge does
+  /// not re-pin it: restoring the row puts the accept decision back in the
+  /// user's hands rather than republishing their profile for them.
   Future<void> unhideAward(BadgeAwardViewData award) {
     return _runAction(
       BadgeActionStatus.hiding,
-      () => _repository.unhideAward(award.awardEventId),
+      () => _repository.unhideAward(award.definitionCoordinate),
     );
   }
 

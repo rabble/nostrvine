@@ -145,7 +145,7 @@ void main() {
     );
 
     blocTest<BadgesCubit, BadgesState>(
-      'hideAward stores dismissal by award event id then refreshes dashboard',
+      'rejectAward dismisses the badge then refreshes dashboard',
       setUp: () {
         when(() => repository.hideAward(any())).thenAnswer((_) async {});
         when(
@@ -163,7 +163,7 @@ void main() {
         status: BadgesStatus.loaded,
         awarded: [awardedBadge],
       ),
-      act: (cubit) => cubit.hideAward(awardedBadge),
+      act: (cubit) => cubit.rejectAward(awardedBadge),
       expect: () => [
         BadgesState(
           status: BadgesStatus.loaded,
@@ -176,7 +176,33 @@ void main() {
         ),
       ],
       verify: (_) {
-        verify(() => repository.hideAward(awardedBadge.awardEventId)).called(1);
+        verify(
+          () => repository.hideAward(awardedBadge.definitionCoordinate),
+        ).called(1);
+        verifyNever(() => repository.removeAward(any()));
+      },
+    );
+
+    blocTest<BadgesCubit, BadgesState>(
+      'rejectAward unpins an accepted badge before dismissing it',
+      setUp: () {
+        when(() => repository.hideAward(any())).thenAnswer((_) async {});
+        when(() => repository.removeAward(any())).thenAnswer((_) async {});
+        when(repository.loadDashboard).thenAnswer(
+          (_) async => const BadgeDashboardData(
+            awarded: [],
+            issued: [],
+            created: [],
+          ),
+        );
+      },
+      build: () => BadgesCubit(repository: repository),
+      act: (cubit) => cubit.rejectAward(_awardViewData(isAccepted: true)),
+      verify: (_) {
+        verifyInOrder([
+          () => repository.removeAward(any()),
+          () => repository.hideAward(awardedBadge.definitionCoordinate),
+        ]);
       },
     );
 
@@ -209,7 +235,7 @@ void main() {
       ],
       verify: (_) {
         verify(
-          () => repository.unhideAward(awardedBadge.awardEventId),
+          () => repository.unhideAward(awardedBadge.definitionCoordinate),
         ).called(1);
       },
     );
@@ -353,10 +379,11 @@ void main() {
   });
 }
 
-BadgeAwardViewData _awardViewData() {
+BadgeAwardViewData _awardViewData({bool isAccepted = false}) {
   final issuerPubkey = _pubkey(2);
   final definitionCoordinate = '30009:$issuerPubkey:daily-diviner';
   return BadgeAwardViewData(
+    isAccepted: isAccepted,
     award: Nip58BadgeAward(
       event: _event(
         id: _eventId(1),
