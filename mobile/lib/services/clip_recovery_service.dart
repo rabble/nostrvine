@@ -84,8 +84,15 @@ class ClipRecoveryService {
   /// also the only family that is irreplaceable, since every other file is
   /// derived from a clip or (for an import) from media that still exists
   /// elsewhere.
+  ///
+  /// Both timestamp shapes the camera produces have to match, because they
+  /// differ per platform: Android formats `yyyyMMdd_HHmmss`
+  /// (`VID_20260814_113531.mp4`, see `CameraController.kt`) while iOS and
+  /// macOS use epoch milliseconds (`VID_1786700133469.mp4`, see
+  /// `CameraController.swift`). Matching only the millisecond shape made this
+  /// whole feature a no-op on Android.
   static final RegExp _recordingFileName = RegExp(
-    r'^VID_\d+\.mp4$',
+    r'^VID_(\d{8}_\d{6}|\d+)\.mp4$',
     caseSensitive: false,
   );
 

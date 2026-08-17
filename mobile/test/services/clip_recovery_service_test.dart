@@ -125,6 +125,21 @@ void main() {
         expect(report.orphanFiles.single.duration, const Duration(seconds: 3));
       });
 
+      test('recognises the recording names of every platform', () async {
+        // The camera names its output differently per platform, and matching
+        // only one shape made the whole feature a no-op on the other: Android
+        // formats yyyyMMdd_HHmmss, iOS and macOS use epoch milliseconds.
+        final android = writeVideo('VID_20260814_113531.mp4');
+        final apple = writeVideo('VID_1786700133469.mp4');
+
+        final report = await serviceFor(_ownerA).scanRecoverableClips();
+
+        expect(
+          report.orphanFiles.map((f) => f.path).toSet(),
+          {android.path, apple.path},
+        );
+      });
+
       test('offers only camera recordings, never derived renders', () async {
         // The documents directory is full of mp4s derived from a clip. They
         // cannot be blacklisted — the chroma-key bake and transform services

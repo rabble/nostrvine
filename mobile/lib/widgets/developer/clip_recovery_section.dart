@@ -112,22 +112,25 @@ class _RecoveryResult extends StatelessWidget {
               color: context.vineColors.accentPositive,
             ),
           ),
+        // The verdict leads and the inventory follows it, not the other way
+        // round: read in the other order, "23 clips" looks like the finding
+        // and "nothing to recover" like a contradiction of it.
+        if (!report.hasRecoverableContent)
+          Text(
+            l10n.devOptionsClipRecoveryEmpty,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
         Text(
           l10n.devOptionsClipRecoveryVisible(
             report.ownedClipCount,
             report.ownedDraftCount,
           ),
-          style: VineTheme.titleMediumFont(
-            color: context.vineColors.primaryText,
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
           ),
         ),
-        if (!report.hasRecoverableContent)
-          Text(
-            l10n.devOptionsClipRecoveryEmpty,
-            style: VineTheme.bodyMediumFont(
-              color: context.vineColors.secondaryText,
-            ),
-          ),
         if (report.foreignGroups.isNotEmpty) ...[
           Text(
             l10n.devOptionsClipRecoveryOtherAccounts,
