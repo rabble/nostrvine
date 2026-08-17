@@ -14,7 +14,11 @@ import 'package:unified_logger/unified_logger.dart';
 /// Shows a forgot password dialog that sends a reset email.
 ///
 /// [initialEmail] pre-populates the email field.
-/// [onSendResetEmail] is called with the validated email address.
+/// [onSendResetEmail] is called with the validated email address; the sheet
+/// stays open while it runs and closes only when it returns `true`. On
+/// `false` or a thrown error the sheet shows retry copy instead.
+/// [onResetAccepted] fires after the sheet has closed following an accepted
+/// reset — never on cancel or dismissal.
 void showForgotPasswordDialog({
   required BuildContext context,
   required String initialEmail,
@@ -23,20 +27,30 @@ void showForgotPasswordDialog({
 }) {
   unawaited(
     VineBottomSheet.show<bool>(
-      context: context,
-      scrollable: false,
-      isDismissible: false,
-      enableDrag: false,
-      title: Text(context.l10n.forgotPasswordTitle),
-      body: _ForgotPasswordSheetContent(
-        initialEmail: initialEmail,
-        onSendResetEmail: onSendResetEmail,
-      ),
-    ).then((wasAccepted) {
-      if (wasAccepted ?? false) {
-        onResetAccepted?.call();
-      }
-    }),
+          context: context,
+          scrollable: false,
+          isDismissible: false,
+          enableDrag: false,
+          showDragHandle: false,
+          title: Text(context.l10n.forgotPasswordTitle),
+          body: _ForgotPasswordSheetContent(
+            initialEmail: initialEmail,
+            onSendResetEmail: onSendResetEmail,
+          ),
+        )
+        .then((wasAccepted) {
+          if (wasAccepted ?? false) {
+            onResetAccepted?.call();
+          }
+        })
+        .onError<Object>((error, stackTrace) {
+          Log.error(
+            'Forgot password reset accepted callback failed: $error',
+            name: 'ForgotPasswordDialog',
+            category: LogCategory.auth,
+            stackTrace: stackTrace,
+          );
+        }),
   );
 }
 
@@ -96,17 +110,11 @@ class _ForgotPasswordSheetContentState
       _sendFailed = false;
     });
 
+    final bool wasAccepted;
     try {
-      final wasAccepted = await widget.onSendResetEmail(
+      wasAccepted = await widget.onSendResetEmail(
         _emailController.text.trim(),
       );
-      if (!mounted) return;
-
-      if (wasAccepted) {
-        context.pop(true);
-      } else {
-        _showSendFailure();
-      }
     } catch (error, stackTrace) {
       Log.error(
         'Forgot password reset callback failed: $error',
@@ -115,6 +123,14 @@ class _ForgotPasswordSheetContentState
         stackTrace: stackTrace,
       );
       if (mounted) _showSendFailure();
+      return;
+    }
+
+    if (!mounted) return;
+    if (wasAccepted) {
+      context.pop(true);
+    } else {
+      _showSendFailure();
     }
   }
 

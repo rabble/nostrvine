@@ -301,6 +301,36 @@ void main() {
         expect(find.text(l10n.forgotPasswordTitle), findsNothing);
       });
 
+      testWidgets('system back does not dismiss the sheet mid-submit', (
+        tester,
+      ) async {
+        final sendCompleter = Completer<bool>();
+        await tester.pumpWidget(
+          createTestWidget(
+            initialEmail: 'user@example.com',
+            onSendResetEmail: (_) => sendCompleter.future,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await openDialog(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
+        );
+        await tester.pump();
+
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
+
+        sendCompleter.complete(true);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.forgotPasswordTitle), findsNothing);
+      });
+
       testWidgets('keeps dialog open and shows retry copy when sending fails', (
         tester,
       ) async {
