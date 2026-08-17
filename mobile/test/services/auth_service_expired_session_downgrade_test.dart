@@ -6,6 +6,8 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -1250,6 +1252,57 @@ void main() {
         );
       },
     );
+
+    test('sign-out closes the active Keycast RPC signer', () async {
+      // Pins the production close-on-clear decision: signOut() clears the
+      // signer through _setKeycastSigner(null), which must close the owned
+      // KeycastRpc transport rather than abandon it.
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      arrangeExpiredSessionWithLocalKeys();
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
+
+      final activeRpc = KeycastRpc(
+        nostrApi: 'https://login.divine.video/api/nostr',
+        accessToken: 'active_token',
+        httpClient: MockClient(
+          (request) async => http.Response(
+            jsonEncode({'result': 'ok'}),
+            200,
+          ),
+        ),
+      );
+
+      final authService = createAuthService();
+
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
+          authService.debugSetKeycastSigner(activeRpc);
+          await authService.signOut();
+        },
+        (error, stack) {
+          // Ignore background relay/RPC errors
+        },
+      );
+
+      expect(authService.authState, equals(AuthState.unauthenticated));
+      await expectLater(
+        activeRpc.getPublicKey(),
+        throwsA(isA<KeycastRpcClosedException>()),
+        reason:
+            'sign-out must close the KeycastRpc it cleared so the owned '
+            'transport is not left open',
+      );
+    });
 
     test('isRpcUpgradeInProgress is false after upgrade completes', () async {
       // Regression for #4626: isRpcUpgradeInProgress must be false after

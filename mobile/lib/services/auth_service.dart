@@ -2813,6 +2813,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _hasExpiredOAuthSession = false;
 
     try {
+      // Sign-in runs during startup restore or from unauthenticated login
+      // screens, before any app-wide NostrClient can hold the previous
+      // signer (#5909 keeps the client across same-pubkey swaps), so
+      // closing the replaced signer here is safe — unlike the same-pubkey
+      // background RPC upgrade path, which deliberately retains it.
       if (session.hasRpcAccess) {
         _setKeycastSigner(_newKeycastSigner(session));
       } else {
