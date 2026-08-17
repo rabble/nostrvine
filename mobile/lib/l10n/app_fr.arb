@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "La récupération des clips a échoué",
     "devOptionsClipRecoveryVisible": "Visible actuellement : {clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} brouillon} other{{drafts} brouillons}}",
     "devOptionsClipRecoveryOtherAccounts": "Masqués sous d'autres comptes",
-    "devOptionsClipRecoveryUnowned": "Entrées sans compte",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} brouillon} other{{drafts} brouillons}}",
     "devOptionsClipRecoveryClaim": "Déplacer vers ce compte",
     "devOptionsClipRecoveryOrphanFiles": "Fichiers non référencés : {count} ({size})",

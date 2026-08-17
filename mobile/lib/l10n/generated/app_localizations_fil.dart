@@ -30,9 +30,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'Nakatago sa ibang account';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Mga entry na walang account';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     return '$clips clip, $drafts draft';
   }

@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "የክሊፕ መልሶ ማግኘት አልተሳካም",
     "devOptionsClipRecoveryVisible": "አሁን የሚታዩ፦ {clips, plural, =1{{clips} ክሊፕ} other{{clips} ክሊፖች}}, {drafts, plural, =1{{drafts} ረቂቅ} other{{drafts} ረቂቆች}}",
     "devOptionsClipRecoveryOtherAccounts": "በሌሎች መለያዎች ስር የተደበቁ",
-    "devOptionsClipRecoveryUnowned": "መለያ የሌላቸው ግቤቶች",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} ክሊፕ} other{{clips} ክሊፖች}}, {drafts, plural, =1{{drafts} ረቂቅ} other{{drafts} ረቂቆች}}",
     "devOptionsClipRecoveryClaim": "ወደዚህ መለያ አዛውር",
     "devOptionsClipRecoveryOrphanFiles": "ያልተጠቀሱ ፋይሎች፦ {count} ({size})",

@@ -6,7 +6,6 @@
   "devOptionsClipRecoveryFailure": "Pemulihan klip gagal",
   "devOptionsClipRecoveryVisible": "Kelihatan sekarang: {clips} klip, {drafts} draf",
   "devOptionsClipRecoveryOtherAccounts": "Tersembunyi di bawah akaun lain",
-  "devOptionsClipRecoveryUnowned": "Entri tanpa akaun",
   "devOptionsClipRecoveryCounts": "{clips} klip, {drafts} draf",
   "devOptionsClipRecoveryClaim": "Alih ke akaun ini",
   "devOptionsClipRecoveryOrphanFiles": "Fail tanpa rujukan: {count} ({size})",

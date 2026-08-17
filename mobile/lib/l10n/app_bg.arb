@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Възстановяването на клипове се провали",
     "devOptionsClipRecoveryVisible": "Видими сега: {clips, plural, =1{{clips} клип} other{{clips} клипа}}, {drafts, plural, =1{{drafts} чернова} other{{drafts} чернови}}",
     "devOptionsClipRecoveryOtherAccounts": "Скрити под други акаунти",
-    "devOptionsClipRecoveryUnowned": "Записи без акаунт",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} клип} other{{clips} клипа}}, {drafts, plural, =1{{drafts} чернова} other{{drafts} чернови}}",
     "devOptionsClipRecoveryClaim": "Преместване в този акаунт",
     "devOptionsClipRecoveryOrphanFiles": "Файлове без връзка: {count} ({size})",

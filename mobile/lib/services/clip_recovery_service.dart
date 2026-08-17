@@ -10,12 +10,23 @@ import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/clip_recovery.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_editor/clip_media_duration.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Thrown when a claim is attempted with no account to move the rows to.
+class NoAccountToRecoverToException implements Exception {
+  /// Creates the exception.
+  const NoAccountToRecoverToException();
+
+  @override
+  String toString() =>
+      'NoAccountToRecoverToException: no signed-in account to recover to';
+}
 
 /// Recovers recordings the app can no longer show.
 ///
@@ -106,8 +117,9 @@ class ClipRecoveryService {
     return result?.path;
   }
 
-  /// Reports every locally stored recording, grouped by the owner it is
-  /// stamped with, plus the video files no row references.
+  /// Reports every locally stored recording, split into what the signed-in
+  /// account can already see and what is hidden under another owner, plus the
+  /// video files no row references.
   Future<ClipRecoveryReport> scanRecoverableClips() async {
     final currentOwner = _clipLibrary.ownerPubkey;
 
@@ -118,26 +130,36 @@ class ClipRecoveryService {
     final clipRows = await _clipsDao.getAllClips(includeTrashed: true);
     final draftRows = await _draftsDao.getAllDrafts();
 
-    final clipCounts = <String?, int>{};
-    final newestRecordedAt = <String?, DateTime>{};
+    var ownedClipCount = 0;
+    var ownedDraftCount = 0;
+    final clipCounts = <String, int>{};
+    final newestRecordedAt = <String, DateTime>{};
     for (final row in clipRows) {
-      clipCounts.update(row.ownerPubkey, (v) => v + 1, ifAbsent: () => 1);
-      final newest = newestRecordedAt[row.ownerPubkey];
+      final owner = row.ownerPubkey;
+      if (_isVisibleTo(currentOwner, owner)) {
+        ownedClipCount++;
+        continue;
+      }
+      clipCounts.update(owner!, (v) => v + 1, ifAbsent: () => 1);
+      final newest = newestRecordedAt[owner];
       if (newest == null || row.recordedAt.isAfter(newest)) {
-        newestRecordedAt[row.ownerPubkey] = row.recordedAt;
+        newestRecordedAt[owner] = row.recordedAt;
       }
     }
 
-    final draftCounts = <String?, int>{};
+    final draftCounts = <String, int>{};
     for (final row in draftRows) {
-      draftCounts.update(row.ownerPubkey, (v) => v + 1, ifAbsent: () => 1);
+      final owner = row.ownerPubkey;
+      if (_isVisibleTo(currentOwner, owner)) {
+        ownedDraftCount++;
+        continue;
+      }
+      draftCounts.update(owner!, (v) => v + 1, ifAbsent: () => 1);
     }
 
-    final foreignOwners = {...clipCounts.keys, ...draftCounts.keys}
-      ..remove(currentOwner);
     final foreignGroups =
         [
-          for (final owner in foreignOwners)
+          for (final owner in {...clipCounts.keys, ...draftCounts.keys})
             ClipOwnerGroup(
               ownerPubkey: owner,
               clipCount: clipCounts[owner] ?? 0,
@@ -151,12 +173,24 @@ class ClipRecoveryService {
 
     return ClipRecoveryReport(
       currentOwnerPubkey: currentOwner,
-      ownedClipCount: clipCounts[currentOwner] ?? 0,
-      ownedDraftCount: draftCounts[currentOwner] ?? 0,
+      ownedClipCount: ownedClipCount,
+      ownedDraftCount: ownedDraftCount,
       foreignGroups: foreignGroups,
       orphanFiles: await _findOrphanFiles(),
     );
   }
+
+  /// Whether a row stamped [rowOwner] is already visible to [currentOwner].
+  ///
+  /// Mirrors the DAOs' `owner = ? OR owner IS NULL` predicate exactly, and the
+  /// `IS NULL` half is why this is not a plain equality check: a row carrying
+  /// no owner at all is visible to *every* account, so counting it as hidden
+  /// would report a clip the user can already see as one to recover — and offer
+  /// a claim that changes nothing about its visibility. A null [currentOwner]
+  /// turns the same predicate into a constant true, so nothing is hidden from
+  /// it either.
+  static bool _isVisibleTo(String? currentOwner, String? rowOwner) =>
+      currentOwner == null || rowOwner == null || rowOwner == currentOwner;
 
   /// Camera recordings in the documents directory that no clip or draft row
   /// references, newest first, each with a preview frame and its length.
@@ -271,22 +305,29 @@ class ClipRecoveryService {
   /// Restamps every row owned by [group] onto the signed-in account, so its
   /// clips and drafts become visible again.
   ///
-  /// Rows carrying no owner at all are swept up alongside it: that is the
+  /// Rows carrying no owner at all are swept up alongside it — that is the
   /// contract of the DAO's claim, and the same one sign-in already applies to
-  /// them. So claiming any group also empties the unowned group, even though
-  /// the report lists the two separately.
+  /// them. It changes nothing the operator can see: those rows were already
+  /// visible to this account (see [_isVisibleTo]) and the scan counts them as
+  /// such, so the claim only attributes them.
   ///
-  /// Returns the number of clip rows moved. No-ops when no account is signed
-  /// in — there would be nothing to move them to.
+  /// Returns the number of clip rows moved, which for that reason can exceed
+  /// [ClipOwnerGroup.clipCount].
+  ///
+  /// Throws [NoAccountToRecoverToException] when there is no account to move
+  /// the rows to.
   Future<int> claimOwnerGroup(ClipOwnerGroup group) async {
     final newOwner = _clipLibrary.ownerPubkey;
-    if (newOwner == null || newOwner.isEmpty) {
-      Log.warning(
-        '$_logName: refusing to claim without a signed-in account',
-        name: _logName,
-        category: LogCategory.video,
-      );
-      return 0;
+    if (newOwner == null ||
+        newOwner.isEmpty ||
+        newOwner == DraftStorageService.anonymousOwnerPubkey) {
+      // The marker is the reachable case, and the reason this is not a plain
+      // null check: the owner resolver falls back to it rather than to null, so
+      // a null/empty owner only happens in a test that constructs the library
+      // by hand. Claiming onto the marker would move a real account's rows into
+      // the bucket every owner-scoped query hides — the failure this whole
+      // feature exists to undo — and hand them to whoever signs in next.
+      throw const NoAccountToRecoverToException();
     }
 
     final source = group.ownerPubkey;
@@ -302,7 +343,7 @@ class ClipRecoveryService {
 
     Log.info(
       '$_logName: claimed $movedClips clip row(s) from '
-      '${source ?? '(unowned)'} for $newOwner',
+      '$source (plus any unowned) for $newOwner',
       name: _logName,
       category: LogCategory.video,
     );

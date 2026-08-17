@@ -30,9 +30,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => '隐藏在其他账号下';
 
   @override
-  String get devOptionsClipRecoveryUnowned => '无账号的记录';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     return '$clips 个片段，$drafts 个草稿';
   }

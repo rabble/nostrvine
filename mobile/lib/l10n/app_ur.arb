@@ -6,7 +6,6 @@
   "devOptionsClipRecoveryFailure": "کلپ بازیابی ناکام ہو گئی",
   "devOptionsClipRecoveryVisible": "اس وقت نظر آنے والے: {clips, plural, =1{{clips} کلپ} other{{clips} کلپس}}, {drafts, plural, =1{{drafts} مسودہ} other{{drafts} مسودے}}",
   "devOptionsClipRecoveryOtherAccounts": "دوسرے اکاؤنٹس میں چھپے ہوئے",
-  "devOptionsClipRecoveryUnowned": "بغیر اکاؤنٹ کے اندراجات",
   "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} کلپ} other{{clips} کلپس}}, {drafts, plural, =1{{drafts} مسودہ} other{{drafts} مسودے}}",
   "devOptionsClipRecoveryClaim": "اس اکاؤنٹ میں منتقل کریں",
   "devOptionsClipRecoveryOrphanFiles": "بغیر حوالہ فائلیں: {count} ({size})",

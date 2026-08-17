@@ -8,9 +8,11 @@ import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart' show Size;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/models/clip_recovery.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/clip_recovery_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -90,6 +92,26 @@ void main() {
     }
 
     group('scanRecoverableClips', () {
+      test('counts rows with no owner as visible, not as hidden', () async {
+        // Every scoped query is `owner = ? OR owner IS NULL`, so an unowned row
+        // is already showing in the library. Grouping it as hidden told the
+        // operator to recover a clip they could see, and offered a claim that
+        // changes nothing about its visibility — the opposite of what a
+        // diagnostic that has to separate two failure modes should say.
+        await saveClipOwnedBy(null, 'unowned');
+        expect(
+          (await libraryFor(_ownerA).getAllClips()).map((c) => c.id),
+          ['unowned'],
+          reason: 'the app already shows it, so the scan must agree',
+        );
+
+        final report = await serviceFor(_ownerA).scanRecoverableClips();
+
+        expect(report.ownedClipCount, 1);
+        expect(report.foreignGroups, isEmpty);
+        expect(report.hasRecoverableContent, isFalse);
+      });
+
       test('reports rows held by other owners, not the current one', () async {
         await saveClipOwnedBy(_ownerA, 'mine');
         await saveClipOwnedBy(_ownerB, 'theirs_1');
@@ -202,13 +224,41 @@ void main() {
         expect(visible.map((c) => c.id), ['hidden']);
       });
 
-      test('refuses to claim when no account is signed in', () async {
+      test('refuses to claim onto the anonymous marker', () async {
+        // The reachable "no account" case: the owner resolver falls back to the
+        // marker, never to null. Claiming onto it would move a real account's
+        // rows into the bucket every owner-scoped query hides — the failure
+        // this feature exists to undo.
         await saveClipOwnedBy(_ownerB, 'hidden');
-        final service = serviceFor(null);
-        final group =
-            (await service.scanRecoverableClips()).foreignGroups.single;
+        // Built directly rather than scanned: an unscoped library sees every
+        // row, so a scan run without an account reports nothing as hidden.
+        const group = ClipOwnerGroup(
+          ownerPubkey: _ownerB,
+          clipCount: 1,
+          draftCount: 0,
+        );
 
-        expect(await service.claimOwnerGroup(group), 0);
+        await expectLater(
+          serviceFor(DraftStorageService.anonymousOwnerPubkey).claimOwnerGroup(
+            group,
+          ),
+          throwsA(isA<NoAccountToRecoverToException>()),
+        );
+        expect(await libraryFor(_ownerB).getAllClips(), hasLength(1));
+      });
+
+      test('refuses to claim with no owner at all', () async {
+        await saveClipOwnedBy(_ownerB, 'hidden');
+        const group = ClipOwnerGroup(
+          ownerPubkey: _ownerB,
+          clipCount: 1,
+          draftCount: 0,
+        );
+
+        await expectLater(
+          serviceFor(null).claimOwnerGroup(group),
+          throwsA(isA<NoAccountToRecoverToException>()),
+        );
         expect(await libraryFor(_ownerB).getAllClips(), hasLength(1));
       });
     });

@@ -43,9 +43,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'Скрити под други акаунти';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Записи без акаунт';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     String _temp0 = intl.Intl.pluralLogic(
       clips,

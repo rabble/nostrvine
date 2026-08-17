@@ -30,9 +30,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'Diğer hesaplarda gizli';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Hesabı olmayan kayıtlar';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     return '$clips klip, $drafts taslak';
   }

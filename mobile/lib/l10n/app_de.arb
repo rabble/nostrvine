@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Clip-Wiederherstellung fehlgeschlagen",
     "devOptionsClipRecoveryVisible": "Jetzt sichtbar: {clips, plural, =1{{clips} Clip} other{{clips} Clips}}, {drafts, plural, =1{{drafts} Entwurf} other{{drafts} Entwürfe}}",
     "devOptionsClipRecoveryOtherAccounts": "Unter anderen Konten verborgen",
-    "devOptionsClipRecoveryUnowned": "Einträge ohne Konto",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} Clip} other{{clips} Clips}}, {drafts, plural, =1{{drafts} Entwurf} other{{drafts} Entwürfe}}",
     "devOptionsClipRecoveryClaim": "Zu diesem Konto verschieben",
     "devOptionsClipRecoveryOrphanFiles": "Nicht referenzierte Dateien: {count} ({size})",

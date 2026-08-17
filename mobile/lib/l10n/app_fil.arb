@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Nabigo ang pagbawi ng clip",
     "devOptionsClipRecoveryVisible": "Nakikita ngayon: {clips} clip, {drafts} draft",
     "devOptionsClipRecoveryOtherAccounts": "Nakatago sa ibang account",
-    "devOptionsClipRecoveryUnowned": "Mga entry na walang account",
     "devOptionsClipRecoveryCounts": "{clips} clip, {drafts} draft",
     "devOptionsClipRecoveryClaim": "Ilipat sa account na ito",
     "devOptionsClipRecoveryOrphanFiles": "Mga file na walang tumutukoy: {count} ({size})",

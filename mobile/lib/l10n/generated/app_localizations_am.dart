@@ -42,9 +42,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'በሌሎች መለያዎች ስር የተደበቁ';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'መለያ የሌላቸው ግቤቶች';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     String _temp0 = intl.Intl.pluralLogic(
       clips,

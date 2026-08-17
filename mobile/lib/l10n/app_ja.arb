@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "クリップの復旧に失敗しました",
     "devOptionsClipRecoveryVisible": "現在表示中: クリップ {clips} 件、下書き {drafts} 件",
     "devOptionsClipRecoveryOtherAccounts": "他のアカウントに隠れています",
-    "devOptionsClipRecoveryUnowned": "アカウントのない項目",
     "devOptionsClipRecoveryCounts": "クリップ {clips} 件、下書き {drafts} 件",
     "devOptionsClipRecoveryClaim": "このアカウントに移動",
     "devOptionsClipRecoveryOrphanFiles": "参照されていないファイル: {count} 件 ({size})",

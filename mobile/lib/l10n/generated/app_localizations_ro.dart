@@ -42,9 +42,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'Ascunse în alte conturi';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Intrări fără cont';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     String _temp0 = intl.Intl.pluralLogic(
       clips,

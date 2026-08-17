@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Klip kurtarma başarısız oldu",
     "devOptionsClipRecoveryVisible": "Şu anda görünen: {clips} klip, {drafts} taslak",
     "devOptionsClipRecoveryOtherAccounts": "Diğer hesaplarda gizli",
-    "devOptionsClipRecoveryUnowned": "Hesabı olmayan kayıtlar",
     "devOptionsClipRecoveryCounts": "{clips} klip, {drafts} taslak",
     "devOptionsClipRecoveryClaim": "Bu hesaba taşı",
     "devOptionsClipRecoveryOrphanFiles": "Referans verilmeyen dosyalar: {count} ({size})",

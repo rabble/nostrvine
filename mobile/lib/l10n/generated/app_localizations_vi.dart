@@ -30,9 +30,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'Bị ẩn dưới tài khoản khác';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Mục không có tài khoản';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     return '$clips clip, $drafts bản nháp';
   }

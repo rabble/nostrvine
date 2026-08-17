@@ -30,9 +30,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'Tersembunyi di akun lain';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Entri tanpa akun';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     return '$clips klip, $drafts draf';
   }

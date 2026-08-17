@@ -6,7 +6,6 @@
   "devOptionsClipRecoveryFailure": "片段恢复失败",
   "devOptionsClipRecoveryVisible": "当前可见：{clips} 个片段，{drafts} 个草稿",
   "devOptionsClipRecoveryOtherAccounts": "隐藏在其他账号下",
-  "devOptionsClipRecoveryUnowned": "无账号的记录",
   "devOptionsClipRecoveryCounts": "{clips} 个片段，{drafts} 个草稿",
   "devOptionsClipRecoveryClaim": "移至此账号",
   "devOptionsClipRecoveryOrphanFiles": "无引用的文件：{count} 个（{size}）",

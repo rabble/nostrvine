@@ -42,9 +42,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'مخفية ضمن حسابات أخرى';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'سجلات بلا حساب';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     String _temp0 = intl.Intl.pluralLogic(
       clips,

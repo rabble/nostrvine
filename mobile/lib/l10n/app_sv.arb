@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Klippåterställningen misslyckades",
     "devOptionsClipRecoveryVisible": "Synliga nu: {clips, plural, =1{{clips} klipp} other{{clips} klipp}}, {drafts, plural, =1{{drafts} utkast} other{{drafts} utkast}}",
     "devOptionsClipRecoveryOtherAccounts": "Dolda under andra konton",
-    "devOptionsClipRecoveryUnowned": "Poster utan konto",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} klipp} other{{clips} klipp}}, {drafts, plural, =1{{drafts} utkast} other{{drafts} utkast}}",
     "devOptionsClipRecoveryClaim": "Flytta till detta konto",
     "devOptionsClipRecoveryOrphanFiles": "Filer utan referens: {count} ({size})",

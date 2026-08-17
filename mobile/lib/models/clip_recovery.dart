@@ -3,6 +3,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:openvine/utils/byte_size_format.dart';
+import 'package:path/path.dart' as p;
 
 /// Locally stored rows attributed to one owner.
 ///
@@ -18,11 +19,16 @@ class ClipOwnerGroup extends Equatable {
     this.newestRecordedAt,
   });
 
-  /// Hex pubkey the rows are stamped with, or null for unowned legacy rows.
+  /// Hex pubkey the rows are stamped with.
   ///
-  /// May also be the anonymous marker, which is what recordings made before a
-  /// session had resolved used to be stamped with.
-  final String? ownerPubkey;
+  /// May be the anonymous marker, which is what recordings made before a
+  /// session had resolved used to be stamped with — the reported failure this
+  /// tool exists for.
+  ///
+  /// Never the unowned case: rows carrying no owner at all match every
+  /// account's `owner = ? OR owner IS NULL` query, so they are already visible
+  /// and the scan counts them that way instead of grouping them here.
+  final String ownerPubkey;
 
   /// Clip rows under this owner, including trashed and draft-owned ones.
   final int clipCount;
@@ -78,7 +84,7 @@ class OrphanClipFile extends Equatable {
   final String? previewPath;
 
   /// Filename without its directory.
-  String get name => path.split('/').last;
+  String get name => p.basename(path);
 
   @override
   List<Object?> get props => [
@@ -156,7 +162,7 @@ class ClipRecoveryReport extends Equatable {
       buffer.writeln('Other owners:');
       for (final group in foreignGroups) {
         buffer
-          ..writeln('  owner: ${group.ownerPubkey ?? '(unowned)'}')
+          ..writeln('  owner: ${group.ownerPubkey}')
           ..writeln(
             '    ${group.clipCount} clip(s), ${group.draftCount} draft(s)'
             '${group.newestRecordedAt == null ? '' : ', newest '

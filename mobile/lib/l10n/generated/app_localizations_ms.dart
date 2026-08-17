@@ -31,9 +31,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tersembunyi di bawah akaun lain';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Entri tanpa akaun';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     return '$clips klip, $drafts draf';
   }

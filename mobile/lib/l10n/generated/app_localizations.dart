@@ -174,12 +174,6 @@ abstract class AppLocalizations {
   /// **'Hidden under other accounts'**
   String get devOptionsClipRecoveryOtherAccounts;
 
-  /// Label for a group of rows that carry no account at all.
-  ///
-  /// In en, this message translates to:
-  /// **'Entries without an account'**
-  String get devOptionsClipRecoveryUnowned;
-
   /// How many clips and drafts one owner group holds.
   ///
   /// In en, this message translates to:

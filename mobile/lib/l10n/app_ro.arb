@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Recuperarea clipurilor a eșuat",
     "devOptionsClipRecoveryVisible": "Vizibile acum: {clips, plural, =1{{clips} clip} other{{clips} clipuri}}, {drafts, plural, =1{{drafts} ciornă} other{{drafts} ciorne}}",
     "devOptionsClipRecoveryOtherAccounts": "Ascunse în alte conturi",
-    "devOptionsClipRecoveryUnowned": "Intrări fără cont",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} clip} other{{clips} clipuri}}, {drafts, plural, =1{{drafts} ciornă} other{{drafts} ciorne}}",
     "devOptionsClipRecoveryClaim": "Mută în acest cont",
     "devOptionsClipRecoveryOrphanFiles": "Fișiere fără referință: {count} ({size})",

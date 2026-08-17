@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "La recuperación de clips falló",
     "devOptionsClipRecoveryVisible": "Visible ahora: {clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} borrador} other{{drafts} borradores}}",
     "devOptionsClipRecoveryOtherAccounts": "Ocultos en otras cuentas",
-    "devOptionsClipRecoveryUnowned": "Registros sin cuenta",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} borrador} other{{drafts} borradores}}",
     "devOptionsClipRecoveryClaim": "Mover a esta cuenta",
     "devOptionsClipRecoveryOrphanFiles": "Archivos sin referencia: {count} ({size})",

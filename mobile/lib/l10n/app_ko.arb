@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "클립 복구에 실패했습니다",
     "devOptionsClipRecoveryVisible": "현재 표시: 클립 {clips}개, 초안 {drafts}개",
     "devOptionsClipRecoveryOtherAccounts": "다른 계정에 숨겨짐",
-    "devOptionsClipRecoveryUnowned": "계정이 없는 항목",
     "devOptionsClipRecoveryCounts": "클립 {clips}개, 초안 {drafts}개",
     "devOptionsClipRecoveryClaim": "이 계정으로 옮기기",
     "devOptionsClipRecoveryOrphanFiles": "참조되지 않은 파일: {count}개 ({size})",

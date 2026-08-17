@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "فشل استرداد المقاطع",
     "devOptionsClipRecoveryVisible": "ظاهر الآن: {clips, plural, =1{مقطع واحد} other{{clips} مقاطع}}, {drafts, plural, =1{مسودة واحدة} other{{drafts} مسودات}}",
     "devOptionsClipRecoveryOtherAccounts": "مخفية ضمن حسابات أخرى",
-    "devOptionsClipRecoveryUnowned": "سجلات بلا حساب",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{مقطع واحد} other{{clips} مقاطع}}, {drafts, plural, =1{مسودة واحدة} other{{drafts} مسودات}}",
     "devOptionsClipRecoveryClaim": "نقل إلى هذا الحساب",
     "devOptionsClipRecoveryOrphanFiles": "ملفات غير مُشار إليها: {count} ({size})",

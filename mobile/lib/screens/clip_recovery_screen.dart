@@ -211,7 +211,7 @@ class _OwnerGroupRow extends StatelessWidget {
           // account, and this is the one value the operator has to verify
           // before handing the rows to someone else.
           Text(
-            group.ownerPubkey ?? l10n.devOptionsClipRecoveryUnowned,
+            group.ownerPubkey,
             style: VineTheme.bodySmallFont(
               color: context.vineColors.secondaryText,
             ),

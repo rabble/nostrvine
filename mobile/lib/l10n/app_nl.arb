@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Clipherstel mislukt",
     "devOptionsClipRecoveryVisible": "Nu zichtbaar: {clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} concept} other{{drafts} concepten}}",
     "devOptionsClipRecoveryOtherAccounts": "Verborgen onder andere accounts",
-    "devOptionsClipRecoveryUnowned": "Items zonder account",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} concept} other{{drafts} concepten}}",
     "devOptionsClipRecoveryClaim": "Naar dit account verplaatsen",
     "devOptionsClipRecoveryOrphanFiles": "Bestanden zonder verwijzing: {count} ({size})",

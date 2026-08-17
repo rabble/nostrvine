@@ -43,9 +43,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => 'Dolda under andra konton';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Poster utan konto';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     String _temp0 = intl.Intl.pluralLogic(
       clips,

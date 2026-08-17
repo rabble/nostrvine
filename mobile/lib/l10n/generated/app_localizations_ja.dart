@@ -30,9 +30,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get devOptionsClipRecoveryOtherAccounts => '他のアカウントに隠れています';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'アカウントのない項目';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     return 'クリップ $clips 件、下書き $drafts 件';
   }

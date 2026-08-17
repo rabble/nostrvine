@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Ripristino delle clip non riuscito",
     "devOptionsClipRecoveryVisible": "Visibili ora: {clips, plural, =1{{clips} clip} other{{clips} clip}}, {drafts, plural, =1{{drafts} bozza} other{{drafts} bozze}}",
     "devOptionsClipRecoveryOtherAccounts": "Nascosti sotto altri account",
-    "devOptionsClipRecoveryUnowned": "Voci senza account",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} clip} other{{clips} clip}}, {drafts, plural, =1{{drafts} bozza} other{{drafts} bozze}}",
     "devOptionsClipRecoveryClaim": "Sposta in questo account",
     "devOptionsClipRecoveryOrphanFiles": "File non referenziati: {count} ({size})",

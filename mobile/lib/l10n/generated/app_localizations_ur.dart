@@ -43,9 +43,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'دوسرے اکاؤنٹس میں چھپے ہوئے';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'بغیر اکاؤنٹ کے اندراجات';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     String _temp0 = intl.Intl.pluralLogic(
       clips,

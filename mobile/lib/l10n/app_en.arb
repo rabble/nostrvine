@@ -12,8 +12,6 @@
   "@devOptionsClipRecoveryVisible": {"description": "How much of the local library the signed-in account can already see.", "placeholders": {"clips": {"type": "int"}, "drafts": {"type": "int"}}},
   "devOptionsClipRecoveryOtherAccounts": "Hidden under other accounts",
   "@devOptionsClipRecoveryOtherAccounts": {"description": "Subheading above the groups of rows stored under a different account."},
-  "devOptionsClipRecoveryUnowned": "Entries without an account",
-  "@devOptionsClipRecoveryUnowned": {"description": "Label for a group of rows that carry no account at all."},
   "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} draft} other{{drafts} drafts}}",
   "@devOptionsClipRecoveryCounts": {"description": "How many clips and drafts one owner group holds.", "placeholders": {"clips": {"type": "int"}, "drafts": {"type": "int"}}},
   "devOptionsClipRecoveryClaim": "Move to this account",

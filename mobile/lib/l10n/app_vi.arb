@@ -6,7 +6,6 @@
   "devOptionsClipRecoveryFailure": "Khôi phục clip không thành công",
   "devOptionsClipRecoveryVisible": "Đang hiển thị: {clips} clip, {drafts} bản nháp",
   "devOptionsClipRecoveryOtherAccounts": "Bị ẩn dưới tài khoản khác",
-  "devOptionsClipRecoveryUnowned": "Mục không có tài khoản",
   "devOptionsClipRecoveryCounts": "{clips} clip, {drafts} bản nháp",
   "devOptionsClipRecoveryClaim": "Chuyển sang tài khoản này",
   "devOptionsClipRecoveryOrphanFiles": "Tệp không được tham chiếu: {count} ({size})",

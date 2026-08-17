@@ -6,7 +6,6 @@
     "devOptionsClipRecoveryFailure": "Odzyskiwanie klipów nie udało się",
     "devOptionsClipRecoveryVisible": "Widoczne teraz: {clips, plural, =1{{clips} klip} other{{clips} klipów}}, {drafts, plural, =1{{drafts} wersja robocza} other{{drafts} wersji roboczych}}",
     "devOptionsClipRecoveryOtherAccounts": "Ukryte na innych kontach",
-    "devOptionsClipRecoveryUnowned": "Wpisy bez konta",
     "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} klip} other{{clips} klipów}}, {drafts, plural, =1{{drafts} wersja robocza} other{{drafts} wersji roboczych}}",
     "devOptionsClipRecoveryClaim": "Przenieś na to konto",
     "devOptionsClipRecoveryOrphanFiles": "Pliki bez odwołań: {count} ({size})",

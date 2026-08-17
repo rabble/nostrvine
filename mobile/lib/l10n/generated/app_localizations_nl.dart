@@ -43,9 +43,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verborgen onder andere accounts';
 
   @override
-  String get devOptionsClipRecoveryUnowned => 'Items zonder account';
-
-  @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
     String _temp0 = intl.Intl.pluralLogic(
       clips,
