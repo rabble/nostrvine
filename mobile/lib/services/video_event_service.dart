@@ -97,8 +97,8 @@ class PaginationState {
   /// stored backlog through the real-time handler, so its tally stays at zero
   /// and [completeQuery] would call the feed exhausted however much arrived.
   ///
-  /// Takes the larger of the two counts so a load-more query that is already
-  /// counting for itself is never revised downward.
+  /// Takes the larger of the two counts so an externally observed tally seeds
+  /// missing events without erasing events already counted on this query.
   void recordReceivedCount(int count) {
     if (count > eventsReceivedInCurrentQuery) {
       eventsReceivedInCurrentQuery = count;
@@ -2496,12 +2496,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             // and the UI never transitions from spinner to empty state.
             final paginationState = _paginationStates[subscriptionType];
             if (paginationState != null) {
-              // Everything up to EOSE is stored history by definition, but the
-              // initial subscription routes it through the real-time handler,
-              // so the per-query tally never sees it. `eventCount` is this
-              // subscription's own count of those events; it spans every kind
-              // in the filter set rather than videos alone, which can only
-              // keep `hasMore` true a page longer than needed — the safe
+              // On the first EOSE, the initial subscription's stored backlog
+              // has routed through the real-time handler, so the per-query
+              // tally never sees it. `eventCount` is this subscription's raw
+              // stream count: repeat EOSE cycles can include later live
+              // deliveries, and the filter set can include non-video kinds,
+              // duplicates, or events filtered out below. Those all skew toward
+              // keeping `hasMore` true a page longer than needed — the safe
               // direction, and the load-more path re-queries from there.
               paginationState.recordReceivedCount(eventCount);
               paginationState.completeQuery(limit);
