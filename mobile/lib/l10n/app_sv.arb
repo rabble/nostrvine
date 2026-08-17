@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "Klassiker",
+    "exploreTabFeatured": "Utvalda",
+  "exploreTabClassics": "Klassiker",
     "exploreTabNew": "Nytt",
     "exploreTabPopular": "Populärt",
     "exploreTabCategories": "Kategorier",

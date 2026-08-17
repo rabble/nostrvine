@@ -1182,6 +1182,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'مميز';
+
+  @override
   String get exploreTabClassics => 'الكلاسيكيات';
 
   @override

@@ -1229,6 +1229,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'À la une';
+
+  @override
   String get exploreTabClassics => 'Classiques';
 
   @override

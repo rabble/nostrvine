@@ -1207,6 +1207,9 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Nổi bật';
+
+  @override
   String get exploreTabClassics => 'Kinh điển';
 
   @override

@@ -1221,6 +1221,9 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Itinatampok';
+
+  @override
   String get exploreTabClassics => 'Klasiko';
 
   @override

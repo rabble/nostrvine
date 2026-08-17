@@ -541,7 +541,8 @@
             }
         }
     },
-    "exploreTabClassics": "ክላሲኮች",
+    "exploreTabFeatured": "ተለይተው የቀረቡ",
+  "exploreTabClassics": "ክላሲኮች",
     "exploreTabNew": "አዲስ",
     "exploreTabPopular": "ታዋቂ",
     "exploreTabCategories": "ምድቦች",

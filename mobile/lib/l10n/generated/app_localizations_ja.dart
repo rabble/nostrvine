@@ -1119,6 +1119,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'おすすめ';
+
+  @override
   String get exploreTabClassics => 'クラシック';
 
   @override

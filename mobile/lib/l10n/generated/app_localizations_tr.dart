@@ -1174,6 +1174,9 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Öne çıkanlar';
+
+  @override
   String get exploreTabClassics => 'Klasikler';
 
   @override

@@ -1207,6 +1207,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Uitgelicht';
+
+  @override
   String get exploreTabClassics => 'Klassiekers';
 
   @override

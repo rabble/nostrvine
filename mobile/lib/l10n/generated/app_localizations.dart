@@ -2142,6 +2142,12 @@ abstract class AppLocalizations {
   /// **'Failed to delete content: {error}'**
   String videoGridDeleteFailure(Object error);
 
+  /// Name of the Explore tab that shows a server-curated collection. The collection's own name is not this string — it rides beside it in a pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get exploreTabFeatured;
+
   /// No description provided for @exploreTabClassics.
   ///
   /// In en, this message translates to:

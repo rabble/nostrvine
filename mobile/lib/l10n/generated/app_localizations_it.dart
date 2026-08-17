@@ -1217,6 +1217,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'In evidenza';
+
+  @override
   String get exploreTabClassics => 'Classici';
 
   @override

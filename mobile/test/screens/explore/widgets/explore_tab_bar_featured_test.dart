@@ -10,14 +10,15 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_bar.dart';
 
 FeaturedTabConfig _featured({
-  Map<String, String> label = const {'default': 'Featured'},
   Map<String, String> pillLabel = const {'default': 'Skate Week'},
   Map<String, String> disclosureLabel = const {},
 }) {
   return FeaturedTabConfig(
     id: 'ft_a1b2c3d4',
     slug: 'featured-slug',
-    label: label,
+    // Pinned server-side to the English word; the client renders its own
+    // translated label and ignores this.
+    label: const {'default': 'Featured'},
     pillLabel: pillLabel,
     disclosureLabel: disclosureLabel,
     startsAt: null,
@@ -179,20 +180,15 @@ void main() {
       expect(find.text('${'x' * 15}…'), findsOneWidget);
     });
 
-    testWidgets('truncates an overlong label at the narrowest width', (
-      tester,
-    ) async {
+    testWidgets('lays out at the narrowest supported width', (tester) async {
       tester.view.physicalSize = const Size(320 * 3, 640 * 3);
       tester.view.devicePixelRatio = 3;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await pumpBar(
-        tester,
-        ExploreTabsState(featuredTab: _featured(label: {'default': 'x' * 200})),
-      );
+      await pumpBar(tester, ExploreTabsState(featuredTab: _featured()));
 
-      expect(find.textContaining('…'), findsWidgets);
+      expect(find.text('Featured'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

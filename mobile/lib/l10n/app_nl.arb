@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "Klassiekers",
+    "exploreTabFeatured": "Uitgelicht",
+  "exploreTabClassics": "Klassiekers",
     "exploreTabNew": "Nieuw",
     "exploreTabPopular": "Populair",
     "exploreTabCategories": "Categorieën",

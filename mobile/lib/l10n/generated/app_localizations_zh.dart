@@ -1132,6 +1132,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => '精选';
+
+  @override
   String get exploreTabClassics => '经典';
 
   @override

@@ -1216,6 +1216,9 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Избрани';
+
+  @override
   String get exploreTabClassics => 'Класики';
 
   @override

@@ -1192,6 +1192,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Utvalda';
+
+  @override
   String get exploreTabClassics => 'Klassiker';
 
   @override

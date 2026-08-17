@@ -116,7 +116,7 @@ class _ExploreTabLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final label = labelForExploreTabName(l10n, name, featuredTab: featuredTab);
+    final label = labelForExploreTabName(l10n, name);
     final featured = featuredTab;
     if (name != exploreFeaturedTabName || featured == null) {
       return Text(label);

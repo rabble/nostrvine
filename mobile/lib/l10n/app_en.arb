@@ -669,6 +669,10 @@
       }
     }
   },
+  "exploreTabFeatured": "Featured",
+  "@exploreTabFeatured": {
+    "description": "Name of the Explore tab that shows a server-curated collection. The collection's own name is not this string \u2014 it rides beside it in a pill."
+  },
   "exploreTabClassics": "Classics",
   "exploreTabNew": "New",
   "exploreTabPopular": "Popular",

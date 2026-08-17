@@ -1175,6 +1175,9 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Unggulan';
+
+  @override
   String get exploreTabClassics => 'Klasik';
 
   @override

@@ -1123,6 +1123,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => '추천';
+
+  @override
   String get exploreTabClassics => '클래식';
 
   @override

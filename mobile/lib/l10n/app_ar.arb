@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "الكلاسيكيات",
+    "exploreTabFeatured": "مميز",
+  "exploreTabClassics": "الكلاسيكيات",
     "exploreTabNew": "جديد",
     "exploreTabPopular": "الرائج",
     "exploreTabCategories": "الفئات",

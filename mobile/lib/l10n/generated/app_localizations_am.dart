@@ -1177,6 +1177,9 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'ተለይተው የቀረቡ';
+
+  @override
   String get exploreTabClassics => 'ክላሲኮች';
 
   @override

@@ -1217,6 +1217,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Destacados';
+
+  @override
   String get exploreTabClassics => 'Clásicos';
 
   @override

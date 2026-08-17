@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "Classici",
+    "exploreTabFeatured": "In evidenza",
+  "exploreTabClassics": "Classici",
     "exploreTabNew": "Nuovi",
     "exploreTabPopular": "Popolari",
     "exploreTabCategories": "Categorie",

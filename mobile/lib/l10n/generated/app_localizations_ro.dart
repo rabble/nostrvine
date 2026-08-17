@@ -1240,6 +1240,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Recomandate';
+
+  @override
   String get exploreTabClassics => 'Clasice';
 
   @override

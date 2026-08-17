@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "Klasikler",
+    "exploreTabFeatured": "Öne çıkanlar",
+  "exploreTabClassics": "Klasikler",
     "exploreTabNew": "Yeni",
     "exploreTabPopular": "Popüler",
     "exploreTabCategories": "Kategoriler",

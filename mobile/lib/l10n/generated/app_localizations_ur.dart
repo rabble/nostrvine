@@ -1206,6 +1206,9 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'نمایاں';
+
+  @override
   String get exploreTabClassics => 'کلاسکس';
 
   @override
