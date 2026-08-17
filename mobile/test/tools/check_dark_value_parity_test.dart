@@ -55,6 +55,25 @@ class VineTheme {
       ], workingDirectory: sandbox.path);
     }
 
+    void git(List<String> arguments) {
+      final res = Process.runSync(
+        'git',
+        arguments,
+        workingDirectory: sandbox.path,
+      );
+      expect(res.exitCode, 0, reason: 'git ${arguments.join(' ')}');
+    }
+
+    /// Commits a `main` root in the sandbox so a base ref exists to diff from.
+    void initRepo() {
+      git(['init', '--initial-branch=main']);
+      git(['config', 'user.email', 'test@example.com']);
+      git(['config', 'user.name', 'Test']);
+      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// base\n');
+      git(['add', '.']);
+      git(['commit', '-m', 'base']);
+    }
+
     setUp(() {
       sandbox = Directory.systemTemp.createTempSync('dark_parity_');
       themePath = p.join(sandbox.path, 'vine_theme.dart');
@@ -210,21 +229,7 @@ class VineTheme {
     // branch's additions and reporting confident, wrong DARK MISMATCH lines.
     // Two orphan roots reproduce "no merge base" without a shallow fixture.
     test('refuses to guess when the base shares no history with HEAD', () {
-      void git(List<String> arguments) {
-        final res = Process.runSync(
-          'git',
-          arguments,
-          workingDirectory: sandbox.path,
-        );
-        expect(res.exitCode, 0, reason: 'git ${arguments.join(' ')}');
-      }
-
-      git(['init', '--initial-branch=main']);
-      git(['config', 'user.email', 'test@example.com']);
-      git(['config', 'user.name', 'Test']);
-      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// base\n');
-      git(['add', '.']);
-      git(['commit', '-m', 'base']);
+      initRepo();
 
       git(['checkout', '--orphan', 'unrelated']);
       File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// other\n');
@@ -251,21 +256,7 @@ class VineTheme {
     // and suggesting `git fetch --unshallow` sends the reader after a fix
     // that cannot resolve a ref that was never there. Surface git's error.
     test('surfaces the git error when the base ref does not exist', () {
-      void git(List<String> arguments) {
-        final res = Process.runSync(
-          'git',
-          arguments,
-          workingDirectory: sandbox.path,
-        );
-        expect(res.exitCode, 0, reason: 'git ${arguments.join(' ')}');
-      }
-
-      git(['init', '--initial-branch=main']);
-      git(['config', 'user.email', 'test@example.com']);
-      git(['config', 'user.name', 'Test']);
-      File(p.join(sandbox.path, 'a.dart')).writeAsStringSync('// base\n');
-      git(['add', '.']);
-      git(['commit', '-m', 'base']);
+      initRepo();
 
       final res = Process.runSync('dart', [
         'run',
