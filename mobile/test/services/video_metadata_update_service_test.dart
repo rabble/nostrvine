@@ -904,6 +904,86 @@ void main() {
       );
 
       test(
+        'preserves multiple clip-source credits when editing metadata',
+        () async {
+          const sourceCreatorA =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          const sourceCreatorB =
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+          const sourceAddressableIdA = '34236:$sourceCreatorA:source-a';
+          const sourceAddressableIdB = '34236:$sourceCreatorB:source-b';
+          final video = _testVideo(
+            extraTags: const [
+              [
+                'a',
+                sourceAddressableIdA,
+                'wss://source-a.relay',
+                clipSourceCreditTagMarker,
+              ],
+              [
+                'a',
+                sourceAddressableIdB,
+                'wss://source-b.relay',
+                clipSourceCreditTagMarker,
+              ],
+            ],
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(title: 'Updated title'),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'a',
+                sourceAddressableIdA,
+                'wss://source-a.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'a',
+                sourceAddressableIdB,
+                'wss://source-b.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'p',
+                sourceCreatorA,
+                'wss://source-a.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+          expect(
+            capturedTags,
+            contains(
+              equals([
+                'p',
+                sourceCreatorB,
+                'wss://source-b.relay',
+                clipSourceCreditTagMarker,
+              ]),
+            ),
+          );
+        },
+      );
+
+      test(
         'drops a mention p-tag when its pubkey is promoted to collaborator',
         () async {
           const promoted =
