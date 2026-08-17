@@ -319,19 +319,23 @@ class _OrphanPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final previewPath = file.previewPath;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: SizedBox(
-        width: 48,
-        height: 64,
-        child: previewPath == null
-            ? ColoredBox(color: context.vineColors.surfaceContainer)
-            : Image.file(
-                File(previewPath),
-                fit: BoxFit.cover,
-                errorBuilder: (context, _, _) =>
-                    ColoredBox(color: context.vineColors.surfaceContainer),
-              ),
+    // No semantics: a frame out of a recording cannot be described, and the row
+    // already announces the filename, size and length that identify it.
+    return ExcludeSemantics(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: SizedBox(
+          width: 48,
+          height: 64,
+          child: previewPath == null
+              ? ColoredBox(color: context.vineColors.surfaceContainer)
+              : Image.file(
+                  File(previewPath),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, _, _) =>
+                      ColoredBox(color: context.vineColors.surfaceContainer),
+                ),
+        ),
       ),
     );
   }
