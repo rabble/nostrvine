@@ -27,7 +27,8 @@
 // Only unqualified calls count — `harness.test(...)` is a method on some other
 // object, not a declaration the test runner picks up.
 //
-// Test-declaring HELPERS are counted at their call site, not their definition.
+// Test-declaring HELPERS in the same file are counted at their call site, not
+// their definition.
 // A wrapper like
 //
 //     void testWidgetsWithSurfaceSize(String description, cb) {
@@ -38,8 +39,17 @@
 // wrapper is called, so that is where grouping is decided. Counting the body
 // would permanently flag three files whose `main()` is fully grouped, and
 // skipping the shape entirely would let a helper called from top-level `main`
-// slip through. Helper names are resolved to a fixpoint, so a wrapper around a
-// wrapper is still counted at the outermost call.
+// slip through. Helper names are resolved to a fixpoint within the parsed file,
+// so a wrapper around a wrapper is still counted at the outermost call.
+//
+// Two deliberate boundaries:
+// - Moving several loose tests into one same-file helper makes the detector
+//   count the helper call as one site. That is still ungrouped debt, but a
+//   baseline shrink from that shape is not proof the tests were grouped.
+// - Cross-file helper resolution is out of scope. An imported helper that
+//   declares tests is invisible here unless it is locally wrapped by a
+//   same-file helper. Keep imported test-declaring helpers grouped at their
+//   call sites; paydown is tracked in #7705.
 //
 // Exit codes: 0 clean run, 2 bad usage / unreadable scan dir.
 import 'dart:io';

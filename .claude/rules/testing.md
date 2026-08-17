@@ -464,10 +464,10 @@ August, so the shape re-accretes on its own.
 
 Nothing in the baseline is a flat file — those were all grouped in #3615.
 Each remaining entry is a file that *has* group structure and left a
-declaration or two outside it. List them:
+declaration or two outside it; paydown is tracked in #7705. List them:
 
 ```bash
-cd mobile && dart run scripts/lib/ungrouped_test_detector.dart test --detail
+cd mobile && dart run scripts/lib/ungrouped_test_detector.dart test integration_test packages --path-prefix . --detail
 ```
 
 After grouping the loose ones, lock the win and commit the baseline:

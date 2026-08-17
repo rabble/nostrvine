@@ -26,7 +26,8 @@
 #
 # Baselined files are NOT flat — those were cleared in #3615. Each is a file
 # with real group structure that left a declaration or two outside it. Run the
-# detector with --detail on one to see which.
+# detector with --detail on one to see which. Use --path-prefix . so the
+# reported paths match scripts/baseline/ungrouped_tests.txt.
 #
 # Per-key NUMERIC ceiling: a file may drop sites freely while above zero without
 # churning the baseline; only growth / a new file / a raised ceiling /
@@ -36,7 +37,7 @@
 #   UPDATE_BASELINE=1 bash mobile/scripts/check_ungrouped_tests.sh
 # Run (from repo root or mobile/): bash mobile/scripts/check_ungrouped_tests.sh
 # List the individual sites in a file:
-#   dart run scripts/lib/ungrouped_test_detector.dart test --detail
+#   dart run scripts/lib/ungrouped_test_detector.dart test integration_test packages --path-prefix . --detail
 
 set -euo pipefail
 export LC_ALL=C
@@ -63,7 +64,7 @@ STALE_HINT="A file grouped every declaration it had loose."
 FOOTER="Ungrouped test declarations are frozen per file and may only decrease.
 See .claude/rules/testing.md and issue #3615 (test-org epic #4337). Inspect a
 file's loose declarations with:
-  dart run scripts/lib/ungrouped_test_detector.dart test --detail"
+  dart run scripts/lib/ungrouped_test_detector.dart test integration_test packages --path-prefix . --detail"
 
 # Print "relpath<TAB>count" for every test file with at least one declaration
 # outside a group. Runs from MOBILE_DIR so the detector resolves
@@ -87,6 +88,7 @@ print_baseline_header() {
 # more loose declarations, a new file, or a raised ceiling fails CI vs
 # ${BASE_REF}. Every entry here is a file that HAS group structure and left a
 # declaration or two outside it — the fully flat files were cleared in #3615.
+# Remaining paydown is tracked in #7705.
 # Fix by wrapping the declaration in the group it belongs to
 # (.claude/rules/testing.md). Regenerate after grouping sites:
 #   UPDATE_BASELINE=1 bash scripts/check_ungrouped_tests.sh

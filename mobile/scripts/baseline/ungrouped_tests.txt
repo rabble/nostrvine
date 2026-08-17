@@ -6,6 +6,7 @@
 # more loose declarations, a new file, or a raised ceiling fails CI vs
 # origin/main. Every entry here is a file that HAS group structure and left a
 # declaration or two outside it — the fully flat files were cleared in #3615.
+# Remaining paydown is tracked in #7705.
 # Fix by wrapping the declaration in the group it belongs to
 # (.claude/rules/testing.md). Regenerate after grouping sites:
 #   UPDATE_BASELINE=1 bash scripts/check_ungrouped_tests.sh

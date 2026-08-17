@@ -47,10 +47,12 @@ void main() {
 }
 ''');
 
-        expect(
-          sites.map((s) => s.declaration),
-          ['test', 'testWidgets', 'blocTest', 'patrolTest'],
-        );
+        expect(sites.map((s) => s.declaration), [
+          'test',
+          'testWidgets',
+          'blocTest',
+          'patrolTest',
+        ]);
       });
 
       test('a declaration that trails a group', () {
@@ -69,10 +71,8 @@ void main() {
         expect(sites.single.line, 6);
       });
 
-      test(
-        'a test-declaring helper, counted at its call site',
-        () {
-          final sites = scan('''
+      test('a test-declaring helper, counted at its call site', () {
+        final sites = scan('''
 void testWidgetsWithSurfaceSize(String description, dynamic callback) {
   testWidgets(description, (tester) async {});
 }
@@ -82,12 +82,11 @@ void main() {
 }
 ''');
 
-          expect(sites, hasLength(1));
-          expect(sites.single.declaration, 'testWidgetsWithSurfaceSize');
-          expect(sites.single.description, "'loose'");
-          expect(sites.single.line, 6);
-        },
-      );
+        expect(sites, hasLength(1));
+        expect(sites.single.declaration, 'testWidgetsWithSurfaceSize');
+        expect(sites.single.description, "'loose'");
+        expect(sites.single.line, 6);
+      });
 
       test('a helper wrapping a helper, resolved to a fixpoint', () {
         final sites = scan('''
@@ -106,6 +105,23 @@ void main() {
 
         expect(sites, hasLength(1));
         expect(sites.single.declaration, 'outer');
+      });
+
+      test('one same-file helper call counts as one site', () {
+        final sites = scan('''
+void allLoose() {
+  test('one', () {});
+  test('two', () {});
+  test('three', () {});
+}
+
+void main() {
+  allLoose();
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.declaration, 'allLoose');
       });
     });
 
@@ -313,6 +329,29 @@ void main() {
         'test/a_test.dart',
       ]);
       expect(sites.map((s) => s.description), ["'one'", "'two'"]);
+    });
+
+    test('does not resolve test-declaring helpers from imported files', () {
+      Directory('${tmp.path}/test/helpers').createSync(recursive: true);
+      File('${tmp.path}/test/helpers/shared_helpers.dart').writeAsStringSync('''
+void sharedTests() {
+  test('one', () {});
+  test('two', () {});
+}
+''');
+      File('${tmp.path}/test/imported_helper_test.dart').writeAsStringSync('''
+import 'helpers/shared_helpers.dart';
+
+void main() {
+  sharedTests();
+}
+''');
+
+      final sites = findUngroupedTests([
+        Directory('${tmp.path}/test'),
+      ], pathPrefix: tmp.path);
+
+      expect(sites, isEmpty);
     });
   });
 }
