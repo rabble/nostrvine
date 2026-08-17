@@ -3410,31 +3410,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get authContinueToApp => 'Lanjut ke Aplikasi';
 
   @override
-  String get authResetPassword => 'Reset kata sandi';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Masukkan alamat emailmu dan kami akan mengirim tautan untuk mereset kata sandimu.';
-
-  @override
   String get authFailedToSendResetEmail => 'Gagal mengirim email reset.';
 
   @override
-  String get authUnexpectedErrorShort => 'Terjadi kesalahan tak terduga.';
-
-  @override
   String get authSending => 'Mengirim...';
-
-  @override
-  String get authSendResetLink => 'Kirim tautan reset';
-
-  @override
-  String get authEmailSent => 'Email terkirim!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Kami mengirim tautan reset kata sandi ke $email. Silakan klik tautan di emailmu untuk memperbarui kata sandimu.';
-  }
 
   @override
   String get authSignInButton => 'Masuk';

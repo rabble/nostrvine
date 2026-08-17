@@ -3259,31 +3259,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authContinueToApp => 'アプリに進む';
 
   @override
-  String get authResetPassword => 'パスワードをリセット';
-
-  @override
-  String get authResetPasswordDescription =>
-      'メールアドレスを入れてね。パスワードをリセットするリンクを送るよ。';
-
-  @override
   String get authFailedToSendResetEmail => 'リセットメールの送信がうまくいかなかった。';
 
   @override
-  String get authUnexpectedErrorShort => '予期しないエラーが起きた。';
-
-  @override
   String get authSending => '送信中...';
-
-  @override
-  String get authSendResetLink => 'リセットリンクを送る';
-
-  @override
-  String get authEmailSent => 'メールを送ったよ！';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return '$email にパスワードリセットリンクを送ったよ。メール内のリンクをクリックしてパスワードを更新してね。';
-  }
 
   @override
   String get authSignInButton => 'サインイン';

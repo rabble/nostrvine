@@ -1368,22 +1368,8 @@
     "authClickLinkContinue": "Klik tautan di emailmu untuk menyelesaikan pendaftaran. Kamu bisa terus menggunakan aplikasi sementara itu.",
     "authWaitingForVerificationEllipsis": "Menunggu verifikasi...",
     "authContinueToApp": "Lanjut ke Aplikasi",
-    "authResetPassword": "Reset kata sandi",
-    "authResetPasswordDescription": "Masukkan alamat emailmu dan kami akan mengirim tautan untuk mereset kata sandimu.",
     "authFailedToSendResetEmail": "Gagal mengirim email reset.",
-    "authUnexpectedErrorShort": "Terjadi kesalahan tak terduga.",
     "authSending": "Mengirim...",
-    "authSendResetLink": "Kirim tautan reset",
-    "authEmailSent": "Email terkirim!",
-    "authResetLinkSentTo": "Kami mengirim tautan reset kata sandi ke {email}. Silakan klik tautan di emailmu untuk memperbarui kata sandimu.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Masuk",
     "authVerificationErrorTimeout": "Verifikasi kedaluwarsa. Silakan coba daftar lagi.",
     "authVerificationErrorMissingCode": "Verifikasi gagal — kode otorisasi hilang.",

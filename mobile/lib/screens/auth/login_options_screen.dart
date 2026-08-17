@@ -311,7 +311,9 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
       context: context,
       initialEmail: _emailController.text,
       onSendResetEmail: (email) async {
-        await context.read<DivineAuthCubit>().sendPasswordResetEmail(email);
+        return context.read<DivineAuthCubit>().sendPasswordResetEmail(email);
+      },
+      onResetAccepted: () {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

@@ -3458,32 +3458,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authContinueToApp => 'Door naar de app';
 
   @override
-  String get authResetPassword => 'Wachtwoord resetten';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Voer je e-mailadres in en we sturen je een link om je wachtwoord te resetten.';
-
-  @override
   String get authFailedToSendResetEmail => 'Resetmail versturen mislukt.';
 
   @override
-  String get authUnexpectedErrorShort =>
-      'Er is een onverwachte fout opgetreden.';
-
-  @override
   String get authSending => 'Versturen...';
-
-  @override
-  String get authSendResetLink => 'Resetlink versturen';
-
-  @override
-  String get authEmailSent => 'E-mail verstuurd!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'We hebben een resetlink naar $email gestuurd. Klik op de link in je e-mail om je wachtwoord bij te werken.';
-  }
 
   @override
   String get authSignInButton => 'Inloggen';

@@ -3472,32 +3472,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get authContinueToApp => 'Ir para o app';
 
   @override
-  String get authResetPassword => 'Redefinir senha';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Digite seu endereço de e-mail e enviaremos um link para redefinir sua senha.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Falha ao enviar o e-mail de redefinição.';
 
   @override
-  String get authUnexpectedErrorShort => 'Ocorreu um erro inesperado.';
-
-  @override
   String get authSending => 'Enviando...';
-
-  @override
-  String get authSendResetLink => 'Enviar link de redefinição';
-
-  @override
-  String get authEmailSent => 'E-mail enviado!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Enviamos um link de redefinição de senha para $email. Clique no link do e-mail para atualizar sua senha.';
-  }
 
   @override
   String get authSignInButton => 'Entrar';

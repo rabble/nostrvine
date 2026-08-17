@@ -3545,32 +3545,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authContinueToApp => 'Continuă în aplicație';
 
   @override
-  String get authResetPassword => 'Resetează parola';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Introdu adresa ta de email și âți trimitem un link de resetare a parolei.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'N-am putut trimite emailul de resetare.';
 
   @override
-  String get authUnexpectedErrorShort => 'A apărut o eroare neașteptată.';
-
-  @override
   String get authSending => 'Se trimite...';
-
-  @override
-  String get authSendResetLink => 'Trimite linkul de resetare';
-
-  @override
-  String get authEmailSent => 'Email trimis!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Am trimis un link de resetare a parolei la $email. Apasă linkul din email ca să-ți actualizezi parola.';
-  }
 
   @override
   String get authSignInButton => 'Autentificare';

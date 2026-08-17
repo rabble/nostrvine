@@ -1447,22 +1447,8 @@
     "authClickLinkContinue": "Отвори линка в имейла си, за да завършиш регистрацията. Междувременно можеш да продължиш да използваш приложението.",
     "authWaitingForVerificationEllipsis": "Чакаме потвърждение...",
     "authContinueToApp": "Продължи към приложението",
-    "authResetPassword": "Нулирай паролата",
-    "authResetPasswordDescription": "Въведи имейл адреса си и ще ти изпратим линк за възстановяване на паролата.",
     "authFailedToSendResetEmail": "Не успяхме да изпратим имейл за нулиране.",
-    "authUnexpectedErrorShort": "Стана неочаквана грешка.",
     "authSending": "Изпращаме...",
-    "authSendResetLink": "Изпрати линк за нулиране",
-    "authEmailSent": "Имейлът е изпратен!",
-    "authResetLinkSentTo": "Изпратихме линк за нулиране на паролата до {email}. Натисни линка в имейла, за да обновиш паролата си.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Вход",
     "authVerificationErrorTimeout": "Потвърждението изтече. Опитай да се регистрираш отново.",
     "authVerificationErrorMissingCode": "Потвърждението не мина - липсва код за оторизация.",

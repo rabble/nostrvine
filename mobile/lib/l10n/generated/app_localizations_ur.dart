@@ -3445,31 +3445,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get authContinueToApp => 'ایپ پر جائیں';
 
   @override
-  String get authResetPassword => 'پاس ورڈ ری سیٹ کریں';
-
-  @override
-  String get authResetPasswordDescription =>
-      'اپنا ای میل ایڈریس درج کریں اور ہم آپ کو پاس ورڈ ری سیٹ کرنے کا لنک بھیج دیں گے۔';
-
-  @override
   String get authFailedToSendResetEmail => 'ری سیٹ ای میل نہیں بھیجی جا سکی۔';
 
   @override
-  String get authUnexpectedErrorShort => 'ایک غیر متوقع خرابی پیش آئی۔';
-
-  @override
   String get authSending => 'بھیجا جا رہا ہے...';
-
-  @override
-  String get authSendResetLink => 'ری سیٹ لنک بھیجیں';
-
-  @override
-  String get authEmailSent => 'ای میل بھیج دی گئی!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'ہم نے $email پر پاس ورڈ ری سیٹ لنک بھیجا ہے۔ اپنا پاس ورڈ اپڈیٹ کرنے کے لیے اپنی ای میل میں دیا گیا لنک کھولیں۔';
-  }
 
   @override
   String get authSignInButton => 'سائن ان کریں';

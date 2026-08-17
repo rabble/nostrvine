@@ -1876,22 +1876,8 @@
   "authClickLinkContinue": "Bấm vào liên kết trong email để hoàn tất đăng ký. Trong lúc chờ, bạn vẫn có thể tiếp tục dùng ứng dụng.",
   "authWaitingForVerificationEllipsis": "Đang chờ xác minh...",
   "authContinueToApp": "Tiếp tục vào ứng dụng",
-  "authResetPassword": "Đặt lại mật khẩu",
-  "authResetPasswordDescription": "Nhập địa chỉ email của bạn và bọn mình sẽ gửi liên kết để đặt lại mật khẩu.",
   "authFailedToSendResetEmail": "Không gửi được email đặt lại.",
-  "authUnexpectedErrorShort": "Đã xảy ra lỗi bất ngờ.",
   "authSending": "Đang gửi...",
-  "authSendResetLink": "Gửi liên kết đặt lại",
-  "authEmailSent": "Đã gửi email!",
-  "authResetLinkSentTo": "Bọn mình đã gửi liên kết đặt lại mật khẩu tới {email}. Hãy bấm vào liên kết trong email để cập nhật mật khẩu của bạn.",
-  "@authResetLinkSentTo": {
-    "description": "Confirmation message after reset link sent",
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
   "authSignInButton": "Đăng nhập",
   "authVerificationErrorTimeout": "Xác minh hết thời gian chờ. Vui lòng đăng ký lại.",
   "authVerificationErrorMissingCode": "Xác minh thất bại — thiếu mã ủy quyền.",

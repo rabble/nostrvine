@@ -1375,22 +1375,8 @@
     "authClickLinkContinue": "Tocá el link en tu email para completar el registro. Mientras tanto, podés seguir usando la app.",
     "authWaitingForVerificationEllipsis": "Esperando la verificación...",
     "authContinueToApp": "Ir a la app",
-    "authResetPassword": "Restablecer contraseña",
-    "authResetPasswordDescription": "Ingresá tu email y te mandamos un link para restablecer la contraseña.",
     "authFailedToSendResetEmail": "No se pudo enviar el email de restablecimiento.",
-    "authUnexpectedErrorShort": "Ocurrió un error inesperado.",
     "authSending": "Enviando...",
-    "authSendResetLink": "Enviar link de restablecimiento",
-    "authEmailSent": "¡Email enviado!",
-    "authResetLinkSentTo": "Te mandamos un link de restablecimiento de contraseña a {email}. Tocá el link en tu email para actualizar la contraseña.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Iniciar sesión",
     "authVerificationErrorTimeout": "Se agotó el tiempo de verificación. Registrate de nuevo.",
     "authVerificationErrorMissingCode": "Falló la verificación — falta el código de autorización.",

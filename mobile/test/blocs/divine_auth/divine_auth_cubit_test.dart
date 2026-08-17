@@ -1718,20 +1718,35 @@ void main() {
     });
 
     group('sendPasswordResetEmail', () {
-      blocTest<DivineAuthCubit, DivineAuthState>(
-        'calls sendPasswordResetEmail on oauth client',
-        setUp: () {
-          when(
-            () => mockOAuth.sendPasswordResetEmail(any()),
-          ).thenAnswer((_) async => ForgotPasswordResult(success: true));
-        },
-        build: buildCubit,
-        act: (cubit) => cubit.sendPasswordResetEmail(testEmail),
-        expect: () => <DivineAuthState>[],
-        verify: (_) {
-          verify(() => mockOAuth.sendPasswordResetEmail(testEmail)).called(1);
-        },
-      );
+      test('returns true when the OAuth client accepts the request', () async {
+        final expected = ForgotPasswordResult(success: true);
+        when(
+          () => mockOAuth.sendPasswordResetEmail(any()),
+        ).thenAnswer((_) async => expected);
+
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+        final result = await cubit.sendPasswordResetEmail(testEmail);
+
+        expect(result, isTrue);
+        verify(() => mockOAuth.sendPasswordResetEmail(testEmail)).called(1);
+      });
+
+      test('returns false when the OAuth client rejects the request', () async {
+        final expected = ForgotPasswordResult(
+          success: false,
+          error: 'Not found',
+        );
+        when(
+          () => mockOAuth.sendPasswordResetEmail(any()),
+        ).thenAnswer((_) async => expected);
+
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+        final result = await cubit.sendPasswordResetEmail(testEmail);
+
+        expect(result, isFalse);
+      });
 
       blocTest<DivineAuthCubit, DivineAuthState>(
         'normalizes email before password reset',
@@ -1762,14 +1777,17 @@ void main() {
       );
 
       blocTest<DivineAuthCubit, DivineAuthState>(
-        'handles exception without emitting error state',
+        'returns failure and reports exceptions without emitting state',
         setUp: () {
           when(
             () => mockOAuth.sendPasswordResetEmail(any()),
           ).thenThrow(Exception('network error'));
         },
         build: buildCubit,
-        act: (cubit) => cubit.sendPasswordResetEmail(testEmail),
+        act: (cubit) async {
+          final result = await cubit.sendPasswordResetEmail(testEmail);
+          expect(result, isFalse);
+        },
         expect: () => <DivineAuthState>[],
         errors: () => [isA<Exception>()],
       );

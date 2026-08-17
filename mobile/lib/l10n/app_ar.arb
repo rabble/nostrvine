@@ -1361,22 +1361,8 @@
     "authClickLinkContinue": "انقر على الرابط في بريدك لإكمال التسجيل. يمكنك الاستمرار في استخدام التطبيق في الأثناء.",
     "authWaitingForVerificationEllipsis": "في انتظار التحقق...",
     "authContinueToApp": "المتابعة إلى التطبيق",
-    "authResetPassword": "إعادة تعيين كلمة المرور",
-    "authResetPasswordDescription": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
     "authFailedToSendResetEmail": "فشل إرسال بريد إعادة التعيين.",
-    "authUnexpectedErrorShort": "حدث خطأ غير متوقّع.",
     "authSending": "جاري الإرسال...",
-    "authSendResetLink": "إرسال رابط التعيين",
-    "authEmailSent": "تم إرسال البريد!",
-    "authResetLinkSentTo": "أرسلنا رابط إعادة تعيين كلمة المرور إلى {email}. يرجى النقر على الرابط في بريدك لتحديث كلمة المرور.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "تسجيل الدخول",
     "authVerificationErrorTimeout": "انتهت مهلة التحقق. حاول التسجيل مرّة أخرى.",
     "authVerificationErrorMissingCode": "فشل التحقق — رمز التفويض مفقود.",

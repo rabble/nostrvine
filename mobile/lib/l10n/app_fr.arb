@@ -1371,22 +1371,8 @@
     "authClickLinkContinue": "Clique sur le lien dans ton e-mail pour terminer l'inscription. Tu peux continuer à utiliser l'app en attendant.",
     "authWaitingForVerificationEllipsis": "En attente de vérification...",
     "authContinueToApp": "Continuer vers l'app",
-    "authResetPassword": "Réinitialiser le mot de passe",
-    "authResetPasswordDescription": "Entre ton adresse e-mail et on t'enverra un lien pour réinitialiser ton mot de passe.",
     "authFailedToSendResetEmail": "Échec de l'envoi de l'e-mail de réinitialisation.",
-    "authUnexpectedErrorShort": "Une erreur inattendue est survenue.",
     "authSending": "Envoi...",
-    "authSendResetLink": "Envoyer le lien",
-    "authEmailSent": "E-mail envoyé !",
-    "authResetLinkSentTo": "On a envoyé un lien de réinitialisation à {email}. Clique sur le lien dans ton e-mail pour mettre à jour ton mot de passe.",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "Se connecter",
     "authVerificationErrorTimeout": "Délai de vérification dépassé. Essaie de t'inscrire à nouveau.",
     "authVerificationErrorMissingCode": "Vérification échouée — code d'autorisation manquant.",

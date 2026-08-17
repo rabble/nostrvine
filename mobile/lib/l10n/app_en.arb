@@ -2096,22 +2096,8 @@
   "authClickLinkContinue": "Click the link in your email to complete registration. You can continue using the app in the meantime.",
   "authWaitingForVerificationEllipsis": "Waiting for verification...",
   "authContinueToApp": "Continue to App",
-  "authResetPassword": "Reset password",
-  "authResetPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
   "authFailedToSendResetEmail": "Failed to send reset email.",
-  "authUnexpectedErrorShort": "An unexpected error occurred.",
   "authSending": "Sending...",
-  "authSendResetLink": "Send reset link",
-  "authEmailSent": "Email sent!",
-  "authResetLinkSentTo": "We sent a password reset link to {email}. Please click the link in your email to update your password.",
-  "@authResetLinkSentTo": {
-    "description": "Confirmation message after reset link sent",
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
   "authSignInButton": "Sign in",
   "authVerificationErrorTimeout": "Verification timed out. Please try registering again.",
   "authVerificationErrorMissingCode": "Verification failed — missing authorization code.",

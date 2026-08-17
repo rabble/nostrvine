@@ -3376,31 +3376,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authContinueToApp => 'ወደ መተግበሪያ ይቀጥሉ';
 
   @override
-  String get authResetPassword => 'የይለፍ ቃል ዳግም አስጀምር';
-
-  @override
-  String get authResetPasswordDescription =>
-      'የኢሜል አድራሻዎን ያስገቡ እና የይለፍ ቃልዎን እንደገና የሚያስጀምሩበት አገናኝ እንልክልዎታለን።';
-
-  @override
   String get authFailedToSendResetEmail => 'ዳግም ማስጀመር ኢሜይል መላክ አልተሳካም።';
 
   @override
-  String get authUnexpectedErrorShort => 'ያልተጠበቀ ስህተት ተከስቷል።';
-
-  @override
   String get authSending => 'በመላክ ላይ...';
-
-  @override
-  String get authSendResetLink => 'ዳግም ማስጀመሪያ አገናኝ ላክ';
-
-  @override
-  String get authEmailSent => 'ኢሜል ተልኳል!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'የይለፍ ቃል ዳግም ማስጀመሪያ አገናኝ ወደ $email ልከናል። የይለፍ ቃልዎን ለማዘመን እባክዎ በኢሜልዎ ውስጥ ያለውን አገናኝ ጠቅ ያድርጉ።';
-  }
 
   @override
   String get authSignInButton => 'ይግቡ';

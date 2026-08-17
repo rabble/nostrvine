@@ -1635,22 +1635,8 @@
     "authClickLinkContinue": "ምዝገባውን ለማጠናቀቅ በኢሜልዎ ውስጥ ያለውን አገናኝ ጠቅ ያድርጉ። እስከዚያው መተግበሪያውን መጠቀም መቀጠል ይችላሉ።",
     "authWaitingForVerificationEllipsis": "ማረጋገጫን በመጠበቅ ላይ...",
     "authContinueToApp": "ወደ መተግበሪያ ይቀጥሉ",
-    "authResetPassword": "የይለፍ ቃል ዳግም አስጀምር",
-    "authResetPasswordDescription": "የኢሜል አድራሻዎን ያስገቡ እና የይለፍ ቃልዎን እንደገና የሚያስጀምሩበት አገናኝ እንልክልዎታለን።",
     "authFailedToSendResetEmail": "ዳግም ማስጀመር ኢሜይል መላክ አልተሳካም።",
-    "authUnexpectedErrorShort": "ያልተጠበቀ ስህተት ተከስቷል።",
     "authSending": "በመላክ ላይ...",
-    "authSendResetLink": "ዳግም ማስጀመሪያ አገናኝ ላክ",
-    "authEmailSent": "ኢሜል ተልኳል!",
-    "authResetLinkSentTo": "የይለፍ ቃል ዳግም ማስጀመሪያ አገናኝ ወደ {email} ልከናል። የይለፍ ቃልዎን ለማዘመን እባክዎ በኢሜልዎ ውስጥ ያለውን አገናኝ ጠቅ ያድርጉ።",
-    "@authResetLinkSentTo": {
-        "description": "Confirmation message after reset link sent",
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
     "authSignInButton": "ይግቡ",
     "authVerificationErrorTimeout": "የማረጋገጫ ጊዜ አልቋል። እባክዎ እንደገና ለመመዝገብ ይሞክሩ።",
     "authVerificationErrorMissingCode": "ማረጋገጥ አልተሳካም - የፈቀዳ ኮድ ጠፍቷል።",

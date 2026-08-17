@@ -1876,22 +1876,8 @@
   "authClickLinkContinue": "رجسٹریشن مکمل کرنے کے لیے اپنی ای میل میں دیا گیا لنک کھولیں۔ اس دوران آپ ایپ استعمال کرتے رہ سکتے ہیں۔",
   "authWaitingForVerificationEllipsis": "تصدیق کا انتظار ہے...",
   "authContinueToApp": "ایپ پر جائیں",
-  "authResetPassword": "پاس ورڈ ری سیٹ کریں",
-  "authResetPasswordDescription": "اپنا ای میل ایڈریس درج کریں اور ہم آپ کو پاس ورڈ ری سیٹ کرنے کا لنک بھیج دیں گے۔",
   "authFailedToSendResetEmail": "ری سیٹ ای میل نہیں بھیجی جا سکی۔",
-  "authUnexpectedErrorShort": "ایک غیر متوقع خرابی پیش آئی۔",
   "authSending": "بھیجا جا رہا ہے...",
-  "authSendResetLink": "ری سیٹ لنک بھیجیں",
-  "authEmailSent": "ای میل بھیج دی گئی!",
-  "authResetLinkSentTo": "ہم نے {email} پر پاس ورڈ ری سیٹ لنک بھیجا ہے۔ اپنا پاس ورڈ اپڈیٹ کرنے کے لیے اپنی ای میل میں دیا گیا لنک کھولیں۔",
-  "@authResetLinkSentTo": {
-    "description": "Confirmation message after reset link sent",
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
   "authSignInButton": "سائن ان کریں",
   "authVerificationErrorTimeout": "تصدیق کا وقت ختم ہو گیا۔ براہ کرم دوبارہ رجسٹر کریں۔",
   "authVerificationErrorMissingCode": "تصدیق ناکام — اجازتی کوڈ غائب ہے۔",

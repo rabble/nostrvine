@@ -3500,32 +3500,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authContinueToApp => 'Continuer vers l\'app';
 
   @override
-  String get authResetPassword => 'Réinitialiser le mot de passe';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Entre ton adresse e-mail et on t\'enverra un lien pour réinitialiser ton mot de passe.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Échec de l\'envoi de l\'e-mail de réinitialisation.';
 
   @override
-  String get authUnexpectedErrorShort => 'Une erreur inattendue est survenue.';
-
-  @override
   String get authSending => 'Envoi...';
-
-  @override
-  String get authSendResetLink => 'Envoyer le lien';
-
-  @override
-  String get authEmailSent => 'E-mail envoyé !';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'On a envoyé un lien de réinitialisation à $email. Clique sur le lien dans ton e-mail pour mettre à jour ton mot de passe.';
-  }
 
   @override
   String get authSignInButton => 'Se connecter';

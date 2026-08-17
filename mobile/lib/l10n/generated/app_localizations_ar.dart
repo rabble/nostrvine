@@ -3412,31 +3412,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authContinueToApp => 'المتابعة إلى التطبيق';
 
   @override
-  String get authResetPassword => 'إعادة تعيين كلمة المرور';
-
-  @override
-  String get authResetPasswordDescription =>
-      'أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.';
-
-  @override
   String get authFailedToSendResetEmail => 'فشل إرسال بريد إعادة التعيين.';
 
   @override
-  String get authUnexpectedErrorShort => 'حدث خطأ غير متوقّع.';
-
-  @override
   String get authSending => 'جاري الإرسال...';
-
-  @override
-  String get authSendResetLink => 'إرسال رابط التعيين';
-
-  @override
-  String get authEmailSent => 'تم إرسال البريد!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'أرسلنا رابط إعادة تعيين كلمة المرور إلى $email. يرجى النقر على الرابط في بريدك لتحديث كلمة المرور.';
-  }
 
   @override
   String get authSignInButton => 'تسجيل الدخول';

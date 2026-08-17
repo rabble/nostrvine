@@ -354,6 +354,56 @@ void main() {
         expect(find.text('Reset Password'), findsOneWidget);
       });
 
+      testWidgets('failed password reset keeps dialog open without success', (
+        tester,
+      ) async {
+        when(() => mockOAuth.sendPasswordResetEmail(any())).thenAnswer(
+          (_) async => ForgotPasswordResult(success: false, error: 'API error'),
+        );
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(find.text(l10n.authForgotPassword));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextFormField).last,
+          'user@example.com',
+        );
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.forgotPasswordTitle), findsOneWidget);
+        expect(find.text(l10n.authPasswordResetSent), findsNothing);
+      });
+
+      testWidgets('accepted password reset shows neutral confirmation', (
+        tester,
+      ) async {
+        when(
+          () => mockOAuth.sendPasswordResetEmail(any()),
+        ).thenAnswer((_) async => ForgotPasswordResult(success: true));
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(find.text(l10n.authForgotPassword));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextFormField).last,
+          'user@example.com',
+        );
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, l10n.forgotPasswordSendLink),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.forgotPasswordTitle), findsNothing);
+        expect(find.text(l10n.authPasswordResetSent), findsOneWidget);
+      });
+
       testWidgets('calls headlessLogin on sign in tap with valid input', (
         tester,
       ) async {

@@ -3439,32 +3439,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authContinueToApp => 'Fortsätt till appen';
 
   @override
-  String get authResetPassword => 'Återställ lösenord';
-
-  @override
-  String get authResetPasswordDescription =>
-      'Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Kunde inte skicka återställningsmejl.';
 
   @override
-  String get authUnexpectedErrorShort => 'Ett oväntat fel uppstod.';
-
-  @override
   String get authSending => 'Skickar...';
-
-  @override
-  String get authSendResetLink => 'Skicka återställningslänk';
-
-  @override
-  String get authEmailSent => 'E-post skickad!';
-
-  @override
-  String authResetLinkSentTo(String email) {
-    return 'Vi skickade en återställningslänk till $email. Klicka på länken i din e-post för att uppdatera ditt lösenord.';
-  }
 
   @override
   String get authSignInButton => 'Logga in';
