@@ -26,6 +26,8 @@ abstract class Relay {
   // to hold the message when the ws haven't authed and should be send after auth.
   List<List<dynamic>> pendingAuthedMessages = [];
 
+  final Map<String, List<dynamic>> _sentFramesForAuthRetry = {};
+
   Function(Relay, List<dynamic>)? onMessage;
 
   // subscriptions
@@ -164,13 +166,45 @@ abstract class Relay {
     info ??= await RelayInfoUtil.get(url);
   }
 
+  /// Records a frame that was sent, keyed by event ID for later retrieval if needed.
+  void recordSentFrame(List<dynamic> frame) {
+    final eventId = _extractEventId(frame);
+    if (eventId != null) {
+      _sentFramesForAuthRetry[eventId] = frame;
+    }
+  }
+
+  /// Retrieves and removes a previously recorded frame by event ID.
+  List<dynamic>? takeSentFrame(String eventId) {
+    return _sentFramesForAuthRetry.remove(eventId);
+  }
+
+  /// Returns all retained frames and clears the map.
+  List<List<dynamic>> drainSentFramesForAuthRetry() {
+    final frames = _sentFramesForAuthRetry.values.toList();
+    _sentFramesForAuthRetry.clear();
+    return frames;
+  }
+
+  /// Extracts the event ID from an EVENT message frame.
+  /// Returns null if the frame is not an EVENT message or doesn't contain a valid event ID.
+  String? _extractEventId(List<dynamic> frame) {
+    if (frame.length < 3 || frame[0] != 'EVENT') {
+      return null;
+    }
+    final event = frame[2];
+    if (event is Map && event['id'] is String) {
+      return event['id'] as String;
+    }
+    return null;
+  }
+
   /// Sends [message] to this relay.
   ///
   /// [deadline] is a hard send deadline: implementations must not write or
   /// queue the message after it has expired.
   Future<bool> send(
     List<dynamic> message, {
-    bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
     DateTime? deadline,

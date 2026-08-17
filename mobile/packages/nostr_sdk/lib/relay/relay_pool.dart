@@ -622,7 +622,7 @@ class RelayPool {
         log('🔐 Auth-required query - sending to trigger AUTH challenge');
         relay.saveQuery(subscription);
         final result = await relay
-            .send(message, forceSend: true)
+            .send(message)
             .timeout(perRelaySendTimeout, onTimeout: () => false);
         if (!result) {
           log(
@@ -1522,6 +1522,11 @@ class RelayPool {
           }
           relay.pendingAuthedMessages.clear();
 
+          // Flush and re-send frames that were retained while waiting for auth
+          for (final frame in relay.drainSentFramesForAuthRetry()) {
+            relay.send(frame);
+          }
+
           // Send subscriptions
           if (relay.hasSubscription()) {
             var subs = relay.getSubscriptions();
@@ -1604,7 +1609,7 @@ class RelayPool {
           // Track this AUTH event to match with OK response
           _pendingAuthEvents[event.id] = relay.url;
 
-          relay.send(["AUTH", event.toJson()], forceSend: true);
+          relay.send(["AUTH", event.toJson()]);
           log('🔐 AUTH response sent, waiting for relay confirmation...');
 
           if (relay.pendingAuthedMessages.isNotEmpty) {
@@ -1817,7 +1822,7 @@ class RelayPool {
           '🔐 Auth-required subscription - sending to trigger AUTH challenge',
         );
         final result = await relay
-            .send(message, forceSend: true)
+            .send(message)
             .timeout(perRelaySendTimeout, onTimeout: () => false);
         if (result) {
           return true;
@@ -2156,12 +2161,7 @@ class RelayPool {
             );
             var timedOut = false;
             var result = await relay
-                .send(
-                  message,
-                  forceSend: true,
-                  queueIfFailed: false,
-                  deadline: deadline,
-                )
+                .send(message, queueIfFailed: false, deadline: deadline)
                 .timeout(
                   timeout,
                   onTimeout: () {
@@ -2252,6 +2252,16 @@ class RelayPool {
         // Same skipReconnect rationale as the main loop above: a fresh
         // tempRelay whose initial connection is still in-flight must not
         // block the publish.
+
+        // If this is a fire-and-forget (deadline == null) and the relay requires
+        // auth and is not yet authenticated, park the message for retry after auth.
+        if (tempRelay.relayStatus.alwaysAuth &&
+            !tempRelay.relayStatus.authed &&
+            deadline == null) {
+          tempRelay.pendingAuthedMessages.add(message);
+          continue;
+        }
+
         var result = await tempRelay
             .send(
               message,
