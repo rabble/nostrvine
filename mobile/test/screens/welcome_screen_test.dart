@@ -515,6 +515,21 @@ void main() {
         expect(find.byType(AuthHeroSection), findsNothing);
       });
 
+      testWidgets('app bar close control announces a localized label', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.bySemanticsLabel(l10n.commonClose), findsOneWidget);
+        // The divine_ui default. Reaching a user means the call site forgot
+        // to pass a label, and it ships untranslated to every locale.
+        expect(find.bySemanticsLabel('Leading action'), findsNothing);
+      });
+
       testWidgets('shows explicit returning-user action labels', (
         tester,
       ) async {

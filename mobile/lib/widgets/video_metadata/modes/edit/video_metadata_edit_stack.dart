@@ -141,6 +141,7 @@ class _VideoMetadataEditStackContentState
       appBar: DiVineAppBar(
         backgroundColor: context.vineColors.surfaceContainerHigh,
         leadingIcon: SvgIconSource(DivineIconName.caretLeft.assetPath),
+        leadingActionSemanticLabel: context.l10n.commonBack,
         onLeadingPressed: context.pop,
         title: context.l10n.shareMenuEditVideo,
       ),
