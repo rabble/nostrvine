@@ -2,6 +2,7 @@
 // ABOUTME: Keeps tab bar and feed-mode shell titles in sync.
 
 import 'package:characters/characters.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 
@@ -80,3 +81,28 @@ final _featuredTabControlCharacters = RegExp(
 );
 
 final _repeatedWhitespace = RegExp(r'\s+');
+
+/// The sanitised sponsor name for [config] in [localeCode], or `null` when
+/// this locale has no sponsor to disclose.
+///
+/// Both the partnership line and the pill's sponsored state resolve through
+/// here, so the pill can never announce a sponsor the grid never names: a
+/// map whose only entries resolve for other locales, or a value that is
+/// nothing but control characters, means no sponsor for this viewer.
+String? featuredTabSponsorName(
+  FeaturedTabConfig config,
+  String? localeCode,
+) {
+  final raw = config.sponsorNameFor(localeCode);
+  if (raw == null) return null;
+  final sanitized = sanitizeFeaturedTabText(raw);
+  return sanitized.isEmpty ? null : sanitized;
+}
+
+/// Whether the featured tab presents as sponsored for [localeCode].
+///
+/// Derived from [featuredTabSponsorName] rather than the raw field so the
+/// pill's colour and spoken label agree with the partnership line above the
+/// grid in every locale.
+bool featuredTabIsSponsored(FeaturedTabConfig config, String? localeCode) =>
+    featuredTabSponsorName(config, localeCode) != null;

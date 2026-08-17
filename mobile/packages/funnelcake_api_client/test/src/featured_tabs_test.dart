@@ -77,7 +77,6 @@ void main() {
       });
 
       expect(tab.sponsorNameFor('en'), equals('Acme Bikes'));
-      expect(tab.isSponsored, isTrue);
     });
 
     test('reads a per-locale sponsor name', () {
@@ -89,25 +88,36 @@ void main() {
       expect(tab.sponsorNameFor('pt-BR'), equals('Acme Bicicletas'));
     });
 
-    test('is unsponsored when the server sends a null sponsor name', () {
+    test('resolves no sponsor when the map has no default entry', () {
+      // A map that only resolves for other locales names no sponsor for this
+      // viewer; whether the tab presents as sponsored is decided from the
+      // resolved value, per locale, in the client.
+      final tab = FeaturedTabConfig.fromJson(const {
+        'id': 'ft_a1b2c3d4',
+        'disclosure_label': {'pt': 'Acme Bicicletas'},
+      });
+
+      expect(tab.sponsorNameFor('en'), isNull);
+      expect(tab.sponsorNameFor('pt'), equals('Acme Bicicletas'));
+    });
+
+    test('resolves no sponsor when the server sends a null sponsor name', () {
       final tab = FeaturedTabConfig.fromJson(const {
         'id': 'ft_a1b2c3d4',
         'disclosure_label': null,
       });
 
       expect(tab.sponsorNameFor('en'), isNull);
-      expect(tab.isSponsored, isFalse);
     });
 
-    test('is unsponsored when the server omits the key entirely', () {
+    test('resolves no sponsor when the server omits the key entirely', () {
       // What an older backend returns, before the sponsorship fields ship.
       final tab = FeaturedTabConfig.fromJson(const {'id': 'ft_a1b2c3d4'});
 
       expect(tab.sponsorNameFor('en'), isNull);
-      expect(tab.isSponsored, isFalse);
     });
 
-    test('is unsponsored when the sponsor name is an empty string', () {
+    test('resolves no sponsor when the sponsor name is an empty string', () {
       // Funnelcake normalises empty to null on write, but a sponsored tab
       // with nobody to credit cannot be disclosed and must not be styled as
       // one, so the client does not depend on that normalisation.
@@ -116,7 +126,7 @@ void main() {
         'disclosure_label': '',
       });
 
-      expect(tab.isSponsored, isFalse);
+      expect(tab.sponsorNameFor('en'), isNull);
     });
 
     test('reads a bare string pill label as the default entry', () {

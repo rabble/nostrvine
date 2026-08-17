@@ -245,6 +245,24 @@ void main() {
       expect(find.textContaining('paid partnership'), findsNothing);
     });
 
+    testWidgets(
+      'discloses nothing when the sponsor resolves only for another locale',
+      (tester) async {
+        // Mirrors the pill: a sponsor this viewer cannot see must not half-
+        // appear as a line naming somebody else's locale either.
+        await tester.pumpWidget(
+          buildSubject(
+            config: _config(
+              disclosureLabel: const {'pt': 'Acme Bicicletas'},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('paid partnership'), findsNothing);
+      },
+    );
+
     testWidgets('keeps the disclosure above an empty grid', (tester) async {
       // The tab can be scheduled ahead of its content snapshot, so a live
       // partnership is reachable with nothing to show.

@@ -3,10 +3,24 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/screens/explore/explore_tab_labels.dart';
+
+FeaturedTabConfig _configWithSponsor(Map<String, String> disclosureLabel) {
+  return FeaturedTabConfig(
+    id: 'ft_a1b2c3d4',
+    slug: 'featured-slug',
+    label: const {'default': 'Featured'},
+    disclosureLabel: disclosureLabel,
+    startsAt: null,
+    endsAt: null,
+    enabled: true,
+    hasContent: true,
+  );
+}
 
 void main() {
   group('labelForExploreTabName', () {
@@ -147,6 +161,40 @@ void main() {
 
     test('returns empty for control-only copy', () {
       expect(sanitizeFeaturedTabText('\n\u202e\t'), isEmpty);
+    });
+  });
+
+  group('featuredTabSponsorName', () {
+    test('resolves and sanitises the active locale entry', () {
+      final config = _configWithSponsor(const {'default': '  Acme Bikes '});
+
+      expect(featuredTabSponsorName(config, 'en'), equals('Acme Bikes'));
+      expect(featuredTabIsSponsored(config, 'en'), isTrue);
+    });
+
+    test('resolves no sponsor for a locale the map does not cover', () {
+      // The pill and the partnership line must agree per locale: a map that
+      // only resolves elsewhere means this viewer sees no sponsor at all.
+      final config = _configWithSponsor(const {'pt': 'Acme Bicicletas'});
+
+      expect(featuredTabSponsorName(config, 'en'), isNull);
+      expect(featuredTabIsSponsored(config, 'en'), isFalse);
+      expect(featuredTabSponsorName(config, 'pt'), equals('Acme Bicicletas'));
+      expect(featuredTabIsSponsored(config, 'pt'), isTrue);
+    });
+
+    test('resolves no sponsor for control-only copy', () {
+      final config = _configWithSponsor(const {'default': '\n\u202e\t'});
+
+      expect(featuredTabSponsorName(config, 'en'), isNull);
+      expect(featuredTabIsSponsored(config, 'en'), isFalse);
+    });
+
+    test('resolves no sponsor when the field is absent', () {
+      final config = _configWithSponsor(const {});
+
+      expect(featuredTabSponsorName(config, 'en'), isNull);
+      expect(featuredTabIsSponsored(config, 'en'), isFalse);
     });
   });
 }

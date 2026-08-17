@@ -117,12 +117,8 @@ class _FeaturedPartnershipLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final rawSponsor = config.sponsorNameFor(l10n.localeName);
-    // Same untrusted-input path as the tab label, so same treatment.
-    final sponsor = rawSponsor == null
-        ? null
-        : sanitizeFeaturedTabText(rawSponsor);
-    if (sponsor == null || sponsor.isEmpty) return const SizedBox.shrink();
+    final sponsor = featuredTabSponsorName(config, l10n.localeName);
+    if (sponsor == null) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

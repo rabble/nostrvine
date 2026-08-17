@@ -119,6 +119,28 @@ void main() {
       );
     });
 
+    testWidgets(
+      'tints the pill yellow when the sponsor resolves only for another locale',
+      (tester) async {
+        // A pink "sponsored" pill with no partnership line for this viewer is
+        // the one combination that actively misleads, so sponsorship follows
+        // the locale-resolved sponsor name, not the raw field.
+        await pumpBar(
+          tester,
+          ExploreTabsState(
+            featuredTab: _featured(
+              disclosureLabel: const {'pt': 'Acme Bicicletas'},
+            ),
+          ),
+        );
+
+        expect(
+          _pillTextColor(tester, 'Skate Week'),
+          equals(VineTheme.darkColors.accentChipYellow.onContainer),
+        );
+      },
+    );
+
     testWidgets('tints the pill pink when a sponsor is configured', (
       tester,
     ) async {

@@ -98,13 +98,6 @@ class FeaturedTabConfig {
     return resolved.isEmpty ? null : resolved;
   }
 
-  /// Whether this tab is commercially sponsored in any locale.
-  ///
-  /// Answered by the presence of a sponsor name, since a sponsored tab with
-  /// nobody to credit cannot be disclosed and must not be styled as one.
-  bool get isSponsored =>
-      disclosureLabel.values.any((value) => value.isNotEmpty);
-
   /// Whether [now] falls inside the configured display window.
   ///
   /// A missing bound is treated as unbounded on that side.

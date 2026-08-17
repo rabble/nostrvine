@@ -135,7 +135,10 @@ class _ExploreTabLabel extends StatelessWidget {
       spacing: 6,
       children: [
         Text(label),
-        _FeaturedTabPill(text: pill, isSponsored: featured.isSponsored),
+        _FeaturedTabPill(
+          text: pill,
+          isSponsored: featuredTabIsSponsored(featured, l10n.localeName),
+        ),
       ],
     );
   }
