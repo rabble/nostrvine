@@ -1346,6 +1346,7 @@ void main() {
         pubkey: expiredPubkey,
         rpcSigner: retainedRpc,
       );
+      late AuthResult result;
 
       await runZonedGuarded(
         () async {
@@ -1354,30 +1355,33 @@ void main() {
           authService.debugSetKeycastSigner(retainedRpc);
           authService.debugSetIdentity(retainedIdentity);
 
-          final result = await authService.importFromNsec(
+          result = await authService.importFromNsec(
             Nip19.encodePrivateKey(privateKeyHex),
-          );
-          expect(result.success, isTrue);
-
-          // Anti-vacuous: the import must have actually swapped the
-          // identity off the retained one while keeping the pubkey.
-          expect(authService.currentIdentity, isNot(same(retainedIdentity)));
-          expect(authService.currentPublicKeyHex, equals(expiredPubkey));
-
-          // The production regression this pins: if the non-OAuth branch
-          // closed the previous signer, this throws
-          // KeycastRpcClosedException.
-          expect(
-            await retainedRpc.getPublicKey(),
-            equals(expiredPubkey),
-            reason:
-                'the RPC still held by the live NostrClient must survive a '
-                'same-pubkey nsec import',
           );
         },
         (error, stack) {
-          // Ignore background errors (RPC connection, relay discovery)
+          // Ignore background errors (RPC connection, relay discovery).
+          // Assertions live outside the zone: this handler must not
+          // swallow them into a framework timeout.
         },
+      );
+
+      expect(result.success, isTrue);
+
+      // Anti-vacuous: the import must have actually swapped the
+      // identity off the retained one while keeping the pubkey.
+      expect(authService.currentIdentity, isNot(same(retainedIdentity)));
+      expect(authService.currentPublicKeyHex, equals(expiredPubkey));
+
+      // The production regression this pins: if the non-OAuth branch
+      // closed the previous signer, this throws
+      // KeycastRpcClosedException.
+      expect(
+        await retainedRpc.getPublicKey(),
+        equals(expiredPubkey),
+        reason:
+            'the RPC still held by the live NostrClient must survive a '
+            'same-pubkey nsec import',
       );
     });
 
