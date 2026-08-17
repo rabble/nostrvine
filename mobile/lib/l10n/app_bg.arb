@@ -5377,5 +5377,12 @@
     "dbFailureResetDoneBody": "Затвори Divine и го отвори отново — следващото стартиране изгражда нова локална база данни.",
   "authSignInOptionsInfo": "Относно опциите за вход",
   "authShowPassword": "Показване на паролата",
-  "authHidePassword": "Скриване на паролата"
+  "authHidePassword": "Скриване на паролата",
+    "followUserSemanticLabel": "Последвай потребителя",
+    "unfollowUserSemanticLabel": "Спри да следваш потребителя",
+    "commentsLoadingSemanticLabel": "Зареждане на коментарите",
+    "analyticsWindowAll": "Всички",
+    "followUserIndexedSemanticLabel": "Последвай потребителя {index}",
+    "unfollowUserIndexedSemanticLabel": "Спри да следваш потребителя {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / месец"
 }

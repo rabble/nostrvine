@@ -7076,5 +7076,12 @@
   "dbFailureResetDoneBody": "关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。",
   "authSignInOptionsInfo": "关于登录选项",
   "authShowPassword": "显示密码",
-  "authHidePassword": "隐藏密码"
+  "authHidePassword": "隐藏密码",
+  "followUserSemanticLabel": "关注用户",
+  "unfollowUserSemanticLabel": "取消关注用户",
+  "commentsLoadingSemanticLabel": "正在加载评论",
+  "analyticsWindowAll": "全部",
+  "followUserIndexedSemanticLabel": "关注用户 {index}",
+  "unfollowUserIndexedSemanticLabel": "取消关注用户 {index}",
+  "supporterTierMonthlyLabel": "{title} — {price} / 月"
 }

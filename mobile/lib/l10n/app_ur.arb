@@ -7076,5 +7076,12 @@
   "dbFailureResetDoneBody": "Divine بند کریں اور دوبارہ کھولیں — اگلی بار شروع ہونے پر نیا مقامی ڈیٹابیس بنے گا۔",
   "authSignInOptionsInfo": "سائن ان کے اختیارات کے بارے میں",
   "authShowPassword": "پاس ورڈ دکھائیں",
-  "authHidePassword": "پاس ورڈ چھپائیں"
+  "authHidePassword": "پاس ورڈ چھپائیں",
+  "followUserSemanticLabel": "صارف کو فالو کریں",
+  "unfollowUserSemanticLabel": "صارف کو ان فالو کریں",
+  "commentsLoadingSemanticLabel": "تبصرے لوڈ ہو رہے ہیں",
+  "analyticsWindowAll": "سب",
+  "followUserIndexedSemanticLabel": "صارف کو فالو کریں {index}",
+  "unfollowUserIndexedSemanticLabel": "صارف کو ان فالو کریں {index}",
+  "supporterTierMonthlyLabel": "{title} — {price} / ماہ"
 }

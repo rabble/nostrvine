@@ -12242,4 +12242,31 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Şifreyi gizle';
+
+  @override
+  String get followUserSemanticLabel => 'Kullanıcıyı takip et';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Kullanıcıyı takipten çık';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Yorumlar yükleniyor';
+
+  @override
+  String get analyticsWindowAll => 'Tümü';
+
+  @override
+  String followUserIndexedSemanticLabel(int index) {
+    return 'Kullanıcıyı takip et $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(int index) {
+    return 'Kullanıcıyı takipten çık $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / ay';
+  }
 }

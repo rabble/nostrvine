@@ -11727,4 +11727,31 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get authHidePassword => '비밀번호 숨기기';
+
+  @override
+  String get followUserSemanticLabel => '사용자 팔로우';
+
+  @override
+  String get unfollowUserSemanticLabel => '사용자 팔로우 취소';
+
+  @override
+  String get commentsLoadingSemanticLabel => '댓글 불러오는 중';
+
+  @override
+  String get analyticsWindowAll => '전체';
+
+  @override
+  String followUserIndexedSemanticLabel(int index) {
+    return '사용자 팔로우 $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(int index) {
+    return '사용자 팔로우 취소 $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / 월';
+  }
 }

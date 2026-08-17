@@ -5246,5 +5246,12 @@
     "dbFailureResetDoneBody": "Divine を閉じてもう一度開いてください。次回の起動で新しいローカルデータベースが作成されます。",
   "authSignInOptionsInfo": "ログイン方法について",
   "authShowPassword": "パスワードを表示",
-  "authHidePassword": "パスワードを非表示"
+  "authHidePassword": "パスワードを非表示",
+    "followUserSemanticLabel": "ユーザーをフォロー",
+    "unfollowUserSemanticLabel": "ユーザーのフォローを解除",
+    "commentsLoadingSemanticLabel": "コメントを読み込み中",
+    "analyticsWindowAll": "すべて",
+    "followUserIndexedSemanticLabel": "ユーザーをフォロー {index}",
+    "unfollowUserIndexedSemanticLabel": "ユーザーのフォローを解除 {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / 月"
 }

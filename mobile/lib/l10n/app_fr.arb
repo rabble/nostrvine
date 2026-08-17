@@ -5246,5 +5246,12 @@
     "dbFailureResetDoneBody": "Fermez Divine et rouvrez-le — le prochain lancement crée une nouvelle base de données locale.",
   "authSignInOptionsInfo": "À propos des options de connexion",
   "authShowPassword": "Afficher le mot de passe",
-  "authHidePassword": "Masquer le mot de passe"
+  "authHidePassword": "Masquer le mot de passe",
+    "followUserSemanticLabel": "Suivre l'utilisateur",
+    "unfollowUserSemanticLabel": "Ne plus suivre l'utilisateur",
+    "commentsLoadingSemanticLabel": "Chargement des commentaires",
+    "analyticsWindowAll": "Tout",
+    "followUserIndexedSemanticLabel": "Suivre l'utilisateur {index}",
+    "unfollowUserIndexedSemanticLabel": "Ne plus suivre l'utilisateur {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / mois"
 }

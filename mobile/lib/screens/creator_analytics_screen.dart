@@ -381,7 +381,7 @@ class _RangeSelector extends StatelessWidget {
       children: _AnalyticsWindow.values.map((window) {
         final isSelected = window == selected;
         return ChoiceChip(
-          label: Text(window.label),
+          label: Text(window.labelFor(context.l10n)),
           selected: isSelected,
           selectedColor: VineTheme.vineGreen.withValues(alpha: 0.2),
           labelStyle: VineTheme.bodySmallFont(
@@ -1451,6 +1451,18 @@ enum _AnalyticsWindow {
 
   final String label;
   final Duration? duration;
+}
+
+extension on _AnalyticsWindow {
+  /// 7D / 28D / 90D are numeric abbreviations that read the same everywhere;
+  /// only the all-time window is a word, and it shipped as a hardcoded 'All'.
+  /// Switched exhaustively so a new window has to make this choice too.
+  String labelFor(AppLocalizations l10n) => switch (this) {
+    _AnalyticsWindow.allTime => l10n.analyticsWindowAll,
+    _AnalyticsWindow.last7Days ||
+    _AnalyticsWindow.last28Days ||
+    _AnalyticsWindow.last90Days => label,
+  };
 }
 
 class _CreatorAnalyticsData {

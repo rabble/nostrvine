@@ -193,7 +193,10 @@ class _TierList extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: DivineButton(
-              label: '${tier.title} — ${tier.price} / month',
+              label: context.l10n.supporterTierMonthlyLabel(
+                tier.title,
+                tier.price,
+              ),
               onPressed: state.isBusy
                   ? null
                   : () => context.read<SupporterCubit>().subscribe(

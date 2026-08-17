@@ -12375,4 +12375,31 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Wachtwoord verbergen';
+
+  @override
+  String get followUserSemanticLabel => 'Gebruiker volgen';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Gebruiker ontvolgen';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Reacties laden';
+
+  @override
+  String get analyticsWindowAll => 'Alles';
+
+  @override
+  String followUserIndexedSemanticLabel(int index) {
+    return 'Gebruiker volgen $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(int index) {
+    return 'Gebruiker ontvolgen $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / maand';
+  }
 }

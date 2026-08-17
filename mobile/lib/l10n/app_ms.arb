@@ -7076,5 +7076,12 @@
   "dbFailureResetDoneBody": "Tutup Divine dan buka semula — pelancaran seterusnya membina pangkalan data setempat yang baharu.",
   "authSignInOptionsInfo": "Tentang pilihan log masuk",
   "authShowPassword": "Tunjukkan kata laluan",
-  "authHidePassword": "Sembunyikan kata laluan"
+  "authHidePassword": "Sembunyikan kata laluan",
+  "followUserSemanticLabel": "Ikut pengguna",
+  "unfollowUserSemanticLabel": "Nyahikut pengguna",
+  "commentsLoadingSemanticLabel": "Memuatkan komen",
+  "analyticsWindowAll": "Semua",
+  "followUserIndexedSemanticLabel": "Ikut pengguna {index}",
+  "unfollowUserIndexedSemanticLabel": "Nyahikut pengguna {index}",
+  "supporterTierMonthlyLabel": "{title} — {price} / bulan"
 }

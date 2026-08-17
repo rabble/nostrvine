@@ -5246,5 +5246,12 @@
     "dbFailureResetDoneBody": "أغلق Divine ثم افتحه مجددًا — سيبني التشغيل التالي قاعدة بيانات محلية جديدة.",
   "authSignInOptionsInfo": "حول خيارات تسجيل الدخول",
   "authShowPassword": "إظهار كلمة المرور",
-  "authHidePassword": "إخفاء كلمة المرور"
+  "authHidePassword": "إخفاء كلمة المرور",
+    "followUserSemanticLabel": "متابعة المستخدم",
+    "unfollowUserSemanticLabel": "إلغاء متابعة المستخدم",
+    "commentsLoadingSemanticLabel": "جارٍ تحميل التعليقات",
+    "analyticsWindowAll": "الكل",
+    "followUserIndexedSemanticLabel": "متابعة المستخدم {index}",
+    "unfollowUserIndexedSemanticLabel": "إلغاء متابعة المستخدم {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / شهريًا"
 }

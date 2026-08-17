@@ -12219,4 +12219,31 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authHidePassword => 'إخفاء كلمة المرور';
+
+  @override
+  String get followUserSemanticLabel => 'متابعة المستخدم';
+
+  @override
+  String get unfollowUserSemanticLabel => 'إلغاء متابعة المستخدم';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'جارٍ تحميل التعليقات';
+
+  @override
+  String get analyticsWindowAll => 'الكل';
+
+  @override
+  String followUserIndexedSemanticLabel(int index) {
+    return 'متابعة المستخدم $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(int index) {
+    return 'إلغاء متابعة المستخدم $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / شهريًا';
+  }
 }

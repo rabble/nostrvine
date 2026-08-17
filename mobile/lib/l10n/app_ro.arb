@@ -5246,5 +5246,12 @@
     "dbFailureResetDoneBody": "Închide Divine și deschide-l din nou — următoarea pornire creează o bază de date locală nouă.",
   "authSignInOptionsInfo": "Despre opțiunile de conectare",
   "authShowPassword": "Afișați parola",
-  "authHidePassword": "Ascundeți parola"
+  "authHidePassword": "Ascundeți parola",
+    "followUserSemanticLabel": "Urmărește utilizatorul",
+    "unfollowUserSemanticLabel": "Nu mai urmări utilizatorul",
+    "commentsLoadingSemanticLabel": "Se încarcă comentariile",
+    "analyticsWindowAll": "Tot",
+    "followUserIndexedSemanticLabel": "Urmărește utilizatorul {index}",
+    "unfollowUserIndexedSemanticLabel": "Nu mai urmări utilizatorul {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / lună"
 }

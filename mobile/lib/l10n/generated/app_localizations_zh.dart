@@ -11596,4 +11596,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get authHidePassword => '隐藏密码';
+
+  @override
+  String get followUserSemanticLabel => '关注用户';
+
+  @override
+  String get unfollowUserSemanticLabel => '取消关注用户';
+
+  @override
+  String get commentsLoadingSemanticLabel => '正在加载评论';
+
+  @override
+  String get analyticsWindowAll => '全部';
+
+  @override
+  String followUserIndexedSemanticLabel(int index) {
+    return '关注用户 $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(int index) {
+    return '取消关注用户 $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / 月';
+  }
 }

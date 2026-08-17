@@ -3840,5 +3840,12 @@
     "dbFailureResetDoneBody": "Isara ang Divine at buksan itong muli — gagawa ng bagong lokal na database sa susunod na paglulunsad.",
   "authSignInOptionsInfo": "Tungkol sa mga opsyon sa pag-sign in",
   "authShowPassword": "Ipakita ang password",
-  "authHidePassword": "Itago ang password"
+  "authHidePassword": "Itago ang password",
+    "followUserSemanticLabel": "Sundan ang user",
+    "unfollowUserSemanticLabel": "I-unfollow ang user",
+    "commentsLoadingSemanticLabel": "Nilo-load ang mga komento",
+    "analyticsWindowAll": "Lahat",
+    "followUserIndexedSemanticLabel": "Sundan ang user {index}",
+    "unfollowUserIndexedSemanticLabel": "I-unfollow ang user {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / buwan"
 }

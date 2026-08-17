@@ -11702,4 +11702,31 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get authHidePassword => 'パスワードを非表示';
+
+  @override
+  String get followUserSemanticLabel => 'ユーザーをフォロー';
+
+  @override
+  String get unfollowUserSemanticLabel => 'ユーザーのフォローを解除';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'コメントを読み込み中';
+
+  @override
+  String get analyticsWindowAll => 'すべて';
+
+  @override
+  String followUserIndexedSemanticLabel(int index) {
+    return 'ユーザーをフォロー $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(int index) {
+    return 'ユーザーのフォローを解除 $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / 月';
+  }
 }

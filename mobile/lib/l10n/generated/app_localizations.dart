@@ -20883,6 +20883,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide password'**
   String get authHidePassword;
+
+  /// Screen-reader label for the follow button on a user row.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow user'**
+  String get followUserSemanticLabel;
+
+  /// Screen-reader label for the unfollow button on a user row.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow user'**
+  String get unfollowUserSemanticLabel;
+
+  /// Screen-reader label announced while the comment list is still loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading comments'**
+  String get commentsLoadingSemanticLabel;
+
+  /// Creator-analytics time window covering all time, shown next to 7D / 28D / 90D.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get analyticsWindowAll;
+
+  /// Screen-reader label for the follow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow user {index}'**
+  String followUserIndexedSemanticLabel(int index);
+
+  /// Screen-reader label for the unfollow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow user {index}'**
+  String unfollowUserIndexedSemanticLabel(int index);
+
+  /// Label on a supporter subscription button: the tier name, its price, and the monthly billing period.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} — {price} / month'**
+  String supporterTierMonthlyLabel(String title, String price);
 }
 
 class _AppLocalizationsDelegate
