@@ -19,8 +19,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 // TODO(e2e): Add divine-name-server to local_stack Docker dependencies
 // so username check/claim flows can be tested against it in E2E tests.
-// Tracked by #3367 while this repository still uses the production name
-// server in local builds.
+// Tracked by #7692.
 
 // How long a Divine-identity determination is trusted before re-querying.
 //

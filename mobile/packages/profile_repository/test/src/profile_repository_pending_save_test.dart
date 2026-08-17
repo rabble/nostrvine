@@ -29,6 +29,8 @@ class _MockEvent extends Mock implements Event {
   List<List<String>> get tags => const [];
 }
 
+const _testNameServer = 'https://names.test.example';
+
 void main() {
   group('ProfileRepository pending-save slot (#3161)', () {
     late _MockNostrClient nostrClient;
@@ -43,7 +45,7 @@ void main() {
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 
     setUpAll(() {
-      registerFallbackValue(Uri.parse('https://names.test.example'));
+      registerFallbackValue(Uri.parse(_testNameServer));
       registerFallbackValue(<String, dynamic>{});
       registerFallbackValue(
         UserProfile(
@@ -66,6 +68,7 @@ void main() {
         userProfilesDao: userProfilesDao,
         httpClient: httpClient,
         pendingProfileSavesDao: slotDao,
+        nameServerBaseUrl: _testNameServer,
       );
 
       event = _MockEvent();
