@@ -1,6 +1,7 @@
 // ABOUTME: Screen for adjusting audio timing/offset for video editor.
 // ABOUTME: Displays video preview with audio segment selector overlay.
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -351,6 +352,32 @@ class _BottomControls extends StatelessWidget {
   }
 }
 
+/// [VideoEditorConstants.maxDuration] expressed in seconds.
+double get _maxDurationSecs =>
+    VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
+
+/// Converts [seconds] of audio into a [Duration].
+Duration _secondsToDuration(double seconds) =>
+    Duration(milliseconds: (seconds * 1000).toInt());
+
+/// Width of the marker representing [VideoEditorConstants.maxDuration] of audio
+/// on a bar where [trackWidth] pixels span [audioDurationSecs] of audio.
+///
+/// [minWidth] floors the result — the two callers floor it for unrelated
+/// reasons (visibility above, scrub resolution below), so the floor stays at
+/// the call site rather than being baked in here.
+double _maxDurationSegmentWidth({
+  required double trackWidth,
+  required double audioDurationSecs,
+  required double minWidth,
+}) {
+  if (audioDurationSecs <= _maxDurationSecs) return trackWidth;
+  return (trackWidth * _maxDurationSecs / audioDurationSecs).clamp(
+    math.min(minWidth, trackWidth),
+    trackWidth,
+  );
+}
+
 /// Video duration timeline showing where the selected segment will play.
 class _VideoDurationTimeline extends StatelessWidget {
   const _VideoDurationTimeline({
@@ -381,22 +408,16 @@ class _VideoDurationTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width - 32;
-    final maxDurationSecs =
-        VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
     final audioDurationSecs = audioDuration ?? 0;
 
     // This bar spans the whole track, so the marker's share of it is the
     // segment's true share of the audio — the waveform below owns scrub
     // precision and sets its own zoom independently.
-    final minSegmentWidth = _minSegmentWidth < screenWidth
-        ? _minSegmentWidth
-        : screenWidth;
-    final segmentWidth = audioDurationSecs <= maxDurationSecs
-        ? screenWidth
-        : (screenWidth * maxDurationSecs / audioDurationSecs).clamp(
-            minSegmentWidth,
-            screenWidth,
-          );
+    final segmentWidth = _maxDurationSegmentWidth(
+      trackWidth: screenWidth,
+      audioDurationSecs: audioDurationSecs,
+      minWidth: _minSegmentWidth,
+    );
 
     // Scrollable distance lets the segment's left edge reach
     // `audioDuration - minRemainingAudio`, so users can pick a late start
@@ -516,8 +537,6 @@ class _AudioWaveformSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width - 32;
-    final maxDurationSecs =
-        VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
     final audioDurationSecs = audioDuration ?? 0;
 
     // Zoom is chosen for scrub precision, not to mirror the overview bar above.
@@ -527,72 +546,52 @@ class _AudioWaveformSelector extends StatelessWidget {
     // per frame keeps the in-point resolvable on the same grid the timeline
     // ruler labels; a purely proportional width collapses on long tracks, where
     // a single pixel used to jump roughly six frames.
-    final framePreciseWidth = maxDurationSecs * VideoEditorConstants.editorFps;
-    final minSelectionWidth = framePreciseWidth < screenWidth
-        ? framePreciseWidth
-        : screenWidth;
-    final selectionWidth = audioDurationSecs <= maxDurationSecs
-        ? screenWidth
-        : (screenWidth * maxDurationSecs / audioDurationSecs).clamp(
-            minSelectionWidth,
-            screenWidth,
-          );
+    final selectionWidth = _maxDurationSegmentWidth(
+      trackWidth: screenWidth,
+      audioDurationSecs: audioDurationSecs,
+      minWidth: _maxDurationSecs * VideoEditorConstants.editorFps,
+    );
     // Selection is always centered
     final selectionLeft = (screenWidth - selectionWidth) / 2;
 
-    // Calculate actual waveform width based on audio duration
-    final double fullWaveformWidth;
-    if (audioDurationSecs <= 0 || audioDurationSecs <= maxDurationSecs) {
-      // Short audio: waveform fits exactly within selection
-      fullWaveformWidth = selectionWidth;
-    } else {
-      // Long audio: waveform extends beyond selection proportionally
-      fullWaveformWidth =
-          selectionWidth * (audioDurationSecs / maxDurationSecs);
-    }
+    // Every length below is derived from this one scale, so the bars, the
+    // scrollable range and the shrinking tail cannot disagree about where a
+    // second of audio sits.
+    final pixelsPerSecond = selectionWidth / _maxDurationSecs;
 
-    // Calculate how far the waveform can scroll.
-    //
-    // The selection's left edge (in audio time) can range from 0 to
-    // `audioDuration - minRemainingAudio`, allowing users to pick a late
+    // The canvas spans whichever is longer, the track or the video window:
+    // audio shorter than the video leaves the remainder to the painter's
+    // placeholder bars.
+    final waveformSpanSecs = math.max(audioDurationSecs, _maxDurationSecs);
+    final fullWaveformWidth = waveformSpanSecs * pixelsPerSecond;
+
+    // On-screen extent of the audio itself. Until the duration resolves there
+    // is nothing to measure it against, so the placeholder canvas stands in.
+    final trackWidth = audioDurationSecs > 0
+        ? audioDurationSecs * pixelsPerSecond
+        : fullWaveformWidth;
+
+    // The in-point ranges from 0 to `audioDuration - minRemainingAudio`, so
+    // the waveform scrolls by exactly that much audio — users can pick a late
     // start even when the trailing audio is shorter than the video.
-    // `selectionWidth` always represents min(audioDurationSecs, maxDurationSecs)
-    // worth of audio — full duration for short clips, maxDuration for long ones —
-    // so the minimum-remaining slice width must use the same basis as the
-    // denominator.
-    final double maxScrollableDistance;
-    if (audioDurationSecs <= 0 ||
-        audioDurationSecs <= AudioTimingCubit.minRemainingAudioSecs) {
-      maxScrollableDistance = 0;
-    } else {
-      // For short audio selectionWidth represents audioDurationSecs;
-      // for long audio it represents maxDurationSecs.
-      final waveformBasisSecs = audioDurationSecs < maxDurationSecs
-          ? audioDurationSecs
-          : maxDurationSecs;
-      final minVisibleWidth =
-          selectionWidth *
-          (AudioTimingCubit.minRemainingAudioSecs / waveformBasisSecs);
-      maxScrollableDistance = (fullWaveformWidth - minVisibleWidth).clamp(
-        0.0,
-        double.infinity,
-      );
-    }
-    // Waveform position: at offset 0, waveform starts at selection left edge
-    // at offset 1, waveform ends at selection right edge
+    final maxScrollableDistance =
+        ((audioDurationSecs - AudioTimingCubit.minRemainingAudioSecs) *
+                pixelsPerSecond)
+            .clamp(0.0, double.infinity);
+
+    // Waveform position: at offset 0 the track starts at the selection's left
+    // edge; at offset 1 only `minRemainingAudio` is left inside it.
     final waveformLeft = selectionLeft - startOffset * maxScrollableDistance;
 
-    // Shrink the green selection when the trailing audio is shorter than the
-    // video's max duration, so the box matches the actual playable clip
-    // (mirrors [AudioTimingCubit._setClippedAudioSource]'s end clamp).
-    final waveformRight = waveformLeft + fullWaveformWidth;
-    final remainingSelectionWidth = (waveformRight - selectionLeft).clamp(
-      0.0,
-      double.infinity,
+    // Shrink the green selection to the audio still under it, so the box
+    // matches the actual playable clip (mirrors
+    // [AudioTimingCubit._setClippedAudioSource]'s end clamp).
+    final remainingSelectionWidth = (waveformLeft + trackWidth - selectionLeft)
+        .clamp(0.0, double.infinity);
+    final effectiveSelectionWidth = math.min(
+      selectionWidth,
+      remainingSelectionWidth,
     );
-    final effectiveSelectionWidth = selectionWidth < remainingSelectionWidth
-        ? selectionWidth
-        : remainingSelectionWidth;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -678,11 +677,16 @@ class _AudioWaveformSelector extends StatelessWidget {
                                 progress: 1.0, // No progress indicator needed
                                 activeColor: VineTheme.whiteText,
                                 inactiveColor: VineTheme.whiteText,
-                                audioDuration: Duration(
-                                  milliseconds: ((audioDuration ?? 0) * 1000)
-                                      .toInt(),
+                                audioDuration: _secondsToDuration(
+                                  audioDurationSecs,
                                 ),
-                                maxDuration: VideoEditorConstants.maxDuration,
+                                // The canvas is `waveformSpanSecs` wide, not
+                                // one video duration wide — telling the painter
+                                // otherwise stretches the opening 6.3s across
+                                // the whole track.
+                                maxDuration: _secondsToDuration(
+                                  waveformSpanSecs,
+                                ),
                                 heightFactor: heightFactor,
                               ),
                             ),

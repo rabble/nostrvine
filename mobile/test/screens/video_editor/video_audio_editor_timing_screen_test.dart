@@ -9,9 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/video_editor/audio_timing/audio_timing_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
+import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
@@ -447,6 +449,110 @@ void main() {
             )
             .width,
         closeTo(expectedWidth, 0.1),
+      );
+    });
+
+    testWidgets('draws the whole track across the waveform strip', (
+      tester,
+    ) async {
+      // The strip is as wide as the track is long, but the painter was told it
+      // only spanned one video duration — so it mapped the opening 6.3s across
+      // the entire strip and the bars under the selection never corresponded
+      // to the audio playing. Scrubbing to a visible transient landed
+      // somewhere else entirely.
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const audioDurationSecs = 120.0;
+      await tester.pumpWidget(
+        buildWidget(
+          sound: _createTestAudioEvent(
+            title: 'Long Track',
+            duration: audioDurationSecs,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final waveform = find.byWidgetPredicate(
+        (widget) =>
+            widget is CustomPaint && widget.painter is StereoWaveformPainter,
+      );
+      final painter =
+          tester.widget<CustomPaint>(waveform).painter!
+              as StereoWaveformPainter;
+
+      // The selection is the scale reference: it is maxDuration wide by
+      // construction. The strip must carry the painter's span at that same
+      // scale, or the bars are stretched relative to the in-point.
+      final maxDurationSecs =
+          VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
+      final pixelsPerSecond =
+          tester
+              .getSize(
+                find.byKey(VideoAudioEditorTimingScreen.waveformSelectionKey),
+              )
+              .width /
+          maxDurationSecs;
+
+      expect(
+        painter.maxDuration.inMilliseconds / 1000.0 * pixelsPerSecond,
+        closeTo(tester.getSize(waveform).width, 0.5),
+      );
+      expect(painter.maxDuration, equals(painter.audioDuration));
+    });
+
+    testWidgets('scrolls a short track by its own length, not the window', (
+      tester,
+    ) async {
+      // Audio shorter than the video still scrolls, up to
+      // `duration - minRemainingAudio`. The scroll range was derived from the
+      // selection window rather than the track's on-screen extent, so it ran
+      // 6.3/duration times too far and the waveform left the window entirely
+      // before the in-point reached its limit.
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const audioDurationSecs = 3.0;
+      await tester.pumpWidget(
+        buildWidget(
+          sound: _createTestAudioEvent(
+            title: 'Short Clip',
+            duration: audioDurationSecs,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      const screenWidth = 800.0 - 32.0;
+      final maxDurationSecs =
+          VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
+      const pixelsPerSecond = screenWidth / 6.3;
+      final selection = find.byKey(
+        VideoAudioEditorTimingScreen.waveformSelectionKey,
+      );
+
+      // The video outlasts the audio, so the box covers the track, not the
+      // full window.
+      expect(maxDurationSecs, equals(6.3));
+      expect(
+        tester.getSize(selection).width,
+        closeTo(audioDurationSecs * pixelsPerSecond, 0.1),
+      );
+
+      // The pointer lands on the selection's border overlay rather than the
+      // keyed box, but both sit inside the strip's single drag detector.
+      await tester.drag(selection, const Offset(-1000, 0), warnIfMissed: false);
+      await tester.pump();
+
+      // At the far end only `minRemainingAudio` is still under the box.
+      expect(
+        tester.getSize(selection).width,
+        closeTo(AudioTimingCubit.minRemainingAudioSecs * pixelsPerSecond, 0.1),
       );
     });
 
