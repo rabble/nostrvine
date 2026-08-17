@@ -9,6 +9,7 @@ MISE_PATH = Path(__file__).resolve().parents[3] / "mobile" / "mise.toml"
 MOBILE_CI_PATH = (
     Path(__file__).resolve().parents[3] / ".github" / "workflows" / "mobile_ci.yaml"
 )
+WORKFLOWS_PATH = Path(__file__).resolve().parents[2] / "workflows"
 
 
 class CodemagicAndroidBuildNumberTest(unittest.TestCase):
@@ -87,6 +88,15 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertEqual({expected}, mobile_ci_versions)
         self.assertEqual({expected}, codemagic_flutter_versions)
         self.assertEqual({expected}, shorebird_release_versions)
+        stale_workflows = []
+        for workflow in WORKFLOWS_PATH.glob("*.y*ml"):
+            versions = re.findall(
+                r"flutter(?:-|_)version:\s*[\"']?([^\"'\s]+)",
+                workflow.read_text(),
+            )
+            if any(version != expected for version in versions):
+                stale_workflows.append(workflow.name)
+        self.assertEqual([], stale_workflows)
 
     def test_shorebird_patch_commands_publish_to_staging_and_are_signed(self) -> None:
         self.assertIn(
@@ -115,10 +125,25 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("'pubspec.yaml'", self.contents)
         self.assertIn("'pubspec.lock'", self.contents)
         self.assertIn("'packages/**/android/**'", self.contents)
+        self.assertIn("'packages/**/assets/**'", self.contents)
         self.assertIn("'packages/**/darwin/**'", self.contents)
         self.assertIn("Cut a normal store release instead of a Shorebird patch.", self.contents)
         for command in self._shorebird_patch_commands():
             self.assertNotRegex(command, r"--allow-native-diffs|--allow-asset-diffs")
+
+    def test_store_artifacts_are_built_by_shorebird_release(self) -> None:
+        self.assertIn("*build_aab", self._workflow_block("android-build"))
+        self.assertIn("*build_ios", self._workflow_block("ios-build"))
+        self.assertRegex(self.contents, r"(?m)^\s+shorebird release android ")
+        self.assertRegex(self.contents, r"(?m)^\s+shorebird release ios ")
+        self.assertNotRegex(self.contents, r"(?m)^\s+flutter build appbundle ")
+        self.assertNotRegex(self.contents, r"(?m)^\s+flutter build ipa ")
+
+    def test_release_jobs_never_materialize_patch_private_key(self) -> None:
+        self.assertIn("*write_shorebird_public_key", self._workflow_block("ios-build"))
+        self.assertIn("*write_shorebird_public_key", self._workflow_block("android-build"))
+        self.assertNotIn("*write_shorebird_private_key", self._workflow_block("ios-build"))
+        self.assertNotIn("*write_shorebird_private_key", self._workflow_block("android-build"))
 
     def test_shorebird_cache_is_enabled_for_release_and_patch_workflows(self) -> None:
         for workflow in ("ios-build", "android-build", "ios-patch", "android-patch"):
