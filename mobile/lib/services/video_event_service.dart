@@ -82,11 +82,27 @@ class PaginationState {
 
   void startQuery() {
     eventsReceivedInCurrentQuery = 0;
+    hasMore = true;
     isLoading = true;
   }
 
   void incrementEventCount() {
     eventsReceivedInCurrentQuery++;
+  }
+
+  /// Records a per-query tally the caller counted for itself.
+  ///
+  /// [incrementEventCount] only fires for events flagged `isHistorical`, which
+  /// is set on the load-more path alone. An initial subscription delivers its
+  /// stored backlog through the real-time handler, so its tally stays at zero
+  /// and [completeQuery] would call the feed exhausted however much arrived.
+  ///
+  /// Takes the larger of the two counts so an externally observed tally seeds
+  /// missing events without erasing events already counted on this query.
+  void recordReceivedCount(int count) {
+    if (count > eventsReceivedInCurrentQuery) {
+      eventsReceivedInCurrentQuery = count;
+    }
   }
 
   void completeQuery(int requestedLimit) {
@@ -2187,12 +2203,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           nip50Sort: nip50Sort,
         );
 
-        // Set per-subscription loading state to show loading UI
-        final paginationState = _paginationStates[subscriptionType];
-        if (paginationState != null) {
-          paginationState.isLoading = true;
-        }
-
         // Generate deterministic subscription ID based on subscription parameters
         final subscriptionId = _generateSubscriptionId(
           subscriptionType: subscriptionType,
@@ -2226,6 +2236,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         }
         _pendingSubscriptionIds.add(subscriptionId);
         pendingClaimId = subscriptionId;
+
+        // Set per-subscription loading state after duplicate detection so a
+        // reused in-flight subscription keeps its current query tally intact.
+        final paginationState = _paginationStates[subscriptionType];
+        paginationState?.startQuery();
 
         // Create direct subscription using NostrService with proper filters
         final subscriptionStartTime = DateTime.now();
@@ -2481,6 +2496,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             // and the UI never transitions from spinner to empty state.
             final paginationState = _paginationStates[subscriptionType];
             if (paginationState != null) {
+              // On the first EOSE, the initial subscription's stored backlog
+              // has routed through the real-time handler, so the per-query
+              // tally never sees it. `eventCount` is this subscription's raw
+              // stream count: repeat EOSE cycles can include later live
+              // deliveries, and the filter set can include non-video kinds,
+              // duplicates, or events filtered out below. Those all skew toward
+              // keeping `hasMore` true a page longer than needed — the safe
+              // direction, and the load-more path re-queries from there.
+              paginationState.recordReceivedCount(eventCount);
               paginationState.completeQuery(limit);
               notifyListeners();
             }
