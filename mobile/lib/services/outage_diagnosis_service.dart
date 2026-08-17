@@ -69,34 +69,40 @@ class OutageDiagnosisService {
   final ConnectivityProbe _connectivityProbe;
   final DateTime Function() _now;
 
-  OutageDiagnosis? _cached;
-  DateTime? _cachedAt;
-  Future<OutageDiagnosis>? _inFlight;
+  // Keyed by component set: a verdict for [api, relay] does not answer a
+  // question about [uploads]. Sharing one entry across sets would hand a
+  // second surface the feed's verdict.
+  final Map<String, OutageDiagnosis> _cached = {};
+  final Map<String, DateTime> _cachedAt = {};
+  final Map<String, Future<OutageDiagnosis>> _inFlight = {};
 
   /// Diagnoses why a load of [components] failed.
   ///
-  /// Concurrent callers share one request, so several failing surfaces do not
-  /// multiply into several status fetches.
-  Future<OutageDiagnosis> diagnose({
-    List<String> components = feedComponents,
-  }) {
-    final cached = _cached;
-    final cachedAt = _cachedAt;
+  /// Concurrent callers asking about the same components share one request, so
+  /// several failing surfaces do not multiply into several status fetches.
+  Future<OutageDiagnosis> diagnose({List<String> components = feedComponents}) {
+    final key = _cacheKey(components);
+    final cached = _cached[key];
+    final cachedAt = _cachedAt[key];
     if (cached != null &&
         cachedAt != null &&
         _now().difference(cachedAt) < cacheDuration) {
       return Future.value(cached);
     }
 
-    return _inFlight ??= _diagnose(components).whenComplete(() {
-      _inFlight = null;
+    return _inFlight[key] ??= _diagnose(key, components).whenComplete(() {
+      _inFlight.remove(key);
     });
   }
 
-  Future<OutageDiagnosis> _diagnose(List<String> components) async {
+  /// Order-independent key for a component set.
+  static String _cacheKey(List<String> components) =>
+      (components.toSet().toList()..sort()).join(',');
+
+  Future<OutageDiagnosis> _diagnose(String key, List<String> components) async {
     final diagnosis = await _resolve(components);
-    _cached = diagnosis;
-    _cachedAt = _now();
+    _cached[key] = diagnosis;
+    _cachedAt[key] = _now();
     return diagnosis;
   }
 
@@ -137,11 +143,11 @@ class OutageDiagnosisService {
     }
   }
 
-  /// Drops any cached verdict, so the next diagnosis re-checks.
+  /// Drops every cached verdict, so the next diagnosis re-checks.
   @visibleForTesting
   void invalidateCache() {
-    _cached = null;
-    _cachedAt = null;
+    _cached.clear();
+    _cachedAt.clear();
   }
 
   void dispose() => _statusClient.close();

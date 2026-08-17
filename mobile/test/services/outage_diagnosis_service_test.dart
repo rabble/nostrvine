@@ -85,6 +85,22 @@ void main() {
       expect(diagnosis.verdict, equals(OutageVerdict.indeterminate));
     });
 
+    test('keeps verdicts separate per component set', () async {
+      // `uploads` is down in the fixture while `api`/`relay` are healthy. A
+      // surface asking about uploads must get its own verdict, not the feed's
+      // cached one.
+      stubStatus(_statusBody());
+      final service = buildService();
+
+      final feed = await service.diagnose();
+      final uploads = await service.diagnose(
+        components: const [DivineStatusComponents.uploads],
+      );
+
+      expect(feed.verdict, equals(OutageVerdict.indeterminate));
+      expect(uploads.verdict, equals(OutageVerdict.divineOutage));
+    });
+
     test('blames the network when there is no interface', () async {
       stubStatus(_statusBody(apiStatus: 'down'));
 
