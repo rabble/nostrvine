@@ -60,67 +60,73 @@ void main() {
     DivineQuickActionsPlatform.instance = initialPlatform;
   });
 
-  test('$MethodChannelDivineQuickActions is the default instance', () {
-    expect(initialPlatform, isInstanceOf<MethodChannelDivineQuickActions>());
+  group('platform instance', () {
+    test('$MethodChannelDivineQuickActions is the default instance', () {
+      expect(initialPlatform, isInstanceOf<MethodChannelDivineQuickActions>());
+    });
   });
 
-  test('setActions delegates typed actions to the platform', () async {
-    final plugin = DivineQuickActions.instance;
-    final fakePlatform = MockDivineQuickActionsPlatform();
-    DivineQuickActionsPlatform.instance = fakePlatform;
+  group('setActions', () {
+    test('setActions delegates typed actions to the platform', () async {
+      final plugin = DivineQuickActions.instance;
+      final fakePlatform = MockDivineQuickActionsPlatform();
+      DivineQuickActionsPlatform.instance = fakePlatform;
 
-    const action = DivineQuickAction(
-      type: 'record',
-      title: 'Record',
-      payload: <String, String>{'source': 'shortcut'},
-    );
-
-    expect(await plugin.setActions(<DivineQuickAction>[action]), isTrue);
-    expect(await plugin.getActions(), equals(<DivineQuickAction>[action]));
-  });
-
-  test('setActions rejects duplicate action types', () async {
-    final plugin = DivineQuickActions.instance;
-    DivineQuickActionsPlatform.instance = MockDivineQuickActionsPlatform();
-
-    expect(
-      () => plugin.setActions(const <DivineQuickAction>[
-        DivineQuickAction(type: 'record', title: 'Record'),
-        DivineQuickAction(type: 'record', title: 'Record again'),
-      ]),
-      throwsArgumentError,
-    );
-  });
-
-  test('initialize returns and forwards launch action once', () async {
-    final plugin = DivineQuickActions.instance;
-    final fakePlatform = MockDivineQuickActionsPlatform()
-      ..launchAction = const DivineQuickActionEvent(
+      const action = DivineQuickAction(
         type: 'record',
-        payload: <String, String>{'source': 'launch'},
-        isLaunchAction: true,
+        title: 'Record',
+        payload: <String, String>{'source': 'shortcut'},
       );
-    DivineQuickActionsPlatform.instance = fakePlatform;
-    final received = <DivineQuickActionEvent>[];
 
-    final launchAction = await plugin.initialize(onAction: received.add);
+      expect(await plugin.setActions(<DivineQuickAction>[action]), isTrue);
+      expect(await plugin.getActions(), equals(<DivineQuickAction>[action]));
+    });
 
-    expect(launchAction?.type, 'record');
-    expect(launchAction?.isLaunchAction, isTrue);
-    expect(received, contains(launchAction));
-    expect(await plugin.initialize(), isNull);
+    test('setActions rejects duplicate action types', () async {
+      final plugin = DivineQuickActions.instance;
+      DivineQuickActionsPlatform.instance = MockDivineQuickActionsPlatform();
+
+      expect(
+        () => plugin.setActions(const <DivineQuickAction>[
+          DivineQuickAction(type: 'record', title: 'Record'),
+          DivineQuickAction(type: 'record', title: 'Record again'),
+        ]),
+        throwsArgumentError,
+      );
+    });
   });
 
-  test('initialize subscribes to runtime action stream', () async {
-    final plugin = DivineQuickActions.instance;
-    final fakePlatform = MockDivineQuickActionsPlatform();
-    DivineQuickActionsPlatform.instance = fakePlatform;
-    final received = <DivineQuickActionEvent>[];
+  group('initialize', () {
+    test('initialize returns and forwards launch action once', () async {
+      final plugin = DivineQuickActions.instance;
+      final fakePlatform = MockDivineQuickActionsPlatform()
+        ..launchAction = const DivineQuickActionEvent(
+          type: 'record',
+          payload: <String, String>{'source': 'launch'},
+          isLaunchAction: true,
+        );
+      DivineQuickActionsPlatform.instance = fakePlatform;
+      final received = <DivineQuickActionEvent>[];
 
-    await plugin.initialize(onAction: received.add);
-    fakePlatform.addAction(const DivineQuickActionEvent(type: 'search'));
-    await pumpEventQueue();
+      final launchAction = await plugin.initialize(onAction: received.add);
 
-    expect(received.single.type, 'search');
+      expect(launchAction?.type, 'record');
+      expect(launchAction?.isLaunchAction, isTrue);
+      expect(received, contains(launchAction));
+      expect(await plugin.initialize(), isNull);
+    });
+
+    test('initialize subscribes to runtime action stream', () async {
+      final plugin = DivineQuickActions.instance;
+      final fakePlatform = MockDivineQuickActionsPlatform();
+      DivineQuickActionsPlatform.instance = fakePlatform;
+      final received = <DivineQuickActionEvent>[];
+
+      await plugin.initialize(onAction: received.add);
+      fakePlatform.addAction(const DivineQuickActionEvent(type: 'search'));
+      await pumpEventQueue();
+
+      expect(received.single.type, 'search');
+    });
   });
 }

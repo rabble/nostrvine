@@ -49,102 +49,112 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
-  test('isSupported delegates to native platform', () async {
-    expect(await platform.isSupported(), isTrue);
+  group('isSupported', () {
+    test('isSupported delegates to native platform', () async {
+      expect(await platform.isSupported(), isTrue);
+    });
   });
 
-  test('setActions serializes actions for native platform', () async {
-    const action = DivineQuickAction(
-      type: 'record',
-      title: 'Record',
-      subtitle: 'Open camera',
-      androidIconName: 'ic_record',
-      iosIconName: 'video.fill',
-      iosIconStyle: DivineQuickActionIosIconStyle.system,
-      rank: 1,
-      payload: <String, String>{'source': 'shortcut'},
-    );
+  group('setActions', () {
+    test('setActions serializes actions for native platform', () async {
+      const action = DivineQuickAction(
+        type: 'record',
+        title: 'Record',
+        subtitle: 'Open camera',
+        androidIconName: 'ic_record',
+        iosIconName: 'video.fill',
+        iosIconStyle: DivineQuickActionIosIconStyle.system,
+        rank: 1,
+        payload: <String, String>{'source': 'shortcut'},
+      );
 
-    expect(await platform.setActions(<DivineQuickAction>[action]), isTrue);
+      expect(await platform.setActions(<DivineQuickAction>[action]), isTrue);
 
-    expect(calls.single.method, 'setActions');
-    expect(calls.single.arguments, <Map<String, Object?>>[action.toMap()]);
+      expect(calls.single.method, 'setActions');
+      expect(calls.single.arguments, <Map<String, Object?>>[action.toMap()]);
+    });
   });
 
-  test('getActions parses native action maps', () async {
-    final actions = await platform.getActions();
+  group('getActions', () {
+    test('getActions parses native action maps', () async {
+      final actions = await platform.getActions();
 
-    expect(actions.single.type, 'record');
-    expect(actions.single.payload, <String, String>{'source': 'test'});
+      expect(actions.single.type, 'record');
+      expect(actions.single.payload, <String, String>{'source': 'test'});
+    });
+
+    test('getActions ignores malformed native action maps', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method != 'getActions') return null;
+            return <Map<String, Object?>>[
+              <String, Object?>{'title': 'Missing type'},
+              <String, Object?>{'type': 'record', 'title': 'Record'},
+            ];
+          });
+
+      final actions = await platform.getActions();
+
+      expect(actions.single.type, 'record');
+    });
   });
 
-  test('getActions ignores malformed native action maps', () async {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (methodCall) async {
-          if (methodCall.method != 'getActions') return null;
-          return <Map<String, Object?>>[
-            <String, Object?>{'title': 'Missing type'},
-            <String, Object?>{'type': 'record', 'title': 'Record'},
-          ];
-        });
+  group('consumeLaunchAction', () {
+    test('consumeLaunchAction parses and marks launch action', () async {
+      final action = await platform.consumeLaunchAction();
 
-    final actions = await platform.getActions();
-
-    expect(actions.single.type, 'record');
+      expect(action?.type, 'search');
+      expect(action?.payload, <String, String>{'query': 'nostr'});
+      expect(action?.isLaunchAction, isTrue);
+    });
   });
 
-  test('consumeLaunchAction parses and marks launch action', () async {
-    final action = await platform.consumeLaunchAction();
+  group('actionStream', () {
+    test('native callbacks are emitted on the action stream', () async {
+      final action = expectLater(
+        platform.actionStream,
+        emits(
+          isA<DivineQuickActionEvent>()
+              .having((event) => event.type, 'type', 'record')
+              .having((event) => event.payload, 'payload', <String, String>{
+                'source': 'callback',
+              }),
+        ),
+      );
 
-    expect(action?.type, 'search');
-    expect(action?.payload, <String, String>{'query': 'nostr'});
-    expect(action?.isLaunchAction, isTrue);
-  });
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .handlePlatformMessage(
+            channel.name,
+            channel.codec.encodeMethodCall(
+              const MethodCall('onQuickAction', <String, Object?>{
+                'type': 'record',
+                'payload': <String, String>{'source': 'callback'},
+              }),
+            ),
+            (_) {},
+          );
 
-  test('native callbacks are emitted on the action stream', () async {
-    final action = expectLater(
-      platform.actionStream,
-      emits(
-        isA<DivineQuickActionEvent>()
-            .having((event) => event.type, 'type', 'record')
-            .having((event) => event.payload, 'payload', <String, String>{
-              'source': 'callback',
-            }),
-      ),
-    );
+      await action;
+    });
 
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .handlePlatformMessage(
-          channel.name,
-          channel.codec.encodeMethodCall(
-            const MethodCall('onQuickAction', <String, Object?>{
-              'type': 'record',
-              'payload': <String, String>{'source': 'callback'},
-            }),
-          ),
-          (_) {},
-        );
+    test('malformed native callbacks are ignored', () async {
+      final emitted = <DivineQuickActionEvent>[];
+      final subscription = platform.actionStream.listen(emitted.add);
 
-    await action;
-  });
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .handlePlatformMessage(
+            channel.name,
+            channel.codec.encodeMethodCall(
+              const MethodCall('onQuickAction', <String, Object?>{
+                'payload': <String, String>{},
+              }),
+            ),
+            (_) {},
+          );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
 
-  test('malformed native callbacks are ignored', () async {
-    final emitted = <DivineQuickActionEvent>[];
-    final subscription = platform.actionStream.listen(emitted.add);
-
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .handlePlatformMessage(
-          channel.name,
-          channel.codec.encodeMethodCall(
-            const MethodCall('onQuickAction', <String, Object?>{
-              'payload': <String, String>{},
-            }),
-          ),
-          (_) {},
-        );
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-
-    expect(emitted, isEmpty);
-    await subscription.cancel();
+      expect(emitted, isEmpty);
+      await subscription.cancel();
+    });
   });
 }

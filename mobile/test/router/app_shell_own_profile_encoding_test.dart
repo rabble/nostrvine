@@ -134,47 +134,49 @@ void main() {
         .appBar;
   }
 
-  testWidgets('treats a bare-hex own-profile route as mine', (tester) async {
-    // The defect: `/profile/<own hex>` is a documented deep-link form
-    // (DEEP_LINK_URL_REFERENCE.md), but the shell compared the raw segment
-    // against the signed-in npub, so it decided the route belonged to someone
-    // else and popped in the other-user app bar over your own profile.
-    expect(
-      await shellAppBar(
-        tester,
-        const RouteContext(type: RouteType.profile, npub: selfHex),
-      ),
-      isNull,
-    );
-  });
+  group(AppShell, () {
+    testWidgets('treats a bare-hex own-profile route as mine', (tester) async {
+      // The defect: `/profile/<own hex>` is a documented deep-link form
+      // (DEEP_LINK_URL_REFERENCE.md), but the shell compared the raw segment
+      // against the signed-in npub, so it decided the route belonged to someone
+      // else and popped in the other-user app bar over your own profile.
+      expect(
+        await shellAppBar(
+          tester,
+          const RouteContext(type: RouteType.profile, npub: selfHex),
+        ),
+        isNull,
+      );
+    });
 
-  testWidgets('treats an npub own-profile route as mine', (tester) async {
-    expect(
-      await shellAppBar(
-        tester,
-        RouteContext(type: RouteType.profile, npub: selfNpub),
-      ),
-      isNull,
-    );
-  });
+    testWidgets('treats an npub own-profile route as mine', (tester) async {
+      expect(
+        await shellAppBar(
+          tester,
+          RouteContext(type: RouteType.profile, npub: selfNpub),
+        ),
+        isNull,
+      );
+    });
 
-  testWidgets('treats the relative "me" route as mine', (tester) async {
-    expect(
-      await shellAppBar(
-        tester,
-        const RouteContext(type: RouteType.profile, npub: 'me'),
-      ),
-      isNull,
-    );
-  });
+    testWidgets('treats the relative "me" route as mine', (tester) async {
+      expect(
+        await shellAppBar(
+          tester,
+          const RouteContext(type: RouteType.profile, npub: 'me'),
+        ),
+        isNull,
+      );
+    });
 
-  testWidgets("keeps the app bar on another user's profile", (tester) async {
-    expect(
-      await shellAppBar(
-        tester,
-        RouteContext(type: RouteType.profile, npub: otherNpub),
-      ),
-      isNotNull,
-    );
+    testWidgets("keeps the app bar on another user's profile", (tester) async {
+      expect(
+        await shellAppBar(
+          tester,
+          RouteContext(type: RouteType.profile, npub: otherNpub),
+        ),
+        isNotNull,
+      );
+    });
   });
 }

@@ -11,111 +11,113 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
-  test('activeVideoIdProvider returns video ID when in foreground', () async {
-    final now = DateTime.now();
-    final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
+  group('activeVideoIdProvider', () {
+    test('activeVideoIdProvider returns video ID when in foreground', () async {
+      final now = DateTime.now();
+      final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
 
-    final mockVideos = [
-      VideoEvent(
-        id: 'v0',
-        pubkey: 'pubkey-0',
-        createdAt: nowUnix,
-        content: 'Video 0',
-        timestamp: now,
-        title: 'Video 0',
-        videoUrl: 'https://example.com/v0.mp4',
-      ),
-      VideoEvent(
-        id: 'v1',
-        pubkey: 'pubkey-1',
-        createdAt: nowUnix,
-        content: 'Video 1',
-        timestamp: now,
-        title: 'Video 1',
-        videoUrl: 'https://example.com/v1.mp4',
-      ),
-    ];
+      final mockVideos = [
+        VideoEvent(
+          id: 'v0',
+          pubkey: 'pubkey-0',
+          createdAt: nowUnix,
+          content: 'Video 0',
+          timestamp: now,
+          title: 'Video 0',
+          videoUrl: 'https://example.com/v0.mp4',
+        ),
+        VideoEvent(
+          id: 'v1',
+          pubkey: 'pubkey-1',
+          createdAt: nowUnix,
+          content: 'Video 1',
+          timestamp: now,
+          title: 'Video 1',
+          videoUrl: 'https://example.com/v1.mp4',
+        ),
+      ];
 
-    final container = ProviderContainer(
-      overrides: [
-        // appForegroundProvider defaults to true (Notifier-based)
+      final container = ProviderContainer(
+        overrides: [
+          // appForegroundProvider defaults to true (Notifier-based)
 
-        // URL context: explore index 1
-        pageContextProvider.overrideWithValue(
-          const AsyncValue.data(
-            RouteContext(type: RouteType.explore, videoIndex: 1),
+          // URL context: explore index 1
+          pageContextProvider.overrideWithValue(
+            const AsyncValue.data(
+              RouteContext(type: RouteType.explore, videoIndex: 1),
+            ),
           ),
+
+          // Feed (two items) — activeVideoIdProvider reads
+          // videosForExploreRouteProvider for explore routes
+          videosForExploreRouteProvider.overrideWith((ref) {
+            return AsyncValue.data(
+              VideoFeedState(videos: mockVideos, hasMoreContent: false),
+            );
+          }),
+        ],
+      );
+
+      // Create active subscription to force reactive chain evaluation
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
+
+      await pumpEventQueue();
+
+      // Should return video at index 1
+      expect(container.read(activeVideoIdProvider), 'v1');
+
+      container.dispose();
+    });
+
+    test('activeVideoIdProvider returns null when backgrounded', () async {
+      final now = DateTime.now();
+      final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
+
+      final mockVideos = [
+        VideoEvent(
+          id: 'v0',
+          pubkey: 'pubkey-0',
+          createdAt: nowUnix,
+          content: 'Video 0',
+          timestamp: now,
+          title: 'Video 0',
+          videoUrl: 'https://example.com/v0.mp4',
         ),
+      ];
 
-        // Feed (two items) — activeVideoIdProvider reads
-        // videosForExploreRouteProvider for explore routes
-        videosForExploreRouteProvider.overrideWith((ref) {
-          return AsyncValue.data(
-            VideoFeedState(videos: mockVideos, hasMoreContent: false),
-          );
-        }),
-      ],
-    );
-
-    // Create active subscription to force reactive chain evaluation
-    container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
-
-    await pumpEventQueue();
-
-    // Should return video at index 1
-    expect(container.read(activeVideoIdProvider), 'v1');
-
-    container.dispose();
-  });
-
-  test('activeVideoIdProvider returns null when backgrounded', () async {
-    final now = DateTime.now();
-    final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
-
-    final mockVideos = [
-      VideoEvent(
-        id: 'v0',
-        pubkey: 'pubkey-0',
-        createdAt: nowUnix,
-        content: 'Video 0',
-        timestamp: now,
-        title: 'Video 0',
-        videoUrl: 'https://example.com/v0.mp4',
-      ),
-    ];
-
-    final container = ProviderContainer(
-      overrides: [
-        // Foreground FALSE - backgrounded
-        appForegroundProvider.overrideWith(
-          () => _TestAppForegroundNotifier(false),
-        ),
-
-        // URL context: explore index 0
-        pageContextProvider.overrideWithValue(
-          const AsyncValue.data(
-            RouteContext(type: RouteType.explore, videoIndex: 0),
+      final container = ProviderContainer(
+        overrides: [
+          // Foreground FALSE - backgrounded
+          appForegroundProvider.overrideWith(
+            () => _TestAppForegroundNotifier(false),
           ),
-        ),
 
-        // Feed (one item)
-        videosForExploreRouteProvider.overrideWith((ref) {
-          return AsyncValue.data(
-            VideoFeedState(videos: mockVideos, hasMoreContent: false),
-          );
-        }),
-      ],
-    );
+          // URL context: explore index 0
+          pageContextProvider.overrideWithValue(
+            const AsyncValue.data(
+              RouteContext(type: RouteType.explore, videoIndex: 0),
+            ),
+          ),
 
-    // Create active subscription to force reactive chain evaluation
-    container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
+          // Feed (one item)
+          videosForExploreRouteProvider.overrideWith((ref) {
+            return AsyncValue.data(
+              VideoFeedState(videos: mockVideos, hasMoreContent: false),
+            );
+          }),
+        ],
+      );
 
-    await pumpEventQueue();
+      // Create active subscription to force reactive chain evaluation
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
-    // Should return null when backgrounded
-    expect(container.read(activeVideoIdProvider), isNull);
+      await pumpEventQueue();
 
-    container.dispose();
+      // Should return null when backgrounded
+      expect(container.read(activeVideoIdProvider), isNull);
+
+      container.dispose();
+    });
   });
 }
 

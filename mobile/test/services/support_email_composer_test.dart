@@ -13,120 +13,122 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  test('uses Android chooser on Android', () async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  group('compose', () {
+    test('uses Android chooser on Android', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
-    Uri? launchedUri;
-    String? chooserTitle;
-    var externalLaunchCalled = false;
-    var shareCalled = false;
-
-    final composer = SupportEmailComposer(
-      androidChooserLauncher: (uri, title) async {
-        launchedUri = uri;
-        chooserTitle = title;
-      },
-      externalUriLauncher: (_) async {
-        externalLaunchCalled = true;
-        return true;
-      },
-      shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
-        shareCalled = true;
-      },
-    );
-
-    await composer.compose(toEmail: toEmail, subject: subject, body: body);
-
-    expect(launchedUri, isNotNull);
-    expect(launchedUri!.scheme, 'mailto');
-    expect(launchedUri!.path, toEmail);
-    expect(launchedUri!.queryParameters['subject'], subject);
-    expect(launchedUri!.queryParameters['body'], body);
-    expect(launchedUri.toString(), isNot(contains('+')));
-    expect(chooserTitle, 'Choose email app');
-    expect(externalLaunchCalled, isFalse);
-    expect(shareCalled, isFalse);
-  });
-
-  test('uses external mailto launcher on iOS', () async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-
-    Uri? launchedUri;
-    var shareCalled = false;
-
-    final composer = SupportEmailComposer(
-      externalUriLauncher: (uri) async {
-        launchedUri = uri;
-        return true;
-      },
-      shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
-        shareCalled = true;
-      },
-    );
-
-    await composer.compose(toEmail: toEmail, subject: subject, body: body);
-
-    expect(launchedUri, isNotNull);
-    expect(launchedUri!.scheme, 'mailto');
-    expect(launchedUri!.path, toEmail);
-    expect(launchedUri!.queryParameters['subject'], subject);
-    expect(launchedUri!.queryParameters['body'], body);
-    expect(launchedUri.toString(), isNot(contains('+')));
-    expect(shareCalled, isFalse);
-  });
-
-  test(
-    'falls back to share sheet when external launch returns false',
-    () async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-
-      String? sharedText;
-      String? sharedSubject;
-      Rect? sharedOrigin;
+      Uri? launchedUri;
+      String? chooserTitle;
+      var externalLaunchCalled = false;
+      var shareCalled = false;
 
       final composer = SupportEmailComposer(
-        externalUriLauncher: (_) async => false,
+        androidChooserLauncher: (uri, title) async {
+          launchedUri = uri;
+          chooserTitle = title;
+        },
+        externalUriLauncher: (_) async {
+          externalLaunchCalled = true;
+          return true;
+        },
         shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
-          sharedText = text;
-          sharedSubject = subject;
-          sharedOrigin = sharePositionOrigin;
+          shareCalled = true;
         },
       );
 
-      await composer.compose(
-        toEmail: toEmail,
-        subject: subject,
-        body: body,
-        sharePositionOrigin: const Rect.fromLTWH(8, 16, 32, 64),
+      await composer.compose(toEmail: toEmail, subject: subject, body: body);
+
+      expect(launchedUri, isNotNull);
+      expect(launchedUri!.scheme, 'mailto');
+      expect(launchedUri!.path, toEmail);
+      expect(launchedUri!.queryParameters['subject'], subject);
+      expect(launchedUri!.queryParameters['body'], body);
+      expect(launchedUri.toString(), isNot(contains('+')));
+      expect(chooserTitle, 'Choose email app');
+      expect(externalLaunchCalled, isFalse);
+      expect(shareCalled, isFalse);
+    });
+
+    test('uses external mailto launcher on iOS', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+      Uri? launchedUri;
+      var shareCalled = false;
+
+      final composer = SupportEmailComposer(
+        externalUriLauncher: (uri) async {
+          launchedUri = uri;
+          return true;
+        },
+        shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
+          shareCalled = true;
+        },
       );
+
+      await composer.compose(toEmail: toEmail, subject: subject, body: body);
+
+      expect(launchedUri, isNotNull);
+      expect(launchedUri!.scheme, 'mailto');
+      expect(launchedUri!.path, toEmail);
+      expect(launchedUri!.queryParameters['subject'], subject);
+      expect(launchedUri!.queryParameters['body'], body);
+      expect(launchedUri.toString(), isNot(contains('+')));
+      expect(shareCalled, isFalse);
+    });
+
+    test(
+      'falls back to share sheet when external launch returns false',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+        String? sharedText;
+        String? sharedSubject;
+        Rect? sharedOrigin;
+
+        final composer = SupportEmailComposer(
+          externalUriLauncher: (_) async => false,
+          shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
+            sharedText = text;
+            sharedSubject = subject;
+            sharedOrigin = sharePositionOrigin;
+          },
+        );
+
+        await composer.compose(
+          toEmail: toEmail,
+          subject: subject,
+          body: body,
+          sharePositionOrigin: const Rect.fromLTWH(8, 16, 32, 64),
+        );
+
+        expect(sharedText, contains(toEmail));
+        expect(sharedText, contains(subject));
+        expect(sharedText, contains(body));
+        expect(sharedSubject, subject);
+        // iPad refuses the fallback share without the popover anchor (#7506).
+        expect(sharedOrigin, const Rect.fromLTWH(8, 16, 32, 64));
+      },
+    );
+
+    test('falls back to share sheet when Android chooser throws', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
+      String? sharedText;
+
+      final composer = SupportEmailComposer(
+        androidChooserLauncher: (uri, title) {
+          throw Exception('$title: $uri');
+        },
+        shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
+          sharedText = text;
+        },
+      );
+
+      await composer.compose(toEmail: toEmail, subject: subject, body: body);
 
       expect(sharedText, contains(toEmail));
       expect(sharedText, contains(subject));
       expect(sharedText, contains(body));
-      expect(sharedSubject, subject);
-      // iPad refuses the fallback share without the popover anchor (#7506).
-      expect(sharedOrigin, const Rect.fromLTWH(8, 16, 32, 64));
-    },
-  );
-
-  test('falls back to share sheet when Android chooser throws', () async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.android;
-
-    String? sharedText;
-
-    final composer = SupportEmailComposer(
-      androidChooserLauncher: (uri, title) {
-        throw Exception('$title: $uri');
-      },
-      shareTextLauncher: (text, {subject, sharePositionOrigin}) async {
-        sharedText = text;
-      },
-    );
-
-    await composer.compose(toEmail: toEmail, subject: subject, body: body);
-
-    expect(sharedText, contains(toEmail));
-    expect(sharedText, contains(subject));
-    expect(sharedText, contains(body));
+    });
   });
 }

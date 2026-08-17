@@ -54,84 +54,98 @@ void main() {
     return container;
   }
 
-  test('unauthenticated with no verdict persisted is restricted', () {
-    final container = containerWith(authState: AuthState.unauthenticated);
+  group('unresolved with no verdict', () {
+    test('unauthenticated with no verdict persisted is restricted', () {
+      final container = containerWith(authState: AuthState.unauthenticated);
 
-    expect(container.read(isDmRestrictedProvider), isTrue);
+      expect(container.read(isDmRestrictedProvider), isTrue);
+    });
   });
 
-  test('a trusted not-protected answer lifts the restriction', () async {
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () async => ProtectedMinorStatus.notProtected(),
-    );
-    await container.read(protectedMinorStatusProvider.future);
+  group('trusted live verdict', () {
+    test('a trusted not-protected answer lifts the restriction', () async {
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        status: () async => ProtectedMinorStatus.notProtected(),
+      );
+      await container.read(protectedMinorStatusProvider.future);
 
-    expect(container.read(isDmRestrictedProvider), isFalse);
+      expect(container.read(isDmRestrictedProvider), isFalse);
+    });
+
+    test('a trusted protected answer restricts', () async {
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        status: () async => ProtectedMinorStatus.protected(),
+      );
+      await container.read(protectedMinorStatusProvider.future);
+
+      expect(container.read(isDmRestrictedProvider), isTrue);
+    });
   });
 
-  test('a trusted protected answer restricts', () async {
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () async => ProtectedMinorStatus.protected(),
-    );
-    await container.read(protectedMinorStatusProvider.future);
+  group('persisted verdict', () {
+    test(
+      'a trusted verdict persists and relaxes the next cold start',
+      () async {
+        final first = containerWith(
+          authState: AuthState.authenticated,
+          status: () async => ProtectedMinorStatus.notProtected(),
+        );
+        await first.read(protectedMinorStatusProvider.future);
+        expect(first.read(isDmRestrictedProvider), isFalse);
 
-    expect(container.read(isDmRestrictedProvider), isTrue);
+        // Next session: status unresolved (e.g. offline), but the persisted
+        // positive not-protected verdict keeps an adult unrestricted.
+        final second = containerWith(
+          authState: AuthState.authenticated,
+          status: () => Completer<ProtectedMinorStatus>().future,
+        );
+        expect(second.read(isDmRestrictedProvider), isFalse);
+      },
+    );
+
+    test(
+      'sticky protected survives an unresolved recheck (token gap)',
+      () async {
+        final store = ProtectedMinorStickyStore(prefs: prefs);
+        await store.applyLiveStatus(pubkey, ProtectedMinorStatus.protected());
+
+        final container = containerWith(
+          authState: AuthState.authenticated,
+          status: () => Completer<ProtectedMinorStatus>().future,
+        );
+
+        expect(container.read(isDmRestrictedProvider), isTrue);
+      },
+    );
   });
 
-  test('a trusted verdict persists and relaxes the next cold start', () async {
-    final first = containerWith(
-      authState: AuthState.authenticated,
-      status: () async => ProtectedMinorStatus.notProtected(),
-    );
-    await first.read(protectedMinorStatusProvider.future);
-    expect(first.read(isDmRestrictedProvider), isFalse);
+  group('unknown verdict', () {
+    test('an unknown resolution falls back to the persisted verdict', () async {
+      final store = ProtectedMinorStickyStore(prefs: prefs);
+      await store.applyLiveStatus(pubkey, ProtectedMinorStatus.notProtected());
 
-    // Next session: status unresolved (e.g. offline), but the persisted
-    // positive not-protected verdict keeps an adult unrestricted.
-    final second = containerWith(
-      authState: AuthState.authenticated,
-      status: () => Completer<ProtectedMinorStatus>().future,
-    );
-    expect(second.read(isDmRestrictedProvider), isFalse);
-  });
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        status: () async => ProtectedMinorStatus.unknown(),
+      );
+      await container.read(protectedMinorStatusProvider.future);
 
-  test('sticky protected survives an unresolved recheck (token gap)', () async {
-    final store = ProtectedMinorStickyStore(prefs: prefs);
-    await store.applyLiveStatus(pubkey, ProtectedMinorStatus.protected());
+      expect(container.read(isDmRestrictedProvider), isFalse);
+    });
 
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () => Completer<ProtectedMinorStatus>().future,
-    );
+    test('an unknown resolution never creates a relaxing verdict', () async {
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        status: () async => ProtectedMinorStatus.unknown(),
+      );
+      await container.read(protectedMinorStatusProvider.future);
 
-    expect(container.read(isDmRestrictedProvider), isTrue);
-  });
-
-  test('an unknown resolution falls back to the persisted verdict', () async {
-    final store = ProtectedMinorStickyStore(prefs: prefs);
-    await store.applyLiveStatus(pubkey, ProtectedMinorStatus.notProtected());
-
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () async => ProtectedMinorStatus.unknown(),
-    );
-    await container.read(protectedMinorStatusProvider.future);
-
-    expect(container.read(isDmRestrictedProvider), isFalse);
-  });
-
-  test('an unknown resolution never creates a relaxing verdict', () async {
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () async => ProtectedMinorStatus.unknown(),
-    );
-    await container.read(protectedMinorStatusProvider.future);
-
-    expect(container.read(isDmRestrictedProvider), isTrue);
-    final store = ProtectedMinorStickyStore(prefs: prefs);
-    expect(store.lastKnownFor(pubkey), isNull);
+      expect(container.read(isDmRestrictedProvider), isTrue);
+      final store = ProtectedMinorStickyStore(prefs: prefs);
+      expect(store.lastKnownFor(pubkey), isNull);
+    });
   });
 
   // The fail direction per auth source with no verdict anywhere (live status
@@ -196,81 +210,83 @@ void main() {
     }
   });
 
-  test(
-    'a live provider restricts a Keycast account after a self-custody session',
-    () async {
-      // Regression test for the provider-cache staleness in
-      // keycastSignalApplicableProvider: AuthService mutates its pubkey and
-      // auth source in place, so without a currentAuthStateProvider watch the
-      // extracted provider keeps a stale value into the next account's
-      // session — and a stale `false` unrestricts a Keycast-backed account.
-      //
-      // Uses the REAL currentAuthStateProvider (stream + invalidateSelf) over
-      // a mock AuthService so an auth transition propagates exactly as in
-      // production; overriding currentAuthStateProvider with a value would
-      // hide the defect.
-      const pubkeyA =
-          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      const pubkeyB =
-          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  group('auth transitions', () {
+    test(
+      'a live provider restricts a Keycast account after a self-custody session',
+      () async {
+        // Regression test for the provider-cache staleness in
+        // keycastSignalApplicableProvider: AuthService mutates its pubkey and
+        // auth source in place, so without a currentAuthStateProvider watch the
+        // extracted provider keeps a stale value into the next account's
+        // session — and a stale `false` unrestricts a Keycast-backed account.
+        //
+        // Uses the REAL currentAuthStateProvider (stream + invalidateSelf) over
+        // a mock AuthService so an auth transition propagates exactly as in
+        // production; overriding currentAuthStateProvider with a value would
+        // hide the defect.
+        const pubkeyA =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        const pubkeyB =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
-      final authStateController = StreamController<AuthState>.broadcast();
-      addTearDown(authStateController.close);
+        final authStateController = StreamController<AuthState>.broadcast();
+        addTearDown(authStateController.close);
 
-      var state = AuthState.authenticated;
-      var source = AuthenticationSource.importedKeys;
-      var key = pubkeyA;
+        var state = AuthState.authenticated;
+        var source = AuthenticationSource.importedKeys;
+        var key = pubkeyA;
 
-      final liveAuth = _MockAuthService();
-      when(() => liveAuth.authState).thenAnswer((_) => state);
-      when(
-        () => liveAuth.authStateStream,
-      ).thenAnswer((_) => authStateController.stream);
-      when(() => liveAuth.authenticationSource).thenAnswer((_) => source);
-      when(() => liveAuth.currentPublicKeyHex).thenAnswer((_) => key);
+        final liveAuth = _MockAuthService();
+        when(() => liveAuth.authState).thenAnswer((_) => state);
+        when(
+          () => liveAuth.authStateStream,
+        ).thenAnswer((_) => authStateController.stream);
+        when(() => liveAuth.authenticationSource).thenAnswer((_) => source);
+        when(() => liveAuth.currentPublicKeyHex).thenAnswer((_) => key);
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          authServiceProvider.overrideWithValue(liveAuth),
-          protectedMinorStatusProvider.overrideWith(
-            // Never resolves: Keycast unreachable for both accounts.
-            (ref) => Completer<ProtectedMinorStatus>().future,
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            authServiceProvider.overrideWithValue(liveAuth),
+            protectedMinorStatusProvider.overrideWith(
+              // Never resolves: Keycast unreachable for both accounts.
+              (ref) => Completer<ProtectedMinorStatus>().future,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      // Keep a listener attached across the whole sequence, as an app-shell
-      // consumer would.
-      final sub = container.listen(
-        isDmRestrictedProvider,
-        (_, _) {},
-        fireImmediately: true,
-      );
-      addTearDown(sub.close);
-      await pumpEventQueue();
+        // Keep a listener attached across the whole sequence, as an app-shell
+        // consumer would.
+        final sub = container.listen(
+          isDmRestrictedProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(sub.close);
+        await pumpEventQueue();
 
-      // Account A: pure self-custody, never seen by Keycast -> unrestricted.
-      expect(container.read(isDmRestrictedProvider), isFalse);
+        // Account A: pure self-custody, never seen by Keycast -> unrestricted.
+        expect(container.read(isDmRestrictedProvider), isFalse);
 
-      // Sign out.
-      state = AuthState.unauthenticated;
-      key = '';
-      authStateController.add(AuthState.unauthenticated);
-      await pumpEventQueue();
-      expect(container.read(isDmRestrictedProvider), isTrue);
+        // Sign out.
+        state = AuthState.unauthenticated;
+        key = '';
+        authStateController.add(AuthState.unauthenticated);
+        await pumpEventQueue();
+        expect(container.read(isDmRestrictedProvider), isTrue);
 
-      // Sign in as account B: divineOAuth, protected minor, Keycast
-      // unreachable, nothing persisted for B. Must fail closed — a stale
-      // `applicable=false` from A's session would leave B unrestricted.
-      state = AuthState.authenticated;
-      source = AuthenticationSource.divineOAuth;
-      key = pubkeyB;
-      authStateController.add(AuthState.authenticated);
-      await pumpEventQueue();
+        // Sign in as account B: divineOAuth, protected minor, Keycast
+        // unreachable, nothing persisted for B. Must fail closed — a stale
+        // `applicable=false` from A's session would leave B unrestricted.
+        state = AuthState.authenticated;
+        source = AuthenticationSource.divineOAuth;
+        key = pubkeyB;
+        authStateController.add(AuthState.authenticated);
+        await pumpEventQueue();
 
-      expect(container.read(isDmRestrictedProvider), isTrue);
-    },
-  );
+        expect(container.read(isDmRestrictedProvider), isTrue);
+      },
+    );
+  });
 }

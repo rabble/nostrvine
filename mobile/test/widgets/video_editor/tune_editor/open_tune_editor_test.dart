@@ -37,35 +37,37 @@ void main() {
     );
   }
 
-  test(
-    'opening for a new set flips the main bloc and records no set',
-    () async {
+  group('openTuneEditor', () {
+    test(
+      'opening for a new set flips the main bloc and records no set',
+      () async {
+        final mainBloc = VideoEditorMainBloc();
+        addTearDown(mainBloc.close);
+        final tuneBloc = VideoEditorTuneBloc();
+        addTearDown(tuneBloc.close);
+
+        expect(mainBloc.state.openSubEditor, isNull);
+
+        openTuneEditor(mainBloc, tuneBloc, buildScope());
+        await Future<void>.delayed(Duration.zero);
+
+        expect(mainBloc.state.openSubEditor, SubEditorType.tune);
+        expect(mainBloc.state.isSubEditorOpen, isTrue);
+        expect(tuneBloc.state.editingSetId, isNull);
+      },
+    );
+
+    test('opening for an existing set records the edited set id', () async {
       final mainBloc = VideoEditorMainBloc();
       addTearDown(mainBloc.close);
       final tuneBloc = VideoEditorTuneBloc();
       addTearDown(tuneBloc.close);
 
-      expect(mainBloc.state.openSubEditor, isNull);
-
-      openTuneEditor(mainBloc, tuneBloc, buildScope());
+      openTuneEditor(mainBloc, tuneBloc, buildScope(), editSetId: 'set-1');
       await Future<void>.delayed(Duration.zero);
 
       expect(mainBloc.state.openSubEditor, SubEditorType.tune);
-      expect(mainBloc.state.isSubEditorOpen, isTrue);
-      expect(tuneBloc.state.editingSetId, isNull);
-    },
-  );
-
-  test('opening for an existing set records the edited set id', () async {
-    final mainBloc = VideoEditorMainBloc();
-    addTearDown(mainBloc.close);
-    final tuneBloc = VideoEditorTuneBloc();
-    addTearDown(tuneBloc.close);
-
-    openTuneEditor(mainBloc, tuneBloc, buildScope(), editSetId: 'set-1');
-    await Future<void>.delayed(Duration.zero);
-
-    expect(mainBloc.state.openSubEditor, SubEditorType.tune);
-    expect(tuneBloc.state.editingSetId, 'set-1');
+      expect(tuneBloc.state.editingSetId, 'set-1');
+    });
   });
 }

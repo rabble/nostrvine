@@ -20,68 +20,72 @@ class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
 void main() {
-  testWidgets('single-entry hashtag back falls back instead of throwing', (
-    tester,
-  ) async {
-    final videosRepository = _MockVideosRepository();
-    final hashtagService = _MockHashtagService();
-    final blocklistRepository = _MockContentBlocklistRepository();
+  group('navigation', () {
+    testWidgets('single-entry hashtag back falls back instead of throwing', (
+      tester,
+    ) async {
+      final videosRepository = _MockVideosRepository();
+      final hashtagService = _MockHashtagService();
+      final blocklistRepository = _MockContentBlocklistRepository();
 
-    when(() => hashtagService.getVideosByHashtags(any())).thenReturn([]);
-    when(() => hashtagService.getHashtagStats(any())).thenReturn(null);
-    when(
-      () => hashtagService.subscribeToHashtagVideos(any()),
-    ).thenAnswer((_) async {});
-    when(
-      () =>
-          videosRepository.getHashtagFeedVideos(hashtag: any(named: 'hashtag')),
-    ).thenAnswer((_) async => const HashtagFeedVideosResult.success([]));
-    when(
-      () => blocklistRepository.shouldFilterFromFeeds(any()),
-    ).thenReturn(false);
-
-    final router = GoRouter(
-      initialLocation: '/hashtag/funny',
-      routes: [
-        GoRoute(
-          path: VideoFeedPage.pathWithIndex,
-          builder: (_, _) => const Scaffold(body: Text('feed fallback')),
+      when(() => hashtagService.getVideosByHashtags(any())).thenReturn([]);
+      when(() => hashtagService.getHashtagStats(any())).thenReturn(null);
+      when(
+        () => hashtagService.subscribeToHashtagVideos(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => videosRepository.getHashtagFeedVideos(
+          hashtag: any(named: 'hashtag'),
         ),
-        GoRoute(
-          path: '/hashtag/:hashtag',
-          builder: (_, state) =>
-              HashtagFeedScreen(hashtag: state.pathParameters['hashtag'] ?? ''),
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
+      ).thenAnswer((_) async => const HashtagFeedVideosResult.success([]));
+      when(
+        () => blocklistRepository.shouldFilterFromFeeds(any()),
+      ).thenReturn(false);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          videosRepositoryProvider.overrideWithValue(videosRepository),
-          hashtagServiceProvider.overrideWith((ref) => hashtagService),
-          contentBlocklistRepositoryProvider.overrideWithValue(
-            blocklistRepository,
+      final router = GoRouter(
+        initialLocation: '/hashtag/funny',
+        routes: [
+          GoRoute(
+            path: VideoFeedPage.pathWithIndex,
+            builder: (_, _) => const Scaffold(body: Text('feed fallback')),
           ),
-          subscribedListVideoCacheProvider.overrideWithValue(null),
+          GoRoute(
+            path: '/hashtag/:hashtag',
+            builder: (_, state) => HashtagFeedScreen(
+              hashtag: state.pathParameters['hashtag'] ?? '',
+            ),
+          ),
         ],
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videosRepositoryProvider.overrideWithValue(videosRepository),
+            hashtagServiceProvider.overrideWith((ref) => hashtagService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              blocklistRepository,
+            ),
+            subscribedListVideoCacheProvider.overrideWithValue(null),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    // Identifier, not label: the back label is now
-    // MaterialLocalizations.backButtonTooltip and moves per locale.
-    await tester.tap(find.bySemanticsIdentifier('back_button'));
-    await tester.pumpAndSettle();
+      // Identifier, not label: the back label is now
+      // MaterialLocalizations.backButtonTooltip and moves per locale.
+      await tester.tap(find.bySemanticsIdentifier('back_button'));
+      await tester.pumpAndSettle();
 
-    expect(tester.takeException(), isNull);
-    expect(router.routeInformationProvider.value.uri.toString(), '/home/0');
-    expect(defaultSafePopFallback, '/home/0');
+      expect(tester.takeException(), isNull);
+      expect(router.routeInformationProvider.value.uri.toString(), '/home/0');
+      expect(defaultSafePopFallback, '/home/0');
+    });
   });
 }

@@ -37,73 +37,75 @@ void main() {
 
   tearDown(() => database.close());
 
-  test('every container reads the same shared database instance', () {
-    final a = buildAccountContainer(deviceScope);
-    addTearDown(a.dispose);
-    final b = buildAccountContainer(deviceScope);
-    addTearDown(b.dispose);
+  group(DeviceScope, () {
+    test('every container reads the same shared database instance', () {
+      final a = buildAccountContainer(deviceScope);
+      addTearDown(a.dispose);
+      final b = buildAccountContainer(deviceScope);
+      addTearDown(b.dispose);
 
-    expect(a.read(databaseProvider), same(database));
-    expect(b.read(databaseProvider), same(a.read(databaseProvider)));
-  });
+      expect(a.read(databaseProvider), same(database));
+      expect(b.read(databaseProvider), same(a.read(databaseProvider)));
+    });
 
-  test('shared instances survive disposing a container', () {
-    final a = buildAccountContainer(deviceScope);
-    expect(a.read(sharedPreferencesProvider), same(prefs));
+    test('shared instances survive disposing a container', () {
+      final a = buildAccountContainer(deviceScope);
+      expect(a.read(sharedPreferencesProvider), same(prefs));
 
-    // Simulate a swap: the leaving account's container is disposed.
-    a.dispose();
+      // Simulate a swap: the leaving account's container is disposed.
+      a.dispose();
 
-    final b = buildAccountContainer(deviceScope);
-    addTearDown(b.dispose);
-    expect(b.read(sharedPreferencesProvider), same(prefs));
-  });
+      final b = buildAccountContainer(deviceScope);
+      addTearDown(b.dispose);
+      expect(b.read(sharedPreferencesProvider), same(prefs));
+    });
 
-  test('every container reads the same install source override', () {
-    final a = buildAccountContainer(deviceScope);
-    addTearDown(a.dispose);
-    final b = buildAccountContainer(deviceScope);
-    addTearDown(b.dispose);
+    test('every container reads the same install source override', () {
+      final a = buildAccountContainer(deviceScope);
+      addTearDown(a.dispose);
+      final b = buildAccountContainer(deviceScope);
+      addTearDown(b.dispose);
 
-    expect(a.read(installSourceProvider), InstallSource.playStore);
-    expect(b.read(installSourceProvider), InstallSource.playStore);
-  });
+      expect(a.read(installSourceProvider), InstallSource.playStore);
+      expect(b.read(installSourceProvider), InstallSource.playStore);
+    });
 
-  test('every container reads the same documents path override', () {
-    final a = buildAccountContainer(deviceScope);
-    addTearDown(a.dispose);
-    final b = buildAccountContainer(deviceScope);
-    addTearDown(b.dispose);
+    test('every container reads the same documents path override', () {
+      final a = buildAccountContainer(deviceScope);
+      addTearDown(a.dispose);
+      final b = buildAccountContainer(deviceScope);
+      addTearDown(b.dispose);
 
-    expect(a.read(documentsPathProvider), '/documents');
-    expect(b.read(documentsPathProvider), '/documents');
-  });
+      expect(a.read(documentsPathProvider), '/documents');
+      expect(b.read(documentsPathProvider), '/documents');
+    });
 
-  test('every container reads the same app version override', () {
-    final a = buildAccountContainer(deviceScope);
-    addTearDown(a.dispose);
-    final b = buildAccountContainer(deviceScope);
-    addTearDown(b.dispose);
+    test('every container reads the same app version override', () {
+      final a = buildAccountContainer(deviceScope);
+      addTearDown(a.dispose);
+      final b = buildAccountContainer(deviceScope);
+      addTearDown(b.dispose);
 
-    expect(a.read(appVersionProvider), '1.2.3');
-    expect(b.read(appVersionProvider), '1.2.3');
-  });
+      expect(a.read(appVersionProvider), '1.2.3');
+      expect(b.read(appVersionProvider), '1.2.3');
+    });
 
-  test('disposing a container does not close the shared database', () async {
-    final a = buildAccountContainer(deviceScope);
-    // Touch the DB through the container to prove it is live.
-    await a.read(databaseProvider).notificationsDao.getAllNotifications();
+    test('disposing a container does not close the shared database', () async {
+      final a = buildAccountContainer(deviceScope);
+      // Touch the DB through the container to prove it is live.
+      await a.read(databaseProvider).notificationsDao.getAllNotifications();
 
-    a.dispose();
+      a.dispose();
 
-    // The shared DB must still be usable from a new container after the
-    // old one was disposed — the override-with-value path never registered
-    // the factory's onDispose(db.close).
-    final b = buildAccountContainer(deviceScope);
-    addTearDown(b.dispose);
-    await expectLater(
-      b.read(databaseProvider).notificationsDao.getAllNotifications(),
-      completes,
-    );
+      // The shared DB must still be usable from a new container after the
+      // old one was disposed — the override-with-value path never registered
+      // the factory's onDispose(db.close).
+      final b = buildAccountContainer(deviceScope);
+      addTearDown(b.dispose);
+      await expectLater(
+        b.read(databaseProvider).notificationsDao.getAllNotifications(),
+        completes,
+      );
+    });
   });
 }

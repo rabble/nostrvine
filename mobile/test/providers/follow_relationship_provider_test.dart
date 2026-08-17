@@ -31,97 +31,103 @@ void main() {
   const targetPubkey =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
-  test(
-    'warm-up waits for a ready Nostr session and reruns in the same container',
-    () async {
-      final repository = _MockFollowRepository();
-      final nostrClient = _MockNostrClient();
-      when(() => nostrClient.hasKeys).thenReturn(true);
-      when(() => nostrClient.publicKey).thenReturn(currentPubkey);
-      when(repository.getMyFollowers).thenAnswer((_) async => const <String>[]);
+  group('myFollowersWarmupProvider', () {
+    test(
+      'warm-up waits for a ready Nostr session and reruns in the same container',
+      () async {
+        final repository = _MockFollowRepository();
+        final nostrClient = _MockNostrClient();
+        when(() => nostrClient.hasKeys).thenReturn(true);
+        when(() => nostrClient.publicKey).thenReturn(currentPubkey);
+        when(
+          repository.getMyFollowers,
+        ).thenAnswer((_) async => const <String>[]);
 
-      final container = ProviderContainer(
-        overrides: [
-          followRepositoryProvider.overrideWithValue(repository),
-          nostrSessionProvider.overrideWith(
-            () => _TestNostrSession(const NostrSessionReadiness.signedOut()),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await container.read(myFollowersWarmupProvider.future);
-      verifyNever(repository.getMyFollowers);
-
-      container
-          .read(nostrSessionProvider.notifier)
-          .update(
-            NostrSessionReadiness.nostrReady(
-              pubkey: currentPubkey,
-              client: nostrClient,
+        final container = ProviderContainer(
+          overrides: [
+            followRepositoryProvider.overrideWithValue(repository),
+            nostrSessionProvider.overrideWith(
+              () => _TestNostrSession(const NostrSessionReadiness.signedOut()),
             ),
-          );
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(myFollowersWarmupProvider.future);
-      verify(repository.getMyFollowers).called(1);
-    },
-  );
+        await container.read(myFollowersWarmupProvider.future);
+        verifyNever(repository.getMyFollowers);
 
-  test(
-    'relationship stream upgrades when follower warm-up completes',
-    () async {
-      final repository = _MockFollowRepository();
-      final nostrClient = _MockNostrClient();
-      final warmupCompleter = Completer<List<String>>();
-      var warmupComplete = false;
-
-      when(() => nostrClient.hasKeys).thenReturn(true);
-      when(() => nostrClient.publicKey).thenReturn(currentPubkey);
-      when(repository.getMyFollowers).thenAnswer((_) async {
-        final followers = await warmupCompleter.future;
-        warmupComplete = true;
-        return followers;
-      });
-      when(() => repository.relationshipTo(targetPubkey)).thenAnswer(
-        (_) => warmupComplete
-            ? FollowRelationship.mutual
-            : FollowRelationship.youFollow,
-      );
-      when(
-        () => repository.followingStream,
-      ).thenAnswer((_) => const Stream<List<String>>.empty());
-
-      final container = ProviderContainer(
-        overrides: [
-          followRepositoryProvider.overrideWithValue(repository),
-          nostrSessionProvider.overrideWith(
-            () => _TestNostrSession(
+        container
+            .read(nostrSessionProvider.notifier)
+            .update(
               NostrSessionReadiness.nostrReady(
                 pubkey: currentPubkey,
                 client: nostrClient,
               ),
+            );
+
+        await container.read(myFollowersWarmupProvider.future);
+        verify(repository.getMyFollowers).called(1);
+      },
+    );
+  });
+
+  group('followRelationshipProvider', () {
+    test(
+      'relationship stream upgrades when follower warm-up completes',
+      () async {
+        final repository = _MockFollowRepository();
+        final nostrClient = _MockNostrClient();
+        final warmupCompleter = Completer<List<String>>();
+        var warmupComplete = false;
+
+        when(() => nostrClient.hasKeys).thenReturn(true);
+        when(() => nostrClient.publicKey).thenReturn(currentPubkey);
+        when(repository.getMyFollowers).thenAnswer((_) async {
+          final followers = await warmupCompleter.future;
+          warmupComplete = true;
+          return followers;
+        });
+        when(() => repository.relationshipTo(targetPubkey)).thenAnswer(
+          (_) => warmupComplete
+              ? FollowRelationship.mutual
+              : FollowRelationship.youFollow,
+        );
+        when(
+          () => repository.followingStream,
+        ).thenAnswer((_) => const Stream<List<String>>.empty());
+
+        final container = ProviderContainer(
+          overrides: [
+            followRepositoryProvider.overrideWithValue(repository),
+            nostrSessionProvider.overrideWith(
+              () => _TestNostrSession(
+                NostrSessionReadiness.nostrReady(
+                  pubkey: currentPubkey,
+                  client: nostrClient,
+                ),
+              ),
             ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final emitted = <AsyncValue<FollowRelationship>>[];
-      final subscription = container.listen(
-        followRelationshipProvider(targetPubkey),
-        (_, next) => emitted.add(next),
-        fireImmediately: true,
-      );
-      addTearDown(subscription.close);
+        final emitted = <AsyncValue<FollowRelationship>>[];
+        final subscription = container.listen(
+          followRelationshipProvider(targetPubkey),
+          (_, next) => emitted.add(next),
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
 
-      await Future<void>.delayed(Duration.zero);
-      expect(emitted.last.value, FollowRelationship.youFollow);
+        await Future<void>.delayed(Duration.zero);
+        expect(emitted.last.value, FollowRelationship.youFollow);
 
-      warmupCompleter.complete(const <String>[targetPubkey]);
-      await container.read(myFollowersWarmupProvider.future);
-      await Future<void>.delayed(Duration.zero);
+        warmupCompleter.complete(const <String>[targetPubkey]);
+        await container.read(myFollowersWarmupProvider.future);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(emitted.last.value, FollowRelationship.mutual);
-    },
-  );
+        expect(emitted.last.value, FollowRelationship.mutual);
+      },
+    );
+  });
 }

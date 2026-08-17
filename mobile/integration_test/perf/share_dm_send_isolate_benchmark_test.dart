@@ -50,74 +50,80 @@ Future<double> _maxEventLoopStallMs(Future<void> Function() work) async {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  test('#5391 send-path gift-wrap build no longer stalls the UI isolate', () async {
-    final senderPrivateKey = generatePrivateKey();
-    final senderPubkey = getPublicKey(senderPrivateKey);
-    final recipientPubkey = getPublicKey(generatePrivateKey());
+  group('gift-wrap build stall', () {
+    test('#5391 send-path gift-wrap build no longer stalls the UI isolate', () async {
+      final senderPrivateKey = generatePrivateKey();
+      final senderPubkey = getPublicKey(senderPrivateKey);
+      final recipientPubkey = getPublicKey(generatePrivateKey());
 
-    final senderNostr = Nostr(
-      LocalNostrSigner(senderPrivateKey),
-      const [],
-      _dummyRelay,
-    );
-    await senderNostr.refreshPublicKey();
+      final senderNostr = Nostr(
+        LocalNostrSigner(senderPrivateKey),
+        const [],
+        _dummyRelay,
+      );
+      await senderNostr.refreshPublicKey();
 
-    final rumor = Event(
-      senderPubkey,
-      EventKind.privateDirectMessage,
-      const <List<String>>[],
-      'benchmark message',
-    );
-    final rumorJson = rumor.toJson();
+      final rumor = Event(
+        senderPubkey,
+        EventKind.privateDirectMessage,
+        const <List<String>>[],
+        'benchmark message',
+      );
+      final rumorJson = rumor.toJson();
 
-    final view = PlatformDispatcher.instance.views.first;
-    final refreshHz = view.display.refreshRate;
-    final frameBudgetMs = refreshHz > 0 ? 1000.0 / refreshHz : 16.67;
+      final view = PlatformDispatcher.instance.views.first;
+      final refreshHz = view.display.refreshRate;
+      final frameBudgetMs = refreshHz > 0 ? 1000.0 / refreshHz : 16.67;
 
-    // The shipped send path: one combined batch for recipient + self wrap.
-    final combinedRequest = BuildGiftWrapRequest(
-      privateKeyHex: senderPrivateKey,
-      rumorJson: rumorJson,
-      receiverPublicKeys: [recipientPubkey, senderPubkey],
-    );
+      // The shipped send path: one combined batch for recipient + self wrap.
+      final combinedRequest = BuildGiftWrapRequest(
+        privateKeyHex: senderPrivateKey,
+        rumorJson: rumorJson,
+        receiverPublicKeys: [recipientPubkey, senderPubkey],
+      );
 
-    // Warm up both paths (JIT + first-isolate spawn) so the measured windows
-    // reflect steady-state cost rather than one-off initialization.
-    await GiftWrapUtil.getGiftWrapEvent(senderNostr, rumor, recipientPubkey);
-    await compute(buildGiftWrapBatch, combinedRequest);
-
-    // OLD: build recipient + self wrap on the main isolate (today's path).
-    final oldStallMs = await _maxEventLoopStallMs(() async {
+      // Warm up both paths (JIT + first-isolate spawn) so the measured windows
+      // reflect steady-state cost rather than one-off initialization.
       await GiftWrapUtil.getGiftWrapEvent(senderNostr, rumor, recipientPubkey);
-      await GiftWrapUtil.getGiftWrapEvent(senderNostr, rumor, senderPubkey);
-    });
-
-    // NEW: build both wraps off the main isolate in one combined compute() hop.
-    final newStallMs = await _maxEventLoopStallMs(() async {
       await compute(buildGiftWrapBatch, combinedRequest);
+
+      // OLD: build recipient + self wrap on the main isolate (today's path).
+      final oldStallMs = await _maxEventLoopStallMs(() async {
+        await GiftWrapUtil.getGiftWrapEvent(
+          senderNostr,
+          rumor,
+          recipientPubkey,
+        );
+        await GiftWrapUtil.getGiftWrapEvent(senderNostr, rumor, senderPubkey);
+      });
+
+      // NEW: build both wraps off the main isolate in one combined compute() hop.
+      final newStallMs = await _maxEventLoopStallMs(() async {
+        await compute(buildGiftWrapBatch, combinedRequest);
+      });
+
+      debugPrint(
+        '[#5391] frameBudget=${frameBudgetMs.toStringAsFixed(2)}ms '
+        'OLD main-isolate stall=${oldStallMs.toStringAsFixed(1)}ms '
+        'NEW main-isolate stall=${newStallMs.toStringAsFixed(1)}ms',
+      );
+
+      // The OLD path blocks the UI isolate well past a single frame — the freeze.
+      expect(
+        oldStallMs,
+        greaterThan(frameBudgetMs),
+        reason: 'on-main-isolate build should blow the frame budget',
+      );
+      // The offloaded path keeps the UI isolate under one frame budget — an
+      // absolute bound that is device-speed-independent, unlike a relative
+      // fraction of the old-path stall. This is precisely what "the freeze is
+      // gone" means to the user: the UI stays responsive across every frame.
+      expect(
+        newStallMs,
+        lessThan(frameBudgetMs),
+        reason:
+            'compute() offload should keep the UI isolate under one frame budget',
+      );
     });
-
-    debugPrint(
-      '[#5391] frameBudget=${frameBudgetMs.toStringAsFixed(2)}ms '
-      'OLD main-isolate stall=${oldStallMs.toStringAsFixed(1)}ms '
-      'NEW main-isolate stall=${newStallMs.toStringAsFixed(1)}ms',
-    );
-
-    // The OLD path blocks the UI isolate well past a single frame — the freeze.
-    expect(
-      oldStallMs,
-      greaterThan(frameBudgetMs),
-      reason: 'on-main-isolate build should blow the frame budget',
-    );
-    // The offloaded path keeps the UI isolate under one frame budget — an
-    // absolute bound that is device-speed-independent, unlike a relative
-    // fraction of the old-path stall. This is precisely what "the freeze is
-    // gone" means to the user: the UI stays responsive across every frame.
-    expect(
-      newStallMs,
-      lessThan(frameBudgetMs),
-      reason:
-          'compute() offload should keep the UI isolate under one frame budget',
-    );
   });
 }

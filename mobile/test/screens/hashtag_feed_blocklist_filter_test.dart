@@ -90,118 +90,120 @@ void main() {
     );
   }
 
-  testWidgets(
-    "the assembly seam removes a blocked author's video even when a source "
-    'bypasses the repository parse-gate (#4782)',
-    (tester) async {
-      // Simulate a source that did NOT filter (e.g. the WebSocket path):
-      // the seam filter must still consult the blocklist before rendering.
-      when(
-        () => mockVideosRepository.getHashtagFeedVideos(
-          hashtag: any(named: 'hashtag'),
-        ),
-      ).thenAnswer(
-        (_) async => HashtagFeedVideosResult.success([
-          _video('blocked-vid', blockedPubkey),
-        ]),
-      );
-      when(
-        () => mockBlocklist.shouldFilterFromFeeds(blockedPubkey),
-      ).thenReturn(true);
+  group(HashtagFeedScreen, () {
+    testWidgets(
+      "the assembly seam removes a blocked author's video even when a source "
+      'bypasses the repository parse-gate (#4782)',
+      (tester) async {
+        // Simulate a source that did NOT filter (e.g. the WebSocket path):
+        // the seam filter must still consult the blocklist before rendering.
+        when(
+          () => mockVideosRepository.getHashtagFeedVideos(
+            hashtag: any(named: 'hashtag'),
+          ),
+        ).thenAnswer(
+          (_) async => HashtagFeedVideosResult.success([
+            _video('blocked-vid', blockedPubkey),
+          ]),
+        );
+        when(
+          () => mockBlocklist.shouldFilterFromFeeds(blockedPubkey),
+        ).thenReturn(true);
 
-      await tester.pumpWidget(buildSubject('bts'));
-      await tester.pump(); // run post-frame _loadHashtagVideos
-      await tester.pump(const Duration(milliseconds: 100)); // settle REST
-      await tester.pump(); // rebuild with filtered list
+        await tester.pumpWidget(buildSubject('bts'));
+        await tester.pump(); // run post-frame _loadHashtagVideos
+        await tester.pump(const Duration(milliseconds: 100)); // settle REST
+        await tester.pump(); // rebuild with filtered list
 
-      verify(
-        () => mockBlocklist.shouldFilterFromFeeds(blockedPubkey),
-      ).called(greaterThanOrEqualTo(1));
-      expect(
-        find.byType(ComposableVideoGrid),
-        findsNothing,
-        reason: "A blocked author's only video must not render a grid",
-      );
-      // Mutation note: if the filter were deleted or inverted, the blocked
-      // video would render the grid above and this assertion would fail.
-    },
-  );
+        verify(
+          () => mockBlocklist.shouldFilterFromFeeds(blockedPubkey),
+        ).called(greaterThanOrEqualTo(1));
+        expect(
+          find.byType(ComposableVideoGrid),
+          findsNothing,
+          reason: "A blocked author's only video must not render a grid",
+        );
+        // Mutation note: if the filter were deleted or inverted, the blocked
+        // video would render the grid above and this assertion would fail.
+      },
+    );
 
-  testWidgets(
-    'refetches the REST feed when the blocklist changes, so an unblock '
-    're-shows content the parse-gate had dropped (#948)',
-    (tester) async {
-      when(
-        () => mockVideosRepository.getHashtagFeedVideos(
-          hashtag: any(named: 'hashtag'),
-        ),
-      ).thenAnswer(
-        (_) async => const HashtagFeedVideosResult.success(<VideoEvent>[]),
-      );
+    testWidgets(
+      'refetches the REST feed when the blocklist changes, so an unblock '
+      're-shows content the parse-gate had dropped (#948)',
+      (tester) async {
+        when(
+          () => mockVideosRepository.getHashtagFeedVideos(
+            hashtag: any(named: 'hashtag'),
+          ),
+        ).thenAnswer(
+          (_) async => const HashtagFeedVideosResult.success(<VideoEvent>[]),
+        );
 
-      await tester.pumpWidget(buildSubject('bts'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(buildSubject('bts'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      verify(
-        () => mockVideosRepository.getHashtagFeedVideos(hashtag: 'bts'),
-      ).called(1);
+        verify(
+          () => mockVideosRepository.getHashtagFeedVideos(hashtag: 'bts'),
+        ).called(1);
 
-      // A block/unblock anywhere in the app bumps the blocklist version.
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(HashtagFeedScreen)),
-      );
-      container.read(blocklistVersionProvider.notifier).increment();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        // A block/unblock anywhere in the app bumps the blocklist version.
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(HashtagFeedScreen)),
+        );
+        container.read(blocklistVersionProvider.notifier).increment();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      verify(
-        () => mockVideosRepository.getHashtagFeedVideos(hashtag: 'bts'),
-      ).called(1);
-    },
-  );
+        verify(
+          () => mockVideosRepository.getHashtagFeedVideos(hashtag: 'bts'),
+        ).called(1);
+      },
+    );
 
-  testWidgets(
-    'preserves an existing REST cache when a blocklist-triggered refetch '
-    'fails',
-    (tester) async {
-      final cachedVideo = _video('cached-vid', 'allowed-pubkey');
-      var callCount = 0;
-      when(
-        () => mockVideosRepository.getHashtagFeedVideos(
-          hashtag: any(named: 'hashtag'),
-        ),
-      ).thenAnswer((_) async {
-        callCount += 1;
-        if (callCount == 1) {
-          return HashtagFeedVideosResult.success([cachedVideo]);
-        }
-        return const HashtagFeedVideosResult.failure();
-      });
+    testWidgets(
+      'preserves an existing REST cache when a blocklist-triggered refetch '
+      'fails',
+      (tester) async {
+        final cachedVideo = _video('cached-vid', 'allowed-pubkey');
+        var callCount = 0;
+        when(
+          () => mockVideosRepository.getHashtagFeedVideos(
+            hashtag: any(named: 'hashtag'),
+          ),
+        ).thenAnswer((_) async {
+          callCount += 1;
+          if (callCount == 1) {
+            return HashtagFeedVideosResult.success([cachedVideo]);
+          }
+          return const HashtagFeedVideosResult.failure();
+        });
 
-      await tester.pumpWidget(buildSubject('bts'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump();
+        await tester.pumpWidget(buildSubject('bts'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
 
-      expect(find.byType(ComposableVideoGrid), findsOneWidget);
+        expect(find.byType(ComposableVideoGrid), findsOneWidget);
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(HashtagFeedScreen)),
-      );
-      container.read(blocklistVersionProvider.notifier).increment();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump();
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(HashtagFeedScreen)),
+        );
+        container.read(blocklistVersionProvider.notifier).increment();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
 
-      expect(
-        find.byType(ComposableVideoGrid),
-        findsOneWidget,
-        reason: 'A failed background refetch must not blank a populated feed',
-      );
-      verify(
-        () => mockVideosRepository.getHashtagFeedVideos(hashtag: 'bts'),
-      ).called(2);
-    },
-  );
+        expect(
+          find.byType(ComposableVideoGrid),
+          findsOneWidget,
+          reason: 'A failed background refetch must not blank a populated feed',
+        );
+        verify(
+          () => mockVideosRepository.getHashtagFeedVideos(hashtag: 'bts'),
+        ).called(2);
+      },
+    );
+  });
 }

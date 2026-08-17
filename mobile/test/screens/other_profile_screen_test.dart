@@ -285,273 +285,279 @@ void main() {
     );
   }
 
-  testWidgets('names a deleted account instead of its route hints', (
-    tester,
-  ) async {
-    // The hints outlive the cache: whoever navigated here supplies them, and
-    // the classic-viner slider supplies the archived Vine name and avatar. So
-    // evicting the profile row is not enough to stop the deleted account
-    // rendering under its own identity.
-    final container = createContainer(
-      StateProvider<bool>((ref) => false),
-      isVanished: true,
-    );
-    addTearDown(container.dispose);
-
-    await tester.pumpWidget(
-      buildSubject(
-        container: container,
-        displayNameHint: 'Archived Viner',
-        avatarUrlHint: 'https://example.com/archived.jpg',
-      ),
-    );
-    await tester.pump();
-    // Second frame: the vanish stream resolves after the first build.
-    await tester.pump();
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.profileDeletedAccountName), findsWidgets);
-    expect(find.text('Archived Viner'), findsNothing);
-    expect(find.text('Target User'), findsNothing);
-  });
-
-  testWidgets('renders the profile when the account has not vanished', (
-    tester,
-  ) async {
-    // Pins the gate: the deleted-account treatment must not leak into the
-    // ordinary path.
-    final container = createContainer(StateProvider<bool>((ref) => false));
-    addTearDown(container.dispose);
-
-    await tester.pumpWidget(
-      buildSubject(container: container, displayNameHint: 'Archived Viner'),
-    );
-    await tester.pump();
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text('Target User'), findsWidgets);
-    expect(find.text(l10n.profileDeletedAccountName), findsNothing);
-  });
-
-  testWidgets(
-    'updates Message visibility when DM restriction flips while mounted',
-    (tester) async {
-      final restrictedProvider = StateProvider<bool>((ref) => true);
-      final container = createContainer(restrictedProvider);
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(buildSubject(container: container));
-      await tester.pump();
-
-      expect(find.text('Message'), findsNothing);
-
-      container.read(restrictedProvider.notifier).state = false;
-      await tester.pump();
-
-      expect(find.text('Message'), findsOneWidget);
-
-      container.read(restrictedProvider.notifier).state = true;
-      await tester.pump();
-
-      expect(find.text('Message'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    're-fetches raw Kind 0 when the monetization flag flips while mounted',
-    (tester) async {
-      // Regression: the flag both gates the Tip/Support button AND gates
-      // OtherProfileBloc.requireRawKind0 (relay Kind 0, which carries the
-      // monetization links, vs the REST projection that strips them). A
-      // keyless BlocProvider captured the first flag value forever, so
-      // enabling the flag on an already-mounted profile never re-fetched the
-      // raw Kind 0 and the button never appeared.
-      const targetNpub =
-          'npub1424242424242424242424242424242424242424242424242424qamrcaj';
-      final flag = StateProvider<bool>((ref) => false);
-      final identityClaims = _MockIdentityClaimsRepository();
-      final profileRepo = MockProfileRepository();
-      when(
-        () => profileRepo.getCachedProfile(pubkey: any(named: 'pubkey')),
-      ).thenAnswer((_) async => null);
-      // Not a deleted account — the bloc short-circuits the whole load when
-      // this is true.
-      when(() => profileRepo.isVanished(any())).thenReturn(false);
-      when(
-        () => profileRepo.watchProfile(pubkey: any(named: 'pubkey')),
-      ).thenAnswer((_) => const Stream<UserProfile?>.empty());
-      when(
-        () => profileRepo.fetchFreshProfile(pubkey: any(named: 'pubkey')),
-      ).thenAnswer((_) async => profile());
-      when(
-        () => profileRepo.fetchFreshProfile(
-          pubkey: any(named: 'pubkey'),
-          requireRawKind0: any(named: 'requireRawKind0'),
-          rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
-        ),
-      ).thenAnswer((_) async => profile());
-      // The load also drives the identity-claims flow; stub it to resolve to
-      // no claims so it completes without a MissingStub TypeError.
-      when(
-        () => profileRepo.cachedIdentityTags(any()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => profileRepo.freshIdentityTags(
-          pubkey: any(named: 'pubkey'),
-          kind0Tags: any(named: 'kind0Tags'),
-        ),
-      ).thenAnswer((_) async => const <List<String>>[]);
-      when(
-        () => identityClaims.cachedVerifiedClaims(
-          pubkey: any(named: 'pubkey'),
-          tags: any(named: 'tags'),
-        ),
-      ).thenAnswer((_) async => null);
-      when(
-        () => identityClaims.resolveClaims(
-          pubkey: any(named: 'pubkey'),
-          freshTags: any(named: 'freshTags'),
-          cached: any(named: 'cached'),
-          renderedClaims: any(named: 'renderedClaims'),
-        ),
-      ).thenAnswer((_) async => const <IdentityClaim>[]);
-
-      final container = ProviderContainer(
-        overrides: [
-          ...getStandardTestOverrides(
-            mockAuthService: authService,
-            mockNostrService: nostrClient,
-            mockFollowRepository: followRepository,
-            mockProfileRepository: profileRepo,
-          ),
-          identityClaimsRepositoryProvider.overrideWithValue(identityClaims),
-          contentBlocklistRepositoryProvider.overrideWithValue(
-            blocklistRepository,
-          ),
-          likesRepositoryProvider.overrideWithValue(likesRepository),
-          repostsRepositoryProvider.overrideWithValue(repostsRepository),
-          commentsRepositoryProvider.overrideWithValue(commentsRepository),
-          videosRepositoryProvider.overrideWithValue(videosRepository),
-          videoEventServiceProvider.overrideWithValue(videoEventService),
-          officialAccountsServiceProvider.overrideWithValue(officials),
-          isDmRestrictedProvider.overrideWith((ref) => false),
-          userProfileStatsReactiveProvider(
-            targetPubkey,
-          ).overrideWith((ref) => const Stream<ProfileStats?>.empty()),
-          fetchUserProfileProvider(
-            targetPubkey,
-          ).overrideWith((ref) async => profile()),
-          isFeatureEnabledProvider(
-            FeatureFlag.videoReplies,
-          ).overrideWith((ref) => false),
-          isFeatureEnabledProvider(
-            FeatureFlag.curatedLists,
-          ).overrideWith((ref) => false),
-          isFeatureEnabledProvider(
-            FeatureFlag.profileMonetizationLinks,
-          ).overrideWith((ref) => ref.watch(flag)),
-        ],
+  group('renders', () {
+    testWidgets('names a deleted account instead of its route hints', (
+      tester,
+    ) async {
+      // The hints outlive the cache: whoever navigated here supplies them, and
+      // the classic-viner slider supplies the archived Vine name and avatar. So
+      // evicting the profile row is not enough to stop the deleted account
+      // rendering under its own identity.
+      final container = createContainer(
+        StateProvider<bool>((ref) => false),
+        isVanished: true,
       );
       addTearDown(container.dispose);
 
       await tester.pumpWidget(
+        buildSubject(
+          container: container,
+          displayNameHint: 'Archived Viner',
+          avatarUrlHint: 'https://example.com/archived.jpg',
+        ),
+      );
+      await tester.pump();
+      // Second frame: the vanish stream resolves after the first build.
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileDeletedAccountName), findsWidgets);
+      expect(find.text('Archived Viner'), findsNothing);
+      expect(find.text('Target User'), findsNothing);
+    });
+
+    testWidgets('renders the profile when the account has not vanished', (
+      tester,
+    ) async {
+      // Pins the gate: the deleted-account treatment must not leak into the
+      // ordinary path.
+      final container = createContainer(StateProvider<bool>((ref) => false));
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        buildSubject(container: container, displayNameHint: 'Archived Viner'),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text('Target User'), findsWidgets);
+      expect(find.text(l10n.profileDeletedAccountName), findsNothing);
+    });
+  });
+
+  group('interactions', () {
+    testWidgets(
+      'updates Message visibility when DM restriction flips while mounted',
+      (tester) async {
+        final restrictedProvider = StateProvider<bool>((ref) => true);
+        final container = createContainer(restrictedProvider);
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(buildSubject(container: container));
+        await tester.pump();
+
+        expect(find.text('Message'), findsNothing);
+
+        container.read(restrictedProvider.notifier).state = false;
+        await tester.pump();
+
+        expect(find.text('Message'), findsOneWidget);
+
+        container.read(restrictedProvider.notifier).state = true;
+        await tester.pump();
+
+        expect(find.text('Message'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      're-fetches raw Kind 0 when the monetization flag flips while mounted',
+      (tester) async {
+        // Regression: the flag both gates the Tip/Support button AND gates
+        // OtherProfileBloc.requireRawKind0 (relay Kind 0, which carries the
+        // monetization links, vs the REST projection that strips them). A
+        // keyless BlocProvider captured the first flag value forever, so
+        // enabling the flag on an already-mounted profile never re-fetched the
+        // raw Kind 0 and the button never appeared.
+        const targetNpub =
+            'npub1424242424242424242424242424242424242424242424242424qamrcaj';
+        final flag = StateProvider<bool>((ref) => false);
+        final identityClaims = _MockIdentityClaimsRepository();
+        final profileRepo = MockProfileRepository();
+        when(
+          () => profileRepo.getCachedProfile(pubkey: any(named: 'pubkey')),
+        ).thenAnswer((_) async => null);
+        // Not a deleted account — the bloc short-circuits the whole load when
+        // this is true.
+        when(() => profileRepo.isVanished(any())).thenReturn(false);
+        when(
+          () => profileRepo.watchProfile(pubkey: any(named: 'pubkey')),
+        ).thenAnswer((_) => const Stream<UserProfile?>.empty());
+        when(
+          () => profileRepo.fetchFreshProfile(pubkey: any(named: 'pubkey')),
+        ).thenAnswer((_) async => profile());
+        when(
+          () => profileRepo.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
+            requireRawKind0: any(named: 'requireRawKind0'),
+            rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
+          ),
+        ).thenAnswer((_) async => profile());
+        // The load also drives the identity-claims flow; stub it to resolve to
+        // no claims so it completes without a MissingStub TypeError.
+        when(
+          () => profileRepo.cachedIdentityTags(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => profileRepo.freshIdentityTags(
+            pubkey: any(named: 'pubkey'),
+            kind0Tags: any(named: 'kind0Tags'),
+          ),
+        ).thenAnswer((_) async => const <List<String>>[]);
+        when(
+          () => identityClaims.cachedVerifiedClaims(
+            pubkey: any(named: 'pubkey'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => identityClaims.resolveClaims(
+            pubkey: any(named: 'pubkey'),
+            freshTags: any(named: 'freshTags'),
+            cached: any(named: 'cached'),
+            renderedClaims: any(named: 'renderedClaims'),
+          ),
+        ).thenAnswer((_) async => const <IdentityClaim>[]);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(
+              mockAuthService: authService,
+              mockNostrService: nostrClient,
+              mockFollowRepository: followRepository,
+              mockProfileRepository: profileRepo,
+            ),
+            identityClaimsRepositoryProvider.overrideWithValue(identityClaims),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              blocklistRepository,
+            ),
+            likesRepositoryProvider.overrideWithValue(likesRepository),
+            repostsRepositoryProvider.overrideWithValue(repostsRepository),
+            commentsRepositoryProvider.overrideWithValue(commentsRepository),
+            videosRepositoryProvider.overrideWithValue(videosRepository),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            officialAccountsServiceProvider.overrideWithValue(officials),
+            isDmRestrictedProvider.overrideWith((ref) => false),
+            userProfileStatsReactiveProvider(
+              targetPubkey,
+            ).overrideWith((ref) => const Stream<ProfileStats?>.empty()),
+            fetchUserProfileProvider(
+              targetPubkey,
+            ).overrideWith((ref) async => profile()),
+            isFeatureEnabledProvider(
+              FeatureFlag.videoReplies,
+            ).overrideWith((ref) => false),
+            isFeatureEnabledProvider(
+              FeatureFlag.curatedLists,
+            ).overrideWith((ref) => false),
+            isFeatureEnabledProvider(
+              FeatureFlag.profileMonetizationLinks,
+            ).overrideWith((ref) => ref.watch(flag)),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              home: BlocProvider<PeopleListsBloc>.value(
+                value: peopleListsBloc,
+                child: const OtherProfileScreen(npub: targetNpub),
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Flag OFF: bloc fetched with requireRawKind0 false, never true.
+        verifyNever(
+          () => profileRepo.fetchFreshProfile(
+            pubkey: targetPubkey,
+            requireRawKind0: true,
+            rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
+          ),
+        );
+
+        container.read(flag.notifier).state = true;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Flipping the flag must recreate the bloc and re-fetch the raw Kind 0.
+        verify(
+          () => profileRepo.fetchFreshProfile(
+            pubkey: targetPubkey,
+            requireRawKind0: true,
+            rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('navigation', () {
+    testWidgets('Message routes to the canonical conversation id', (
+      tester,
+    ) async {
+      // Regression: this screen pushed `pathForId(widget.pubkey)` — the raw peer
+      // pubkey — while every other entry point and `DmRepository.sendMessage`
+      // use the sha256 of the sorted participants. Both are 64-char hex, so
+      // nothing caught the mismatch: the thread's id matched no stored row, so
+      // history never rendered and messages sent from it never appeared.
+      final restrictedProvider = StateProvider<bool>((ref) => false);
+      final container = createContainer(restrictedProvider);
+      addTearDown(container.dispose);
+
+      String? pushedId;
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => MultiBlocProvider(
+              providers: [
+                BlocProvider<OtherProfileBloc>.value(value: otherProfileBloc),
+                BlocProvider<PeopleListsBloc>.value(value: peopleListsBloc),
+              ],
+              child: const OtherProfileView(pubkey: targetPubkey),
+            ),
+          ),
+          GoRoute(
+            path: '/inbox/conversation/:id',
+            builder: (_, state) {
+              pushedId = state.pathParameters['id'];
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
+          child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             theme: VineTheme.theme,
-            home: BlocProvider<PeopleListsBloc>.value(
-              value: peopleListsBloc,
-              child: const OtherProfileScreen(npub: targetNpub),
-            ),
+            routerConfig: router,
           ),
         ),
       );
-      await tester.pump(const Duration(milliseconds: 50));
-
-      // Flag OFF: bloc fetched with requireRawKind0 false, never true.
-      verifyNever(
-        () => profileRepo.fetchFreshProfile(
-          pubkey: targetPubkey,
-          requireRawKind0: true,
-          rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
-        ),
-      );
-
-      container.read(flag.notifier).state = true;
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
 
-      // Flipping the flag must recreate the bloc and re-fetch the raw Kind 0.
-      verify(
-        () => profileRepo.fetchFreshProfile(
-          pubkey: targetPubkey,
-          requireRawKind0: true,
-          rawKind0RetryDelays: any(named: 'rawKind0RetryDelays'),
-        ),
-      ).called(1);
-    },
-  );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(find.text(l10n.profileMessageLabel));
+      await tester.pumpAndSettle();
 
-  testWidgets('Message routes to the canonical conversation id', (
-    tester,
-  ) async {
-    // Regression: this screen pushed `pathForId(widget.pubkey)` — the raw peer
-    // pubkey — while every other entry point and `DmRepository.sendMessage`
-    // use the sha256 of the sorted participants. Both are 64-char hex, so
-    // nothing caught the mismatch: the thread's id matched no stored row, so
-    // history never rendered and messages sent from it never appeared.
-    final restrictedProvider = StateProvider<bool>((ref) => false);
-    final container = createContainer(restrictedProvider);
-    addTearDown(container.dispose);
-
-    String? pushedId;
-    final router = GoRouter(
-      initialLocation: '/',
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (_, _) => MultiBlocProvider(
-            providers: [
-              BlocProvider<OtherProfileBloc>.value(value: otherProfileBloc),
-              BlocProvider<PeopleListsBloc>.value(value: peopleListsBloc),
-            ],
-            child: const OtherProfileView(pubkey: targetPubkey),
-          ),
-        ),
-        GoRoute(
-          path: '/inbox/conversation/:id',
-          builder: (_, state) {
-            pushedId = state.pathParameters['id'];
-            return const Scaffold(body: SizedBox.shrink());
-          },
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: VineTheme.theme,
-          routerConfig: router,
-        ),
-      ),
-    );
-    await tester.pump();
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.tap(find.text(l10n.profileMessageLabel));
-    await tester.pumpAndSettle();
-
-    expect(
-      pushedId,
-      DmRepository.computeConversationId([viewerPubkey, targetPubkey]),
-    );
-    expect(pushedId, isNot(targetPubkey));
+      expect(
+        pushedId,
+        DmRepository.computeConversationId([viewerPubkey, targetPubkey]),
+      );
+      expect(pushedId, isNot(targetPubkey));
+    });
   });
 }

@@ -14,111 +14,119 @@ void main() {
   ProviderContainer containerWith(String value) =>
       ProviderContainer(overrides: [_valueProvider.overrideWithValue(value)]);
 
-  testWidgets('renders the initial container', (tester) async {
-    final controller = AccountSwitchController();
-    await tester.pumpWidget(
-      ContainerSwapHost(
-        initialContainer: containerWith('A'),
-        controller: controller,
-        child: const _ValueText(),
-      ),
-    );
+  group('renders', () {
+    testWidgets('renders the initial container', (tester) async {
+      final controller = AccountSwitchController();
+      await tester.pumpWidget(
+        ContainerSwapHost(
+          initialContainer: containerWith('A'),
+          controller: controller,
+          child: const _ValueText(),
+        ),
+      );
 
-    expect(find.text('A'), findsOneWidget);
+      expect(find.text('A'), findsOneWidget);
+    });
   });
 
-  testWidgets('swap mounts the new container in place', (tester) async {
-    final controller = AccountSwitchController();
-    await tester.pumpWidget(
-      ContainerSwapHost(
-        initialContainer: containerWith('A'),
-        controller: controller,
-        child: const _ValueText(),
-      ),
-    );
-    expect(find.text('A'), findsOneWidget);
+  group('swap', () {
+    testWidgets('swap mounts the new container in place', (tester) async {
+      final controller = AccountSwitchController();
+      await tester.pumpWidget(
+        ContainerSwapHost(
+          initialContainer: containerWith('A'),
+          controller: controller,
+          child: const _ValueText(),
+        ),
+      );
+      expect(find.text('A'), findsOneWidget);
 
-    await controller.swapTo(containerWith('B'));
-    await tester.pump();
+      await controller.swapTo(containerWith('B'));
+      await tester.pump();
 
-    expect(find.text('B'), findsOneWidget);
-    expect(find.text('A'), findsNothing);
+      expect(find.text('B'), findsOneWidget);
+      expect(find.text('A'), findsNothing);
+    });
+
+    testWidgets('the previous container is disposed after the swap', (
+      tester,
+    ) async {
+      final controller = AccountSwitchController();
+      final first = containerWith('A');
+      await tester.pumpWidget(
+        ContainerSwapHost(
+          initialContainer: first,
+          controller: controller,
+          child: const _ValueText(),
+        ),
+      );
+
+      await controller.swapTo(containerWith('B'));
+      await tester.pump();
+
+      // A disposed container throws when read.
+      expect(() => first.read(_valueProvider), throwsStateError);
+    });
+
+    testWidgets('swap remounts container-owned child state', (tester) async {
+      final controller = AccountSwitchController();
+      var initStateCount = 0;
+      await tester.pumpWidget(
+        ContainerSwapHost(
+          initialContainer: containerWith('A'),
+          controller: controller,
+          child: _LifecycleProbe(onInitState: () => initStateCount += 1),
+        ),
+      );
+      expect(initStateCount, equals(1));
+
+      await controller.swapTo(containerWith('B'));
+      await tester.pump();
+
+      expect(initStateCount, equals(2));
+    });
   });
 
-  testWidgets('the previous container is disposed after the swap', (
-    tester,
-  ) async {
-    final controller = AccountSwitchController();
-    final first = containerWith('A');
-    await tester.pumpWidget(
-      ContainerSwapHost(
-        initialContainer: first,
-        controller: controller,
-        child: const _ValueText(),
-      ),
-    );
+  group('controller lifecycle', () {
+    testWidgets('runExclusive rejects overlapping switches', (tester) async {
+      final controller = AccountSwitchController();
+      final completer = Completer<void>();
 
-    await controller.swapTo(containerWith('B'));
-    await tester.pump();
+      final first = controller.runExclusive(() => completer.future);
+      await expectLater(
+        controller.runExclusive(() async {}),
+        throwsA(isA<StateError>()),
+      );
 
-    // A disposed container throws when read.
-    expect(() => first.read(_valueProvider), throwsStateError);
-  });
+      completer.complete();
+      await first;
 
-  testWidgets('swap remounts container-owned child state', (tester) async {
-    final controller = AccountSwitchController();
-    var initStateCount = 0;
-    await tester.pumpWidget(
-      ContainerSwapHost(
-        initialContainer: containerWith('A'),
-        controller: controller,
-        child: _LifecycleProbe(onInitState: () => initStateCount += 1),
-      ),
-    );
-    expect(initStateCount, equals(1));
+      await controller.runExclusive(() async {});
+    });
 
-    await controller.swapTo(containerWith('B'));
-    await tester.pump();
+    testWidgets('swapTo before mount throws', (tester) async {
+      final controller = AccountSwitchController();
+      expect(controller.isReady, isFalse);
+      expect(() => controller.swapTo(containerWith('X')), throwsStateError);
+    });
 
-    expect(initStateCount, equals(2));
-  });
+    testWidgets('controller detaches when the host is disposed', (
+      tester,
+    ) async {
+      final controller = AccountSwitchController();
+      await tester.pumpWidget(
+        ContainerSwapHost(
+          initialContainer: containerWith('A'),
+          controller: controller,
+          child: const _ValueText(),
+        ),
+      );
+      expect(controller.isReady, isTrue);
 
-  testWidgets('runExclusive rejects overlapping switches', (tester) async {
-    final controller = AccountSwitchController();
-    final completer = Completer<void>();
+      await tester.pumpWidget(const SizedBox());
 
-    final first = controller.runExclusive(() => completer.future);
-    await expectLater(
-      controller.runExclusive(() async {}),
-      throwsA(isA<StateError>()),
-    );
-
-    completer.complete();
-    await first;
-
-    await controller.runExclusive(() async {});
-  });
-
-  testWidgets('swapTo before mount throws', (tester) async {
-    final controller = AccountSwitchController();
-    expect(controller.isReady, isFalse);
-    expect(() => controller.swapTo(containerWith('X')), throwsStateError);
-  });
-
-  testWidgets('controller detaches when the host is disposed', (tester) async {
-    final controller = AccountSwitchController();
-    await tester.pumpWidget(
-      ContainerSwapHost(
-        initialContainer: containerWith('A'),
-        controller: controller,
-        child: const _ValueText(),
-      ),
-    );
-    expect(controller.isReady, isTrue);
-
-    await tester.pumpWidget(const SizedBox());
-
-    expect(controller.isReady, isFalse);
+      expect(controller.isReady, isFalse);
+    });
   });
 }
 

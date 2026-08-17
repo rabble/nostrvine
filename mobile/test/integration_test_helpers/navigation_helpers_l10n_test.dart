@@ -6,15 +6,17 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('auth navigation helpers resolve auth labels from l10n', () {
-    final source = File(
-      'integration_test/helpers/navigation_helpers.dart',
-    ).readAsStringSync();
+  group('auth navigation helpers l10n usage', () {
+    test('auth navigation helpers resolve auth labels from l10n', () {
+      final source = File(
+        'integration_test/helpers/navigation_helpers.dart',
+      ).readAsStringSync();
 
-    expect(source, contains('lookupAppLocalizations'));
-    expect(source, isNot(contains("'Create a new Divine account'")));
-    expect(source, isNot(contains("'Sign in with an existing account'")));
-    expect(source, isNot(contains("'Create account'")));
-    expect(source, isNot(contains("'Sign in'")));
+      expect(source, contains('lookupAppLocalizations'));
+      expect(source, isNot(contains("'Create a new Divine account'")));
+      expect(source, isNot(contains("'Sign in with an existing account'")));
+      expect(source, isNot(contains("'Create account'")));
+      expect(source, isNot(contains("'Sign in'")));
+    });
   });
 }

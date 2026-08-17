@@ -96,185 +96,206 @@ void main() {
 
   tearDown(() => controller.close());
 
-  blocTest<SupporterCubit, SupporterState>(
-    'loadTiers emits loading then tiers',
-    build: () {
-      final repo = _FakeRepository(controller);
-      repo.validator.products = [
-        const SupporterTier(
-          productId: 'divine.supporter.monthly',
-          title: 'Supporter',
-          price: r'$4.99',
-        ),
-      ];
-      return SupporterCubit(repository: repo);
-    },
-    act: (cubit) => cubit.loadTiers(),
-    expect: () => [
-      isA<SupporterState>().having(
-        (s) => s.status,
-        'status',
-        SupporterStatus.loading,
-      ),
-      isA<SupporterState>()
-          .having((s) => s.tiers, 'tiers', hasLength(1))
-          .having((s) => s.status, 'status', SupporterStatus.idle),
-    ],
-  );
-
-  blocTest<SupporterCubit, SupporterState>(
-    'loadTiers maps StoreUnavailableException to failure',
-    build: () {
-      final repo = _FakeRepository(controller);
-      repo.validator.products = [];
-      repo.validator.fetchError = const StoreUnavailableException();
-      return SupporterCubit(repository: repo);
-    },
-    act: (cubit) => cubit.loadTiers(),
-    skip: 1,
-    expect: () => [
-      isA<SupporterState>()
-          .having((s) => s.status, 'status', SupporterStatus.error)
-          .having(
-            (s) => s.failure,
-            'failure',
-            SupporterFailure.storeUnavailable,
+  group('loadTiers', () {
+    blocTest<SupporterCubit, SupporterState>(
+      'loadTiers emits loading then tiers',
+      build: () {
+        final repo = _FakeRepository(controller);
+        repo.validator.products = [
+          const SupporterTier(
+            productId: 'divine.supporter.monthly',
+            title: 'Supporter',
+            price: r'$4.99',
           ),
-    ],
-  );
-
-  blocTest<SupporterCubit, SupporterState>(
-    'subscribe emits purchasing then active on success',
-    build: () {
-      final repo = _FakeRepository(controller);
-      repo.validator.purchaseResult = SupporterEntitlement(
-        productId: 'divine.supporter.monthly',
-        source: EntitlementSource.appStore,
-        purchaseDate: DateTime.utc(2030),
-      );
-      return SupporterCubit(repository: repo);
-    },
-    act: (cubit) => cubit.subscribe('divine.supporter.monthly'),
-    expect: () => [
-      isA<SupporterState>().having(
-        (s) => s.status,
-        'status',
-        SupporterStatus.purchasing,
-      ),
-      isA<SupporterState>()
-          .having((s) => s.status, 'status', SupporterStatus.active)
-          .having((s) => s.isSupporter, 'isSupporter', isTrue),
-    ],
-  );
-
-  blocTest<SupporterCubit, SupporterState>(
-    'subscribe maps PurchaseFailedException to failure',
-    build: () {
-      final repo = _FakeRepository(controller);
-      repo.validator.purchaseError = const PurchaseFailedException(
-        'cancel',
-        'cancelled',
-      );
-      return SupporterCubit(repository: repo);
-    },
-    act: (cubit) => cubit.subscribe('divine.supporter.monthly'),
-    skip: 1,
-    expect: () => [
-      isA<SupporterState>()
-          .having((s) => s.status, 'status', SupporterStatus.idle)
-          .having((s) => s.failure, 'failure', SupporterFailure.purchaseFailed),
-    ],
-  );
-
-  blocTest<SupporterCubit, SupporterState>(
-    'restore emits restoring then idle on success',
-    build: () {
-      final repo = _FakeRepository(controller);
-      return SupporterCubit(repository: repo);
-    },
-    act: (cubit) => cubit.restore(),
-    expect: () => [
-      isA<SupporterState>().having(
-        (s) => s.status,
-        'status',
-        SupporterStatus.restoring,
-      ),
-      isA<SupporterState>().having(
-        (s) => s.status,
-        'status',
-        SupporterStatus.idle,
-      ),
-    ],
-  );
-
-  blocTest<SupporterCubit, SupporterState>(
-    'restore maps RestoreFailedException to failure',
-    build: () {
-      final repo = _FakeRepository(controller);
-      repo.validator.restoreError = const RestoreFailedException();
-      return SupporterCubit(repository: repo);
-    },
-    act: (cubit) => cubit.restore(),
-    skip: 1,
-    expect: () => [
-      isA<SupporterState>()
-          .having((s) => s.status, 'status', SupporterStatus.idle)
-          .having((s) => s.failure, 'failure', SupporterFailure.restoreFailed),
-    ],
-  );
-
-  test('SupporterFailure.fromMessage maps known substrings', () {
-    expect(
-      SupporterFailure.fromMessage('Store is unavailable.'),
-      SupporterFailure.storeUnavailable,
+        ];
+        return SupporterCubit(repository: repo);
+      },
+      act: (cubit) => cubit.loadTiers(),
+      expect: () => [
+        isA<SupporterState>().having(
+          (s) => s.status,
+          'status',
+          SupporterStatus.loading,
+        ),
+        isA<SupporterState>()
+            .having((s) => s.tiers, 'tiers', hasLength(1))
+            .having((s) => s.status, 'status', SupporterStatus.idle),
+      ],
     );
-    expect(
-      SupporterFailure.fromMessage('Purchase is pending.'),
-      SupporterFailure.purchasePending,
-    );
-    expect(
-      SupporterFailure.fromMessage('No subscription to restore.'),
-      SupporterFailure.restoreFailed,
-    );
-    expect(
-      SupporterFailure.fromMessage('Purchase was cancelled.'),
-      SupporterFailure.purchaseFailed,
-    );
-    expect(
-      SupporterFailure.fromMessage('something unexpected'),
-      SupporterFailure.unknown,
+
+    blocTest<SupporterCubit, SupporterState>(
+      'loadTiers maps StoreUnavailableException to failure',
+      build: () {
+        final repo = _FakeRepository(controller);
+        repo.validator.products = [];
+        repo.validator.fetchError = const StoreUnavailableException();
+        return SupporterCubit(repository: repo);
+      },
+      act: (cubit) => cubit.loadTiers(),
+      skip: 1,
+      expect: () => [
+        isA<SupporterState>()
+            .having((s) => s.status, 'status', SupporterStatus.error)
+            .having(
+              (s) => s.failure,
+              'failure',
+              SupporterFailure.storeUnavailable,
+            ),
+      ],
     );
   });
 
-  test('does not emit after close when tier loading completes late', () async {
-    final repo = _FakeRepository(controller);
-    final completer = Completer<List<SupporterTier>>();
-    repo.validator.fetchCompleter = completer;
-    final cubit = SupporterCubit(repository: repo);
+  group('subscribe', () {
+    blocTest<SupporterCubit, SupporterState>(
+      'subscribe emits purchasing then active on success',
+      build: () {
+        final repo = _FakeRepository(controller);
+        repo.validator.purchaseResult = SupporterEntitlement(
+          productId: 'divine.supporter.monthly',
+          source: EntitlementSource.appStore,
+          purchaseDate: DateTime.utc(2030),
+        );
+        return SupporterCubit(repository: repo);
+      },
+      act: (cubit) => cubit.subscribe('divine.supporter.monthly'),
+      expect: () => [
+        isA<SupporterState>().having(
+          (s) => s.status,
+          'status',
+          SupporterStatus.purchasing,
+        ),
+        isA<SupporterState>()
+            .having((s) => s.status, 'status', SupporterStatus.active)
+            .having((s) => s.isSupporter, 'isSupporter', isTrue),
+      ],
+    );
 
-    final load = cubit.loadTiers();
-    await Future<void>.delayed(Duration.zero);
-    await cubit.close();
-    completer.complete(const <SupporterTier>[]);
-
-    await expectLater(load, completes);
+    blocTest<SupporterCubit, SupporterState>(
+      'subscribe maps PurchaseFailedException to failure',
+      build: () {
+        final repo = _FakeRepository(controller);
+        repo.validator.purchaseError = const PurchaseFailedException(
+          'cancel',
+          'cancelled',
+        );
+        return SupporterCubit(repository: repo);
+      },
+      act: (cubit) => cubit.subscribe('divine.supporter.monthly'),
+      skip: 1,
+      expect: () => [
+        isA<SupporterState>()
+            .having((s) => s.status, 'status', SupporterStatus.idle)
+            .having(
+              (s) => s.failure,
+              'failure',
+              SupporterFailure.purchaseFailed,
+            ),
+      ],
+    );
   });
 
-  test('surfaces pending and confirming purchase lifecycle', () async {
-    final lifecycle = StreamController<EntitlementLifecycle>.broadcast();
-    addTearDown(lifecycle.close);
-    final repo = _FakeRepository(controller);
-    repo.validator.lifecycleStream = lifecycle.stream;
-    final cubit = SupporterCubit(repository: repo);
-    addTearDown(cubit.close);
+  group('restore', () {
+    blocTest<SupporterCubit, SupporterState>(
+      'restore emits restoring then idle on success',
+      build: () {
+        final repo = _FakeRepository(controller);
+        return SupporterCubit(repository: repo);
+      },
+      act: (cubit) => cubit.restore(),
+      expect: () => [
+        isA<SupporterState>().having(
+          (s) => s.status,
+          'status',
+          SupporterStatus.restoring,
+        ),
+        isA<SupporterState>().having(
+          (s) => s.status,
+          'status',
+          SupporterStatus.idle,
+        ),
+      ],
+    );
 
-    cubit.start();
-    lifecycle.add(EntitlementLifecycle.pending);
-    await Future<void>.delayed(Duration.zero);
-    expect(cubit.state.status, SupporterStatus.pending);
+    blocTest<SupporterCubit, SupporterState>(
+      'restore maps RestoreFailedException to failure',
+      build: () {
+        final repo = _FakeRepository(controller);
+        repo.validator.restoreError = const RestoreFailedException();
+        return SupporterCubit(repository: repo);
+      },
+      act: (cubit) => cubit.restore(),
+      skip: 1,
+      expect: () => [
+        isA<SupporterState>()
+            .having((s) => s.status, 'status', SupporterStatus.idle)
+            .having(
+              (s) => s.failure,
+              'failure',
+              SupporterFailure.restoreFailed,
+            ),
+      ],
+    );
+  });
 
-    lifecycle.add(EntitlementLifecycle.confirming);
-    await Future<void>.delayed(Duration.zero);
-    expect(cubit.state.status, SupporterStatus.confirming);
+  group('SupporterFailure.fromMessage', () {
+    test('SupporterFailure.fromMessage maps known substrings', () {
+      expect(
+        SupporterFailure.fromMessage('Store is unavailable.'),
+        SupporterFailure.storeUnavailable,
+      );
+      expect(
+        SupporterFailure.fromMessage('Purchase is pending.'),
+        SupporterFailure.purchasePending,
+      );
+      expect(
+        SupporterFailure.fromMessage('No subscription to restore.'),
+        SupporterFailure.restoreFailed,
+      );
+      expect(
+        SupporterFailure.fromMessage('Purchase was cancelled.'),
+        SupporterFailure.purchaseFailed,
+      );
+      expect(
+        SupporterFailure.fromMessage('something unexpected'),
+        SupporterFailure.unknown,
+      );
+    });
+  });
+
+  group('additional cubit behavior', () {
+    test(
+      'does not emit after close when tier loading completes late',
+      () async {
+        final repo = _FakeRepository(controller);
+        final completer = Completer<List<SupporterTier>>();
+        repo.validator.fetchCompleter = completer;
+        final cubit = SupporterCubit(repository: repo);
+
+        final load = cubit.loadTiers();
+        await Future<void>.delayed(Duration.zero);
+        await cubit.close();
+        completer.complete(const <SupporterTier>[]);
+
+        await expectLater(load, completes);
+      },
+    );
+
+    test('surfaces pending and confirming purchase lifecycle', () async {
+      final lifecycle = StreamController<EntitlementLifecycle>.broadcast();
+      addTearDown(lifecycle.close);
+      final repo = _FakeRepository(controller);
+      repo.validator.lifecycleStream = lifecycle.stream;
+      final cubit = SupporterCubit(repository: repo);
+      addTearDown(cubit.close);
+
+      cubit.start();
+      lifecycle.add(EntitlementLifecycle.pending);
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.state.status, SupporterStatus.pending);
+
+      lifecycle.add(EntitlementLifecycle.confirming);
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.state.status, SupporterStatus.confirming);
+    });
   });
 }

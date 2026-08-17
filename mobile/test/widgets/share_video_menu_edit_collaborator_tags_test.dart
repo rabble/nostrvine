@@ -128,56 +128,63 @@ void main() {
     );
   });
 
-  test('buildCollaboratorPTag emits the exact lowercase collaborator tag', () {
-    expect(
-      buildCollaboratorPTag(collaboratorPubkey),
-      equals(const [
-        'p',
-        collaboratorPubkey,
-        collaboratorInviteRelayHint,
-        'collaborator',
-      ]),
+  group('buildCollaboratorPTag', () {
+    test(
+      'buildCollaboratorPTag emits the exact lowercase collaborator tag',
+      () {
+        expect(
+          buildCollaboratorPTag(collaboratorPubkey),
+          equals(const [
+            'p',
+            collaboratorPubkey,
+            collaboratorInviteRelayHint,
+            'collaborator',
+          ]),
+        );
+      },
     );
   });
 
-  test(
-    'edit-video flow republishes collaborator p-tags with lowercase marker',
-    () async {
-      final editorState = VideoEditorProviderState(
-        collaboratorPubkeys: {collaboratorPubkey},
-      );
+  group('updateVideo', () {
+    test(
+      'edit-video flow republishes collaborator p-tags with lowercase marker',
+      () async {
+        final editorState = VideoEditorProviderState(
+          collaboratorPubkeys: {collaboratorPubkey},
+        );
 
-      final result = await service.updateVideo(
-        originalVideo: _testVideo(
-          ownerPubkey: ownerPubkey,
-          collaboratorPubkey: collaboratorPubkey,
-        ),
-        editorState: editorState,
-        initialCollaboratorPubkeys: {collaboratorPubkey},
-      );
-
-      expect(result, isA<VideoUpdateSuccess>());
-      expect(
-        capturedTags.where((tag) => tag.isNotEmpty && tag.first == 'p'),
-        hasLength(1),
-      );
-      expect(
-        capturedTags,
-        contains(equals(buildCollaboratorPTag(collaboratorPubkey))),
-      );
-      expect(
-        capturedTags,
-        isNot(
-          contains(
-            equals(const [
-              'p',
-              collaboratorPubkey,
-              collaboratorInviteRelayHint,
-              'Collaborator',
-            ]),
+        final result = await service.updateVideo(
+          originalVideo: _testVideo(
+            ownerPubkey: ownerPubkey,
+            collaboratorPubkey: collaboratorPubkey,
           ),
-        ),
-      );
-    },
-  );
+          editorState: editorState,
+          initialCollaboratorPubkeys: {collaboratorPubkey},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(
+          capturedTags.where((tag) => tag.isNotEmpty && tag.first == 'p'),
+          hasLength(1),
+        );
+        expect(
+          capturedTags,
+          contains(equals(buildCollaboratorPTag(collaboratorPubkey))),
+        );
+        expect(
+          capturedTags,
+          isNot(
+            contains(
+              equals(const [
+                'p',
+                collaboratorPubkey,
+                collaboratorInviteRelayHint,
+                'Collaborator',
+              ]),
+            ),
+          ),
+        );
+      },
+    );
+  });
 }

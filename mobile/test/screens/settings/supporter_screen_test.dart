@@ -86,93 +86,104 @@ class _EmptyValidator extends Fake implements EntitlementValidator {
 }
 
 void main() {
-  testWidgets('renders hero copy and restore button when not a supporter', (
-    tester,
-  ) async {
-    final controller = StreamController<SupporterEntitlement>.broadcast();
-    addTearDown(controller.close);
-    final repo = _FakeRepository(controller);
+  group('renders', () {
+    testWidgets('renders hero copy and restore button when not a supporter', (
+      tester,
+    ) async {
+      final controller = StreamController<SupporterEntitlement>.broadcast();
+      addTearDown(controller.close);
+      final repo = _FakeRepository(controller);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
-        child: buildLocalizedWidget(const SupporterScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
+          child: buildLocalizedWidget(const SupporterScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Keep Divine running'), findsOneWidget);
-    expect(find.text('Restore purchases'), findsOneWidget);
-  });
+      expect(find.text('Keep Divine running'), findsOneWidget);
+      expect(find.text('Restore purchases'), findsOneWidget);
+    });
 
-  testWidgets('shows active badge when entitlement is active', (tester) async {
-    final controller = StreamController<SupporterEntitlement>.broadcast();
-    addTearDown(controller.close);
-    final repo = _FakeRepository(
-      controller,
-      initial: SupporterEntitlement(
-        productId: 'divine.supporter.monthly',
-        source: EntitlementSource.appStore,
-        purchaseDate: DateTime.utc(2030),
-      ),
-    );
+    testWidgets('shows active badge when entitlement is active', (
+      tester,
+    ) async {
+      final controller = StreamController<SupporterEntitlement>.broadcast();
+      addTearDown(controller.close);
+      final repo = _FakeRepository(
+        controller,
+        initial: SupporterEntitlement(
+          productId: 'divine.supporter.monthly',
+          source: EntitlementSource.appStore,
+          purchaseDate: DateTime.utc(2030),
+        ),
+      );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
-        child: buildLocalizedWidget(const SupporterScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
+          child: buildLocalizedWidget(const SupporterScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.textContaining("You're a Divine Supporter"), findsOneWidget);
-  });
+      expect(find.textContaining("You're a Divine Supporter"), findsOneWidget);
+    });
 
-  testWidgets('shows unavailable note when store has no tiers', (tester) async {
-    final controller = StreamController<SupporterEntitlement>.broadcast();
-    addTearDown(controller.close);
-    final repo = _FakeRepository(controller);
+    testWidgets('shows unavailable note when store has no tiers', (
+      tester,
+    ) async {
+      final controller = StreamController<SupporterEntitlement>.broadcast();
+      addTearDown(controller.close);
+      final repo = _FakeRepository(controller);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
-        child: buildLocalizedWidget(const SupporterScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
+          child: buildLocalizedWidget(const SupporterScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.textContaining('not available here right now'), findsOneWidget);
-  });
+      expect(
+        find.textContaining('not available here right now'),
+        findsOneWidget,
+      );
+    });
 
-  testWidgets('renders failure banner for an error state', (tester) async {
-    final controller = StreamController<SupporterEntitlement>.broadcast();
-    addTearDown(controller.close);
-    late SupporterCubit cubit;
+    testWidgets('renders failure banner for an error state', (tester) async {
+      final controller = StreamController<SupporterEntitlement>.broadcast();
+      addTearDown(controller.close);
+      late SupporterCubit cubit;
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          supporterRepositoryProvider.overrideWithValue(
-            _FakeRepository(controller),
-          ),
-        ],
-        child: buildLocalizedWidget(
-          BlocProvider<SupporterCubit>(
-            create: (_) {
-              return cubit = SupporterCubit(
-                repository: _FakeRepository(controller),
-              );
-            },
-            child: const SupporterScreenView(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            supporterRepositoryProvider.overrideWithValue(
+              _FakeRepository(controller),
+            ),
+          ],
+          child: buildLocalizedWidget(
+            BlocProvider<SupporterCubit>(
+              create: (_) {
+                return cubit = SupporterCubit(
+                  repository: _FakeRepository(controller),
+                );
+              },
+              child: const SupporterScreenView(),
+            ),
           ),
         ),
-      ),
-    );
-    // Let start() + loadTiers() settle to idle, then surface a failure.
-    await tester.pumpAndSettle();
-    cubit.emit(const SupporterState(failure: SupporterFailure.purchaseFailed));
-    await tester.pumpAndSettle();
+      );
+      // Let start() + loadTiers() settle to idle, then surface a failure.
+      await tester.pumpAndSettle();
+      cubit.emit(
+        const SupporterState(failure: SupporterFailure.purchaseFailed),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.textContaining('did not complete'), findsOneWidget);
+      expect(find.textContaining('did not complete'), findsOneWidget);
+    });
   });
 }

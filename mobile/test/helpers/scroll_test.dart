@@ -7,39 +7,41 @@ import 'package:flutter_test/flutter_test.dart';
 import 'scroll.dart';
 
 void main() {
-  testWidgets(
-    'scrollUntilTappable pumps the post-scroll frame before returning',
-    (
-      tester,
-    ) async {
-      const targetKey = Key('target');
-
-      await tester.pumpWidget(
-        const _ScrollProbe(targetKey: targetKey),
-      );
-
-      await tester.scrollUntilVisible(
-        find.byKey(targetKey),
-        240,
-        scrollable: find.byType(Scrollable),
-      );
-      expect(find.text('post-scroll frame pending'), findsOneWidget);
-
-      await tester.pumpWidget(
-        const _ScrollProbe(targetKey: targetKey),
-      );
-      await tester.pumpAndSettle();
-
-      await scrollUntilTappable(
+  group('scrollUntilTappable', () {
+    testWidgets(
+      'scrollUntilTappable pumps the post-scroll frame before returning',
+      (
         tester,
-        find.byKey(targetKey),
-        240,
-        scrollable: find.byType(Scrollable),
-      );
+      ) async {
+        const targetKey = Key('target');
 
-      expect(find.text('post-scroll frame settled'), findsOneWidget);
-    },
-  );
+        await tester.pumpWidget(
+          const _ScrollProbe(targetKey: targetKey),
+        );
+
+        await tester.scrollUntilVisible(
+          find.byKey(targetKey),
+          240,
+          scrollable: find.byType(Scrollable),
+        );
+        expect(find.text('post-scroll frame pending'), findsOneWidget);
+
+        await tester.pumpWidget(
+          const _ScrollProbe(targetKey: targetKey),
+        );
+        await tester.pumpAndSettle();
+
+        await scrollUntilTappable(
+          tester,
+          find.byKey(targetKey),
+          240,
+          scrollable: find.byType(Scrollable),
+        );
+
+        expect(find.text('post-scroll frame settled'), findsOneWidget);
+      },
+    );
+  });
 }
 
 class _ScrollProbe extends StatefulWidget {
