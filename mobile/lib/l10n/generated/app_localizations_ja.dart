@@ -11600,4 +11600,49 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get feedOfflineMessage => 'オフラインだよ。\n接続を確認して、もう一度試してね。';
+
+  @override
+  String get dbFailureTitle => 'ローカルデータベースのロックを解除できませんでした';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      '再起動では解決しません。下のローカルデータベースをリセットすると Divine をきれいな状態から始められます。アカウントはそのまま残ります。';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'デバイスのロックを解除してから Divine を再起動してください。これが続く場合は、アプリを更新するかサポートにご連絡ください。';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return '診断: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'Divine を閉じる';
+
+  @override
+  String get dbFailureResetAction => 'ローカルデータベースをリセット';
+
+  @override
+  String get dbFailureConfirmTitle => 'ローカルデータベースをリセットしますか？';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'アカウントはそのまま残ります。この端末に保存された下書きとクリップは削除されます。メッセージとフィードはネットワークから復元されます。';
+
+  @override
+  String get dbFailureResetConfirm => 'リセットして閉じる';
+
+  @override
+  String get dbFailureCancel => 'キャンセル';
+
+  @override
+  String get dbFailureResetFailed => 'うまくいきませんでした。Divine を閉じてもう一度お試しください。';
+
+  @override
+  String get dbFailureResetDoneTitle => 'ローカルデータベースをリセットしました';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Divine を閉じてもう一度開いてください。次回の起動で新しいローカルデータベースが作成されます。';
 }

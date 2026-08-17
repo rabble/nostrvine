@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} takipçi}}",
   "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}",
   "feedOutageMessage": "Videolar şu anda yüklenmiyor.\nSorun bizde, sende değil — üzerinde çalışıyoruz.",
-  "feedOfflineMessage": "Çevrimdışısın.\nBağlantını kontrol edip tekrar dene."
+  "feedOfflineMessage": "Çevrimdışısın.\nBağlantını kontrol edip tekrar dene.",
+    "dbFailureTitle": "yerel veritabanınız açılamadı",
+    "dbFailureAdviceResettable": "Yeniden başlatmak bunu düzeltmez. Aşağıdaki yerel veritabanını sıfırlamak Divine’a temiz bir başlangıç verir — hesabınız kalır.",
+    "dbFailureAdviceRestart": "Cihazınızın kilidini açtıktan sonra Divine’ı yeniden başlatın. Bu sürerse uygulamayı güncelleyin veya destekle iletişime geçin.",
+    "dbFailureDiagnostic": "Tanılama: {code}",
+    "dbFailureCloseApp": "Divine’ı kapat",
+    "dbFailureResetAction": "yerel veritabanını sıfırla",
+    "dbFailureConfirmTitle": "yerel veritabanınız sıfırlansın mı?",
+    "dbFailureConfirmBody": "Hesabınız kalır. Bu cihazda kayıtlı taslaklar ve klipler silinir — mesajlar ve akışlar ağdan geri gelir.",
+    "dbFailureResetConfirm": "sıfırla ve kapat",
+    "dbFailureCancel": "iptal",
+    "dbFailureResetFailed": "Bu işe yaramadı. Divine’ı kapatıp tekrar deneyin.",
+    "dbFailureResetDoneTitle": "yerel veritabanı sıfırlandı",
+    "dbFailureResetDoneBody": "Divine’ı kapatıp yeniden açın — sonraki başlatmada yeni bir yerel veritabanı oluşturulur."
 }

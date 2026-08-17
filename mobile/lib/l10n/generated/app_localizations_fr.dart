@@ -12361,4 +12361,52 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Vous êtes hors ligne.\nVérifiez votre connexion et réessayez.';
+
+  @override
+  String get dbFailureTitle =>
+      'impossible de déverrouiller votre base de données locale';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Un redémarrage ne réglera pas ça. Réinitialiser la base de données locale ci-dessous donne à Divine un nouveau départ — votre compte est conservé.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Redémarrez Divine après avoir déverrouillé votre appareil. Si cela persiste, mettez l\'application à jour ou contactez l\'assistance.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostic : $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'fermer Divine';
+
+  @override
+  String get dbFailureResetAction => 'réinitialiser la base de données locale';
+
+  @override
+  String get dbFailureConfirmTitle =>
+      'réinitialiser votre base de données locale ?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Votre compte est conservé. Les brouillons et clips enregistrés sur cet appareil sont supprimés — les messages et fils reviennent du réseau.';
+
+  @override
+  String get dbFailureResetConfirm => 'réinitialiser et fermer';
+
+  @override
+  String get dbFailureCancel => 'annuler';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Ça n\'a pas fonctionné. Fermez Divine et réessayez.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'base de données locale réinitialisée';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Fermez Divine et rouvrez-le — le prochain lancement crée une nouvelle base de données locale.';
 }

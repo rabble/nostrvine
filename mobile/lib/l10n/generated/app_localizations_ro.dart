@@ -12429,4 +12429,50 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Ești offline.\nVerifică-ți conexiunea și încearcă din nou.';
+
+  @override
+  String get dbFailureTitle => 'nu am putut debloca baza de date locală';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'O repornire nu rezolvă asta. Resetarea bazei de date locale de mai jos îi oferă lui Divine un start curat — contul tău rămâne.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Repornește Divine după ce îți deblochezi dispozitivul. Dacă se repetă, actualizează aplicația sau contactează asistența.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostic: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'închide Divine';
+
+  @override
+  String get dbFailureResetAction => 'resetează baza de date locală';
+
+  @override
+  String get dbFailureConfirmTitle => 'resetezi baza de date locală?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Contul tău rămâne. Ciornele și clipurile salvate pe acest dispozitiv sunt șterse — mesajele și fluxurile revin din rețea.';
+
+  @override
+  String get dbFailureResetConfirm => 'resetează și închide';
+
+  @override
+  String get dbFailureCancel => 'anulează';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Nu a funcționat. Închide Divine și încearcă din nou.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'baza de date locală a fost resetată';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Închide Divine și deschide-l din nou — următoarea pornire creează o bază de date locală nouă.';
 }

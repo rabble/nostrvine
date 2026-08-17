@@ -12222,4 +12222,53 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Anda di luar talian.\nSemak sambungan anda dan cuba lagi.';
+
+  @override
+  String get dbFailureTitle =>
+      'tidak dapat membuka kunci pangkalan data setempat anda';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Memulakan semula tidak akan membaikinya. Menetapkan semula pangkalan data setempat di bawah memberi Divine permulaan yang bersih — akaun anda kekal.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Mulakan semula Divine selepas membuka kunci peranti anda. Jika ini berterusan, kemas kini apl atau hubungi sokongan.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostik: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'tutup Divine';
+
+  @override
+  String get dbFailureResetAction => 'tetapkan semula pangkalan data setempat';
+
+  @override
+  String get dbFailureConfirmTitle =>
+      'tetapkan semula pangkalan data setempat anda?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Akaun anda kekal. Draf dan klip yang disimpan pada peranti ini akan dipadamkan — mesej dan suapan kembali daripada rangkaian.';
+
+  @override
+  String get dbFailureResetConfirm => 'tetapkan semula dan tutup';
+
+  @override
+  String get dbFailureCancel => 'batal';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Itu tidak berjaya. Tutup Divine dan cuba lagi.';
+
+  @override
+  String get dbFailureResetDoneTitle =>
+      'pangkalan data setempat ditetapkan semula';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Tutup Divine dan buka semula — pelancaran seterusnya membina pangkalan data setempat yang baharu.';
 }

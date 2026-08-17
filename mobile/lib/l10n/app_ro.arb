@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} urmăritor} other{{formattedCount} urmăritori}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} videoclip} other{{formattedCount} videoclipuri}}",
   "feedOutageMessage": "Videoclipurile nu se încarcă acum.\nE de la noi, nu de la tine — lucrăm la asta.",
-  "feedOfflineMessage": "Ești offline.\nVerifică-ți conexiunea și încearcă din nou."
+  "feedOfflineMessage": "Ești offline.\nVerifică-ți conexiunea și încearcă din nou.",
+    "dbFailureTitle": "nu am putut debloca baza de date locală",
+    "dbFailureAdviceResettable": "O repornire nu rezolvă asta. Resetarea bazei de date locale de mai jos îi oferă lui Divine un start curat — contul tău rămâne.",
+    "dbFailureAdviceRestart": "Repornește Divine după ce îți deblochezi dispozitivul. Dacă se repetă, actualizează aplicația sau contactează asistența.",
+    "dbFailureDiagnostic": "Diagnostic: {code}",
+    "dbFailureCloseApp": "închide Divine",
+    "dbFailureResetAction": "resetează baza de date locală",
+    "dbFailureConfirmTitle": "resetezi baza de date locală?",
+    "dbFailureConfirmBody": "Contul tău rămâne. Ciornele și clipurile salvate pe acest dispozitiv sunt șterse — mesajele și fluxurile revin din rețea.",
+    "dbFailureResetConfirm": "resetează și închide",
+    "dbFailureCancel": "anulează",
+    "dbFailureResetFailed": "Nu a funcționat. Închide Divine și încearcă din nou.",
+    "dbFailureResetDoneTitle": "baza de date locală a fost resetată",
+    "dbFailureResetDoneBody": "Închide Divine și deschide-l din nou — următoarea pornire creează o bază de date locală nouă."
 }

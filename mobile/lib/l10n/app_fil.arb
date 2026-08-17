@@ -3811,5 +3811,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} follower} other{{formattedCount} follower}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video}}",
   "feedOutageMessage": "Hindi nagloload ang mga video ngayon.\nSa amin ito, hindi sa iyo — inaayos na namin.",
-  "feedOfflineMessage": "Offline ka.\nTingnan ang koneksyon mo at subukan ulit."
+  "feedOfflineMessage": "Offline ka.\nTingnan ang koneksyon mo at subukan ulit.",
+    "dbFailureTitle": "hindi ma-unlock ang iyong lokal na database",
+    "dbFailureAdviceResettable": "Hindi ito maaayos ng pag-restart. Ang pag-reset ng lokal na database sa ibaba ay nagbibigay sa Divine ng malinis na simula — mananatili ang iyong account.",
+    "dbFailureAdviceRestart": "I-restart ang Divine matapos i-unlock ang iyong device. Kung patuloy itong nangyayari, i-update ang app o makipag-ugnayan sa suporta.",
+    "dbFailureDiagnostic": "Diagnostic: {code}",
+    "dbFailureCloseApp": "isara ang Divine",
+    "dbFailureResetAction": "i-reset ang lokal na database",
+    "dbFailureConfirmTitle": "i-reset ang iyong lokal na database?",
+    "dbFailureConfirmBody": "Mananatili ang iyong account. Buburahin ang mga draft at clip na naka-save sa device na ito — babalik ang mga mensahe at feed mula sa network.",
+    "dbFailureResetConfirm": "i-reset at isara",
+    "dbFailureCancel": "kanselahin",
+    "dbFailureResetFailed": "Hindi ito gumana. Isara ang Divine at subukan ulit.",
+    "dbFailureResetDoneTitle": "na-reset ang lokal na database",
+    "dbFailureResetDoneBody": "Isara ang Divine at buksan itong muli — gagawa ng bagong lokal na database sa susunod na paglulunsad."
 }

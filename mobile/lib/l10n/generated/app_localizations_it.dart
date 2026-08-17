@@ -12325,4 +12325,50 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Sei offline.\nControlla la connessione e riprova.';
+
+  @override
+  String get dbFailureTitle => 'impossibile sbloccare il database locale';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Riavviare non risolverà il problema. Reimpostare il database locale qui sotto dà a Divine un nuovo inizio — il tuo account resta.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Riavvia Divine dopo aver sbloccato il dispositivo. Se continua a succedere, aggiorna l\'app o contatta l\'assistenza.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostica: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'chiudi Divine';
+
+  @override
+  String get dbFailureResetAction => 'reimposta database locale';
+
+  @override
+  String get dbFailureConfirmTitle => 'reimpostare il database locale?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Il tuo account resta. Le bozze e le clip salvate su questo dispositivo vengono eliminate — messaggi e feed tornano dalla rete.';
+
+  @override
+  String get dbFailureResetConfirm => 'reimposta e chiudi';
+
+  @override
+  String get dbFailureCancel => 'annulla';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Non ha funzionato. Chiudi Divine e riprova.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'database locale reimpostato';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Chiudi Divine e riaprilo — al prossimo avvio verrà creato un nuovo database locale.';
 }

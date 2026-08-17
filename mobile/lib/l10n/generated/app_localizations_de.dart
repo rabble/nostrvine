@@ -12332,4 +12332,50 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Du bist offline.\nPrüfe deine Verbindung und versuch es nochmal.';
+
+  @override
+  String get dbFailureTitle => 'Lokale Datenbank konnte nicht entsperrt werden';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Ein Neustart hilft hier nicht. Das Zurücksetzen der lokalen Datenbank unten gibt Divine einen sauberen Start — dein Konto bleibt bestehen.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Starte Divine neu, nachdem du dein Gerät entsperrt hast. Wenn das weiterhin passiert, aktualisiere die App oder wende dich an den Support.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnose: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'Divine schließen';
+
+  @override
+  String get dbFailureResetAction => 'Lokale Datenbank zurücksetzen';
+
+  @override
+  String get dbFailureConfirmTitle => 'Lokale Datenbank zurücksetzen?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Dein Konto bleibt. Auf diesem Gerät gespeicherte Entwürfe und Clips werden gelöscht — Nachrichten und Feeds kommen aus dem Netzwerk zurück.';
+
+  @override
+  String get dbFailureResetConfirm => 'Zurücksetzen und schließen';
+
+  @override
+  String get dbFailureCancel => 'Abbrechen';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Das hat nicht geklappt. Schließe Divine und versuche es erneut.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'Lokale Datenbank zurückgesetzt';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Schließe Divine und öffne es erneut — der nächste Start legt eine frische lokale Datenbank an.';
 }

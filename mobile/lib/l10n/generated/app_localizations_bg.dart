@@ -12299,4 +12299,50 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Няма връзка с интернет.\nПровери връзката си и опитай пак.';
+
+  @override
+  String get dbFailureTitle => 'локалната база данни не може да се отключи';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Рестартирането няма да помогне. Нулирането на локалната база данни по-долу дава на Divine чист старт — акаунтът ти остава.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Рестартирай Divine, след като отключиш устройството си. Ако това продължава, обнови приложението или се свържи с поддръжката.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Диагностика: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'затвори Divine';
+
+  @override
+  String get dbFailureResetAction => 'нулирай локалната база данни';
+
+  @override
+  String get dbFailureConfirmTitle => 'да нулираме ли локалната база данни?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Акаунтът ти остава. Черновите и клиповете, запазени на това устройство, се изтриват — съобщенията и емисиите се връщат от мрежата.';
+
+  @override
+  String get dbFailureResetConfirm => 'нулирай и затвори';
+
+  @override
+  String get dbFailureCancel => 'отказ';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Това не сработи. Затвори Divine и опитай отново.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'локалната база данни е нулирана';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Затвори Divine и го отвори отново — следващото стартиране изгражда нова локална база данни.';
 }

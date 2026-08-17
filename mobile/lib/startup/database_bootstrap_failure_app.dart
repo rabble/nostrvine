@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter/services.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 
 /// Result of resolving the DB cipher key during app startup.
@@ -28,6 +30,7 @@ Future<DatabaseBootstrapStartupResult> resolveDatabaseBootstrapForAppStart({
   required Future<String?> Function() resolveCipherKey,
   required void Function(Widget app) runApp,
   required VoidCallback removeNativeSplash,
+  Locale? locale,
   Future<void> Function(Object error, StackTrace stack)?
   repairLocalDatabaseCache,
   bool Function(Object error)? shouldRepairLocalDatabaseCache,
@@ -52,6 +55,7 @@ Future<DatabaseBootstrapStartupResult> resolveDatabaseBootstrapForAppStart({
       DatabaseBootstrapFailureApp(
         error: error,
         stack: stack,
+        locale: locale,
         onResetLocalDatabase: resetLocalDatabase,
       ),
     );
@@ -84,13 +88,6 @@ const _diagnosticStyle = TextStyle(
   decoration: TextDecoration.none,
 );
 
-/// Titles are reused as screen-reader announcements when a step replaces the
-/// one before it, so they live next to each other rather than inline.
-const _failureTitle = "couldn't unlock your local database";
-const _confirmTitle = 'reset your local database?';
-const _resetDoneTitle = 'local database reset';
-const _resetFailedMessage = "That didn't work. Close Divine and try again.";
-
 /// Ceiling on the manual reset. It renames a few files and clears
 /// SharedPreferences, so anything approaching this means a platform channel is
 /// wedged — better to report a failure the user can act on than to leave the
@@ -104,6 +101,7 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   const DatabaseBootstrapFailureApp({
     required this.error,
     required this.stack,
+    this.locale,
     this.onCloseApp = SystemNavigator.pop,
     this.onResetLocalDatabase,
     super.key,
@@ -111,6 +109,15 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
 
   final Object error;
   final StackTrace stack;
+
+  /// The user's in-app language override, when they set one.
+  ///
+  /// `null` falls through to [resolveAppUiLocale] on the device locales, which
+  /// is also what the running app does. Passed in rather than read here so
+  /// this screen keeps no dependency on SharedPreferences — it has to render
+  /// even when startup did not get far enough to have one.
+  final Locale? locale;
+
   final VoidCallback onCloseApp;
 
   /// Clears the local database so the next launch rebuilds it.
@@ -130,6 +137,14 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      // This screen replaces the whole app before startup finishes, so it
+      // needs its own delegates — nothing above it has registered any. It
+      // shipped entirely in English to all 21 other locales without them.
+      // AppLocalizations does not touch the database, so it is safe here.
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localeListResolutionCallback: resolveAppUiLocale,
       home: _FailureScreen(
         error: error,
         stack: stack,
@@ -198,7 +213,7 @@ class _FailureScreenState extends State<_FailureScreen> {
         _resetting = false;
         _resetFailed = true;
       });
-      _announce(_resetFailedMessage);
+      _announce(context.l10n.dbFailureResetFailed);
       return;
     }
     if (mounted) {
@@ -206,7 +221,7 @@ class _FailureScreenState extends State<_FailureScreen> {
         _step = _Step.done;
         _resetting = false;
       });
-      _announce(_resetDoneTitle);
+      _announce(context.l10n.dbFailureResetDoneTitle);
     }
     // Finishes the activity on Android. On iOS the process stays alive, which
     // is what the done step renders for.
@@ -235,14 +250,18 @@ class _FailureScreenState extends State<_FailureScreen> {
                   stack: widget.stack,
                   onCloseApp: widget.onCloseApp,
                   onResetRequested: _canReset
-                      ? () => _goTo(_Step.confirm, _confirmTitle)
+                      ? () => _goTo(
+                          _Step.confirm,
+                          context.l10n.dbFailureConfirmTitle,
+                        )
                       : null,
                 ),
                 _Step.confirm => _ResetConfirmView(
                   isResetting: _resetting,
                   didFail: _resetFailed,
                   onConfirm: _resetLocalDatabase,
-                  onCancel: () => _goTo(_Step.failure, _failureTitle),
+                  onCancel: () =>
+                      _goTo(_Step.failure, context.l10n.dbFailureTitle),
                 ),
                 _Step.done => _ResetDoneView(onCloseApp: widget.onCloseApp),
               },
@@ -270,14 +289,13 @@ class _FailureView extends StatelessWidget {
   /// The advice and the reset offer answer the same question, so one condition
   /// decides both: unlocking and restarting is the fix for the transient
   /// keystore case, and misleading for the diagnoses a reset is offered for.
-  String get _advice => onResetRequested != null
-      ? "A restart won't fix this one. Resetting the local database below "
-            'gives Divine a clean start — your account stays.'
-      : 'Restart Divine after unlocking your device. If this '
-            'keeps happening, update the app or contact support.';
+  String _advice(AppLocalizations l10n) => onResetRequested != null
+      ? l10n.dbFailureAdviceResettable
+      : l10n.dbFailureAdviceRestart;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -287,29 +305,29 @@ class _FailureView extends StatelessWidget {
           size: 48,
         ),
         const SizedBox(height: 20),
-        const Text(
-          _failureTitle,
+        Text(
+          l10n.dbFailureTitle,
           textAlign: TextAlign.center,
           style: _titleStyle,
         ),
         const SizedBox(height: 12),
-        Text(_advice, textAlign: TextAlign.center, style: _bodyStyle),
+        Text(_advice(l10n), textAlign: TextAlign.center, style: _bodyStyle),
         const SizedBox(height: 12),
         Text(
-          'Diagnostic: ${databaseBootstrapDiagnosticCode(error)}',
+          l10n.dbFailureDiagnostic(databaseBootstrapDiagnosticCode(error)),
           textAlign: TextAlign.center,
           style: _diagnosticStyle,
         ),
         const SizedBox(height: 24),
         DivineButton(
-          label: 'close Divine',
+          label: l10n.dbFailureCloseApp,
           onPressed: onCloseApp,
           type: DivineButtonType.secondary,
         ),
         if (onResetRequested != null) ...[
           const SizedBox(height: 12),
           DivineButton(
-            label: 'reset local database',
+            label: l10n.dbFailureResetAction,
             onPressed: onResetRequested,
             type: DivineButtonType.link,
           ),
@@ -338,6 +356,7 @@ class _ResetConfirmView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -347,36 +366,35 @@ class _ResetConfirmView extends StatelessWidget {
           size: 48,
         ),
         const SizedBox(height: 20),
-        const Text(
-          _confirmTitle,
+        Text(
+          l10n.dbFailureConfirmTitle,
           textAlign: TextAlign.center,
           style: _titleStyle,
         ),
         const SizedBox(height: 12),
-        const Text(
-          'Your account stays. Drafts and clips saved on this device are '
-          'deleted — messages and feeds come back from the network.',
+        Text(
+          l10n.dbFailureConfirmBody,
           textAlign: TextAlign.center,
           style: _bodyStyle,
         ),
         if (didFail) ...[
           const SizedBox(height: 12),
           Text(
-            _resetFailedMessage,
+            l10n.dbFailureResetFailed,
             textAlign: TextAlign.center,
             style: _diagnosticStyle.copyWith(color: VineTheme.error),
           ),
         ],
         const SizedBox(height: 24),
         DivineButton(
-          label: 'reset and close',
+          label: l10n.dbFailureResetConfirm,
           onPressed: isResetting ? null : onConfirm,
           isLoading: isResetting,
           type: DivineButtonType.error,
         ),
         const SizedBox(height: 12),
         DivineButton(
-          label: 'cancel',
+          label: l10n.dbFailureCancel,
           onPressed: isResetting ? null : onCancel,
           type: DivineButtonType.secondary,
         ),
@@ -398,6 +416,7 @@ class _ResetDoneView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -407,21 +426,20 @@ class _ResetDoneView extends StatelessWidget {
           size: 48,
         ),
         const SizedBox(height: 20),
-        const Text(
-          _resetDoneTitle,
+        Text(
+          l10n.dbFailureResetDoneTitle,
           textAlign: TextAlign.center,
           style: _titleStyle,
         ),
         const SizedBox(height: 12),
-        const Text(
-          'Close Divine and open it again — the next launch builds a fresh '
-          'local database.',
+        Text(
+          l10n.dbFailureResetDoneBody,
           textAlign: TextAlign.center,
           style: _bodyStyle,
         ),
         const SizedBox(height: 24),
         DivineButton(
-          label: 'close Divine',
+          label: l10n.dbFailureCloseApp,
           onPressed: onCloseApp,
           type: DivineButtonType.secondary,
         ),

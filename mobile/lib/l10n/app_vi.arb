@@ -7047,5 +7047,18 @@
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} người theo dõi}}",
   "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}",
   "feedOutageMessage": "Hiện không tải được video.\nLỗi từ phía chúng tôi — chúng tôi đang khắc phục.",
-  "feedOfflineMessage": "Bạn đang ngoại tuyến.\nKiểm tra kết nối rồi thử lại."
+  "feedOfflineMessage": "Bạn đang ngoại tuyến.\nKiểm tra kết nối rồi thử lại.",
+  "dbFailureTitle": "không thể mở khóa cơ sở dữ liệu cục bộ của bạn",
+  "dbFailureAdviceResettable": "Khởi động lại sẽ không khắc phục được. Đặt lại cơ sở dữ liệu cục bộ bên dưới giúp Divine bắt đầu lại từ đầu — tài khoản của bạn vẫn còn.",
+  "dbFailureAdviceRestart": "Khởi động lại Divine sau khi mở khóa thiết bị. Nếu vẫn tiếp diễn, hãy cập nhật ứng dụng hoặc liên hệ bộ phận hỗ trợ.",
+  "dbFailureDiagnostic": "Chẩn đoán: {code}",
+  "dbFailureCloseApp": "đóng Divine",
+  "dbFailureResetAction": "đặt lại cơ sở dữ liệu cục bộ",
+  "dbFailureConfirmTitle": "đặt lại cơ sở dữ liệu cục bộ của bạn?",
+  "dbFailureConfirmBody": "Tài khoản của bạn vẫn còn. Bản nháp và clip đã lưu trên thiết bị này sẽ bị xóa — tin nhắn và bảng tin sẽ được tải lại từ mạng.",
+  "dbFailureResetConfirm": "đặt lại và đóng",
+  "dbFailureCancel": "hủy",
+  "dbFailureResetFailed": "Không thành công. Hãy đóng Divine và thử lại.",
+  "dbFailureResetDoneTitle": "đã đặt lại cơ sở dữ liệu cục bộ",
+  "dbFailureResetDoneBody": "Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới."
 }

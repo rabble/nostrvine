@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} seguidor} other{{formattedCount} seguidores}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} videos}}",
   "feedOutageMessage": "Los videos no se están cargando.\nEs cosa nuestra, no tuya: ya estamos en ello.",
-  "feedOfflineMessage": "Estás sin conexión.\nRevisa tu conexión e inténtalo de nuevo."
+  "feedOfflineMessage": "Estás sin conexión.\nRevisa tu conexión e inténtalo de nuevo.",
+    "dbFailureTitle": "no se pudo desbloquear tu base de datos local",
+    "dbFailureAdviceResettable": "Reiniciar no va a arreglar esto. Restablecer la base de datos local de abajo le da a Divine un comienzo limpio — tu cuenta se mantiene.",
+    "dbFailureAdviceRestart": "Reiniciá Divine después de desbloquear tu dispositivo. Si esto sigue pasando, actualizá la app o contactá con soporte.",
+    "dbFailureDiagnostic": "Diagnóstico: {code}",
+    "dbFailureCloseApp": "cerrar Divine",
+    "dbFailureResetAction": "restablecer base de datos local",
+    "dbFailureConfirmTitle": "¿restablecer tu base de datos local?",
+    "dbFailureConfirmBody": "Tu cuenta se mantiene. Los borradores y clips guardados en este dispositivo se eliminan — los mensajes y feeds vuelven desde la red.",
+    "dbFailureResetConfirm": "restablecer y cerrar",
+    "dbFailureCancel": "cancelar",
+    "dbFailureResetFailed": "Eso no funcionó. Cerrá Divine y probá de nuevo.",
+    "dbFailureResetDoneTitle": "base de datos local restablecida",
+    "dbFailureResetDoneBody": "Cerrá Divine y volvé a abrirlo — el próximo inicio crea una base de datos local nueva."
 }

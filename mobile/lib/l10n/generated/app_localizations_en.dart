@@ -12128,4 +12128,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'You\'re offline.\nCheck your connection and try again.';
+
+  @override
+  String get dbFailureTitle => 'couldn\'t unlock your local database';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'A restart won\'t fix this one. Resetting the local database below gives Divine a clean start — your account stays.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Restart Divine after unlocking your device. If this keeps happening, update the app or contact support.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostic: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'close Divine';
+
+  @override
+  String get dbFailureResetAction => 'reset local database';
+
+  @override
+  String get dbFailureConfirmTitle => 'reset your local database?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Your account stays. Drafts and clips saved on this device are deleted — messages and feeds come back from the network.';
+
+  @override
+  String get dbFailureResetConfirm => 'reset and close';
+
+  @override
+  String get dbFailureCancel => 'cancel';
+
+  @override
+  String get dbFailureResetFailed =>
+      'That didn\'t work. Close Divine and try again.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'local database reset';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Close Divine and open it again — the next launch builds a fresh local database.';
 }

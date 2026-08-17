@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} abonné} other{{formattedCount} abonnés}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} vidéo} other{{formattedCount} vidéos}}",
   "feedOutageMessage": "Les vidéos ne se chargent pas pour le moment.\nÇa vient de nous, pas de vous — on s'en occupe.",
-  "feedOfflineMessage": "Vous êtes hors ligne.\nVérifiez votre connexion et réessayez."
+  "feedOfflineMessage": "Vous êtes hors ligne.\nVérifiez votre connexion et réessayez.",
+    "dbFailureTitle": "impossible de déverrouiller votre base de données locale",
+    "dbFailureAdviceResettable": "Un redémarrage ne réglera pas ça. Réinitialiser la base de données locale ci-dessous donne à Divine un nouveau départ — votre compte est conservé.",
+    "dbFailureAdviceRestart": "Redémarrez Divine après avoir déverrouillé votre appareil. Si cela persiste, mettez l'application à jour ou contactez l'assistance.",
+    "dbFailureDiagnostic": "Diagnostic : {code}",
+    "dbFailureCloseApp": "fermer Divine",
+    "dbFailureResetAction": "réinitialiser la base de données locale",
+    "dbFailureConfirmTitle": "réinitialiser votre base de données locale ?",
+    "dbFailureConfirmBody": "Votre compte est conservé. Les brouillons et clips enregistrés sur cet appareil sont supprimés — les messages et fils reviennent du réseau.",
+    "dbFailureResetConfirm": "réinitialiser et fermer",
+    "dbFailureCancel": "annuler",
+    "dbFailureResetFailed": "Ça n'a pas fonctionné. Fermez Divine et réessayez.",
+    "dbFailureResetDoneTitle": "base de données locale réinitialisée",
+    "dbFailureResetDoneBody": "Fermez Divine et rouvrez-le — le prochain lancement crée une nouvelle base de données locale."
 }

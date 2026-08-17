@@ -3,11 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
+  // Resolved from the ARB rather than hardcoded, so the assertions
+  // survive copy changes and break loudly if the screen stops reading
+  // from l10n (it shipped fully hardcoded until this change).
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   group('resolveDatabaseBootstrapForAppStart', () {
     test('returns the cipher key without rendering failure UI', () async {
       var removedSplash = false;
@@ -277,15 +283,18 @@ void main() {
       );
 
       expect(
-        find.text("couldn't unlock your local database"),
+        find.text(l10n.dbFailureTitle),
         findsOneWidget,
       );
-      expect(find.textContaining('Restart Divine'), findsOneWidget);
+      expect(find.text(l10n.dbFailureAdviceRestart), findsOneWidget);
       // The rendered code is what a support report is triaged from, so pin the
       // value rather than just the label.
-      expect(find.text('Diagnostic: db-secure-storage'), findsOneWidget);
+      expect(
+        find.text(l10n.dbFailureDiagnostic('db-secure-storage')),
+        findsOneWidget,
+      );
 
-      await tester.tap(find.text('close Divine'));
+      await tester.tap(find.text(l10n.dbFailureCloseApp));
       expect(closed, isTrue);
     });
 
@@ -343,7 +352,7 @@ void main() {
         ),
       );
 
-      expect(find.text('reset local database'), findsNothing);
+      expect(find.text(l10n.dbFailureResetAction), findsNothing);
     });
 
     testWidgets('offers no reset for a locked keystore', (tester) async {
@@ -359,8 +368,11 @@ void main() {
         ),
       );
 
-      expect(find.text('Diagnostic: db-secure-storage'), findsOneWidget);
-      expect(find.text('reset local database'), findsNothing);
+      expect(
+        find.text(l10n.dbFailureDiagnostic('db-secure-storage')),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.dbFailureResetAction), findsNothing);
     });
 
     testWidgets('drops the unlock-and-restart advice when a reset is offered', (
@@ -377,11 +389,11 @@ void main() {
       );
 
       expect(
-        find.textContaining('Restart Divine after unlocking'),
+        find.text(l10n.dbFailureAdviceRestart),
         findsNothing,
       );
       expect(
-        find.textContaining("A restart won't fix this one"),
+        find.text(l10n.dbFailureAdviceResettable),
         findsOneWidget,
       );
     });
@@ -399,14 +411,14 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('reset local database'));
+      await tester.tap(find.text(l10n.dbFailureResetAction));
       await tester.pump();
 
-      expect(find.text('reset your local database?'), findsOneWidget);
-      expect(find.textContaining('Your account stays'), findsOneWidget);
+      expect(find.text(l10n.dbFailureConfirmTitle), findsOneWidget);
+      expect(find.text(l10n.dbFailureConfirmBody), findsOneWidget);
       expect(resetDiagnosis, isNull, reason: 'confirmation must gate the wipe');
 
-      await tester.tap(find.text('reset and close'));
+      await tester.tap(find.text(l10n.dbFailureResetConfirm));
       await tester.pump();
 
       expect(resetDiagnosis, DatabaseBootstrapDiagnosis.bootstrapFailed);
@@ -426,9 +438,9 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('reset local database'));
+      await tester.tap(find.text(l10n.dbFailureResetAction));
       await tester.pump();
-      await tester.tap(find.text('reset and close'));
+      await tester.tap(find.text(l10n.dbFailureResetConfirm));
       await tester.pump();
 
       expect(resetDiagnosis, DatabaseBootstrapDiagnosis.databaseUnreadable);
@@ -445,12 +457,12 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('reset local database'));
+      await tester.tap(find.text(l10n.dbFailureResetAction));
       await tester.pump();
-      await tester.tap(find.text('cancel'));
+      await tester.tap(find.text(l10n.dbFailureCancel));
       await tester.pump();
 
-      expect(find.text("couldn't unlock your local database"), findsOneWidget);
+      expect(find.text(l10n.dbFailureTitle), findsOneWidget);
       expect(resets, isZero);
     });
 
@@ -469,12 +481,12 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('reset local database'));
+      await tester.tap(find.text(l10n.dbFailureResetAction));
       await tester.pump();
-      await tester.tap(find.text('reset and close'));
+      await tester.tap(find.text(l10n.dbFailureResetConfirm));
       await tester.pump();
 
-      expect(find.textContaining("That didn't work"), findsOneWidget);
+      expect(find.text(l10n.dbFailureResetFailed), findsOneWidget);
       expect(
         closed,
         isFalse,
@@ -498,16 +510,16 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('reset local database'));
+      await tester.tap(find.text(l10n.dbFailureResetAction));
       await tester.pump();
-      await tester.tap(find.text('reset and close'));
+      await tester.tap(find.text(l10n.dbFailureResetConfirm));
       await tester.pump();
 
-      expect(find.text('local database reset'), findsOneWidget);
-      expect(find.text('reset and close'), findsNothing);
+      expect(find.text(l10n.dbFailureResetDoneTitle), findsOneWidget);
+      expect(find.text(l10n.dbFailureResetConfirm), findsNothing);
       expect(closes, equals(1));
 
-      await tester.tap(find.text('close Divine'));
+      await tester.tap(find.text(l10n.dbFailureCloseApp));
       expect(
         closes,
         equals(2),
@@ -526,17 +538,17 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('reset local database'));
+      await tester.tap(find.text(l10n.dbFailureResetAction));
       await tester.pump();
-      await tester.tap(find.text('reset and close'));
+      await tester.tap(find.text(l10n.dbFailureResetConfirm));
       await tester.pump(const Duration(seconds: 16));
 
-      expect(find.textContaining("That didn't work"), findsOneWidget);
+      expect(find.text(l10n.dbFailureResetFailed), findsOneWidget);
 
-      await tester.tap(find.text('cancel'));
+      await tester.tap(find.text(l10n.dbFailureCancel));
       await tester.pump();
       expect(
-        find.text("couldn't unlock your local database"),
+        find.text(l10n.dbFailureTitle),
         findsOneWidget,
         reason: 'a wedged platform call must not disable the way back',
       );
@@ -553,19 +565,19 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('reset local database'));
+      await tester.tap(find.text(l10n.dbFailureResetAction));
       await tester.pump();
-      await tester.tap(find.text('reset and close'));
+      await tester.tap(find.text(l10n.dbFailureResetConfirm));
       await tester.pump();
-      expect(find.textContaining("That didn't work"), findsOneWidget);
+      expect(find.text(l10n.dbFailureResetFailed), findsOneWidget);
 
-      await tester.tap(find.text('cancel'));
+      await tester.tap(find.text(l10n.dbFailureCancel));
       await tester.pump();
-      await tester.tap(find.text('reset local database'));
+      await tester.tap(find.text(l10n.dbFailureResetAction));
       await tester.pump();
 
       expect(
-        find.textContaining("That didn't work"),
+        find.text(l10n.dbFailureResetFailed),
         findsNothing,
         reason: 'the banner belongs to an attempt, not to the step',
       );
@@ -643,6 +655,70 @@ void main() {
             'expectation that follows passes no matter what the function does',
       );
       expect(shouldRepairLocalDatabaseCacheAfterBootstrapError(error), isFalse);
+    });
+  });
+
+  group('DatabaseBootstrapFailureApp localization', () {
+    // This screen shipped 100% hardcoded English to all 21 non-English
+    // locales — it builds its own MaterialApp before startup finishes, so it
+    // inherited no delegates from anywhere. These are the tests a regression
+    // back to constants cannot pass.
+    final es = lookupAppLocalizations(const Locale('es'));
+
+    testWidgets('renders the failure step in the requested locale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: DatabaseCipherStorageUnavailableException(
+            _lockedKeychainFailure(),
+          ),
+          stack: StackTrace.current,
+          locale: const Locale('es'),
+        ),
+      );
+
+      expect(find.text(es.dbFailureTitle), findsOneWidget);
+      expect(find.text(es.dbFailureAdviceRestart), findsOneWidget);
+      expect(find.text(es.dbFailureCloseApp), findsOneWidget);
+      expect(find.text(l10n.dbFailureTitle), findsNothing);
+    });
+
+    testWidgets('carries the locale through the reset confirmation', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('SQLITE_NOTADB: demo'),
+          stack: StackTrace.current,
+          locale: const Locale('es'),
+          onResetLocalDatabase: (_) async {},
+        ),
+      );
+
+      await tester.tap(find.text(es.dbFailureResetAction));
+      await tester.pumpAndSettle();
+
+      expect(find.text(es.dbFailureConfirmTitle), findsOneWidget);
+      expect(find.text(es.dbFailureConfirmBody), findsOneWidget);
+      expect(find.text(es.dbFailureCancel), findsOneWidget);
+    });
+
+    testWidgets('falls back to the device locale when none is given', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: DatabaseCipherStorageUnavailableException(
+            _lockedKeychainFailure(),
+          ),
+          stack: StackTrace.current,
+        ),
+      );
+
+      // resolveAppUiLocale picks English rather than supportedLocales.first,
+      // which is Arabic.
+      expect(find.text(l10n.dbFailureTitle), findsOneWidget);
     });
   });
 }

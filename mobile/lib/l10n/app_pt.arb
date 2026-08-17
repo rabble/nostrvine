@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} seguidor} other{{formattedCount} seguidores}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} vídeo} other{{formattedCount} vídeos}}",
   "feedOutageMessage": "Os vídeos não estão carregando.\nO problema é nosso, não seu — já estamos resolvendo.",
-  "feedOfflineMessage": "Você está offline.\nVerifique sua conexão e tente de novo."
+  "feedOfflineMessage": "Você está offline.\nVerifique sua conexão e tente de novo.",
+    "dbFailureTitle": "não foi possível desbloquear seu banco de dados local",
+    "dbFailureAdviceResettable": "Reiniciar não vai resolver. Redefinir o banco de dados local abaixo dá ao Divine um começo limpo — sua conta permanece.",
+    "dbFailureAdviceRestart": "Reinicie o Divine depois de desbloquear seu dispositivo. Se continuar acontecendo, atualize o app ou fale com o suporte.",
+    "dbFailureDiagnostic": "Diagnóstico: {code}",
+    "dbFailureCloseApp": "fechar o Divine",
+    "dbFailureResetAction": "redefinir banco de dados local",
+    "dbFailureConfirmTitle": "redefinir seu banco de dados local?",
+    "dbFailureConfirmBody": "Sua conta permanece. Rascunhos e clipes salvos neste dispositivo são excluídos — mensagens e feeds voltam da rede.",
+    "dbFailureResetConfirm": "redefinir e fechar",
+    "dbFailureCancel": "cancelar",
+    "dbFailureResetFailed": "Isso não funcionou. Feche o Divine e tente de novo.",
+    "dbFailureResetDoneTitle": "banco de dados local redefinido",
+    "dbFailureResetDoneBody": "Feche o Divine e abra de novo — a próxima inicialização cria um banco de dados local novo."
 }

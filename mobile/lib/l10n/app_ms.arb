@@ -7047,5 +7047,18 @@
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} pengikut}}",
   "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}",
   "feedOutageMessage": "Video tidak dapat dimuatkan sekarang.\nIni masalah kami, bukan anda — kami sedang membaikinya.",
-  "feedOfflineMessage": "Anda di luar talian.\nSemak sambungan anda dan cuba lagi."
+  "feedOfflineMessage": "Anda di luar talian.\nSemak sambungan anda dan cuba lagi.",
+  "dbFailureTitle": "tidak dapat membuka kunci pangkalan data setempat anda",
+  "dbFailureAdviceResettable": "Memulakan semula tidak akan membaikinya. Menetapkan semula pangkalan data setempat di bawah memberi Divine permulaan yang bersih — akaun anda kekal.",
+  "dbFailureAdviceRestart": "Mulakan semula Divine selepas membuka kunci peranti anda. Jika ini berterusan, kemas kini apl atau hubungi sokongan.",
+  "dbFailureDiagnostic": "Diagnostik: {code}",
+  "dbFailureCloseApp": "tutup Divine",
+  "dbFailureResetAction": "tetapkan semula pangkalan data setempat",
+  "dbFailureConfirmTitle": "tetapkan semula pangkalan data setempat anda?",
+  "dbFailureConfirmBody": "Akaun anda kekal. Draf dan klip yang disimpan pada peranti ini akan dipadamkan — mesej dan suapan kembali daripada rangkaian.",
+  "dbFailureResetConfirm": "tetapkan semula dan tutup",
+  "dbFailureCancel": "batal",
+  "dbFailureResetFailed": "Itu tidak berjaya. Tutup Divine dan cuba lagi.",
+  "dbFailureResetDoneTitle": "pangkalan data setempat ditetapkan semula",
+  "dbFailureResetDoneBody": "Tutup Divine dan buka semula — pelancaran seterusnya membina pangkalan data setempat yang baharu."
 }

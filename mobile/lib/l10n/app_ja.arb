@@ -5217,5 +5217,18 @@
   "socialProofFollowerCount": "{count, plural, other{フォロワー{formattedCount}人}}",
   "searchUserVideoCount": "{count, plural, other{{formattedCount}本の動画}}",
   "feedOutageMessage": "いま動画を読み込めません。\nこちらの不具合だよ。すぐ直すね。",
-  "feedOfflineMessage": "オフラインだよ。\n接続を確認して、もう一度試してね。"
+  "feedOfflineMessage": "オフラインだよ。\n接続を確認して、もう一度試してね。",
+    "dbFailureTitle": "ローカルデータベースのロックを解除できませんでした",
+    "dbFailureAdviceResettable": "再起動では解決しません。下のローカルデータベースをリセットすると Divine をきれいな状態から始められます。アカウントはそのまま残ります。",
+    "dbFailureAdviceRestart": "デバイスのロックを解除してから Divine を再起動してください。これが続く場合は、アプリを更新するかサポートにご連絡ください。",
+    "dbFailureDiagnostic": "診断: {code}",
+    "dbFailureCloseApp": "Divine を閉じる",
+    "dbFailureResetAction": "ローカルデータベースをリセット",
+    "dbFailureConfirmTitle": "ローカルデータベースをリセットしますか？",
+    "dbFailureConfirmBody": "アカウントはそのまま残ります。この端末に保存された下書きとクリップは削除されます。メッセージとフィードはネットワークから復元されます。",
+    "dbFailureResetConfirm": "リセットして閉じる",
+    "dbFailureCancel": "キャンセル",
+    "dbFailureResetFailed": "うまくいきませんでした。Divine を閉じてもう一度お試しください。",
+    "dbFailureResetDoneTitle": "ローカルデータベースをリセットしました",
+    "dbFailureResetDoneBody": "Divine を閉じてもう一度開いてください。次回の起動で新しいローカルデータベースが作成されます。"
 }

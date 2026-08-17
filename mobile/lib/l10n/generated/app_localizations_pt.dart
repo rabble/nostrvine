@@ -12273,4 +12273,51 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Você está offline.\nVerifique sua conexão e tente de novo.';
+
+  @override
+  String get dbFailureTitle =>
+      'não foi possível desbloquear seu banco de dados local';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Reiniciar não vai resolver. Redefinir o banco de dados local abaixo dá ao Divine um começo limpo — sua conta permanece.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'Reinicie o Divine depois de desbloquear seu dispositivo. Se continuar acontecendo, atualize o app ou fale com o suporte.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnóstico: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'fechar o Divine';
+
+  @override
+  String get dbFailureResetAction => 'redefinir banco de dados local';
+
+  @override
+  String get dbFailureConfirmTitle => 'redefinir seu banco de dados local?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Sua conta permanece. Rascunhos e clipes salvos neste dispositivo são excluídos — mensagens e feeds voltam da rede.';
+
+  @override
+  String get dbFailureResetConfirm => 'redefinir e fechar';
+
+  @override
+  String get dbFailureCancel => 'cancelar';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Isso não funcionou. Feche o Divine e tente de novo.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'banco de dados local redefinido';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Feche o Divine e abra de novo — a próxima inicialização cria um banco de dados local novo.';
 }

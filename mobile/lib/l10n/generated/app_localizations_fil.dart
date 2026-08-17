@@ -12330,4 +12330,50 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get feedOfflineMessage =>
       'Offline ka.\nTingnan ang koneksyon mo at subukan ulit.';
+
+  @override
+  String get dbFailureTitle => 'hindi ma-unlock ang iyong lokal na database';
+
+  @override
+  String get dbFailureAdviceResettable =>
+      'Hindi ito maaayos ng pag-restart. Ang pag-reset ng lokal na database sa ibaba ay nagbibigay sa Divine ng malinis na simula — mananatili ang iyong account.';
+
+  @override
+  String get dbFailureAdviceRestart =>
+      'I-restart ang Divine matapos i-unlock ang iyong device. Kung patuloy itong nangyayari, i-update ang app o makipag-ugnayan sa suporta.';
+
+  @override
+  String dbFailureDiagnostic(String code) {
+    return 'Diagnostic: $code';
+  }
+
+  @override
+  String get dbFailureCloseApp => 'isara ang Divine';
+
+  @override
+  String get dbFailureResetAction => 'i-reset ang lokal na database';
+
+  @override
+  String get dbFailureConfirmTitle => 'i-reset ang iyong lokal na database?';
+
+  @override
+  String get dbFailureConfirmBody =>
+      'Mananatili ang iyong account. Buburahin ang mga draft at clip na naka-save sa device na ito — babalik ang mga mensahe at feed mula sa network.';
+
+  @override
+  String get dbFailureResetConfirm => 'i-reset at isara';
+
+  @override
+  String get dbFailureCancel => 'kanselahin';
+
+  @override
+  String get dbFailureResetFailed =>
+      'Hindi ito gumana. Isara ang Divine at subukan ulit.';
+
+  @override
+  String get dbFailureResetDoneTitle => 'na-reset ang lokal na database';
+
+  @override
+  String get dbFailureResetDoneBody =>
+      'Isara ang Divine at buksan itong muli — gagawa ng bagong lokal na database sa susunod na paglulunsad.';
 }

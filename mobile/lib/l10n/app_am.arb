@@ -5342,5 +5342,18 @@
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} ተከታይ} other{{formattedCount} ተከታዮች}}",
   "searchUserVideoCount": "{count, plural, =1{{formattedCount} ቪዲዮ} other{{formattedCount} ቪዲዮዎች}}",
   "feedOutageMessage": "ቪዲዮዎች አሁን እየተጫኑ አይደሉም።\nችግሩ የእኛ ነው፤ እየሠራንበት ነው።",
-  "feedOfflineMessage": "ከመስመር ውጭ ነዎት።\nግንኙነትዎን አረጋግጠው እንደገና ይሞክሩ።"
+  "feedOfflineMessage": "ከመስመር ውጭ ነዎት።\nግንኙነትዎን አረጋግጠው እንደገና ይሞክሩ።",
+    "dbFailureTitle": "የአካባቢ ዳታቤዝዎን መክፈት አልተቻለም",
+    "dbFailureAdviceResettable": "እንደገና ማስጀመር ይህን አያስተካክለውም። ከታች ያለውን የአካባቢ ዳታቤዝ ዳግም ማስጀመር ለDivine ንጹህ ጅምር ይሰጣል — መለያዎ ይቀራል።",
+    "dbFailureAdviceRestart": "መሣሪያዎን ከከፈቱ በኋላ Divineን እንደገና ያስጀምሩ። ይህ የሚቀጥል ከሆነ መተግበሪያውን ያዘምኑ ወይም ድጋፍን ያግኙ።",
+    "dbFailureDiagnostic": "ምርመራ: {code}",
+    "dbFailureCloseApp": "Divineን ዝጋ",
+    "dbFailureResetAction": "የአካባቢ ዳታቤዝ ዳግም አስጀምር",
+    "dbFailureConfirmTitle": "የአካባቢ ዳታቤዝዎን ዳግም ያስጀምሩ?",
+    "dbFailureConfirmBody": "መለያዎ ይቀራል። በዚህ መሣሪያ ላይ የተቀመጡ ረቂቆች እና ክሊፖች ይሰረዛሉ — መልእክቶች እና ምግቦች ከአውታረ መረቡ ይመለሳሉ።",
+    "dbFailureResetConfirm": "ዳግም አስጀምር እና ዝጋ",
+    "dbFailureCancel": "ሰርዝ",
+    "dbFailureResetFailed": "ያ አልሰራም። Divineን ዘግተው እንደገና ይሞክሩ።",
+    "dbFailureResetDoneTitle": "የአካባቢ ዳታቤዝ ዳግም ተጀምሯል",
+    "dbFailureResetDoneBody": "Divineን ዝጋ እና እንደገና ክፈተው — ቀጣዩ ጅምር አዲስ የአካባቢ ዳታቤዝ ይገነባል።"
 }

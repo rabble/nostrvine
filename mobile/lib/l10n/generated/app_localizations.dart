@@ -20709,6 +20709,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'re offline.\nCheck your connection and try again.'**
   String get feedOfflineMessage;
+
+  /// Title of the fail-closed startup screen shown when the encrypted local database cannot be opened.
+  ///
+  /// In en, this message translates to:
+  /// **'couldn\'t unlock your local database'**
+  String get dbFailureTitle;
+
+  /// Advice on the database-failure screen when a reset is offered, because the database is provably unusable.
+  ///
+  /// In en, this message translates to:
+  /// **'A restart won\'t fix this one. Resetting the local database below gives Divine a clean start — your account stays.'**
+  String get dbFailureAdviceResettable;
+
+  /// Advice on the database-failure screen when no reset is offered, because the database is intact and only its keystore was unreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart Divine after unlocking your device. If this keeps happening, update the app or contact support.'**
+  String get dbFailureAdviceRestart;
+
+  /// Short diagnostic code rendered on the database-failure screen so a support report can name the cause without a stack trace.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostic: {code}'**
+  String dbFailureDiagnostic(String code);
+
+  /// Button that quits the app from the database-failure screen.
+  ///
+  /// In en, this message translates to:
+  /// **'close Divine'**
+  String get dbFailureCloseApp;
+
+  /// Button that opens the confirmation step for the destructive local-database reset.
+  ///
+  /// In en, this message translates to:
+  /// **'reset local database'**
+  String get dbFailureResetAction;
+
+  /// Title of the confirmation step before the local database is reset.
+  ///
+  /// In en, this message translates to:
+  /// **'reset your local database?'**
+  String get dbFailureConfirmTitle;
+
+  /// Body of the confirmation step explaining what a local-database reset deletes and what survives.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account stays. Drafts and clips saved on this device are deleted — messages and feeds come back from the network.'**
+  String get dbFailureConfirmBody;
+
+  /// Button that performs the local-database reset and then closes the app.
+  ///
+  /// In en, this message translates to:
+  /// **'reset and close'**
+  String get dbFailureResetConfirm;
+
+  /// Button that returns from the reset confirmation to the failure screen.
+  ///
+  /// In en, this message translates to:
+  /// **'cancel'**
+  String get dbFailureCancel;
+
+  /// Message shown when the local-database reset itself failed or timed out.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work. Close Divine and try again.'**
+  String get dbFailureResetFailed;
+
+  /// Title of the terminal step after a successful local-database reset.
+  ///
+  /// In en, this message translates to:
+  /// **'local database reset'**
+  String get dbFailureResetDoneTitle;
+
+  /// Body of the terminal step after a successful reset, telling the user to relaunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Divine and open it again — the next launch builds a fresh local database.'**
+  String get dbFailureResetDoneBody;
 }
 
 class _AppLocalizationsDelegate
