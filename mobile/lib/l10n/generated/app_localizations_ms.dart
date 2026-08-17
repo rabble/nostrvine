@@ -9,6 +9,59 @@ class AppLocalizationsMs extends AppLocalizations {
   AppLocalizationsMs([String locale = 'ms']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Pemulihan klip';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Mencari rakaman yang disimpan di bawah akaun lain dan fail video yang tidak lagi dirujuk oleh mana-mana entri.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Imbas';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Klip yang boleh dipulihkan tidak dapat diimbas';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Kelihatan sekarang: $clips klip, $drafts draf';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts =>
+      'Tersembunyi di bawah akaun lain';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'Entri tanpa akaun';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips klip, $drafts draf';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Alih ke akaun ini';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Fail tanpa rujukan: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Bina semula dalam pustaka';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Tiada apa-apa untuk dipulihkan';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return '$count klip dipulihkan';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Laporan pemulihan disalin';
+
+  @override
   String get devOptionsStorageFootprint => 'Penggunaan storan';
 
   @override

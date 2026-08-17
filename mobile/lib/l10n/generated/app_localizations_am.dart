@@ -9,6 +9,57 @@ class AppLocalizationsAm extends AppLocalizations {
   AppLocalizationsAm([String locale = 'am']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'የክሊፕ መልሶ ማግኛ';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'በሌላ መለያ ስር የተቀመጡ ቀረጻዎችን እና ማንኛውም ግቤት የማይጠቅሳቸውን የቪዲዮ ፋይሎችን ያገኛል።';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'ቃኝ';
+
+  @override
+  String get devOptionsClipRecoveryFailure => 'መልሶ ሊገኙ የሚችሉ ክሊፖችን መፈለግ አልተቻለም';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'አሁን የሚታዩ፦ $clips ክሊፖች፣ $drafts ረቂቆች';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'በሌሎች መለያዎች ስር የተደበቁ';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'መለያ የሌላቸው ግቤቶች';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips ክሊፖች፣ $drafts ረቂቆች';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'ወደዚህ መለያ አዛውር';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'ያልተጠቀሱ ፋይሎች፦ $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'በቤተ-መጻሕፍት ውስጥ መልሶ ገንባ';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'መልሶ የሚገኝ ነገር የለም';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return '$count ክሊፖች ተመልሰዋል';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'የመልሶ ማግኛ ሪፖርት ተቀድቷል';
+
+  @override
   String get devOptionsStorageFootprint => 'የማከማቻ አጠቃቀም';
 
   @override

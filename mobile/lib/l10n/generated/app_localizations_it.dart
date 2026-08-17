@@ -9,6 +9,59 @@ class AppLocalizationsIt extends AppLocalizations {
   AppLocalizationsIt([String locale = 'it']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Recupero clip';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Trova registrazioni salvate con un altro account e file video a cui nessuna voce fa più riferimento.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Analizza';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Impossibile cercare clip recuperabili';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Visibili ora: $clips clip, $drafts bozze';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts =>
+      'Nascosti sotto altri account';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'Voci senza account';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips clip, $drafts bozze';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Sposta in questo account';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'File non referenziati: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Ricostruisci nella libreria';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Nulla da recuperare';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return '$count clip recuperate';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Rapporto di recupero copiato';
+
+  @override
   String get devOptionsStorageFootprint => 'Spazio occupato';
 
   @override

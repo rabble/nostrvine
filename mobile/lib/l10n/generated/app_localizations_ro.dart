@@ -9,6 +9,58 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Recuperare clipuri';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Găsește înregistrări stocate în alt cont și fișiere video la care nu mai face referire nicio intrare.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Scanează';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Clipurile recuperabile nu au putut fi căutate';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Vizibile acum: $clips clipuri, $drafts ciorne';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Ascunse în alte conturi';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'Intrări fără cont';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips clipuri, $drafts ciorne';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Mută în acest cont';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Fișiere fără referință: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Reconstruiește în bibliotecă';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Nimic de recuperat';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return '$count clipuri recuperate';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Raport de recuperare copiat';
+
+  @override
   String get devOptionsStorageFootprint => 'Spațiu ocupat';
 
   @override

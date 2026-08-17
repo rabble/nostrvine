@@ -9,6 +9,59 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Clipherstel';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Vindt opnamen die onder een ander account staan en videobestanden waarnaar geen enkel item meer verwijst.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Scannen';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Kan niet scannen op herstelbare clips';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Nu zichtbaar: $clips clips, $drafts concepten';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts =>
+      'Verborgen onder andere accounts';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'Items zonder account';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips clips, $drafts concepten';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Naar dit account verplaatsen';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Bestanden zonder verwijzing: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Herstellen in bibliotheek';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Niets te herstellen';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return '$count clips hersteld';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Herstelrapport gekopieerd';
+
+  @override
   String get devOptionsStorageFootprint => 'Opslaggebruik';
 
   @override

@@ -9,6 +9,58 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'استرداد المقاطع';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'يعثر على التسجيلات المحفوظة ضمن حساب آخر وعلى ملفات الفيديو التي لم يعد أي سجل يشير إليها.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'فحص';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'تعذر البحث عن مقاطع قابلة للاسترداد';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'ظاهر الآن: $clips مقاطع، $drafts مسودات';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'مخفية ضمن حسابات أخرى';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'سجلات بلا حساب';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips مقاطع، $drafts مسودات';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'نقل إلى هذا الحساب';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'ملفات غير مُشار إليها: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'إعادة البناء في المكتبة';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'لا يوجد ما يمكن استرداده';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return 'تم استرداد $count مقاطع';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'تم نسخ تقرير الاسترداد';
+
+  @override
   String get devOptionsStorageFootprint => 'مساحة التخزين المستخدمة';
 
   @override

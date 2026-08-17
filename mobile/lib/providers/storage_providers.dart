@@ -1,10 +1,13 @@
-// ABOUTME: Riverpod provider for the settings "Storage" screen service.
+// ABOUTME: Riverpod providers for the settings "Storage" screen service and
+// ABOUTME: the developer clip-recovery tool.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/services/clip_recovery_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -27,3 +30,18 @@ final storageManagementServiceProvider = Provider<StorageManagementService>(
     );
   },
 );
+
+/// Provides the [ClipRecoveryService] for the developer recovery tool.
+///
+/// The DAOs are handed over unscoped on purpose — the tool exists to see rows
+/// the owner-scoped queries hide. The clip library supplies the account to
+/// recover *to*, so this rebuilds when the account changes.
+final clipRecoveryServiceProvider = Provider<ClipRecoveryService>((ref) {
+  final db = ref.watch(databaseProvider);
+  return ClipRecoveryService(
+    clipsDao: db.clipsDao,
+    draftsDao: db.draftsDao,
+    clipCategoriesDao: db.clipCategoriesDao,
+    clipLibrary: ref.watch(clipLibraryServiceProvider),
+  );
+});

@@ -9,6 +9,57 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'クリップの復旧';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      '別のアカウントに保存された録画と、どの項目からも参照されていない動画ファイルを探します。';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'スキャン';
+
+  @override
+  String get devOptionsClipRecoveryFailure => '復旧できるクリップを検索できませんでした';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return '現在表示中: クリップ $clips 件、下書き $drafts 件';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => '他のアカウントに隠れています';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'アカウントのない項目';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return 'クリップ $clips 件、下書き $drafts 件';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'このアカウントに移動';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return '参照されていないファイル: $count 件 ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'ライブラリに復元';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => '復旧するものはありません';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return '$count 件のクリップを復旧しました';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => '復旧レポートをコピーしました';
+
+  @override
   String get devOptionsStorageFootprint => 'ストレージ使用量';
 
   @override

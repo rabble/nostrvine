@@ -9,6 +9,58 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Klippåterställning';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Hittar inspelningar som lagrats under ett annat konto och videofiler som ingen post längre refererar till.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Sök igenom';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Kunde inte söka efter återställningsbara klipp';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Synliga nu: $clips klipp, $drafts utkast';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Dolda under andra konton';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'Poster utan konto';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips klipp, $drafts utkast';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Flytta till detta konto';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Filer utan referens: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Återskapa i biblioteket';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Inget att återställa';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return 'Återställde $count klipp';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Återställningsrapport kopierad';
+
+  @override
   String get devOptionsStorageFootprint => 'Lagringsanvändning';
 
   @override

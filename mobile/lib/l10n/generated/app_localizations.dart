@@ -138,6 +138,90 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
+  /// Header of the Developer Options section that recovers clips the app can no longer show.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip Recovery'**
+  String get devOptionsClipRecovery;
+
+  /// Explains that the tool finds clips hidden under another account plus video files with no database row.
+  ///
+  /// In en, this message translates to:
+  /// **'Finds recordings stored under another account and video files no entry references any more.'**
+  String get devOptionsClipRecoveryDescription;
+
+  /// Button that starts the clip-recovery scan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get devOptionsClipRecoveryScan;
+
+  /// Shown when the clip-recovery scan failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not scan for recoverable clips'**
+  String get devOptionsClipRecoveryFailure;
+
+  /// How much of the local library the signed-in account can already see.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible now: {clips} clips, {drafts} drafts'**
+  String devOptionsClipRecoveryVisible(int clips, int drafts);
+
+  /// Subheading above the groups of rows stored under a different account.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden under other accounts'**
+  String get devOptionsClipRecoveryOtherAccounts;
+
+  /// Label for a group of rows that carry no account at all.
+  ///
+  /// In en, this message translates to:
+  /// **'Entries without an account'**
+  String get devOptionsClipRecoveryUnowned;
+
+  /// How many clips and drafts one owner group holds.
+  ///
+  /// In en, this message translates to:
+  /// **'{clips} clips, {drafts} drafts'**
+  String devOptionsClipRecoveryCounts(int clips, int drafts);
+
+  /// Button that restamps an owner group onto the signed-in account.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to this account'**
+  String get devOptionsClipRecoveryClaim;
+
+  /// How many video files on disk no database row references, and their total size.
+  ///
+  /// In en, this message translates to:
+  /// **'Unreferenced files: {count} ({size})'**
+  String devOptionsClipRecoveryOrphanFiles(int count, String size);
+
+  /// Button that rebuilds library entries for the unreferenced video files.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild in library'**
+  String get devOptionsClipRecoveryImport;
+
+  /// Shown when a scan found no hidden owners and no unreferenced files.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to recover'**
+  String get devOptionsClipRecoveryEmpty;
+
+  /// Confirmation of how many clips the last claim or rebuild recovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovered {count} clips'**
+  String devOptionsClipRecoveryRecovered(int count);
+
+  /// Confirmation shown after the recovery report is copied to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery report copied'**
+  String get devOptionsClipRecoveryCopied;
+
   /// Header of the Developer Options section that measures the app's on-disk footprint.
   ///
   /// In en, this message translates to:

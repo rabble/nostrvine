@@ -9,6 +9,58 @@ class AppLocalizationsTr extends AppLocalizations {
   AppLocalizationsTr([String locale = 'tr']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Klip kurtarma';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Başka bir hesap altında saklanan kayıtları ve artık hiçbir kaydın işaret etmediği video dosyalarını bulur.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Tara';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Kurtarılabilir klipler taranamadı';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Şu anda görünen: $clips klip, $drafts taslak';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Diğer hesaplarda gizli';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'Hesabı olmayan kayıtlar';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips klip, $drafts taslak';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Bu hesaba taşı';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Referans verilmeyen dosyalar: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Kitaplıkta yeniden oluştur';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Kurtarılacak bir şey yok';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return '$count klip kurtarıldı';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied => 'Kurtarma raporu kopyalandı';
+
+  @override
   String get devOptionsStorageFootprint => 'Depolama kullanımı';
 
   @override

@@ -9,6 +9,59 @@ class AppLocalizationsBg extends AppLocalizations {
   AppLocalizationsBg([String locale = 'bg']) : super(locale);
 
   @override
+  String get devOptionsClipRecovery => 'Възстановяване на клипове';
+
+  @override
+  String get devOptionsClipRecoveryDescription =>
+      'Намира записи, съхранени под друг акаунт, и видеофайлове, към които вече не сочи никакъв запис.';
+
+  @override
+  String get devOptionsClipRecoveryScan => 'Сканиране';
+
+  @override
+  String get devOptionsClipRecoveryFailure =>
+      'Възстановимите клипове не можаха да бъдат потърсени';
+
+  @override
+  String devOptionsClipRecoveryVisible(int clips, int drafts) {
+    return 'Видими сега: $clips клипа, $drafts чернови';
+  }
+
+  @override
+  String get devOptionsClipRecoveryOtherAccounts => 'Скрити под други акаунти';
+
+  @override
+  String get devOptionsClipRecoveryUnowned => 'Записи без акаунт';
+
+  @override
+  String devOptionsClipRecoveryCounts(int clips, int drafts) {
+    return '$clips клипа, $drafts чернови';
+  }
+
+  @override
+  String get devOptionsClipRecoveryClaim => 'Преместване в този акаунт';
+
+  @override
+  String devOptionsClipRecoveryOrphanFiles(int count, String size) {
+    return 'Файлове без връзка: $count ($size)';
+  }
+
+  @override
+  String get devOptionsClipRecoveryImport => 'Възстановяване в библиотеката';
+
+  @override
+  String get devOptionsClipRecoveryEmpty => 'Няма какво да се възстанови';
+
+  @override
+  String devOptionsClipRecoveryRecovered(int count) {
+    return 'Възстановени $count клипа';
+  }
+
+  @override
+  String get devOptionsClipRecoveryCopied =>
+      'Отчетът за възстановяване е копиран';
+
+  @override
   String get devOptionsStorageFootprint => 'Заето пространство';
 
   @override

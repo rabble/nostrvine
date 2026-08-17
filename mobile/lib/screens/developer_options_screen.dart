@@ -25,6 +25,7 @@ import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_format_preference.dart';
+import 'package:openvine/widgets/developer/clip_recovery_section.dart';
 import 'package:openvine/widgets/developer/storage_footprint_section.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -298,6 +299,10 @@ class _DeveloperOptionsScreenState
               Divider(color: context.vineColors.outline, height: 32),
 
               const StorageFootprintSection(),
+
+              Divider(color: context.vineColors.outline, height: 32),
+
+              const ClipRecoverySection(),
 
               Divider(color: context.vineColors.outline, height: 32),
 
