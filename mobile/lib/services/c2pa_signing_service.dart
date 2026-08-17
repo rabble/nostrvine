@@ -129,6 +129,9 @@ class C2paSigningService {
     Map<String, dynamic>? cawgIdentityAssertion,
     bool enableAdvancedCawgEmbedding = false,
   }) async {
+    // Declared outside the try so every failure exit can clean up a partial
+    // output the native call may already have created (#7739).
+    String? signedPath;
     try {
       // Opted-out builds must not reach the signer: the endpoint is a sentinel,
       // not a URL, so attempting the call would fail with a confusing error.
@@ -165,7 +168,7 @@ class C2paSigningService {
       // Generate output path for signed video
       final directory = inputFile.parent.path;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final signedPath = '$directory/c2pa_signed_$timestamp.mp4';
+      signedPath = '$directory/c2pa_signed_$timestamp.mp4';
 
       final filename = inputFile.path.split('/').last;
       final manifestResult = _manifestService.buildCreatedVideoManifest(
@@ -223,6 +226,18 @@ class C2paSigningService {
         );
       }
 
+      // The rename below replaces the user's recording in place, so an empty
+      // output would destroy it. Treat it as a failed signing pass (#7739).
+      if (signedFile.lengthSync() == 0) {
+        _deleteSignedOutput(signedPath);
+        return C2paSigningResult(
+          signedFilePath: videoPath,
+          success: false,
+          error: 'Signed file is empty',
+          failureReason: C2paSigningFailureReason.outputMissing,
+        );
+      }
+
       final sFileNew = signedFile.renameSync(inputFile.path);
       Log.debug(
         'Signed file renamed: ${sFileNew.path}',
@@ -247,6 +262,12 @@ class C2paSigningService {
         error: e,
         stackTrace: stackTrace,
       );
+
+      // A throw from the native call can still leave a partial output behind;
+      // nothing will ever pick it up, so it would sit in the documents
+      // directory forever (#7739). The timeout path additionally re-runs this
+      // once the abandoned call settles, since the file may appear later.
+      _deleteSignedOutput(signedPath);
 
       // Return original path - signing is best-effort, not blocking
       return C2paSigningResult(
@@ -388,6 +409,16 @@ class C2paSigningService {
     } catch (_) {
       // The abandoned call failed on its own — still clean up any partial file.
     }
+    _deleteSignedOutput(signedPath);
+  }
+
+  /// Removes a signing output that no caller will ever use.
+  ///
+  /// Signing writes its output next to the input, which for a recorded clip is
+  /// the documents directory. Every failure exit has to remove it or the debris
+  /// accumulates one file per attempt (#7739).
+  static void _deleteSignedOutput(String? signedPath) {
+    if (signedPath == null) return;
     try {
       final orphan = File(signedPath);
       if (orphan.existsSync()) orphan.deleteSync();
