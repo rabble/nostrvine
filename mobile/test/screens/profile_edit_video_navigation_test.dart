@@ -9,11 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
-import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
   Widget shell(ProviderContainer c, {GoRouter? customRouter}) {
@@ -40,8 +38,6 @@ void main() {
     title: 'Test Video',
     videoUrl: 'https://example.com/test.mp4',
   );
-
-  final mockVideos = [testVideo];
 
   testWidgets(
     'EDIT VIDEO: Tapping edit button navigates to /edit-video route',
@@ -80,13 +76,7 @@ void main() {
       );
 
       final c = ProviderContainer(
-        overrides: [
-          videosForProfileRouteProvider.overrideWith((ref) {
-            return AsyncValue.data(
-              VideoFeedState(videos: mockVideos, hasMoreContent: false),
-            );
-          }),
-        ],
+        overrides: [],
       );
       addTearDown(c.dispose);
 
@@ -166,13 +156,7 @@ void main() {
       if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
         // On desktop, edit button should show SnackBar instead of navigating
         final c = ProviderContainer(
-          overrides: [
-            videosForProfileRouteProvider.overrideWith((ref) {
-              return AsyncValue.data(
-                VideoFeedState(videos: mockVideos, hasMoreContent: false),
-              );
-            }),
-          ],
+          overrides: [],
         );
         addTearDown(c.dispose);
 
