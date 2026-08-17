@@ -591,6 +591,61 @@ for _ in $(seq 1 100); do
   sleep 0.1
 done
 
+# Pin the BSD/macOS stat fallback without requiring a second filesystem. The
+# fake rejects GNU `stat -c` and reports different BSD `stat -f` device ids; a
+# regular file at the staging path makes any missed cross-device detection fail.
+BSD_STAT_BIN="$SCRATCH_DIR/bsd-stat-bin"
+mkdir -p "$BSD_STAT_BIN"
+cat > "$BSD_STAT_BIN/stat" <<'EOF'
+#!/bin/bash
+case "$1" in
+  -c)
+    exit 1
+    ;;
+  -f)
+    case "$3" in
+      "$BSD_STAT_WORKTREE_MOBILE") echo 101 ;;
+      "$BSD_STAT_GITDIR") echo 202 ;;
+      *) echo 101 ;;
+    esac
+    exit 0
+    ;;
+esac
+exit 1
+EOF
+chmod +x "$BSD_STAT_BIN/stat"
+
+mkdir -p "$WT_LINK/mobile/build" "$WT_LINK/mobile/.dart_tool"
+touch "$WT_LINK/mobile/build/output.o" \
+  "$WT_LINK/mobile/.dart_tool/package_config.json" \
+  "$gitdir/claude-purge"
+BSD_STAT_OUTPUT=$(cd "$WT_LINK" && \
+  env PATH="$BSD_STAT_BIN:/usr/bin:/bin" \
+    BSD_STAT_WORKTREE_MOBILE="$WT_LINK/mobile" \
+    BSD_STAT_GITDIR="$gitdir" \
+    CLAUDE_PROJECT_DIR="$WT_LINK" \
+    "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}' || true)
+printf '%s\n' "$BSD_STAT_OUTPUT" | jq -e \
+  '.systemMessage == "Purged 2 build/.dart_tool dirs from purge-linked"' >/dev/null || {
+  echo "Purge hook did not use the BSD stat fallback for device detection." >&2
+  echo "Output was: $BSD_STAT_OUTPUT" >&2
+  exit 1
+}
+if [ ! -f "$gitdir/claude-purge" ]; then
+  echo "BSD-stat cross-device purge touched the gitdir staging path." >&2
+  exit 1
+fi
+for _ in $(seq 1 100); do
+  [ ! -d "$WT_LINK/mobile/build" ] && [ ! -d "$WT_LINK/mobile/.dart_tool" ] && break
+  sleep 0.1
+done
+if [ -d "$WT_LINK/mobile/build" ] || [ -d "$WT_LINK/mobile/.dart_tool" ]; then
+  echo "BSD-stat cross-device purge did not delete the artifact dirs." >&2
+  exit 1
+fi
+rm -f "$gitdir/claude-purge"
+
 # A linked worktree on a different filesystem from the main checkout must
 # still purge: the hook detects the cross-device gitdir and deletes in place
 # instead of staging (mv would degrade to a synchronous copy that can blow
