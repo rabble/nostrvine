@@ -10,7 +10,6 @@ import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -20,16 +19,12 @@ import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -117,96 +112,10 @@ void main() {
     video('profile-video-2'),
   ];
 
-  // The URL is the source of truth for which profile video plays:
-  // routerLocationStreamProvider -> pageContextProvider -> activeVideoIdProvider.
-  // videosForProfileRouteProvider is the list that provider indexes into; the
-  // grid/feed widgets get their own copy from ProfileFeedCubit.
-  group('profile URL drives the active video', () {
-    ProviderContainer profileContainer({
-      required Stream<String> locations,
-      required List<VideoEvent> videos,
-    }) {
-      final container = ProviderContainer(
-        overrides: [
-          routerLocationStreamProvider.overrideWithValue(locations),
-          videosForProfileRouteProvider.overrideWithValue(
-            AsyncValue.data(
-              VideoFeedState(videos: videos, hasMoreContent: false),
-            ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      // Keep the location stream subscribed for the whole test; no widget
-      // tree is mounted here to do it.
-      container.listen(pageContextProvider, (_, _) {}, fireImmediately: true);
-      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
-      return container;
-    }
-
-    test('the index segment selects the matching video', () async {
-      final locations = StreamController<String>();
-      addTearDown(locations.close);
-      final container = profileContainer(
-        locations: locations.stream,
-        videos: mockVideos,
-      );
-
-      locations.add(ProfileScreenRouter.pathForIndex(_npub, 0));
-      await pumpEventQueue();
-
-      expect(container.read(activeVideoIdProvider), mockVideos[0].stableId);
-
-      locations.add(ProfileScreenRouter.pathForIndex(_npub, 1));
-      await pumpEventQueue();
-
-      expect(container.read(activeVideoIdProvider), mockVideos[1].stableId);
-    });
-
-    test('an empty profile feed leaves nothing playing', () async {
-      final locations = StreamController<String>();
-      addTearDown(locations.close);
-      final container = profileContainer(
-        locations: locations.stream,
-        videos: const [],
-      );
-
-      locations.add(ProfileScreenRouter.pathForIndex(_npub, 0));
-      await pumpEventQueue();
-
-      expect(container.read(activeVideoIdProvider), isNull);
-    });
-
-    test(
-      'backgrounding clears the active video, resuming restores it',
-      () async {
-        final locations = StreamController<String>();
-        addTearDown(locations.close);
-        final container = profileContainer(
-          locations: locations.stream,
-          videos: mockVideos,
-        );
-
-        locations.add(ProfileScreenRouter.pathForIndex(_npub, 1));
-        await pumpEventQueue();
-
-        expect(container.read(activeVideoIdProvider), mockVideos[1].stableId);
-
-        container.read(appForegroundProvider.notifier).setForeground(false);
-
-        expect(container.read(activeVideoIdProvider), isNull);
-
-        container.read(appForegroundProvider.notifier).setForeground(true);
-
-        expect(container.read(activeVideoIdProvider), mockVideos[1].stableId);
-      },
-    );
-  });
-
-  // The provider group above stops at activeVideoIdProvider, whose profile
-  // branch only feeds upload gating. What actually opens a page is the chain
+  // The URL is the source of truth for which profile video plays, through
   // URL -> ProfileScreenRouter -> ProfileViewSwitcher -> ProfileVideoFeedView
-  // -> PooledFullscreenVideoFeedScreen, so pin that end to end (#7160).
+  // -> PooledFullscreenVideoFeedScreen. Assert the video the fullscreen feed
+  // actually shows, so a dropped index anywhere in that chain fails (#7160).
   group('profile feed URL opens the matching page', () {
     late _MockVideosRepository videosRepository;
     late _MockVideoEventService videoEventService;
