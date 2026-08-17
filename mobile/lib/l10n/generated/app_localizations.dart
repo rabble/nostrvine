@@ -159,13 +159,13 @@ abstract class AppLocalizations {
   /// Shown when the clip-recovery scan failed.
   ///
   /// In en, this message translates to:
-  /// **'Could not scan for recoverable clips'**
+  /// **'Clip recovery failed'**
   String get devOptionsClipRecoveryFailure;
 
   /// How much of the local library the signed-in account can already see.
   ///
   /// In en, this message translates to:
-  /// **'Visible now: {clips} clips, {drafts} drafts'**
+  /// **'Visible now: {clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} draft} other{{drafts} drafts}}'**
   String devOptionsClipRecoveryVisible(int clips, int drafts);
 
   /// Subheading above the groups of rows stored under a different account.
@@ -183,7 +183,7 @@ abstract class AppLocalizations {
   /// How many clips and drafts one owner group holds.
   ///
   /// In en, this message translates to:
-  /// **'{clips} clips, {drafts} drafts'**
+  /// **'{clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} draft} other{{drafts} drafts}}'**
   String devOptionsClipRecoveryCounts(int clips, int drafts);
 
   /// Button that restamps an owner group onto the signed-in account.
@@ -213,7 +213,7 @@ abstract class AppLocalizations {
   /// Confirmation of how many clips the last claim or rebuild recovered.
   ///
   /// In en, this message translates to:
-  /// **'Recovered {count} clips'**
+  /// **'{count, plural, =1{Recovered {count} clip} other{Recovered {count} clips}}'**
   String devOptionsClipRecoveryRecovered(int count);
 
   /// Confirmation shown after the recovery report is copied to the clipboard.

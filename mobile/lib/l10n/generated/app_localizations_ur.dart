@@ -19,12 +19,23 @@ class AppLocalizationsUr extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'اسکین کریں';
 
   @override
-  String get devOptionsClipRecoveryFailure =>
-      'بازیاب ہونے والے کلپس تلاش نہیں ہو سکے';
+  String get devOptionsClipRecoveryFailure => 'کلپ بازیابی ناکام ہو گئی';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
-    return 'اس وقت نظر آنے والے: $clips کلپس، $drafts مسودے';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips کلپس',
+      one: '$clips کلپ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts مسودے',
+      one: '$drafts مسودہ',
+    );
+    return 'اس وقت نظر آنے والے: $_temp0, $_temp1';
   }
 
   @override
@@ -36,7 +47,19 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
-    return '$clips کلپس، $drafts مسودے';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips کلپس',
+      one: '$clips کلپ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts مسودے',
+      one: '$drafts مسودہ',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
@@ -55,7 +78,13 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryRecovered(int count) {
-    return '$count کلپس بازیاب ہو گئے';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کلپس بازیاب ہو گئے',
+      one: '$count کلپ بازیاب ہو گیا',
+    );
+    return '$_temp0';
   }
 
   @override

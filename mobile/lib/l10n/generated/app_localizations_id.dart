@@ -19,8 +19,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'Pindai';
 
   @override
-  String get devOptionsClipRecoveryFailure =>
-      'Tidak dapat memindai klip yang bisa dipulihkan';
+  String get devOptionsClipRecoveryFailure => 'Pemulihan klip gagal';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {

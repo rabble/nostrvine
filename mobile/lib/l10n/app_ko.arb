@@ -3,7 +3,7 @@
     "devOptionsClipRecovery": "클립 복구",
     "devOptionsClipRecoveryDescription": "다른 계정에 저장된 녹화본과 어떤 항목도 참조하지 않는 동영상 파일을 찾습니다.",
     "devOptionsClipRecoveryScan": "검사",
-    "devOptionsClipRecoveryFailure": "복구 가능한 클립을 검사할 수 없습니다",
+    "devOptionsClipRecoveryFailure": "클립 복구에 실패했습니다",
     "devOptionsClipRecoveryVisible": "현재 표시: 클립 {clips}개, 초안 {drafts}개",
     "devOptionsClipRecoveryOtherAccounts": "다른 계정에 숨겨짐",
     "devOptionsClipRecoveryUnowned": "계정이 없는 항목",

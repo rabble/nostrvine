@@ -3,7 +3,7 @@
   "devOptionsClipRecovery": "Pemulihan klip",
   "devOptionsClipRecoveryDescription": "Mencari rakaman yang disimpan di bawah akaun lain dan fail video yang tidak lagi dirujuk oleh mana-mana entri.",
   "devOptionsClipRecoveryScan": "Imbas",
-  "devOptionsClipRecoveryFailure": "Klip yang boleh dipulihkan tidak dapat diimbas",
+  "devOptionsClipRecoveryFailure": "Pemulihan klip gagal",
   "devOptionsClipRecoveryVisible": "Kelihatan sekarang: {clips} klip, {drafts} draf",
   "devOptionsClipRecoveryOtherAccounts": "Tersembunyi di bawah akaun lain",
   "devOptionsClipRecoveryUnowned": "Entri tanpa akaun",

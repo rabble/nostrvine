@@ -19,12 +19,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'فحص';
 
   @override
-  String get devOptionsClipRecoveryFailure =>
-      'تعذر البحث عن مقاطع قابلة للاسترداد';
+  String get devOptionsClipRecoveryFailure => 'فشل استرداد المقاطع';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
-    return 'ظاهر الآن: $clips مقاطع، $drafts مسودات';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips مقاطع',
+      one: 'مقطع واحد',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts مسودات',
+      one: 'مسودة واحدة',
+    );
+    return 'ظاهر الآن: $_temp0, $_temp1';
   }
 
   @override
@@ -35,7 +46,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
-    return '$clips مقاطع، $drafts مسودات';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips مقاطع',
+      one: 'مقطع واحد',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts مسودات',
+      one: 'مسودة واحدة',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
@@ -54,7 +77,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryRecovered(int count) {
-    return 'تم استرداد $count مقاطع';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم استرداد $count مقاطع',
+      one: 'تم استرداد مقطع واحد',
+    );
+    return '$_temp0';
   }
 
   @override

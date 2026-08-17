@@ -19,11 +19,23 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'ቃኝ';
 
   @override
-  String get devOptionsClipRecoveryFailure => 'መልሶ ሊገኙ የሚችሉ ክሊፖችን መፈለግ አልተቻለም';
+  String get devOptionsClipRecoveryFailure => 'የክሊፕ መልሶ ማግኘት አልተሳካም';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
-    return 'አሁን የሚታዩ፦ $clips ክሊፖች፣ $drafts ረቂቆች';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips ክሊፖች',
+      one: '$clips ክሊፕ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts ረቂቆች',
+      one: '$drafts ረቂቅ',
+    );
+    return 'አሁን የሚታዩ፦ $_temp0, $_temp1';
   }
 
   @override
@@ -34,7 +46,19 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
-    return '$clips ክሊፖች፣ $drafts ረቂቆች';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips ክሊፖች',
+      one: '$clips ክሊፕ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts ረቂቆች',
+      one: '$drafts ረቂቅ',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
@@ -53,7 +77,13 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryRecovered(int count) {
-    return '$count ክሊፖች ተመልሰዋል';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ክሊፖች ተመልሰዋል',
+      one: '$count ክሊፕ ተመልሷል',
+    );
+    return '$_temp0';
   }
 
   @override

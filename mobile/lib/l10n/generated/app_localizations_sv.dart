@@ -20,11 +20,23 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get devOptionsClipRecoveryFailure =>
-      'Kunde inte söka efter återställningsbara klipp';
+      'Klippåterställningen misslyckades';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
-    return 'Synliga nu: $clips klipp, $drafts utkast';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips klipp',
+      one: '$clips klipp',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts utkast',
+      one: '$drafts utkast',
+    );
+    return 'Synliga nu: $_temp0, $_temp1';
   }
 
   @override
@@ -35,7 +47,19 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
-    return '$clips klipp, $drafts utkast';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips klipp',
+      one: '$clips klipp',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts utkast',
+      one: '$drafts utkast',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
@@ -54,7 +78,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryRecovered(int count) {
-    return 'Återställde $count klipp';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Återställde $count klipp',
+      one: 'Återställde $count klipp',
+    );
+    return '$_temp0';
   }
 
   @override

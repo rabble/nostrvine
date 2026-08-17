@@ -19,8 +19,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'I-scan';
 
   @override
-  String get devOptionsClipRecoveryFailure =>
-      'Hindi ma-scan ang mga clip na mababawi';
+  String get devOptionsClipRecoveryFailure => 'Nabigo ang pagbawi ng clip';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {

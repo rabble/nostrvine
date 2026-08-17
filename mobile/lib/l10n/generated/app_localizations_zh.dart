@@ -19,7 +19,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsClipRecoveryScan => '扫描';
 
   @override
-  String get devOptionsClipRecoveryFailure => '无法扫描可恢复的片段';
+  String get devOptionsClipRecoveryFailure => '片段恢复失败';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {

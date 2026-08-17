@@ -19,7 +19,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get devOptionsClipRecoveryScan => '검사';
 
   @override
-  String get devOptionsClipRecoveryFailure => '복구 가능한 클립을 검사할 수 없습니다';
+  String get devOptionsClipRecoveryFailure => '클립 복구에 실패했습니다';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {

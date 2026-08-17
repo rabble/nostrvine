@@ -19,7 +19,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'スキャン';
 
   @override
-  String get devOptionsClipRecoveryFailure => '復旧できるクリップを検索できませんでした';
+  String get devOptionsClipRecoveryFailure => 'クリップの復旧に失敗しました';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {

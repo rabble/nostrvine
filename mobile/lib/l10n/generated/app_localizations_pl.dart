@@ -20,11 +20,23 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get devOptionsClipRecoveryFailure =>
-      'Nie udało się wyszukać klipów do odzyskania';
+      'Odzyskiwanie klipów nie udało się';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
-    return 'Widoczne teraz: $clips klipów, $drafts wersji roboczych';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips klipów',
+      one: '$clips klip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts wersji roboczych',
+      one: '$drafts wersja robocza',
+    );
+    return 'Widoczne teraz: $_temp0, $_temp1';
   }
 
   @override
@@ -35,7 +47,19 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
-    return '$clips klipów, $drafts wersji roboczych';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips klipów',
+      one: '$clips klip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts wersji roboczych',
+      one: '$drafts wersja robocza',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
@@ -54,7 +78,13 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryRecovered(int count) {
-    return 'Odzyskano $count klipów';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Odzyskano $count klipów',
+      one: 'Odzyskano $count klip',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -19,8 +19,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'Tara';
 
   @override
-  String get devOptionsClipRecoveryFailure =>
-      'Kurtarılabilir klipler taranamadı';
+  String get devOptionsClipRecoveryFailure => 'Klip kurtarma başarısız oldu';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {

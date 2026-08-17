@@ -20,11 +20,23 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get devOptionsClipRecoveryFailure =>
-      'Възстановимите клипове не можаха да бъдат потърсени';
+      'Възстановяването на клипове се провали';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
-    return 'Видими сега: $clips клипа, $drafts чернови';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips клипа',
+      one: '$clips клип',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts чернови',
+      one: '$drafts чернова',
+    );
+    return 'Видими сега: $_temp0, $_temp1';
   }
 
   @override
@@ -35,7 +47,19 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
-    return '$clips клипа, $drafts чернови';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips клипа',
+      one: '$clips клип',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts чернови',
+      one: '$drafts чернова',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
@@ -54,7 +78,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryRecovered(int count) {
-    return 'Възстановени $count клипа';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Възстановени $count клипа',
+      one: 'Възстановен $count клип',
+    );
+    return '$_temp0';
   }
 
   @override

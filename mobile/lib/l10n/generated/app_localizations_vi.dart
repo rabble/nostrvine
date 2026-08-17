@@ -19,8 +19,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'Quét';
 
   @override
-  String get devOptionsClipRecoveryFailure =>
-      'Không quét được các clip có thể khôi phục';
+  String get devOptionsClipRecoveryFailure => 'Khôi phục clip không thành công';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {

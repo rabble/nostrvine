@@ -19,12 +19,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'Scannen';
 
   @override
-  String get devOptionsClipRecoveryFailure =>
-      'Kan niet scannen op herstelbare clips';
+  String get devOptionsClipRecoveryFailure => 'Clipherstel mislukt';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
-    return 'Nu zichtbaar: $clips clips, $drafts concepten';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips clips',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts concepten',
+      one: '$drafts concept',
+    );
+    return 'Nu zichtbaar: $_temp0, $_temp1';
   }
 
   @override
@@ -36,7 +47,19 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
-    return '$clips clips, $drafts concepten';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips clips',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts concepten',
+      one: '$drafts concept',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
@@ -55,7 +78,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryRecovered(int count) {
-    return '$count clips hersteld';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips hersteld',
+      one: '$count clip hersteld',
+    );
+    return '$_temp0';
   }
 
   @override

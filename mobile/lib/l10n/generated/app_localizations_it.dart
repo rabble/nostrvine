@@ -20,11 +20,23 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get devOptionsClipRecoveryFailure =>
-      'Impossibile cercare clip recuperabili';
+      'Ripristino delle clip non riuscito';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
-    return 'Visibili ora: $clips clip, $drafts bozze';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips clip',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts bozze',
+      one: '$drafts bozza',
+    );
+    return 'Visibili ora: $_temp0, $_temp1';
   }
 
   @override
@@ -36,7 +48,19 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryCounts(int clips, int drafts) {
-    return '$clips clip, $drafts bozze';
+    String _temp0 = intl.Intl.pluralLogic(
+      clips,
+      locale: localeName,
+      other: '$clips clip',
+      one: '$clips clip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      drafts,
+      locale: localeName,
+      other: '$drafts bozze',
+      one: '$drafts bozza',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
@@ -55,7 +79,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String devOptionsClipRecoveryRecovered(int count) {
-    return '$count clip recuperate';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip recuperate',
+      one: '$count clip recuperata',
+    );
+    return '$_temp0';
   }
 
   @override

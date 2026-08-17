@@ -3,7 +3,7 @@
   "devOptionsClipRecovery": "Khôi phục clip",
   "devOptionsClipRecoveryDescription": "Tìm các bản ghi được lưu dưới tài khoản khác và các tệp video không còn mục nào tham chiếu tới.",
   "devOptionsClipRecoveryScan": "Quét",
-  "devOptionsClipRecoveryFailure": "Không quét được các clip có thể khôi phục",
+  "devOptionsClipRecoveryFailure": "Khôi phục clip không thành công",
   "devOptionsClipRecoveryVisible": "Đang hiển thị: {clips} clip, {drafts} bản nháp",
   "devOptionsClipRecoveryOtherAccounts": "Bị ẩn dưới tài khoản khác",
   "devOptionsClipRecoveryUnowned": "Mục không có tài khoản",

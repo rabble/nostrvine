@@ -3,7 +3,7 @@
     "devOptionsClipRecovery": "クリップの復旧",
     "devOptionsClipRecoveryDescription": "別のアカウントに保存された録画と、どの項目からも参照されていない動画ファイルを探します。",
     "devOptionsClipRecoveryScan": "スキャン",
-    "devOptionsClipRecoveryFailure": "復旧できるクリップを検索できませんでした",
+    "devOptionsClipRecoveryFailure": "クリップの復旧に失敗しました",
     "devOptionsClipRecoveryVisible": "現在表示中: クリップ {clips} 件、下書き {drafts} 件",
     "devOptionsClipRecoveryOtherAccounts": "他のアカウントに隠れています",
     "devOptionsClipRecoveryUnowned": "アカウントのない項目",

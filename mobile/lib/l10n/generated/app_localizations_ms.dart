@@ -19,8 +19,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get devOptionsClipRecoveryScan => 'Imbas';
 
   @override
-  String get devOptionsClipRecoveryFailure =>
-      'Klip yang boleh dipulihkan tidak dapat diimbas';
+  String get devOptionsClipRecoveryFailure => 'Pemulihan klip gagal';
 
   @override
   String devOptionsClipRecoveryVisible(int clips, int drafts) {
