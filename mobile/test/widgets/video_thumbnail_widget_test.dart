@@ -26,7 +26,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_provider_overrides.dart'
-    show createMockMediaCacheManager;
+    show createMockMediaCacheManager, testMaterialApp;
 import '../test_data/video_test_data.dart';
 
 Finder _divineIcon(DivineIconName name) =>
@@ -1045,7 +1045,7 @@ void main() {
 
       Widget buildSubject(double width) => UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(
+        child: testMaterialApp(
           home: PassiveAuthThumbnailImage(url: url, width: width),
         ),
       );
