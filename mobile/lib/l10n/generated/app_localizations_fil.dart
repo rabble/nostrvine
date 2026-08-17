@@ -1221,6 +1221,9 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Itinatampok';
+
+  @override
   String get exploreTabClassics => 'Klasiko';
 
   @override
@@ -1240,6 +1243,16 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get exploreTabIntegratedApps => 'Mga Integrated App';
+
+  @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
 
   @override
   String get featuredTabEmpty => 'Wala pa rito. Balikan mo mamaya.';

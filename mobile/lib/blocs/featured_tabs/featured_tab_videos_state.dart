@@ -46,8 +46,9 @@ class FeaturedTabVideosState extends Equatable {
 
   /// Whether the tab has loaded and has nothing to show.
   ///
-  /// The server refreshes its content snapshot on a 15-minute cadence, so an
-  /// empty page for an otherwise-eligible tab is transient rather than final.
+  /// Eligibility refreshes every 15 minutes and the composed videos every 30,
+  /// so an empty page for an otherwise-eligible tab is transient rather than
+  /// final — and can stay empty for up to the longer of the two.
   bool get isEmpty => status == FeaturedTabVideosStatus.ready && videos.isEmpty;
 
   /// Returns a copy with the given overrides.

@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "Klasyki",
+    "exploreTabFeatured": "Polecane",
+  "exploreTabClassics": "Klasyki",
     "exploreTabNew": "Nowe",
     "exploreTabPopular": "Popularne",
     "exploreTabCategories": "Kategorie",

@@ -6,34 +6,36 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 
-/// Longest featured-tab label the tab bar will render.
+/// Longest server-supplied string the tab bar will render.
 ///
-/// The label is server-supplied and not authored in this repo, so it is
-/// treated as untrusted for layout purposes and clamped before it reaches
-/// the scrollable tab bar.
+/// Applies to the sponsor name and, through [featuredTabPillMaxLength], the
+/// collection pill. Both are authored outside this repo, so both are treated
+/// as untrusted for layout purposes and clamped before they reach the bar.
 const featuredTabLabelMaxLength = 24;
+
+/// Longest collection-name pill the tab bar will render beside the label.
+///
+/// Shorter than the label's own limit because the pill is laid out *next to*
+/// "Featured" on a scrollable bar: at 24 characters the pill runs past the
+/// right edge of a 390 px screen, so the tab opens partly off-screen.
+const featuredTabPillMaxLength = 16;
 
 /// Returns the localized display label for an Explore tab [name].
 ///
 /// The shell uses a little more context for video mode ("New Videos",
 /// "Trending") while the tab bar keeps the shorter tab copy ("New", "Popular").
 ///
-/// The featured tab is the one deliberate exception to
-/// `.claude/rules/localization.md`: its copy is editorial, scheduled
-/// server-side, and cannot live in the ARB files. [featuredTab] carries a
-/// locale map with a required `default` entry, which is how it stays
-/// translatable, and [localeCode] selects from it.
+/// The featured tab reads "Featured" like any other tab. The server sends a
+/// label too, but it is now pinned to that one word rather than being
+/// editorial, so translating it here reaches every locale where echoing the
+/// server's copy would have shipped English to all of them. The collection's
+/// own name is the pill beside it.
 String labelForExploreTabName(
   AppLocalizations l10n,
   String name, {
   bool shellTitle = false,
-  FeaturedTabConfig? featuredTab,
-  String? localeCode,
 }) => switch (name) {
-  exploreFeaturedTabName => _clampFeaturedLabel(
-    featuredTab?.labelFor(localeCode ?? l10n.localeName) ?? '',
-    l10n,
-  ),
+  exploreFeaturedTabName => l10n.exploreTabFeatured,
   exploreClassicsTabName =>
     shellTitle ? l10n.navExploreClassics : l10n.exploreTabClassics,
   exploreDefaultTabName =>
@@ -49,14 +51,6 @@ String labelForExploreTabName(
   _ => l10n.navExplore,
 };
 
-/// Clamps a server-supplied label so an unexpected length cannot stretch the
-/// tab bar, falling back to the generic Explore noun when it is unusable.
-String _clampFeaturedLabel(String label, AppLocalizations l10n) {
-  final sanitized = sanitizeFeaturedTabText(label);
-  if (sanitized.isEmpty) return l10n.navExplore;
-  return sanitized;
-}
-
 /// Collapses and clamps a server-supplied string bound for the tab bar.
 ///
 /// Length alone does not bound a tab: `Tab` lays out at a fixed height, so a
@@ -66,15 +60,18 @@ String _clampFeaturedLabel(String label, AppLocalizations l10n) {
 /// outside this repo, so both go through here.
 ///
 /// Returns an empty string when nothing renderable survives.
-String sanitizeFeaturedTabText(String raw) {
+String sanitizeFeaturedTabText(
+  String raw, {
+  int maxLength = featuredTabLabelMaxLength,
+}) {
   final collapsed = raw
       .replaceAll(_featuredTabControlCharacters, ' ')
       .replaceAll(_repeatedWhitespace, ' ')
       .trim();
   if (collapsed.isEmpty) return '';
   final characters = collapsed.characters;
-  if (characters.length <= featuredTabLabelMaxLength) return collapsed;
-  return '${characters.take(featuredTabLabelMaxLength - 1).toString().trimRight()}…';
+  if (characters.length <= maxLength) return collapsed;
+  return '${characters.take(maxLength - 1).toString().trimRight()}…';
 }
 
 /// C0/C1 controls, line/paragraph separators, and bidi formatting overrides.
@@ -84,3 +81,28 @@ final _featuredTabControlCharacters = RegExp(
 );
 
 final _repeatedWhitespace = RegExp(r'\s+');
+
+/// The sanitised sponsor name for [config] in [localeCode], or `null` when
+/// this locale has no sponsor to disclose.
+///
+/// Both the partnership line and the pill's sponsored state resolve through
+/// here, so the pill can never announce a sponsor the grid never names: a
+/// map whose only entries resolve for other locales, or a value that is
+/// nothing but control characters, means no sponsor for this viewer.
+String? featuredTabSponsorName(
+  FeaturedTabConfig config,
+  String? localeCode,
+) {
+  final raw = config.sponsorNameFor(localeCode);
+  if (raw == null) return null;
+  final sanitized = sanitizeFeaturedTabText(raw);
+  return sanitized.isEmpty ? null : sanitized;
+}
+
+/// Whether the featured tab presents as sponsored for [localeCode].
+///
+/// Derived from [featuredTabSponsorName] rather than the raw field so the
+/// pill's colour and spoken label agree with the partnership line above the
+/// grid in every locale.
+bool featuredTabIsSponsored(FeaturedTabConfig config, String? localeCode) =>
+    featuredTabSponsorName(config, localeCode) != null;

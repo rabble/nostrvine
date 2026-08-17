@@ -52,7 +52,10 @@ const _pollInterval = Duration(seconds: 30);
 const _featuredConfig = FeaturedTabConfig(
   id: 'ft_a1b2c3d4',
   slug: 'featured-slug',
-  label: {'default': 'Spotlight'},
+  label: {'default': 'Featured'},
+  // The tab itself reads the compiled "Featured"; the pill is what makes
+  // this particular collection identifiable on screen.
+  pillLabel: {'default': 'Spotlight'},
   startsAt: null,
   endsAt: null,
   enabled: true,

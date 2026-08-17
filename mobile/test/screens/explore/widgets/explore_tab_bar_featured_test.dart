@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for the featured tab's presence in the Explore bar.
 // ABOUTME: Absent means absent — no placeholder, no disabled tab.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -9,22 +10,28 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_bar.dart';
 
 FeaturedTabConfig _featured({
-  Map<String, String> label = const {'default': 'Featured'},
+  Map<String, String> pillLabel = const {'default': 'Skate Week'},
   Map<String, String> disclosureLabel = const {},
-  String? after = explorePopularTabName,
 }) {
   return FeaturedTabConfig(
     id: 'ft_a1b2c3d4',
     slug: 'featured-slug',
-    label: label,
+    // Pinned server-side to the English word; the client renders its own
+    // translated label and ignores this.
+    label: const {'default': 'Featured'},
+    pillLabel: pillLabel,
     disclosureLabel: disclosureLabel,
-    position: FeaturedTabPosition(after: after),
     startsAt: null,
     endsAt: null,
     enabled: true,
     hasContent: true,
   );
 }
+
+/// Colour the pill's text is painted in, which is what separates the
+/// sponsored state from the unsponsored one.
+Color? _pillTextColor(WidgetTester tester, String pillText) =>
+    tester.widget<Text>(find.text(pillText)).style?.color;
 
 void main() {
   group('$ExploreTabBar featured tab', () {
@@ -34,6 +41,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: VineTheme.theme,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: DefaultTabController(
@@ -68,66 +76,141 @@ void main() {
       expect(find.text('Featured'), findsOneWidget);
     });
 
-    testWidgets('places the tab after its configured anchor', (tester) async {
-      final state = ExploreTabsState(featuredTab: _featured());
-      await pumpBar(tester, state);
+    testWidgets('places the tab between New and Popular', (tester) async {
+      await pumpBar(tester, ExploreTabsState(featuredTab: _featured()));
 
-      final popularX = tester.getCenter(find.text('Popular')).dx;
+      final newX = tester.getCenter(find.text('New')).dx;
       final featuredX = tester.getCenter(find.text('Featured')).dx;
-      final categoriesX = tester.getCenter(find.text('Categories')).dx;
+      final popularX = tester.getCenter(find.text('Popular')).dx;
 
-      expect(featuredX, greaterThan(popularX));
-      expect(featuredX, lessThan(categoriesX));
+      expect(featuredX, greaterThan(newX));
+      expect(featuredX, lessThan(popularX));
     });
 
-    testWidgets('renders the disclosure marker when the server sends one', (
+    testWidgets('renders the collection name in a pill beside the label', (
+      tester,
+    ) async {
+      await pumpBar(tester, ExploreTabsState(featuredTab: _featured()));
+
+      expect(find.text('Featured'), findsOneWidget);
+      expect(find.text('Skate Week'), findsOneWidget);
+    });
+
+    testWidgets('renders no pill when the server sends no pill label', (
+      tester,
+    ) async {
+      await pumpBar(
+        tester,
+        ExploreTabsState(featuredTab: _featured(pillLabel: const {})),
+      );
+
+      expect(find.text('Featured'), findsOneWidget);
+      expect(find.text('Skate Week'), findsNothing);
+    });
+
+    testWidgets('tints the pill yellow when the collection is unsponsored', (
+      tester,
+    ) async {
+      await pumpBar(tester, ExploreTabsState(featuredTab: _featured()));
+
+      expect(
+        _pillTextColor(tester, 'Skate Week'),
+        equals(VineTheme.darkColors.accentChipYellow.onContainer),
+      );
+    });
+
+    testWidgets(
+      'tints the pill yellow when the sponsor resolves only for another locale',
+      (tester) async {
+        // A pink "sponsored" pill with no partnership line for this viewer is
+        // the one combination that actively misleads, so sponsorship follows
+        // the locale-resolved sponsor name, not the raw field.
+        await pumpBar(
+          tester,
+          ExploreTabsState(
+            featuredTab: _featured(
+              disclosureLabel: const {'pt': 'Acme Bicicletas'},
+            ),
+          ),
+        );
+
+        expect(
+          _pillTextColor(tester, 'Skate Week'),
+          equals(VineTheme.darkColors.accentChipYellow.onContainer),
+        );
+      },
+    );
+
+    testWidgets('tints the pill pink when a sponsor is configured', (
       tester,
     ) async {
       await pumpBar(
         tester,
         ExploreTabsState(
           featuredTab: _featured(
-            disclosureLabel: const {'default': 'Sponsored'},
+            disclosureLabel: const {'default': 'Acme Bikes'},
           ),
         ),
       );
 
-      expect(find.text('Sponsored'), findsOneWidget);
-    });
-
-    testWidgets('renders nothing extra when no disclosure is configured', (
-      tester,
-    ) async {
-      await pumpBar(tester, ExploreTabsState(featuredTab: _featured()));
-
-      // The label renders bare, not wrapped in the marker Row the disclosure
-      // path builds.
       expect(
-        find.descendant(
-          of: find.ancestor(
-            of: find.text('Featured'),
-            matching: find.byType(Tab),
-          ),
-          matching: find.byType(Row),
-        ),
-        findsNothing,
+        _pillTextColor(tester, 'Skate Week'),
+        equals(VineTheme.darkColors.accentChipPink.onContainer),
       );
     });
 
-    testWidgets('truncates an overlong label at the narrowest width', (
+    testWidgets('speaks the sponsored state rather than relying on colour', (
       tester,
     ) async {
+      final handle = tester.ensureSemantics();
+      await pumpBar(
+        tester,
+        ExploreTabsState(
+          featuredTab: _featured(
+            disclosureLabel: const {'default': 'Acme Bikes'},
+          ),
+        ),
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      // Matched as a substring: Tab merges its children into one node, so the
+      // pill's label arrives joined to the tab's own.
+      expect(
+        find.bySemanticsLabel(
+          RegExp(
+            RegExp.escape(
+              l10n.exploreFeaturedSponsoredPillSemanticLabel('Skate Week'),
+            ),
+          ),
+        ),
+        findsWidgets,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('truncates an overlong pill harder than the label', (
+      tester,
+    ) async {
+      await pumpBar(
+        tester,
+        ExploreTabsState(
+          featuredTab: _featured(pillLabel: {'default': 'x' * 40}),
+        ),
+      );
+
+      // 16 graphemes, the last of which is the ellipsis.
+      expect(find.text('${'x' * 15}…'), findsOneWidget);
+    });
+
+    testWidgets('lays out at the narrowest supported width', (tester) async {
       tester.view.physicalSize = const Size(320 * 3, 640 * 3);
       tester.view.devicePixelRatio = 3;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await pumpBar(
-        tester,
-        ExploreTabsState(featuredTab: _featured(label: {'default': 'x' * 200})),
-      );
+      await pumpBar(tester, ExploreTabsState(featuredTab: _featured()));
 
-      expect(find.textContaining('…'), findsOneWidget);
+      expect(find.text('Featured'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

@@ -1206,6 +1206,9 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Pilihan';
+
+  @override
   String get exploreTabClassics => 'Klasik';
 
   @override
@@ -1225,6 +1228,16 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get exploreTabIntegratedApps => 'Apl Bersepadu';
+
+  @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
 
   @override
   String get featuredTabEmpty =>

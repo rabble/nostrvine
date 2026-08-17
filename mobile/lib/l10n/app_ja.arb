@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "クラシック",
+    "exploreTabFeatured": "おすすめ",
+  "exploreTabClassics": "クラシック",
     "exploreTabNew": "新着",
     "exploreTabPopular": "人気",
     "exploreTabCategories": "カテゴリ",

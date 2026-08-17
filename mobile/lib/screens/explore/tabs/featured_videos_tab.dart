@@ -16,6 +16,7 @@ import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
+import 'package:openvine/screens/explore/explore_tab_labels.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -59,7 +60,8 @@ class FeaturedVideosTab extends ConsumerWidget {
 
 /// Refetches the page when a config poll lands while the tab is empty.
 ///
-/// `has_content` runs on a 15-minute snapshot cadence and can lead the videos
+/// `has_content` refreshes every 15 minutes and the composed videos every 30,
+/// so the eligibility flag leads the videos
 /// endpoint, so funnelcake's integration guide asks clients to treat an empty
 /// page as transient and retry on the next poll.
 /// [FeaturedTabVideosState.isEmpty] already says as much; this is what acts on
@@ -87,6 +89,56 @@ class _FeaturedVideosRetryOnPoll extends StatelessWidget {
 
 class _FeaturedVideosView extends StatelessWidget {
   const _FeaturedVideosView({required this.config});
+
+  final FeaturedTabConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    // The disclosure is pinned rather than scrolled into the grid, and sits
+    // outside the videos state so it survives an empty or failed page: it
+    // describes the tab's commercial arrangement, not its contents.
+    return Column(
+      children: [
+        _FeaturedPartnershipLine(config: config),
+        Expanded(child: _FeaturedVideosContent(config: config)),
+      ],
+    );
+  }
+}
+
+/// The commercial disclosure pinned above a sponsored collection's grid.
+///
+/// Renders nothing when the collection has no sponsor.
+class _FeaturedPartnershipLine extends StatelessWidget {
+  const _FeaturedPartnershipLine({required this.config});
+
+  final FeaturedTabConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final sponsor = featuredTabSponsorName(config, l10n.localeName);
+    if (sponsor == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(
+          l10n.exploreFeaturedPaidPartnership(sponsor),
+          // Wraps with no line ceiling: a clipped disclosure has stopped
+          // disclosing, and the grid below yields whatever the line needs.
+          style: VineTheme.labelMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeaturedVideosContent extends StatelessWidget {
+  const _FeaturedVideosContent({required this.config});
 
   final FeaturedTabConfig config;
 

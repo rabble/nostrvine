@@ -1123,6 +1123,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => '추천';
+
+  @override
   String get exploreTabClassics => '클래식';
 
   @override
@@ -1142,6 +1145,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get exploreTabIntegratedApps => '연동된 앱';
+
+  @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
 
   @override
   String get featuredTabEmpty => '아직 아무것도 없어요. 곧 다시 확인해 주세요.';

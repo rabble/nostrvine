@@ -1216,6 +1216,9 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Избрани';
+
+  @override
   String get exploreTabClassics => 'Класики';
 
   @override
@@ -1235,6 +1238,16 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get exploreTabIntegratedApps => 'Интегрирани приложения';
+
+  @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
 
   @override
   String get featuredTabEmpty => 'Тук още няма нищо. Върни се скоро.';

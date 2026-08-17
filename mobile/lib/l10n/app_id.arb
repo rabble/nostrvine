@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "Klasik",
+    "exploreTabFeatured": "Unggulan",
+  "exploreTabClassics": "Klasik",
     "exploreTabNew": "Baru",
     "exploreTabPopular": "Populer",
     "exploreTabCategories": "Kategori",

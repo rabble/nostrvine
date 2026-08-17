@@ -2142,6 +2142,12 @@ abstract class AppLocalizations {
   /// **'Failed to delete content: {error}'**
   String videoGridDeleteFailure(Object error);
 
+  /// Name of the Explore tab that shows a server-curated collection. The collection's own name is not this string — it rides beside it in a pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get exploreTabFeatured;
+
   /// No description provided for @exploreTabClassics.
   ///
   /// In en, this message translates to:
@@ -2183,6 +2189,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Integrated Apps'**
   String get exploreTabIntegratedApps;
+
+  /// Commercial disclosure pinned above a sponsored featured collection's grid. The wording is a legal disclosure, not marketing copy: translate it as the closest local equivalent of a paid commercial partnership, and keep the word for 'paid'. {sponsor} is a brand name supplied by the server and must not be translated.
+  ///
+  /// In en, this message translates to:
+  /// **'In paid partnership with {sponsor}'**
+  String exploreFeaturedPaidPartnership(String sponsor);
+
+  /// Spoken label for the featured tab's collection pill when the collection is sponsored. The pill's pink colour conveys this visually; this carries the same state to screen readers. {name} is the collection name supplied by the server.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, sponsored'**
+  String exploreFeaturedSponsoredPillSemanticLabel(String name);
 
   /// Empty state for a server-configured featured Explore tab whose content snapshot has not caught up yet.
   ///

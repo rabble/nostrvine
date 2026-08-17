@@ -472,7 +472,8 @@
             }
         }
     },
-    "exploreTabClassics": "Clásicos",
+    "exploreTabFeatured": "Destacados",
+  "exploreTabClassics": "Clásicos",
     "exploreTabNew": "Nuevos",
     "exploreTabPopular": "Populares",
     "exploreTabCategories": "Categorías",

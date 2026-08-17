@@ -503,7 +503,8 @@
             }
         }
     },
-    "exploreTabClassics": "Класики",
+    "exploreTabFeatured": "Избрани",
+  "exploreTabClassics": "Класики",
     "exploreTabNew": "Нови",
     "exploreTabPopular": "Популярни",
     "exploreTabCategories": "Категории",

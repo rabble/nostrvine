@@ -1,5 +1,5 @@
 // ABOUTME: Regression tests for shared Explore tab label resolution.
-// ABOUTME: Covers shell titles plus the server-supplied featured tab label.
+// ABOUTME: Covers shell titles plus sanitising of server-supplied tab copy.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,11 +9,12 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/screens/explore/explore_tab_labels.dart';
 
-FeaturedTabConfig _featured(Map<String, String> label) {
+FeaturedTabConfig _configWithSponsor(Map<String, String> disclosureLabel) {
   return FeaturedTabConfig(
     id: 'ft_a1b2c3d4',
     slug: 'featured-slug',
-    label: label,
+    label: const {'default': 'Featured'},
+    disclosureLabel: disclosureLabel,
     startsAt: null,
     endsAt: null,
     enabled: true,
@@ -77,115 +78,28 @@ void main() {
       en = lookupAppLocalizations(const Locale('en'));
     });
 
-    test('uses the locale entry matching the active locale', () {
-      final label = labelForExploreTabName(
-        en,
-        exploreFeaturedTabName,
-        featuredTab: _featured(const {'default': 'Fallback', 'en': 'Picked'}),
+    test('reads the compiled label, not the server one', () {
+      expect(
+        labelForExploreTabName(en, exploreFeaturedTabName),
+        equals(en.exploreTabFeatured),
       );
-
-      expect(label, equals('Picked'));
     });
 
-    test('falls back to the default entry for an absent locale', () {
-      final label = labelForExploreTabName(
-        lookupAppLocalizations(const Locale('ja')),
-        exploreFeaturedTabName,
-        featuredTab: _featured(const {'default': 'Fallback', 'en': 'Picked'}),
-      );
+    test('translates with the rest of the bar', () {
+      // The server pins its own label to the English word, so echoing it
+      // would have shipped English to every locale.
+      final es = lookupAppLocalizations(const Locale('es'));
+      final label = labelForExploreTabName(es, exploreFeaturedTabName);
 
-      expect(label, equals('Fallback'));
+      expect(label, equals(es.exploreTabFeatured));
+      expect(label, isNot(equals(en.exploreTabFeatured)));
     });
 
-    test('truncates a label longer than the tab bar allows', () {
-      final label = labelForExploreTabName(
-        en,
-        exploreFeaturedTabName,
-        featuredTab: _featured({'default': 'x' * 200}),
-      );
-
-      expect(label.length, equals(featuredTabLabelMaxLength));
-      expect(label, endsWith('…'));
-    });
-
-    test('truncates a label without splitting compound emoji', () {
-      const family = '👨‍👩‍👧‍👦';
-      final label = labelForExploreTabName(
-        en,
-        exploreFeaturedTabName,
-        featuredTab: _featured({'default': family * 40}),
-      );
-
-      expect(label, startsWith(family));
-      expect(label, isNot(contains('�')));
-      expect(label, endsWith('…'));
-    });
-
-    test('keeps a label at exactly the limit intact', () {
-      final exact = 'x' * featuredTabLabelMaxLength;
-      final label = labelForExploreTabName(
-        en,
-        exploreFeaturedTabName,
-        featuredTab: _featured({'default': exact}),
-      );
-
-      expect(label, equals(exact));
-    });
-
-    test('falls back to the generic noun when the map is unusable', () {
-      final label = labelForExploreTabName(
-        en,
-        exploreFeaturedTabName,
-        featuredTab: _featured(const {}),
-      );
-
-      expect(label, equals(en.navExplore));
-    });
-
-    test('falls back to the generic noun when no config is supplied', () {
-      final label = labelForExploreTabName(en, exploreFeaturedTabName);
-
-      expect(label, equals(en.navExplore));
-    });
-
-    test('leaves the compiled tab labels untouched', () {
+    test('leaves the other compiled tab labels untouched', () {
       expect(
         labelForExploreTabName(en, exploreListsTabName),
         equals(en.exploreTabLists),
       );
-    });
-
-    test('collapses newlines that a grapheme count would let through', () {
-      // Tab lays out at a fixed height, so extra lines overflow the bar even
-      // though four graphemes are well inside the clamp.
-      final label = labelForExploreTabName(
-        en,
-        exploreFeaturedTabName,
-        featuredTab: _featured(const {'default': 'a\nb\nc\nd'}),
-      );
-
-      expect(label, equals('a b c d'));
-    });
-
-    test('strips bidi overrides from a server label', () {
-      final label = labelForExploreTabName(
-        en,
-        exploreFeaturedTabName,
-        featuredTab: _featured(const {'default': 'Spot\u202elight'}),
-      );
-
-      expect(label, equals('Spot light'));
-      expect(label.contains('\u202e'), isFalse);
-    });
-
-    test('falls back to the generic noun for control-only copy', () {
-      final label = labelForExploreTabName(
-        en,
-        exploreFeaturedTabName,
-        featuredTab: _featured(const {'default': '\n\u202e\t'}),
-      );
-
-      expect(label, equals(en.navExplore));
     });
   });
 
@@ -203,6 +117,84 @@ void main() {
 
     test('returns empty when nothing renderable survives', () {
       expect(sanitizeFeaturedTabText('\n\t '), isEmpty);
+    });
+
+    test('honours a caller-supplied shorter limit', () {
+      final sanitized = sanitizeFeaturedTabText(
+        'x' * 80,
+        maxLength: featuredTabPillMaxLength,
+      );
+
+      expect(
+        sanitized.characters.length,
+        equals(featuredTabPillMaxLength),
+      );
+    });
+
+    test('keeps text at exactly the limit intact', () {
+      final exact = 'x' * featuredTabLabelMaxLength;
+
+      expect(sanitizeFeaturedTabText(exact), equals(exact));
+    });
+
+    test('clamps without splitting a compound emoji', () {
+      const family = '\u{1F468}\u200d\u{1F469}\u200d\u{1F467}\u200d\u{1F466}';
+      final sanitized = sanitizeFeaturedTabText(family * 40);
+
+      expect(sanitized, startsWith(family));
+      expect(sanitized, isNot(contains('\uFFFD')));
+      expect(sanitized, endsWith('\u2026'));
+    });
+
+    test('collapses newlines a grapheme count would let through', () {
+      // Tab lays out at a fixed height, so extra lines overflow the bar even
+      // though four graphemes are well inside the clamp.
+      expect(sanitizeFeaturedTabText('a\nb\nc\nd'), equals('a b c d'));
+    });
+
+    test('strips bidi overrides', () {
+      final sanitized = sanitizeFeaturedTabText('Spot\u202elight');
+
+      expect(sanitized, equals('Spot light'));
+      expect(sanitized.contains('\u202e'), isFalse);
+    });
+
+    test('returns empty for control-only copy', () {
+      expect(sanitizeFeaturedTabText('\n\u202e\t'), isEmpty);
+    });
+  });
+
+  group('featuredTabSponsorName', () {
+    test('resolves and sanitises the active locale entry', () {
+      final config = _configWithSponsor(const {'default': '  Acme Bikes '});
+
+      expect(featuredTabSponsorName(config, 'en'), equals('Acme Bikes'));
+      expect(featuredTabIsSponsored(config, 'en'), isTrue);
+    });
+
+    test('resolves no sponsor for a locale the map does not cover', () {
+      // The pill and the partnership line must agree per locale: a map that
+      // only resolves elsewhere means this viewer sees no sponsor at all.
+      final config = _configWithSponsor(const {'pt': 'Acme Bicicletas'});
+
+      expect(featuredTabSponsorName(config, 'en'), isNull);
+      expect(featuredTabIsSponsored(config, 'en'), isFalse);
+      expect(featuredTabSponsorName(config, 'pt'), equals('Acme Bicicletas'));
+      expect(featuredTabIsSponsored(config, 'pt'), isTrue);
+    });
+
+    test('resolves no sponsor for control-only copy', () {
+      final config = _configWithSponsor(const {'default': '\n\u202e\t'});
+
+      expect(featuredTabSponsorName(config, 'en'), isNull);
+      expect(featuredTabIsSponsored(config, 'en'), isFalse);
+    });
+
+    test('resolves no sponsor when the field is absent', () {
+      final config = _configWithSponsor(const {});
+
+      expect(featuredTabSponsorName(config, 'en'), isNull);
+      expect(featuredTabIsSponsored(config, 'en'), isFalse);
     });
   });
 }

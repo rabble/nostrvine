@@ -6,49 +6,6 @@ import 'package:meta/meta.dart';
 /// Key of the required fallback entry in a featured tab's locale map.
 const featuredTabLabelDefaultKey = 'default';
 
-/// Platform key the mobile client reads out of a tab's `position` object.
-const featuredTabMobilePlatformKey = 'mobile';
-
-/// Placement of a featured tab relative to an existing Explore tab.
-///
-/// Placement is always expressed by tab **name**, never by index, because
-/// Explore's optional tabs shift indices at runtime.
-@immutable
-class FeaturedTabPosition {
-  /// Creates a placement anchored after or before a named tab.
-  const FeaturedTabPosition({this.after, this.before});
-
-  /// Parses the mobile entry of a `position` object.
-  ///
-  /// Returns an anchorless position when [json] is missing the mobile key or
-  /// carries no usable anchor, which callers treat as "append at the end".
-  factory FeaturedTabPosition.fromJson(Map<String, dynamic>? json) {
-    final mobile = json?[featuredTabMobilePlatformKey];
-    if (mobile is! Map) return const FeaturedTabPosition();
-    final after = mobile['after'];
-    final before = mobile['before'];
-    return FeaturedTabPosition(
-      after: after is String && after.isNotEmpty ? after : null,
-      before: before is String && before.isNotEmpty ? before : null,
-    );
-  }
-
-  /// Name of the tab this tab is placed after.
-  final String? after;
-
-  /// Name of the tab this tab is placed before.
-  final String? before;
-
-  @override
-  bool operator ==(Object other) =>
-      other is FeaturedTabPosition &&
-      other.after == after &&
-      other.before == before;
-
-  @override
-  int get hashCode => Object.hash(after, before);
-}
-
 /// A single server-configured featured tab.
 ///
 /// The client never learns which hashtag a tab represents; [id] is the only
@@ -62,9 +19,9 @@ class FeaturedTabConfig {
     required this.label,
     required this.startsAt,
     required this.endsAt,
-    this.position = const FeaturedTabPosition(),
     this.enabled = false,
     this.visibleToMinors = false,
+    this.pillLabel = const {},
     this.disclosureLabel = const {},
     this.hasContent = false,
   });
@@ -75,13 +32,11 @@ class FeaturedTabConfig {
       id: json['id']?.toString() ?? '',
       slug: json['slug']?.toString() ?? '',
       label: _parseLocaleMap(json['label']),
-      position: FeaturedTabPosition.fromJson(
-        json['position'] as Map<String, dynamic>?,
-      ),
       startsAt: _parseTimestamp(json['starts_at']),
       endsAt: _parseTimestamp(json['ends_at']),
       enabled: json['enabled'] as bool? ?? false,
       visibleToMinors: json['visible_to_minors'] as bool? ?? false,
+      pillLabel: _parseLocaleMap(json['pill_label']),
       disclosureLabel: _parseLocaleMap(json['disclosure_label']),
       hasContent: json['has_content'] as bool? ?? false,
     );
@@ -96,9 +51,6 @@ class FeaturedTabConfig {
   /// Locale map of display labels, keyed by locale code.
   final Map<String, String> label;
 
-  /// Placement relative to the canonical Explore tabs.
-  final FeaturedTabPosition position;
-
   /// Start of the configured display window.
   final DateTime? startsAt;
 
@@ -111,7 +63,18 @@ class FeaturedTabConfig {
   /// Whether the tab may be shown to accounts flagged as minors.
   final bool visibleToMinors;
 
-  /// Optional locale map for a short disclosure marker.
+  /// Optional locale map for the pill rendered beside the tab name.
+  ///
+  /// The tab itself always reads "Featured"; this carries the collection's
+  /// own name. Absent or empty means no pill.
+  final Map<String, String> pillLabel;
+
+  /// Optional locale map naming the tab's commercial sponsor.
+  ///
+  /// This field is the *only* sponsorship signal — there is no boolean
+  /// beside it. A non-empty value means the collection is sponsored and
+  /// names who by; an absent, null, or empty value means it is not. An
+  /// older backend omits the key entirely, which reads the same as unset.
   final Map<String, String> disclosureLabel;
 
   /// Whether the server has precomputed content for this tab.
@@ -123,8 +86,14 @@ class FeaturedTabConfig {
   /// treat as an unrenderable tab.
   String labelFor(String? localeCode) => _resolveLocale(label, localeCode);
 
-  /// Localized disclosure marker for [localeCode], or `null` when unset.
-  String? disclosureLabelFor(String? localeCode) {
+  /// Localized pill text for [localeCode], or `null` when unset.
+  String? pillLabelFor(String? localeCode) {
+    final resolved = _resolveLocale(pillLabel, localeCode);
+    return resolved.isEmpty ? null : resolved;
+  }
+
+  /// Localized sponsor name for [localeCode], or `null` when not sponsored.
+  String? sponsorNameFor(String? localeCode) {
     final resolved = _resolveLocale(disclosureLabel, localeCode);
     return resolved.isEmpty ? null : resolved;
   }
@@ -145,26 +114,26 @@ class FeaturedTabConfig {
       other is FeaturedTabConfig &&
       other.id == id &&
       other.slug == slug &&
-      other.position == position &&
       other.startsAt == startsAt &&
       other.endsAt == endsAt &&
       other.enabled == enabled &&
       other.visibleToMinors == visibleToMinors &&
       other.hasContent == hasContent &&
       _mapEquals(other.label, label) &&
+      _mapEquals(other.pillLabel, pillLabel) &&
       _mapEquals(other.disclosureLabel, disclosureLabel);
 
   @override
   int get hashCode => Object.hash(
     id,
     slug,
-    position,
     startsAt,
     endsAt,
     enabled,
     visibleToMinors,
     hasContent,
     _mapHash(label),
+    _mapHash(pillLabel),
     _mapHash(disclosureLabel),
   );
 

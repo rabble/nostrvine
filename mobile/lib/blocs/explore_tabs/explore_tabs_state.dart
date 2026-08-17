@@ -59,7 +59,7 @@ class ExploreTabsState extends Equatable {
   ///
   /// Canonical order: `classics?`, `new`, `popular`, `categories`,
   /// `for_you?`, `lists`, `apps?`, with the configured `featured?` tab
-  /// spliced in at its named anchor.
+  /// always between `new` and `popular`.
   List<String> get tabNames {
     final names = [
       if (classicsAvailable) exploreClassicsTabName,
@@ -70,33 +70,19 @@ class ExploreTabsState extends Equatable {
       exploreListsTabName,
       if (appsAvailable) exploreAppsTabName,
     ];
-    final featured = featuredTab;
-    if (featured == null) return names;
-    return names
-      ..insert(_featuredInsertIndex(names, featured), exploreFeaturedTabName);
+    if (featuredTab == null) return names;
+    return names..insert(_featuredInsertIndex(names), exploreFeaturedTabName);
   }
 
-  /// Resolves the featured tab's slot from its named anchor.
+  /// Slot the featured tab occupies, immediately after New.
   ///
-  /// Anchors are names, never indices, because the optional tabs above shift
-  /// indices at runtime. An anchor naming an absent tab falls through to the
-  /// end of the list rather than displacing an unrelated tab.
-  static int _featuredInsertIndex(
-    List<String> names,
-    FeaturedTabConfig featured,
-  ) {
-    final after = featured.position.after;
-    if (after != null) {
-      final index = names.indexOf(after);
-      if (index >= 0) return index + 1;
-    }
-    final before = featured.position.before;
-    if (before != null) {
-      final index = names.indexOf(before);
-      if (index >= 0) return index;
-    }
-    return names.length;
-  }
+  /// The server's `position` object is deliberately ignored: placement is
+  /// fixed on mobile so it cannot drift from web, and the payload carries
+  /// per-platform anchors that need not name a tab this client has. Resolved
+  /// by name rather than a literal index because Classics is optional and
+  /// shifts everything below it.
+  static int _featuredInsertIndex(List<String> names) =>
+      names.indexOf(exploreDefaultTabName) + 1;
 
   /// Number of visible tabs.
   int get tabCount => tabNames.length;

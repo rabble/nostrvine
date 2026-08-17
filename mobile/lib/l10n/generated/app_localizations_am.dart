@@ -1177,6 +1177,9 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'ተለይተው የቀረቡ';
+
+  @override
   String get exploreTabClassics => 'ክላሲኮች';
 
   @override
@@ -1196,6 +1199,16 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get exploreTabIntegratedApps => 'የተዋሃዱ መተግበሪያዎች';
+
+  @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
 
   @override
   String get featuredTabEmpty => 'እስካሁን እዚህ ምንም የለም። በቅርቡ ተመልሰህ ተመልከት።';

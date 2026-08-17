@@ -1240,6 +1240,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get exploreTabFeatured => 'Recomandate';
+
+  @override
   String get exploreTabClassics => 'Clasice';
 
   @override
@@ -1259,6 +1262,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get exploreTabIntegratedApps => 'Aplicații integrate';
+
+  @override
+  String exploreFeaturedPaidPartnership(String sponsor) {
+    return 'In paid partnership with $sponsor';
+  }
+
+  @override
+  String exploreFeaturedSponsoredPillSemanticLabel(String name) {
+    return '$name, sponsored';
+  }
 
   @override
   String get featuredTabEmpty => 'Încă nu e nimic aici. Revino în curând.';
