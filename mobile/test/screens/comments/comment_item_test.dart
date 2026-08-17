@@ -251,7 +251,10 @@ void main() {
     await tester.longPress(find.byType(CommentItem));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsIdentifier('delete_comment_option'), findsNothing);
+    // The title is shared by both modal variants; a delete-option assertion
+    // would pass even with the sheet open, since isCurrentUser is false here.
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.commentOptionsTitle), findsNothing);
     verifyNever(() => mocks.composer.add(any()));
     verifyNever(() => mocks.reactions.add(any()));
   });
