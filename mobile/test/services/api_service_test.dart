@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/config/app_version.dart';
 import 'package:openvine/services/api_service.dart';
 
 // Mock classes
@@ -205,6 +206,40 @@ void main() {
             captured.path,
             '/v1/minor-review-cases/case-123/parent-contact',
           );
+        },
+      );
+    });
+
+    group('User-Agent header', () {
+      test(
+        'sends app version and platform, not the old divine-Mobile literal',
+        () async {
+          addTearDown(() => AppVersion.current = 'unknown');
+          AppVersion.current = '1.0.20';
+
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.body).thenReturn('{}');
+
+          when(
+            () => mockClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => mockResponse);
+
+          await apiService.getMinorAccountReviewStatus();
+
+          final captured = verify(
+            () => mockClient.get(any(), headers: captureAny(named: 'headers')),
+          ).captured;
+          final headers = captured.whereType<Map<String, String>>().single;
+          expect(
+            headers['User-Agent'],
+            matches(
+              RegExp(
+                r'^Divine-Mobile/1\.0\.20 \((iOS|Android|macOS|Linux|Windows|Web)\)$',
+              ),
+            ),
+          );
+          expect(headers['User-Agent'], isNot('divine-Mobile/1.0'));
         },
       );
     });

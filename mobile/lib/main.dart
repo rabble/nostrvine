@@ -38,6 +38,7 @@ import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/bootstrap/font_licenses.dart';
+import 'package:openvine/config/app_version.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/constants/app_constants.dart';
@@ -1234,6 +1235,7 @@ Future<void> _startOpenVineApp() async {
 
   // Load package info for version checking (non-blocking, fast).
   final packageInfo = await PackageInfo.fromPlatform();
+  AppVersion.current = packageInfo.version;
 
   // Resolve the at-rest database cipher key before the container so the
   // database provider opens an encrypted SQLite3MultipleCiphers connection on

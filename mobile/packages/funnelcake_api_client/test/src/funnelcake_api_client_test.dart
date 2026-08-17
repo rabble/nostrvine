@@ -1256,15 +1256,19 @@ void main() {
 
         await client.getVideosByAuthor(pubkey: testPubkey);
 
-        verify(
+        final captured = verify(
           () => mockHttpClient.get(
             any(),
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'OpenVine-Mobile/1.0',
-            },
+            headers: captureAny(named: 'headers'),
           ),
-        ).called(1);
+        ).captured;
+        final headers = captured.whereType<Map<String, String>>().first;
+        expect(headers['Accept'], 'application/json');
+        expect(
+          headers['User-Agent'],
+          matches(RegExp(r'^Divine-Mobile/\S+ \(\w[\w.]*\)$')),
+        );
+        expect(headers['User-Agent'], isNot('OpenVine-Mobile/1.0'));
       });
 
       test('filters out videos with empty id', () async {
@@ -5072,17 +5076,20 @@ void main() {
 
         await client.getBulkProfiles(['pub1']);
 
-        verify(
+        final captured = verify(
           () => mockHttpClient.post(
             any(),
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'User-Agent': 'OpenVine-Mobile/1.0',
-            },
+            headers: captureAny(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).called(1);
+        ).captured;
+        final headers = captured.whereType<Map<String, String>>().first;
+        expect(headers['Content-Type'], 'application/json');
+        expect(
+          headers['User-Agent'],
+          matches(RegExp(r'^Divine-Mobile/\S+ \(\w[\w.]*\)$')),
+        );
+        expect(headers['User-Agent'], isNot('OpenVine-Mobile/1.0'));
       });
 
       test('throws FunnelcakeNotConfiguredException when not available', () {

@@ -2,7 +2,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart' as http;
+import 'package:openvine/config/app_version.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -126,7 +128,7 @@ class ApiService {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': 'divine-Mobile/1.0',
+      'User-Agent': buildDivineUserAgent(appVersion: AppVersion.current),
     };
 
     // Add NIP-98 authentication if available

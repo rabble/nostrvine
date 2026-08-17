@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:notification_repository/notification_repository.dart';
+import 'package:openvine/config/app_version.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -27,6 +28,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   );
   final funnelcakeApiClient = FunnelcakeApiClient(
     baseUrl: notificationsBaseUrl,
+    appVersion: AppVersion.current,
   );
   final profileRepository = ref.watch(profileRepositoryProvider);
 

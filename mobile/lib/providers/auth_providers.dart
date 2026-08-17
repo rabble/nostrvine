@@ -10,6 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/config/app_version.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
@@ -148,6 +149,7 @@ AuthService authService(Ref ref) {
       final client = FunnelcakeApiClient(
         baseUrl: environmentConfig.apiBaseUrl,
         httpClient: httpClient,
+        appVersion: AppVersion.current,
       );
       final prefs = ref.read(sharedPreferencesProvider);
       try {
