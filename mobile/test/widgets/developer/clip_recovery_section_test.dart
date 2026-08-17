@@ -66,20 +66,25 @@ void main() {
     expect(find.text(l10n.devOptionsClipRecoveryClaim), findsOneWidget);
   });
 
-  testWidgets('offers a rebuild for unreferenced files', (tester) async {
+  testWidgets('restores only the file whose button was tapped', (tester) async {
+    final wanted = OrphanClipFile(
+      path: '/documents/VID_1755400000000.mp4',
+      sizeBytes: 2 * 1024 * 1024,
+      modifiedAt: DateTime(2026, 8, 17),
+      duration: const Duration(milliseconds: 6033),
+    );
+    final other = OrphanClipFile(
+      path: '/documents/VID_1755400000001.mp4',
+      sizeBytes: 1024,
+      modifiedAt: DateTime(2026, 8, 16),
+    );
     when(service.scanRecoverableClips).thenAnswer(
       (_) async => ClipRecoveryReport(
         currentOwnerPubkey: 'bb',
         ownedClipCount: 0,
         ownedDraftCount: 0,
         foreignGroups: const [],
-        orphanFiles: [
-          OrphanClipFile(
-            path: '/documents/VID_1755400000000.mp4',
-            sizeBytes: 2 * 1024 * 1024,
-            modifiedAt: DateTime(2026, 8, 17),
-          ),
-        ],
+        orphanFiles: [wanted, other],
       ),
     );
     when(() => service.importOrphanFiles(any())).thenAnswer((_) async => []);
@@ -90,12 +95,16 @@ void main() {
     await tester.tap(find.text(l10n.devOptionsClipRecoveryScan));
     await tester.pumpAndSettle();
 
-    expect(find.text('VID_1755400000000.mp4'), findsOneWidget);
+    expect(find.text(wanted.name), findsOneWidget);
+    // Size and length let the operator tell two recordings apart before
+    // restoring one; a file that would not decode shows the size alone.
+    expect(find.text('2.0 MB · 6.0s'), findsOneWidget);
+    expect(find.text('1.0 KB'), findsOneWidget);
 
-    await tester.tap(find.text(l10n.devOptionsClipRecoveryImport));
+    await tester.tap(find.text(l10n.devOptionsClipRecoveryImport).first);
     await tester.pumpAndSettle();
 
-    verify(() => service.importOrphanFiles(any())).called(1);
+    verify(() => service.importOrphanFiles([wanted])).called(1);
   });
 
   testWidgets('says so when there is nothing to recover', (tester) async {

@@ -54,10 +54,15 @@ class ClipRecoveryCubit extends Cubit<ClipRecoveryState>
     }
   }
 
-  /// Rebuilds library rows for every unreferenced file found by the last
-  /// scan, then re-scans.
-  Future<void> importOrphanFiles() async {
-    final files = state.report.orphanFiles;
+  /// Rebuilds a library row for [file], then re-scans.
+  ///
+  /// One file at a time on purpose: the listing shows a preview per row, and
+  /// restoring the whole scan would take back recordings the operator looked
+  /// at and decided against.
+  Future<void> importOrphanFile(OrphanClipFile file) =>
+      _importOrphanFiles([file]);
+
+  Future<void> _importOrphanFiles(List<OrphanClipFile> files) async {
     if (files.isEmpty) return;
 
     emit(state.copyWith(status: ClipRecoveryStatus.importing));

@@ -10,7 +10,6 @@ import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/clip_recovery.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
-import 'package:openvine/services/temp_render_janitor.dart';
 import 'package:openvine/services/video_editor/clip_media_duration.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as p;
@@ -72,13 +71,23 @@ class ClipRecoveryService {
 
   static const String _logName = 'ClipRecoveryService';
 
-  /// Extensions a recovered recording can have.
-  static const Set<String> _videoExtensions = {'.mp4', '.mov'};
-
-  /// Suffix the recorder gives the working copy it makes while reading
-  /// metadata. It is a duplicate of a real clip, not a recording of its own,
-  /// so importing it would double every rescued clip.
-  static const String _workCopySuffix = '.work.mp4';
+  /// The camera's own output filename, and the only shape this tool will
+  /// restore.
+  ///
+  /// An allowlist rather than a blacklist of known artefacts, because the
+  /// documents directory is full of derived mp4s and they cannot be
+  /// enumerated: alongside `c2pa_signed_*`, `<clipId>_reversed`, `trimmed_`,
+  /// `cropped_`, `normalized_`, `divine_`, `stop_motion_`, `merged_` and
+  /// `watermarked_`, the chroma-key bake and transform services write a bare
+  /// `<microseconds>.mp4` with no prefix at all. A blacklist misses those and
+  /// offers the user a list of unrestorable junk; the camera's own output is
+  /// also the only family that is irreplaceable, since every other file is
+  /// derived from a clip or (for an import) from media that still exists
+  /// elsewhere.
+  static final RegExp _recordingFileName = RegExp(
+    r'^VID_\d+\.mp4$',
+    caseSensitive: false,
+  );
 
   static Future<VideoMetadata> _readMetadata(String videoPath) =>
       ProVideoEditor.instance.getMetadata(EditorVideo.file(File(videoPath)));
@@ -142,13 +151,17 @@ class ClipRecoveryService {
     );
   }
 
-  /// Video files in the documents directory that no clip or draft row
-  /// references, largest first.
+  /// Camera recordings in the documents directory that no clip or draft row
+  /// references, newest first, each with a preview frame and its length.
   ///
   /// Unreferenced is judged against *every* row rather than the current
   /// account's, so a file belonging to a hidden owner group is not offered
   /// here as well — claiming that group is the right fix for it, and importing
   /// would duplicate the clip under a second row.
+  ///
+  /// Empty files are dropped rather than listed as unrestorable: a failed
+  /// render or an aborted signing pass leaves zero-byte mp4s behind, and
+  /// offering them buries the recordings that can actually be restored.
   Future<List<OrphanClipFile>> _findOrphanFiles() async {
     final documents = await _documentsDirectoryProvider();
     if (!documents.existsSync()) return const [];
@@ -160,12 +173,7 @@ class ClipRecoveryService {
       // and every package's private storage.
       await for (final entity in documents.list(followLinks: false)) {
         if (entity is! File) continue;
-        final name = p.basename(entity.path);
-        if (!_videoExtensions.contains(p.extension(name).toLowerCase())) {
-          continue;
-        }
-        if (name.endsWith(_workCopySuffix)) continue;
-        if (TempRenderJanitor.isTempRenderName(name)) continue;
+        if (!_recordingFileName.hasMatch(p.basename(entity.path))) continue;
         candidates.add(entity);
       }
     } on Object catch (error) {
@@ -187,18 +195,13 @@ class ClipRecoveryService {
       final name = p.basename(file.path);
       if (referenced.contains(name)) continue;
       if (await _draftsDao.isDraftFileReferenced(name)) continue;
+
+      final FileStat stat;
       try {
         // One stat rather than a length + lastModified pair, so a file
         // deleted mid-scan cannot report a size from before and a timestamp
         // from after.
-        final stat = file.statSync();
-        orphans.add(
-          OrphanClipFile(
-            path: file.path,
-            sizeBytes: stat.size,
-            modifiedAt: stat.modified,
-          ),
-        );
+        stat = file.statSync();
       } on Object catch (error) {
         // A file that vanished between listing and stat is not an orphan
         // worth reporting.
@@ -207,11 +210,55 @@ class ClipRecoveryService {
           name: _logName,
           category: LogCategory.video,
         );
+        continue;
       }
+      if (stat.size == 0) continue;
+
+      orphans.add(
+        OrphanClipFile(
+          path: file.path,
+          sizeBytes: stat.size,
+          modifiedAt: stat.modified,
+          duration: await _durationOrNull(file.path),
+          previewPath: await _previewOrNull(file.path),
+        ),
+      );
     }
 
-    orphans.sort((a, b) => b.sizeBytes.compareTo(a.sizeBytes));
+    orphans.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
     return orphans;
+  }
+
+  /// Playing length of [videoPath], or null when it cannot be read — which is
+  /// how the UI marks a file that will probably not restore into anything
+  /// playable.
+  Future<Duration?> _durationOrNull(String videoPath) async {
+    try {
+      final metadata = await _metadataProvider(videoPath);
+      return commonTrackEnd(metadata) ?? metadata.duration;
+    } on Object catch (error) {
+      Log.warning(
+        '$_logName: could not read metadata for $videoPath: $error',
+        name: _logName,
+        category: LogCategory.video,
+      );
+      return null;
+    }
+  }
+
+  /// A frame from [videoPath] for the scan listing, or null when none could be
+  /// taken. Best-effort: a missing preview must not drop a restorable file.
+  Future<String?> _previewOrNull(String videoPath) async {
+    try {
+      return await _thumbnailProvider(videoPath);
+    } on Object catch (error) {
+      Log.warning(
+        '$_logName: could not extract a preview for $videoPath: $error',
+        name: _logName,
+        category: LogCategory.video,
+      );
+      return null;
+    }
   }
 
   /// Restamps every row owned by [group] onto the signed-in account, so its
@@ -297,7 +344,10 @@ class ClipRecoveryService {
 
   Future<DivineVideoClip> _rebuildClip(OrphanClipFile file) async {
     final metadata = await _metadataProvider(file.path);
-    final duration = commonTrackEnd(metadata) ?? metadata.duration;
+    // The scan already read both; prefer its values so what the operator saw
+    // in the listing is what the restored clip carries.
+    final duration =
+        file.duration ?? commonTrackEnd(metadata) ?? metadata.duration;
     final resolution = metadata.resolution;
     final sourceAspectRatio = resolution.height == 0
         ? null
@@ -314,7 +364,7 @@ class ClipRecoveryService {
       // default rather than inventing one from the sensor's ratio.
       targetAspectRatio: model.AspectRatio.vertical,
       originalAspectRatio: sourceAspectRatio,
-      thumbnailPath: await _thumbnailProvider(file.path),
+      thumbnailPath: file.previewPath ?? await _thumbnailProvider(file.path),
     );
   }
 }

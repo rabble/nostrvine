@@ -1,6 +1,8 @@
 // ABOUTME: Developer-only rescue for recordings the app can no longer show.
 // ABOUTME: Answers "my clips are gone" with where they actually are.
 
+import 'dart:io';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -202,16 +204,14 @@ class _OrphanFiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final state = context.watch<ClipRecoveryCubit>().state;
-    final report = state.report;
+    final report = context.select((ClipRecoveryCubit c) => c.state.report);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 4,
+      spacing: 8,
       children: [
         Text(
-          l10n.devOptionsClipRecoveryOrphanFiles(
+          context.l10n.devOptionsClipRecoveryOrphanFiles(
             report.orphanFiles.length,
             formatByteSize(report.orphanBytes),
           ),
@@ -220,14 +220,6 @@ class _OrphanFiles extends StatelessWidget {
           ),
         ),
         ...report.orphanFiles.map(_OrphanFileRow.new),
-        DivineButton(
-          label: l10n.devOptionsClipRecoveryImport,
-          type: DivineButtonType.secondary,
-          expanded: true,
-          onPressed: state.isBusy
-              ? null
-              : () => context.read<ClipRecoveryCubit>().importOrphanFiles(),
-        ),
       ],
     );
   }
@@ -240,20 +232,78 @@ class _OrphanFileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = VineTheme.bodySmallFont(
+    final isBusy = context.select((ClipRecoveryCubit c) => c.state.isBusy);
+    final metaStyle = VineTheme.bodySmallFont(
       color: context.vineColors.secondaryText,
     );
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 8,
+      spacing: 12,
       children: [
-        SizedBox(
-          width: 72,
-          child: Text(formatByteSize(file.sizeBytes), style: style),
+        _OrphanPreview(file),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                file.name,
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
+              // Symbols and numbers only, so the line needs no translation:
+              // "2.1 MB · 6.0s", or just the size when the file would not
+              // decode.
+              Text(
+                [
+                  formatByteSize(file.sizeBytes),
+                  if (file.duration != null)
+                    '${(file.duration!.inMilliseconds / 1000).toStringAsFixed(1)}s',
+                ].join(' · '),
+                style: metaStyle,
+              ),
+            ],
+          ),
         ),
-        Expanded(child: Text(file.path.split('/').last, style: style)),
+        DivineButton(
+          label: context.l10n.devOptionsClipRecoveryImport,
+          type: DivineButtonType.secondary,
+          onPressed: isBusy
+              ? null
+              : () => context.read<ClipRecoveryCubit>().importOrphanFile(file),
+        ),
       ],
+    );
+  }
+}
+
+/// The frame the scan pulled out of a recording, so the operator can see which
+/// one a row is before restoring it. Falls back to a blank tile when no frame
+/// could be taken — which, together with a missing duration, is the signal
+/// that the file is unlikely to restore into anything playable.
+class _OrphanPreview extends StatelessWidget {
+  const _OrphanPreview(this.file);
+
+  final OrphanClipFile file;
+
+  @override
+  Widget build(BuildContext context) {
+    final previewPath = file.previewPath;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: SizedBox(
+        width: 48,
+        height: 64,
+        child: previewPath == null
+            ? ColoredBox(color: context.vineColors.surfaceContainer)
+            : Image.file(
+                File(previewPath),
+                fit: BoxFit.cover,
+                errorBuilder: (context, _, _) =>
+                    ColoredBox(color: context.vineColors.surfaceContainer),
+              ),
+      ),
     );
   }
 }

@@ -43,7 +43,7 @@ class ClipOwnerGroup extends Equatable {
   ];
 }
 
-/// A video file in the documents directory that no clip or draft row
+/// A recording in the documents directory that no clip or draft row
 /// references — what a database reset leaves behind.
 class OrphanClipFile extends Equatable {
   /// Creates an orphan file entry.
@@ -51,6 +51,8 @@ class OrphanClipFile extends Equatable {
     required this.path,
     required this.sizeBytes,
     required this.modifiedAt,
+    this.duration,
+    this.previewPath,
   });
 
   /// Absolute path on this device.
@@ -62,8 +64,30 @@ class OrphanClipFile extends Equatable {
   /// Last modification time, which for a recording is when it was shot.
   final DateTime modifiedAt;
 
+  /// Playing length, or null when the file could not be read.
+  ///
+  /// A null duration is the scan's own verdict that this file is unlikely to
+  /// restore into anything playable.
+  final Duration? duration;
+
+  /// A frame extracted during the scan, or null when none could be taken.
+  ///
+  /// Restoring is per file, so the operator has to be able to tell which
+  /// recording a row is before pressing anything — a filename and a byte count
+  /// cannot answer that.
+  final String? previewPath;
+
+  /// Filename without its directory.
+  String get name => path.split('/').last;
+
   @override
-  List<Object?> get props => [path, sizeBytes, modifiedAt];
+  List<Object?> get props => [
+    path,
+    sizeBytes,
+    modifiedAt,
+    duration,
+    previewPath,
+  ];
 }
 
 /// The result of a clip-recovery scan.
@@ -98,7 +122,7 @@ class ClipRecoveryReport extends Equatable {
   /// Groups owned by anyone else, largest first.
   final List<ClipOwnerGroup> foreignGroups;
 
-  /// Unreferenced video files, largest first.
+  /// Unreferenced recordings, newest first.
   final List<OrphanClipFile> orphanFiles;
 
   /// Whether the scan found anything to recover.
@@ -149,8 +173,14 @@ class ClipRecoveryReport extends Equatable {
         '(${formatByteSize(orphanBytes)}, $orphanBytes bytes)',
       );
       for (final file in orphanFiles) {
+        // An unreadable length is the scan's verdict that this one probably
+        // will not restore into anything playable, so it belongs in the report
+        // rather than only on screen.
+        final length = file.duration == null
+            ? 'unreadable'
+            : '${file.duration!.inMilliseconds}ms';
         buffer.writeln(
-          '  ${formatByteSize(file.sizeBytes)}\t'
+          '  ${formatByteSize(file.sizeBytes)}\t$length\t'
           '${file.modifiedAt.toIso8601String()}\t${file.path}',
         );
       }

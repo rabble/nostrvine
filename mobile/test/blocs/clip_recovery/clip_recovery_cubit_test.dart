@@ -27,6 +27,30 @@ const _found = ClipRecoveryReport(
   orphanFiles: [],
 );
 
+final _firstOrphan = OrphanClipFile(
+  path: '/documents/VID_1755400000000.mp4',
+  sizeBytes: 2048,
+  modifiedAt: DateTime(2026, 8, 17),
+  duration: const Duration(seconds: 6),
+  previewPath: '/documents/VID_1755400000000.mp4.jpg',
+);
+
+final _secondOrphan = OrphanClipFile(
+  path: '/documents/VID_1755400000001.mp4',
+  sizeBytes: 4096,
+  modifiedAt: DateTime(2026, 8, 16),
+  duration: const Duration(seconds: 3),
+  previewPath: '/documents/VID_1755400000001.mp4.jpg',
+);
+
+final _withOrphans = ClipRecoveryReport(
+  currentOwnerPubkey: _found.currentOwnerPubkey,
+  ownedClipCount: 0,
+  ownedDraftCount: 0,
+  foreignGroups: const [],
+  orphanFiles: [_firstOrphan, _secondOrphan],
+);
+
 final _afterClaim = ClipRecoveryReport(
   currentOwnerPubkey: _found.currentOwnerPubkey,
   ownedClipCount: 3,
@@ -104,18 +128,24 @@ void main() {
     );
 
     blocTest<ClipRecoveryCubit, ClipRecoveryState>(
-      'rebuilding does nothing when the scan found no unreferenced files',
+      'rebuilding restores only the file the operator picked',
       build: () {
-        when(service.scanRecoverableClips).thenAnswer((_) async => _found);
+        when(
+          service.scanRecoverableClips,
+        ).thenAnswer((_) async => _withOrphans);
+        when(
+          () => service.importOrphanFiles(any()),
+        ).thenAnswer((_) async => const []);
         return ClipRecoveryCubit(service: service);
       },
       act: (cubit) async {
         await cubit.scan();
-        await cubit.importOrphanFiles();
+        await cubit.importOrphanFile(_secondOrphan);
       },
-      skip: 2,
-      expect: () => <ClipRecoveryState>[],
-      verify: (_) => verifyNever(() => service.importOrphanFiles(any())),
+      skip: 3,
+      verify: (_) => verify(
+        () => service.importOrphanFiles([_secondOrphan]),
+      ).called(1),
     );
   });
 }
