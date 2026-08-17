@@ -478,7 +478,9 @@ never satisfy the app's delegate.
 
 `scripts/check_l10n_delegates_ceiling.sh` freezes the per-file count of
 `MaterialApp` / `CupertinoApp` / `WidgetsApp` constructions under
-`mobile/test` that register no delegates, in
+`mobile/test` that register no `AppLocalizations` delegate — passing
+some other delegate list, such as `GlobalMaterialLocalizations.delegates`,
+does not clear the count — in
 `mobile/scripts/baseline/l10n_delegates.txt` — a ceiling that may only
 shrink. It runs in CI (the `generated-files` job), not the pre-push hook.
 
