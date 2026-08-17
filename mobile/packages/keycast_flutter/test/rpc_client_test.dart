@@ -267,7 +267,10 @@ void main() {
 
         expect(firstClient.closeCount, equals(1));
         expect(retryClient.closeCount, equals(1));
-        await expectLater(rpc.getPublicKey(), throwsA(isA<StateError>()));
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(isA<KeycastRpcClosedException>()),
+        );
 
         staleRequest.completeError(
           http.ClientException(

@@ -621,7 +621,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
 
   void _ensureOpen() {
     if (_isClosed) {
-      throw StateError('KeycastRpc is closed');
+      throw KeycastRpcClosedException();
     }
   }
 }
