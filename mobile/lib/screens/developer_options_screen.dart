@@ -315,6 +315,7 @@ class _DeveloperOptionsScreenState
                     color: context.vineColors.secondaryText,
                   ),
                 ),
+                trailing: const DivineIcon(icon: .caretRight),
                 onTap: () => context.push(ClipRecoveryScreen.path),
               ),
 
