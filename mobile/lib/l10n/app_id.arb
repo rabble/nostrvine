@@ -5214,5 +5214,7 @@
   "socialProofFollowsYou": "Mengikuti kamu",
   "socialProofYouFollow": "Kamu ikuti",
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} pengikut}}",
-  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}"
+  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}",
+  "feedOutageMessage": "Video sedang tidak bisa dimuat.\nIni dari kami, bukan kamu — sedang kami perbaiki.",
+  "feedOfflineMessage": "Kamu sedang offline.\nPeriksa koneksimu lalu coba lagi."
 }

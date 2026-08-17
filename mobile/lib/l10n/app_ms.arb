@@ -7044,5 +7044,7 @@
   "socialProofFollowsYou": "Mengikuti anda",
   "socialProofYouFollow": "Anda ikuti",
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} pengikut}}",
-  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}"
+  "searchUserVideoCount": "{count, plural, other{{formattedCount} video}}",
+  "feedOutageMessage": "Video tidak dapat dimuatkan sekarang.\nIni masalah kami, bukan anda — kami sedang membaikinya.",
+  "feedOfflineMessage": "Anda di luar talian.\nSemak sambungan anda dan cuba lagi."
 }

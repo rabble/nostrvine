@@ -7044,5 +7044,7 @@
   "socialProofFollowsYou": "关注了你",
   "socialProofYouFollow": "已关注",
   "socialProofFollowerCount": "{count, plural, other{{formattedCount} 位粉丝}}",
-  "searchUserVideoCount": "{count, plural, other{{formattedCount} 条视频}}"
+  "searchUserVideoCount": "{count, plural, other{{formattedCount} 条视频}}",
+  "feedOutageMessage": "视频暂时加载不出来。\n是我们的问题，正在修复。",
+  "feedOfflineMessage": "你当前处于离线状态。\n请检查网络后重试。"
 }

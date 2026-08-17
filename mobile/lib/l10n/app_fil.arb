@@ -3808,5 +3808,7 @@
   "socialProofFollowsYou": "Sinusundan ka",
   "socialProofYouFollow": "Sinusundan mo",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} follower} other{{formattedCount} follower}}",
-  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video}}"
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video}}",
+  "feedOutageMessage": "Hindi nagloload ang mga video ngayon.\nSa amin ito, hindi sa iyo — inaayos na namin.",
+  "feedOfflineMessage": "Offline ka.\nTingnan ang koneksyon mo at subukan ulit."
 }

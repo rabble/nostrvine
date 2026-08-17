@@ -5214,5 +5214,7 @@
   "socialProofFollowsYou": "Volgt jou",
   "socialProofYouFollow": "Jij volgt",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} volger} other{{formattedCount} volgers}}",
-  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video''s}}"
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} video''s}}",
+  "feedOutageMessage": "Er laden nu geen video's.\nHet ligt aan ons, niet aan jou — we zijn ermee bezig.",
+  "feedOfflineMessage": "Je bent offline.\nControleer je verbinding en probeer het opnieuw."
 }

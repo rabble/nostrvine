@@ -5214,5 +5214,7 @@
   "socialProofFollowsYou": "Te sigue",
   "socialProofYouFollow": "Siguiendo",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} seguidor} other{{formattedCount} seguidores}}",
-  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} videos}}"
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} videos}}",
+  "feedOutageMessage": "Los videos no se están cargando.\nEs cosa nuestra, no tuya: ya estamos en ello.",
+  "feedOfflineMessage": "Estás sin conexión.\nRevisa tu conexión e inténtalo de nuevo."
 }

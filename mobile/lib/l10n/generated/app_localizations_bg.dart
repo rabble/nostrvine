@@ -12278,4 +12278,12 @@ class AppLocalizationsBg extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Видеата не се зареждат в момента.\nПроблемът е от нас и вече го оправяме.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Няма връзка с интернет.\nПровери връзката си и опитай пак.';
 }

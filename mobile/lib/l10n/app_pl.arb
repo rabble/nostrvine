@@ -5214,5 +5214,7 @@
   "socialProofFollowsYou": "Obserwuje Cię",
   "socialProofYouFollow": "Obserwujesz",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} obserwujący} few{{formattedCount} obserwujących} many{{formattedCount} obserwujących} other{{formattedCount} obserwujących}}",
-  "searchUserVideoCount": "{count, plural, =1{{formattedCount} film} few{{formattedCount} filmy} many{{formattedCount} filmów} other{{formattedCount} filmu}}"
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} film} few{{formattedCount} filmy} many{{formattedCount} filmów} other{{formattedCount} filmu}}",
+  "feedOutageMessage": "Filmy się teraz nie ładują.\nTo po naszej stronie — już to naprawiamy.",
+  "feedOfflineMessage": "Jesteś offline.\nSprawdź połączenie i spróbuj ponownie."
 }

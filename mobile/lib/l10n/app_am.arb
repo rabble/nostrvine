@@ -5339,5 +5339,7 @@
   "socialProofFollowsYou": "ይከተልዎታል",
   "socialProofYouFollow": "ይከተላሉ",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} ተከታይ} other{{formattedCount} ተከታዮች}}",
-  "searchUserVideoCount": "{count, plural, =1{{formattedCount} ቪዲዮ} other{{formattedCount} ቪዲዮዎች}}"
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} ቪዲዮ} other{{formattedCount} ቪዲዮዎች}}",
+  "feedOutageMessage": "ቪዲዮዎች አሁን እየተጫኑ አይደሉም።\nችግሩ የእኛ ነው፤ እየሠራንበት ነው።",
+  "feedOfflineMessage": "ከመስመር ውጭ ነዎት።\nግንኙነትዎን አረጋግጠው እንደገና ይሞክሩ።"
 }

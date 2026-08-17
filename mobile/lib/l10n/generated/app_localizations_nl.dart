@@ -12220,4 +12220,12 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Er laden nu geen video\'s.\nHet ligt aan ons, niet aan jou — we zijn ermee bezig.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Je bent offline.\nControleer je verbinding en probeer het opnieuw.';
 }

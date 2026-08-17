@@ -12201,4 +12201,12 @@ class AppLocalizationsMs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Video tidak dapat dimuatkan sekarang.\nIni masalah kami, bukan anda — kami sedang membaikinya.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Anda di luar talian.\nSemak sambungan anda dan cuba lagi.';
 }

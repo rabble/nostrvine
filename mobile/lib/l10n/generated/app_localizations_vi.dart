@@ -12142,4 +12142,12 @@ class AppLocalizationsVi extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Hiện không tải được video.\nLỗi từ phía chúng tôi — chúng tôi đang khắc phục.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Bạn đang ngoại tuyến.\nKiểm tra kết nối rồi thử lại.';
 }

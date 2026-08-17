@@ -12159,4 +12159,12 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Videor laddas inte just nu.\nDet är vårt fel, inte ditt – vi jobbar på det.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Du är offline.\nKolla din anslutning och försök igen.';
 }

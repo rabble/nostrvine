@@ -20679,6 +20679,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{{formattedCount} follower} other{{formattedCount} followers}}'**
   String socialProofFollowerCount(int count, String formattedCount);
+
+  /// Shown on the video feed when the Divine status page confirms a component the feed depends on is impaired. Says plainly that the fault is ours.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos aren\'t loading right now.\nIt\'s us, not you — we\'re on it.'**
+  String get feedOutageMessage;
+
+  /// Shown on the video feed when the device has no network, or when even the status page (on a different CDN) is unreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline.\nCheck your connection and try again.'**
+  String get feedOfflineMessage;
 }
 
 class _AppLocalizationsDelegate

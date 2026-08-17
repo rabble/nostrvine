@@ -12304,4 +12304,12 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'I video non si caricano al momento.\nDipende da noi, non da te — ci stiamo lavorando.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Sei offline.\nControlla la connessione e riprova.';
 }

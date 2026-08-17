@@ -12408,4 +12408,12 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Videoclipurile nu se încarcă acum.\nE de la noi, nu de la tine — lucrăm la asta.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Ești offline.\nVerifică-ți conexiunea și încearcă din nou.';
 }

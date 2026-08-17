@@ -11477,4 +11477,10 @@ class AppLocalizationsZh extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage => '视频暂时加载不出来。\n是我们的问题，正在修复。';
+
+  @override
+  String get feedOfflineMessage => '你当前处于离线状态。\n请检查网络后重试。';
 }

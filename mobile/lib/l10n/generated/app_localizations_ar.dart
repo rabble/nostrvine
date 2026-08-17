@@ -12065,4 +12065,12 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'الفيديوهات لا تُحمَّل الآن.\nالمشكلة من عندنا، ونحن نصلحها.';
+
+  @override
+  String get feedOfflineMessage =>
+      'أنت غير متصل.\nتحقق من اتصالك وحاول مرة أخرى.';
 }

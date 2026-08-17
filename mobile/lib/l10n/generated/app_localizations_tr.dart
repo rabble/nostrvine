@@ -12118,4 +12118,12 @@ class AppLocalizationsTr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get feedOutageMessage =>
+      'Videolar şu anda yüklenmiyor.\nSorun bizde, sende değil — üzerinde çalışıyoruz.';
+
+  @override
+  String get feedOfflineMessage =>
+      'Çevrimdışısın.\nBağlantını kontrol edip tekrar dene.';
 }

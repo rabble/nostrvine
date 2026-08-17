@@ -5345,5 +5345,7 @@
   "socialProofFollowsYou": "Следва те",
   "socialProofYouFollow": "Следваш",
   "socialProofFollowerCount": "{count, plural, =1{{formattedCount} последовател} other{{formattedCount} последователи}}",
-  "searchUserVideoCount": "{count, plural, =1{{formattedCount} видео} other{{formattedCount} видеа}}"
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} видео} other{{formattedCount} видеа}}",
+  "feedOutageMessage": "Видеата не се зареждат в момента.\nПроблемът е от нас и вече го оправяме.",
+  "feedOfflineMessage": "Няма връзка с интернет.\nПровери връзката си и опитай пак."
 }

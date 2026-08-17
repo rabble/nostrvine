@@ -7585,5 +7585,13 @@
         "type": "String"
       }
     }
+  },
+  "feedOutageMessage": "Videos aren't loading right now.\nIt's us, not you — we're on it.",
+  "@feedOutageMessage": {
+    "description": "Shown on the video feed when the Divine status page confirms a component the feed depends on is impaired. Says plainly that the fault is ours."
+  },
+  "feedOfflineMessage": "You're offline.\nCheck your connection and try again.",
+  "@feedOfflineMessage": {
+    "description": "Shown on the video feed when the device has no network, or when even the status page (on a different CDN) is unreachable."
   }
 }
