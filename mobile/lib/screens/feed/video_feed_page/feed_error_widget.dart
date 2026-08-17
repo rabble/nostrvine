@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/outage_notice/outage_notice_cubit.dart';
-import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/outage_diagnosis_provider.dart';
 
@@ -20,9 +19,8 @@ import 'package:openvine/providers/outage_diagnosis_provider.dart';
 /// at this screen — never in the background, and only for the components the
 /// feed itself depends on.
 class FeedErrorWidget extends ConsumerWidget {
-  const FeedErrorWidget({required this.onRetry, this.error, super.key});
+  const FeedErrorWidget({required this.onRetry, super.key});
 
-  final VideoFeedError? error;
   final Future<void> Function() onRetry;
 
   @override
