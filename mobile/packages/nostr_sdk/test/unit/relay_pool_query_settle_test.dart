@@ -249,6 +249,49 @@ void main() {
       );
     });
 
+    test(
+      'a relay CLOSED refusal arms the settle window for a silent peer',
+      () async {
+        final nostr = _newNostr();
+        final refusing = _SilentRelay('wss://refuses-req.example');
+        final mute = _SilentRelay('wss://never-eoses.example');
+        expect(await nostr.relayPool.add(refusing), isTrue);
+        expect(await nostr.relayPool.add(mute), isTrue);
+
+        final stopwatch = Stopwatch()..start();
+        final pending = nostr.queryEventsDetailed([
+          {
+            'kinds': [1],
+          },
+        ], timeout: _timeout);
+
+        final subId = await refusing.awaitPendingQuery();
+        await mute.awaitPendingQuery();
+        // The refusal is terminal for this relay, but the peer still gets the
+        // same grace period it would after a sibling EOSE.
+        await refusing.deliver([
+          'CLOSED',
+          subId,
+          'error: too many concurrent REQs',
+        ]);
+
+        final result = await pending;
+        stopwatch.stop();
+
+        expect(result.timedOut, isFalse);
+        expect(
+          stopwatch.elapsed,
+          lessThan(_timeout),
+          reason: 'the caller must not wait out the full query timeout',
+        );
+        expect(
+          stopwatch.elapsed,
+          greaterThanOrEqualTo(RelayPool.querySettleWindow),
+          reason: 'the silent relay still gets its grace period first',
+        );
+      },
+    );
+
     test('the settle window closes the REQ it abandons', () async {
       final nostr = _newNostr();
       final answering = _SilentRelay('wss://answers.example');
@@ -896,6 +939,49 @@ void main() {
           );
         },
       );
+
+      test('reports a peer CLOSED refusal after EOSE as a timeout', () async {
+        final nostr = _newNostr();
+        final answering = _SilentRelay('wss://answers.example');
+        final refusing = _SilentRelay('wss://refuses-req.example');
+        expect(await nostr.relayPool.add(answering), isTrue);
+        expect(await nostr.relayPool.add(refusing), isTrue);
+
+        final pending = nostr.queryEventsDetailed(
+          [
+            {
+              'kinds': [10003],
+            },
+          ],
+          timeout: timeout,
+          requireAllRelaysSettled: true,
+        );
+
+        final subId = await answering.awaitPendingQuery();
+        await refusing.awaitPendingQuery();
+        await answering.deliver(['EOSE', subId]);
+        await refusing.deliver([
+          'CLOSED',
+          subId,
+          'error: too many concurrent REQs',
+        ]);
+
+        final result = await pending;
+
+        expect(result.events, isEmpty);
+        expect(
+          result.timedOut,
+          isTrue,
+          reason:
+              'one relay answered empty, but the peer refusal is still '
+              'inconclusive for a caller about to replace what it read',
+        );
+        expect(
+          result.noRelaysParticipated,
+          isFalse,
+          reason: 'both relays took the REQ before settling or refusing it',
+        );
+      });
 
       // Participation is acceptance, not a successful write. `relayDoQuery`
       // saves the query before sending on the auth-gated branch, so the REQ is
