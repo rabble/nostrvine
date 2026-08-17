@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# ABOUTME: Reports which local branches and worktrees are safe to prune.
-# ABOUTME: Report-only by default; deletion is a separate explicit opt-in.
+# ABOUTME: Reports which local branches and worktrees look safe to prune.
+# ABOUTME: Report-only until deletion has a separately reviewed implementation.
 #
 # Why the obvious approaches are wrong here
 # -----------------------------------------
@@ -16,65 +16,74 @@
 # 3. Name matching destroys work. Deleting everything matching "7606" took out
 #    `fix/7606-semantic-tokens` — unpushed local work on a parallel attempt.
 #
-# So there is exactly one trustworthy signal in a squash-merge repo: GitHub
-# says a PR with this head ref merged. Everything else is KEEP.
+# So the useful signal in a squash-merge repo is GitHub reporting a same-repo PR
+# to main with this head ref merged. Everything else is KEEP.
 #
 # The bias is deliberate. A false KEEP costs disk. A false DELETE costs work
 # that exists nowhere else — an unpushed branch has no backup.
 #
 # Usage:
-#   bash prune-stale-worktrees.sh                  # report only (default)
-#   bash prune-stale-worktrees.sh --execute        # delete, with confirmation
-#   bash prune-stale-worktrees.sh --execute --yes  # no confirmation
+#   bash scripts/prune-merged-branches.sh
+#   bash scripts/prune-merged-branches.sh --help
 #
-# Requires: gh (authenticated), git. Run from the repo root.
+# Requires: gh (authenticated), git, perl. Run from the repo root.
 
 set -euo pipefail
 
-EXECUTE=0
-ASSUME_YES=0
+usage() {
+  sed -n '/^# Usage:/,/^# Requires:/s/^# \{0,1\}//p' "$0"
+}
+
 for arg in "$@"; do
   case "$arg" in
-    --execute) EXECUTE=1 ;;
-    --yes) ASSUME_YES=1 ;;
+    -h|--help) usage; exit 0 ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
 
-command -v gh >/dev/null || { echo "gh not found" >&2; exit 2; }
+GH="${GH:-gh}"
+BASE="${BASE:-origin/main}"
+REPO="${REPO:-${GITHUB_REPOSITORY:-divinevideo/divine-mobile}}"
+MERGED_PR_LIMIT="${MERGED_PR_LIMIT:-100000}"
+
+command -v "$GH" >/dev/null || { echo "$GH not found" >&2; exit 2; }
 git rev-parse --git-dir >/dev/null || exit 2
 
-BASE=origin/main
 echo "Fetching origin..."
 git fetch origin --prune --quiet
 git rev-parse --verify --quiet "$BASE" >/dev/null || {
   echo "$BASE not found" >&2; exit 2
 }
 
-# Shallow is fine for the signals used here: the GitHub lookup needs no local
-# history, and the unpushed check compares a branch tip against its own remote
-# tracking ref. Only note it, because `git branch -d`'s built-in safety check
-# does need ancestry and will refuse more often than it strictly must.
+# Shallow is fine for the signals used here: the GitHub lookups need no local
+# history, and the worktree checks inspect only the current checkout state.
 if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-  echo "Note: shallow repository. Classification is unaffected, but git's own"
-  echo "      -d safety check may refuse some deletions. That is safe."
+  echo "Note: shallow repository. Classification is unaffected."
 fi
 
 echo "Loading merged PR head refs from GitHub..."
 MERGED_REFS="$(mktemp)"
-DELETABLE="$(mktemp)"
-trap 'rm -f "$MERGED_REFS" "$DELETABLE"' EXIT
+WORKTREE_FIELDS="$(mktemp)"
+trap 'rm -f "$MERGED_REFS" "$WORKTREE_FIELDS"' EXIT
 
-gh pr list --state merged --limit 2000 --json headRefName \
-  --jq '.[].headRefName' | sort -u > "$MERGED_REFS"
+"$GH" pr list --state merged --limit "$MERGED_PR_LIMIT" \
+  --json headRefName,isCrossRepository,baseRefName \
+  --jq '.[] | select(.isCrossRepository == false and .baseRefName == "main") | .headRefName' \
+  | sort -u > "$MERGED_REFS"
 echo "  $(wc -l < "$MERGED_REFS" | tr -d ' ') merged head refs known"
 
+git worktree list --porcelain -z > "$WORKTREE_FIELDS"
+
 worktree_for() {
-  git worktree list --porcelain \
-    | awk -v want="refs/heads/$1" '
-        /^worktree /  { path = substr($0, 10) }
-        /^branch /    { if (substr($0, 8) == want) print path }
-      '
+  WANT="refs/heads/$1" perl -0ne '
+    chomp;
+    if (/^worktree (.*)\z/s) { $path = $1; next }
+    if (/^branch (.*)\z/s && $1 eq $ENV{"WANT"}) { print $path; exit }
+  ' "$WORKTREE_FIELDS"
+}
+
+commit_exists_on_github() {
+  "$GH" api -X GET "repos/$REPO/commits/$1" >/dev/null 2>&1
 }
 
 CURRENT="$(git rev-parse --abbrev-ref HEAD)"
@@ -88,73 +97,43 @@ while IFS= read -r branch; do
   [ "$branch" = "$CURRENT" ] && continue
 
   wt="$(worktree_for "$branch")"
+  tip="$(git rev-parse "$branch")"
 
-  if grep -qxF "$branch" "$MERGED_REFS"; then
+  if grep -qxF -- "$branch" "$MERGED_REFS"; then
     verdict="MERGED-PR"
   else
     verdict="KEEP"
   fi
 
-  # Two independent vetoes, applied even to MERGED-PR branches.
+  # Vetoes are applied even to MERGED-PR branches.
 
-  # Veto 1: uncommitted work in the branch's worktree exists in no commit
-  # anywhere, merged PR or not.
-  if [ "$verdict" = "MERGED-PR" ] && [ -n "$wt" ] && [ -d "$wt" ]; then
-    if [ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]; then
-      verdict="KEEP-DIRTY"
+  # Veto 1: the local tip must exist in GitHub's repository object database.
+  # This catches unpushed work and branch-name reuse after an older PR merged.
+  if [ "$verdict" = "MERGED-PR" ]; then
+    if ! commit_exists_on_github "$tip"; then
+      verdict="KEEP-LOCAL"
     fi
   fi
 
-  # Veto 2: local commits the remote tracking ref does not have. Covers the
-  # "merged, then someone kept working on the branch" case.
-  if [ "$verdict" = "MERGED-PR" ]; then
-    upstream="$(git rev-parse --abbrev-ref --symbolic-full-name \
-      "$branch@{upstream}" 2>/dev/null || true)"
-    if [ -n "$upstream" ]; then
-      ahead="$(git rev-list --count "$upstream..$branch" 2>/dev/null || echo 0)"
-      [ "$ahead" -gt 0 ] && verdict="KEEP-AHEAD"
+  # Veto 2: uncommitted or ignored work in the branch's worktree exists in no
+  # commit anywhere, merged PR or not.
+  if [ "$verdict" = "MERGED-PR" ] && [ -n "$wt" ] && [ -d "$wt" ]; then
+    if [ -n "$(git -C "$wt" status --porcelain --ignored=matching 2>/dev/null)" ]; then
+      verdict="KEEP-DIRTY"
     fi
   fi
 
   printf '%-14s %-50s %s\n' "$verdict" "$branch" "${wt:-—}"
   if [ "$verdict" = "MERGED-PR" ]; then
     merged=$((merged + 1))
-    printf '%s\t%s\n' "$branch" "$wt" >> "$DELETABLE"
   else
     keep=$((keep + 1))
   fi
 done < <(git for-each-ref --format='%(refname:short)' refs/heads/ | sort)
 
-printf '\n%s deletable (merged PR, clean, not ahead) / %s kept.\n' "$merged" "$keep"
+printf '\n%s likely prunable (merged same-repo PR to main, local tip on GitHub, clean) / %s kept.\n' "$merged" "$keep"
 echo
-echo "KEEP includes every branch with no merged PR — which is where unpushed"
-echo "local work lives. Review those by hand; this script will never touch them."
-
-if [ "$EXECUTE" -ne 1 ]; then
-  echo
-  echo "Report only. Re-run with --execute to delete the MERGED-PR rows."
-  exit 0
-fi
-
-[ "$merged" -eq 0 ] && exit 0
-
-if [ "$ASSUME_YES" -ne 1 ]; then
-  printf '\nDelete %s branches and their worktrees? [y/N] ' "$merged"
-  read -r reply
-  case "$reply" in [yY]*) ;; *) echo "Aborted."; exit 0 ;; esac
-fi
-
-while IFS=$'\t' read -r branch wt; do
-  if [ -n "$wt" ] && [ -d "$wt" ]; then
-    git worktree remove "$wt" || {
-      echo "  worktree busy: $wt — skipping $branch"; continue
-    }
-  fi
-  # -d, never -D. Git's own unmerged check is a second safety net under the
-  # classification above; when it refuses, that disagreement is worth a look.
-  git branch -d "$branch" 2>/dev/null \
-    || echo "  git refused to delete $branch — kept, review by hand"
-done < "$DELETABLE"
-
-git worktree prune
-echo "Done."
+echo "Report only. This script does not delete branches or worktrees."
+echo "KEEP includes branches with no matching merged same-repo PR to main,"
+echo "branches whose local tip is not on GitHub, and branches with dirty or"
+echo "ignored worktree files. Review kept branches by hand."

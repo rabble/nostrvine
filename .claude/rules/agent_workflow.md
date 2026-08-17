@@ -38,8 +38,10 @@ elsewhere. Do not mix unrelated work into one worktree.
 ### Pruning after merge
 
 `AGENTS.md` says to prune the worktree and branch once a branch merges or
-is abandoned. Do it with `scripts/prune-merged-branches.sh`, which reports
-by default and only deletes under `--execute`.
+is abandoned. Start with `scripts/prune-merged-branches.sh`, which is a
+report-only classifier for likely stale local branches and worktrees. It
+does not delete anything; prune the reported rows manually after reviewing
+the output.
 
 Do **not** improvise the classification. Three things that look like they
 work do not:
@@ -54,11 +56,12 @@ work do not:
   `fix/7606-semantic-tokens` was destroyed exactly this way: unpushed
   local work on a parallel attempt at the same task.
 
-The one trustworthy signal is GitHub reporting a merged PR with that head
-ref. Everything else is KEEP, and two vetoes apply on top even to merged
-branches: uncommitted work in the worktree, and local commits ahead of the
-remote. That second veto is not theoretical — it caught 10 branches on its
-first run.
+The useful signal is GitHub reporting a same-repo merged PR to `main` with
+that head ref. Everything else is KEEP, and two vetoes apply on top even
+to matched branches: the local branch tip must exist in GitHub's repository
+object database, and the worktree must have no uncommitted or ignored
+files. That keeps branch-name reuse, unpushed commits, and local-only
+worktree files out of the prunable set.
 
 ### Optional: warn on concurrent sessions in one worktree
 
