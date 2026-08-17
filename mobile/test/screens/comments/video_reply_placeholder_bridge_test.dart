@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
@@ -102,6 +103,8 @@ void main() {
     Future<void> pumpBridge(WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MultiBlocProvider(
               providers: [

@@ -238,6 +238,8 @@ void main() {
   group('username field input formatters', () {
     Widget buildField(TextEditingController controller) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: TextField(
             controller: controller,

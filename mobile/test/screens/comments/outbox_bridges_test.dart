@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 
 class _MockListBloc extends MockBloc<CommentsListEvent, CommentsListState>
@@ -67,6 +68,8 @@ void main() {
     Future<void> pumpBridges(WidgetTester tester) {
       return tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MultiBlocProvider(
               providers: [
@@ -171,36 +174,32 @@ void main() {
       },
     );
 
-    testWidgets(
-      'composer ReplaceComment → list.CommentReplacedInStore + ack',
-      (tester) async {
-        final newComment = makeComment(validId('new'));
-        whenListen(
-          composer,
-          Stream.fromIterable([
-            const CommentComposerState(),
-            CommentComposerState(
-              outbox: ComposerOutboxReplaceComment(
-                oldId: validId('old'),
-                newComment: newComment,
-              ),
+    testWidgets('composer ReplaceComment → list.CommentReplacedInStore + ack', (
+      tester,
+    ) async {
+      final newComment = makeComment(validId('new'));
+      whenListen(
+        composer,
+        Stream.fromIterable([
+          const CommentComposerState(),
+          CommentComposerState(
+            outbox: ComposerOutboxReplaceComment(
+              oldId: validId('old'),
+              newComment: newComment,
             ),
-          ]),
-          initialState: const CommentComposerState(),
-        );
+          ),
+        ]),
+        initialState: const CommentComposerState(),
+      );
 
-        await pumpBridges(tester);
-        await tester.pump();
+      await pumpBridges(tester);
+      await tester.pump();
 
-        final captured = verify(() => list.add(captureAny())).captured;
-        expect(captured.first, isA<CommentReplacedInStore>());
-        expect(
-          (captured.first as CommentReplacedInStore).oldId,
-          validId('old'),
-        );
-        verify(() => composer.add(const ComposerOutboxConsumed())).called(1);
-      },
-    );
+      final captured = verify(() => list.add(captureAny())).captured;
+      expect(captured.first, isA<CommentReplacedInStore>());
+      expect((captured.first as CommentReplacedInStore).oldId, validId('old'));
+      verify(() => composer.add(const ComposerOutboxConsumed())).called(1);
+    });
 
     testWidgets(
       'reactions RemoveComment → list.CommentRemovedFromStore + ack',
@@ -288,27 +287,24 @@ void main() {
       },
     );
 
-    testWidgets(
-      'vote-counts fetch filters out optimistic placeholder ids',
-      (tester) async {
-        final placeholder = makeComment('pending_comment_1');
-        when(() => reactions.state).thenReturn(const CommentReactionsState());
-        whenListen(
-          list,
-          Stream.fromIterable([
-            const CommentsListState(),
-            CommentsListState(commentsById: {placeholder.id: placeholder}),
-          ]),
-          initialState: const CommentsListState(),
-        );
+    testWidgets('vote-counts fetch filters out optimistic placeholder ids', (
+      tester,
+    ) async {
+      final placeholder = makeComment('pending_comment_1');
+      when(() => reactions.state).thenReturn(const CommentReactionsState());
+      whenListen(
+        list,
+        Stream.fromIterable([
+          const CommentsListState(),
+          CommentsListState(commentsById: {placeholder.id: placeholder}),
+        ]),
+        initialState: const CommentsListState(),
+      );
 
-        await pumpBridges(tester);
-        await tester.pump();
+      await pumpBridges(tester);
+      await tester.pump();
 
-        verifyNever(
-          () => reactions.add(any<CommentVoteCountsFetchRequested>()),
-        );
-      },
-    );
+      verifyNever(() => reactions.add(any<CommentVoteCountsFetchRequested>()));
+    });
   });
 }

@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 
 void main() {
@@ -21,6 +22,8 @@ void main() {
       required void Function() onVideoTap,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Column(
             children: [
@@ -63,63 +66,59 @@ void main() {
       },
     );
 
-    testWidgets(
-      'absorbs taps on the video while a text input has focus, '
-      'so playback does not toggle',
-      (tester) async {
-        final textFieldFocus = FocusNode();
-        addTearDown(textFieldFocus.dispose);
-        var videoTapCount = 0;
+    testWidgets('absorbs taps on the video while a text input has focus, '
+        'so playback does not toggle', (tester) async {
+      final textFieldFocus = FocusNode();
+      addTearDown(textFieldFocus.dispose);
+      var videoTapCount = 0;
 
-        await tester.pumpWidget(
-          buildSubject(
-            textFieldFocus: textFieldFocus,
-            onVideoTap: () => videoTapCount++,
-          ),
-        );
+      await tester.pumpWidget(
+        buildSubject(
+          textFieldFocus: textFieldFocus,
+          onVideoTap: () => videoTapCount++,
+        ),
+      );
 
-        textFieldFocus.requestFocus();
-        await tester.pump();
+      textFieldFocus.requestFocus();
+      await tester.pump();
 
-        // `warnIfMissed: false` because the *intent* is that the
-        // inner recognizer doesn't receive the tap — the overlay
-        // claims it before the gesture arena resolves on the child.
-        await tester.tap(
-          find.byKey(const ValueKey('fake-video')),
-          warnIfMissed: false,
-        );
-        expect(videoTapCount, 0);
-      },
-    );
+      // `warnIfMissed: false` because the *intent* is that the
+      // inner recognizer doesn't receive the tap — the overlay
+      // claims it before the gesture arena resolves on the child.
+      await tester.tap(
+        find.byKey(const ValueKey('fake-video')),
+        warnIfMissed: false,
+      );
+      expect(videoTapCount, 0);
+    });
 
-    testWidgets(
-      'releases taps back to the video once focus moves away',
-      (tester) async {
-        final textFieldFocus = FocusNode();
-        addTearDown(textFieldFocus.dispose);
-        var videoTapCount = 0;
+    testWidgets('releases taps back to the video once focus moves away', (
+      tester,
+    ) async {
+      final textFieldFocus = FocusNode();
+      addTearDown(textFieldFocus.dispose);
+      var videoTapCount = 0;
 
-        await tester.pumpWidget(
-          buildSubject(
-            textFieldFocus: textFieldFocus,
-            onVideoTap: () => videoTapCount++,
-          ),
-        );
+      await tester.pumpWidget(
+        buildSubject(
+          textFieldFocus: textFieldFocus,
+          onVideoTap: () => videoTapCount++,
+        ),
+      );
 
-        textFieldFocus.requestFocus();
-        await tester.pump();
-        await tester.tap(
-          find.byKey(const ValueKey('fake-video')),
-          warnIfMissed: false,
-        );
-        expect(videoTapCount, 0);
+      textFieldFocus.requestFocus();
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('fake-video')),
+        warnIfMissed: false,
+      );
+      expect(videoTapCount, 0);
 
-        textFieldFocus.unfocus();
-        await tester.pump();
+      textFieldFocus.unfocus();
+      await tester.pump();
 
-        await tester.tap(find.byKey(const ValueKey('fake-video')));
-        expect(videoTapCount, 1);
-      },
-    );
+      await tester.tap(find.byKey(const ValueKey('fake-video')));
+      expect(videoTapCount, 1);
+    });
   });
 }

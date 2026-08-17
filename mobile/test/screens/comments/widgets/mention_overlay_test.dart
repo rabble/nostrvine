@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/widgets/mention_overlay.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 
@@ -18,13 +19,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MentionOverlay(
               suggestions: const [
-                MentionSuggestion(
-                  pubkey: pubkey,
-                  displayName: 'GaryVee',
-                ),
+                MentionSuggestion(pubkey: pubkey, displayName: 'GaryVee'),
               ],
               onSelect: (_, _) {},
             ),
@@ -47,11 +47,13 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          mentionNip05VerificationProvider(claim).overrideWith(
-            (ref) async => Nip05VerificationStatus.verified,
-          ),
+          mentionNip05VerificationProvider(
+            claim,
+          ).overrideWith((ref) async => Nip05VerificationStatus.verified),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MentionOverlay(
               suggestions: const [
@@ -85,11 +87,13 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          mentionNip05VerificationProvider(claim).overrideWith(
-            (ref) async => Nip05VerificationStatus.failed,
-          ),
+          mentionNip05VerificationProvider(
+            claim,
+          ).overrideWith((ref) async => Nip05VerificationStatus.failed),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MentionOverlay(
               suggestions: const [
@@ -121,6 +125,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MentionOverlay(
               suggestions: const [

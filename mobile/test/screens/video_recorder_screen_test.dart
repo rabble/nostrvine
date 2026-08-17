@@ -427,7 +427,11 @@ void main() {
         expect(pageOpenChanges, isNot(contains(false)));
 
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: Text('Other screen'))),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: Text('Other screen')),
+          ),
         );
         await tester.pump();
 

@@ -189,7 +189,13 @@ void main() {
     await startPlayback(tester);
     expect(DivineVideoPlayerController.liveControllerCount, 1);
 
-    await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SizedBox(),
+      ),
+    );
     await tester.pump();
 
     // dispose() drops the controller from the live registry synchronously.
@@ -247,7 +253,13 @@ void main() {
 
       // Unmount, then pump extra frames so any deferred VisibilityDetector
       // callback (delivered after the render object is disposed) fires.
-      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SizedBox(),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
