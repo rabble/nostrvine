@@ -974,11 +974,12 @@ void main() {
 
         expect(find.text('Invalid list'), findsOneWidget);
         expect(find.text('People list'), findsOneWidget);
-        // Back button present (matches divine_ui DiVineAppBarLeading label).
-        expect(find.bySemanticsLabel('Go back'), findsOneWidget);
+        // Identifier, not label: the back label is now
+        // MaterialLocalizations.backButtonTooltip and moves per locale.
+        expect(find.bySemanticsIdentifier('back_button'), findsOneWidget);
 
         // Tapping the back button pops the fallback route.
-        await tester.tap(find.bySemanticsLabel('Go back'));
+        await tester.tap(find.bySemanticsIdentifier('back_button'));
         await tester.pumpAndSettle();
 
         expect(find.text('Invalid list'), findsNothing);

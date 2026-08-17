@@ -61,9 +61,9 @@ void main() {
           buildSubject(onBack: () => onBackCalled = true),
         );
 
-        // DiVineAppBar renders the back button with a 'Go back' semantic
-        // label inside an IconButton.
-        final backButton = find.bySemanticsLabel('Go back');
+        // Identifier, not label: DiVineAppBar's back label is now
+        // MaterialLocalizations.backButtonTooltip and moves per locale.
+        final backButton = find.bySemanticsIdentifier('back_button');
         await tester.tap(backButton.first);
         await tester.pump();
 
