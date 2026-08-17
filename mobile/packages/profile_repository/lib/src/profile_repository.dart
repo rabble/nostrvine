@@ -94,12 +94,28 @@ const defaultNameServerBaseUrl = 'https://names.divine.video';
 const defaultKeycastNip05Url =
     'https://login.divine.video/.well-known/nostr.json';
 
-/// Normalizes an injected endpoint so composition cannot leave a stray
-/// separator. `'$base/name'` on a base ending in `/` yields `//name`, and
-/// `'$url?name='` yields `nostr.json/?name=`; both are paths the origin
-/// routes to a 404 rather than the intended handler.
-String _stripTrailingSlash(String url) =>
-    url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+/// Canonicalizes an injected endpoint, then strips a trailing separator.
+///
+/// Both steps are load-bearing, and the order matters.
+///
+/// `Uri.parse` normalizes exactly the way the wire URL and the name server
+/// do — it lowercases the host, drops a default port, and resolves dot
+/// segments. Without it, a non-canonical injected base makes the NIP-98 `u`
+/// tag (signed from this string verbatim) differ from the request URL
+/// (built via `Uri.parse`), and the server compares them as raw strings, so
+/// every claim and release 401s while the unauthenticated `/check` keeps
+/// working.
+///
+/// Stripping runs afterwards because canonicalization can reintroduce a
+/// trailing slash (`https://x/.` becomes `https://x/`), and `'$base/name'`
+/// on a base ending in `/` yields `//name`, which the origin routes to a
+/// 404 rather than the intended handler.
+String _normalizeEndpoint(String url) {
+  final canonical = Uri.parse(url).toString();
+  return canonical.endsWith('/')
+      ? canonical.substring(0, canonical.length - 1)
+      : canonical;
+}
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository implements ProfileReader {
@@ -118,8 +134,8 @@ class ProfileRepository implements ProfileReader {
     List<String> indexerRelays = defaultProfileIndexerRelays,
     String nameServerBaseUrl = defaultNameServerBaseUrl,
     String keycastNip05Url = defaultKeycastNip05Url,
-  }) : _nameServerBaseUrl = _stripTrailingSlash(nameServerBaseUrl),
-       _keycastNip05Url = _stripTrailingSlash(keycastNip05Url),
+  }) : _nameServerBaseUrl = _normalizeEndpoint(nameServerBaseUrl),
+       _keycastNip05Url = _normalizeEndpoint(keycastNip05Url),
        _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
