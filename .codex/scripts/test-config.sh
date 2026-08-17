@@ -548,6 +548,37 @@ if [ -n "$NOOP_OUTPUT" ] || [ -d "$gitdir/claude-purge" ]; then
   exit 1
 fi
 
+# A directory whose name contains a newline must not split find output into
+# fragments: without -print0 the hook reads `mobile/pkg\nage/build` as the two
+# paths `mobile/pkg` and `age/build`, and `mv`/`rm -rf` then reach the
+# non-artifact sibling. The precious file is the discrimination.
+NEWLINE_PKG="$WT_LINK/mobile/pkg
+age"
+mkdir -p "$NEWLINE_PKG/build" "$WT_LINK/mobile/pkg"
+touch "$NEWLINE_PKG/build/output.o" "$WT_LINK/mobile/pkg/PRECIOUS_SOURCE.dart"
+NEWLINE_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" \
+    "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+printf '%s\n' "$NEWLINE_OUTPUT" | jq -e \
+  '.systemMessage == "Purged 1 build/.dart_tool dirs from purge-linked"' >/dev/null || {
+  echo "Purge hook did not report purging the newline-named build dir." >&2
+  echo "Output was: $NEWLINE_OUTPUT" >&2
+  exit 1
+}
+if [ ! -f "$WT_LINK/mobile/pkg/PRECIOUS_SOURCE.dart" ]; then
+  echo "Purge hook deleted a non-artifact path through a newline-split find line." >&2
+  exit 1
+fi
+if [ -d "$NEWLINE_PKG/build" ]; then
+  echo "Purge hook left the newline-named build dir behind." >&2
+  exit 1
+fi
+for _ in $(seq 1 100); do
+  [ ! -e "$gitdir/claude-purge" ] && break
+  sleep 0.1
+done
+
 # A linked worktree on a different filesystem from the main checkout must
 # still purge: the hook detects the cross-device gitdir and deletes in place
 # instead of staging (mv would degrade to a synchronous copy that can blow

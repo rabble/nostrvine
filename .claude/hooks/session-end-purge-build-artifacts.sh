@@ -66,10 +66,10 @@ fi
 if [ "$(device_id "$root/mobile")" != "$(device_id "$gitdir")" ]; then
   n=0
   dirs=()
-  while IFS= read -r dir; do
+  while IFS= read -r -d '' dir; do
     dirs+=("$dir")
     n=$((n + 1))
-  done < <(find "$root/mobile" -type d \( -name build -o -name .dart_tool \) -prune 2>/dev/null)
+  done < <(find "$root/mobile" -type d \( -name build -o -name .dart_tool \) -prune -print0 2>/dev/null)
   if [ "$n" -gt 0 ]; then
     nohup rm -rf "${dirs[@]}" >/dev/null 2>&1 &
     printf '{"systemMessage":"Purged %d build/.dart_tool dirs from %s"}\n' \
@@ -81,9 +81,9 @@ fi
 mkdir -p "$trash"
 
 n=0
-while IFS= read -r dir; do
+while IFS= read -r -d '' dir; do
   mv "$dir" "$trash/$n" 2>/dev/null && n=$((n + 1)) || true
-done < <(find "$root/mobile" -type d \( -name build -o -name .dart_tool \) -prune 2>/dev/null)
+done < <(find "$root/mobile" -type d \( -name build -o -name .dart_tool \) -prune -print0 2>/dev/null)
 
 [ "$n" -gt 0 ] || { rmdir "$trash" 2>/dev/null || true; exit 0; }
 
