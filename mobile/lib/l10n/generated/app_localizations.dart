@@ -435,7 +435,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsDeveloperModeTapsRemaining.
   ///
   /// In en, this message translates to:
-  /// **'{count} more taps to enable developer mode'**
+  /// **'{count, plural, =1{{count} more tap to enable developer mode} other{{count} more taps to enable developer mode}}'**
   String settingsDeveloperModeTapsRemaining(int count);
 
   /// No description provided for @settingsInvites.
@@ -6794,7 +6794,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuFollowSetsAvailable.
   ///
   /// In en, this message translates to:
-  /// **'{count} follow sets available'**
+  /// **'{count, plural, =1{{count} follow set available} other{{count} follow sets available}}'**
   String shareMenuFollowSetsAvailable(int count);
 
   /// No description provided for @peopleListsAddToList.
@@ -7094,7 +7094,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuVideoCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} videos'**
+  /// **'{count, plural, =1{{count} video} other{{count} videos}}'**
   String shareMenuVideoCount(int count);
 
   /// No description provided for @shareMenuClose.
@@ -13250,7 +13250,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoFeedLoopCountLabel.
   ///
   /// In en, this message translates to:
-  /// **'🔁 {count} loops'**
+  /// **'{count, plural, =1{🔁 {count} loop} other{🔁 {count} loops}}'**
   String videoFeedLoopCountLabel(int count);
 
   /// No description provided for @videoFeedLoopCountSemanticLabel.

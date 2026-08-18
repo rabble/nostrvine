@@ -103,7 +103,7 @@
   },
   "settingsDeveloperModeAlreadyEnabled": "Developer mode is already enabled",
   "settingsDeveloperModeEnabled": "Developer mode enabled!",
-  "settingsDeveloperModeTapsRemaining": "{count} more taps to enable developer mode",
+  "settingsDeveloperModeTapsRemaining": "{count, plural, =1{{count} more tap to enable developer mode} other{{count} more taps to enable developer mode}}",
   "@settingsDeveloperModeTapsRemaining": {
     "placeholders": {
       "count": {
@@ -2369,7 +2369,7 @@
   "shareMenuCreateFollowSet": "Create Follow Set",
   "shareMenuCreateFollowSetSubtitle": "Start new collection with this creator",
   "shareMenuAddToFollowSet": "Add to Follow Set",
-  "shareMenuFollowSetsAvailable": "{count} follow sets available",
+  "shareMenuFollowSetsAvailable": "{count, plural, =1{{count} follow set available} other{{count} follow sets available}}",
   "@shareMenuFollowSetsAvailable": {
     "placeholders": {
       "count": {
@@ -2485,7 +2485,7 @@
   "shareMenuEditVideoSubtitle": "Update title, description, and hashtags",
   "shareMenuDeleteVideo": "Delete Video",
   "shareMenuVideoInTheseLists": "Video is in these lists:",
-  "shareMenuVideoCount": "{count} videos",
+  "shareMenuVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}",
   "@shareMenuVideoCount": {
     "placeholders": {
       "count": {
@@ -4653,7 +4653,7 @@
   "soundDetailNotFoundMessage": "This sound could not be found",
   "soundDetailNotFoundTitle": "Sound Not Found",
   "videoFeedDescriptionSemanticLabel": "Video description",
-  "videoFeedLoopCountLabel": "\ud83d\udd01 {count} loops",
+  "videoFeedLoopCountLabel": "{count, plural, =1{\ud83d\udd01 {count} loop} other{\ud83d\udd01 {count} loops}}",
   "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
   "videoFeedLoopCountSemanticLabel": "Video loop count",
   "originalSoundUnavailableBody": "Audio from this video is not available separately.",

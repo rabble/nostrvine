@@ -34,6 +34,14 @@ Map<String, String Function(AppLocalizations, int)> get _countableKeys => {
       l.relayDiagnosticFoundVideoEvents(n),
   'relayDiagnosticConnectedToRelays': (l, n) =>
       l.relayDiagnosticConnectedToRelays(n),
+  // Tier 1b — no call site today (#3630). Pluralized anyway: once the baseline
+  // exempts a key the ratchet stays silent, so a later call site would ship
+  // "1 videos" with nothing to catch it.
+  'shareMenuVideoCount': (l, n) => l.shareMenuVideoCount(n),
+  'shareMenuFollowSetsAvailable': (l, n) => l.shareMenuFollowSetsAvailable(n),
+  'videoFeedLoopCountLabel': (l, n) => l.videoFeedLoopCountLabel(n),
+  'settingsDeveloperModeTapsRemaining': (l, n) =>
+      l.settingsDeveloperModeTapsRemaining(n),
   // Tier 2 — selector int + displayed String (Design X).
   'analyticsViewsCount': (l, n) => l.analyticsViewsCount(n, '$n'),
   'analyticsCommentsCount': (l, n) => l.analyticsCommentsCount(n, '$n'),

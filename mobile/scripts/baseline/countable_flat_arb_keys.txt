@@ -32,10 +32,7 @@ profileVideoThumbnailLabel  # ordinal: position in a grid
 relayDiagnosticConnectedRatio  # ratio: "{connected}/{total}"
 relayDiagnosticEndpointSummary  # ratio: "{ok}/{total} OK"
 rgbColorSemanticLabel  # not a count: RGB channel values
-settingsDeveloperModeTapsRemaining  # orphan: test-only reference, #3630
 settingsStorageBrokenClipsFound  # detached: colon form
-shareMenuFollowSetsAvailable  # orphan: no call site, #3630
-shareMenuVideoCount  # orphan: no call site, #3630
 timeDaysAgo  # unit: "{count}d" symbol
 timeHoursAgo  # unit: "{count}h" symbol
 timeMinutesAgo  # unit: "{count}m" symbol
@@ -68,6 +65,5 @@ videoEditorTimelinePositionFormat  # unit: "{minutes}m {seconds}s" symbols
 videoEditorTimelineVolumePreview  # percentage
 videoEditorTransitionCurveOptionSemanticLabel  # ordinal: "Easing curve {number}"
 videoEditorVoiceOverTakeName  # ordinal: "Recording {number}"
-videoFeedLoopCountLabel  # orphan: no call site, #3630
 videoInspiredByAttributionMultiple  # detached: "+{n}" overflow badge
 videoMetadataCollaboratorsCount  # orphan: no call site, #3630

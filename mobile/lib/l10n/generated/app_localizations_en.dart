@@ -209,7 +209,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsDeveloperModeTapsRemaining(int count) {
-    return '$count more taps to enable developer mode';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more taps to enable developer mode',
+      one: '$count more tap to enable developer mode',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4009,7 +4015,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
-    return '$count follow sets available';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count follow sets available',
+      one: '$count follow set available',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4191,7 +4203,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String shareMenuVideoCount(int count) {
-    return '$count videos';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '$count video',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -7797,7 +7815,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String videoFeedLoopCountLabel(int count) {
-    return '🔁 $count loops';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '🔁 $count loops',
+      one: '🔁 $count loop',
+    );
+    return '$_temp0';
   }
 
   @override
