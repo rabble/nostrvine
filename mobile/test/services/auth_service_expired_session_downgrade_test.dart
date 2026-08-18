@@ -931,7 +931,8 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
         final delayedPrefs = _DelayingSharedPreferencesStore.withData(
           prefixedSharedPreferencesData(prefs),
-          delayedRemoveKey: 'flutter.${divineLoginBannerDismissalKey(pubkey)}',
+          delayedRemoveKey:
+              'flutter.${DivineLoginBannerDismissalStore.keyFor(pubkey)}',
         );
         SharedPreferencesStorePlatform.instance = delayedPrefs;
         SharedPreferences.resetStatic();

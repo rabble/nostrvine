@@ -277,10 +277,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     final hasExpiredSession = authService.hasExpiredOAuthSession;
     final isRpcUpgradeInProgress = authService.isRpcUpgradeInProgress;
     final prefs = ref.watch(sharedPreferencesProvider);
-    final isDivineLoginBannerHidden = isDivineLoginBannerDismissed(
-      prefs,
-      widget.userIdHex,
-    );
+    final isDivineLoginBannerHidden = DivineLoginBannerDismissalStore(
+      prefs: prefs,
+      userIdHex: widget.userIdHex,
+    ).isDismissed();
 
     // This is the condition, not the trigger. It stays true while the session
     // is expired, so _SessionExpiredPromptTrigger owns the edge (#7308).
@@ -495,7 +495,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // `ref` or looking up an ancestor from a button callback throws once the
     // header is gone (#7297).
     final authService = ref.read(authServiceProvider);
-    final prefs = ref.read(sharedPreferencesProvider);
+    final bannerDismissal = DivineLoginBannerDismissalStore(
+      prefs: ref.read(sharedPreferencesProvider),
+      userIdHex: userIdHex,
+    );
     final publishBloc = context.read<BackgroundPublishBloc>();
     final navigator = Navigator.of(context);
 
@@ -523,9 +526,9 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         // repeatedly (#7297), so a second tap would pop the screen underneath.
         // Awaiting first buys nothing — `setInt` updates the in-memory
         // SharedPreferences cache synchronously, so the dismissal is already
-        // visible to `isDivineLoginBannerDismissed` before the pop.
+        // visible to `isDismissed` before the pop.
         navigator.pop();
-        await dismissDivineLoginBanner(prefs, userIdHex);
+        await bannerDismissal.dismiss();
       },
     );
   }
