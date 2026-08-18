@@ -214,6 +214,13 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         )
         self.assertEqual(expected_tree, result.stdout.strip())
 
+    def test_ci_config_job_fetches_history_for_release_tree_verification(self) -> None:
+        job_start = self.mobile_ci_contents.index("  ci-config-tests:")
+        next_job = self.mobile_ci_contents.index("\n  generated-files:", job_start)
+        job = self.mobile_ci_contents[job_start:next_job]
+
+        self.assertIn("fetch-depth: 0", job)
+
     def test_caption_generator_names_missing_flutter_embedding_jar(self) -> None:
         self.assertIn("if (!flutterDebugEmbeddingJar.isFile)", self.caption_generator_gradle_contents)
         self.assertIn("Flutter debug embedding JAR not found at", self.caption_generator_gradle_contents)

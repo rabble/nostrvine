@@ -91,6 +91,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Provenance tests verify the historical release baseline tree.
+          fetch-depth: 0
       - name: Run CI configuration unit tests
         run: python3 -m unittest discover -s .github/scripts/tests
 
