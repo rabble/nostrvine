@@ -51,7 +51,13 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
     // link), where the first watch has already started a fetch that
     // invalidating would only throw away and repeat.
     addPostFrameCallbackIfMounted(() {
-      if (ref.read(accountEnforcementStatusProvider).hasValue) {
+      // Refetch anything already settled, success or failure alike: a first
+      // fetch that failed (cold start offline) survives this screen's disposal
+      // because Settings keeps the provider alive, and would otherwise render
+      // stale on the next visit without ever retrying. Only an in-flight first
+      // fetch is left alone, since invalidating would discard and repeat it.
+      final current = ref.read(accountEnforcementStatusProvider);
+      if (!current.isLoading) {
         ref.invalidate(accountEnforcementStatusProvider);
       }
     });
@@ -82,11 +88,14 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
             // the refetch is in flight; not knowing yet is the honest state.
             skipLoadingOnRefresh: false,
             loading: () => const Center(child: CircularProgressIndicator()),
-            // A failed read is not a claim about the account, so it renders the
-            // same "we could not check" state as an explicit unknown rather
-            // than an error page or, worse, a clean bill of health.
+            // A failed read is not a claim about the account, so it keeps
+            // showing whatever was last known and only falls back to "we could
+            // not check" when nothing was. Otherwise the Settings tile, which
+            // retains the last value, would say "restricted" while this screen
+            // denied knowing anything and withheld the appeal and exit paths
+            // the surface exists to provide.
             error: (_, _) => _StatusBody(
-              kind: AccountEnforcementKind.unknown,
+              kind: async.value?.kind ?? AccountEnforcementKind.unknown,
               onRetry: () => ref.invalidate(accountEnforcementStatusProvider),
             ),
             data: (status) => _StatusBody(

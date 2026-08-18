@@ -54,22 +54,21 @@ void main() {
     });
 
     test(
-      'unknown when the owner-bound gate yields no token',
+      'a missing token is a failed ask, not a clean bill of health',
       () async {
-        // A session bound to a different account, or a transient refresh
-        // miss, yields no token. That is an absent signal, not a clean bill of
-        // health: the account may well be restricted and we could not ask.
-        // Self-custody and a known-expired session never reach here; the
-        // provider short-circuits both to their own states.
+        // Same exit as a failed read: resolving this would be indistinguishable
+        // from a successful "no enforcement" answer and would clear a
+        // restriction the user had already been shown. Self-custody never
+        // reaches here; the provider short-circuits it.
         final repo = AccountEnforcementRepository(
           oauthClient: _oauthReturning(_suspendedBody, 200),
           readAccessToken: () async => null,
         );
 
-        final s = await repo.fetchCurrentStatus();
-
-        expect(s.kind, AccountEnforcementKind.unknown);
-        expect(s.isKnown, isFalse);
+        await expectLater(
+          repo.fetchCurrentStatus(),
+          throwsA(isA<AccountStatusUnavailable>()),
+        );
       },
     );
 

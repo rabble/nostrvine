@@ -71,7 +71,6 @@ void main() {
     () async {
       final authService = _MockAuthService();
       when(() => authService.isRegistered).thenReturn(true);
-      when(() => authService.hasExpiredOAuthSession).thenReturn(false);
       when(
         authService.activeAccountKeycastToken,
       ).thenAnswer((_) async => 'tok123');
@@ -111,7 +110,6 @@ void main() {
     var requests = 0;
     final authService = _MockAuthService();
     when(() => authService.isRegistered).thenReturn(true);
-    when(() => authService.hasExpiredOAuthSession).thenReturn(false);
     when(
       authService.activeAccountKeycastToken,
     ).thenAnswer((_) async => 'tok123');
@@ -172,38 +170,6 @@ void main() {
   );
 
   test(
-    'an expired session says so, rather than "we could not check"',
-    () async {
-      // The app already knows the session is dead and Settings offers re-auth.
-      // Reporting a generic failure would send the user at a retry button that
-      // can never succeed.
-      var requests = 0;
-      final authService = _MockAuthService();
-      when(() => authService.isRegistered).thenReturn(true);
-      when(() => authService.hasExpiredOAuthSession).thenReturn(false);
-      when(() => authService.hasExpiredOAuthSession).thenReturn(true);
-
-      final container = ProviderContainer(
-        overrides: [
-          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          oauthClientProvider.overrideWithValue(
-            _oauthReturning(_activeBody, onCall: (_) => requests++),
-          ),
-          authServiceProvider.overrideWithValue(authService),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final status = await container.read(
-        accountEnforcementStatusProvider.future,
-      );
-
-      expect(status.kind, AccountEnforcementKind.sessionExpired);
-      expect(requests, 0, reason: 'a dead session is not worth asking with');
-    },
-  );
-
-  test(
     'a failed refresh does not clear an earned restriction marker',
     () async {
       // The settings marker is a warning. An offline refresh must not erase it:
@@ -246,7 +212,6 @@ void main() {
   test('authenticated: an active account reports none', () async {
     final authService = _MockAuthService();
     when(() => authService.isRegistered).thenReturn(true);
-    when(() => authService.hasExpiredOAuthSession).thenReturn(false);
     when(
       authService.activeAccountKeycastToken,
     ).thenAnswer((_) async => 'tok123');

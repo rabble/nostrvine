@@ -46,18 +46,9 @@ accountEnforcementStatusProvider =
       // report and no endpoint worth calling. Answering `unknown` here would
       // render as "we could not check, try again" against a retry that can
       // never succeed.
-      final authService = ref.watch(authServiceProvider);
-      if (!authService.isRegistered) {
+      if (!ref.watch(authServiceProvider).isRegistered) {
         return const AccountEnforcementStatus(
           kind: AccountEnforcementKind.noAccountState,
-        );
-      }
-      // A dead session cannot answer the question, and retrying it never will.
-      // The app already knows this state and Settings offers re-auth for it, so
-      // say so rather than reporting a generic "we could not check".
-      if (authService.hasExpiredOAuthSession) {
-        return const AccountEnforcementStatus(
-          kind: AccountEnforcementKind.sessionExpired,
         );
       }
       return ref

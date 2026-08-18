@@ -7,15 +7,18 @@ import 'package:openvine/models/account_enforcement_status.dart';
 /// Reads `account_status` from Keycast's `GET /api/user/account` (via
 /// [KeycastOAuth.getAccountStatus]) and maps it to [AccountEnforcementStatus].
 ///
-/// [readAccessToken] supplies the current Keycast bearer token. A null/empty
-/// token yields unknown, NOT "in good standing".
+/// [readAccessToken] supplies the current Keycast bearer token, through the
+/// owner-bound gate, so a session another account left behind cannot answer
+/// the enforcement question for this one.
+///
+/// Every "we could not ask" outcome throws rather than resolving to a status:
+/// a missing token (session unbound, or a refresh that has not landed) and a
+/// failed read alike. Resolving either would be indistinguishable from a
+/// successful "no enforcement" answer and would clear a restriction the user
+/// had already been shown.
 ///
 /// Self-custody accounts never reach here: [accountEnforcementStatusProvider]
-/// short-circuits them to `noAccountState` before constructing a request. So
-/// the null-token branch means a *divineOAuth* account whose session is
-/// expired, unrefreshable, or bound to a different pubkey — a real and live
-/// path, not dead code. Unknown is the honest answer there: the account may
-/// well be restricted and we simply could not ask.
+/// short-circuits them before a request is constructed.
 ///
 /// Keycast reports only the caller's own account: the pubkey is taken from the
 /// bearer token and there is no pubkey parameter, so this cannot observe
@@ -39,7 +42,12 @@ class AccountEnforcementRepository {
   Future<AccountEnforcementStatus> fetchCurrentStatus() async {
     final token = await _readAccessToken();
     if (token == null || token.isEmpty) {
-      return AccountEnforcementStatus.unknown();
+      // Same exit as a failed read below, for the same reason: this is "we
+      // could not ask", not "you are unrestricted". Resolving it would
+      // overwrite the last good answer and clear a restriction marker the user
+      // already earned. Retrying is worthwhile because the owner-bound gate
+      // refreshes the session, so a later attempt can genuinely succeed.
+      throw const AccountStatusUnavailable();
     }
     final status = await _oauthClient.getAccountStatus(token);
     if (status == null) {
