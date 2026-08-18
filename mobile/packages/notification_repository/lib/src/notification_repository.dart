@@ -700,6 +700,7 @@ class NotificationRepository {
                       : _recipientScopedVideoAddressableId(
                           dTag: null,
                           video: video,
+                          rootEventPubkey: null,
                         )),
             );
           }(),
@@ -1604,6 +1605,15 @@ class NotificationRepository {
         eventIds.add(referencedEventId);
       }
 
+      // Ensure rootEventId is prefetched when it might be used as the anchor
+      // (e.g., for comments when referencedEventId is missing). Fixes #6369.
+      final rootEventId = notification.rootEventId;
+      if (rootEventId != null &&
+          rootEventId.isNotEmpty &&
+          _isEventId(rootEventId)) {
+        eventIds.add(rootEventId);
+      }
+
       final kind = _mapNotificationKind(notification);
       if (!_isVideoAnchoredNotification(kind, notification)) continue;
       final anchorEventId = _videoAnchorEventId(kind, notification);
@@ -1722,7 +1732,11 @@ class NotificationRepository {
           ? trustedRootAddressableId ?? _sourceVideoAddressableId(video: video)
           : isListAdd
           ? _listAddVideoAddressableId(group.first, dTag: dTag, video: video)
-          : _recipientScopedVideoAddressableId(dTag: dTag, video: video);
+          : _recipientScopedVideoAddressableId(
+          dTag: dTag,
+          video: video,
+          rootEventPubkey: group.first.rootEventPubkey,
+        );
       // Normal video rows prefer payload media because it is stable after
       // metadata updates. Video mentions prefer the resolved source video, and
       // only accept payload media when the root coordinate was trusted.
@@ -2031,14 +2045,29 @@ class NotificationRepository {
   /// Prefers the authoritative `VideoStats` d-tag over the payload [dTag] so a
   /// `referenced_video` block disagreeing with `referenced_event_id` cannot
   /// build a mismatched route.
+  ///
+  /// When [rootEventPubkey] is provided from the API response and indicates a
+  /// different owner than the user, avoids synthesizing a recipient-scoped
+  /// coordinate. Fixes #6369 by preventing misattributed routes when ownership
+  /// checks pass but root metadata reveals a different creator.
   String? _recipientScopedVideoAddressableId({
     required String? dTag,
     required VideoStats? video,
+    String? rootEventPubkey,
   }) {
     // Defensive local invariant: metadata that resolves and names a different
     // owner never yields a recipient-scoped route. Unreachable via
     // _groupVideoAnchored (those are reclassified to actor rows, #4920).
     if (video != null && video.pubkey != _userPubkey) return null;
+
+    // If the API response indicates the root event has a different owner than
+    // the user, don't synthesize a recipient-scoped coordinate. Fixes #6369.
+    if (rootEventPubkey != null &&
+        rootEventPubkey.isNotEmpty &&
+        rootEventPubkey != _userPubkey) {
+      return null;
+    }
+
     final resolvedDTag = _nonEmpty(video?.dTag) ?? _nonEmpty(dTag);
     if (resolvedDTag == null) return null;
     return '${NIP71VideoKinds.addressableShortVideo}'
@@ -2471,7 +2500,11 @@ class NotificationRepository {
     if (addressableId != null) {
       return addressableId;
     }
-    return _recipientScopedVideoAddressableId(dTag: dTag, video: video);
+    return _recipientScopedVideoAddressableId(
+      dTag: dTag,
+      video: video,
+      rootEventPubkey: notification.rootEventPubkey,
+    );
   }
 
   String? _trustedListAddRootAddressableId(RelayNotification notification) {
