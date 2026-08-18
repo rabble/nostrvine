@@ -265,6 +265,12 @@ class VideosRepository {
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
+  /// - [skipCache]: Full manual refresh — bypasses the in-memory
+  ///   first-page cache.
+  /// - [revalidate]: Bypasses the in-memory first-page cache read only,
+  ///   without any heavier refresh behavior. Use for session-start
+  ///   revalidation where a fresh page is wanted but [skipCache] semantics
+  ///   do not apply.
   ///
   /// Returns a [HomeFeedResult] containing videos sorted by creation time
   /// (newest first) plus attribution metadata mapping videos to their
@@ -278,13 +284,14 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
     bool skipCache = false,
+    bool revalidate = false,
   }) async {
     if (authors.isEmpty && userPubkey == null) {
       return const HomeFeedResult(videos: []);
     }
 
     // Return in-memory cached result when available (initial page only).
-    if (!skipCache && until == null) {
+    if (!skipCache && !revalidate && until == null) {
       final cached = _inMemoryFeedCache?.get('home');
       if (cached != null) return _withSeenFreshnessOrdering(cached);
     }
@@ -718,6 +725,13 @@ class VideosRepository {
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
+  /// - [skipCache]: Full manual refresh (pull-to-refresh) — bypasses the
+  ///   in-memory first-page cache and merges newer relay events into a
+  ///   successful API first page.
+  /// - [revalidate]: Bypasses the in-memory first-page cache read only,
+  ///   without the relay merge. Use for session-start revalidation where a
+  ///   fresh first page is wanted but the pull-to-refresh relay round-trip
+  ///   is not.
   ///
   /// Returns a [HomeFeedResult] whose videos are sorted by creation time
   /// (newest first), with [HomeFeedResult.hasMore] reporting whether more
@@ -735,9 +749,10 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
     bool skipCache = false,
+    bool revalidate = false,
   }) async {
     // Return in-memory cached result when available (initial page only).
-    if (!skipCache && until == null) {
+    if (!skipCache && !revalidate && until == null) {
       final cached = _inMemoryFeedCache?.get('latest');
       if (cached != null) {
         final ordered = await _orderBySeenFreshness(cached.videos);
@@ -2778,12 +2793,21 @@ class VideosRepository {
   }
 
   /// Fetches For You videos from the recommendations endpoint.
+  ///
+  /// - [skipCache]: Full manual refresh — bypasses the in-memory first-page
+  ///   cache and draws a new recommendation session seed, so the first page
+  ///   is reshuffled while later pages stay consistent with it.
+  /// - [revalidate]: Bypasses the in-memory first-page cache read only and
+  ///   keeps the current recommendation session seed, so session-start
+  ///   revalidation refetches the first page without reshuffling the
+  ///   session.
   Future<HomeFeedResult> getRecommendedVideos({
     required String? userPubkey,
     int limit = _defaultLimit,
     int? until,
     String? cursor,
     bool skipCache = false,
+    bool revalidate = false,
     List<String> preferredLanguages = const [],
     String? viewerCountry,
   }) async {
@@ -2796,7 +2820,7 @@ class VideosRepository {
     final cacheKey =
         'recommended:${effectiveUserPubkey ?? 'anonymous'}'
         '$preferenceCacheSuffix';
-    if (!skipCache && until == null && cursor == null) {
+    if (!skipCache && !revalidate && until == null && cursor == null) {
       final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) return _withSeenFreshnessOrdering(cached);
     }
@@ -2814,6 +2838,7 @@ class VideosRepository {
         limit: limit,
         until: until,
         skipCache: skipCache,
+        revalidate: revalidate,
         preferredLanguages: preferredLanguages,
         viewerCountry: viewerCountry,
       );
@@ -2837,6 +2862,7 @@ class VideosRepository {
         limit: limit,
         until: until,
         skipCache: skipCache,
+        revalidate: revalidate,
         preferredLanguages: preferredLanguages,
         viewerCountry: viewerCountry,
       );
@@ -2858,6 +2884,7 @@ class VideosRepository {
         limit: limit,
         until: until,
         skipCache: skipCache,
+        revalidate: revalidate,
         preferredLanguages: preferredLanguages,
         viewerCountry: viewerCountry,
       );
@@ -2882,6 +2909,7 @@ class VideosRepository {
     required int limit,
     required int? until,
     required bool skipCache,
+    required bool revalidate,
     required List<String> preferredLanguages,
     required String? viewerCountry,
   }) async {
@@ -2895,7 +2923,9 @@ class VideosRepository {
         await getPopularVideos(
           limit: limit,
           until: until,
-          skipCache: skipCache,
+          // The popular fallback cache carries no heavier refresh semantics,
+          // so a revalidation bypasses it the same way a manual refresh does.
+          skipCache: skipCache || revalidate,
           preferredLanguages: preferredLanguages,
           viewerCountry: viewerCountry,
         ),

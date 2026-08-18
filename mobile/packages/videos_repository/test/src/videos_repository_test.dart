@@ -1064,6 +1064,47 @@ void main() {
           ).called(2); // 1 initial + 1 skip
         });
 
+        // Session-start revalidation bypasses the cache read like skipCache,
+        // but must NOT trigger the pull-to-refresh relay merge (#5913) — that
+        // extra relay round-trip is reserved for explicit user refreshes.
+        test(
+          'revalidate bypasses the in-memory cache without the relay merge',
+          () async {
+            when(
+              () => mockFunnelcakeClient.getRecentVideosPage(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => _recentPage([
+                _createVideoStats(
+                  id: 'v1',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/v1.mp4',
+                ),
+              ]),
+            );
+
+            // First call populates cache
+            await repoWithCache.getNewVideos();
+
+            // revalidate: true → hits network again, no relay enrichment
+            final revalidated = (await repoWithCache.getNewVideos(
+              revalidate: true,
+            )).videos;
+            verify(
+              () => mockFunnelcakeClient.getRecentVideosPage(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).called(2); // 1 initial + 1 revalidate
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+            expect(revalidated, hasLength(1));
+            expect(revalidated.first.id, equals('v1'));
+          },
+        );
+
         test('pagination calls bypass cache', () async {
           when(
             () => mockFunnelcakeClient.getRecentVideosPage(
@@ -2938,6 +2979,48 @@ void main() {
           ).called(1);
           expect(cached.videos, hasLength(1));
           expect(cached.videos.first.id, equals('h1'));
+        });
+
+        test('revalidate bypasses the in-memory cache', () async {
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'h1',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/h1.mp4',
+                ),
+              ],
+              rawBody: '{}',
+            ),
+          );
+
+          // First call populates cache
+          await repoWithCache.getHomeFeedVideos(
+            authors: ['author1'],
+            userPubkey: 'user1',
+          );
+
+          // revalidate: true → hits network again
+          await repoWithCache.getHomeFeedVideos(
+            authors: ['author1'],
+            userPubkey: 'user1',
+            revalidate: true,
+          );
+          verify(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(2); // 1 initial + 1 revalidate
         });
       });
     });
@@ -11854,6 +11937,80 @@ void main() {
         ).called(2);
       });
 
+      // Session-start revalidation bypasses the cache read but must keep the
+      // current recommendation session seed: drawing a new seed reshuffles
+      // the session, which is reserved for explicit pull-to-refresh
+      // (skipCache).
+      test(
+        'revalidate bypasses the cache but keeps the session seed',
+        () async {
+          final requestedSeeds = <String?>[];
+          var callCount = 0;
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer((invocation) async {
+            requestedSeeds.add(invocation.namedArguments[#seed] as String?);
+            callCount += 1;
+            return RecommendationsResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'recommended-video-$callCount',
+                  pubkey: 'recommended-pubkey-$callCount',
+                  dTag: 'recommended-dtag-$callCount',
+                  videoUrl: 'https://example.com/recommended-$callCount.mp4',
+                ),
+              ],
+              source: 'personalized',
+              nextCursor: 'cursor-$callCount',
+              hasMore: true,
+            );
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: InMemoryFeedCache(),
+          );
+
+          final first = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+          );
+          // Served from the in-memory cache — no second network call.
+          final cached = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+          );
+          // Revalidation refetches the first page with the same session seed.
+          final revalidated = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            revalidate: true,
+          );
+
+          expect(first.videos.single.id, equals('recommended-video-1'));
+          expect(cached.videos.single.id, equals('recommended-video-1'));
+          expect(revalidated.videos.single.id, equals('recommended-video-2'));
+          expect(requestedSeeds, hasLength(2));
+          expect(requestedSeeds.first, isNotNull);
+          expect(requestedSeeds.first, isNotEmpty);
+          expect(requestedSeeds.last, requestedSeeds.first);
+          verify(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: 'user-pubkey',
+              limit: any(named: 'limit'),
+            ),
+          ).called(2);
+        },
+      );
+
       test('reorders cached recommendations when seen state changes', () async {
         final first = _createVideoStats(
           id: 'first-video',
@@ -12141,6 +12298,50 @@ void main() {
               category: any(named: 'category'),
             ),
           );
+        },
+      );
+
+      test(
+        'revalidate bypasses the popular cache in the fallback path',
+        () async {
+          final popular = _createVideoStats(
+            id: 'popular-video',
+            pubkey: 'popular-pubkey',
+            dTag: 'popular-dtag',
+            videoUrl: 'https://example.com/popular.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => [popular]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: InMemoryFeedCache(),
+          );
+
+          // Populate the popular first-page cache.
+          await repo.getPopularVideos();
+
+          // Revalidating For You with no pubkey falls back to popular and
+          // must not answer that fallback from the cached popular page.
+          final result = await repo.getRecommendedVideos(
+            userPubkey: null,
+            limit: 10,
+            revalidate: true,
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('popular-video'));
+          verify(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(2); // 1 popular cache fill + 1 revalidated fallback
         },
       );
 
