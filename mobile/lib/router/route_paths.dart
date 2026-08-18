@@ -67,6 +67,8 @@ abstract final class RoutePaths {
   static const soundDetailBase = '/sound';
   static const storageManagement = '/storage-management';
   static const subtitleEditor = '/subtitle-edit';
+  static const accountStatus = '/settings/account-status';
+  static const accountStatusSubpath = 'account-status';
   static const supportCenter = '/support-center';
   static const videoDetailBase = '/video';
   static const videoEditor = '/video-editor';

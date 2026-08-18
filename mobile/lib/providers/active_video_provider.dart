@@ -121,6 +121,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.generalSettings:
     case RouteType.storageManagement:
     case RouteType.monetizationLinksSettings:
+    case RouteType.accountStatus:
     case RouteType.supportCenter:
     case RouteType.legal:
     case RouteType.nostrSettings:
