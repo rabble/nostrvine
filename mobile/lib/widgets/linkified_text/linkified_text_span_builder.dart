@@ -41,6 +41,7 @@ class LinkifiedTextSpanBuilder {
     this.profilePubkeyForMention,
     this.videoLabel,
     this.allowWidgetSpans = true,
+    this.initialHeartBudget = kDivineHeartMaxPainted,
   });
 
   static final _combinedRegex = RegExp(
@@ -95,6 +96,14 @@ class LinkifiedTextSpanBuilder {
   /// the character. Selectable callers pass false to keep copied text intact.
   final bool allowWidgetSpans;
 
+  /// Starting budget of brand-green hearts one [build] may paint as widgets.
+  ///
+  /// Callers that run one builder per fragment of a larger string (the DM
+  /// markdown path builds one per leaf) pass the remaining budget down from
+  /// the fragment's owner, so the cap bounds the whole rendered message
+  /// rather than each fragment.
+  final int initialHeartBudget;
+
   /// Builds spans preserving the token precedence from [LinkifiedText].
   ///
   /// Unpaired UTF-16 surrogates are normalized here rather than at each
@@ -111,7 +120,7 @@ class LinkifiedTextSpanBuilder {
     // The heart budget is shared across every run of one build: the splitter
     // is invoked once per plain run between tokens, so a per-run cap would
     // let an interleaved note (one heart per hashtag, say) reset it to full.
-    var heartBudget = kDivineHeartMaxPainted;
+    var heartBudget = initialHeartBudget;
 
     for (final match in _combinedRegex.allMatches(safeText)) {
       if (match.start > lastEnd) {
