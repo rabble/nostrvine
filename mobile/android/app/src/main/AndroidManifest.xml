@@ -116,6 +116,29 @@
              (the exported file is unaffected either way), and we decided
              a working preview is worth re-entering Impeller.
 
+             What the trade cost, measured in the field (#7123): across
+             the 1.0.17 Skia -> 1.0.19 Impeller boundary, store builds
+             only, `_st_MainActivity` screen traces with device fixed
+             effects and session weighting, Android slow frames rose
+             2.9 points (95% CI [+0.5, +5.3], p=0.019) - about one frame
+             in thirty-five. iOS across the same boundary under the same
+             estimator is the control at +0.29 points (CI [-0.01,
+             +0.59]), which is what pins this on the backend rather than
+             the shared Dart. Frozen frames did not move (+0.23 points,
+             p=0.18), and the cold-start regression the issue was opened
+             on faded to noise as the sample grew. Larger figures were
+             reported for all three before sessions were weighted:
+             averaging per-device ratios unweighted gives a device with
+             five sessions the same say as one with eight hundred.
+
+             Reverting is a stopgap, not a fix. The engine logs
+             "[Action Required]: Impeller opt-out deprecated" and says
+             the flag and this manifest entry "are going to go away in
+             an upcoming Flutter release" (shell/common/shell.cc). The
+             feed has to be fast on Impeller before that removal lands,
+             whatever the chroma-key preview is worth, so the answer to
+             those 2.9 points is raster work, not a backend flip.
+
              Two things that follow, both easy to get wrong:
 
              - "Falls back to Skia" is not what happens. Below API 29 the
