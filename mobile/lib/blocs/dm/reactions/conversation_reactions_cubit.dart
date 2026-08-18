@@ -12,8 +12,8 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
-import 'package:openvine/blocs/dm/reactions/reportable_sites.dart';
 import 'package:openvine/blocs/close_guard.dart';
+import 'package:openvine/blocs/dm/reactions/reportable_sites.dart';
 
 part 'conversation_reactions_event.dart';
 part 'conversation_reactions_state.dart';
@@ -24,7 +24,8 @@ part 'conversation_reactions_state.dart';
 /// so the optimistic publish flow can use `sequential()` to serialize
 /// rapid-tap toggle events without dropping any.
 class ConversationReactionsCubit
-    extends Bloc<ConversationReactionsEvent, ConversationReactionsState> {
+    extends Bloc<ConversationReactionsEvent, ConversationReactionsState>
+    with CloseGuardedEmit<ConversationReactionsState> {
   /// Construct a cubit. [ownerPubkey] is the account viewing this
   /// conversation; it's used to detect own reactions for the toggle-off
   /// path and for the `pending` map's local-status semantics.

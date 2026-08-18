@@ -7,13 +7,13 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/voice_over_recorder_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:sound_service/sound_service.dart';
-import 'package:openvine/blocs/close_guard.dart';
 
 part 'voice_over_state.dart';
 

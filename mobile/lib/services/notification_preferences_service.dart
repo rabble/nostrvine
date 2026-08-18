@@ -7,7 +7,6 @@ import 'package:hive_ce/hive.dart';
 import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
-import 'package:openvine/blocs/close_guard.dart';
 
 abstract interface class NotificationPreferencesStore {
   Future<NotificationPreferences> loadPreferences();

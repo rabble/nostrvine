@@ -4,8 +4,8 @@
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/blossom_settings/blossom_settings_state.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 /// Cubit backing `BlossomSettingsScreen`.
 ///

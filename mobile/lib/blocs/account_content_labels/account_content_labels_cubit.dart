@@ -3,9 +3,9 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/account_content_labels/account_content_labels_state.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/account_label_service.dart';
-import 'package:openvine/blocs/close_guard.dart';
 
 /// Cubit backing `AccountContentLabelsTile`.
 ///
