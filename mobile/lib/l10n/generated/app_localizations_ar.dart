@@ -4133,7 +4133,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteFailedAccountRestricted =>
-      'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.';
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
 
   @override
   String get shareMenuDeleteFailedRelayNoResponse =>
@@ -7365,7 +7365,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.';
+      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';

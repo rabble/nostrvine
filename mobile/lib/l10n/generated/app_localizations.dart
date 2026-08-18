@@ -7166,7 +7166,7 @@ abstract class AppLocalizations {
   /// Shown when every responding relay explicitly rejects an owner's content-deletion request because the publishing account is suspended or banned.
   ///
   /// In en, this message translates to:
-  /// **'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.'**
+  /// **'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.'**
   String get shareMenuDeleteFailedAccountRestricted;
 
   /// No description provided for @shareMenuDeleteFailedRelayNoResponse.
@@ -12797,7 +12797,7 @@ abstract class AppLocalizations {
   /// Shown when every responding relay explicitly rejects the NIP-62 account-deletion request because the publishing account is suspended or banned.
   ///
   /// In en, this message translates to:
-  /// **'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.'**
+  /// **'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.'**
   String get deleteAccountAccountRestricted;
 
   /// No description provided for @deleteAccountDeleteAllContentButton.
