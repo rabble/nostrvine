@@ -169,20 +169,39 @@ definitions:
         set -euo pipefail
         SHOREBIRD_BIN="$HOME/.shorebird/bin/shorebird"
         EXPECTED_SHOREBIRD_VERSION="Shorebird 1.6.117"
+        # Pinned installer commit sha with integrity check.
+        INSTALLER_COMMIT="153e5f17e27879183d8fa5b78b058b1be3551f75"
+        EXPECTED_INSTALLER_SHA256="068e61b0fe74d20ecc92645df9c414cdd0140041620f07460447f8d08011b20e"
         SHOREBIRD_VERSION_OUTPUT=""
         if [ -x "$SHOREBIRD_BIN" ]; then
           SHOREBIRD_VERSION_OUTPUT=$("$SHOREBIRD_BIN" --version 2>/dev/null || true)
         fi
-        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
-          curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash -s -- --force
+        if ! printf '%s
+' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
+          INSTALLER_SCRIPT=$(mktemp)
+          trap "rm -f '$INSTALLER_SCRIPT'" EXIT
+          curl --proto '=https' --tlsv1.2 \
+            "https://raw.githubusercontent.com/shorebirdtech/install/${INSTALLER_COMMIT}/install.sh" \
+            -sSf -o "$INSTALLER_SCRIPT"
+          ACTUAL_SHA256=$(sha256sum "$INSTALLER_SCRIPT" | awk '{print $1}')
+          if [ "$ACTUAL_SHA256" != "$EXPECTED_INSTALLER_SHA256" ]; then
+            echo "ERROR: Shorebird installer integrity check failed."
+            echo "  Expected: $EXPECTED_INSTALLER_SHA256"
+            echo "  Actual:   $ACTUAL_SHA256"
+            echo "  Commit:   $INSTALLER_COMMIT"
+            exit 1
+          fi
+          bash "$INSTALLER_SCRIPT" --force
           SHOREBIRD_VERSION_OUTPUT=$("$SHOREBIRD_BIN" --version)
         fi
         echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
         echo "$SHOREBIRD_VERSION_OUTPUT"
-        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
+        if ! printf '%s
+' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
           echo "ERROR: expected $EXPECTED_SHOREBIRD_VERSION; update and validate the pinned version before continuing."
           exit 1
         fi
+
     - &write_shorebird_dart_defines
       name: Write Shorebird dart-defines
       script: |
