@@ -904,22 +904,38 @@ class CameraController(
      * Evaluated per Recorder build, so initial bind and both lens switches pick
      * up a microphone attached since the last build; a mic plugged in while the
      * camera stays bound is picked up on the next switch or re-entry.
+     *
+     * Logs the decision and the inputs it was made from either way. A report
+     * that the external mic was still ignored is only actionable if it says
+     * which inputs the device reported, and a device naming its mic something
+     * we do not route on leaves no other trace (#6171).
      */
     private fun resolveAudioSource(): Int {
         val audioManager =
             context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-                ?: return AudioSpec.SOURCE_AUTO
+                ?: run {
+                    DivineCameraLog.warning(
+                        "AudioManager unavailable — camera-default audio source",
+                        name = "DivineCamera.Audio"
+                    )
+                    return AudioSpec.SOURCE_AUTO
+                }
         val types = audioManager
             .getDevices(AudioManager.GET_DEVICES_INPUTS)
             .map { it.type }
             .toIntArray()
         val source = audioSourceForInputDeviceTypes(types)
-        if (source != AudioSpec.SOURCE_AUTO) {
-            DivineCameraLog.info(
-                "External audio input attached — capturing from MIC",
-                name = "DivineCamera.Audio"
-            )
-        }
+        val inputs = types
+            .joinToString(", ") { audioInputTypeName(it) }
+            .ifEmpty { "none" }
+        DivineCameraLog.info(
+            if (source == AudioSpec.SOURCE_AUTO) {
+                "Audio source: camera default (inputs: $inputs)"
+            } else {
+                "Audio source: MIC, external input attached (inputs: $inputs)"
+            },
+            name = "DivineCamera.Audio"
+        )
         return source
     }
 

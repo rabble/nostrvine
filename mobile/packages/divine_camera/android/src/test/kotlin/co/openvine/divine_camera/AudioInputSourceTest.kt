@@ -133,6 +133,16 @@ internal class AudioInputSourceTest {
         )
     }
 
+    @Test
+    fun inputTypeNames_stayReadableAndKeepUnmappedTypesVisible() {
+        // The names land in user bug reports, and an unmapped type is the case
+        // worth reading: a device that calls its external mic something we do
+        // not route on has to show up as a number rather than not at all.
+        assertEquals("USB_DEVICE", audioInputTypeName(AudioDeviceInfo.TYPE_USB_DEVICE))
+        assertEquals("BUILTIN_MIC", audioInputTypeName(AudioDeviceInfo.TYPE_BUILTIN_MIC))
+        assertEquals("TYPE_9999", audioInputTypeName(9999))
+    }
+
     /*
      * Recorder.Builder.setAudioSource and Recorder.getAudioSource are both
      * @RestrictTo(LIBRARY) — the only lever CameraX offers, since it publishes

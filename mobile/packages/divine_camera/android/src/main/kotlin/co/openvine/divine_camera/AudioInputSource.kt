@@ -1,5 +1,5 @@
 // ABOUTME: Picks the recording audio source from the connected input devices
-// ABOUTME: CAMCORDER never selects an attached USB mic, so external inputs use MIC
+// ABOUTME: CAMCORDER ranks USB below the built-in mic, so external inputs use MIC
 
 package co.openvine.divine_camera
 
@@ -48,3 +48,24 @@ internal fun audioSourceForInputDeviceTypes(types: IntArray): Int =
     } else {
         AudioSpec.SOURCE_AUTO
     }
+
+/**
+ * Short readable name for an `AudioDeviceInfo` input [type], used by the
+ * diagnostic line the camera writes when it resolves the recording source.
+ *
+ * Unknown types fall back to the raw constant on purpose: a device reporting
+ * an input we do not map is the exact failure mode behind #6171, and it has to
+ * survive into the bug report rather than disappear.
+ */
+internal fun audioInputTypeName(type: Int): String = when (type) {
+    AudioDeviceInfo.TYPE_BUILTIN_MIC -> "BUILTIN_MIC"
+    AudioDeviceInfo.TYPE_USB_DEVICE -> "USB_DEVICE"
+    AudioDeviceInfo.TYPE_USB_HEADSET -> "USB_HEADSET"
+    AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB_ACCESSORY"
+    AudioDeviceInfo.TYPE_WIRED_HEADSET -> "WIRED_HEADSET"
+    AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "BLUETOOTH_SCO"
+    AudioDeviceInfo.TYPE_BLE_HEADSET -> "BLE_HEADSET"
+    AudioDeviceInfo.TYPE_TELEPHONY -> "TELEPHONY"
+    AudioDeviceInfo.TYPE_REMOTE_SUBMIX -> "REMOTE_SUBMIX"
+    else -> "TYPE_$type"
+}
