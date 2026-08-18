@@ -251,6 +251,17 @@ class LikesRepository {
   /// downvote on the same target. Downvotes stay in-memory only, as in v1.
   final Map<String, LikeRecord> _downvoteRecordsByAddressableId = {};
 
+  /// Reaction event ids this session has retracted with a published Kind 5.
+  ///
+  /// The own-reaction echo subscription and the relay's read path can both
+  /// still carry a just-retracted reaction (the relay only SHOULD stop
+  /// serving deleted events, and its kind-5 reads lag under load), so
+  /// without this tombstone a retracted reaction resurrects as a live
+  /// record — a tap then reconciles to it without publishing, and the next
+  /// removal publishes a redundant Kind 5 (#7784 device patrol). Consulted
+  /// by the echo, the remote resolvers, and both vote/reaction read paths.
+  final Set<String> _retractedReactionIds = {};
+
   /// In-memory cache of the user's own emoji reactions keyed by target
   /// event ID.
   ///
@@ -407,6 +418,21 @@ class LikesRepository {
         _emojiReactionRecordsByAddressableId.remove(addressableId);
       }
     }
+  }
+
+  /// Publishes the NIP-09 retraction for [reactionEventId] with the
+  /// reaction `k` tag and, on success, tombstones the id (see
+  /// [_retractedReactionIds]). Returns the deletion event, or `null` when
+  /// the publish failed.
+  Future<Event?> _publishReactionRetraction(String reactionEventId) async {
+    final deletionEvent = await _nostrClient.deleteEvent(
+      reactionEventId,
+      targetKind: EventKind.reaction,
+    );
+    if (deletionEvent != null) {
+      _retractedReactionIds.add(reactionEventId);
+    }
+    return deletionEvent;
   }
 
   /// Resolves an emoji reaction record by target event id, falling back to
@@ -775,7 +801,7 @@ class LikesRepository {
     required String? countAddressableId,
   }) async {
     try {
-      final deletion = await _nostrClient.deleteEvent(
+      final deletion = await _publishReactionRetraction(
         confirmed.reactionEventId,
       );
       if (deletion == null) {
@@ -995,7 +1021,7 @@ class LikesRepository {
     }
 
     try {
-      final deletionEvent = await _nostrClient.deleteEvent(
+      final deletionEvent = await _publishReactionRetraction(
         snapshotRecord.reactionEventId,
       );
       if (deletionEvent == null) {
@@ -1078,7 +1104,7 @@ class LikesRepository {
     }
 
     // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(
+    final deletionEvent = await _publishReactionRetraction(
       record.reactionEventId,
     );
 
@@ -1314,6 +1340,9 @@ class LikesRepository {
   /// SHOULD NOT be read as a like — and content that is neither a vote nor
   /// emoji-only (see [emojiReactionContentOf]) is ignored. Every requested
   /// id is present in all three maps, so callers can merge per target.
+  ///
+  /// Counts dedupe per pubkey within each bucket: N copies of the same vote
+  /// or emoji from one account count once.
   Future<
     ({
       Map<String, int> upvotes,
@@ -1361,6 +1390,14 @@ class LikesRepository {
     final reactionsById = {for (final event in events) event.id: event};
     final deletedReactionIds = await _deletedReactionIds(reactionsById);
 
+    // Dedupe per pubkey: NIP-25 imposes no per-user cap, so another client
+    // can publish the same vote or emoji from one account repeatedly, and
+    // counting raw events would let each copy inflate the score (#7784
+    // device patrol). One person counts once per bucket.
+    final upvoterPubkeys = <String, Set<String>>{};
+    final downvoterPubkeys = <String, Set<String>>{};
+    final emojiReactorPubkeys = <String, Map<String, Set<String>>>{};
+
     final knownEventIds = eventIds.toSet();
     for (final event in reactionsById.values) {
       if (deletedReactionIds.contains(event.id)) continue;
@@ -1372,15 +1409,29 @@ class LikesRepository {
       if (targetId == null) continue;
 
       if (event.content == _downvoteContent) {
-        downvotes[targetId] = downvotes[targetId]! + 1;
+        (downvoterPubkeys[targetId] ??= {}).add(event.pubkey);
       } else if (_isLikeContent(event.content)) {
-        upvotes[targetId] = upvotes[targetId]! + 1;
+        (upvoterPubkeys[targetId] ??= {}).add(event.pubkey);
       } else {
         final emoji = emojiReactionContentOf(event.content);
         if (emoji == null) continue;
-        final perTarget = emojiReactions[targetId]!;
-        perTarget[emoji] = (perTarget[emoji] ?? 0) + 1;
+        ((emojiReactorPubkeys[targetId] ??= {})[emoji] ??= {}).add(
+          event.pubkey,
+        );
       }
+    }
+
+    for (final entry in upvoterPubkeys.entries) {
+      upvotes[entry.key] = entry.value.length;
+    }
+    for (final entry in downvoterPubkeys.entries) {
+      downvotes[entry.key] = entry.value.length;
+    }
+    for (final entry in emojiReactorPubkeys.entries) {
+      emojiReactions[entry.key] = {
+        for (final perEmoji in entry.value.entries)
+          perEmoji.key: perEmoji.value.length,
+      };
     }
 
     return (
@@ -1460,6 +1511,10 @@ class LikesRepository {
         }
       }
     }
+    // Session tombstones cover the relay's read lag (see
+    // [_retractedReactionIds]); without them a just-retracted reaction can
+    // hydrate back as the user's live vote or emoji.
+    deletedIds.addAll(_retractedReactionIds);
 
     final upvotedIds = <String>{};
     final downvotedIds = <String>{};
@@ -1719,7 +1774,7 @@ class LikesRepository {
 
     // 3. Publish kind 5 deletion; on failure roll back memory + stream.
     try {
-      final deletionEvent = await _nostrClient.deleteEvent(
+      final deletionEvent = await _publishReactionRetraction(
         snapshotRecord.reactionEventId,
       );
       if (deletionEvent == null) {
@@ -1885,7 +1940,7 @@ class LikesRepository {
     }
 
     try {
-      final deletionEvent = await _nostrClient.deleteEvent(
+      final deletionEvent = await _publishReactionRetraction(
         snapshotRecord.reactionEventId,
       );
       if (deletionEvent == null) {
@@ -1903,7 +1958,7 @@ class LikesRepository {
   ///
   /// Used for vote switching (removing old vote before publishing new one).
   Future<void> deleteReaction(String reactionEventId) async {
-    final deletionEvent = await _nostrClient.deleteEvent(reactionEventId);
+    final deletionEvent = await _publishReactionRetraction(reactionEventId);
     if (deletionEvent == null) {
       throw const UnlikeFailedException('Failed to delete reaction');
     }
@@ -2359,6 +2414,12 @@ class LikesRepository {
         }
       }
     }
+    // Session tombstones cover the relay's read lag: a reaction this
+    // session just retracted must never re-count even when the kind-5
+    // query misses its deletion (#7784 device patrol).
+    deleted.addAll(
+      _retractedReactionIds.intersection(reactionsById.keys.toSet()),
+    );
     return deleted;
   }
 
@@ -2577,6 +2638,11 @@ class LikesRepository {
     if (event.kind != EventKind.reaction) return;
     if (event.pubkey != _nostrClient.publicKey) return;
 
+    // A retracted reaction's echo must not resurrect its record: the tap
+    // that follows would reconcile to a dead reaction without publishing
+    // (#7784 device patrol).
+    if (_retractedReactionIds.contains(event.id)) return;
+
     final targetId = _extractTargetEventId(event);
     if (targetId == null) return;
 
@@ -2708,6 +2774,7 @@ class LikesRepository {
     _downvoteRecordsByAddressableId.clear();
     _emojiReactionRecords.clear();
     _emojiReactionRecordsByAddressableId.clear();
+    _retractedReactionIds.clear();
     _likeCountCache.clear();
     _likeCountCacheByAddressableId.clear();
     await _localStorage?.clearAll();
@@ -2924,6 +2991,7 @@ class LikesRepository {
     final candidatesById = <String, Event>{};
     for (final event in reactions) {
       if (!contentMatches(event.content)) continue;
+      if (_retractedReactionIds.contains(event.id)) continue;
       final matches =
           _extractTargetEventId(event) == eventId ||
           (hasCoordinate && _extractAddressableId(event) == addressableId);

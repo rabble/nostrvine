@@ -54,6 +54,7 @@ void main() {
     }) {
       final event = MockEvent();
       when(() => event.id).thenReturn(id);
+      when(() => event.kind).thenReturn(7);
       when(() => event.pubkey).thenReturn(authorPubkey);
       when(() => event.content).thenReturn(content);
       when(() => event.createdAt).thenReturn(createdAt);
@@ -461,7 +462,10 @@ void main() {
           final deletionEvent = MockEvent();
           when(() => deletionEvent.id).thenReturn('deletion_event_id');
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => deletionEvent);
 
           repository = createRepository();
@@ -478,7 +482,10 @@ void main() {
 
           expect(isNowLiked, isFalse);
           verify(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).called(1);
         },
       );
@@ -975,7 +982,10 @@ void main() {
             ),
           ).thenAnswer((_) => publishGate.future);
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
 
           repository = createRepository();
@@ -992,7 +1002,12 @@ void main() {
           publishGate.complete(reactionA);
           await inFlightLike;
 
-          verify(() => mockNostrClient.deleteEvent('reaction_a')).called(1);
+          verify(
+            () => mockNostrClient.deleteEvent(
+              'reaction_a',
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
           expect(
             await repository.isLiked(testEventId),
             isFalse,
@@ -1052,7 +1067,12 @@ void main() {
             authorPubkey: testAuthorPubkey,
           );
 
-          verifyNever(() => mockNostrClient.deleteEvent(any()));
+          verifyNever(
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
+          );
           expect(await repository.isLiked(testEventId), isTrue);
         },
       );
@@ -1082,7 +1102,10 @@ void main() {
             ),
           ).thenAnswer((_) => publishGate.future);
           when(
-            () => mockNostrClient.deleteEvent('reaction_a'),
+            () => mockNostrClient.deleteEvent(
+              'reaction_a',
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => null);
 
           bool? queuedIsLike;
@@ -1116,7 +1139,12 @@ void main() {
           publishGate.complete(reactionA);
           await inFlightLike;
 
-          verify(() => mockNostrClient.deleteEvent('reaction_a')).called(1);
+          verify(
+            () => mockNostrClient.deleteEvent(
+              'reaction_a',
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
           expect(queuedIsLike, isFalse);
           expect(queuedEventId, equals(testEventId));
           expect(await repository.isLiked(testEventId), isTrue);
@@ -1128,7 +1156,10 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => MockEvent());
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -1139,7 +1170,10 @@ void main() {
         await repository.unlikeEvent(testEventId);
 
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).called(1);
         verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
       });
@@ -1157,7 +1191,10 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => null);
         // Optimistic-first removes then rolls back on failure; storage
         // methods need stubs so the rollback path resolves.
@@ -1182,7 +1219,10 @@ void main() {
           () => mockLocalStorage.getLikeRecord(testEventId),
         ).thenAnswer((_) async => createLikeRecord());
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => MockEvent());
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -1193,7 +1233,10 @@ void main() {
 
         verify(() => mockLocalStorage.getLikeRecord(testEventId)).called(1);
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).called(1);
       });
 
@@ -1210,7 +1253,10 @@ void main() {
           // Suspend deleteEvent so we can observe the optimistic phase.
           final deleteCompleter = Completer<Event?>();
           when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) => deleteCompleter.future);
 
           repository = createRepository();
@@ -1242,7 +1288,10 @@ void main() {
             () => mockLocalStorage.getAllLikeRecords(),
           ).thenAnswer((_) async => [createLikeRecord()]);
           when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => null);
           when(
             () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -1270,7 +1319,10 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenThrow(Exception('relay closed'));
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -1300,7 +1352,10 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => null);
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -1342,7 +1397,10 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenThrow(Exception('relay closed'));
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -1442,7 +1500,10 @@ void main() {
           () => mockLocalStorage.isLiked(testEventId),
         ).thenAnswer((_) async => true);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => MockEvent());
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -1473,7 +1534,10 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => MockEvent());
 
         repository = createRepository(withLocalStorage: false);
@@ -1715,7 +1779,10 @@ void main() {
         );
         final deletionEvent = MockEvent();
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => deletionEvent);
 
         repository = createRepository(withLocalStorage: false);
@@ -1728,7 +1795,10 @@ void main() {
 
         expect(await repository.isDownvoted(testEventId), isFalse);
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).called(1);
       });
 
@@ -1759,7 +1829,10 @@ void main() {
           ),
         );
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => MockEvent());
 
         await repository.downvoteEvent(
@@ -1772,7 +1845,10 @@ void main() {
         await repository.removeDownvote(editedId, addressableId: coordinate);
 
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).called(1);
       });
 
@@ -1846,13 +1922,19 @@ void main() {
             <Event>[],
           ]);
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
 
           await repository.removeDownvote(testEventId);
 
           verify(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).called(1);
         },
       );
@@ -1875,7 +1957,10 @@ void main() {
           ];
           mockQueryEventsSequence([reactions, <Event>[], <Event>[]]);
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
 
           await repository.removeDownvote(testEventId);
@@ -1928,7 +2013,12 @@ void main() {
             repository.removeDownvote(testEventId),
             throwsA(isA<NotDownvotedException>()),
           );
-          verifyNever(() => mockNostrClient.deleteEvent(any()));
+          verifyNever(
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
+          );
         },
       );
 
@@ -1949,7 +2039,10 @@ void main() {
           ),
         );
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => null);
 
         repository = createRepository(withLocalStorage: false);
@@ -1984,7 +2077,10 @@ void main() {
           ),
         );
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenThrow(Exception('relay unreachable'));
 
         repository = createRepository(withLocalStorage: false);
@@ -2050,7 +2146,10 @@ void main() {
           );
           final deletionEvent = MockEvent();
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => deletionEvent);
 
           repository = createRepository(withLocalStorage: false);
@@ -2431,7 +2530,10 @@ void main() {
           () => mockLocalStorage.deleteLikeRecord(any()),
         ).thenAnswer((_) async => true);
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => MockEvent());
 
         repository = createRepository();
@@ -3983,7 +4085,10 @@ void main() {
           () => mockLocalStorage.deleteLikeRecord(any()),
         ).thenAnswer((_) async => true);
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => MockEvent());
         when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
           (_) async => [
@@ -4665,7 +4770,10 @@ void main() {
             () => mockLocalStorage.deleteLikeRecord(any()),
           ).thenAnswer((_) async => true);
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer(
             (_) async => createMockDeletion([otherDeviceReactionId]),
           );
@@ -4736,7 +4844,10 @@ void main() {
             () => mockLocalStorage.deleteLikeRecord(otherDeviceEventId),
           ).called(1);
           verify(
-            () => mockNostrClient.deleteEvent(otherDeviceReactionId),
+            () => mockNostrClient.deleteEvent(
+              otherDeviceReactionId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).called(1);
           expect(
             await repository.isLikedResolvingCoordinate(
@@ -4789,7 +4900,10 @@ void main() {
           ),
         );
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
@@ -4809,7 +4923,10 @@ void main() {
         await repository.executeUnlikeAction(testEventId);
 
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).called(1);
         verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
       });
@@ -4845,7 +4962,12 @@ void main() {
         // Execute unlike - should not call deleteEvent since never synced
         await repository.executeUnlikeAction(testEventId);
 
-        verifyNever(() => mockNostrClient.deleteEvent(any()));
+        verifyNever(
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
+        );
         verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
       });
 
@@ -4859,7 +4981,12 @@ void main() {
         // Should not throw, just return
         await repository.executeUnlikeAction(testEventId);
 
-        verifyNever(() => mockNostrClient.deleteEvent(any()));
+        verifyNever(
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
+        );
         verifyNever(() => mockLocalStorage.deleteLikeRecord(testEventId));
       });
 
@@ -4879,7 +5006,10 @@ void main() {
           ),
         );
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => null);
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
@@ -4905,7 +5035,10 @@ void main() {
           () => mockLocalStorage.getLikeRecord(testEventId),
         ).thenAnswer((_) async => record);
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
         when(
           () => mockLocalStorage.deleteLikeRecord(any()),
@@ -4917,7 +5050,10 @@ void main() {
 
         verify(() => mockLocalStorage.getLikeRecord(testEventId)).called(1);
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEvent(
+            testReactionEventId,
+            targetKind: any(named: 'targetKind'),
+          ),
         ).called(1);
       });
 
@@ -4940,7 +5076,10 @@ void main() {
           ),
         );
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
@@ -5145,7 +5284,10 @@ void main() {
             ],
           );
           when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
           when(
             () => mockLocalStorage.deleteLikeRecord(oldEventId),
@@ -5171,7 +5313,10 @@ void main() {
             ),
           );
           verify(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).called(1);
         },
       );
@@ -5195,7 +5340,10 @@ void main() {
             ],
           );
           when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
           when(
             () => mockLocalStorage.deleteLikeRecord(oldEventId),
@@ -5207,7 +5355,10 @@ void main() {
           await repository.unlikeEvent(newEventId, addressableId: coordinate);
 
           verify(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).called(1);
           verify(
             () => mockLocalStorage.deleteLikeRecord(oldEventId),
@@ -5231,7 +5382,10 @@ void main() {
             ),
           );
           when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
           when(
             () => mockLocalStorage.deleteLikeRecord(oldEventId),
@@ -5245,7 +5399,10 @@ void main() {
             () => mockLocalStorage.getLikeRecordByAddressableId(coordinate),
           ).called(1);
           verify(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).called(1);
         },
       );
@@ -5732,7 +5889,10 @@ void main() {
           ],
         ]);
         when(
-          () => mockNostrClient.deleteEvent(any()),
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => MockEvent());
 
         repository = createRepository(withLocalStorage: false);
@@ -5741,7 +5901,12 @@ void main() {
         await repository.syncUserReactions();
         await repository.removeDownvote(newId, addressableId: coordinate);
 
-        verify(() => mockNostrClient.deleteEvent(newReactionId)).called(1);
+        verify(
+          () => mockNostrClient.deleteEvent(
+            newReactionId,
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).called(1);
       });
     });
 
@@ -5884,7 +6049,10 @@ void main() {
           when(() => mockEvent.id).thenReturn(testReactionEventId);
           stubSendLike(mockEvent);
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
 
           repository = createRepository(withLocalStorage: false);
@@ -5896,7 +6064,10 @@ void main() {
           await repository.removeEmojiReaction(testEventId);
 
           verify(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).called(1);
         },
       );
@@ -5916,13 +6087,21 @@ void main() {
             <Event>[],
           ]);
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
 
           repository = createRepository(withLocalStorage: false);
           await repository.removeEmojiReaction(testEventId);
 
-          verify(() => mockNostrClient.deleteEvent(remoteReactionId)).called(1);
+          verify(
+            () => mockNostrClient.deleteEvent(
+              remoteReactionId,
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
         },
       );
 
@@ -5933,7 +6112,10 @@ void main() {
           when(() => mockEvent.id).thenReturn(testReactionEventId);
           stubSendLike(mockEvent);
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => null);
 
           repository = createRepository(withLocalStorage: false);
@@ -5951,11 +6133,17 @@ void main() {
           // The restored record makes the retry reference the same
           // reaction id without any relay resolve.
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
           await repository.removeEmojiReaction(testEventId);
           verify(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
           ).called(2);
           verifyNever(() => mockNostrClient.queryEvents(any()));
         },
@@ -6076,19 +6264,249 @@ void main() {
             <Event>[],
           ]);
           when(
-            () => mockNostrClient.deleteEvent(any()),
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
           ).thenAnswer((_) async => MockEvent());
 
           repository = createRepository(withLocalStorage: false);
           await repository.getUserVoteStatuses([testEventId]);
           await repository.removeEmojiReaction(testEventId);
 
-          verify(() => mockNostrClient.deleteEvent(remoteReactionId)).called(1);
+          verify(
+            () => mockNostrClient.deleteEvent(
+              remoteReactionId,
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
           // Both queryEvents calls belong to the fetch; the removal used the
           // hydrated record instead of re-resolving from the relay.
           verify(() => mockNostrClient.queryEvents(any())).called(2);
         },
       );
+
+      test(
+        'a retracted reaction echo does not resurrect the record',
+        () async {
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          when(
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => MockEvent());
+          final echoController = StreamController<Event>.broadcast();
+          addTearDown(echoController.close);
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => echoController.stream);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.initialize();
+
+          await repository.reactToEventWithEmoji(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            emoji: '😂',
+          );
+          await repository.removeEmojiReaction(testEventId);
+
+          // The relay echoes the original kind 7 after the local removal.
+          echoController.add(
+            createMockReaction(
+              id: testReactionEventId,
+              targetEventId: testEventId,
+              authorPubkey: testUserPubkey,
+              content: '😂',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          // Without the tombstone the echo re-indexes the retracted
+          // reaction and this react throws $AlreadyReactedException
+          // instead of publishing.
+          await repository.reactToEventWithEmoji(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            emoji: '😂',
+          );
+
+          verify(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(2);
+        },
+      );
+
+      test(
+        'a retracted reaction is never re-deleted through the remote '
+        'resolver',
+        () async {
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          when(
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => MockEvent());
+          // The relay keeps serving the retracted kind 7 while its kind-5
+          // read returns nothing — observed live: identical queries answer
+          // inconsistently under load.
+          mockQueryEventsSequence([
+            [
+              createMockReaction(
+                id: testReactionEventId,
+                targetEventId: testEventId,
+                authorPubkey: testUserPubkey,
+                content: '😂',
+              ),
+            ],
+            <Event>[],
+          ]);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.reactToEventWithEmoji(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            emoji: '😂',
+          );
+          await repository.removeEmojiReaction(testEventId);
+
+          await expectLater(
+            repository.removeEmojiReaction(testEventId),
+            throwsA(isA<NotReactedException>()),
+          );
+          verify(
+            () => mockNostrClient.deleteEvent(
+              testReactionEventId,
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'counts exclude reactions this session retracted even when the '
+        'relay still serves them',
+        () async {
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          when(
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => MockEvent());
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.reactToEventWithEmoji(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            emoji: '😂',
+          );
+          await repository.removeEmojiReaction(testEventId);
+
+          // Relay still serves the retracted kind 7; its kind-5 read lags.
+          mockQueryEventsSequence([
+            [
+              createMockReaction(
+                id: testReactionEventId,
+                targetEventId: testEventId,
+                authorPubkey: testUserPubkey,
+                content: '😂',
+              ),
+            ],
+            <Event>[],
+          ]);
+
+          final counts = await repository.getVoteCounts([testEventId]);
+          expect(counts.emojiReactions[testEventId], isEmpty);
+
+          final statuses = await repository.getUserVoteStatuses([testEventId]);
+          expect(statuses.reactedEmojiByTargetId, isEmpty);
+        },
+      );
+
+      test('counts dedupe repeated reactions per pubkey', () async {
+        const repeatPubkey = 'repeat_pubkey_1234567890abcdef';
+        mockQueryEventsSequence([
+          [
+            createMockReaction(
+              id: 'plus_copy_1',
+              targetEventId: testEventId,
+              authorPubkey: repeatPubkey,
+            ),
+            createMockReaction(
+              id: 'plus_copy_2',
+              targetEventId: testEventId,
+              authorPubkey: repeatPubkey,
+            ),
+            createMockReaction(
+              id: 'joy_copy_1',
+              targetEventId: testEventId,
+              authorPubkey: repeatPubkey,
+              content: '😂',
+            ),
+            createMockReaction(
+              id: 'joy_copy_2',
+              targetEventId: testEventId,
+              authorPubkey: repeatPubkey,
+              content: '😂',
+            ),
+            createMockReaction(
+              id: 'joy_other',
+              targetEventId: testEventId,
+              authorPubkey: 'other_pubkey_1234567890abcdef',
+              content: '😂',
+            ),
+          ],
+          <Event>[],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+        final counts = await repository.getVoteCounts([testEventId]);
+
+        expect(counts.upvotes[testEventId], equals(1));
+        expect(counts.emojiReactions[testEventId], equals({'😂': 2}));
+      });
+
+      test('reaction retractions carry the NIP-09 k tag', () async {
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        when(
+          () => mockNostrClient.deleteEvent(
+            any(),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => MockEvent());
+
+        repository = createRepository(withLocalStorage: false);
+        await repository.reactToEventWithEmoji(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+          emoji: '😂',
+        );
+        await repository.removeEmojiReaction(testEventId);
+
+        verify(
+          () => mockNostrClient.deleteEvent(testReactionEventId, targetKind: 7),
+        ).called(1);
+      });
 
       test(
         'fetchEventLikers does not count emoji reactors as likers',

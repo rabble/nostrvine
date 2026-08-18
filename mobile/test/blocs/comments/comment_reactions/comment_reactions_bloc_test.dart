@@ -1029,7 +1029,50 @@ void main() {
                 'reconciled own',
                 '🔥',
               )
+              // The reconcile must keep own ⊆ counts — a highlighted chip
+              // with no count behind it is the #7784 ghost state.
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')]?['🔥'],
+                'reconciled count',
+                1,
+              )
               .having((s) => s.error, 'error', isNull),
+        ],
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'fetch merge keeps the own emoji visible when the count snapshot '
+        'lacks it',
+        setUp: () {
+          when(() => mockLikesRepository.getVoteCounts(any())).thenAnswer(
+            (_) async => (
+              upvotes: <String, int>{},
+              downvotes: <String, int>{},
+              emojiReactions: {validId('c1'): <String, int>{}},
+            ),
+          );
+          when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
+            (_) async => (
+              upvotedIds: <String>{},
+              downvotedIds: <String>{},
+              reactedEmojiByTargetId: {validId('c1'): '😂'},
+            ),
+          );
+        },
+        build: createBloc,
+        act: (b) => b.add(CommentVoteCountsFetchRequested([validId('c1')])),
+        expect: () => [
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+                'own',
+                '😂',
+              )
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'counts keep own visible',
+                {'😂': 1},
+              ),
         ],
       );
 

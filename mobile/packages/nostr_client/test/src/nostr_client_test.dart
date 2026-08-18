@@ -521,6 +521,52 @@ void main() {
         verify(() => mockNostr.sendEvent(event)).called(1);
       });
 
+      test('deleteEvent emits the NIP-09 e and k tags', () async {
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (invocation) async => invocation.positionalArguments.first as Event,
+        );
+
+        final deletion = await client.deleteEvent(
+          'deleted_reaction_event_id_1234567890abcdef',
+          targetKind: 7,
+        );
+
+        expect(deletion, isNotNull);
+        expect(deletion!.kind, equals(EventKind.eventDeletion));
+        expect(
+          deletion.tags,
+          containsAll([
+            ['e', 'deleted_reaction_event_id_1234567890abcdef'],
+            ['k', '7'],
+          ]),
+        );
+      });
+
+      test('deleteEvent omits the k tag when the kind is unknown', () async {
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (invocation) async => invocation.positionalArguments.first as Event,
+        );
+
+        final deletion = await client.deleteEvent(
+          'deleted_reaction_event_id_1234567890abcdef',
+        );
+
+        expect(deletion, isNotNull);
+        expect(deletion!.tags.where((tag) => tag.first == 'k'), isEmpty);
+      });
+
       test('publishes event with target relays', () async {
         final event = _createTestEvent();
         final targetRelays = ['wss://relay1.example.com'];

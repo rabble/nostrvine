@@ -128,6 +128,27 @@ class CommentReactionsBloc
     emit(state.copyWith(clearError: true));
   }
 
+  /// Returns [counts] adjusted so every comment in [ownEmoji] shows its own
+  /// emoji with at least count 1.
+  ///
+  /// A fetch merge samples the relay at its own moment and a reconcile only
+  /// learns the emoji — either could otherwise leave a highlighted own chip
+  /// with no count behind it (#7784 device patrol). Untouched comments keep
+  /// their map instances so chip selectors skip rebuilding them.
+  Map<String, Map<String, int>> _withOwnReactionsVisible(
+    Map<String, Map<String, int>> counts,
+    Map<String, String> ownEmoji,
+  ) {
+    Map<String, Map<String, int>>? adjusted;
+    for (final entry in ownEmoji.entries) {
+      final perComment = counts[entry.key];
+      if (perComment != null && (perComment[entry.value] ?? 0) > 0) continue;
+      adjusted ??= Map.of(counts);
+      adjusted[entry.key] = {...?perComment, entry.value: 1};
+    }
+    return adjusted ?? counts;
+  }
+
   void _onOutboxConsumed(
     ReactionsOutboxConsumed event,
     Emitter<CommentReactionsState> emit,
@@ -160,6 +181,10 @@ class CommentReactionsBloc
       // previously-fetched counts for ids not in this batch so an
       // incremental fetch (only newly-loaded comments) doesn't lose
       // already-known counts.
+      final mergedOwnEmoji = {
+        ...state.ownReactionEmojiByCommentId,
+        ...voteStatuses.reactedEmojiByTargetId,
+      };
       emit(
         state.copyWith(
           commentUpvoteCounts: {
@@ -170,10 +195,10 @@ class CommentReactionsBloc
             ...state.commentDownvoteCounts,
             ...voteCounts.downvotes,
           },
-          commentEmojiReactionCounts: {
+          commentEmojiReactionCounts: _withOwnReactionsVisible({
             ...state.commentEmojiReactionCounts,
             ...voteCounts.emojiReactions,
-          },
+          }, mergedOwnEmoji),
           upvotedCommentIds: {
             ...state.upvotedCommentIds,
             ...voteStatuses.upvotedIds,
@@ -182,10 +207,7 @@ class CommentReactionsBloc
             ...state.downvotedCommentIds,
             ...voteStatuses.downvotedIds,
           },
-          ownReactionEmojiByCommentId: {
-            ...state.ownReactionEmojiByCommentId,
-            ...voteStatuses.reactedEmojiByTargetId,
-          },
+          ownReactionEmojiByCommentId: mergedOwnEmoji,
         ),
       );
     } catch (e, stackTrace) {
@@ -438,6 +460,10 @@ class CommentReactionsBloc
             ...state.ownReactionEmojiByCommentId,
             commentId: e.emoji,
           },
+          commentEmojiReactionCounts: _withOwnReactionsVisible(
+            state.commentEmojiReactionCounts,
+            {commentId: e.emoji},
+          ),
         ),
       );
     } catch (e, stackTrace) {

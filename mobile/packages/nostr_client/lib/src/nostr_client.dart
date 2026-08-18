@@ -1651,13 +1651,18 @@ class NostrClient {
   ///
   /// Sends a NIP-09 deletion event (Kind 5) and removes the target event
   /// from the local database cache.
+  ///
+  /// Pass [targetKind] when the deleted event's kind is known — NIP-09 says
+  /// deletion requests SHOULD carry a `k` tag naming it.
   Future<Event?> deleteEvent(
     String eventId, {
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
     final deletionEvent = Event(publicKey, EventKind.eventDeletion, [
       ['e', eventId],
+      if (targetKind != null) ['k', '$targetKind'],
     ], 'delete');
 
     final result = await publishEvent(
@@ -1674,15 +1679,22 @@ class NostrClient {
   ///
   /// Sends a NIP-09 deletion event (Kind 5) and removes the target events
   /// from the local database cache.
+  ///
+  /// Pass [targetKind] when every deleted event shares one known kind —
+  /// NIP-09 says deletion requests SHOULD carry a `k` tag per deleted kind.
   Future<Event?> deleteEvents(
     List<String> eventIds, {
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
     final deletionEvent = Event(
       publicKey,
       EventKind.eventDeletion,
-      eventIds.map((eventId) => ['e', eventId]).toList(),
+      [
+        for (final eventId in eventIds) ['e', eventId],
+        if (targetKind != null) ['k', '$targetKind'],
+      ],
       'delete',
     );
 
