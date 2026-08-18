@@ -54,13 +54,13 @@ void main() {
     });
 
     test(
-      'unknown when there is no access token (self-custody signer)',
+      'unknown when the owner-bound gate yields no token',
       () async {
-        // A divineOAuth account whose session is expired, unrefreshable, or
-        // bound to another pubkey yields no token. That is an absent signal,
-        // not a clean bill of health: the account may well be restricted and
-        // we simply could not ask. (Self-custody never reaches here — the
-        // provider short-circuits it to noAccountState.)
+        // A session bound to a different account, or a transient refresh
+        // miss, yields no token. That is an absent signal, not a clean bill of
+        // health: the account may well be restricted and we could not ask.
+        // Self-custody and a known-expired session never reach here; the
+        // provider short-circuits both to their own states.
         final repo = AccountEnforcementRepository(
           oauthClient: _oauthReturning(_suspendedBody, 200),
           readAccessToken: () async => null,
@@ -73,26 +73,28 @@ void main() {
       },
     );
 
-    test('unknown on server error', () async {
+    test('surfaces a read failure as an error, not as a status', () async {
+      // A failed read must be distinguishable from a successful "no
+      // enforcement" read: collapsing them lets an offline refresh clear a
+      // restriction marker the user already earned.
       final repo = AccountEnforcementRepository(
         oauthClient: _oauthReturning('err', 500),
         readAccessToken: () async => 'tok',
       );
 
-      final s = await repo.fetchCurrentStatus();
-
-      expect(s.kind, AccountEnforcementKind.unknown);
+      await expectLater(
+        repo.fetchCurrentStatus(),
+        throwsA(isA<AccountStatusUnavailable>()),
+      );
     });
 
-    test('unknown when reading the token throws', () async {
+    test('propagates an error from reading the token', () async {
       final repo = AccountEnforcementRepository(
         oauthClient: _oauthReturning(_activeBody, 200),
         readAccessToken: () async => throw StateError('secure storage locked'),
       );
 
-      final s = await repo.fetchCurrentStatus();
-
-      expect(s.kind, AccountEnforcementKind.unknown);
+      await expectLater(repo.fetchCurrentStatus(), throwsA(isA<StateError>()));
     });
   });
 }

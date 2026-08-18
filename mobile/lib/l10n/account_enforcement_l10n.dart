@@ -19,6 +19,8 @@ extension AccountEnforcementL10n on AppLocalizations {
         return accountStatusUnknownHeading;
       case AccountEnforcementKind.noAccountState:
         return accountStatusNoAccountStateHeading;
+      case AccountEnforcementKind.sessionExpired:
+        return accountStatusSessionExpiredHeading;
       case AccountEnforcementKind.none:
         return accountStatusOkHeading;
       case AccountEnforcementKind.suspended:
@@ -36,6 +38,8 @@ extension AccountEnforcementL10n on AppLocalizations {
         return accountStatusUnknownBody;
       case AccountEnforcementKind.noAccountState:
         return accountStatusNoAccountStateBody;
+      case AccountEnforcementKind.sessionExpired:
+        return accountStatusSessionExpiredBody;
       case AccountEnforcementKind.none:
         return accountStatusOkBody;
       case AccountEnforcementKind.suspended:

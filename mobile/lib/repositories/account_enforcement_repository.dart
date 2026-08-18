@@ -37,15 +37,31 @@ class AccountEnforcementRepository {
   final Future<String?> Function() _readAccessToken;
 
   Future<AccountEnforcementStatus> fetchCurrentStatus() async {
-    try {
-      final token = await _readAccessToken();
-      if (token == null || token.isEmpty) {
-        return AccountEnforcementStatus.unknown();
-      }
-      final status = await _oauthClient.getAccountStatus(token);
-      return AccountEnforcementStatus.fromKeycast(status);
-    } catch (_) {
+    final token = await _readAccessToken();
+    if (token == null || token.isEmpty) {
       return AccountEnforcementStatus.unknown();
     }
+    final status = await _oauthClient.getAccountStatus(token);
+    if (status == null) {
+      // A failed read is an ERROR, not a status. Returning `unknown` here would
+      // be indistinguishable from a successful "no enforcement" read to any
+      // consumer reading the resolved value, which would let an offline refresh
+      // silently clear a restriction marker the user had already earned.
+      // Surfacing it lets Riverpod retain the last good value instead.
+      throw const AccountStatusUnavailable();
+    }
+    return AccountEnforcementStatus.fromKeycast(status);
   }
+}
+
+/// Thrown when the account status could not be read at all.
+///
+/// Distinct from [AccountEnforcementKind.unknown], which is a resolved "we hold
+/// no signal for you". This means the lookup itself failed and the previous
+/// answer, if any, is still the best one available.
+class AccountStatusUnavailable implements Exception {
+  const AccountStatusUnavailable();
+
+  @override
+  String toString() => 'AccountStatusUnavailable';
 }

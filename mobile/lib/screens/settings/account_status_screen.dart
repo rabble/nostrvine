@@ -91,8 +91,11 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
             ),
             data: (status) => _StatusBody(
               kind: status.kind,
-              // Retry is offered only where it can actually change the answer.
-              // noAccountState is settled: there is no Divine account to check.
+              // Retry is offered only where it can actually change the
+              // answer. noAccountState is settled (there is no Divine account
+              // to check) and sessionExpired needs re-authentication, not a
+              // retry — Settings, one tap back, owns that control, so this
+              // screen points at it in copy rather than duplicating the flow.
               onRetry: status.kind == AccountEnforcementKind.unknown
                   ? () => ref.invalidate(accountEnforcementStatusProvider)
                   : null,

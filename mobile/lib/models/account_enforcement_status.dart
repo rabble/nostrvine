@@ -15,6 +15,12 @@ enum AccountEnforcementKind {
   /// retrying will never change it.
   noAccountState,
 
+  /// The Divine session is expired or revoked, so the status cannot be read.
+  ///
+  /// Distinct from [unknown]: this is diagnosable and actionable. Signing in
+  /// again resolves it, whereas retrying the same dead session never will.
+  sessionExpired,
+
   /// Confirmed in good standing.
   none,
 

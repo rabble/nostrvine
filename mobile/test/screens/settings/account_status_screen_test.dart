@@ -89,6 +89,57 @@ void main() {
       expect(find.text(l10n.accountStatusRetry), findsOneWidget);
     });
 
+    testWidgets('opening the screen refetches an already-cached status', (
+      tester,
+    ) async {
+      // Settings keeps the provider alive underneath, so without this the
+      // screen would render whatever was cached before the user was
+      // suspended. Deleting the initState refetch must turn this red.
+      var call = 0;
+      final container = ProviderContainer(
+        overrides: [
+          accountEnforcementStatusProvider.overrideWith((ref) async {
+            call++;
+            return const AccountEnforcementStatus(
+              kind: AccountEnforcementKind.none,
+            );
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Resolve it once, as Settings would, so a value is already cached.
+      final sub = container.listen(
+        accountEnforcementStatusProvider,
+        (_, _) {},
+      );
+      await container.read(accountEnforcementStatusProvider.future);
+      expect(call, 1);
+      addTearDown(sub.close);
+
+      tester.view.physicalSize = const Size(1080, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AccountStatusScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        call,
+        2,
+        reason: 'opening the screen must re-read, not serve the cached answer',
+      );
+    });
+
     testWidgets('a refresh shows loading, never the previous answer', (
       tester,
     ) async {

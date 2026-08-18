@@ -46,9 +46,18 @@ accountEnforcementStatusProvider =
       // report and no endpoint worth calling. Answering `unknown` here would
       // render as "we could not check, try again" against a retry that can
       // never succeed.
-      if (!ref.watch(authServiceProvider).isRegistered) {
+      final authService = ref.watch(authServiceProvider);
+      if (!authService.isRegistered) {
         return const AccountEnforcementStatus(
           kind: AccountEnforcementKind.noAccountState,
+        );
+      }
+      // A dead session cannot answer the question, and retrying it never will.
+      // The app already knows this state and Settings offers re-auth for it, so
+      // say so rather than reporting a generic "we could not check".
+      if (authService.hasExpiredOAuthSession) {
+        return const AccountEnforcementStatus(
+          kind: AccountEnforcementKind.sessionExpired,
         );
       }
       return ref
@@ -61,13 +70,16 @@ accountEnforcementStatusProvider =
 /// autoDispose so watching this seam cannot pin the status provider alive and
 /// defeat its refetch.
 ///
-/// Unknown resolves to false. Consumers that must fail safe should read
+/// Reads the last resolved value rather than the current async state, so a
+/// refresh in flight, or one that fails, does not clear a restriction marker
+/// the user has already earned. A warning must not be erased by an absent
+/// signal; only a successful read saying otherwise should lift it.
+///
+/// Unresolved resolves to false. Consumers that must fail safe should read
 /// [accountEnforcementStatusProvider] and branch on the kind themselves rather
 /// than relying on this.
 final Provider<bool> isAccountEnforcedProvider = Provider.autoDispose<bool>((
   ref,
 ) {
-  return ref
-      .watch(accountEnforcementStatusProvider)
-      .maybeWhen(data: (s) => s.isEnforced, orElse: () => false);
+  return ref.watch(accountEnforcementStatusProvider).value?.isEnforced ?? false;
 });
