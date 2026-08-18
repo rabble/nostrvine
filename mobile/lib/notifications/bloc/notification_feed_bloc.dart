@@ -481,8 +481,15 @@ class NotificationFeedBloc
       // are NOT Reportable.
       addError(e, s);
     } catch (e, s) {
-      // Errors (StateError, TypeError from the post-await
-      // `_applyFollowState` transform) — matrix-YES invariant.
+      if (e is ArgumentError) {
+        // `FollowRepository.follow` rejects a malformed pubkey before it can
+        // poison the Kind 3 list. The value comes off a relay/FunnelCake
+        // payload, so this is input validation — matrix-NO, not an invariant.
+        addError(e, s);
+        return;
+      }
+      // Any other `Error` — e.g. a signer `StateError` raised while
+      // broadcasting the contact list — is a matrix-YES invariant.
       addError(
         Reportable(
           e,

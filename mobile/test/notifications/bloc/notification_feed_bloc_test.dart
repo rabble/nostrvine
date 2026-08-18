@@ -1171,6 +1171,18 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'forwards an invalid-pubkey ArgumentError without wrapping it',
+        setUp: () {
+          when(() => mockFollowRepo.follow(_bobPubkey)).thenThrow(
+            ArgumentError.value(_bobPubkey, 'pubkey', 'Invalid key'),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedFollowBack(_bobPubkey)),
+        errors: () => [isA<ArgumentError>()],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
         'wraps unexpected Error from follow as Reportable',
         setUp: () {
           when(
