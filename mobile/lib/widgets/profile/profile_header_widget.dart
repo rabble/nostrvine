@@ -543,12 +543,16 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   }
 }
 
-/// Triggers session-expired prompt on condition edges, preventing stacks.
+/// Presents the session-expired prompt on condition edges, without stacking.
 ///
-/// Converts the always-true expiry condition to an edge signal via [initState]
-/// and [didUpdateWidget] (#7308). Guards against flickers in
-/// `isRpcUpgradeInProgress` with an `_isPresenting` flag — when a true edge
-/// arrives while a sheet is open, the pending presentation suppresses the next.
+/// The condition stays true while the session is expired, so this reduces it
+/// to an edge: [initState] covers a header that mounts already expired,
+/// [didUpdateWidget] ignores rebuilds that merely re-report true (#7308).
+/// Edges alone are not enough — `isRpcUpgradeInProgress` flickers true then
+/// false on every app resume while expired, from
+/// `AuthService._refreshOAuthTokenOnResume`. That `false -> true` edge can
+/// arrive while the first sheet is open, so `_isPresenting` also suppresses a
+/// prompt whose predecessor has not closed.
 class _SessionExpiredPromptTrigger extends StatefulWidget {
   const _SessionExpiredPromptTrigger({
     required this.shouldPrompt,
