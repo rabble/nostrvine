@@ -62,24 +62,40 @@ internal class AudioInputSourceTest {
     }
 
     @Test
-    fun headsetsWornForListening_doNotBecomeTheRecordingMic() {
-        // Same rule as the Bluetooth cases below, over a cable. Android reports
-        // an input-only USB mic as USB_DEVICE; a type carrying an output leg is
-        // something the user put on to listen, so plugging in USB-C or wired
-        // earbuds to monitor must not move the recording onto their mic.
-        val wornForListening = mapOf(
-            "USB_HEADSET" to AudioDeviceInfo.TYPE_USB_HEADSET,
-            "WIRED_HEADSET" to AudioDeviceInfo.TYPE_WIRED_HEADSET
+    fun everyUsbInputType_switchesToMic() {
+        // A mic or wireless receiver with a monitoring jack declares an output
+        // terminal, and AOSP's hasMic() && hasSpeaker() rule scores that at the
+        // full 0.75 headset trigger — so it arrives as USB_HEADSET rather than
+        // USB_DEVICE. Excluding that type would drop most real external mics.
+        val usbTypes = mapOf(
+            "USB_DEVICE" to AudioDeviceInfo.TYPE_USB_DEVICE,
+            "USB_HEADSET" to AudioDeviceInfo.TYPE_USB_HEADSET
         )
-        for ((name, type) in wornForListening) {
+        for ((name, type) in usbTypes) {
             assertEquals(
-                AudioSpec.SOURCE_AUTO,
+                MediaRecorder.AudioSource.MIC,
                 audioSourceForInputDeviceTypes(
                     intArrayOf(AudioDeviceInfo.TYPE_BUILTIN_MIC, type)
                 ),
-                "$name should leave the camera-tuned default in place"
+                "$name should route capture to MIC"
             )
         }
+    }
+
+    @Test
+    fun wiredHeadset_doesNotBecomeTheRecordingMic() {
+        // The jack is overwhelmingly earbuds and CAMCORDER does not select it
+        // today, so plugging in to listen must not move the recording onto the
+        // earbud mic. Same rule as the Bluetooth cases below, over a cable.
+        assertEquals(
+            AudioSpec.SOURCE_AUTO,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET
+                )
+            )
+        )
     }
 
     @Test

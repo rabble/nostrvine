@@ -13,24 +13,30 @@ import androidx.camera.video.AudioSpec
  * Only devices reported by `AudioManager.GET_DEVICES_INPUTS` are ever tested
  * against this set, so every entry is a real capture device.
  *
- * The set is deliberately one entry wide. Android reports an input-only USB
- * audio device as `TYPE_USB_DEVICE`, which is what a microphone or a wireless
- * receiver is; a device that also has an output leg — headphones with a mic,
- * over USB (`TYPE_USB_HEADSET`), over the jack (`TYPE_WIRED_HEADSET`) or over
- * Bluetooth — is something the user put on to *listen*. Routing capture to
- * those would silently turn monitoring earbuds into the recording microphone,
- * which is the surprise this fix is supposed to avoid, not create. Wearing
- * headphones is not asking to record through them, and the cable does not
- * change that.
+ * USB covers both of its input types, because the split between them is not
+ * the split it looks like. AOSP scores a USB peripheral in
+ * `UsbDescriptorParser.getInputHeadsetProbability()`, where `hasMic() &&
+ * hasSpeaker()` alone contributes the full `IN_HEADSET_TRIGGER` of 0.75, and
+ * `hasSpeaker()` counts a `TERMINAL_OUT_HEADPHONES` terminal. A microphone or
+ * wireless receiver with a **monitoring jack** therefore enumerates as
+ * `TYPE_USB_HEADSET`, not `TYPE_USB_DEVICE` — and monitoring output is
+ * standard on the receivers #6171 is about. Excluding that type would drop
+ * most of the hardware this exists to fix.
  *
- * If a report ever shows a real external microphone enumerating as
- * `TYPE_USB_HEADSET` — a combo device exposing a monitoring output — that
- * type can be added back on the evidence. The diagnostic line in
- * `CameraController.resolveAudioSource` names the types it saw, so such a
- * report will say so.
+ * Monitoring earbuds land on the same type and cannot be told apart:
+ * `AudioDeviceInfo` carries only type, id, address, product name and channel
+ * counts, and the output-device list matches both. So USB is treated as
+ * intent to record — plugging a USB peripheral into a phone you are filming
+ * on is a deliberate act.
+ *
+ * The 3.5mm jack is left out for the opposite reason. `TYPE_WIRED_HEADSET`
+ * is overwhelmingly earbuds, CAMCORDER does not select it today, and adding
+ * it would change recording for people who plugged in only to listen.
+ * Bluetooth is out for the same reason — see below.
  */
 private val EXTERNAL_MIC_TYPES = setOf(
-    AudioDeviceInfo.TYPE_USB_DEVICE
+    AudioDeviceInfo.TYPE_USB_DEVICE,
+    AudioDeviceInfo.TYPE_USB_HEADSET
 )
 
 /**
