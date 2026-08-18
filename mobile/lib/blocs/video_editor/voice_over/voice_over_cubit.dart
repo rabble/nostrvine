@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:sound_service/sound_service.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 part 'voice_over_state.dart';
 
@@ -22,7 +23,8 @@ part 'voice_over_state.dart';
 /// [AudioEvent.fromLocalImport]); the screen commits them to the editor
 /// timeline when the user taps Done. Recording is gated behind a microphone
 /// permission check using the injected [PermissionsService].
-class VoiceOverCubit extends Cubit<VoiceOverState> {
+class VoiceOverCubit extends Cubit<VoiceOverState>
+    with CloseGuardedEmit<VoiceOverState> {
   /// Creates a [VoiceOverCubit].
   ///
   /// [takeTitleBuilder] returns the localized title for a take given its
@@ -125,7 +127,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
         if (isClosed) return;
       }
       if (status != PermissionStatus.granted) {
-        emit(state.copyWith(status: VoiceOverStatus.permissionDenied));
+        emitIfOpen(state.copyWith(status: VoiceOverStatus.permissionDenied));
         return;
       }
       await _start();

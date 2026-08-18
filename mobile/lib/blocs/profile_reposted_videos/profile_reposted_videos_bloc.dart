@@ -18,6 +18,7 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 part 'profile_reposted_videos_event.dart';
 part 'profile_reposted_videos_state.dart';
@@ -70,7 +71,7 @@ class ProfileRepostedVideosBloc
     );
     _removedVideoIdsSubscription = removedVideoIds.listen((videoId) {
       if (isClosed) return;
-      add(ProfileRepostedVideosVideoRemoved(videoId));
+      addIfOpen(ProfileRepostedVideosVideoRemoved(videoId));
     });
   }
 

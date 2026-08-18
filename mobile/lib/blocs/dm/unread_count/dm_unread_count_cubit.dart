@@ -11,6 +11,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 /// Cubit that tracks the number of unread DM conversations shown in the
 /// Messages tab.
@@ -51,7 +52,8 @@ import 'package:rxdart/rxdart.dart';
 /// remount). Mirrors [NotificationBadgeCubit.setRepository].
 ///
 /// Used by the bottom-nav badge and the inbox segmented toggle.
-class DmUnreadCountCubit extends Cubit<int> {
+class DmUnreadCountCubit extends Cubit<int>
+    with CloseGuardedEmit<int> {
   DmUnreadCountCubit({
     required DmRepository dmRepository,
     required FollowRepository followRepository,
@@ -189,7 +191,7 @@ class DmUnreadCountCubit extends Cubit<int> {
             )
             .listen(
               (count) {
-                if (_subscriptionGeneration == generation) emit(count);
+                if (_subscriptionGeneration == generation) emitIfOpen(count);
               },
               onError: (Object error, StackTrace stackTrace) {
                 if (_subscriptionGeneration == generation) {

@@ -16,6 +16,7 @@ import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.d
 import 'package:openvine/constants/search_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 part 'conversation_list_event.dart';
 part 'conversation_list_state.dart';
@@ -313,7 +314,7 @@ class ConversationListBloc
                 ),
           );
           if (hasNewUnresolved) {
-            add(const _ConversationListProfileResolutionRequested());
+            addIfOpen(const _ConversationListProfileResolutionRequested());
           }
         }
 

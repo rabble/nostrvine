@@ -42,6 +42,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 part 'video_recorder_event.dart';
 part 'video_recorder_state.dart';
@@ -177,7 +178,7 @@ class VideoRecorderBloc
         CameraService.create(
           onUpdateState: ({forceCameraRebuild}) {
             if (isClosed) return;
-            add(
+            addIfOpen(
               _VideoRecorderCameraStateChanged(
                 cameraRebuildCount: (forceCameraRebuild ?? false)
                     ? state.cameraRebuildCount + 1

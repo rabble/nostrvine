@@ -13,6 +13,7 @@ import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/reactions/reportable_sites.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 part 'conversation_reactions_event.dart';
 part 'conversation_reactions_state.dart';
@@ -74,7 +75,7 @@ class ConversationReactionsCubit
       return;
     }
     _conversationId = event.conversationId;
-    emit(state.copyWith(status: ConversationReactionsStatus.loading));
+    emitIfOpen(state.copyWith(status: ConversationReactionsStatus.loading));
     await _subscription?.cancel();
     _subscription = _reactionsRepository
         .watchForConversation(event.conversationId)
