@@ -166,12 +166,21 @@ definitions:
     - &shorebird_install
       name: Install Shorebird
       script: |
-        curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
+        set -euo pipefail
+        SHOREBIRD_BIN="$HOME/.shorebird/bin/shorebird"
+        EXPECTED_SHOREBIRD_VERSION="Shorebird 1.6.117"
+        SHOREBIRD_VERSION_OUTPUT=""
+        if [ -x "$SHOREBIRD_BIN" ]; then
+          SHOREBIRD_VERSION_OUTPUT=$("$SHOREBIRD_BIN" --version 2>/dev/null || true)
+        fi
+        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
+          curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash -s -- --force
+          SHOREBIRD_VERSION_OUTPUT=$("$SHOREBIRD_BIN" --version)
+        fi
         echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
-        SHOREBIRD_VERSION_OUTPUT=$("$HOME/.shorebird/bin/shorebird" --version)
         echo "$SHOREBIRD_VERSION_OUTPUT"
-        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq 'Shorebird 1.6.117'; then
-          echo "ERROR: expected Shorebird 1.6.117; update and validate the pinned version before continuing."
+        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
+          echo "ERROR: expected $EXPECTED_SHOREBIRD_VERSION; update and validate the pinned version before continuing."
           exit 1
         fi
     - &write_shorebird_dart_defines
@@ -194,7 +203,7 @@ definitions:
           FF_DIVINE_SUPPORTERS
         ]
 
-        missing = required_names.reject { |name| ENV.key?(name) }
+        missing = required_names.reject { |name| ENV.key?(name) && !ENV.fetch(name).empty? }
         unless missing.empty?
           abort("missing Shorebird dart-define environment variables: #{missing.join(', ')}")
         end
@@ -289,11 +298,13 @@ definitions:
           'macos/**' \
           'web/**' \
           'assets/**' \
+          'shaders/**' \
           'pubspec.yaml' \
           'pubspec.lock' \
           'shorebird.yaml' \
           'packages/**/android/**' \
           'packages/**/assets/**' \
+          'packages/**/shaders/**' \
           'packages/**/darwin/**' \
           'packages/**/ios/**' \
           'packages/**/macos/**' \
@@ -411,6 +422,7 @@ definitions:
     - &build_aab
       name: Build Android AAB (Shorebird release)
       script: |
+        set -euo pipefail
         # Use the latest Play versionCode as the primary source of truth.
         . build/shorebird/android_release.env
         BUILD_NAME=$SHOREBIRD_BUILD_NAME
@@ -528,6 +540,7 @@ definitions:
     - &build_ios
       name: Build and sign iOS (Shorebird release)
       script: |
+        set -euo pipefail
         . build/shorebird/ios_release.env
         BUILD_NAME=$SHOREBIRD_BUILD_NAME
         BUILD_NUMBER=$SHOREBIRD_BUILD_NUMBER

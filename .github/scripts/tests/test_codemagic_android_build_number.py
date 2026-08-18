@@ -10,6 +10,9 @@ MOBILE_CI_PATH = (
     Path(__file__).resolve().parents[3] / ".github" / "workflows" / "mobile_ci.yaml"
 )
 WORKFLOWS_PATH = Path(__file__).resolve().parents[2] / "workflows"
+SHOREBIRD_DOC_PATH = (
+    Path(__file__).resolve().parents[3] / "mobile" / "docs" / "SHOREBIRD_CODE_PUSH.md"
+)
 
 
 class CodemagicAndroidBuildNumberTest(unittest.TestCase):
@@ -17,6 +20,7 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.contents = CODEMAGIC_PATH.read_text()
         self.mobile_ci_contents = MOBILE_CI_PATH.read_text()
         self.mise_contents = MISE_PATH.read_text()
+        self.shorebird_doc_contents = SHOREBIRD_DOC_PATH.read_text()
 
     def test_codemagic_yaml_parses_with_aliases(self) -> None:
         result = subprocess.run(
@@ -60,12 +64,27 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("FF_DIVINE_SUPPORTERS", self.contents)
         self.assertIn("defines[name] = ENV.fetch(name, '')", self.contents)
 
+    def test_shorebird_required_defines_reject_empty_values(self) -> None:
+        self.assertIn(
+            "required_names.reject { |name| ENV.key?(name) && !ENV.fetch(name).empty? }",
+            self.contents,
+        )
+
+    def test_shorebird_install_reuses_only_the_expected_cached_version(self) -> None:
+        self.assertIn('EXPECTED_SHOREBIRD_VERSION="Shorebird 1.6.117"', self.contents)
+        self.assertIn('if [ -x "$SHOREBIRD_BIN" ]; then', self.contents)
+        self.assertIn("bash -s -- --force", self.contents)
+        self.assertRegex(
+            self.contents,
+            r"(?s)&shorebird_install.*?script: \|\n\s+set -euo pipefail\n",
+        )
+
     def test_shorebird_release_commands_are_signed_and_preflighted(self) -> None:
         self.assertIn("*preflight_shorebird_ios_release", self.contents)
         self.assertIn("*preflight_shorebird_android_release", self.contents)
         self.assertIn("shorebird releases list --platform=android --json", self.contents)
         self.assertIn("shorebird releases list --platform=ios --json", self.contents)
-        self.assertIn("shorebird_release_preflight.rb", self.contents)
+        self.assertEqual(2, self.contents.count("shorebird_release_preflight.rb"))
         self.assertNotIn("shorebird releases info", self.contents)
         self.assertIn("--build-name=$BUILD_NAME", self.contents)
         self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", self.contents)
@@ -90,11 +109,19 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertEqual({expected}, shorebird_release_versions)
         stale_workflows = []
         for workflow in WORKFLOWS_PATH.glob("*.y*ml"):
+            workflow_contents = workflow.read_text()
+            uses_flutter = re.search(
+                r"flutter_package\.yml|subosito/flutter-action|"
+                r"\bflutter\s+(?:analyze|build|drive|pub|test)\b",
+                workflow_contents,
+            )
+            if uses_flutter is None:
+                continue
             versions = re.findall(
                 r"flutter(?:-|_)version:\s*[\"']?([^\"'\s]+)",
-                workflow.read_text(),
+                workflow_contents,
             )
-            if any(version != expected for version in versions):
+            if set(versions) != {expected}:
                 stale_workflows.append(workflow.name)
         self.assertEqual([], stale_workflows)
 
@@ -122,10 +149,12 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("'android/**'", self.contents)
         self.assertIn("'ios/**'", self.contents)
         self.assertIn("'assets/**'", self.contents)
+        self.assertIn("'shaders/**'", self.contents)
         self.assertIn("'pubspec.yaml'", self.contents)
         self.assertIn("'pubspec.lock'", self.contents)
         self.assertIn("'packages/**/android/**'", self.contents)
         self.assertIn("'packages/**/assets/**'", self.contents)
+        self.assertIn("'packages/**/shaders/**'", self.contents)
         self.assertIn("'packages/**/darwin/**'", self.contents)
         self.assertIn("Cut a normal store release instead of a Shorebird patch.", self.contents)
         for command in self._shorebird_patch_commands():
@@ -150,27 +179,46 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
             self.assertIn("- $HOME/.shorebird", self._workflow_block(workflow))
 
     def test_shorebird_install_runs_before_ios_dependency_resolution(self) -> None:
-        ios_build = self.contents.index("ios-build:")
-        ios_patch = self.contents.index("ios-patch:")
-        android_build = self.contents.index("android-build:")
-        android_patch = self.contents.index("android-patch:")
+        for workflow_name in ("ios-build", "ios-patch"):
+            workflow = self._workflow_block(workflow_name)
+            self.assertLess(
+                workflow.index("- *shorebird_install"),
+                workflow.index("- *prepare_ios_spm_packages"),
+            )
+        for workflow_name in ("android-build", "android-patch"):
+            workflow = self._workflow_block(workflow_name)
+            self.assertLess(
+                workflow.index("- *shorebird_install"),
+                workflow.index("- *setup_local_properties"),
+            )
 
-        self.assertLess(
-            self.contents.index("- *shorebird_install", ios_build),
-            self.contents.index("- *prepare_ios_spm_packages", ios_build),
+    def test_shorebird_release_preflight_runs_before_store_build(self) -> None:
+        for workflow_name, preflight, build in (
+            ("ios-build", "- *preflight_shorebird_ios_release", "- *build_ios"),
+            ("android-build", "- *preflight_shorebird_android_release", "- *build_aab"),
+        ):
+            workflow = self._workflow_block(workflow_name)
+            self.assertLess(workflow.index(preflight), workflow.index(build))
+
+    def test_shorebird_release_builds_fail_on_missing_preflight_output(self) -> None:
+        for anchor in ("build_aab", "build_ios"):
+            self.assertRegex(
+                self.contents,
+                rf"(?s)&{anchor}.*?script: \|\n\s+set -euo pipefail\n",
+            )
+
+    def test_runbook_uses_current_patch_promotion_and_reporting(self) -> None:
+        set_track = (
+            "shorebird patches set-track --release <version> --patch <n> "
+            "--track stable"
         )
+        self.assertIn(set_track, self.shorebird_doc_contents)
         self.assertLess(
-            self.contents.index("- *shorebird_install", ios_patch),
-            self.contents.index("- *prepare_ios_spm_packages", ios_patch),
+            self.shorebird_doc_contents.index(set_track),
+            self.shorebird_doc_contents.index("shorebird patches promote"),
         )
-        self.assertLess(
-            self.contents.index("- *shorebird_install", android_build),
-            self.contents.index("- *setup_local_properties", android_build),
-        )
-        self.assertLess(
-            self.contents.index("- *shorebird_install", android_patch),
-            self.contents.index("- *setup_local_properties", android_patch),
-        )
+        self.assertIn("`shorebird_code_push` is a runtime dependency", self.shorebird_doc_contents)
+        self.assertIn("Crashlytics", self.shorebird_doc_contents)
 
     def _workflow_block(self, workflow_name: str) -> str:
         start = self.contents.index(f"  {workflow_name}:")

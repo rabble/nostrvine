@@ -57,6 +57,9 @@ installation identifier to Divine account data. In Google Play, disclose Device
 or other IDs, App interactions, and Diagnostics as required collection for App
 functionality and Analytics. Mark the Google Play data as not shared only while
 Shorebird is contractually acting as Divine's service provider or processor.
+Do not finalize that answer until the DPA is executed and the privacy review
+confirms that its terms cover data relating to every intended user, including
+minor users.
 
 | Artifact | Built by | Patchable |
 |---|---|---|
@@ -71,8 +74,10 @@ sideload user. Those installs cannot receive patches. Play and App Store
 installs can.
 
 `auto_update` is left at its default (on), so patches apply in the background
-on launch. `shorebird_code_push` is not a dependency — there is no in-app UI
-for controlling or reporting patch state.
+on launch. `shorebird_code_push` is a runtime dependency. There is no in-app UI
+for controlling patch state, but startup records patch availability and the
+current patch number in logs and Crashlytics custom keys. Use those values when
+triaging crashes that may be specific to a code-push patch.
 
 ### Flutter version
 
@@ -133,11 +138,12 @@ be retrofitted later; cut a new store release instead.
 1. Promote the exact patch after validation:
 
    ```
-   shorebird patches promote --release-version <version> --patch-number <n>
+   shorebird patches set-track --release <version> --patch <n> --track stable
    ```
 
-   `shorebird patches set-track --release <version> --patch <n> --track stable`
-   is equivalent when you need the lower-level command form.
+   `shorebird patches promote --release-version <version> --patch-number <n>`
+   is the deprecated legacy shorthand in the pinned CLI. Do not use it in new
+   automation.
 1. Both platforms need their own patch run. There is no combined workflow.
 
 `DEFAULT_ENV` is the easiest thing to get wrong. A mismatch does not fail the
@@ -185,8 +191,14 @@ Divine service identity is tracked in #7200.
 Installing the CLI:
 
 ```
-curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
+if [ ! -x "$HOME/.shorebird/bin/shorebird" ]; then
+  curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
+fi
 ```
+
+The installer refuses to overwrite an existing installation. Existing installs
+do not need to rerun it; use `bash -s -- --force` only when deliberately
+replacing the installed CLI.
 
 Then `shorebird login`. You need access to the Divine organization; membership
 is managed in the Shorebird console.
