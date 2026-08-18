@@ -731,7 +731,6 @@ class FollowRepository {
   /// A genuine drop larger than [_hysteresisThreshold] still shows up
   /// immediately; only drops small enough to look like relay variance wait for
   /// this window.
-  static const _staleDuration = Duration(hours: 24);
 
   /// A new count must drop below this fraction of the persisted count
   /// before being treated as a genuine decrease (when not stale).
@@ -774,8 +773,11 @@ class FollowRepository {
   }
 
   /// Apply hysteresis: keep the persisted (higher) count when the fresh
-  /// count is lower but within the threshold, unless the persisted value
-  /// is stale.
+  /// count is lower but within the threshold.
+  ///
+  /// Even if the persisted value is stale, the hysteresis threshold is still
+  /// applied to prevent accepting large drops due to incomplete relay fetches
+  /// or indexer degradation.
   ///
   /// Returns the stabilized count.
   int _applyHysteresis({
@@ -789,19 +791,15 @@ class FollowRepository {
     // One-person changes are meaningful for small accounts.
     if (persistedCount < _hysteresisMinimumCount) return freshCount;
 
-    // Persisted count is stale → accept the fresh count
-    if (DateTime.now().difference(persistedTimestamp) > _staleDuration) {
-      return freshCount;
-    }
-
-    // Fresh count is lower — if the drop is within the threshold, keep
-    // the persisted count (assumed relay variance). If it dropped below
-    // the threshold, accept the new count as a genuine change.
+    // Fresh count is lower — apply hysteresis threshold to detect relay
+    // variance vs. genuine changes, regardless of staleness.
     final threshold = (persistedCount * _hysteresisThreshold).ceil();
     if (freshCount >= threshold) {
+      // Drop is within tolerance — keep the persisted count
       return persistedCount;
     }
 
+    // Drop exceeds tolerance — accept the fresh count as a genuine change
     return freshCount;
   }
 
