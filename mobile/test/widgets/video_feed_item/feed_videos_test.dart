@@ -203,7 +203,7 @@ extension _PlaybackCubitStub on _MockVideoPlaybackStatusCubit {
         isAgeRestricted: any(named: 'isAgeRestricted'),
         hasVerifyAction: any(named: 'hasVerifyAction'),
       ),
-    ).thenReturn(false);
+    ).thenAnswer((_) async => false);
     whenListen(this, const Stream<VideoPlaybackStatusState>.empty());
   }
 }
@@ -508,8 +508,8 @@ void main() {
         );
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         when(
-          () => mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
-        ).thenReturn(true);
+          mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+        ).thenAnswer((_) async => true);
         when(
           () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
             sha256Hash: any(named: 'sha256Hash'),
@@ -563,8 +563,8 @@ void main() {
         );
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         when(
-          () => mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
-        ).thenReturn(false);
+          mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+        ).thenAnswer((_) async => false);
         final playbackStatusCubit = _MockVideoPlaybackStatusCubit()
           ..stub(PlaybackStatus.ready, video.id);
 

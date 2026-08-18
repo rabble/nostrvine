@@ -815,8 +815,8 @@ void main() {
       addTearDown(playbackStatusCubit.close);
 
       when(
-        () => mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
-      ).thenReturn(true);
+        mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+      ).thenAnswer((_) async => true);
       when(
         () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
           sha256Hash: _sha256,
@@ -863,8 +863,8 @@ void main() {
       addTearDown(playbackStatusCubit.close);
 
       when(
-        () => mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
-      ).thenReturn(true);
+        mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+      ).thenAnswer((_) async => true);
       when(
         () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
           sha256Hash: _sha256,

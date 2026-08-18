@@ -45,6 +45,8 @@ void main() {
       contentFilterService: mockContentFilterService,
       mediaViewerAuthService: mockMediaViewerAuthService,
     );
+    when(() => mockAgeVerificationService.initialized).thenAnswer((_) async {});
+    when(() => mockContentFilterService.initialized).thenAnswer((_) async {});
   });
 
   group('MediaAuthInterceptor - preference handling', () {
@@ -81,7 +83,7 @@ void main() {
           realContentFilterService.adultPlaybackPreference,
           ContentFilterPreference.hide,
         );
-        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isFalse);
+        expect(await interceptor.canAutoAuthorizeAdultMedia(), isFalse);
 
         final result = await interceptor.handleUnauthorizedMedia(
           context: mockContext,
@@ -133,7 +135,7 @@ void main() {
           realContentFilterService.adultPlaybackPreference,
           ContentFilterPreference.hide,
         );
-        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isFalse);
+        expect(await interceptor.canAutoAuthorizeAdultMedia(), isFalse);
 
         final result = await interceptor.handleUnauthorizedMedia(
           context: mockContext,
@@ -202,7 +204,7 @@ void main() {
           realContentFilterService.adultPlaybackPreference,
           ContentFilterPreference.warn,
         );
-        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isTrue);
+        expect(await interceptor.canAutoAuthorizeAdultMedia(), isTrue);
 
         final result = await interceptor.handleUnauthorizedMedia(
           context: mockContext,
@@ -240,7 +242,7 @@ void main() {
           () => mockMediaViewerAuthService.canCreateHeaders,
         ).thenReturn(true);
 
-        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isFalse);
+        expect(await interceptor.canAutoAuthorizeAdultMedia(), isFalse);
 
         final result = await interceptor.handleUnauthorizedMedia(
           context: mockContext,
@@ -335,7 +337,7 @@ void main() {
         );
 
         // Assert - auto auth header created, no dialog shown
-        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isTrue);
+        expect(await interceptor.canAutoAuthorizeAdultMedia(), isTrue);
         expect(result, isA<ViewerAuthAuthorized>());
         expect(
           result.headersOrNull,
@@ -470,7 +472,7 @@ void main() {
         );
 
         // Assert - auth header created without re-verification
-        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isTrue);
+        expect(await interceptor.canAutoAuthorizeAdultMedia(), isTrue);
         expect(result, isA<ViewerAuthAuthorized>());
         expect(
           result.headersOrNull,

@@ -156,7 +156,8 @@ Future<void> autoRetryAgeRestrictedPooledVideo({
   required PooledRetryPlayback retryPlayback,
 }) async {
   final mediaAuthInterceptor = ref.read(mediaAuthInterceptorProvider);
-  if (!mediaAuthInterceptor.canAutoAuthorizeAdultMedia) return;
+  if (!await mediaAuthInterceptor.canAutoAuthorizeAdultMedia()) return;
+  if (!context.mounted) return;
 
   final retryInput = _resolveRetryInput(video, resolveSha256);
   if (retryInput == null || retryInput.sha256 == null) return;

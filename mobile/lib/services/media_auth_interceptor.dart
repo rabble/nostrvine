@@ -27,13 +27,16 @@ class MediaAuthInterceptor {
   ///
   /// `hide` remains a hard block. Verified users with `warn` or `show`
   /// preferences can reuse their existing verification for playback auth.
-  bool get shouldAutoAuthorizeAgeRestrictedMedia =>
-      _mediaViewerAuthService.canCreateHeaders &&
-      _ageVerificationService.isAdultContentVerified &&
-      _contentFilterService.adultPlaybackPreference !=
-          ContentFilterPreference.hide;
-
-  bool get canAutoAuthorizeAdultMedia => shouldAutoAuthorizeAgeRestrictedMedia;
+  Future<bool> canAutoAuthorizeAdultMedia() async {
+    await Future.wait([
+      _ageVerificationService.initialized,
+      _contentFilterService.initialized,
+    ]);
+    return _mediaViewerAuthService.canCreateHeaders &&
+        _ageVerificationService.isAdultContentVerified &&
+        _contentFilterService.adultPlaybackPreference !=
+            ContentFilterPreference.hide;
+  }
 
   /// Creates viewer-auth headers for passive thumbnail/background image loads.
   ///
@@ -90,7 +93,7 @@ class MediaAuthInterceptor {
     String? serverUrl,
   }) async {
     try {
-      if (!canAutoAuthorizeAdultMedia) {
+      if (!await canAutoAuthorizeAdultMedia()) {
         return const ViewerAuthUnavailable();
       }
 
@@ -134,6 +137,11 @@ class MediaAuthInterceptor {
         name: 'MediaAuthInterceptor',
         category: LogCategory.system,
       );
+
+      await Future.wait([
+        _ageVerificationService.initialized,
+        _contentFilterService.initialized,
+      ]);
 
       final playbackPreference = _contentFilterService.adultPlaybackPreference;
 

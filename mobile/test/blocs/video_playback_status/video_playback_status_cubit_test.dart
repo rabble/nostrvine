@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
@@ -178,13 +180,13 @@ void main() {
 
       test(
         'auto retry eligibility requires age restriction and verify action',
-        () {
+        () async {
           final cubit = VideoPlaybackStatusCubit(
-            canAutoAuthorizeAgeRestrictedMedia: () => true,
+            canAutoAuthorizeAgeRestrictedMedia: () async => true,
           );
 
           expect(
-            cubit.consumeAgeRestrictedAutoRetryIfEligible(
+            await cubit.consumeAgeRestrictedAutoRetryIfEligible(
               id1,
               isAgeRestricted: false,
               hasVerifyAction: true,
@@ -192,7 +194,7 @@ void main() {
             isFalse,
           );
           expect(
-            cubit.consumeAgeRestrictedAutoRetryIfEligible(
+            await cubit.consumeAgeRestrictedAutoRetryIfEligible(
               id1,
               isAgeRestricted: true,
               hasVerifyAction: false,
@@ -203,30 +205,33 @@ void main() {
         },
       );
 
-      test('auto retry eligibility requires an auto-authorized viewer', () {
-        final cubit = VideoPlaybackStatusCubit(
-          canAutoAuthorizeAgeRestrictedMedia: () => false,
-        );
+      test(
+        'auto retry eligibility requires an auto-authorized viewer',
+        () async {
+          final cubit = VideoPlaybackStatusCubit(
+            canAutoAuthorizeAgeRestrictedMedia: () async => false,
+          );
 
-        expect(
-          cubit.consumeAgeRestrictedAutoRetryIfEligible(
-            id1,
-            isAgeRestricted: true,
-            hasVerifyAction: true,
-          ),
-          isFalse,
-        );
-        expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
-      });
+          expect(
+            await cubit.consumeAgeRestrictedAutoRetryIfEligible(
+              id1,
+              isAgeRestricted: true,
+              hasVerifyAction: true,
+            ),
+            isFalse,
+          );
+          expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
+        },
+      );
 
-      test('auto retry eligibility is blocked while verifying', () {
+      test('auto retry eligibility is blocked while verifying', () async {
         final cubit = VideoPlaybackStatusCubit(
-          canAutoAuthorizeAgeRestrictedMedia: () => true,
+          canAutoAuthorizeAgeRestrictedMedia: () async => true,
         );
         cubit.markVerifying(id1);
 
         expect(
-          cubit.consumeAgeRestrictedAutoRetryIfEligible(
+          await cubit.consumeAgeRestrictedAutoRetryIfEligible(
             id1,
             isAgeRestricted: true,
             hasVerifyAction: true,
@@ -236,13 +241,13 @@ void main() {
         expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
       });
 
-      test('auto retry eligibility spends the per-video budget once', () {
+      test('auto retry eligibility spends the per-video budget once', () async {
         final cubit = VideoPlaybackStatusCubit(
-          canAutoAuthorizeAgeRestrictedMedia: () => true,
+          canAutoAuthorizeAgeRestrictedMedia: () async => true,
         );
 
         expect(
-          cubit.consumeAgeRestrictedAutoRetryIfEligible(
+          await cubit.consumeAgeRestrictedAutoRetryIfEligible(
             id1,
             isAgeRestricted: true,
             hasVerifyAction: true,
@@ -251,7 +256,7 @@ void main() {
         );
         expect(cubit.state.hasAutoRetryAttempted(id1), isTrue);
         expect(
-          cubit.consumeAgeRestrictedAutoRetryIfEligible(
+          await cubit.consumeAgeRestrictedAutoRetryIfEligible(
             id1,
             isAgeRestricted: true,
             hasVerifyAction: true,
@@ -259,6 +264,30 @@ void main() {
           isFalse,
         );
       });
+
+      test(
+        'waits for async eligibility before spending the retry budget',
+        () async {
+          final eligibility = Completer<bool>();
+          final cubit = VideoPlaybackStatusCubit(
+            canAutoAuthorizeAgeRestrictedMedia: () => eligibility.future,
+          );
+
+          final resultFuture = cubit.consumeAgeRestrictedAutoRetryIfEligible(
+            id1,
+            isAgeRestricted: true,
+            hasVerifyAction: true,
+          );
+          await Future<void>.value();
+
+          expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
+
+          eligibility.complete(true);
+
+          expect(await resultFuture, isTrue);
+          expect(cubit.state.hasAutoRetryAttempted(id1), isTrue);
+        },
+      );
     });
 
     group('authenticated retry exhaustion', () {

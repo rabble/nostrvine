@@ -14,7 +14,7 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
   /// to the [VideoPlaybackStatusState] default when null.
   VideoPlaybackStatusCubit({
     int? maxEntries,
-    bool Function()? canAutoAuthorizeAgeRestrictedMedia,
+    Future<bool> Function()? canAutoAuthorizeAgeRestrictedMedia,
   }) : _canAutoAuthorizeAgeRestrictedMedia = canAutoAuthorizeAgeRestrictedMedia,
        super(
          maxEntries == null
@@ -22,7 +22,7 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
              : VideoPlaybackStatusState(maxEntries: maxEntries),
        );
 
-  final bool Function()? _canAutoAuthorizeAgeRestrictedMedia;
+  final Future<bool> Function()? _canAutoAuthorizeAgeRestrictedMedia;
 
   /// Reports [status] for the video with [eventId].
   ///
@@ -71,14 +71,20 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
   /// This keeps the retry/fallback decision in the cubit rather than in the
   /// error overlay. The caller still owns invoking the UI callback after this
   /// method grants the attempt.
-  bool consumeAgeRestrictedAutoRetryIfEligible(
+  Future<bool> consumeAgeRestrictedAutoRetryIfEligible(
     String eventId, {
     required bool isAgeRestricted,
     required bool hasVerifyAction,
-  }) {
+  }) async {
     if (!isAgeRestricted || !hasVerifyAction) return false;
     if (state.isVerifying(eventId)) return false;
-    if (!(_canAutoAuthorizeAgeRestrictedMedia?.call() ?? false)) return false;
+    final canAutoAuthorize =
+        await (_canAutoAuthorizeAgeRestrictedMedia?.call() ??
+            Future<bool>.value(false));
+    if (!canAutoAuthorize) {
+      return false;
+    }
+    if (isClosed || state.isVerifying(eventId)) return false;
     return consumeAutoRetryAttempt(eventId);
   }
 

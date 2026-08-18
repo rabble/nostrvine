@@ -268,7 +268,7 @@ void main() {
         tester,
       ) async {
         final playbackStatusCubit = VideoPlaybackStatusCubit(
-          canAutoAuthorizeAgeRestrictedMedia: () => true,
+          canAutoAuthorizeAgeRestrictedMedia: () async => true,
         );
 
         await tester.pumpWidget(
@@ -288,7 +288,7 @@ void main() {
         'auto-runs Verify age only once across overlay teardown and rebuild',
         (tester) async {
           final playbackStatusCubit = VideoPlaybackStatusCubit(
-            canAutoAuthorizeAgeRestrictedMedia: () => true,
+            canAutoAuthorizeAgeRestrictedMedia: () async => true,
           );
           var verifyAgeCalls = 0;
 
@@ -520,7 +520,7 @@ void main() {
         'auto-runs verify action for moderation age restriction when already authorized',
         (tester) async {
           final playbackStatusCubit = VideoPlaybackStatusCubit(
-            canAutoAuthorizeAgeRestrictedMedia: () => true,
+            canAutoAuthorizeAgeRestrictedMedia: () async => true,
           );
 
           await tester.pumpWidget(
