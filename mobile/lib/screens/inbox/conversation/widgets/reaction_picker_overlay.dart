@@ -9,18 +9,11 @@ import 'package:flutter/services.dart';
 import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_actions_sheet.dart';
+import 'package:openvine/widgets/reactions/quick_reaction_emojis.dart';
 
-/// Default emoji set for the quick-row. Excludes 🙏 per user-memory
-/// rule "Swap 🙏 → 🫶 always" — 🔥 takes its place because it reads
-/// especially well on short-form video content.
-const List<String> kDefaultDmReactionEmojis = [
-  '❤️',
-  '😂',
-  '🔥',
-  '😮',
-  '😢',
-  '👍',
-];
+/// Default emoji set for the DM quick-row — the shared reaction set, so
+/// DMs and comments offer the same six emoji.
+const List<String> kDefaultDmReactionEmojis = kQuickReactionEmojis;
 
 /// Outcome of a [ReactionPickerOverlay] dismissal.
 class ReactionPickerResult {
@@ -161,7 +154,7 @@ class _EmojiButton extends StatelessWidget {
             child: Center(
               child: DivineHeartText(
                 emoji,
-                style: const TextStyle(fontSize: 28),
+                style: VineTheme.emojiFont(fontSize: 28),
               ),
             ),
           ),

@@ -814,6 +814,15 @@ class VineTheme {
     color: color,
   );
 
+  /// Emoji glyph run: bare style at [fontSize], no family/height/spacing.
+  ///
+  /// Emoji render from the platform emoji font regardless of family, and a
+  /// text face's line-height / letter-spacing crops or floats the glyphs —
+  /// callers size the glyph and nothing else. [color] exists for the rare
+  /// mixed emoji-and-text run that must match its surroundings.
+  static TextStyle emojiFont({required double fontSize, Color? color}) =>
+      TextStyle(fontSize: fontSize, color: color);
+
   /// Caption pill: Chivo Mono 300 16/24/0.5 — used by the inline subtitle
   /// pill above the author row in the home / fullscreen video overlays.
   /// Intentionally mono per the Figma captions block, distinct from the

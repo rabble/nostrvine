@@ -651,6 +651,23 @@ void main() {
         expect(style.fontSize, 11);
         expect(style.fontWeight, FontWeight.w600);
       });
+
+      testWidgets('emojiFont sizes the glyph and nothing else', (tester) async {
+        final style = VineTheme.emojiFont(fontSize: 28);
+        expect(style.fontSize, 28);
+        expect(style.fontFamily, isNull);
+        expect(style.height, isNull);
+        expect(style.letterSpacing, isNull);
+        expect(style.color, isNull);
+      });
+
+      testWidgets('emojiFont accepts a color override', (tester) async {
+        final style = VineTheme.emojiFont(
+          fontSize: 40,
+          color: VineTheme.vineGreen,
+        );
+        expect(style.color, VineTheme.vineGreen);
+      });
     });
 
     group('tabTextStyle', () {
