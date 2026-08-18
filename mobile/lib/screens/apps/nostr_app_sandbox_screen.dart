@@ -16,6 +16,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_bridge.dart';
@@ -588,8 +589,8 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
             method: request.method,
             capability: request.capability,
             eventKind: request.eventKind,
-            onAllow: () => Navigator.of(bottomSheetContext).pop(true),
-            onCancel: () => Navigator.of(bottomSheetContext).pop(false),
+            onAllow: () => bottomSheetContext.popModalIfMounted(true),
+            onCancel: () => bottomSheetContext.popModalIfMounted(false),
           ),
         );
       },

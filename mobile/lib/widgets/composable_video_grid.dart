@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:models/models.dart' hide AspectRatio;
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -283,7 +284,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                     ),
                   ),
                   IconButton(
-                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    onPressed: () => sheetContext.popModalIfMounted(),
                     icon: DivineIcon(
                       icon: DivineIconName.x,
                       color: sheetContext.vineColors.secondaryText,
@@ -323,7 +324,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 ),
               ),
               onTap: () {
-                Navigator.of(sheetContext).pop();
+                if (!sheetContext.popModalIfMounted()) return;
                 showEditDialogForVideo(context, video);
               },
             ),
@@ -358,7 +359,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 ),
               ),
               onTap: () {
-                Navigator.of(sheetContext).pop();
+                if (!sheetContext.popModalIfMounted()) return;
                 _showDeleteConfirmation(context, video);
               },
             ),

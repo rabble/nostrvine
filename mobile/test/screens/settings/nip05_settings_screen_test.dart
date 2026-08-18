@@ -150,6 +150,23 @@ void main() {
       expect(find.text(l10n.profileSetupNip05AddressLabel), findsOneWidget);
     });
 
+    testWidgets('confirm dialog cancel leaves NIP-05 on divine mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(profile: createProfile()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.profileSetupUseOwnNip05));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.profileSetupNip05ConfirmTitle), findsOneWidget);
+
+      await tester.tap(find.text(l10n.profileSetupNip05ConfirmCancel));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.profileSetupNip05ConfirmTitle), findsNothing);
+      expect(find.text(l10n.profileSetupNip05AddressLabel), findsNothing);
+    });
+
     testWidgets(
       'toggle off switches from external NIP-05 back to divine mode',
       (

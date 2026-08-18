@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
@@ -362,12 +363,12 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
           DivineButton(
             label: context.l10n.commonCancel,
             type: DivineButtonType.link,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onPressed: () => dialogContext.popModalIfMounted(false),
           ),
           DivineButton(
             label: context.l10n.listContinue,
             type: DivineButtonType.link,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onPressed: () => dialogContext.popModalIfMounted(true),
           ),
         ],
       ),

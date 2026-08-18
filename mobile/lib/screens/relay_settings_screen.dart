@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_cubit.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_state.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -666,7 +667,7 @@ class _AddRelaySheetState extends State<_AddRelaySheet> {
             textInputAction: .done,
             onSubmitted: (_) {
               final url = _controller.text.trim();
-              if (url.isNotEmpty) Navigator.pop(context, url);
+              if (url.isNotEmpty) context.popModalIfMounted(url);
             },
             spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
           ),
@@ -679,7 +680,7 @@ class _AddRelaySheetState extends State<_AddRelaySheet> {
                   label: context.l10n.relaySettingsCancel,
                   type: DivineButtonType.secondary,
                   expanded: true,
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => context.popModalIfMounted(),
                 ),
               ),
               Expanded(
@@ -688,7 +689,7 @@ class _AddRelaySheetState extends State<_AddRelaySheet> {
                   expanded: true,
                   onPressed: () {
                     final url = _controller.text.trim();
-                    if (url.isNotEmpty) Navigator.pop(context, url);
+                    if (url.isNotEmpty) context.popModalIfMounted(url);
                   },
                 ),
               ),
@@ -792,28 +793,34 @@ Future<void> _confirmRemoveRelay(
           ),
         ),
       ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-        child: Row(
-          spacing: 16,
-          children: [
-            Expanded(
-              child: DivineButton(
-                label: l10n.relaySettingsCancel,
-                type: DivineButtonType.secondary,
-                expanded: true,
-                onPressed: () => Navigator.pop(context, false),
+      // The buttons resolve the Navigator from the sheet's own subtree rather
+      // than from the relay screen's context: the list rebuilds on every relay
+      // status change, and a caller context that has gone defunct leaves both
+      // buttons inert.
+      Builder(
+        builder: (sheetContext) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: l10n.relaySettingsCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => sheetContext.popModalIfMounted(false),
+                ),
               ),
-            ),
-            Expanded(
-              child: DivineButton(
-                label: l10n.relaySettingsRemove,
-                type: DivineButtonType.error,
-                expanded: true,
-                onPressed: () => Navigator.pop(context, true),
+              Expanded(
+                child: DivineButton(
+                  label: l10n.relaySettingsRemove,
+                  type: DivineButtonType.error,
+                  expanded: true,
+                  onPressed: () => sheetContext.popModalIfMounted(true),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ],

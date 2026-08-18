@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -78,7 +79,7 @@ Future<bool?> _confirmExternalLink(BuildContext context, Uri uri) {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
+          onPressed: () => ctx.popModalIfMounted(false),
           child: Text(
             ctx.l10n.commonCancel,
             style: VineTheme.bodyMediumFont(
@@ -87,7 +88,7 @@ Future<bool?> _confirmExternalLink(BuildContext context, Uri uri) {
           ),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
+          onPressed: () => ctx.popModalIfMounted(true),
           child: Text(
             ctx.l10n.messageExternalLinkDialogOpen,
             style: VineTheme.bodyMediumFont(color: VineTheme.primary),

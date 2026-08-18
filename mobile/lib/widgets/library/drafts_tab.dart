@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -276,7 +277,7 @@ class DraftsTab extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onPressed: () => dialogContext.popModalIfMounted(false),
             child: Text(
               context.l10n.commonCancel,
               style: VineTheme.bodyMediumFont(
@@ -285,7 +286,7 @@ class DraftsTab extends ConsumerWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onPressed: () => dialogContext.popModalIfMounted(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.error,
               foregroundColor: VineTheme.whiteText,

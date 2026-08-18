@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -265,7 +266,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onPressed: () => dialogContext.popModalIfMounted(false),
             child: Text(
               l10n.commonCancel,
               style: VineTheme.labelMediumFont(
@@ -274,7 +275,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onPressed: () => dialogContext.popModalIfMounted(true),
             child: Text(
               l10n.commonDelete,
               style: VineTheme.labelMediumFont(color: VineTheme.error),
@@ -722,7 +723,7 @@ class _PeopleAvatarItem extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onPressed: () => dialogContext.popModalIfMounted(false),
             child: Text(
               l10n.commonCancel,
               style: VineTheme.labelMediumFont(
@@ -731,7 +732,7 @@ class _PeopleAvatarItem extends ConsumerWidget {
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onPressed: () => dialogContext.popModalIfMounted(true),
             child: Text(
               l10n.peopleListsRemove,
               style: VineTheme.labelMediumFont(color: VineTheme.error),

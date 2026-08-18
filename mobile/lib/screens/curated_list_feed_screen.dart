@@ -8,6 +8,7 @@ import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart';
@@ -27,18 +28,6 @@ import 'package:openvine/widgets/user_name.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 enum _CuratedListAction { edit, share, delete, unfollow }
-
-/// Pops the delete-confirmation dialog with [confirmed].
-///
-/// The route can be gone by the time a tap on one of its buttons is
-/// delivered. `Navigator.of` then walks a defunct element and throws, which
-/// `FlutterError.onError` records as a fatal even though the pop is moot.
-void _popConfirmation(BuildContext dialogContext, {required bool confirmed}) {
-  if (!dialogContext.mounted) {
-    return;
-  }
-  Navigator.of(dialogContext).pop(confirmed);
-}
 
 class CuratedListFeedScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -517,7 +506,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => _popConfirmation(dialogContext, confirmed: false),
+            onPressed: () => dialogContext.popModalIfMounted(false),
             child: Text(
               l10n.commonCancel,
               style: VineTheme.labelMediumFont(
@@ -526,7 +515,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             ),
           ),
           TextButton(
-            onPressed: () => _popConfirmation(dialogContext, confirmed: true),
+            onPressed: () => dialogContext.popModalIfMounted(true),
             child: Text(
               l10n.commonDelete,
               style: VineTheme.labelMediumFont(color: VineTheme.error),

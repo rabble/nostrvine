@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -290,7 +291,7 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      onPressed: () => dialogContext.popModalIfMounted(),
                       child: Text(
                         context.l10n.profileCancelButton,
                         style: TextStyle(color: context.vineColors.mutedText),
@@ -298,7 +299,10 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(dialogContext).pop();
+                        // A tap that lands after the route is gone is not a
+                        // confirmation the user ever saw, so it must not
+                        // publish either.
+                        if (!dialogContext.popModalIfMounted()) return;
                         context.read<ProfileEditorBloc>().add(
                           const ProfileSaveConfirmed(),
                         );

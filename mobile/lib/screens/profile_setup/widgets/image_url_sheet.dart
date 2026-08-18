@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 
@@ -53,7 +54,7 @@ class _ImageUrlFormState extends State<_ImageUrlForm> {
     super.dispose();
   }
 
-  void _save() => Navigator.of(context).pop(_controller.text);
+  void _save() => context.popModalIfMounted(_controller.text);
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +90,7 @@ class _ImageUrlFormState extends State<_ImageUrlForm> {
                   label: context.l10n.commonCancel,
                   type: DivineButtonType.secondary,
                   expanded: true,
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => context.popModalIfMounted(),
                 ),
               ),
               Expanded(

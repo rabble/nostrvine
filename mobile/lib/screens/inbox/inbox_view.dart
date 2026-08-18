@@ -16,6 +16,7 @@ import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart'
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
@@ -1112,7 +1113,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => context.popModalIfMounted(false),
             child: Text(
               context.l10n.commonCancel,
               style: VineTheme.bodyMediumFont(
@@ -1121,7 +1122,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => context.popModalIfMounted(true),
             child: Text(
               context.l10n.inboxRemoveConfirmConfirm,
               style: VineTheme.bodyMediumFont(color: VineTheme.error),
