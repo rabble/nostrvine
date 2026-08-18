@@ -718,16 +718,10 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                             tabs: _tabs,
                             tabController: tabController,
                             selectionMode: widget.selectionMode,
-                            currentColumns: clipsState.gridColumnCount,
                             scrollController: widget.scrollController,
                             targetAspectRatio: targetAspectRatio,
                             sortedClips: sortedClips,
                             selectionEnabled: selectionEnabled,
-                            onOpenGridSizeMenu: () => _openGridSizeMenu(
-                              context,
-                              clipsBloc,
-                              clipsState.gridColumnCount,
-                            ),
                             onCreateVideo: () => _createVideoFromSelected(
                               context,
                               selectedClips: clipsState.selectedClips,
@@ -806,10 +800,8 @@ class _LibraryContent extends StatelessWidget {
     required this.tabs,
     required this.tabController,
     required this.selectionMode,
-    required this.currentColumns,
     required this.sortedClips,
     required this.selectionEnabled,
-    required this.onOpenGridSizeMenu,
     required this.onCreateVideo,
     this.scrollController,
     this.targetAspectRatio,
@@ -818,10 +810,8 @@ class _LibraryContent extends StatelessWidget {
   final List<_LibraryTab> tabs;
   final TabController tabController;
   final bool selectionMode;
-  final int currentColumns;
   final List<DivineVideoClip> sortedClips;
   final bool selectionEnabled;
-  final VoidCallback onOpenGridSizeMenu;
   final VoidCallback onCreateVideo;
   final ScrollController? scrollController;
   final double? targetAspectRatio;
@@ -867,10 +857,8 @@ class _LibraryContent extends StatelessWidget {
         Expanded(
           child: selectionMode
               ? _SelectionBody(
-                  currentColumns: currentColumns,
                   scrollController: scrollController,
                   targetAspectRatio: targetAspectRatio,
-                  onOpenGridSizeMenu: onOpenGridSizeMenu,
                   onCreate: onCreateVideo,
                 )
               : _TabBody(
@@ -1011,15 +999,11 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
 
 class _SelectionBody extends StatelessWidget {
   const _SelectionBody({
-    required this.currentColumns,
-    required this.onOpenGridSizeMenu,
     required this.onCreate,
     this.targetAspectRatio,
     this.scrollController,
   });
 
-  final int currentColumns;
-  final VoidCallback onOpenGridSizeMenu;
   final VoidCallback onCreate;
   final double? targetAspectRatio;
   final ScrollController? scrollController;
@@ -1028,22 +1012,6 @@ class _SelectionBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
-            child: DivineIconButton(
-              size: .small,
-              type: .secondary,
-              icon: .gridNine,
-              semanticLabel: context.l10n.libraryGridSizeLabel,
-              semanticValue: context.l10n.libraryGridSizeColumns(
-                currentColumns,
-              ),
-              onPressed: onOpenGridSizeMenu,
-            ),
-          ),
-        ),
         Expanded(
           child: ClipsTab(
             targetAspectRatio: targetAspectRatio,
