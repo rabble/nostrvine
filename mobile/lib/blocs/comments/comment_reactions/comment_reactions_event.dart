@@ -58,6 +58,38 @@ final class CommentVoteToggled extends CommentReactionsEvent {
   final int? targetKind;
 }
 
+/// Toggle an emoji reaction on a comment (optimistic update + relay
+/// publish).
+///
+/// Cap-at-one per user per comment, matching DM reactions: tapping the
+/// user's current emoji removes it, tapping a different one replaces it
+/// (Kind 5 for the old reaction, then a new Kind 7).
+final class CommentEmojiReactionToggled extends CommentReactionsEvent {
+  const CommentEmojiReactionToggled({
+    required this.commentId,
+    required this.authorPubkey,
+    required this.emoji,
+    this.addressableId,
+    this.targetKind,
+  });
+
+  /// The ID of the comment being reacted to.
+  final String commentId;
+
+  /// The pubkey of the comment author.
+  final String authorPubkey;
+
+  /// The emoji being toggled.
+  final String emoji;
+
+  /// The target's **own** addressable coordinate, when it has one — same
+  /// contract as [CommentVoteToggled.addressableId] (#6124).
+  final String? addressableId;
+
+  /// The kind of the event being reacted to, for NIP-25's `k` tag.
+  final int? targetKind;
+}
+
 /// Request to batch-fetch vote counts for a set of comments.
 ///
 /// Dispatched by the UI (via a [BlocListener] on [CommentsListBloc]) whenever

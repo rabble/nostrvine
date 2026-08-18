@@ -26,6 +26,7 @@ import 'package:openvine/screens/comments/comment_synthetic_video_event.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
 import 'package:openvine/screens/comments/widgets/pending_video_reply_tile.dart';
 import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
+import 'package:openvine/screens/inbox/conversation/widgets/full_reaction_emoji_picker_sheet.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -226,6 +227,12 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                             ),
                           ),
                         if (!isPendingComment) ...[
+                          _CommentReactionChips(
+                            commentId: widget.comment.id,
+                            authorPubkey: widget.comment.authorPubkey,
+                            addressableId: widget.comment.addressableId,
+                            targetKind: widget.comment.eventKind,
+                          ),
                           const SizedBox(height: 12),
                           _ActionsRow(
                             commentId: widget.comment.id,
@@ -298,7 +305,25 @@ class _CommentItemState extends ConsumerState<CommentItem> {
             originalReplyToAuthorPubkey: widget.comment.replyToAuthorPubkey,
           ),
         );
+      case CommentReactResult(:final emoji):
+        reactionsBloc.add(_emojiReactionToggledFor(emoji));
+      case CommentReactFullPickerRequested():
+        final emoji = await FullReactionEmojiPickerSheet.show(
+          context: this.context,
+        );
+        if (emoji == null || !mounted) return;
+        reactionsBloc.add(_emojiReactionToggledFor(emoji));
     }
+  }
+
+  CommentEmojiReactionToggled _emojiReactionToggledFor(String emoji) {
+    return CommentEmojiReactionToggled(
+      commentId: widget.comment.id,
+      authorPubkey: widget.comment.authorPubkey,
+      emoji: emoji,
+      addressableId: widget.comment.addressableId,
+      targetKind: widget.comment.eventKind,
+    );
   }
 }
 
@@ -464,11 +489,9 @@ class _CommentContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEmoji = _isEmojiOnly(content);
     final baseStyle = isEmoji
-        // Raw style: no VineTheme helper exists at the 40px emoji-only display
-        // size (_emojiOnlyFontSize).
-        ? TextStyle(
-            color: context.vineColors.onSurface,
+        ? VineTheme.emojiFont(
             fontSize: _emojiOnlyFontSize,
+            color: context.vineColors.onSurface,
           )
         : VineTheme.bodyMediumFont(color: context.vineColors.onSurface);
     return LinkifiedText(
@@ -567,6 +590,148 @@ class _ActionsRow extends StatelessWidget {
           targetKind: targetKind,
         ),
       ],
+    );
+  }
+}
+
+/// Aggregated emoji reaction chips for one comment (#7784).
+///
+/// Renders nothing while the comment has no reactions. Chips sort by count
+/// descending (emoji as tiebreak for a stable order); tapping one toggles
+/// the viewer's own reaction of that emoji. The selector keys on the
+/// per-comment inner map's identity, which the bloc replaces wholesale on
+/// any change, so untouched rows never rebuild.
+class _CommentReactionChips extends StatelessWidget {
+  const _CommentReactionChips({
+    required this.commentId,
+    required this.authorPubkey,
+    this.addressableId,
+    this.targetKind,
+  });
+
+  /// ID of the comment whose reactions are shown.
+  final String commentId;
+
+  /// Pubkey of the comment author (for the reaction's `p` tag).
+  final String authorPubkey;
+
+  /// The comment's own addressable coordinate, when it has one (#6124).
+  final String? addressableId;
+
+  /// The kind of the event being reacted to, for NIP-25's `k` tag.
+  final int? targetKind;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      CommentReactionsBloc,
+      CommentReactionsState,
+      ({Map<String, int>? counts, String? ownEmoji})
+    >(
+      selector: (state) => (
+        counts: state.commentEmojiReactionCounts[commentId],
+        ownEmoji: state.ownReactionEmojiByCommentId[commentId],
+      ),
+      builder: (context, reactionState) {
+        final counts = reactionState.counts;
+        if (counts == null || counts.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final entries = counts.entries.toList()
+          ..sort((a, b) {
+            final byCount = b.value.compareTo(a.value);
+            if (byCount != 0) return byCount;
+            return a.key.compareTo(b.key);
+          });
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final entry in entries)
+                _ReactionChip(
+                  emoji: entry.key,
+                  count: entry.value,
+                  isOwn: reactionState.ownEmoji == entry.key,
+                  onTap: () {
+                    context.read<CommentReactionsBloc>().add(
+                      CommentEmojiReactionToggled(
+                        commentId: commentId,
+                        authorPubkey: authorPubkey,
+                        emoji: entry.key,
+                        addressableId: addressableId,
+                        targetKind: targetKind,
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// One emoji + count pill in the reactions row.
+class _ReactionChip extends StatelessWidget {
+  const _ReactionChip({
+    required this.emoji,
+    required this.count,
+    required this.isOwn,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final int count;
+  final bool isOwn;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = isOwn
+        ? context.l10n.commentReactionChipOwnSemanticLabel(count, emoji)
+        : context.l10n.commentReactionChipSemanticLabel(count, emoji);
+    return Semantics(
+      button: true,
+      selected: isOwn,
+      label: label,
+      // excludeSemantics drops the child subtree — including the
+      // GestureDetector's tap action — so the action is re-declared here.
+      onTap: onTap,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: context.vineColors.containerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isOwn
+                  ? context.vineColors.accentPositive
+                  : VineTheme.transparent,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [
+              Text(emoji, style: VineTheme.emojiFont(fontSize: 14)),
+              Text(
+                count.formatScore,
+                style: VineTheme.labelMediumFont(
+                  color: isOwn
+                      ? context.vineColors.accentPositive
+                      : context.vineColors.onSurfaceMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

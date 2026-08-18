@@ -525,4 +525,218 @@ void main() {
       expect(find.text('profile:$expectedNpub'), findsOneWidget);
     });
   });
+
+  group('reaction chips (#7784)', () {
+    Comment buildComment({String content = 'hello'}) => CommentBuilder()
+        .withAuthorPubkey(_testHexPubkey)
+        .withRootEventId(_testRootEventId)
+        .withRootAuthorPubkey(_testRootAuthorPubkey)
+        .withContent(content)
+        .build();
+
+    testWidgets(
+      'renders aggregated chips sorted by count with own-chip semantics',
+      (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+        final mocks = buildMocks();
+        final comment = buildComment();
+        when(() => mocks.reactions.state).thenReturn(
+          CommentReactionsState(
+            commentEmojiReactionCounts: {
+              comment.id: const {'😂': 3, '❤️': 5},
+            },
+            ownReactionEmojiByCommentId: {comment.id: '😂'},
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            'hello',
+            composerBloc: mocks.composer,
+            reactionsBloc: mocks.reactions,
+            comment: comment,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('😂'), findsOneWidget);
+        expect(find.text('3'), findsOneWidget);
+        expect(find.text('❤️'), findsOneWidget);
+        expect(find.text('5'), findsOneWidget);
+        // Higher count sorts first.
+        expect(
+          tester.getCenter(find.text('❤️')).dx,
+          lessThan(tester.getCenter(find.text('😂')).dx),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          tester.getSemantics(
+            find.bySemanticsLabel(
+              l10n.commentReactionChipOwnSemanticLabel(3, '😂'),
+            ),
+          ),
+          isSemantics(isButton: true, hasTapAction: true, isSelected: true),
+        );
+        expect(
+          find.bySemanticsLabel(
+            l10n.commentReactionChipSemanticLabel(5, '❤️'),
+          ),
+          findsOneWidget,
+        );
+
+        semanticsHandle.dispose();
+      },
+    );
+
+    testWidgets('renders no chips without reactions', (tester) async {
+      final mocks = buildMocks();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          'hello',
+          composerBloc: mocks.composer,
+          reactionsBloc: mocks.reactions,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(Wrap), findsNothing);
+    });
+
+    testWidgets('tapping a chip dispatches $CommentEmojiReactionToggled', (
+      tester,
+    ) async {
+      final mocks = buildMocks();
+      final comment = buildComment();
+      when(() => mocks.reactions.state).thenReturn(
+        CommentReactionsState(
+          commentEmojiReactionCounts: {
+            comment.id: const {'😂': 3},
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          'hello',
+          composerBloc: mocks.composer,
+          reactionsBloc: mocks.reactions,
+          comment: comment,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('😂'));
+      await tester.pump();
+
+      final dispatched = verify(
+        () => mocks.reactions.add(captureAny()),
+      ).captured.whereType<CommentEmojiReactionToggled>().single;
+      expect(dispatched.emoji, equals('😂'));
+      expect(dispatched.commentId, equals(comment.id));
+      expect(dispatched.authorPubkey, equals(_testHexPubkey));
+      expect(dispatched.addressableId, isNull);
+    });
+
+    testWidgets(
+      'chips on a video reply carry its own coordinate and kind, not the '
+      "parent video's (#6124)",
+      (tester) async {
+        const ownCoordinate = '34236:$_testHexPubkey:reply-d-tag';
+        final mocks = buildMocks();
+        final reply = CommentBuilder()
+            .withAuthorPubkey(_testHexPubkey)
+            .withRootEventId(_testRootEventId)
+            .withRootAuthorPubkey(_testRootAuthorPubkey)
+            .withContent('a video reply')
+            .asVideoReply(ownCoordinate: ownCoordinate)
+            .build();
+        when(() => mocks.reactions.state).thenReturn(
+          CommentReactionsState(
+            commentEmojiReactionCounts: {
+              reply.id: const {'😂': 1},
+            },
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            'a video reply',
+            composerBloc: mocks.composer,
+            reactionsBloc: mocks.reactions,
+            comment: reply,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('😂'));
+        await tester.pump();
+
+        final dispatched = verify(
+          () => mocks.reactions.add(captureAny()),
+        ).captured.whereType<CommentEmojiReactionToggled>().single;
+        expect(dispatched.addressableId, equals(ownCoordinate));
+        expect(dispatched.targetKind, equals(34236));
+        expect(dispatched.addressableId, isNot(contains(_testRootEventId)));
+      },
+    );
+
+    testWidgets(
+      'long-press quick-row pick dispatches $CommentEmojiReactionToggled',
+      (tester) async {
+        final mocks = buildMocks();
+        final comment = buildComment();
+
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: MultiBlocProvider(
+                  providers: [
+                    BlocProvider<CommentComposerBloc>.value(
+                      value: mocks.composer,
+                    ),
+                    BlocProvider<CommentReactionsBloc>.value(
+                      value: mocks.reactions,
+                    ),
+                  ],
+                  child: SingleChildScrollView(
+                    child: CommentItem(comment: comment),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              nostrServiceProvider.overrideWithValue(const _FakeNostrClient()),
+            ],
+            child: MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.byType(CommentItem));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('🔥'));
+        await tester.pumpAndSettle();
+
+        final dispatched = verify(
+          () => mocks.reactions.add(captureAny()),
+        ).captured.whereType<CommentEmojiReactionToggled>().single;
+        expect(dispatched.emoji, equals('🔥'));
+        expect(dispatched.commentId, equals(comment.id));
+      },
+    );
+  });
 }

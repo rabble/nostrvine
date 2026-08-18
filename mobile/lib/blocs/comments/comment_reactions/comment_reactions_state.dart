@@ -10,6 +10,9 @@ enum ReactionsError {
   /// Failed to toggle vote on a comment.
   voteFailed,
 
+  /// Failed to toggle an emoji reaction on a comment.
+  reactionFailed,
+
   /// Failed to report a comment.
   reportFailed,
 
@@ -57,6 +60,8 @@ final class CommentReactionsState extends Equatable {
     this.commentDownvoteCounts = const {},
     this.upvotedCommentIds = const {},
     this.downvotedCommentIds = const {},
+    this.commentEmojiReactionCounts = const {},
+    this.ownReactionEmojiByCommentId = const {},
     this.error,
     this.outbox,
   });
@@ -73,6 +78,17 @@ final class CommentReactionsState extends Equatable {
   /// Set of comment IDs the current user has downvoted.
   final Set<String> downvotedCommentIds;
 
+  /// Emoji reaction counts per comment ID (`comment id -> emoji -> count`).
+  ///
+  /// Inner maps are replaced wholesale per comment (never mutated), so
+  /// selectors can rely on identity to skip rebuilds of untouched rows.
+  final Map<String, Map<String, int>> commentEmojiReactionCounts;
+
+  /// The current user's own emoji reaction per comment ID (cap-at-one).
+  ///
+  /// Absent key = no own reaction on that comment.
+  final Map<String, String> ownReactionEmojiByCommentId;
+
   /// Error type for l10n-friendly error handling.
   final ReactionsError? error;
 
@@ -84,6 +100,8 @@ final class CommentReactionsState extends Equatable {
     Map<String, int>? commentDownvoteCounts,
     Set<String>? upvotedCommentIds,
     Set<String>? downvotedCommentIds,
+    Map<String, Map<String, int>>? commentEmojiReactionCounts,
+    Map<String, String>? ownReactionEmojiByCommentId,
     ReactionsError? error,
     ReactionsOutbox? outbox,
     bool clearError = false,
@@ -95,6 +113,10 @@ final class CommentReactionsState extends Equatable {
           commentDownvoteCounts ?? this.commentDownvoteCounts,
       upvotedCommentIds: upvotedCommentIds ?? this.upvotedCommentIds,
       downvotedCommentIds: downvotedCommentIds ?? this.downvotedCommentIds,
+      commentEmojiReactionCounts:
+          commentEmojiReactionCounts ?? this.commentEmojiReactionCounts,
+      ownReactionEmojiByCommentId:
+          ownReactionEmojiByCommentId ?? this.ownReactionEmojiByCommentId,
       error: clearError ? null : (error ?? this.error),
       outbox: clearOutbox ? null : (outbox ?? this.outbox),
     );
@@ -106,6 +128,8 @@ final class CommentReactionsState extends Equatable {
     commentDownvoteCounts,
     upvotedCommentIds,
     downvotedCommentIds,
+    commentEmojiReactionCounts,
+    ownReactionEmojiByCommentId,
     error,
     outbox,
   ];

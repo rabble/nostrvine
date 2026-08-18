@@ -24,6 +24,9 @@ part 'comment_reactions_state.dart';
 /// - Voting: optimistic update + relay publish via [LikesRepository], with
 ///   the four state-sync sentinels ([AlreadyLikedException], etc.) handled
 ///   silently to reconcile pre-tap state without surfacing as failures.
+/// - Emoji reactions (#7784): cap-at-one per comment, optimistic update +
+///   relay publish via [LikesRepository], same sentinel handling
+///   ([AlreadyReactedException] / [NotReactedException]).
 /// - Vote count batch fetch on demand (UI bridges from [CommentsListBloc]).
 /// - Reporting (Kind 1984) via [ContentReportingService].
 /// - Blocking (Kind 10000 mute) via [ContentBlocklistRepository]; emits
@@ -49,6 +52,13 @@ class CommentReactionsBloc
        _rootAddressableId = rootAddressableId,
        super(const CommentReactionsState()) {
     on<CommentVoteToggled>(_onVoteToggled, transformer: droppable());
+    // droppable() for the same reason as votes: rapid taps on the same
+    // comment within publish-RTT must not interleave kind-7 / kind-5
+    // publishes for the cap-at-one supersede flow.
+    on<CommentEmojiReactionToggled>(
+      _onEmojiReactionToggled,
+      transformer: droppable(),
+    );
     // restartable(): on a fast comment stream the UI bridge dispatches a
     // fetch for each new id batch. Without this, a slow earlier fetch
     // returning after a newer one could clobber the fresher counts.
@@ -135,7 +145,7 @@ class CommentReactionsBloc
     if (event.commentIds.isEmpty) return;
 
     try {
-      final results = await Future.wait([
+      final (voteCounts, voteStatuses) = await (
         _likesRepository.getVoteCounts(
           event.commentIds,
           addressableIds: event.addressableIdsByCommentId,
@@ -144,13 +154,7 @@ class CommentReactionsBloc
           event.commentIds,
           addressableIds: event.addressableIdsByCommentId,
         ),
-      ]);
-
-      final voteCounts =
-          results[0]
-              as ({Map<String, int> upvotes, Map<String, int> downvotes});
-      final voteStatuses =
-          results[1] as ({Set<String> upvotedIds, Set<String> downvotedIds});
+      ).wait;
 
       // Merge into existing maps/sets rather than replacing — keep
       // previously-fetched counts for ids not in this batch so an
@@ -166,6 +170,10 @@ class CommentReactionsBloc
             ...state.commentDownvoteCounts,
             ...voteCounts.downvotes,
           },
+          commentEmojiReactionCounts: {
+            ...state.commentEmojiReactionCounts,
+            ...voteCounts.emojiReactions,
+          },
           upvotedCommentIds: {
             ...state.upvotedCommentIds,
             ...voteStatuses.upvotedIds,
@@ -173,6 +181,10 @@ class CommentReactionsBloc
           downvotedCommentIds: {
             ...state.downvotedCommentIds,
             ...voteStatuses.downvotedIds,
+          },
+          ownReactionEmojiByCommentId: {
+            ...state.ownReactionEmojiByCommentId,
+            ...voteStatuses.reactedEmojiByTargetId,
           },
         ),
       );
@@ -337,6 +349,122 @@ class CommentReactionsBloc
             state.commentDownvoteCounts,
           )..[commentId] = prevDownCount,
           error: ReactionsError.voteFailed,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onEmojiReactionToggled(
+    CommentEmojiReactionToggled event,
+    Emitter<CommentReactionsState> emit,
+  ) async {
+    if (!_authService.isAuthenticated) {
+      emit(state.copyWith(error: ReactionsError.notAuthenticated));
+      return;
+    }
+
+    final commentId = event.commentId;
+    final emoji = event.emoji;
+    final previousOwnEmoji = state.ownReactionEmojiByCommentId[commentId];
+    final isRemoval = previousOwnEmoji == emoji;
+    final previousCounts = Map<String, int>.from(
+      state.commentEmojiReactionCounts[commentId] ?? const <String, int>{},
+    );
+
+    // Optimistic update: swap out the old emoji (if any), swap in the new
+    // one unless this tap removes the user's current reaction.
+    final newCounts = Map<String, int>.from(previousCounts);
+    if (previousOwnEmoji != null) {
+      final decremented = (newCounts[previousOwnEmoji] ?? 1) - 1;
+      if (decremented <= 0) {
+        newCounts.remove(previousOwnEmoji);
+      } else {
+        newCounts[previousOwnEmoji] = decremented;
+      }
+    }
+    if (!isRemoval) {
+      newCounts[emoji] = (newCounts[emoji] ?? 0) + 1;
+    }
+
+    final newOwn = Map<String, String>.from(state.ownReactionEmojiByCommentId);
+    if (isRemoval) {
+      newOwn.remove(commentId);
+    } else {
+      newOwn[commentId] = emoji;
+    }
+
+    emit(
+      state.copyWith(
+        commentEmojiReactionCounts: {
+          ...state.commentEmojiReactionCounts,
+          commentId: newCounts,
+        },
+        ownReactionEmojiByCommentId: newOwn,
+      ),
+    );
+
+    try {
+      if (previousOwnEmoji != null) {
+        // Tear down the existing reaction first, mirroring the vote flow. A
+        // teardown miss must not abort the placement below: the repo cache
+        // is in-memory only, so a pre-restart reaction can report "not
+        // reacted" while the new one still needs publishing (#6124 lineage).
+        try {
+          await _likesRepository.removeEmojiReaction(
+            commentId,
+            addressableId: event.addressableId,
+          );
+        } on NotReactedException {
+          // Nothing to remove; the optimistic update already reflects that.
+        }
+      }
+
+      if (!isRemoval) {
+        final targetKind = event.targetKind ?? EventKind.comment;
+        await _likesRepository.reactToEventWithEmoji(
+          eventId: commentId,
+          authorPubkey: event.authorPubkey,
+          emoji: emoji,
+          targetKind: targetKind,
+          addressableId: event.addressableId,
+        );
+      }
+    } on AlreadyReactedException catch (e) {
+      // State-sync sentinel (silent): the repo already holds a reaction for
+      // this target; reconcile the own-emoji marker to it.
+      emit(
+        state.copyWith(
+          ownReactionEmojiByCommentId: {
+            ...state.ownReactionEmojiByCommentId,
+            commentId: e.emoji,
+          },
+        ),
+      );
+    } catch (e, stackTrace) {
+      // LikesRepository publish IO is matrix-NO; anything else is wrapped
+      // with Reportable inside _logFailure. Revert the optimistic update.
+      _logFailure(
+        e,
+        stackTrace,
+        CommentReactionsBlocReportableSites.onEmojiReactionToggled,
+        'Error toggling comment emoji reaction',
+      );
+      final revertedOwn = Map<String, String>.from(
+        state.ownReactionEmojiByCommentId,
+      );
+      if (previousOwnEmoji == null) {
+        revertedOwn.remove(commentId);
+      } else {
+        revertedOwn[commentId] = previousOwnEmoji;
+      }
+      emit(
+        state.copyWith(
+          commentEmojiReactionCounts: {
+            ...state.commentEmojiReactionCounts,
+            commentId: previousCounts,
+          },
+          ownReactionEmojiByCommentId: revertedOwn,
+          error: ReactionsError.reactionFailed,
         ),
       );
     }

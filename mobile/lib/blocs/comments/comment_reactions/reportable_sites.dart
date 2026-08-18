@@ -2,6 +2,7 @@
 /// [CommentReactionsBloc].
 abstract class CommentReactionsBlocReportableSites {
   static const String onVoteToggled = '_onVoteToggled';
+  static const String onEmojiReactionToggled = '_onEmojiReactionToggled';
   static const String onVoteCountsFetchRequested =
       '_onVoteCountsFetchRequested';
   static const String onReportRequested = '_onReportRequested';

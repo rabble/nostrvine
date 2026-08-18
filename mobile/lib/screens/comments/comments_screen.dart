@@ -55,6 +55,7 @@ String _reactionsErrorToString(AppLocalizations l10n, ReactionsError error) {
     ReactionsError.notAuthenticated =>
       l10n.commentsErrorNotAuthenticatedInteract,
     ReactionsError.voteFailed => l10n.commentsErrorVoteFailed,
+    ReactionsError.reactionFailed => l10n.commentsErrorReactionFailed,
     ReactionsError.reportFailed => l10n.commentsErrorReportFailed,
     ReactionsError.blockFailed => l10n.commentsErrorBlockFailed,
     ReactionsError.deleteCommentFailed => l10n.commentsErrorDeleteFailed,

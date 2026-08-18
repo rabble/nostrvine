@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/content_moderation_types.dart';
+import 'package:openvine/widgets/reactions/quick_reaction_emojis.dart';
 
 /// Result of a comment options modal action.
 sealed class CommentOptionResult {
@@ -42,6 +43,21 @@ class CommentEditResult extends CommentOptionResult {
   final String content;
 }
 
+/// User picked an emoji from the reaction quick-row.
+class CommentReactResult extends CommentOptionResult {
+  const CommentReactResult({required this.emoji});
+
+  final String emoji;
+}
+
+/// User asked for the full emoji picker (the ➕ in the quick-row).
+///
+/// The caller opens the picker after this sheet closes and dispatches the
+/// chosen emoji itself.
+class CommentReactFullPickerRequested extends CommentOptionResult {
+  const CommentReactFullPickerRequested();
+}
+
 /// Modal bottom sheet displaying options for a comment.
 ///
 /// Shows different menus depending on whether the comment is from the
@@ -73,6 +89,12 @@ class CommentOptionsModal {
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          _ReactionQuickRow(
+            onEmojiSelected: (emoji) =>
+                modalContext.pop(CommentReactResult(emoji: emoji)),
+            onFullPickerRequested: () =>
+                modalContext.pop(const CommentReactFullPickerRequested()),
+          ),
           _OptionTile(
             identifier: 'edit_comment_option',
             label: modalContext.l10n.profileEditLabel,
@@ -112,6 +134,10 @@ class CommentOptionsModal {
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          _ReactionQuickRow(
+            onEmojiSelected: (emoji) => context.pop('react:$emoji'),
+            onFullPickerRequested: () => context.pop('react-full-picker'),
+          ),
           _OptionTile(
             identifier: 'flag_content_option',
             label: context.l10n.commentOptionsFlagContentLabel,
@@ -133,6 +159,14 @@ class CommentOptionsModal {
 
     if (action == null) return null;
 
+    if (action.startsWith('react:')) {
+      return CommentReactResult(emoji: action.substring('react:'.length));
+    }
+
+    if (action == 'react-full-picker') {
+      return const CommentReactFullPickerRequested();
+    }
+
     if (action == 'block') {
       return CommentBlockUserResult(authorPubkey: authorPubkey);
     }
@@ -144,6 +178,98 @@ class CommentOptionsModal {
     }
 
     return null;
+  }
+}
+
+/// Quick emoji reaction row shown above the comment options (#7784).
+///
+/// Mirrors the DM long-press pattern: the shared six-emoji set plus a ➕
+/// that hands off to the full emoji picker. Selection pops the sheet; the
+/// caller publishes the reaction.
+class _ReactionQuickRow extends StatelessWidget {
+  const _ReactionQuickRow({
+    required this.onEmojiSelected,
+    required this.onFullPickerRequested,
+  });
+
+  final ValueChanged<String> onEmojiSelected;
+  final VoidCallback onFullPickerRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          for (final emoji in kQuickReactionEmojis)
+            _QuickReactionButton(
+              emoji: emoji,
+              onTap: () => onEmojiSelected(emoji),
+            ),
+          Semantics(
+            identifier: 'comment_reaction_full_picker',
+            button: true,
+            label: context.l10n.dmReactionAddCustomA11yLabel,
+            // excludeSemantics drops the child subtree — including the
+            // GestureDetector's tap action — so the action is re-declared
+            // here.
+            onTap: onFullPickerRequested,
+            excludeSemantics: true,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onFullPickerRequested,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: context.vineColors.containerLow,
+                ),
+                child: Center(
+                  child: DivineIcon(
+                    icon: DivineIconName.plus,
+                    size: 18,
+                    color: context.vineColors.onSurface,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One emoji button in the quick-row.
+class _QuickReactionButton extends StatelessWidget {
+  const _QuickReactionButton({required this.emoji, required this.onTap});
+
+  final String emoji;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: context.l10n.commentReactWithEmojiSemanticLabel(emoji),
+      // excludeSemantics drops the child subtree — including the
+      // GestureDetector's tap action — so the action is re-declared here.
+      onTap: onTap,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Text(emoji, style: VineTheme.emojiFont(fontSize: 28)),
+          ),
+        ),
+      ),
+    );
   }
 }
 

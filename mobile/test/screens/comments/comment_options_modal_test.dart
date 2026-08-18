@@ -413,5 +413,165 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.widget<ElevatedButton>(submit).onPressed, isNotNull);
     });
+
+    group('reaction quick-row (#7784)', () {
+      Widget buildOwnCommentHarness(
+        void Function(CommentOptionResult?) onResult,
+      ) {
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Builder(
+                  builder: (context) {
+                    return TextButton(
+                      onPressed: () async {
+                        onResult(
+                          await CommentOptionsModal.showForOwnComment(
+                            context,
+                            commentId:
+                                'comment0123456789abcdef0123456789abcdef'
+                                '01234567',
+                            commentContent: 'test comment',
+                          ),
+                        );
+                      },
+                      child: const Text('Open options'),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+        return MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        );
+      }
+
+      Widget buildOtherUserHarness(
+        void Function(CommentOptionResult?) onResult,
+      ) {
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Builder(
+                  builder: (context) {
+                    return TextButton(
+                      onPressed: () async {
+                        onResult(
+                          await CommentOptionsModal.showForOtherUserIntegrated(
+                            context,
+                            authorPubkey:
+                                'author0123456789abcdef0123456789abcdef012'
+                                '3456789ab',
+                          ),
+                        );
+                      },
+                      child: const Text('Open options'),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+        return MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        );
+      }
+
+      testWidgets(
+        'picking a quick emoji on an own comment returns $CommentReactResult',
+        (tester) async {
+          CommentOptionResult? result;
+          await tester.pumpWidget(buildOwnCommentHarness((r) => result = r));
+
+          await tester.tap(find.text('Open options'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('😂'));
+          await tester.pumpAndSettle();
+
+          expect(
+            result,
+            isA<CommentReactResult>().having((r) => r.emoji, 'emoji', '😂'),
+          );
+        },
+      );
+
+      testWidgets(
+        "picking a quick emoji on another user's comment returns "
+        '$CommentReactResult',
+        (tester) async {
+          CommentOptionResult? result;
+          await tester.pumpWidget(buildOtherUserHarness((r) => result = r));
+
+          await tester.tap(find.text('Open options'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('🔥'));
+          await tester.pumpAndSettle();
+
+          expect(
+            result,
+            isA<CommentReactResult>().having((r) => r.emoji, 'emoji', '🔥'),
+          );
+        },
+      );
+
+      testWidgets(
+        'the ➕ expander returns $CommentReactFullPickerRequested',
+        (tester) async {
+          CommentOptionResult? result;
+          await tester.pumpWidget(buildOtherUserHarness((r) => result = r));
+
+          await tester.tap(find.text('Open options'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(
+            find.bySemanticsIdentifier('comment_reaction_full_picker'),
+          );
+          await tester.pumpAndSettle();
+
+          expect(result, isA<CommentReactFullPickerRequested>());
+        },
+      );
+
+      testWidgets('quick-row buttons expose activatable button semantics', (
+        tester,
+      ) async {
+        final semanticsHandle = tester.ensureSemantics();
+        await tester.pumpWidget(buildOtherUserHarness((_) {}));
+
+        await tester.tap(find.text('Open options'));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          tester.getSemantics(
+            find.bySemanticsLabel(
+              l10n.commentReactWithEmojiSemanticLabel('❤️'),
+            ),
+          ),
+          isSemantics(isButton: true, hasTapAction: true),
+        );
+        expect(
+          tester.getSemantics(
+            find.bySemanticsIdentifier('comment_reaction_full_picker'),
+          ),
+          isSemantics(isButton: true, hasTapAction: true),
+        );
+
+        semanticsHandle.dispose();
+      });
+    });
   });
 }

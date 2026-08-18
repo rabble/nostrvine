@@ -58,10 +58,18 @@ void main() {
       ).thenReturn(validId('currentuser'));
 
       when(() => mockLikesRepository.getVoteCounts(any())).thenAnswer(
-        (_) async => (upvotes: <String, int>{}, downvotes: <String, int>{}),
+        (_) async => (
+          upvotes: <String, int>{},
+          downvotes: <String, int>{},
+          emojiReactions: <String, Map<String, int>>{},
+        ),
       );
       when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
-        (_) async => (upvotedIds: <String>{}, downvotedIds: <String>{}),
+        (_) async => (
+          upvotedIds: <String>{},
+          downvotedIds: <String>{},
+          reactedEmojiByTargetId: <String, String>{},
+        ),
       );
     });
 
@@ -94,12 +102,18 @@ void main() {
         'populates counts and statuses from likes repo',
         setUp: () {
           when(() => mockLikesRepository.getVoteCounts(any())).thenAnswer(
-            (_) async =>
-                (upvotes: {validId('c1'): 5}, downvotes: {validId('c1'): 1}),
+            (_) async => (
+              upvotes: {validId('c1'): 5},
+              downvotes: {validId('c1'): 1},
+              emojiReactions: <String, Map<String, int>>{},
+            ),
           );
           when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
-            (_) async =>
-                (upvotedIds: {validId('c1')}, downvotedIds: <String>{}),
+            (_) async => (
+              upvotedIds: {validId('c1')},
+              downvotedIds: <String>{},
+              reactedEmojiByTargetId: <String, String>{},
+            ),
           );
         },
         build: createBloc,
@@ -125,7 +139,11 @@ void main() {
               addressableIds: any(named: 'addressableIds'),
             ),
           ).thenAnswer(
-            (_) async => (upvotes: <String, int>{}, downvotes: <String, int>{}),
+            (_) async => (
+              upvotes: <String, int>{},
+              downvotes: <String, int>{},
+              emojiReactions: <String, Map<String, int>>{},
+            ),
           );
           when(
             () => mockLikesRepository.getUserVoteStatuses(
@@ -133,7 +151,11 @@ void main() {
               addressableIds: any(named: 'addressableIds'),
             ),
           ).thenAnswer(
-            (_) async => (upvotedIds: <String>{}, downvotedIds: <String>{}),
+            (_) async => (
+              upvotedIds: <String>{},
+              downvotedIds: <String>{},
+              reactedEmojiByTargetId: <String, String>{},
+            ),
           );
         },
         build: createBloc,
@@ -791,6 +813,351 @@ void main() {
             'outbox',
             isNull,
           ),
+        ],
+      );
+    });
+
+    group('CommentEmojiReactionToggled (#7784)', () {
+      void stubReactSuccess() {
+        when(
+          () => mockLikesRepository.reactToEventWithEmoji(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            emoji: any(named: 'emoji'),
+            targetKind: any(named: 'targetKind'),
+            addressableId: any(named: 'addressableId'),
+          ),
+        ).thenAnswer((_) async => validId('reaction'));
+      }
+
+      void stubRemoveSuccess() {
+        when(
+          () => mockLikesRepository.removeEmojiReaction(
+            any(),
+            addressableId: any(named: 'addressableId'),
+          ),
+        ).thenAnswer((_) async {});
+      }
+
+      CommentEmojiReactionToggled toggled(String emoji) =>
+          CommentEmojiReactionToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            emoji: emoji,
+          );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'adds a reaction optimistically and publishes it',
+        setUp: stubReactSuccess,
+        build: createBloc,
+        act: (b) => b.add(toggled('😂')),
+        expect: () => [
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'counts',
+                {'😂': 1},
+              )
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+                'own',
+                '😂',
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              emoji: '😂',
+              targetKind: 1111,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockLikesRepository.removeEmojiReaction(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'replaces the previous emoji: teardown first, then publish',
+        setUp: () {
+          stubReactSuccess();
+          stubRemoveSuccess();
+        },
+        build: createBloc,
+        seed: () => CommentReactionsState(
+          commentEmojiReactionCounts: {
+            validId('c1'): const {'❤️': 1},
+          },
+          ownReactionEmojiByCommentId: {validId('c1'): '❤️'},
+        ),
+        act: (b) => b.add(toggled('😂')),
+        expect: () => [
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'counts',
+                {'😂': 1},
+              )
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+                'own',
+                '😂',
+              ),
+        ],
+        verify: (_) {
+          verifyInOrder([
+            () => mockLikesRepository.removeEmojiReaction(validId('c1')),
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              emoji: '😂',
+              targetKind: 1111,
+            ),
+          ]);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'removes the reaction when tapping the current emoji',
+        setUp: stubRemoveSuccess,
+        build: createBloc,
+        seed: () => CommentReactionsState(
+          commentEmojiReactionCounts: {
+            validId('c1'): const {'😂': 2},
+          },
+          ownReactionEmojiByCommentId: {validId('c1'): '😂'},
+        ),
+        act: (b) => b.add(toggled('😂')),
+        expect: () => [
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'counts',
+                {'😂': 1},
+              )
+              .having(
+                (s) => s.ownReactionEmojiByCommentId.containsKey(validId('c1')),
+                'own removed',
+                false,
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.removeEmojiReaction(validId('c1')),
+          ).called(1);
+          verifyNever(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: any(named: 'emoji'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'a teardown miss does not abort the placement',
+        setUp: () {
+          stubReactSuccess();
+          when(
+            () => mockLikesRepository.removeEmojiReaction(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenThrow(NotReactedException(validId('c1')));
+        },
+        build: createBloc,
+        seed: () => CommentReactionsState(
+          commentEmojiReactionCounts: {
+            validId('c1'): const {'❤️': 1},
+          },
+          ownReactionEmojiByCommentId: {validId('c1'): '❤️'},
+        ),
+        act: (b) => b.add(toggled('😂')),
+        expect: () => [
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+                'own',
+                '😂',
+              )
+              .having((s) => s.error, 'error', isNull),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              emoji: '😂',
+              targetKind: 1111,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'reconciles own emoji silently on $AlreadyReactedException',
+        setUp: () {
+          when(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: any(named: 'emoji'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenThrow(AlreadyReactedException(validId('c1'), '🔥'));
+        },
+        build: createBloc,
+        act: (b) => b.add(toggled('😂')),
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+            'optimistic own',
+            '😂',
+          ),
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+                'reconciled own',
+                '🔥',
+              )
+              .having((s) => s.error, 'error', isNull),
+        ],
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'reverts the optimistic update and flags reactionFailed on publish '
+        'failure',
+        setUp: () {
+          when(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: any(named: 'emoji'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenThrow(const LikeFailedException('publish failed'));
+        },
+        build: createBloc,
+        act: (b) => b.add(toggled('😂')),
+        errors: () => [isA<LikeFailedException>()],
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+            'optimistic own',
+            '😂',
+          ),
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'reverted counts',
+                isEmpty,
+              )
+              .having(
+                (s) => s.ownReactionEmojiByCommentId.containsKey(validId('c1')),
+                'reverted own',
+                false,
+              )
+              .having((s) => s.error, 'error', ReactionsError.reactionFailed),
+        ],
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'requires authentication',
+        setUp: () => when(
+          () => mockAuthService.isAuthenticated,
+        ).thenReturn(false),
+        build: createBloc,
+        act: (b) => b.add(toggled('😂')),
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.error,
+            'error',
+            ReactionsError.notAuthenticated,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: any(named: 'emoji'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'reacts to a video reply with its own coordinate and kind (#6124)',
+        setUp: stubReactSuccess,
+        build: createBloc,
+        act: (b) => b.add(
+          CommentEmojiReactionToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            emoji: '😂',
+            addressableId: '34236:${validId('author1')}:reply-d',
+            targetKind: 34236,
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              emoji: '😂',
+              targetKind: 34236,
+              addressableId: '34236:${validId('author1')}:reply-d',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'fetch merges emoji counts and own emoji from the likes repo',
+        setUp: () {
+          when(() => mockLikesRepository.getVoteCounts(any())).thenAnswer(
+            (_) async => (
+              upvotes: <String, int>{},
+              downvotes: <String, int>{},
+              emojiReactions: {
+                validId('c1'): {'😂': 3},
+              },
+            ),
+          );
+          when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
+            (_) async => (
+              upvotedIds: <String>{},
+              downvotedIds: <String>{},
+              reactedEmojiByTargetId: {validId('c1'): '😂'},
+            ),
+          );
+        },
+        build: createBloc,
+        act: (b) => b.add(CommentVoteCountsFetchRequested([validId('c1')])),
+        expect: () => [
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'emoji counts',
+                {'😂': 3},
+              )
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+                'own',
+                '😂',
+              ),
         ],
       );
     });
