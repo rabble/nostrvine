@@ -23,23 +23,6 @@ void main() {
       );
       expect(headers['X-Divine-Platform'], label.toLowerCase());
     });
-
-    test('omits X-Divine-Platform when told to (the web behavior)', () {
-      final headers = buildDivineClientHeaders(
-        appVersion: '1.0.20',
-        omitPlatformToken: true,
-      );
-      expect(
-        headers['User-Agent'],
-        matches(RegExp(r'^Divine-Mobile/1\.0\.20 \(\w[\w.]*\)$')),
-      );
-      expect(headers.containsKey('X-Divine-Platform'), isFalse);
-    });
-
-    test('an explicit platform token overrides detection', () {
-      final headers = buildDivineClientHeaders(platformToken: 'android');
-      expect(headers['X-Divine-Platform'], 'android');
-    });
   });
 
   group('buildDivineUserAgent', () {
@@ -65,6 +48,13 @@ void main() {
     test('falls back to an unknown marker when no version is given', () {
       expect(
         buildDivineUserAgent(platform: 'iOS'),
+        'Divine-Mobile/unknown (iOS)',
+      );
+    });
+
+    test('falls back to an unknown marker when the version is blank', () {
+      expect(
+        buildDivineUserAgent(appVersion: '  ', platform: 'iOS'),
         'Divine-Mobile/unknown (iOS)',
       );
     });

@@ -12,19 +12,24 @@ import 'package:funnelcake_api_client/src/platform_label_stub.dart'
 /// between call sites. Funnelcake logs `user_agent.original` and branches on
 /// it, so the string must change with the shipped version and name the OS.
 ///
-/// Cache note: `/api/videos` responses are edge-cached (`public, max-age=10`)
-/// and vary on `Accept-Encoding, X-Pubkey, Authorization` plus, once the
-/// divine-mobile#7744 counterpart (funnelcake#1047, news hack) lands,
-/// `X-Divine-Platform`; default and `sort=recent` responses also vary on
-/// `User-Agent` there, so a legacy `OpenVine-Mobile/1.0` binary can never
+/// Cache note: the corresponding server behavior is implemented by
+/// funnelcake#1047. `/api/videos` responses are edge-cached
+/// (`public, max-age=10`) and vary on `Accept-Encoding, X-Pubkey,
+/// Authorization, X-Divine-Platform`; default and `sort=recent` responses also
+/// vary on `User-Agent` there, so a legacy `OpenVine-Mobile/1.0` binary can never
 /// share a cached object with a browser or a platform-tokened client. The
 /// funnelcake branch and its `Vary` edits are one change and must land
 /// together, and before store binaries ship this header — otherwise the
 /// origin would serve per-platform responses while the edge stores one
 /// shared object, and iOS and Android clients would be served each other's
 /// cached videos.
-String buildDivineUserAgent({String? appVersion, String? platform}) =>
-    'Divine-Mobile/${appVersion ?? 'unknown'} (${platform ?? divinePlatformLabel})';
+String buildDivineUserAgent({String? appVersion, String? platform}) {
+  final trimmedVersion = appVersion?.trim();
+  final effectiveVersion = trimmedVersion == null || trimmedVersion.isEmpty
+      ? 'unknown'
+      : trimmedVersion;
+  return 'Divine-Mobile/$effectiveVersion (${platform ?? divinePlatformLabel})';
+}
 
 /// Builds the identity headers every Divine mobile HTTP client sends:
 /// the shared [buildDivineUserAgent] User-Agent plus, on io platforms, the
@@ -34,20 +39,12 @@ String buildDivineUserAgent({String? appVersion, String? platform}) =>
 ///
 /// Web builds send no `X-Divine-Platform`: it is not on the CORS safelist,
 /// so it would fail preflight against current backend CORS policy (see
-/// `divinePlatformToken` in the platform label implementations). Set
-/// [omitPlatformToken] to force that off even on io platforms (tests);
-/// pass [platformToken] to override the detected token.
-Map<String, String> buildDivineClientHeaders({
-  String? appVersion,
-  bool omitPlatformToken = false,
-  String? platformToken,
-}) {
+/// `divinePlatformToken` in the platform label implementations).
+Map<String, String> buildDivineClientHeaders({String? appVersion}) {
   final headers = <String, String>{
     'User-Agent': buildDivineUserAgent(appVersion: appVersion),
   };
-  final token = omitPlatformToken
-      ? null
-      : (platformToken ?? divinePlatformToken);
+  final token = divinePlatformToken;
   if (token != null) {
     headers['X-Divine-Platform'] = token;
   }

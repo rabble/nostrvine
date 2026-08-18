@@ -4,6 +4,7 @@
 import 'package:app_update_repository/app_update_repository.dart';
 import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -45,6 +46,7 @@ class DeviceScope {
     required this.database,
     required this.sharedPreferences,
     required this.switchController,
+    required this.appVersion,
     this.dbCipherKey,
     this.databaseCorruptionService,
     this.installSource = InstallSource.sideload,
@@ -61,6 +63,9 @@ class DeviceScope {
   final AppDatabase database;
 
   final SharedPreferences sharedPreferences;
+
+  /// App version resolved once from `PackageInfo` during bootstrap.
+  final String appVersion;
 
   /// The app-lifetime handle the UI calls to switch accounts. Device-scoped so
   /// it outlives — and drives — every container swap.
@@ -91,6 +96,7 @@ class DeviceScope {
   List<Override> get overrides => [
     databaseProvider.overrideWithValue(database),
     sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+    appVersionProvider.overrideWithValue(appVersion),
     dbCipherKeyProvider.overrideWithValue(dbCipherKey),
     databaseCorruptionServiceProvider.overrideWithValue(
       databaseCorruptionService,

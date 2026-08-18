@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/config/app_version.dart';
 import 'package:openvine/services/api_service.dart';
 
 // Mock classes
@@ -29,6 +28,7 @@ void main() {
       apiService = ApiService(
         client: mockClient,
         relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
+        appVersion: 'test',
       );
     });
 
@@ -93,6 +93,7 @@ void main() {
           final stagingService = ApiService(
             client: mockClient,
             relayManagerBaseUrl: 'https://api-relay-staging.divine.video',
+            appVersion: 'test',
           );
           final mockResponse = MockResponse();
           when(() => mockResponse.statusCode).thenReturn(200);
@@ -218,7 +219,7 @@ void main() {
           final injected = ApiService(
             client: mockClient,
             relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
-            appVersion: () => '1.0.20',
+            appVersion: '1.0.20',
           );
 
           final mockResponse = MockResponse();
@@ -247,42 +248,6 @@ void main() {
           expect(
             headers['X-Divine-Platform'],
             matches(RegExp(r'^(ios|android|macos|linux|windows|web)$')),
-          );
-        },
-      );
-
-      test(
-        'falls back to AppVersion.current on the wire when nothing is injected',
-        () async {
-          addTearDown(() => AppVersion.current = 'unknown');
-          AppVersion.current = '9.9.9';
-
-          final fallback = ApiService(
-            client: mockClient,
-            relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
-          );
-
-          final mockResponse = MockResponse();
-          when(() => mockResponse.statusCode).thenReturn(200);
-          when(() => mockResponse.body).thenReturn('{}');
-
-          when(
-            () => mockClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer((_) async => mockResponse);
-
-          await fallback.getMinorAccountReviewStatus();
-
-          final captured = verify(
-            () => mockClient.get(any(), headers: captureAny(named: 'headers')),
-          ).captured;
-          final headers = captured.whereType<Map<String, String>>().single;
-          expect(
-            headers['User-Agent'],
-            matches(
-              RegExp(
-                r'^Divine-Mobile/9\.9\.9 \((iOS|Android|macOS|Linux|Windows|Web)\)$',
-              ),
-            ),
           );
         },
       );

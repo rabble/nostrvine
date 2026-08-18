@@ -8,6 +8,7 @@ import 'package:openvine/blocs/background_publish/publish_foreground_session.dar
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
@@ -315,6 +316,7 @@ ApiService apiService(Ref ref) {
   final service = ApiService(
     authService: authService,
     relayManagerBaseUrl: environment.relayManagerApiUrl,
+    appVersion: ref.watch(appVersionProvider),
     client: ref.watch(instrumentedHttpClientFactoryProvider)(),
   );
   // Close the owned http.Client on rebuild (env switch) — in-flight requests

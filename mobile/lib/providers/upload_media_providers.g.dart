@@ -260,7 +260,7 @@ final class ApiServiceProvider
   }
 }
 
-String _$apiServiceHash() => r'8458d1d89858efc01eebb86ecf93b5f974d856fe';
+String _$apiServiceHash() => r'0fddb607412a0d082c7920f114735bc51a174ece';
 
 /// Crosspost API client for Bluesky toggle settings
 

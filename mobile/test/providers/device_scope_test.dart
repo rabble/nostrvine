@@ -5,6 +5,7 @@ import 'package:app_update_repository/app_update_repository.dart';
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
@@ -27,6 +28,7 @@ void main() {
       database: database,
       sharedPreferences: prefs,
       switchController: AccountSwitchController(),
+      appVersion: '1.2.3',
       installSource: InstallSource.playStore,
     );
   });
@@ -63,6 +65,16 @@ void main() {
 
     expect(a.read(installSourceProvider), InstallSource.playStore);
     expect(b.read(installSourceProvider), InstallSource.playStore);
+  });
+
+  test('every container reads the same app version override', () {
+    final a = buildAccountContainer(deviceScope);
+    addTearDown(a.dispose);
+    final b = buildAccountContainer(deviceScope);
+    addTearDown(b.dispose);
+
+    expect(a.read(appVersionProvider), '1.2.3');
+    expect(b.read(appVersionProvider), '1.2.3');
   });
 
   test('disposing a container does not close the shared database', () async {
