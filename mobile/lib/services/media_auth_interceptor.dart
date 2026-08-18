@@ -22,16 +22,20 @@ class MediaAuthInterceptor {
   final ContentFilterService _contentFilterService;
   final MediaViewerAuthService _mediaViewerAuthService;
 
+  /// Awaits the persisted verification and content-filter state so gate
+  /// decisions read loaded values rather than cold-start in-memory defaults.
+  Future<void> _awaitModerationServicesReady() => Future.wait([
+    _ageVerificationService.initialized,
+    _contentFilterService.initialized,
+  ]);
+
   /// Whether an age-restricted media surface can retry with viewer auth without
   /// asking the user to verify again.
   ///
   /// `hide` remains a hard block. Verified users with `warn` or `show`
   /// preferences can reuse their existing verification for playback auth.
   Future<bool> canAutoAuthorizeAdultMedia() async {
-    await Future.wait([
-      _ageVerificationService.initialized,
-      _contentFilterService.initialized,
-    ]);
+    await _awaitModerationServicesReady();
     return _mediaViewerAuthService.canCreateHeaders &&
         _ageVerificationService.isAdultContentVerified &&
         _contentFilterService.adultPlaybackPreference !=
@@ -49,10 +53,7 @@ class MediaAuthInterceptor {
     String? serverUrl,
   }) async {
     try {
-      await Future.wait([
-        _ageVerificationService.initialized,
-        _contentFilterService.initialized,
-      ]);
+      await _awaitModerationServicesReady();
 
       if (!_mediaViewerAuthService.canCreatePassiveHeaders ||
           !_ageVerificationService.isAdultContentVerified ||
@@ -138,10 +139,7 @@ class MediaAuthInterceptor {
         category: LogCategory.system,
       );
 
-      await Future.wait([
-        _ageVerificationService.initialized,
-        _contentFilterService.initialized,
-      ]);
+      await _awaitModerationServicesReady();
 
       final playbackPreference = _contentFilterService.adultPlaybackPreference;
 
