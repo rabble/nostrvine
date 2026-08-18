@@ -83,6 +83,7 @@ const legacyV1NormalizationRepairIndexes = <String>[
     PendingProductEvents,
     PendingGiftWraps,
     ProcessedGiftWraps,
+    RemovedConversations,
     PendingProfileSaves,
     IdentityEvents,
     IdentityVerifications,
@@ -112,6 +113,7 @@ const legacyV1NormalizationRepairIndexes = <String>[
     PendingProductEventsDao,
     PendingGiftWrapsDao,
     ProcessedGiftWrapsDao,
+    RemovedConversationsDao,
     PendingProfileSavesDao,
     IdentityEventsDao,
     IdentityVerificationsDao,
@@ -127,7 +129,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -190,6 +192,9 @@ class AppDatabase extends _$AppDatabase {
         await _repairSchemaV6();
         await _createConsolidatedIndexes();
         await _repairSchemaV8();
+      }
+      if (from < 9) {
+        await m.createTable(removedConversations);
       }
     },
     beforeOpen: (details) async {

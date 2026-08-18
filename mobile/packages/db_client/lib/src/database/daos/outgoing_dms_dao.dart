@@ -432,6 +432,32 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
     return (delete(outgoingDms)..where((t) => t.id.equals(id))).go();
   }
 
+  /// Deletes queued sends for one conversation and owner.
+  Future<int> deleteForConversation({
+    required String conversationId,
+    required String ownerPubkey,
+  }) {
+    return (delete(outgoingDms)..where(
+          (t) =>
+              t.conversationId.equals(conversationId) &
+              t.ownerPubkey.equals(ownerPubkey),
+        ))
+        .go();
+  }
+
+  /// Deletes queued sends for multiple conversations and one owner.
+  Future<int> deleteForConversations({
+    required Iterable<String> conversationIds,
+    required String ownerPubkey,
+  }) {
+    final ids = conversationIds.toList(growable: false);
+    if (ids.isEmpty) return Future.value(0);
+    return (delete(outgoingDms)..where(
+          (t) => t.conversationId.isIn(ids) & t.ownerPubkey.equals(ownerPubkey),
+        ))
+        .go();
+  }
+
   /// Delete every queued outgoing DM owned by [ownerPubkey].
   ///
   /// Mirrors [DirectMessagesDao.clearAllForUser]: the repository calls

@@ -1538,6 +1538,27 @@ class ProcessedGiftWraps extends Table {
   Set<Column> get primaryKey => {giftWrapId};
 }
 
+/// Owner-scoped record of a conversation the user removed locally.
+///
+/// Relay history is replayable, so deleting the conversation and message rows
+/// alone would make old NIP-17 and NIP-04 events eligible for ingestion again.
+/// The timestamp suppresses history through the removal instant while still
+/// allowing a genuinely newer message to reopen the conversation.
+class RemovedConversations extends Table {
+  @override
+  String get tableName => 'removed_conversations';
+
+  TextColumn get conversationId => text().named('conversation_id')();
+
+  TextColumn get ownerPubkey => text().named('owner_pubkey')();
+
+  /// Unix timestamp when the user removed the conversation.
+  IntColumn get removedAt => integer().named('removed_at')();
+
+  @override
+  Set<Column> get primaryKey => {conversationId, ownerPubkey};
+}
+
 /// Cache of the NIP-39 identity-claims source event per profile.
 ///
 /// One row per viewed profile, mirroring the latest identity event seen on

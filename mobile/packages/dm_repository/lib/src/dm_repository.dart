@@ -252,6 +252,7 @@ class DmRepository {
     OutgoingDmsDao? outgoingDmsDao,
     PendingGiftWrapsDao? pendingGiftWrapsDao,
     ProcessedGiftWrapsDao? processedGiftWrapsDao,
+    RemovedConversationsDao? removedConversationsDao,
     DmSyncState? syncState,
     NIP17MessageService? messageService,
     String? userPubkey,
@@ -273,6 +274,7 @@ class DmRepository {
        _outgoingDmsDao = outgoingDmsDao,
        _pendingGiftWrapsDao = pendingGiftWrapsDao,
        _processedGiftWrapsDao = processedGiftWrapsDao,
+       _removedConversationsDao = removedConversationsDao,
        _syncState = syncState,
        _messageService = messageService,
        _userPubkey = userPubkey ?? '',
@@ -315,6 +317,10 @@ class DmRepository {
   /// (a serial remote-signer RPC each). Nullable to keep older test fixtures
   /// working without rewiring. See #5452.
   final ProcessedGiftWrapsDao? _processedGiftWrapsDao;
+
+  /// Durable owner-scoped removal markers. Relay events are replayable, so a
+  /// hard delete without this ledger would restore the thread on restart.
+  final RemovedConversationsDao? _removedConversationsDao;
 
   final DmSyncState? _syncState;
   NIP17MessageService? _messageService;
@@ -1954,6 +1960,14 @@ class DmRepository {
           return;
         }
 
+        final removedAt = await _removedConversationsDao?.removedAtFor(
+          conversationId: conversationId,
+          ownerPubkey: _userPubkey,
+        );
+        if (removedAt != null && persistedCreatedAt <= removedAt) {
+          return;
+        }
+
         inserted = await _directMessagesDao.insertMessage(
           id: rumor.id,
           conversationId: conversationId,
@@ -2000,6 +2014,12 @@ class DmRepository {
           ownerPubkey: _userPubkey,
           dmProtocol: 'nip17',
         );
+        if (removedAt != null) {
+          await _removedConversationsDao?.clearFor(
+            conversationId: conversationId,
+            ownerPubkey: _userPubkey,
+          );
+        }
       });
 
       if (skippedByTransactionalGiftWrapDedup) {
@@ -2538,6 +2558,14 @@ class DmRepository {
           return;
         }
 
+        final removedAt = await _removedConversationsDao?.removedAtFor(
+          conversationId: conversationId,
+          ownerPubkey: _userPubkey,
+        );
+        if (removedAt != null && nip04Event.createdAt <= removedAt) {
+          return;
+        }
+
         inserted = await _directMessagesDao.insertMessage(
           id: nip04Event.id,
           conversationId: conversationId,
@@ -2569,6 +2597,12 @@ class DmRepository {
           ownerPubkey: _userPubkey,
           dmProtocol: existing?.dmProtocol ?? 'nip04',
         );
+        if (removedAt != null) {
+          await _removedConversationsDao?.clearFor(
+            conversationId: conversationId,
+            ownerPubkey: _userPubkey,
+          );
+        }
       });
 
       if (skippedByTransactionalGiftWrapDedup) {
@@ -5616,16 +5650,23 @@ class DmRepository {
     }
   }
 
-  /// Remove a conversation and all its messages atomically.
+  /// Remove a conversation, its messages, and queued sends atomically.
   ///
-  /// Deletes the messages first, then the conversation metadata
-  /// inside a single database transaction.
+  /// Records an owner-scoped tombstone first so relay replay cannot restore
+  /// history at or before the removal time. A newer message clears the marker
+  /// after it successfully recreates the conversation.
   ///
   /// Throws:
   ///
   /// * `InvalidDataException` if a database constraint is violated.
   Future<void> removeConversation(String conversationId) {
     return _conversationsDao.runInTransaction(() async {
+      final removedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await _removedConversationsDao?.record(
+        conversationId: conversationId,
+        ownerPubkey: _userPubkey,
+        removedAt: removedAt,
+      );
       await _directMessagesDao.deleteConversationMessages(
         conversationId,
         ownerPubkey: _ownerPubkey,
@@ -5634,10 +5675,14 @@ class DmRepository {
         conversationId,
         ownerPubkey: _ownerPubkey,
       );
+      await _outgoingDmsDao?.deleteForConversation(
+        conversationId: conversationId,
+        ownerPubkey: _userPubkey,
+      );
     });
   }
 
-  /// Remove multiple conversations and all their messages atomically.
+  /// Remove multiple conversations, messages, and queued sends atomically.
   ///
   /// No-op when [conversationIds] is empty.
   ///
@@ -5648,6 +5693,12 @@ class DmRepository {
     if (conversationIds.isEmpty) return Future.value();
 
     return _conversationsDao.runInTransaction(() async {
+      final removedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await _removedConversationsDao?.recordAll(
+        conversationIds: conversationIds,
+        ownerPubkey: _userPubkey,
+        removedAt: removedAt,
+      );
       await _directMessagesDao.deleteMultipleConversationMessages(
         conversationIds,
         ownerPubkey: _ownerPubkey,
@@ -5655,6 +5706,10 @@ class DmRepository {
       await _conversationsDao.deleteMultiple(
         conversationIds,
         ownerPubkey: _ownerPubkey,
+      );
+      await _outgoingDmsDao?.deleteForConversations(
+        conversationIds: conversationIds,
+        ownerPubkey: _userPubkey,
       );
     });
   }

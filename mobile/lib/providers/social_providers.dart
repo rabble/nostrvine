@@ -729,6 +729,12 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           'processedGiftWraps',
           db.processedGiftWrapsDao.clearAll,
         );
+        if (deleteUserData && userPubkey != null) {
+          await safeCleanup(
+            'removedConversations',
+            () => db.removedConversationsDao.clearAllForUser(userPubkey),
+          );
+        }
         // Reaction rows keep decrypted rumor payloads (rumor_event_json). Most
         // are re-fetchable DM data and should be wiped with direct_messages,
         // but retryable own rows are also the outgoing queue for unpublished

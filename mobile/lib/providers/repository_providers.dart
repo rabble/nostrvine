@@ -663,6 +663,7 @@ DmRepository dmRepository(Ref ref) {
     outgoingDmsDao: db.outgoingDmsDao,
     pendingGiftWrapsDao: db.pendingGiftWrapsDao,
     processedGiftWrapsDao: db.processedGiftWrapsDao,
+    removedConversationsDao: db.removedConversationsDao,
     syncState: DmSyncState(prefs),
     reactionsRepository: reactionsRepository,
     publishDmRelayListEnabled: publishDmRelayListEnabled,
