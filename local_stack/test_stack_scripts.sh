@@ -83,7 +83,7 @@ assert_stderr_lacks() {
 # are left out on purpose: each case links in the ones it wants to exist.
 link_core_tools() {
     local tool path
-    for tool in bash cat awk sed grep tr uname python3 dirname mktemp tee tail rm; do
+    for tool in bash cat awk sed grep tr uname python3 dirname mktemp tee tail rm sleep; do
         path="$(command -v "$tool" || true)"
         if [[ -z "$path" ]]; then
             echo "ERROR: ${tool} is required to run these checks" >&2
@@ -529,6 +529,32 @@ if [[ "$(cat "${FIXTURES}/up_count")" != "2" ]]; then
         "up attempts: $(cat "${FIXTURES}/up_count")"
 fi
 assert_stderr_contains 'Retrying in 5s (attempt 2 of 3).' "the retry should be announced"
+
+# --- up.sh retries but exits after MAX_ATTEMPTS (3) ---------------------------
+
+reset_fixtures
+with_tools lsof
+: >"${FIXTURES}/docker_ps.txt"
+: >"${FIXTURES}/lsof.txt"
+# All three attempts fail due to transient DNS resolution
+echo 1 >"${FIXTURES}/rc_up_1"
+echo 1 >"${FIXTURES}/rc_up_2"
+echo 1 >"${FIXTURES}/rc_up_3"
+echo 'dependency failed to start' >"${FIXTURES}/up_output_1.txt"
+echo 'dependency failed to start' >"${FIXTURES}/up_output_2.txt"
+echo 'dependency failed to start' >"${FIXTURES}/up_output_3.txt"
+cat >"${FIXTURES}/compose_ps_pipe.txt" <<'PS'
+funnelcake-migrate|exited|1
+PS
+echo 'lookup funnelcake-clickhouse on 127.0.0.11:53: no such host' >"${FIXTURES}/logs_funnelcake-migrate.txt"
+run_up_sh
+
+assert_status 1 "$last_status" "up.sh should exit with non-zero after exhausting MAX_ATTEMPTS"
+if [[ "$(cat "${FIXTURES}/up_count")" != "3" ]]; then
+    fail "up.sh should attempt exactly MAX_ATTEMPTS (3) times"         "up attempts: $(cat "${FIXTURES}/up_count")"
+fi
+assert_stderr_contains 'Retrying in 5s (attempt 2 of 3).' "should retry on attempt 2"
+assert_stderr_contains 'Retrying in 5s (attempt 3 of 3).' "should retry on attempt 3"
 
 # --- Current schema with partial tuning warns --------------------------------
 

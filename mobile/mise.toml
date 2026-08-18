@@ -63,6 +63,10 @@ bash ../local_stack/test_stack_scripts.sh
 bash ../local_stack/test_android_scripts.sh
 """
 
+[tasks.test_stack]
+description = "Run local stack shell script tests"
+run = "bash ../local_stack/test_stack_scripts.sh"
+
 [tasks.local_token]
 description = "Get verification token for an email from local DB"
 run = """
