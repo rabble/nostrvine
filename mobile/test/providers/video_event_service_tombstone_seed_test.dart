@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,10 +58,9 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
 
       container = ProviderContainer(
-        overrides: [
-          ...getStandardTestOverrides(mockSharedPreferences: prefs),
-          appVersionProvider.overrideWithValue('test'),
-        ].cast(),
+        overrides: getStandardTestOverrides(
+          mockSharedPreferences: prefs,
+        ).cast(),
       );
     });
 
