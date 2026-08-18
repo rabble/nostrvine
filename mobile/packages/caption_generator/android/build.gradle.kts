@@ -15,7 +15,7 @@ val flutterRoot = providers.environmentVariable("FLUTTER_ROOT")
     .orElse(providers.environmentVariable("FLUTTER_HOME"))
     .orNull
     ?: throw GradleException("FLUTTER_ROOT must be set to compile caption_generator")
-val flutterEmbeddingJar =
+val flutterDebugEmbeddingJar =
     file("$flutterRoot/bin/cache/artifacts/engine/android-arm64/flutter.jar")
 
 android {
@@ -49,8 +49,8 @@ android {
 }
 
 dependencies {
-    compileOnly(files(flutterEmbeddingJar))
-    testImplementation(files(flutterEmbeddingJar))
+    compileOnly(files(flutterDebugEmbeddingJar))
+    testImplementation(files(flutterDebugEmbeddingJar))
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
     testImplementation("org.robolectric:robolectric:4.14.1")

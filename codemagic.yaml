@@ -29,6 +29,16 @@
 # 9 - Android publishing reads the service account from environment variable
 #     group "google_play_credentials":
 #   - GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+# 10 - Create environment variable group "shorebird_credentials" with:
+#   - SHOREBIRD_TOKEN (mark as secure) — an API key from the Shorebird
+#     console under Account > API Keys. `shorebird login:ci` is removed;
+#     CI authenticates with API keys only.
+#   - SHOREBIRD_PATCH_PUBLIC_KEY (public PEM used by `shorebird release`)
+#   - SHOREBIRD_PATCH_PRIVATE_KEY (secure private PEM used by `shorebird patch`)
+#     Store each PEM as a single-line value whose newlines are written as
+#     literal `\n` sequences. The CI step validates the decoded PEM envelope.
+#   The key must belong to an account with access to the app_id in
+#   mobile/shorebird.yaml, which lives in the Divine organization.
 #
 # Every group named under a workflow's `groups:` key must appear in this
 # checklist. Codemagic validates this whole file before it provisions a machine,
@@ -153,22 +163,177 @@ definitions:
         } >> "$GRADLE_HOME/gradle.properties"
         echo "Effective $GRADLE_HOME/gradle.properties:"
         cat "$GRADLE_HOME/gradle.properties"
-    - &build_apk
-      name: Build Android APK
+    - &shorebird_install
+      name: Install Shorebird
       script: |
-        flutter build apk --release --split-per-abi --build-number=$PROJECT_BUILD_NUMBER \
-          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
-          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
-          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
-          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
-          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
-    - &build_aab
-      name: Build Android AAB
+        set -euo pipefail
+        SHOREBIRD_BIN="$HOME/.shorebird/bin/shorebird"
+        EXPECTED_SHOREBIRD_VERSION="Shorebird 1.6.117"
+        SHOREBIRD_VERSION_OUTPUT=""
+        if [ -x "$SHOREBIRD_BIN" ]; then
+          SHOREBIRD_VERSION_OUTPUT=$("$SHOREBIRD_BIN" --version 2>/dev/null || true)
+        fi
+        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
+          curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash -s -- --force
+          SHOREBIRD_VERSION_OUTPUT=$("$SHOREBIRD_BIN" --version)
+        fi
+        echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
+        echo "$SHOREBIRD_VERSION_OUTPUT"
+        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
+          echo "ERROR: expected $EXPECTED_SHOREBIRD_VERSION; update and validate the pinned version before continuing."
+          exit 1
+        fi
+    - &write_shorebird_dart_defines
+      name: Write Shorebird dart-defines
       script: |
-        # Use the latest Play versionCode as the primary source of truth.
+        mkdir -p build/shorebird
+        DEFAULT_ENV="${{ inputs.DEFAULT_ENV }}" ruby <<'RUBY'
+        require 'json'
+
+        required_names = %w[
+          ZENDESK_APP_ID
+          ZENDESK_CLIENT_ID
+          ZENDESK_URL
+          PROOFMODE_SIGNING_SERVER_ENDPOINT
+          PROOFMODE_SIGNING_SERVER_TOKEN
+        ]
+
+        optional_names = %w[
+          SUPPORTERS_API_BASE_URL
+          FF_DIVINE_SUPPORTERS
+        ]
+
+        missing = required_names.reject { |name| ENV.key?(name) && !ENV.fetch(name).empty? }
+        unless missing.empty?
+          abort("missing Shorebird dart-define environment variables: #{missing.join(', ')}")
+        end
+
+        defines = required_names.to_h { |name| [name, ENV.fetch(name)] }
+        optional_names.each do |name|
+          defines[name] = ENV.fetch(name, '')
+        end
+        defines['DEFAULT_ENV'] = ENV.fetch('DEFAULT_ENV')
+
+        File.write(
+          'build/shorebird/dart_defines.json',
+          JSON.pretty_generate(defines) + "\n",
+        )
+        File.chmod(0o600, 'build/shorebird/dart_defines.json')
+        RUBY
+    - &write_shorebird_public_key
+      name: Write Shorebird patch public key
+      script: |
+        mkdir -p build/shorebird
+        ruby <<'RUBY'
+        keys = {
+          'SHOREBIRD_PATCH_PUBLIC_KEY' => 'build/shorebird/patch_public_key.pem',
+        }
+
+        missing = keys.keys.reject { |name| ENV.key?(name) && !ENV.fetch(name).empty? }
+        unless missing.empty?
+          abort("missing Shorebird patch signing variables: #{missing.join(', ')}")
+        end
+
+        keys.each do |name, path|
+          pem = ENV.fetch(name).gsub('\\n', "\n")
+          unless pem.match?(/\A-----BEGIN PUBLIC KEY-----\n.+\n-----END PUBLIC KEY-----\n?\z/m)
+            abort("invalid PEM encoding for #{name}; use literal \\n sequences")
+          end
+          File.write(path, pem)
+          File.chmod(0o644, path)
+        end
+        RUBY
+    - &write_shorebird_private_key
+      name: Write Shorebird patch private key
+      script: |
+        mkdir -p build/shorebird
+        ruby <<'RUBY'
+        name = 'SHOREBIRD_PATCH_PRIVATE_KEY'
+        path = 'build/shorebird/patch_private_key.pem'
+        unless ENV.key?(name) && !ENV.fetch(name).empty?
+          abort("missing Shorebird patch signing variable: #{name}")
+        end
+        pem = ENV.fetch(name).gsub('\\n', "\n")
+        unless pem.match?(/\A-----BEGIN (?:EC |RSA )?PRIVATE KEY-----\n.+\n-----END (?:EC |RSA )?PRIVATE KEY-----\n?\z/m)
+          abort("invalid PEM encoding for #{name}; use literal \\n sequences")
+        end
+        File.write(path, pem)
+        File.chmod(0o600, path)
+        RUBY
+    - &prepare_patch_source
+      name: Verify patch source
+      script: |
+        if [ "$CM_BRANCH" != "main" ]; then
+          echo "Refusing to patch from branch '$CM_BRANCH'."
+          echo "Patch workflows must run from main after the fix has merged."
+          exit 1
+        fi
+        if [ -z "${{ inputs.RELEASE_COMMIT }}" ]; then
+          echo "Refusing to patch: RELEASE_COMMIT is required."
+          echo "Use the git commit that produced the target store release."
+          exit 1
+        fi
+        if ! printf '%s\n' "${{ inputs.RELEASE_COMMIT }}" | grep -Eq '^[0-9a-fA-F]{40}$'; then
+          echo "Refusing to patch: RELEASE_COMMIT must be a full 40-character commit SHA."
+          exit 1
+        fi
+        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+          git fetch --quiet --unshallow origin main
+        else
+          git fetch --quiet origin main
+        fi
+        if ! git cat-file -e "${{ inputs.RELEASE_COMMIT }}^{commit}" 2>/dev/null; then
+          echo "Refusing to patch: RELEASE_COMMIT '${{ inputs.RELEASE_COMMIT }}' is not a commit in this checkout."
+          exit 1
+        fi
+        if ! git merge-base --is-ancestor "${{ inputs.RELEASE_COMMIT }}" HEAD; then
+          echo "Refusing to patch: RELEASE_COMMIT must be an ancestor of HEAD."
+          echo "release commit: ${{ inputs.RELEASE_COMMIT }}"
+          echo "current head:    $(git rev-parse HEAD)"
+          exit 1
+        fi
+        BLOCKED_PATCH_PATHS=$(git diff --name-only "${{ inputs.RELEASE_COMMIT }}..HEAD" -- \
+          'android/**' \
+          'ios/**' \
+          'macos/**' \
+          'web/**' \
+          'assets/**' \
+          'shaders/**' \
+          'pubspec.yaml' \
+          'pubspec.lock' \
+          'shorebird.yaml' \
+          'packages/**/android/**' \
+          'packages/**/assets/**' \
+          'packages/**/shaders/**' \
+          'packages/**/darwin/**' \
+          'packages/**/ios/**' \
+          'packages/**/macos/**' \
+          'packages/**/pubspec.yaml')
+        if [ -n "$BLOCKED_PATCH_PATHS" ]; then
+          echo "Refusing to patch: this diff contains native, asset, dependency, or Shorebird config changes."
+          echo
+          echo "$BLOCKED_PATCH_PATHS"
+          echo
+          echo "Cut a normal store release instead of a Shorebird patch."
+          exit 1
+        fi
+        echo "Patch source diff from release commit to current HEAD:"
+        git log --oneline --no-merges "${{ inputs.RELEASE_COMMIT }}..HEAD"
+        if git diff --quiet "${{ inputs.RELEASE_COMMIT }}..HEAD" -- '*.dart'; then
+          echo "No Dart changes found between release commit and HEAD."
+        else
+          echo
+          echo "Dart files changed since the release commit:"
+          git diff --name-only "${{ inputs.RELEASE_COMMIT }}..HEAD" -- '*.dart'
+        fi
+    - &preflight_shorebird_android_release
+      name: Preflight Android Shorebird release
+      script: |
+        BUILD_NAME=$(ruby -ne 'if $_ =~ /^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\+/; puts $1; exit; end' pubspec.yaml)
+        if [ -z "$BUILD_NAME" ]; then
+          echo "ERROR: could not read build name from pubspec.yaml version."
+          exit 1
+        fi
         LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "co.openvine.app" 2>/dev/null || true)
         BUILD_NUMBER=$PROJECT_BUILD_NUMBER
         case "$LATEST_GOOGLE_PLAY_BUILD_NUMBER" in
@@ -181,15 +346,142 @@ definitions:
             fi
             ;;
         esac
-        flutter build appbundle --release --build-number=$BUILD_NUMBER \
-          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
-          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
-          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
-          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
-          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
+        RELEASE_VERSION="$BUILD_NAME+$BUILD_NUMBER"
+        {
+          echo "SHOREBIRD_BUILD_NAME=$BUILD_NAME"
+          echo "SHOREBIRD_BUILD_NUMBER=$BUILD_NUMBER"
+          echo "SHOREBIRD_RELEASE_VERSION=$RELEASE_VERSION"
+        } > build/shorebird/android_release.env
+        echo "Android Shorebird release version: $RELEASE_VERSION"
+        if ! shorebird releases list --platform=android --json > build/shorebird/release_info.json 2> build/shorebird/release_info.err; then
+          echo "ERROR: could not list existing Shorebird releases."
+          if [ -s build/shorebird/release_info.err ]; then
+            sed 's/^/stderr: /' build/shorebird/release_info.err
+          fi
+          if [ -s build/shorebird/release_info.json ]; then
+            sed 's/^/stdout: /' build/shorebird/release_info.json
+          fi
+          exit 1
+        fi
+        ruby scripts/shorebird_release_preflight.rb build/shorebird/release_info.json android "$RELEASE_VERSION"
+    - &preflight_shorebird_ios_release
+      name: Preflight iOS Shorebird release
+      script: |
+        set -euo pipefail
+        BUILD_NAME=$(ruby -ne 'if $_ =~ /^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\+/; puts $1; exit; end' pubspec.yaml)
+        if [ -z "$BUILD_NAME" ]; then
+          echo "ERROR: could not read build name from pubspec.yaml version."
+          exit 1
+        fi
+        APP_STORE_APP_ID=6747959501 # co.openvine.app
+        ASC_LOOKUP_LOG=$(mktemp)
+        ASC_STORE_VERSION_JSON=$(mktemp)
+        trap 'rm -f "$ASC_LOOKUP_LOG" "$ASC_STORE_VERSION_JSON"' EXIT
+        if ! app-store-connect get-latest-app-store-build-number "$APP_STORE_APP_ID" \
+          --platform=IOS --include-version --json > "$ASC_STORE_VERSION_JSON" 2>"$ASC_LOOKUP_LOG"; then
+          echo "ERROR: could not read the latest approved App Store version."
+          if [ -s "$ASC_LOOKUP_LOG" ]; then
+            echo "       App Store Connect lookup output:"
+            sed 's/^/       /' "$ASC_LOOKUP_LOG"
+          fi
+          echo "       Refusing to create a Shorebird release that Apple may reject after the build."
+          exit 1
+        fi
+        ruby scripts/ios_store_version_preflight.rb "$ASC_STORE_VERSION_JSON" "$BUILD_NAME"
+        : > "$ASC_LOOKUP_LOG"
+        if ! LATEST_IOS_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$APP_STORE_APP_ID" 2>"$ASC_LOOKUP_LOG"); then
+          LATEST_IOS_BUILD_NUMBER=
+        fi
+        case "$LATEST_IOS_BUILD_NUMBER" in
+          ''|*[!0-9]*)
+            echo "ERROR: could not read the latest App Store Connect build number."
+            if [ -s "$ASC_LOOKUP_LOG" ]; then
+              echo "       App Store Connect lookup output:"
+              sed 's/^/       /' "$ASC_LOOKUP_LOG"
+            fi
+            echo "       Refusing to guess a build number Apple may reject after upload."
+            exit 1
+            ;;
+          *)
+            BUILD_NUMBER=$((LATEST_IOS_BUILD_NUMBER + 1))
+            ;;
+        esac
+        RELEASE_VERSION="$BUILD_NAME+$BUILD_NUMBER"
+        {
+          echo "SHOREBIRD_BUILD_NAME=$BUILD_NAME"
+          echo "SHOREBIRD_BUILD_NUMBER=$BUILD_NUMBER"
+          echo "SHOREBIRD_RELEASE_VERSION=$RELEASE_VERSION"
+        } > build/shorebird/ios_release.env
+        echo "iOS Shorebird release version: $RELEASE_VERSION"
+        if ! shorebird releases list --platform=ios --json > build/shorebird/release_info.json 2> build/shorebird/release_info.err; then
+          echo "ERROR: could not list existing Shorebird releases."
+          if [ -s build/shorebird/release_info.err ]; then
+            sed 's/^/stderr: /' build/shorebird/release_info.err
+          fi
+          if [ -s build/shorebird/release_info.json ]; then
+            sed 's/^/stdout: /' build/shorebird/release_info.json
+          fi
+          exit 1
+        fi
+        ruby scripts/shorebird_release_preflight.rb build/shorebird/release_info.json ios "$RELEASE_VERSION"
+    - &build_apk
+      name: Build Android APK
+      script: |
+        # Deliberately NOT a Shorebird release. Shorebird has no
+        # --split-per-abi; its Android artifact is either an AAB or one
+        # universal APK. These per-ABI APKs go to Zapstore / direct download,
+        # so those installs are not patchable. Play (the AAB below) is.
+        flutter build apk --release --split-per-abi --build-number=$PROJECT_BUILD_NUMBER \
+          --dart-define-from-file=build/shorebird/dart_defines.json
+    - &build_aab
+      name: Build Android AAB (Shorebird release)
+      script: |
+        set -euo pipefail
+        # Use the latest Play versionCode as the primary source of truth.
+        . build/shorebird/android_release.env
+        BUILD_NAME=$SHOREBIRD_BUILD_NAME
+        BUILD_NUMBER=$SHOREBIRD_BUILD_NUMBER
+        echo "Android build number: $BUILD_NUMBER (release: $SHOREBIRD_RELEASE_VERSION)"
+        # Shorebird wraps `flutter build appbundle` with its own engine so the
+        # release carries the updater. A plain `flutter build` here would ship
+        # a permanently unpatchable version to Play.
+        shorebird release android --flutter-version=$FLUTTER_VERSION --build-name=$BUILD_NAME --build-number=$BUILD_NUMBER \
+          --dart-define-from-file=build/shorebird/dart_defines.json \
+          --public-key-path=build/shorebird/patch_public_key.pem
+    - &confirm_patch
+      name: Confirm patch to production
+      script: |
+        # Runs first so a mis-clicked workflow fails in seconds rather than
+        # after pod install / Gradle setup.
+        if [ "${{ inputs.CONFIRM_PATCH }}" != "YES" ]; then
+          echo "Refusing to patch: CONFIRM_PATCH is '${{ inputs.CONFIRM_PATCH }}', expected YES."
+          echo
+          echo "A patch reaches every install of release ${{ inputs.RELEASE_VERSION }}"
+          echo "within about one app launch, including App Store and Play"
+          echo "production users. There is no store review; rollback exists but"
+          echo "is an emergency mitigation, not a substitute for validation."
+          echo
+          echo "Re-run with CONFIRM_PATCH=YES if that is what you intend."
+          exit 1
+        fi
+        if ! printf '%s\n' "${{ inputs.RELEASE_VERSION }}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$'; then
+          echo "Refusing to patch: RELEASE_VERSION must look like 1.0.9+247."
+          echo "Got: '${{ inputs.RELEASE_VERSION }}'"
+          exit 1
+        fi
+        echo "Patching release ${{ inputs.RELEASE_VERSION }} with DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}."
+    - &patch_android
+      name: Patch Android (Shorebird)
+      script: |
+        # No --flutter-version: a patch is compiled against the Flutter version
+        # its release was built with, which Shorebird resolves from the release.
+        # The dart-defines must match the release's or the patch changes app
+        # behaviour beyond the code fix. Shorebird refuses to patch when it
+        # detects native or asset diffs; do NOT add --allow-native-diffs or
+        # --allow-asset-diffs to force past that — cut a new release instead.
+        shorebird patch android --release-version=${{ inputs.RELEASE_VERSION }} --track=staging \
+          --dart-define-from-file=build/shorebird/dart_defines.json \
+          --private-key-path=build/shorebird/patch_private_key.pem
     - &build_macos
       name: Build macOS app
       script: |
@@ -260,44 +552,28 @@ definitions:
             "${ARTIFACTS[@]}"
         fi
     - &build_ios
-      name: Build and sign iOS
+      name: Build and sign iOS (Shorebird release)
       script: |
-        # App Store Connect is the source of truth, mirroring the Play lookup in
-        # the AAB step. Apple rejects any upload whose build number does not
-        # exceed the last one accepted for the version train, and it does so
-        # *after* the upload succeeds — so a stale number costs a full build and
-        # an emailed rejection rather than a fast failure.
-        APP_STORE_APP_ID=6747959501 # co.openvine.app
-        ASC_LOOKUP_LOG=$(mktemp)
-        trap 'rm -f "$ASC_LOOKUP_LOG"' EXIT
-        if ! LATEST_IOS_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$APP_STORE_APP_ID" 2>"$ASC_LOOKUP_LOG"); then
-          LATEST_IOS_BUILD_NUMBER=
-        fi
-        case "$LATEST_IOS_BUILD_NUMBER" in
-          ''|*[!0-9]*)
-            echo "ERROR: could not read the latest App Store Connect build number."
-            if [ -s "$ASC_LOOKUP_LOG" ]; then
-              echo "       App Store Connect lookup output:"
-              sed 's/^/       /' "$ASC_LOOKUP_LOG"
-            fi
-            echo "       Refusing to guess a build number Apple may reject after upload."
-            exit 1
-            ;;
-          *)
-            NEXT_IOS_BUILD_NUMBER=$((LATEST_IOS_BUILD_NUMBER + 1))
-            BUILD_NUMBER=$NEXT_IOS_BUILD_NUMBER
-            ;;
-        esac
-        echo "iOS build number: $BUILD_NUMBER (App Store Connect latest: ${LATEST_IOS_BUILD_NUMBER:-unknown})"
-        flutter build ipa --release --build-number=$BUILD_NUMBER \
-          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
-          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
-          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
-          --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
-          --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS \
+        set -euo pipefail
+        . build/shorebird/ios_release.env
+        BUILD_NAME=$SHOREBIRD_BUILD_NAME
+        BUILD_NUMBER=$SHOREBIRD_BUILD_NUMBER
+        echo "iOS build number: $BUILD_NUMBER (release: $SHOREBIRD_RELEASE_VERSION)"
+        # Shorebird wraps `flutter build ipa` with its own engine so the release
+        # carries the updater. A plain `flutter build` here would ship a
+        # permanently unpatchable version to TestFlight and the App Store.
+        shorebird release ios --flutter-version=$FLUTTER_VERSION --build-name=$BUILD_NAME --build-number=$BUILD_NUMBER \
+          --dart-define-from-file=build/shorebird/dart_defines.json \
+          --public-key-path=build/shorebird/patch_public_key.pem \
+          --export-options-plist=/Users/builder/export_options.plist
+    - &patch_ios
+      name: Patch iOS (Shorebird)
+      script: |
+        # See the Android patch step for why there is no --flutter-version and
+        # why the dart-defines must match the release's.
+        shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} --track=staging \
+          --dart-define-from-file=build/shorebird/dart_defines.json \
+          --private-key-path=build/shorebird/patch_private_key.pem \
           --export-options-plist=/Users/builder/export_options.plist
     - &upload_dsyms_to_crashlytics
       name: Upload dSYMs to Firebase Crashlytics
@@ -582,14 +858,19 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       xcode: latest
       cocoapods: default
       groups:
         - zendesk_credentials
         - proofmode_credentials
         - github_credentials
+        - shorebird_credentials
       vars:
+        # Must match `flutter:` above. Shorebird ships its own Flutter, so the
+        # release is only reproducible if we pin it to the same version
+        # Codemagic provisioned.
+        FLUTTER_VERSION: 3.44.9
         BUNDLE_ID: co.openvine.app
         IOS_EXTENSION_BUNDLE_IDS: >-
           co.openvine.app.NotificationServiceExtension
@@ -600,18 +881,23 @@ workflows:
     cache:
       cache_paths:
         - $HOME/Library/Caches/CocoaPods
+        - $HOME/.shorebird
         - $HOME/.pub-cache
     triggering:
       events: []
     scripts:
+      - *shorebird_install
       - *check_signing_endpoint
       - *check_supporters_config
       - *check_ios_extension_signing_contract
+      - *write_shorebird_public_key
+      - *preflight_shorebird_ios_release
       - *setup_code_signing_xcode
       - *clean_ios_workspace_state
       - *enable_spm
       - *prepare_ios_spm_packages
       - *pod_install
+      - *write_shorebird_dart_defines
       - *build_ios
       - *upload_dsyms_to_crashlytics
       - *publish_github_release
@@ -647,7 +933,7 @@ workflows:
           - TEST
           - POC
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       xcode: latest
       cocoapods: default
       groups:
@@ -696,27 +982,36 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       java: 17
       groups:
         - zendesk_credentials
         - google_play_credentials
         - proofmode_credentials
         - github_credentials
+        - shorebird_credentials
+      vars:
+        # Must match `flutter:` above — see the iOS workflow for why.
+        FLUTTER_VERSION: 3.44.9
       android_signing:
         - divine_keystore
     cache:
       cache_paths:
         - $HOME/.gradle/caches
+        - $HOME/.shorebird
         - $HOME/.pub-cache
     triggering:
       events: []
     scripts:
+      - *shorebird_install
       - *check_signing_endpoint
       - *check_supporters_config
       - *enable_spm
       - *setup_local_properties
       - *configure_gradle_memory
+      - *write_shorebird_public_key
+      - *preflight_shorebird_android_release
+      - *write_shorebird_dart_defines
       - *build_apk
       - *build_aab
       - *publish_github_release
@@ -734,6 +1029,162 @@ workflows:
         # on every track). A draft upload succeeds; promote it to a live
         # release in the Play Console after completing that declaration.
         submit_as_draft: true
+
+  # Patch workflows ship a Dart-only fix to an already-released build over the
+  # air. They publish to Shorebird, not to Play or the App Store, and are
+  # manual-trigger only. The workflows publish to the Shorebird staging track;
+  # promoting to stable reaches users within one app launch, so it should be a
+  # deliberate act, never a side effect of a push.
+  #
+  # A patch can only target a release that was cut by `shorebird release`
+  # (the AAB and IPA steps above). Per-ABI APKs from the Zapstore path are
+  # plain flutter builds and cannot be patched.
+  ios-patch:
+    name: iOS Patch (Shorebird)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: API key for Codemagic # Setup in Codemagic UI
+    inputs:
+      CONFIRM_PATCH:
+        description: >-
+          Must be YES to proceed. Guards against a mis-clicked workflow — a
+          patch ships with no store review and rollback is only an emergency
+          mitigation.
+        type: choice
+        default: "NO"
+        options:
+          - "NO"
+          - "YES"
+      RELEASE_VERSION:
+        description: >-
+          Release to patch, exactly as Shorebird lists it, including the build
+          number (e.g. 1.0.9+247). Get it from `shorebird releases list` or the
+          Shorebird console — a value with no matching release fails the build.
+        type: string
+      RELEASE_COMMIT:
+        description: >-
+          Git commit that produced the target store release. The workflow
+          prints every commit and Dart file that will be included in the patch
+          beyond this release commit.
+        type: string
+      DEFAULT_ENV:
+        description: >-
+          Must match the value the target release was built with. A mismatch
+          silently repoints patched installs at a different environment.
+        type: choice
+        default: PRODUCTION
+        options:
+          - PRODUCTION
+          - STAGING
+          - TEST
+          - POC
+    environment:
+      flutter: 3.44.9
+      xcode: latest
+      cocoapods: default
+      groups:
+        - zendesk_credentials
+        - proofmode_credentials
+        - shorebird_credentials
+      vars:
+        BUNDLE_ID: co.openvine.app
+        IOS_EXTENSION_BUNDLE_IDS: >-
+          co.openvine.app.NotificationServiceExtension
+          co.openvine.app.CameraQuickActionWidget
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: co.openvine.app
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/.shorebird
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *confirm_patch
+      - *prepare_patch_source
+      - *shorebird_install
+      - *check_signing_endpoint
+      - *check_supporters_config
+      - *check_ios_extension_signing_contract
+      - *write_shorebird_private_key
+      - *setup_code_signing_xcode
+      - *clean_ios_workspace_state
+      - *enable_spm
+      - *prepare_ios_spm_packages
+      - *pod_install
+      - *write_shorebird_dart_defines
+      - *patch_ios
+
+  android-patch:
+    name: Android Patch (Shorebird)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: mac_mini_m4
+    inputs:
+      CONFIRM_PATCH:
+        description: >-
+          Must be YES to proceed. Guards against a mis-clicked workflow — a
+          patch ships with no store review and rollback is only an emergency
+          mitigation.
+        type: choice
+        default: "NO"
+        options:
+          - "NO"
+          - "YES"
+      RELEASE_VERSION:
+        description: >-
+          Release to patch, exactly as Shorebird lists it, including the build
+          number (e.g. 1.0.9+247). Get it from `shorebird releases list` or the
+          Shorebird console — a value with no matching release fails the build.
+        type: string
+      RELEASE_COMMIT:
+        description: >-
+          Git commit that produced the target store release. The workflow
+          prints every commit and Dart file that will be included in the patch
+          beyond this release commit.
+        type: string
+      DEFAULT_ENV:
+        description: >-
+          Must match the value the target release was built with. A mismatch
+          silently repoints patched installs at a different environment.
+        type: choice
+        default: PRODUCTION
+        options:
+          - PRODUCTION
+          - STAGING
+          - TEST
+          - POC
+    environment:
+      flutter: 3.44.9
+      java: 17
+      groups:
+        - zendesk_credentials
+        - proofmode_credentials
+        - shorebird_credentials
+      android_signing:
+        - divine_keystore
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $HOME/.shorebird
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *confirm_patch
+      - *prepare_patch_source
+      - *shorebird_install
+      - *check_signing_endpoint
+      - *check_supporters_config
+      - *setup_local_properties
+      - *configure_gradle_memory
+      - *write_shorebird_private_key
+      - *write_shorebird_dart_defines
+      - *patch_android
 
   macos-build:
     name: macOS Build
@@ -758,7 +1209,7 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       xcode: latest
       cocoapods: default
       groups:
@@ -796,7 +1247,7 @@ workflows:
     max_build_duration: 25
     instance_type: mac_mini_m2
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       # Pinned alongside MAESTRO_VERSION. The compatibility contract has two
       # sides: 2.1.0 cannot drive Xcode 26.x, and `latest` floating means a
       # Codemagic image bump can break the suite with no commit on our side —
@@ -868,7 +1319,7 @@ workflows:
     max_build_duration: 60
     instance_type: linux_x2
     environment:
-      flutter: 3.44.0
+      flutter: 3.44.9
       java: 17
       groups:
         - zendesk_credentials

@@ -83,6 +83,13 @@ jobs:
         # undeclared group fails every workflow in the file and no in-script
         # guard can catch it (#7203).
         run: bash mobile/scripts/check_codemagic_groups.sh
+  ci-config-tests:
+    name: CI Configuration Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run CI configuration unit tests
+        run: python3 -m unittest discover -s .github/scripts/tests
 
   generated-files:
     name: Generated Files
@@ -102,7 +109,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
@@ -315,7 +322,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
@@ -339,7 +346,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
@@ -365,7 +372,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
@@ -491,7 +498,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.0"
+          flutter-version: "3.44.9"
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
@@ -542,6 +549,7 @@ jobs:
     needs:
       - changes
       - codemagic-groups
+      - ci-config-tests
       - generated-files
       - format
       - analyze
@@ -554,6 +562,7 @@ jobs:
         env:
           CODEMAGIC_GROUPS_RESULT: ${{ needs.codemagic-groups.result }}
           GENERATED_FILES_RESULT: ${{ needs.generated-files.result }}
+          CI_CONFIG_TESTS_RESULT: ${{ needs.ci-config-tests.result }}
           FORMAT_RESULT: ${{ needs.format.result }}
           ANALYZE_RESULT: ${{ needs.analyze.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
@@ -565,6 +574,7 @@ jobs:
           echo "app-ci-required: ${APP_CI_REQUIRED}"
           echo "codemagic-groups: ${CODEMAGIC_GROUPS_RESULT}"
           echo "generated-files: ${GENERATED_FILES_RESULT}"
+          echo "ci-config-tests: ${CI_CONFIG_TESTS_RESULT}"
           echo "format: ${FORMAT_RESULT}"
           echo "analyze: ${ANALYZE_RESULT}"
           echo "tests: ${TESTS_RESULT}"
@@ -593,6 +603,7 @@ jobs:
           fi
 
           results=(
+            "${CI_CONFIG_TESTS_RESULT}"
             "${GENERATED_FILES_RESULT}"
             "${FORMAT_RESULT}"
             "${ANALYZE_RESULT}"
