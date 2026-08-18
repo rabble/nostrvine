@@ -99,6 +99,7 @@ import 'package:openvine/services/app_engagement_store.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/build_provenance_service.dart';
+import 'package:openvine/services/c2pa_debris_janitor.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
@@ -147,6 +148,7 @@ import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     show LayerRasterizerHost;
@@ -778,6 +780,13 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
   );
 
   if (!kIsWeb) {
+    coordinator.registerService(
+      name: 'C2paDebrisSweep',
+      phase: StartupPhase.deferred,
+      initialize: _sweepC2paDebris,
+      optional: true,
+    );
+
     coordinator.registerService(
       name: 'SeedMediaPreload',
       phase: StartupPhase.deferred,
@@ -1684,6 +1693,14 @@ Future<void> _initializeVideoCacheManifest() async {
       }
     },
   );
+}
+
+Future<void> _sweepC2paDebris() async {
+  final directories = await Future.wait([
+    getApplicationDocumentsDirectory(),
+    getTemporaryDirectory(),
+  ]);
+  directories.forEach(C2paDebrisJanitor.deleteStaleDebris);
 }
 
 Future<void> _initializeSeedDataPreload(ProviderContainer container) async {
