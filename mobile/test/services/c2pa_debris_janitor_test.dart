@@ -58,25 +58,30 @@ void main() {
     test('preserves recordings and other derived media', () {
       final protected =
           [
-            'VID_20260814_113531.mp4',
-            'VID_1786700133469.mp4',
-            'trimmed_1.mp4',
-            'merged_1.mp4',
-            'watermarked_1.mp4',
-            'normalized_1.mp4',
-            '1786964993571.mp4',
-            'C2PA_SIGNED_1.mp4',
-            'c2pa_signed.mp4',
-            'c2pa_signed_abc.mp4',
-            'pre_c2pa_signed_1.mp4',
-            'c2pa_signed_1.mov',
-          ].map(
-            (name) => writeFile(
-              name,
-              age:
-                  C2paDebrisJanitor.staleDebrisAge + const Duration(seconds: 1),
-            ),
-          );
+                'VID_20260814_113531.mp4',
+                'VID_1786700133469.mp4',
+                'trimmed_1.mp4',
+                'merged_1.mp4',
+                'watermarked_1.mp4',
+                'normalized_1.mp4',
+                '1786964993571.mp4',
+                'C2PA_SIGNED_1.mp4',
+                'c2pa_signed.mp4',
+                'c2pa_signed_abc.mp4',
+                'pre_c2pa_signed_1.mp4',
+                'c2pa_signed_1.mov',
+                'c2pa_signed_1786964993575.mp4.tmp',
+                'c2pa_signed_1786964993576.mp4.bak',
+              ]
+              .map(
+                (name) => writeFile(
+                  name,
+                  age:
+                      C2paDebrisJanitor.staleDebrisAge +
+                      const Duration(seconds: 1),
+                ),
+              )
+              .toList();
       final matchingDirectory = Directory(
         p.join(tempDir.path, 'c2pa_signed_2.mp4'),
       )..createSync();
