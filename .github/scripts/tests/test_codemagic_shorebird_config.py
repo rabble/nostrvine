@@ -100,18 +100,14 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             r"(?s)&shorebird_install.*?script: \|\n\s+set -euo pipefail\n",
         )
 
-    def test_shorebird_installer_and_cli_are_pinned_to_full_commits(self) -> None:
-        installer_url = re.search(r'INSTALLER_URL="([^"]+)"', self.contents)
-        self.assertIsNotNone(installer_url)
-        self.assertRegex(installer_url.group(1), r"/install/[0-9a-f]{40}/install\.sh$")
-        self.assertNotIn("/main/", installer_url.group(1))
+    def test_shorebird_cli_install_is_pinned_to_a_full_commit(self) -> None:
         self.assertRegex(
             self.contents,
             r'EXPECTED_SHOREBIRD_REVISION="[0-9a-f]{40}"',
         )
-        self.assertIn("shasum -a 256 -c -", self.contents)
         self.assertIn('checkout --quiet --detach FETCH_HEAD', self.contents)
-        self.assertNotIn("curl -sSf | bash", self.contents)
+        self.assertNotIn("raw.githubusercontent.com/shorebirdtech/install", self.contents)
+        self.assertNotRegex(self.contents, r"git clone .* (?:stable|v[0-9])")
 
     def test_shorebird_release_commands_are_signed_and_preflighted(self) -> None:
         self.assertIn("*preflight_shorebird_ios_release", self.contents)

@@ -222,9 +222,12 @@ materialize the private key.
 The `github_credentials` token used by release and patch jobs must have read
 and write access to the private `divinevideo/divine-release-provenance`
 repository. Provenance writes are create-only. Never delete or replace a record
-for a release that may still be patched. When rotating the HMAC key, retain the
-old key and identifier until every release fingerprinted with it is no longer
-patchable; select the matching credential for an older release.
+for a release that may still be patched. The workflow accepts one HMAC key and
+identifier at a time. When patching an older release after rotation, temporarily
+replace both Codemagic values with that release's retained key pair, run only
+the intended patch workflow, then restore the current pair. Do not run a store
+release while the older pair is selected. Retain each pair securely until every
+release fingerprinted with it is no longer patchable.
 
 The token is currently generated from an individual's account. Moving it to a
 Divine service identity is tracked in #7200.
@@ -242,17 +245,14 @@ git -C "$HOME/.shorebird" checkout --detach FETCH_HEAD
 "$HOME/.shorebird/bin/shorebird" --version
 ```
 
-CI also downloads the upstream installer from reviewed commit
-`153e5f17e27879183d8fa5b78b058b1be3551f75` and verifies SHA-256
-`068e61b0fe74d20ecc92645df9c414cdd0140041620f07460447f8d08011b20e`.
-It does not execute that installer because it clones and immediately runs the
-mutable `stable` branch. CI installs the exact CLI revision directly and checks
-both its git revision and friendly version output on every cache hit.
+CI deliberately does not use the upstream installer because it clones and
+immediately runs the mutable `stable` branch. It installs the exact reviewed CLI
+revision directly and checks both its git revision and friendly version output
+on every cache hit.
 
 To upgrade Shorebird, review a tagged CLI revision, update the 40-character CLI
-SHA and expected version together, review a newer immutable installer commit
-and digest if needed, then run the CI configuration tests. Never replace either
-pin with a branch or tag.
+SHA and expected version together, then run the CI configuration tests. Never
+replace the revision pin with a branch or tag.
 
 Then `shorebird login`. You need access to the Divine organization; membership
 is managed in the Shorebird console.
