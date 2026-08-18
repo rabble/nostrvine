@@ -12558,4 +12558,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Închide Divine și deschide-l din nou — următoarea pornire creează o bază de date locală nouă.';
+
+  @override
+  String get authSignInOptionsInfo => 'Despre opțiunile de conectare';
+
+  @override
+  String get authShowPassword => 'Afișați parola';
+
+  @override
+  String get authHidePassword => 'Ascundeți parola';
 }

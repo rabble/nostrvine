@@ -12424,4 +12424,13 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Isara ang Divine at buksan itong muli — gagawa ng bagong lokal na database sa susunod na paglulunsad.';
+
+  @override
+  String get authSignInOptionsInfo => 'Tungkol sa mga opsyon sa pag-sign in';
+
+  @override
+  String get authShowPassword => 'Ipakita ang password';
+
+  @override
+  String get authHidePassword => 'Itago ang password';
 }

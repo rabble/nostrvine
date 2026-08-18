@@ -5374,5 +5374,8 @@
     "dbFailureCancel": "отказ",
     "dbFailureResetFailed": "Това не сработи. Затвори Divine и опитай отново.",
     "dbFailureResetDoneTitle": "локалната база данни е нулирана",
-    "dbFailureResetDoneBody": "Затвори Divine и го отвори отново — следващото стартиране изгражда нова локална база данни."
+    "dbFailureResetDoneBody": "Затвори Divine и го отвори отново — следващото стартиране изгражда нова локална база данни.",
+  "authSignInOptionsInfo": "Относно опциите за вход",
+  "authShowPassword": "Показване на паролата",
+  "authHidePassword": "Скриване на паролата"
 }

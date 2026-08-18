@@ -12425,4 +12425,13 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Затвори Divine и го отвори отново — следващото стартиране изгражда нова локална база данни.';
+
+  @override
+  String get authSignInOptionsInfo => 'Относно опциите за вход';
+
+  @override
+  String get authShowPassword => 'Показване на паролата';
+
+  @override
+  String get authHidePassword => 'Скриване на паролата';
 }

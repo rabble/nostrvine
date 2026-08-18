@@ -12257,4 +12257,13 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới.';
+
+  @override
+  String get authSignInOptionsInfo => 'Giới thiệu về tùy chọn đăng nhập';
+
+  @override
+  String get authShowPassword => 'Hiện mật khẩu';
+
+  @override
+  String get authHidePassword => 'Ẩn mật khẩu';
 }

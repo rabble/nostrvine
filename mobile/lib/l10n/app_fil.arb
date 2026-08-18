@@ -3837,5 +3837,8 @@
     "dbFailureCancel": "kanselahin",
     "dbFailureResetFailed": "Hindi ito gumana. Isara ang Divine at subukan ulit.",
     "dbFailureResetDoneTitle": "na-reset ang lokal na database",
-    "dbFailureResetDoneBody": "Isara ang Divine at buksan itong muli — gagawa ng bagong lokal na database sa susunod na paglulunsad."
+    "dbFailureResetDoneBody": "Isara ang Divine at buksan itong muli — gagawa ng bagong lokal na database sa susunod na paglulunsad.",
+  "authSignInOptionsInfo": "Tungkol sa mga opsyon sa pag-sign in",
+  "authShowPassword": "Ipakita ang password",
+  "authHidePassword": "Itago ang password"
 }

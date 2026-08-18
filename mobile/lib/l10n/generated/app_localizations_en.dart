@@ -12253,4 +12253,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Close Divine and open it again — the next launch builds a fresh local database.';
+
+  @override
+  String get authSignInOptionsInfo => 'About sign-in options';
+
+  @override
+  String get authShowPassword => 'Show password';
+
+  @override
+  String get authHidePassword => 'Hide password';
 }

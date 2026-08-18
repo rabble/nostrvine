@@ -12210,4 +12210,13 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'أغلق Divine ثم افتحه مجددًا — سيبني التشغيل التالي قاعدة بيانات محلية جديدة.';
+
+  @override
+  String get authSignInOptionsInfo => 'حول خيارات تسجيل الدخول';
+
+  @override
+  String get authShowPassword => 'إظهار كلمة المرور';
+
+  @override
+  String get authHidePassword => 'إخفاء كلمة المرور';
 }

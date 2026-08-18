@@ -7669,5 +7669,11 @@
   "dbFailureResetDoneTitle": "local database reset",
   "@dbFailureResetDoneTitle": {"description": "Title of the terminal step after a successful local-database reset."},
   "dbFailureResetDoneBody": "Close Divine and open it again — the next launch builds a fresh local database.",
-  "@dbFailureResetDoneBody": {"description": "Body of the terminal step after a successful reset, telling the user to relaunch."}
+  "@dbFailureResetDoneBody": {"description": "Body of the terminal step after a successful reset, telling the user to relaunch."},
+  "authSignInOptionsInfo": "About sign-in options",
+  "@authSignInOptionsInfo": {"description": "Screen-reader label for the info button on the sign-in options screen, which opens a sheet explaining each sign-in method."},
+  "authShowPassword": "Show password",
+  "@authShowPassword": {"description": "Screen-reader label for the control that reveals the typed password."},
+  "authHidePassword": "Hide password",
+  "@authHidePassword": {"description": "Screen-reader label for the control that re-masks the typed password."}
 }

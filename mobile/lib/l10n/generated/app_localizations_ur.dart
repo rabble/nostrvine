@@ -12293,4 +12293,13 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Divine بند کریں اور دوبارہ کھولیں — اگلی بار شروع ہونے پر نیا مقامی ڈیٹابیس بنے گا۔';
+
+  @override
+  String get authSignInOptionsInfo => 'سائن ان کے اختیارات کے بارے میں';
+
+  @override
+  String get authShowPassword => 'پاس ورڈ دکھائیں';
+
+  @override
+  String get authHidePassword => 'پاس ورڈ چھپائیں';
 }

@@ -11718,4 +11718,13 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Divine을 닫았다가 다시 여세요. 다음 실행에서 새 로컬 데이터베이스가 만들어집니다.';
+
+  @override
+  String get authSignInOptionsInfo => '로그인 옵션 정보';
+
+  @override
+  String get authShowPassword => '비밀번호 표시';
+
+  @override
+  String get authHidePassword => '비밀번호 숨기기';
 }

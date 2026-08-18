@@ -12305,4 +12305,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Stäng Divine och öppna det igen — nästa start skapar en ny lokal databas.';
+
+  @override
+  String get authSignInOptionsInfo => 'Om inloggningsalternativ';
+
+  @override
+  String get authShowPassword => 'Visa lösenord';
+
+  @override
+  String get authHidePassword => 'Dölj lösenord';
 }

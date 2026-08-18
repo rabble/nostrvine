@@ -11693,4 +11693,13 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Divine を閉じてもう一度開いてください。次回の起動で新しいローカルデータベースが作成されます。';
+
+  @override
+  String get authSignInOptionsInfo => 'ログイン方法について';
+
+  @override
+  String get authShowPassword => 'パスワードを表示';
+
+  @override
+  String get authHidePassword => 'パスワードを非表示';
 }

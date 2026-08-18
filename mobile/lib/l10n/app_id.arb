@@ -5243,5 +5243,8 @@
     "dbFailureCancel": "batal",
     "dbFailureResetFailed": "Itu tidak berhasil. Tutup Divine dan coba lagi.",
     "dbFailureResetDoneTitle": "basis data lokal telah diatur ulang",
-    "dbFailureResetDoneBody": "Tutup Divine lalu buka lagi — peluncuran berikutnya membangun basis data lokal yang baru."
+    "dbFailureResetDoneBody": "Tutup Divine lalu buka lagi — peluncuran berikutnya membangun basis data lokal yang baru.",
+  "authSignInOptionsInfo": "Tentang opsi masuk",
+  "authShowPassword": "Tampilkan sandi",
+  "authHidePassword": "Sembunyikan sandi"
 }

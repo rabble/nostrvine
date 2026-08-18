@@ -12320,4 +12320,13 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Tutup Divine dan buka semula — pelancaran seterusnya membina pangkalan data setempat yang baharu.';
+
+  @override
+  String get authSignInOptionsInfo => 'Tentang pilihan log masuk';
+
+  @override
+  String get authShowPassword => 'Tunjukkan kata laluan';
+
+  @override
+  String get authHidePassword => 'Sembunyikan kata laluan';
 }

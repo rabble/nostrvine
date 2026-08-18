@@ -140,6 +140,10 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                                 setState(() => _passwordError = null);
                               }
                             },
+                            showPasswordSemanticLabel:
+                                context.l10n.authShowPassword,
+                            hidePasswordSemanticLabel:
+                                context.l10n.authHidePassword,
                           ),
                         ],
 

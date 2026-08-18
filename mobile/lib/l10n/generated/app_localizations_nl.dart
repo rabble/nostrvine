@@ -12366,4 +12366,13 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Sluit Divine en open het opnieuw — bij de volgende start wordt een nieuwe lokale database aangemaakt.';
+
+  @override
+  String get authSignInOptionsInfo => 'Over aanmeldopties';
+
+  @override
+  String get authShowPassword => 'Wachtwoord tonen';
+
+  @override
+  String get authHidePassword => 'Wachtwoord verbergen';
 }

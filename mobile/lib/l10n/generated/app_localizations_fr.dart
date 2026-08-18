@@ -12490,4 +12490,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Fermez Divine et rouvrez-le — le prochain lancement crée une nouvelle base de données locale.';
+
+  @override
+  String get authSignInOptionsInfo => 'À propos des options de connexion';
+
+  @override
+  String get authShowPassword => 'Afficher le mot de passe';
+
+  @override
+  String get authHidePassword => 'Masquer le mot de passe';
 }

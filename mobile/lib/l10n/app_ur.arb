@@ -7073,5 +7073,8 @@
   "dbFailureCancel": "منسوخ کریں",
   "dbFailureResetFailed": "یہ کام نہیں کیا۔ Divine بند کریں اور دوبارہ کوشش کریں۔",
   "dbFailureResetDoneTitle": "مقامی ڈیٹابیس ری سیٹ ہو گیا",
-  "dbFailureResetDoneBody": "Divine بند کریں اور دوبارہ کھولیں — اگلی بار شروع ہونے پر نیا مقامی ڈیٹابیس بنے گا۔"
+  "dbFailureResetDoneBody": "Divine بند کریں اور دوبارہ کھولیں — اگلی بار شروع ہونے پر نیا مقامی ڈیٹابیس بنے گا۔",
+  "authSignInOptionsInfo": "سائن ان کے اختیارات کے بارے میں",
+  "authShowPassword": "پاس ورڈ دکھائیں",
+  "authHidePassword": "پاس ورڈ چھپائیں"
 }

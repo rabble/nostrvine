@@ -222,6 +222,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                   }
                                 },
                                 textInputAction: TextInputAction.next,
+                                showPasswordSemanticLabel:
+                                    context.l10n.authShowPassword,
+                                hidePasswordSemanticLabel:
+                                    context.l10n.authHidePassword,
                               ),
                               const SizedBox(height: 16),
                               DivineAuthTextField(
@@ -242,6 +246,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                 },
                                 textInputAction: TextInputAction.done,
                                 onSubmitted: (_) => _handleSubmit(),
+                                showPasswordSemanticLabel:
+                                    context.l10n.authShowPassword,
+                                hidePasswordSemanticLabel:
+                                    context.l10n.authHidePassword,
                               ),
                             ],
                           ),

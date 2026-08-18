@@ -11587,4 +11587,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dbFailureResetDoneBody => '关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。';
+
+  @override
+  String get authSignInOptionsInfo => '关于登录选项';
+
+  @override
+  String get authShowPassword => '显示密码';
+
+  @override
+  String get authHidePassword => '隐藏密码';
 }

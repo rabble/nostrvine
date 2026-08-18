@@ -12233,4 +12233,13 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Divine’ı kapatıp yeniden açın — sonraki başlatmada yeni bir yerel veritabanı oluşturulur.';
+
+  @override
+  String get authSignInOptionsInfo => 'Oturum açma seçenekleri hakkında';
+
+  @override
+  String get authShowPassword => 'Şifreyi göster';
+
+  @override
+  String get authHidePassword => 'Şifreyi gizle';
 }

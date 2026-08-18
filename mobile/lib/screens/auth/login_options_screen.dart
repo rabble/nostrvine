@@ -361,6 +361,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                               context,
                               showNip07: isNip07Available,
                             ),
+                      semanticLabel: context.l10n.authSignInOptionsInfo,
+                      semanticIdentifier: 'sign_in_options_info_button',
                       icon: DivineIcon(
                         icon: DivineIconName.info,
                         color: context.vineColors.onIconButton,
@@ -423,6 +425,10 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                           onSubmitted: isDisabled
                               ? null
                               : (_) => context.read<DivineAuthCubit>().submit(),
+                          showPasswordSemanticLabel:
+                              context.l10n.authShowPassword,
+                          hidePasswordSemanticLabel:
+                              context.l10n.authHidePassword,
                         ),
                       ],
                     ),
