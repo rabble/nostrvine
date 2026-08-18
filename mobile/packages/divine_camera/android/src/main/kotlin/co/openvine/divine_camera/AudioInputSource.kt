@@ -1,5 +1,5 @@
 // ABOUTME: Picks the recording audio source from the connected input devices
-// ABOUTME: CAMCORDER ranks USB below the built-in mic, so external inputs use MIC
+// ABOUTME: CAMCORDER ranks USB below the built-in mic, so an attached USB mic uses MIC
 
 package co.openvine.divine_camera
 
@@ -8,23 +8,29 @@ import android.media.MediaRecorder
 import androidx.camera.video.AudioSpec
 
 /**
- * Input device types that mean the user deliberately plugged in a recording
- * input.
+ * Input device types that mean the user attached something to record with.
  *
  * Only devices reported by `AudioManager.GET_DEVICES_INPUTS` are ever tested
  * against this set, so every entry is a real capture device.
  *
- * Bluetooth is deliberately absent. Under MIC, AOSP reaches a Bluetooth input
- * only via LE Audio (`BLUETOOTH_BLE`, ranked below USB), or via SCO when
- * Bluetooth is already the communication device — which during recording it is
- * not. So listing it here would either change nothing (SCO) or quietly promote
- * a headset the user wore for listening into the recording microphone (LE
- * Audio). Wearing headphones is not asking to record through them.
+ * The set is deliberately one entry wide. Android reports an input-only USB
+ * audio device as `TYPE_USB_DEVICE`, which is what a microphone or a wireless
+ * receiver is; a device that also has an output leg — headphones with a mic,
+ * over USB (`TYPE_USB_HEADSET`), over the jack (`TYPE_WIRED_HEADSET`) or over
+ * Bluetooth — is something the user put on to *listen*. Routing capture to
+ * those would silently turn monitoring earbuds into the recording microphone,
+ * which is the surprise this fix is supposed to avoid, not create. Wearing
+ * headphones is not asking to record through them, and the cable does not
+ * change that.
+ *
+ * If a report ever shows a real external microphone enumerating as
+ * `TYPE_USB_HEADSET` — a combo device exposing a monitoring output — that
+ * type can be added back on the evidence. The diagnostic line in
+ * `CameraController.resolveAudioSource` names the types it saw, so such a
+ * report will say so.
  */
 private val EXTERNAL_MIC_TYPES = setOf(
-    AudioDeviceInfo.TYPE_USB_DEVICE,
-    AudioDeviceInfo.TYPE_USB_HEADSET,
-    AudioDeviceInfo.TYPE_WIRED_HEADSET
+    AudioDeviceInfo.TYPE_USB_DEVICE
 )
 
 /**
@@ -35,9 +41,9 @@ private val EXTERNAL_MIC_TYPES = setOf(
  * `MediaRecorder.AudioSource.CAMCORDER`. AOSP's audio policy ranks input
  * devices per source, and for CAMCORDER the order is back mic, built-in mic,
  * then USB — USB is reachable only on a device with no built-in mic, so on a
- * phone an attached USB microphone is never selected (#6171). MIC ranks wired
- * and USB ahead of the built-in mic, which is what someone who just plugged in
- * a microphone expects.
+ * phone an attached USB microphone is never selected (#6171). MIC ranks USB
+ * ahead of the built-in mic, which is what someone who just plugged in a
+ * microphone expects.
  *
  * Returns [AudioSpec.SOURCE_AUTO] when nothing is attached, leaving the
  * camera-tuned default untouched for everyone else.

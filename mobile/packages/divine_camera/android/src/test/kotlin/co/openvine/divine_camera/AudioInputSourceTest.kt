@@ -62,19 +62,22 @@ internal class AudioInputSourceTest {
     }
 
     @Test
-    fun everyPluggedInMicType_switchesToMic() {
-        val pluggedIn = mapOf(
-            "USB_DEVICE" to AudioDeviceInfo.TYPE_USB_DEVICE,
+    fun headsetsWornForListening_doNotBecomeTheRecordingMic() {
+        // Same rule as the Bluetooth cases below, over a cable. Android reports
+        // an input-only USB mic as USB_DEVICE; a type carrying an output leg is
+        // something the user put on to listen, so plugging in USB-C or wired
+        // earbuds to monitor must not move the recording onto their mic.
+        val wornForListening = mapOf(
             "USB_HEADSET" to AudioDeviceInfo.TYPE_USB_HEADSET,
             "WIRED_HEADSET" to AudioDeviceInfo.TYPE_WIRED_HEADSET
         )
-        for ((name, type) in pluggedIn) {
+        for ((name, type) in wornForListening) {
             assertEquals(
-                MediaRecorder.AudioSource.MIC,
+                AudioSpec.SOURCE_AUTO,
                 audioSourceForInputDeviceTypes(
                     intArrayOf(AudioDeviceInfo.TYPE_BUILTIN_MIC, type)
                 ),
-                "$name should route capture to MIC"
+                "$name should leave the camera-tuned default in place"
             )
         }
     }
@@ -120,7 +123,7 @@ internal class AudioInputSourceTest {
     @Test
     fun bluetoothAlongsideAPluggedInMic_stillSwitches() {
         // Earbuds on, external mic in front of you. The switch still happens,
-        // and AOSP ranks USB above LE Audio, so the plugged-in mic wins.
+        // and AOSP ranks USB above LE Audio, so the attached mic wins.
         assertEquals(
             MediaRecorder.AudioSource.MIC,
             audioSourceForInputDeviceTypes(
