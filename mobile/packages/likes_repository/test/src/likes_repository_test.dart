@@ -5325,7 +5325,13 @@ void main() {
             addressableIds: const {editedId: coordinate},
           ),
           completion(
-            isA<({Map<String, int> upvotes, Map<String, int> downvotes})>()
+            isA<
+                  ({
+                    Map<String, int> upvotes,
+                    Map<String, int> downvotes,
+                    Map<String, Map<String, int>> emojiReactions,
+                  })
+                >()
                 .having((r) => r.upvotes[editedId], 'upvotes', 1)
                 .having((r) => r.downvotes[editedId], 'downvotes', 0),
           ),
@@ -5737,6 +5743,380 @@ void main() {
 
         verify(() => mockNostrClient.deleteEvent(newReactionId)).called(1);
       });
+    });
+
+    group('emoji reactions (#7784)', () {
+      void stubSendLike(MockEvent event) {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => event);
+      }
+
+      test(
+        'reactToEventWithEmoji publishes kind 7 with the emoji as content',
+        () async {
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+
+          repository = createRepository(withLocalStorage: false);
+          final result = await repository.reactToEventWithEmoji(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            emoji: '😂',
+            targetKind: 1111,
+          );
+
+          expect(result, equals(testReactionEventId));
+          verify(
+            () => mockNostrClient.sendLike(
+              testEventId,
+              content: '😂',
+              targetAuthorPubkey: testAuthorPubkey,
+              targetKind: 1111,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'reactToEventWithEmoji rejects vote and non-emoji content',
+        () async {
+          repository = createRepository(withLocalStorage: false);
+
+          for (final invalid in ['+', '-', '', 'not emoji', '123']) {
+            await expectLater(
+              repository.reactToEventWithEmoji(
+                eventId: testEventId,
+                authorPubkey: testAuthorPubkey,
+                emoji: invalid,
+              ),
+              throwsArgumentError,
+            );
+          }
+          verifyNever(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'reactToEventWithEmoji throws $AlreadyReactedException carrying the '
+        'recorded emoji',
+        () async {
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.reactToEventWithEmoji(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            emoji: '🔥',
+          );
+
+          await expectLater(
+            repository.reactToEventWithEmoji(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+              emoji: '😂',
+            ),
+            throwsA(
+              isA<AlreadyReactedException>().having(
+                (e) => e.emoji,
+                'emoji',
+                '🔥',
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'reactToEventWithEmoji rolls back the record when the publish fails',
+        () async {
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => null);
+          mockQueryEventsSequence([<Event>[]]);
+
+          repository = createRepository(withLocalStorage: false);
+          await expectLater(
+            repository.reactToEventWithEmoji(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+              emoji: '😂',
+            ),
+            throwsA(isA<LikeFailedException>()),
+          );
+
+          // The rolled-back record is gone: removal finds nothing locally
+          // and (with an empty relay) nothing remotely either.
+          await expectLater(
+            repository.removeEmojiReaction(testEventId),
+            throwsA(isA<NotReactedException>()),
+          );
+        },
+      );
+
+      test(
+        'removeEmojiReaction publishes a kind 5 for the recorded reaction',
+        () async {
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.reactToEventWithEmoji(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            emoji: '😂',
+          );
+          await repository.removeEmojiReaction(testEventId);
+
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(1);
+        },
+      );
+
+      test(
+        'removeEmojiReaction falls back to the relay copy after a cold start',
+        () async {
+          const remoteReactionId = 'remote_emoji_reaction_1234567890abcdef';
+          final ownReaction = createMockReaction(
+            id: remoteReactionId,
+            targetEventId: testEventId,
+            authorPubkey: testUserPubkey,
+            content: '😂',
+          );
+          mockQueryEventsSequence([
+            [ownReaction],
+            <Event>[],
+          ]);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.removeEmojiReaction(testEventId);
+
+          verify(() => mockNostrClient.deleteEvent(remoteReactionId)).called(1);
+        },
+      );
+
+      test(
+        'removeEmojiReaction restores the record when the deletion fails',
+        () async {
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => null);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.reactToEventWithEmoji(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            emoji: '😂',
+          );
+
+          await expectLater(
+            repository.removeEmojiReaction(testEventId),
+            throwsA(isA<UnlikeFailedException>()),
+          );
+
+          // The restored record makes the retry reference the same
+          // reaction id without any relay resolve.
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+          await repository.removeEmojiReaction(testEventId);
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(2);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'getVoteCounts aggregates emoji separately and never as upvotes',
+        () async {
+          final reactions = <Event>[
+            createMockReaction(
+              id: 'plus_reaction',
+              targetEventId: testEventId,
+              authorPubkey: 'voter_a_pubkey_1234567890abcdef',
+            ),
+            createMockReaction(
+              id: 'empty_reaction',
+              targetEventId: testEventId,
+              authorPubkey: 'voter_b_pubkey_1234567890abcdef',
+              content: '',
+            ),
+            createMockReaction(
+              id: 'minus_reaction',
+              targetEventId: testEventId,
+              authorPubkey: 'voter_c_pubkey_1234567890abcdef',
+              content: '-',
+            ),
+            createMockReaction(
+              id: 'joy_reaction_1',
+              targetEventId: testEventId,
+              authorPubkey: 'voter_d_pubkey_1234567890abcdef',
+              content: '😂',
+            ),
+            createMockReaction(
+              id: 'joy_reaction_2',
+              targetEventId: testEventId,
+              authorPubkey: 'voter_e_pubkey_1234567890abcdef',
+              content: ' 😂 ',
+            ),
+            createMockReaction(
+              id: 'fire_reaction',
+              targetEventId: testEventId,
+              authorPubkey: 'voter_f_pubkey_1234567890abcdef',
+              content: '🔥',
+            ),
+            createMockReaction(
+              id: 'prose_reaction',
+              targetEventId: testEventId,
+              authorPubkey: 'voter_g_pubkey_1234567890abcdef',
+              content: 'great vine!',
+            ),
+            createMockReaction(
+              id: 'digits_reaction',
+              targetEventId: testEventId,
+              authorPubkey: 'voter_h_pubkey_1234567890abcdef',
+              content: '123',
+            ),
+          ];
+          mockQueryEventsSequence([reactions, <Event>[]]);
+
+          repository = createRepository(withLocalStorage: false);
+          final counts = await repository.getVoteCounts([testEventId]);
+
+          expect(counts.upvotes[testEventId], equals(2));
+          expect(counts.downvotes[testEventId], equals(1));
+          expect(
+            counts.emojiReactions[testEventId],
+            equals({'😂': 2, '🔥': 1}),
+          );
+        },
+      );
+
+      test(
+        'getUserVoteStatuses reports the newest own emoji, never as an '
+        'upvote',
+        () async {
+          final older = createMockReaction(
+            id: 'older_emoji_reaction',
+            targetEventId: testEventId,
+            authorPubkey: testUserPubkey,
+            content: '😂',
+          );
+          final newer = createMockReaction(
+            id: 'newer_emoji_reaction',
+            targetEventId: testEventId,
+            authorPubkey: testUserPubkey,
+            content: '🔥',
+            createdAt: defaultTimestamp + 100,
+          );
+          mockQueryEventsSequence([
+            [older, newer],
+            <Event>[],
+          ]);
+
+          repository = createRepository(withLocalStorage: false);
+          final statuses = await repository.getUserVoteStatuses([testEventId]);
+
+          expect(statuses.upvotedIds, isEmpty);
+          expect(statuses.downvotedIds, isEmpty);
+          expect(
+            statuses.reactedEmojiByTargetId,
+            equals({testEventId: '🔥'}),
+          );
+        },
+      );
+
+      test(
+        'getUserVoteStatuses hydrates removal after a cold start',
+        () async {
+          const remoteReactionId = 'hydrated_emoji_reaction_1234567890ab';
+          final ownReaction = createMockReaction(
+            id: remoteReactionId,
+            targetEventId: testEventId,
+            authorPubkey: testUserPubkey,
+            content: '😂',
+          );
+          mockQueryEventsSequence([
+            [ownReaction],
+            <Event>[],
+          ]);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.getUserVoteStatuses([testEventId]);
+          await repository.removeEmojiReaction(testEventId);
+
+          verify(() => mockNostrClient.deleteEvent(remoteReactionId)).called(1);
+          // Both queryEvents calls belong to the fetch; the removal used the
+          // hydrated record instead of re-resolving from the relay.
+          verify(() => mockNostrClient.queryEvents(any())).called(2);
+        },
+      );
+
+      test(
+        'fetchEventLikers does not count emoji reactors as likers',
+        () async {
+          const likerPubkey = 'liker_pubkey_1234567890abcdef';
+          final reactions = <Event>[
+            createMockReaction(
+              id: 'liker_reaction',
+              targetEventId: testEventId,
+              authorPubkey: likerPubkey,
+            ),
+            createMockReaction(
+              id: 'emoji_reactor_reaction',
+              targetEventId: testEventId,
+              authorPubkey: 'emoji_reactor_pubkey_1234567890abcdef',
+              content: '😂',
+            ),
+          ];
+          mockQueryEventsSequence([reactions, <Event>[]]);
+
+          repository = createRepository(withLocalStorage: false);
+          final likers = await repository.fetchEventLikers(
+            eventId: testEventId,
+          );
+
+          expect(likers, equals([likerPubkey]));
+        },
+      );
     });
   });
 }

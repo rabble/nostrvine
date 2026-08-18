@@ -12,6 +12,7 @@ import 'package:likes_repository/src/blocked_liker_filter.dart';
 import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
 import 'package:likes_repository/src/likes_repository_reportable_sites.dart';
+import 'package:likes_repository/src/models/emoji_reaction_record.dart';
 import 'package:likes_repository/src/models/like_record.dart';
 import 'package:likes_repository/src/models/likes_sync_result.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -27,6 +28,54 @@ const _likeContent = '+';
 
 /// NIP-25 reaction content for a downvote.
 const _downvoteContent = '-';
+
+/// Max reaction content length treated as an emoji, in UTF-16 code units.
+///
+/// A single grapheme can be many code units (family ZWJ sequences run ~11,
+/// flags 4, keycaps 3); 16 admits every single emoji while rejecting
+/// sentence-length content some clients put in kind 7.
+const _maxEmojiReactionCodeUnits = 16;
+
+/// Whole-string match for emoji-only reaction content.
+///
+/// Same code-point classes as the app's emoji-only comment check: emoji
+/// components (ZWJ, VS-16, keycap, skin tones, digits/#/* for keycaps),
+/// BMP emoji symbols and dingbats, and the supplementary-plane emoji
+/// blocks. `+`/`-` are outside every class, so vote content never matches.
+final _emojiReactionPattern = RegExp(
+  r'^[\u200d\ufe0f\u20e30-9#*\u{1F3FB}-\u{1F3FF}'
+  r'\u00a9\u00ae\u203c\u2049'
+  r'\u2194-\u2199\u21a9-\u21aa\u231a-\u231b\u2328\u23cf'
+  r'\u23e9-\u23f3\u23f8-\u23fa\u24c2\u25aa-\u25ab\u25b6\u25c0'
+  r'\u25fb-\u25fe\u2600-\u27bf\u2934-\u2935\u2b05-\u2b07'
+  r'\u2b1b-\u2b1c\u2b50\u2b55\u3030\u303d\u3297\u3299'
+  r'\u{1F000}-\u{1FFFF}'
+  r']+$',
+  unicode: true,
+);
+
+/// True when [content] must be read as a like per NIP-25 (`+` or empty).
+bool _isLikeContent(String content) =>
+    content == _likeContent || content.isEmpty;
+
+/// The trimmed emoji when [content] is a displayable emoji reaction,
+/// otherwise `null`.
+///
+/// NIP-25: emoji content SHOULD NOT be interpreted as a like or dislike —
+/// clients MAY display it on the post instead. Content that is neither a
+/// vote nor emoji-only (mentions, prose, `:shortcode:` without rendering
+/// support) resolves to `null` and is ignored entirely.
+String? emojiReactionContentOf(String content) {
+  final trimmed = content.trim();
+  if (trimmed.isEmpty || trimmed.length > _maxEmojiReactionCodeUnits) {
+    return null;
+  }
+  if (!_emojiReactionPattern.hasMatch(trimmed)) return null;
+  // The class admits ASCII digits/#/* as keycap components; require a
+  // non-ASCII code point so plain "123" is not an emoji reaction.
+  if (!trimmed.runes.any((rune) => rune > 0xFF)) return null;
+  return trimmed;
+}
 
 /// Max number of tag values per `#e` or `#a` REQ filter.
 ///
@@ -202,6 +251,22 @@ class LikesRepository {
   /// downvote on the same target. Downvotes stay in-memory only, as in v1.
   final Map<String, LikeRecord> _downvoteRecordsByAddressableId = {};
 
+  /// In-memory cache of the user's own emoji reactions keyed by target
+  /// event ID.
+  ///
+  /// Mirror of [_downvoteRecords] for kind-7 reactions whose content is an
+  /// emoji. Cap-at-one: at most one record per target — a new emoji
+  /// supersedes the previous one. Not persisted, for the same
+  /// `personal_reactions` schema reason as downvotes; relays repopulate via
+  /// [getUserVoteStatuses] (which hydrates this cache) and
+  /// [_resolveRemoteEmojiReactionRecord] on demand.
+  final Map<String, EmojiReactionRecord> _emojiReactionRecords = {};
+
+  /// Companion index of [_emojiReactionRecords] keyed by addressable
+  /// coordinate, mirroring [_downvoteRecordsByAddressableId] (#6124).
+  final Map<String, EmojiReactionRecord> _emojiReactionRecordsByAddressableId =
+      {};
+
   /// In-memory cache of global like counts keyed by event ID.
   ///
   /// Prevents redundant relay queries when the same video is scrolled
@@ -318,6 +383,42 @@ class LikesRepository {
     if (byId != null) return byId;
     if (addressableId == null || addressableId.isEmpty) return null;
     return _downvoteRecordsByAddressableId[addressableId];
+  }
+
+  /// Indexes [record] into [_emojiReactionRecords] and, when it carries a
+  /// coordinate, [_emojiReactionRecordsByAddressableId].
+  void _indexEmojiReactionRecord(EmojiReactionRecord record) {
+    _emojiReactionRecords[record.targetEventId] = record;
+    final addressableId = record.addressableId;
+    if (addressableId != null && addressableId.isNotEmpty) {
+      _emojiReactionRecordsByAddressableId[addressableId] = record;
+    }
+  }
+
+  /// Removes any emoji reaction record for [targetEventId] from both
+  /// indexes.
+  void _deindexEmojiReactionRecord(String targetEventId) {
+    final record = _emojiReactionRecords.remove(targetEventId);
+    final addressableId = record?.addressableId;
+    if (addressableId != null && addressableId.isNotEmpty) {
+      final indexed = _emojiReactionRecordsByAddressableId[addressableId];
+      if (indexed?.reactionEventId == record?.reactionEventId &&
+          indexed?.targetEventId == record?.targetEventId) {
+        _emojiReactionRecordsByAddressableId.remove(addressableId);
+      }
+    }
+  }
+
+  /// Resolves an emoji reaction record by target event id, falling back to
+  /// [addressableId] when the id-keyed lookup misses (#6124).
+  EmojiReactionRecord? _lookupEmojiReactionRecord(
+    String eventId,
+    String? addressableId,
+  ) {
+    final byId = _emojiReactionRecords[eventId];
+    if (byId != null) return byId;
+    if (addressableId == null || addressableId.isEmpty) return null;
+    return _emojiReactionRecordsByAddressableId[addressableId];
   }
 
   /// Emits the current liked event IDs ordered by recency (most recent
@@ -1199,7 +1300,7 @@ class LikesRepository {
   /// Get vote counts (upvotes and downvotes) for multiple events.
   ///
   /// Queries relays for Kind 7 reactions on each event, differentiating
-  /// between `+` (upvote) and `-` (downvote) content.
+  /// `+`/empty (upvote), `-` (downvote), and emoji content per NIP-25.
   ///
   /// Pass [addressableIds] — event id to `kind:pubkey:d-tag` coordinate — for
   /// targets that are addressable. An edit republishes such a target under a
@@ -1207,14 +1308,29 @@ class LikesRepository {
   /// reachable by coordinate; an `e`-only query reports zero and the score
   /// vanishes for every viewer the moment the target is edited (#6124).
   ///
-  /// Returns a record of upvote and downvote count maps.
-  Future<({Map<String, int> upvotes, Map<String, int> downvotes})>
+  /// Returns a record of upvote and downvote count maps, plus per-target
+  /// emoji reaction counts (`target id -> emoji -> count`). Emoji content is
+  /// never folded into the upvote count — NIP-25 says an emoji reaction
+  /// SHOULD NOT be read as a like — and content that is neither a vote nor
+  /// emoji-only (see [emojiReactionContentOf]) is ignored. Every requested
+  /// id is present in all three maps, so callers can merge per target.
+  Future<
+    ({
+      Map<String, int> upvotes,
+      Map<String, int> downvotes,
+      Map<String, Map<String, int>> emojiReactions,
+    })
+  >
   getVoteCounts(
     List<String> eventIds, {
     Map<String, String> addressableIds = const {},
   }) async {
     if (eventIds.isEmpty) {
-      return (upvotes: <String, int>{}, downvotes: <String, int>{});
+      return (
+        upvotes: <String, int>{},
+        downvotes: <String, int>{},
+        emojiReactions: <String, Map<String, int>>{},
+      );
     }
 
     final eventIdByCoordinate = _voteTargetsByCoordinate(
@@ -1229,9 +1345,11 @@ class LikesRepository {
 
     final upvotes = <String, int>{};
     final downvotes = <String, int>{};
+    final emojiReactions = <String, Map<String, int>>{};
     for (final eventId in eventIds) {
       upvotes[eventId] = 0;
       downvotes[eventId] = 0;
+      emojiReactions[eventId] = <String, int>{};
     }
 
     // Retracted votes have to be excluded here, not just in
@@ -1255,36 +1373,65 @@ class LikesRepository {
 
       if (event.content == _downvoteContent) {
         downvotes[targetId] = downvotes[targetId]! + 1;
-      } else {
-        // '+' and any other content counts as upvote
+      } else if (_isLikeContent(event.content)) {
         upvotes[targetId] = upvotes[targetId]! + 1;
+      } else {
+        final emoji = emojiReactionContentOf(event.content);
+        if (emoji == null) continue;
+        final perTarget = emojiReactions[targetId]!;
+        perTarget[emoji] = (perTarget[emoji] ?? 0) + 1;
       }
     }
 
-    return (upvotes: upvotes, downvotes: downvotes);
+    return (
+      upvotes: upvotes,
+      downvotes: downvotes,
+      emojiReactions: emojiReactions,
+    );
   }
 
-  /// Get the user's current vote status for multiple events.
+  /// Get the user's current vote and emoji-reaction status for multiple
+  /// events.
   ///
   /// Pass [addressableIds] for addressable targets, for the same reason
   /// [getVoteCounts] needs it: without the coordinate the voter's own arrow
   /// silently un-fills after the target is edited (#6124).
   ///
-  /// Returns maps of event IDs the user has upvoted or downvoted.
-  Future<({Set<String> upvotedIds, Set<String> downvotedIds})>
+  /// Returns the event IDs the user has upvoted or downvoted, plus the
+  /// user's own live emoji reaction per target (newest wins when several
+  /// exist). Targets with no own emoji reaction are absent from
+  /// `reactedEmojiByTargetId`. As a side effect, found emoji reactions
+  /// hydrate the in-memory removal cache — emoji records are not persisted
+  /// locally, so this fetch is what lets a post-restart toggle-off publish
+  /// its Kind 5.
+  Future<
+    ({
+      Set<String> upvotedIds,
+      Set<String> downvotedIds,
+      Map<String, String> reactedEmojiByTargetId,
+    })
+  >
   getUserVoteStatuses(
     List<String> eventIds, {
     Map<String, String> addressableIds = const {},
   }) async {
     if (eventIds.isEmpty) {
-      return (upvotedIds: <String>{}, downvotedIds: <String>{});
+      return (
+        upvotedIds: <String>{},
+        downvotedIds: <String>{},
+        reactedEmojiByTargetId: <String, String>{},
+      );
     }
 
     // Signed out: both queries below are author-scoped, and a null author
     // would widen them to every user's votes rather than narrowing to none.
     final pubkey = await _currentUserPubkey();
     if (pubkey == null) {
-      return (upvotedIds: <String>{}, downvotedIds: <String>{});
+      return (
+        upvotedIds: <String>{},
+        downvotedIds: <String>{},
+        reactedEmojiByTargetId: <String, String>{},
+      );
     }
 
     final eventIdByCoordinate = _voteTargetsByCoordinate(
@@ -1316,6 +1463,7 @@ class LikesRepository {
 
     final upvotedIds = <String>{};
     final downvotedIds = <String>{};
+    final newestEmojiEventByTargetId = <String, Event>{};
     final knownEventIds = eventIds.toSet();
 
     for (final event in events) {
@@ -1330,12 +1478,44 @@ class LikesRepository {
 
       if (event.content == _downvoteContent) {
         downvotedIds.add(targetId);
-      } else {
+      } else if (_isLikeContent(event.content)) {
         upvotedIds.add(targetId);
+      } else {
+        if (emojiReactionContentOf(event.content) == null) continue;
+        final current = newestEmojiEventByTargetId[targetId];
+        if (current == null || event.createdAt > current.createdAt) {
+          newestEmojiEventByTargetId[targetId] = event;
+        }
       }
     }
 
-    return (upvotedIds: upvotedIds, downvotedIds: downvotedIds);
+    final reactedEmojiByTargetId = <String, String>{};
+    for (final entry in newestEmojiEventByTargetId.entries) {
+      final event = entry.value;
+      final emoji = emojiReactionContentOf(event.content)!;
+      reactedEmojiByTargetId[entry.key] = emoji;
+      // Hydrate the removal cache, but never clobber a live record — an
+      // in-flight optimistic publish holds a fresher one than the relay.
+      if (_emojiReactionRecords[entry.key] == null) {
+        _indexEmojiReactionRecord(
+          EmojiReactionRecord(
+            targetEventId: entry.key,
+            reactionEventId: event.id,
+            emoji: emoji,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              event.createdAt * 1000,
+            ),
+            addressableId: _extractAddressableId(event),
+          ),
+        );
+      }
+    }
+
+    return (
+      upvotedIds: upvotedIds,
+      downvotedIds: downvotedIds,
+      reactedEmojiByTargetId: reactedEmojiByTargetId,
+    );
   }
 
   Future<List<Event>> _queryVoteTargetReactions({
@@ -1581,6 +1761,144 @@ class LikesRepository {
     return true;
   }
 
+  /// Publish an emoji reaction (Kind 7 with the emoji as content).
+  ///
+  /// Cap-at-one per target: a caller switching emoji removes the previous
+  /// reaction first via [removeEmojiReaction], mirroring how vote switching
+  /// tears down before placing. Optimistic-first like [downvoteEvent]: the
+  /// record is indexed before the publish and rolled back on failure.
+  ///
+  /// [emoji] must be displayable emoji content per [emojiReactionContentOf];
+  /// anything else throws [ArgumentError] — a caller bug, not a domain
+  /// failure.
+  ///
+  /// Throws [AlreadyReactedException] when the target already carries the
+  /// user's emoji reaction — a state-sync sentinel carrying the recorded
+  /// emoji so the caller can reconcile to it.
+  /// Throws [LikeFailedException] if the publish fails.
+  Future<String> reactToEventWithEmoji({
+    required String eventId,
+    required String authorPubkey,
+    required String emoji,
+    int? targetKind,
+    String? addressableId,
+  }) async {
+    final content = emojiReactionContentOf(emoji);
+    if (content == null) {
+      throw ArgumentError.value(
+        emoji,
+        'emoji',
+        'must be emoji-only reaction content',
+      );
+    }
+
+    await _ensureInitialized();
+
+    final existing = _lookupEmojiReactionRecord(eventId, addressableId);
+    if (existing != null) {
+      throw AlreadyReactedException(eventId, existing.emoji);
+    }
+    if (addressableId != null && addressableId.isNotEmpty) {
+      final remoteRecord = await _resolveRemoteEmojiReactionRecord(
+        eventId,
+        addressableId: addressableId,
+      );
+      if (remoteRecord != null) {
+        _indexEmojiReactionRecord(remoteRecord);
+        throw AlreadyReactedException(eventId, remoteRecord.emoji);
+      }
+    }
+
+    final placeholderId = 'pending_reaction_$eventId';
+    final placeholder = EmojiReactionRecord(
+      targetEventId: eventId,
+      reactionEventId: placeholderId,
+      emoji: content,
+      createdAt: DateTime.now(),
+      addressableId: addressableId,
+    );
+    _indexEmojiReactionRecord(placeholder);
+
+    try {
+      final reactionEvent = await _nostrClient.sendLike(
+        eventId,
+        content: content,
+        addressableId: addressableId,
+        targetAuthorPubkey: authorPubkey,
+        targetKind: targetKind,
+      );
+
+      if (reactionEvent == null) {
+        throw const LikeFailedException('Failed to publish emoji reaction');
+      }
+
+      _indexEmojiReactionRecord(
+        EmojiReactionRecord(
+          targetEventId: eventId,
+          reactionEventId: reactionEvent.id,
+          emoji: content,
+          createdAt: placeholder.createdAt,
+          addressableId: addressableId,
+        ),
+      );
+
+      return reactionEvent.id;
+    } catch (_) {
+      _deindexEmojiReactionRecord(eventId);
+      rethrow;
+    }
+  }
+
+  /// Remove the current user's emoji reaction on an event.
+  ///
+  /// Optimistic-first like [removeDownvote]: the record is removed before
+  /// the Kind 5 publish and restored on failure. When the in-memory cache
+  /// holds nothing — emoji records are not persisted locally — the relay
+  /// copy is consulted before giving up, so a post-restart removal still
+  /// retracts the live reaction.
+  ///
+  /// Throws [NotReactedException] when neither the cache nor the relay has
+  /// a live emoji reaction for the target.
+  /// Throws [UnlikeFailedException] if the deletion publish fails.
+  Future<void> removeEmojiReaction(
+    String eventId, {
+    String? addressableId,
+  }) async {
+    await _ensureInitialized();
+
+    final record =
+        _lookupEmojiReactionRecord(eventId, addressableId) ??
+        await _resolveRemoteEmojiReactionRecord(
+          eventId,
+          addressableId: addressableId,
+        );
+    if (record == null) {
+      throw NotReactedException(eventId);
+    }
+
+    final snapshotRecord = record;
+    _deindexEmojiReactionRecord(snapshotRecord.targetEventId);
+
+    // A pending_ placeholder never reached the relay; nothing to retract.
+    if (snapshotRecord.reactionEventId.startsWith('pending_')) {
+      return;
+    }
+
+    try {
+      final deletionEvent = await _nostrClient.deleteEvent(
+        snapshotRecord.reactionEventId,
+      );
+      if (deletionEvent == null) {
+        throw const UnlikeFailedException(
+          'Failed to publish emoji reaction deletion',
+        );
+      }
+    } catch (_) {
+      _indexEmojiReactionRecord(snapshotRecord);
+      rethrow;
+    }
+  }
+
   /// Delete a reaction event by its ID (Kind 5 deletion).
   ///
   /// Used for vote switching (removing old vote before publishing new one).
@@ -1675,6 +1993,7 @@ class LikesRepository {
       final newRecords = <LikeRecord>[];
       final deletedTargetIds = <String>[];
       final deletedDownvoteTargetIds = <String>[];
+      final deletedEmojiTargetIds = <String>[];
       var downvoteCacheChanged = false;
 
       for (final event in reactionEvents) {
@@ -1688,6 +2007,9 @@ class LikesRepository {
           }
           if (_downvoteRecords.containsKey(targetId)) {
             deletedDownvoteTargetIds.add(targetId);
+          }
+          if (_emojiReactionRecords[targetId]?.reactionEventId == event.id) {
+            deletedEmojiTargetIds.add(targetId);
           }
           continue;
         }
@@ -1744,6 +2066,26 @@ class LikesRepository {
             _indexDownvoteRecord(record);
             downvoteCacheChanged = true;
           }
+        } else {
+          final emoji = emojiReactionContentOf(event.content);
+          if (emoji == null) continue;
+
+          // Mirror the downvote branch: in-memory only, freshest wins.
+          final existing = _emojiReactionRecords[targetId];
+          final createdAt = DateTime.fromMillisecondsSinceEpoch(
+            event.createdAt * 1000,
+          );
+          if (existing == null || createdAt.isAfter(existing.createdAt)) {
+            _indexEmojiReactionRecord(
+              EmojiReactionRecord(
+                targetEventId: targetId,
+                reactionEventId: event.id,
+                emoji: emoji,
+                createdAt: createdAt,
+                addressableId: _extractAddressableId(event),
+              ),
+            );
+          }
         }
       }
 
@@ -1762,6 +2104,9 @@ class LikesRepository {
         _deindexDownvoteRecord(targetId);
         downvoteCacheChanged = true;
       }
+
+      // Remove deleted emoji reactions from in-memory cache
+      deletedEmojiTargetIds.forEach(_deindexEmojiReactionRecord);
 
       // Batch save new records to storage
       if (newRecords.isNotEmpty && localStorage != null) {
@@ -2027,10 +2372,7 @@ class LikesRepository {
     List<String> eventIds, {
     required int kind,
   }) {
-    return _queryChunked(
-      eventIds,
-      (chunk) => Filter(kinds: [kind], e: chunk),
-    );
+    return _queryChunked(eventIds, (chunk) => Filter(kinds: [kind], e: chunk));
   }
 
   /// Runs [buildFilter] over [values] in chunks capped at [_reqEidChunkSize]
@@ -2106,9 +2448,11 @@ class LikesRepository {
     Iterable<Event> reactions, {
     required Set<String> deletedReactionIds,
   }) {
+    // NIP-25: only `+`/empty content is a like. Emoji reactions display on
+    // the post but do not make their author a liker.
     final survivors =
         reactions
-            .where((event) => event.content != _downvoteContent)
+            .where((event) => _isLikeContent(event.content))
             .where((event) => !deletedReactionIds.contains(event.id))
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -2280,6 +2624,23 @@ class LikesRepository {
         ),
       );
       _emitDownvotedIds();
+    } else {
+      final emoji = emojiReactionContentOf(event.content);
+      if (emoji == null) return;
+
+      // Deduplicate emoji reactions (in-memory only, like downvotes)
+      final existing = _emojiReactionRecords[targetId];
+      if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
+
+      _indexEmojiReactionRecord(
+        EmojiReactionRecord(
+          targetEventId: targetId,
+          reactionEventId: event.id,
+          emoji: emoji,
+          createdAt: createdAt,
+          addressableId: _extractAddressableId(event),
+        ),
+      );
     }
   }
 
@@ -2345,6 +2706,8 @@ class LikesRepository {
     _unlikeRequestedWhilePending.clear();
     _downvoteRecords.clear();
     _downvoteRecordsByAddressableId.clear();
+    _emojiReactionRecords.clear();
+    _emojiReactionRecordsByAddressableId.clear();
     _likeCountCache.clear();
     _likeCountCacheByAddressableId.clear();
     await _localStorage?.clearAll();
@@ -2497,6 +2860,55 @@ class LikesRepository {
     String eventId, {
     String? addressableId,
   }) async {
+    final newest = await _resolveNewestLiveOwnReaction(
+      eventId,
+      addressableId: addressableId,
+      contentMatches: (content) => content == _downvoteContent,
+    );
+    if (newest == null) return null;
+    return LikeRecord(
+      targetEventId: eventId,
+      reactionEventId: newest.id,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(newest.createdAt * 1000),
+      addressableId: _extractAddressableId(newest),
+    );
+  }
+
+  /// Resolves the current user's still-live emoji reaction on [eventId]
+  /// from relays.
+  ///
+  /// Mirror of [_resolveRemoteDownvoteRecord] — emoji records are also
+  /// in-memory only, so a cold start needs the relay to find the reaction
+  /// id a removal must reference.
+  Future<EmojiReactionRecord?> _resolveRemoteEmojiReactionRecord(
+    String eventId, {
+    String? addressableId,
+  }) async {
+    final newest = await _resolveNewestLiveOwnReaction(
+      eventId,
+      addressableId: addressableId,
+      contentMatches: (content) => emojiReactionContentOf(content) != null,
+    );
+    if (newest == null) return null;
+    return EmojiReactionRecord(
+      targetEventId: eventId,
+      reactionEventId: newest.id,
+      emoji: emojiReactionContentOf(newest.content)!,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(newest.createdAt * 1000),
+      addressableId: _extractAddressableId(newest),
+    );
+  }
+
+  /// The newest still-live kind-7 reaction the user has published against
+  /// [eventId] (or its coordinate) whose content satisfies [contentMatches],
+  /// or `null` when there is none.
+  ///
+  /// "Live" excludes reactions the user has since retracted with a Kind 5.
+  Future<Event?> _resolveNewestLiveOwnReaction(
+    String eventId, {
+    required String? addressableId,
+    required bool Function(String content) contentMatches,
+  }) async {
     final pubkey = await _currentUserPubkey();
     if (pubkey == null) return null;
 
@@ -2511,7 +2923,7 @@ class LikesRepository {
 
     final candidatesById = <String, Event>{};
     for (final event in reactions) {
-      if (event.content != _downvoteContent) continue;
+      if (!contentMatches(event.content)) continue;
       final matches =
           _extractTargetEventId(event) == eventId ||
           (hasCoordinate && _extractAddressableId(event) == addressableId);
@@ -2542,13 +2954,6 @@ class LikesRepository {
         candidates.where((event) => !deletedIds.contains(event.id)).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     if (live.isEmpty) return null;
-
-    final newest = live.first;
-    return LikeRecord(
-      targetEventId: eventId,
-      reactionEventId: newest.id,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(newest.createdAt * 1000),
-      addressableId: _extractAddressableId(newest),
-    );
+    return live.first;
   }
 }

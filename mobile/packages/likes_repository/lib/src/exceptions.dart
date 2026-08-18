@@ -100,6 +100,35 @@ class NotDownvotedException extends LikesRepositoryException {
   String toString() => 'NotDownvotedException: $message';
 }
 
+/// Exception thrown when the target already carries the user's emoji
+/// reaction.
+///
+/// A state-sync sentinel like [AlreadyLikedException]: the repository's
+/// record disagreed with the caller's pre-tap baseline. Carries the
+/// [emoji] actually recorded so the caller can reconcile to it.
+class AlreadyReactedException extends LikesRepositoryException {
+  /// Creates a new already reacted exception.
+  const AlreadyReactedException(String eventId, this.emoji)
+    : super('Event $eventId already has an emoji reaction');
+
+  /// The emoji of the reaction the repository already holds.
+  final String emoji;
+
+  @override
+  String toString() => 'AlreadyReactedException: $message ($emoji)';
+}
+
+/// Exception thrown when removing an emoji reaction from an event that has
+/// none.
+class NotReactedException extends LikesRepositoryException {
+  /// Creates a new not reacted exception.
+  const NotReactedException(String eventId)
+    : super('Event $eventId has no emoji reaction');
+
+  @override
+  String toString() => 'NotReactedException: $message';
+}
+
 /// Exception thrown when syncing reactions from relays fails.
 class SyncFailedException extends LikesRepositoryException {
   /// Creates a new sync failed exception.
