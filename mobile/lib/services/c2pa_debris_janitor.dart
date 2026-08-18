@@ -49,7 +49,7 @@ abstract final class C2paDebrisJanitor {
           );
         }
       }
-    } on Object {
+    } on Object catch (error, stackTrace) {
       // Best-effort; a listing failure must not block startup, but a janitor
       // that can never list its directory should be visible in logs rather
       // than indistinguishable from a clean device.
@@ -57,6 +57,8 @@ abstract final class C2paDebrisJanitor {
         'Could not list ${directory.path} while sweeping C2PA signing debris',
         name: 'C2paDebrisJanitor',
         category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
       );
     }
 
