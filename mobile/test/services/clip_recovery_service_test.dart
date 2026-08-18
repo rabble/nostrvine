@@ -312,7 +312,7 @@ void main() {
         writeVideo('VID_1755400000000.mp4.work.mp4');
         writeVideo('merged_1755400000000.mp4');
         writeVideo('watermarked_1755400000000.mp4');
-        writeVideo('c2pa_signed_1755400000000.mp4', bytes: 0);
+        writeVideo('c2pa_signed_1755400000000.mp4');
         writeVideo('clip_1755400000000_0_reversed.mp4');
         writeVideo('trimmed_1755400000000.mp4');
         writeVideo('1755400000000.mp4');
