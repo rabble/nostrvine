@@ -83,11 +83,17 @@ jobs:
         # undeclared group fails every workflow in the file and no in-script
         # guard can catch it (#7203).
         run: bash mobile/scripts/check_codemagic_groups.sh
+
+  # Deliberately ungated: these tests protect release configuration that the
+  # app-scope detector excludes, and the Mobile CI aggregator requires them.
   ci-config-tests:
     name: CI Configuration Tests
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Provenance tests verify the historical release baseline tree.
+          fetch-depth: 0
       - name: Run CI configuration unit tests
         run: python3 -m unittest discover -s .github/scripts/tests
 

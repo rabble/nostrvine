@@ -35,6 +35,10 @@
 #     CI authenticates with API keys only.
 #   - SHOREBIRD_PATCH_PUBLIC_KEY (public PEM used by `shorebird release`)
 #   - SHOREBIRD_PATCH_PRIVATE_KEY (secure private PEM used by `shorebird patch`)
+#   - SHOREBIRD_PROVENANCE_HMAC_KEY (secure random value used only to compare
+#     release and patch configuration without storing or logging its values)
+#   - SHOREBIRD_PROVENANCE_HMAC_KEY_ID (non-secret identifier for that key;
+#     retain old keys while any release fingerprinted with them is patchable)
 #     Store each PEM as a single-line value whose newlines are written as
 #     literal `\n` sequences. The CI step validates the decoded PEM envelope.
 #   The key must belong to an account with access to the app_id in
@@ -169,18 +173,42 @@ definitions:
         set -euo pipefail
         SHOREBIRD_BIN="$HOME/.shorebird/bin/shorebird"
         EXPECTED_SHOREBIRD_VERSION="Shorebird 1.6.117"
+        EXPECTED_SHOREBIRD_REVISION="45facdd4e4b3c39e0d260107977584f0b7c66bec"
         SHOREBIRD_VERSION_OUTPUT=""
+        SHOREBIRD_REVISION=""
         if [ -x "$SHOREBIRD_BIN" ]; then
           SHOREBIRD_VERSION_OUTPUT=$("$SHOREBIRD_BIN" --version 2>/dev/null || true)
+          SHOREBIRD_REVISION=$(git -C "$HOME/.shorebird" rev-parse HEAD 2>/dev/null || true)
         fi
-        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
-          curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash -s -- --force
+        if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION" || \
+           [ "$SHOREBIRD_REVISION" != "$EXPECTED_SHOREBIRD_REVISION" ]; then
+          # The upstream installer executes the mutable `stable` branch, so
+          # install the same checkout layout from the reviewed CLI commit.
+          rm -rf "$HOME/.shorebird"
+          git init --quiet "$HOME/.shorebird"
+          git -C "$HOME/.shorebird" remote add origin https://github.com/shorebirdtech/shorebird.git
+          git -C "$HOME/.shorebird" fetch --quiet --depth 1 origin "$EXPECTED_SHOREBIRD_REVISION"
+          git -C "$HOME/.shorebird" checkout --quiet --detach FETCH_HEAD
           SHOREBIRD_VERSION_OUTPUT=$("$SHOREBIRD_BIN" --version)
+          SHOREBIRD_REVISION=$(git -C "$HOME/.shorebird" rev-parse HEAD)
         fi
         echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
         echo "$SHOREBIRD_VERSION_OUTPUT"
         if ! printf '%s\n' "$SHOREBIRD_VERSION_OUTPUT" | grep -Fq "$EXPECTED_SHOREBIRD_VERSION"; then
           echo "ERROR: expected $EXPECTED_SHOREBIRD_VERSION; update and validate the pinned version before continuing."
+          exit 1
+        fi
+        if [ "$SHOREBIRD_REVISION" != "$EXPECTED_SHOREBIRD_REVISION" ]; then
+          echo "ERROR: Shorebird checkout does not match the reviewed revision."
+          exit 1
+        fi
+    - &verify_shorebird_release_source
+      name: Verify Shorebird release source
+      script: |
+        set -euo pipefail
+        if [ "$CM_BRANCH" != "main" ]; then
+          echo "Refusing to create a store release from branch '$CM_BRANCH'."
+          echo "Shorebird releases must be cut from main so future patches have a reachable baseline."
           exit 1
         fi
     - &write_shorebird_dart_defines
@@ -243,6 +271,52 @@ definitions:
           File.chmod(0o644, path)
         end
         RUBY
+    - &emit_shorebird_provenance
+      name: Record private Shorebird release provenance
+      script: |
+        set -euo pipefail
+        . "build/shorebird/${SHOREBIRD_PLATFORM}_release.env"
+        SOURCE_COMMIT=$(git rev-parse HEAD)
+        SHOREBIRD_CLI_VERSION=$("$HOME/.shorebird/bin/shorebird" --version | head -1)
+        SHOREBIRD_REVISION=$(git -C "$HOME/.shorebird" rev-parse HEAD)
+        PROVENANCE_PATH="build/shorebird/${SHOREBIRD_PLATFORM}_provenance.json"
+        ruby scripts/shorebird_provenance.rb emit \
+          --platform "$SHOREBIRD_PLATFORM" \
+          --release-version "$SHOREBIRD_RELEASE_VERSION" \
+          --source-commit "$SOURCE_COMMIT" \
+          --patch-baseline-commit "$SOURCE_COMMIT" \
+          --flutter-version "$FLUTTER_VERSION" \
+          --shorebird-cli-version "$SHOREBIRD_CLI_VERSION" \
+          --shorebird-cli-revision "$SHOREBIRD_REVISION" \
+          --defines build/shorebird/dart_defines.json \
+          --output "$PROVENANCE_PATH"
+        bash scripts/shorebird_provenance_store.sh create \
+          "$SHOREBIRD_PLATFORM" "$SHOREBIRD_RELEASE_VERSION" "$PROVENANCE_PATH"
+    - &fetch_and_verify_shorebird_provenance
+      name: Verify private Shorebird release provenance
+      script: |
+        set -euo pipefail
+        mkdir -p build/shorebird
+        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+          git fetch --quiet --unshallow origin main
+        else
+          git fetch --quiet origin main
+        fi
+        PROVENANCE_PATH="build/shorebird/${SHOREBIRD_PLATFORM}_provenance.json"
+        SHOREBIRD_CLI_VERSION=$("$HOME/.shorebird/bin/shorebird" --version | head -1)
+        SHOREBIRD_REVISION=$(git -C "$HOME/.shorebird" rev-parse HEAD)
+        bash scripts/shorebird_provenance_store.sh fetch \
+          "$SHOREBIRD_PLATFORM" "${{ inputs.RELEASE_VERSION }}" "$PROVENANCE_PATH"
+        ruby scripts/shorebird_provenance.rb verify \
+          --platform "$SHOREBIRD_PLATFORM" \
+          --release-version "${{ inputs.RELEASE_VERSION }}" \
+          --flutter-version "$FLUTTER_VERSION" \
+          --shorebird-cli-version "$SHOREBIRD_CLI_VERSION" \
+          --shorebird-cli-revision "$SHOREBIRD_REVISION" \
+          --release-commit "${{ inputs.RELEASE_COMMIT }}" \
+          --defines build/shorebird/dart_defines.json \
+          --record "$PROVENANCE_PATH" \
+          --env-output build/shorebird/patch_source.env
     - &write_shorebird_private_key
       name: Write Shorebird patch private key
       script: |
@@ -268,31 +342,8 @@ definitions:
           echo "Patch workflows must run from main after the fix has merged."
           exit 1
         fi
-        if [ -z "${{ inputs.RELEASE_COMMIT }}" ]; then
-          echo "Refusing to patch: RELEASE_COMMIT is required."
-          echo "Use the git commit that produced the target store release."
-          exit 1
-        fi
-        if ! printf '%s\n' "${{ inputs.RELEASE_COMMIT }}" | grep -Eq '^[0-9a-fA-F]{40}$'; then
-          echo "Refusing to patch: RELEASE_COMMIT must be a full 40-character commit SHA."
-          exit 1
-        fi
-        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-          git fetch --quiet --unshallow origin main
-        else
-          git fetch --quiet origin main
-        fi
-        if ! git cat-file -e "${{ inputs.RELEASE_COMMIT }}^{commit}" 2>/dev/null; then
-          echo "Refusing to patch: RELEASE_COMMIT '${{ inputs.RELEASE_COMMIT }}' is not a commit in this checkout."
-          exit 1
-        fi
-        if ! git merge-base --is-ancestor "${{ inputs.RELEASE_COMMIT }}" HEAD; then
-          echo "Refusing to patch: RELEASE_COMMIT must be an ancestor of HEAD."
-          echo "release commit: ${{ inputs.RELEASE_COMMIT }}"
-          echo "current head:    $(git rev-parse HEAD)"
-          exit 1
-        fi
-        BLOCKED_PATCH_PATHS=$(git diff --name-only "${{ inputs.RELEASE_COMMIT }}..HEAD" -- \
+        . build/shorebird/patch_source.env
+        BLOCKED_PATCH_PATHS=$(git diff --name-only "$SHOREBIRD_PATCH_BASELINE_COMMIT..HEAD" -- \
           'android/**' \
           'ios/**' \
           'macos/**' \
@@ -318,13 +369,13 @@ definitions:
           exit 1
         fi
         echo "Patch source diff from release commit to current HEAD:"
-        git log --oneline --no-merges "${{ inputs.RELEASE_COMMIT }}..HEAD"
-        if git diff --quiet "${{ inputs.RELEASE_COMMIT }}..HEAD" -- '*.dart'; then
+        git log --oneline --no-merges "$SHOREBIRD_PATCH_BASELINE_COMMIT..HEAD"
+        if git diff --quiet "$SHOREBIRD_PATCH_BASELINE_COMMIT..HEAD" -- '*.dart'; then
           echo "No Dart changes found between release commit and HEAD."
         else
           echo
           echo "Dart files changed since the release commit:"
-          git diff --name-only "${{ inputs.RELEASE_COMMIT }}..HEAD" -- '*.dart'
+          git diff --name-only "$SHOREBIRD_PATCH_BASELINE_COMMIT..HEAD" -- '*.dart'
         fi
     - &preflight_shorebird_android_release
       name: Preflight Android Shorebird release
@@ -871,6 +922,7 @@ workflows:
         # release is only reproducible if we pin it to the same version
         # Codemagic provisioned.
         FLUTTER_VERSION: 3.44.9
+        SHOREBIRD_PLATFORM: ios
         BUNDLE_ID: co.openvine.app
         IOS_EXTENSION_BUNDLE_IDS: >-
           co.openvine.app.NotificationServiceExtension
@@ -886,6 +938,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *verify_shorebird_release_source
       - *shorebird_install
       - *check_signing_endpoint
       - *check_supporters_config
@@ -899,6 +952,7 @@ workflows:
       - *pod_install
       - *write_shorebird_dart_defines
       - *build_ios
+      - *emit_shorebird_provenance
       - *upload_dsyms_to_crashlytics
       - *publish_github_release
     artifacts:
@@ -993,6 +1047,7 @@ workflows:
       vars:
         # Must match `flutter:` above — see the iOS workflow for why.
         FLUTTER_VERSION: 3.44.9
+        SHOREBIRD_PLATFORM: android
       android_signing:
         - divine_keystore
     cache:
@@ -1003,6 +1058,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *verify_shorebird_release_source
       - *shorebird_install
       - *check_signing_endpoint
       - *check_supporters_config
@@ -1014,6 +1070,7 @@ workflows:
       - *write_shorebird_dart_defines
       - *build_apk
       - *build_aab
+      - *emit_shorebird_provenance
       - *publish_github_release
     artifacts:
       - build/app/outputs/apk/release/*.apk
@@ -1065,9 +1122,9 @@ workflows:
         type: string
       RELEASE_COMMIT:
         description: >-
-          Git commit that produced the target store release. The workflow
-          prints every commit and Dart file that will be included in the patch
-          beyond this release commit.
+          Optional source assertion. When supplied, it must be the recorded
+          build commit, patch baseline, or a commit with the recorded source
+          tree. Provenance determines the actual patch baseline.
         type: string
       DEFAULT_ENV:
         description: >-
@@ -1087,8 +1144,13 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - github_credentials
         - shorebird_credentials
       vars:
+        # Must match `flutter:` above. Provenance verification compares this
+        # against the Flutter version recorded for the target release.
+        FLUTTER_VERSION: 3.44.9
+        SHOREBIRD_PLATFORM: ios
         BUNDLE_ID: co.openvine.app
         IOS_EXTENSION_BUNDLE_IDS: >-
           co.openvine.app.NotificationServiceExtension
@@ -1105,10 +1167,12 @@ workflows:
       events: []
     scripts:
       - *confirm_patch
-      - *prepare_patch_source
       - *shorebird_install
       - *check_signing_endpoint
       - *check_supporters_config
+      - *write_shorebird_dart_defines
+      - *fetch_and_verify_shorebird_provenance
+      - *prepare_patch_source
       - *check_ios_extension_signing_contract
       - *write_shorebird_private_key
       - *setup_code_signing_xcode
@@ -1116,7 +1180,6 @@ workflows:
       - *enable_spm
       - *prepare_ios_spm_packages
       - *pod_install
-      - *write_shorebird_dart_defines
       - *patch_ios
 
   android-patch:
@@ -1143,9 +1206,9 @@ workflows:
         type: string
       RELEASE_COMMIT:
         description: >-
-          Git commit that produced the target store release. The workflow
-          prints every commit and Dart file that will be included in the patch
-          beyond this release commit.
+          Optional source assertion. When supplied, it must be the recorded
+          build commit, patch baseline, or a commit with the recorded source
+          tree. Provenance determines the actual patch baseline.
         type: string
       DEFAULT_ENV:
         description: >-
@@ -1164,7 +1227,13 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - github_credentials
         - shorebird_credentials
+      vars:
+        # Must match `flutter:` above. Provenance verification compares this
+        # against the Flutter version recorded for the target release.
+        FLUTTER_VERSION: 3.44.9
+        SHOREBIRD_PLATFORM: android
       android_signing:
         - divine_keystore
     cache:
@@ -1176,14 +1245,15 @@ workflows:
       events: []
     scripts:
       - *confirm_patch
-      - *prepare_patch_source
       - *shorebird_install
       - *check_signing_endpoint
       - *check_supporters_config
+      - *write_shorebird_dart_defines
+      - *fetch_and_verify_shorebird_provenance
+      - *prepare_patch_source
       - *setup_local_properties
       - *configure_gradle_memory
       - *write_shorebird_private_key
-      - *write_shorebird_dart_defines
       - *patch_android
 
   macos-build:
