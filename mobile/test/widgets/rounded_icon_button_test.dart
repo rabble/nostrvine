@@ -1,5 +1,5 @@
 // ABOUTME: Tests for RoundedIconButton widget
-// ABOUTME: Verifies icon rendering, tap callback, and null onPressed
+// ABOUTME: Verifies icon rendering, tap callback, null onPressed, and semantics
 
 import 'dart:ui' show Tristate;
 

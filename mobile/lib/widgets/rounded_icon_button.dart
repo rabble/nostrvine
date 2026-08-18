@@ -16,7 +16,10 @@ import 'package:flutter/material.dart';
 /// RoundedIconButton(
 ///   onPressed: () => context.pop(),
 ///   semanticLabel: context.l10n.commonBack,
-///   icon: Icon(Icons.chevron_left, color: VineTheme.vineGreenLight, size: 28),
+///   icon: DivineIcon(
+///     icon: DivineIconName.caretLeft,
+///     color: context.vineColors.onIconButton,
+///   ),
 /// )
 /// ```
 class RoundedIconButton extends StatelessWidget {
