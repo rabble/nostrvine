@@ -1401,6 +1401,7 @@ Future<void> _startOpenVineApp() async {
     database: deviceDatabase,
     sharedPreferences: sharedPreferences,
     switchController: accountSwitchController,
+    appVersion: packageInfo.version,
     dbCipherKey: dbCipherKey,
     databaseCorruptionService: databaseCorruptionService,
     installSource: installSource,

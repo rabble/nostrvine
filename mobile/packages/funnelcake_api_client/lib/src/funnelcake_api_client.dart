@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:funnelcake_api_client/src/exceptions.dart';
 import 'package:funnelcake_api_client/src/leaderboard_period.dart';
 import 'package:funnelcake_api_client/src/models/models.dart';
+import 'package:funnelcake_api_client/src/user_agent.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
@@ -62,6 +63,7 @@ class FunnelcakeApiClient {
     Duration timeout = const Duration(seconds: 15),
     Duration retryBaseDelay = const Duration(milliseconds: 300),
     String moderationProfile = defaultModerationProfile,
+    String? appVersion,
   }) : _baseUrl = baseUrl.endsWith('/')
            ? baseUrl.substring(0, baseUrl.length - 1)
            : baseUrl,
@@ -69,7 +71,10 @@ class FunnelcakeApiClient {
        _ownsHttpClient = httpClient == null,
        _timeout = timeout,
        _retryBaseDelay = retryBaseDelay,
-       _moderationProfile = moderationProfile;
+       _moderationProfile = moderationProfile,
+       _appVersion = appVersion;
+
+  final String? _appVersion;
 
   /// Total attempts an idempotent GET makes before giving up.
   ///
@@ -175,7 +180,7 @@ class FunnelcakeApiClient {
               uri,
               headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'OpenVine-Mobile/1.0',
+                ...buildDivineClientHeaders(appVersion: _appVersion),
               },
             )
             .timeout(remaining());
@@ -236,7 +241,7 @@ class FunnelcakeApiClient {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'User-Agent': 'OpenVine-Mobile/1.0',
+            ...buildDivineClientHeaders(appVersion: _appVersion),
           },
           body: jsonEncode(body),
         )
@@ -2789,7 +2794,7 @@ class FunnelcakeApiClient {
             url,
             headers: {
               'Accept': 'application/json',
-              'User-Agent': 'OpenVine-Mobile/1.0',
+              ...buildDivineClientHeaders(appVersion: _appVersion),
               ...?authHeaders,
             },
           )
@@ -2856,7 +2861,7 @@ class FunnelcakeApiClient {
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
-              'User-Agent': 'OpenVine-Mobile/1.0',
+              ...buildDivineClientHeaders(appVersion: _appVersion),
               ...?authHeaders,
             },
             body: payload,

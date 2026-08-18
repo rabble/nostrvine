@@ -72,6 +72,7 @@ void main() {
       database: database,
       sharedPreferences: prefs,
       switchController: controller,
+      appVersion: 'test',
     );
 
     // Create two real local-key identities in a setup container. Guarded

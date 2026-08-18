@@ -59,7 +59,7 @@ final class FunnelcakeApiClientProvider
 }
 
 String _$funnelcakeApiClientHash() =>
-    r'2c71e9e5b8844ea7239eb1a690ad7f5c9fb42b43';
+    r'7d81bbae93be6855dc50f105e4df081344c1ebff';
 
 /// Single source of truth for Funnelcake REST API availability.
 ///

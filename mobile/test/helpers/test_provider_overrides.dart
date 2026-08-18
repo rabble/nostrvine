@@ -16,6 +16,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -370,6 +371,9 @@ List<dynamic> getStandardTestOverrides({
   final mockFollow = mockFollowRepository ?? createMockFollowRepository();
 
   return [
+    // Mirror DeviceScope's required bootstrap override for test containers.
+    appVersionProvider.overrideWithValue('test'),
+
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
 

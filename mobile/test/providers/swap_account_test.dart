@@ -82,6 +82,7 @@ void main() {
       database: database,
       sharedPreferences: prefs,
       switchController: controller,
+      appVersion: 'test',
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
       ],

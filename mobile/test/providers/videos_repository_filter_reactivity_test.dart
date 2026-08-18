@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -104,6 +105,7 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
+            appVersionProvider.overrideWithValue('test'),
             sharedPreferencesProvider.overrideWithValue(mockPrefs),
             nostrServiceProvider.overrideWithValue(mockNostrClient),
             contentFilterServiceProvider.overrideWithValue(mockContentFilter),
@@ -149,6 +151,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          appVersionProvider.overrideWithValue('test'),
           sharedPreferencesProvider.overrideWithValue(mockPrefs),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
           contentFilterServiceProvider.overrideWithValue(mockContentFilter),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -31,7 +32,11 @@ FunnelcakeApiClient funnelcakeApiClient(Ref ref) {
   // its own dispose() would have done has to happen here instead.
   final httpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
   ref.onDispose(httpClient.close);
-  return FunnelcakeApiClient(baseUrl: baseUrl, httpClient: httpClient);
+  return FunnelcakeApiClient(
+    baseUrl: baseUrl,
+    httpClient: httpClient,
+    appVersion: ref.watch(appVersionProvider),
+  );
 }
 
 /// Single source of truth for Funnelcake REST API availability.

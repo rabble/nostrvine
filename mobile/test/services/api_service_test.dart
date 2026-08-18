@@ -28,6 +28,7 @@ void main() {
       apiService = ApiService(
         client: mockClient,
         relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
+        appVersion: 'test',
       );
     });
 
@@ -92,6 +93,7 @@ void main() {
           final stagingService = ApiService(
             client: mockClient,
             relayManagerBaseUrl: 'https://api-relay-staging.divine.video',
+            appVersion: 'test',
           );
           final mockResponse = MockResponse();
           when(() => mockResponse.statusCode).thenReturn(200);
@@ -204,6 +206,48 @@ void main() {
           expect(
             captured.path,
             '/v1/minor-review-cases/case-123/parent-contact',
+          );
+        },
+      );
+    });
+
+    group('client identity headers', () {
+      test(
+        'sends app version, platform, and X-Divine-Platform via injection, '
+        'not the old divine-Mobile literal',
+        () async {
+          final injected = ApiService(
+            client: mockClient,
+            relayManagerBaseUrl: 'https://api-relay-prod.divine.video',
+            appVersion: '1.0.20',
+          );
+
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.body).thenReturn('{}');
+
+          when(
+            () => mockClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => mockResponse);
+
+          await injected.getMinorAccountReviewStatus();
+
+          final captured = verify(
+            () => mockClient.get(any(), headers: captureAny(named: 'headers')),
+          ).captured;
+          final headers = captured.whereType<Map<String, String>>().single;
+          expect(
+            headers['User-Agent'],
+            matches(
+              RegExp(
+                r'^Divine-Mobile/1\.0\.20 \((iOS|Android|macOS|Linux|Windows|Web)\)$',
+              ),
+            ),
+          );
+          expect(headers['User-Agent'], isNot('divine-Mobile/1.0'));
+          expect(
+            headers['X-Divine-Platform'],
+            matches(RegExp(r'^(ios|android|macos|linux|windows|web)$')),
           );
         },
       );
