@@ -487,7 +487,14 @@ class AccountDeletionService {
         var outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
         if (isRateLimitedOutcome(outcome)) {
           await _retryDelay(_rateLimitRetryDelay);
-          _assertSignerMatches(expectedPubkey);
+          try {
+            _assertSignerMatches(expectedPubkey);
+          } on AccountChangedDuringDeletion {
+            if (successCount > 0) {
+              throw const AccountChangedAfterDeletion();
+            }
+            rethrow;
+          }
           outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
         }
         try {
@@ -518,7 +525,14 @@ class AccountDeletionService {
       onProgress?.call(successCount, total);
       if (batchIndex < batches.length - 1) {
         await _retryDelay(_interBatchDelay);
-        _assertSignerMatches(expectedPubkey);
+        try {
+          _assertSignerMatches(expectedPubkey);
+        } on AccountChangedDuringDeletion {
+          if (successCount > 0) {
+            throw const AccountChangedAfterDeletion();
+          }
+          rethrow;
+        }
       }
     }
 

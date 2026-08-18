@@ -956,6 +956,79 @@ void main() {
       );
 
       test(
+        'reports partial deletion when the account changes during the '
+        'inter-batch delay after a batch was confirmed',
+        () async {
+          var current = testPublicKey;
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenAnswer((_) => current);
+
+          final delays = <Duration>[];
+          final pacingService = AccountDeletionService(
+            nostrService: mockNostrService,
+            authService: mockAuthService,
+            retryDelay: (delay) async {
+              delays.add(delay);
+              // Swap the signed-in account while the sweep waits between
+              // batches, after batch 0 has already been confirmed on relays.
+              current = 'a_different_pubkey_than_confirmed';
+            },
+          );
+
+          when(() => mockNostrService.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 1,
+                tags: const [],
+                content: 'note',
+                id: 'kind1_note',
+              ),
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 7,
+                tags: const [],
+                content: 'reaction',
+                id: 'kind7_reaction',
+              ),
+            ],
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 5,
+              tags: const [],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async => _confirmed);
+
+          final result = await pacingService.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          // Two kind-5 deletion requests were already confirmed on relays
+          // before the swap, so the user must be told deletion began, not
+          // that nothing happened.
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountChangedAfterDeletion,
+          );
+          expect(delays, contains(const Duration(milliseconds: 500)));
+        },
+      );
+
+      test(
         'batch deletion does not count events when every relay rejects',
         () async {
           // Arrange
