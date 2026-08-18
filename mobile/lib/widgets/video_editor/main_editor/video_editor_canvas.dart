@@ -1,8 +1,6 @@
-// ABOUTME: Canvas widget wrapping ProImageEditor for the video editor.
-// ABOUTME: Handles layer manipulation callbacks and editor configuration.
-
 import 'dart:async';
 import 'dart:math';
+import 'video_editor_over_budget_indicator.dart';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
@@ -2643,14 +2641,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                                   record.isSubEditorOpen) {
                                 return const SizedBox.shrink();
                               }
-                              return IgnorePointer(
-                                child: ColoredBox(
-                                  color: context.vineColors.background
-                                      .withAlpha(
-                                        128,
-                                      ),
-                                  child: const SizedBox.expand(),
-                                ),
+                              return OverBudgetIndicator(
+                                maxDurationSeconds:
+                                    VideoEditorConstants.maxDuration.inSeconds,
                               );
                             },
                           ),

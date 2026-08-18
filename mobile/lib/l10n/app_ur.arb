@@ -761,11 +761,17 @@
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
   "videoErrorAdultContentHiddenTitle": "بالغ مواد بند ہے",
-  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "@videoErrorAdultContentHiddenTitle": {
+    "description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."
+  },
   "videoErrorAdultContentHiddenBody": "یہ ویڈیو دیکھنے کے لیے اسے مواد فلٹرز میں چالو کریں۔",
-  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "@videoErrorAdultContentHiddenBody": {
+    "description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."
+  },
   "videoErrorAdultContentHiddenAction": "مواد فلٹرز کھولیں",
-  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
+  "@videoErrorAdultContentHiddenAction": {
+    "description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."
+  },
   "videoDetailLoadError": "ویڈیو لوڈ نہیں ہو سکی",
   "videoDetailLoadErrorBody": "یہاں پہنچتے پہنچتے کچھ گڑبڑ ہو گئی۔ دوبارہ کوشش کریں۔",
   "videoDetailNotFoundBody": "ہو سکتا ہے یہ حذف ہو چکی ہو، ہماری پہنچ سے باہر ہو، یا آپ کی ترتیبات نے اسے چھپا دیا ہو۔",
@@ -794,7 +800,16 @@
     "description": "Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound."
   },
   "videoInspiredByAttributionMultiple": "@{creatorName} +{additionalCreatorCount} سے متاثر",
-  "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
+  "@videoInspiredByAttributionMultiple": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      },
+      "additionalCreatorCount": {
+        "type": "int"
+      }
+    }
+  },
   "videoInspiredByAttribution": "@{creatorName} سے متاثر",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -1024,7 +1039,7 @@
   "metadataC2paCredentials": "C2PA مواد اسناد",
   "metadataProofManifest": "ثبوت مینی فیسٹ",
   "metadataVerificationInfoTooltip": "ان جانچوں کا کیا مطلب ہے؟",
-    "metadataSectionInfoSemanticsLabel": "{section}. {question}",
+  "metadataSectionInfoSemanticsLabel": "{section}. {question}",
   "metadataVerificationInfoTitle": "ان جانچوں کا مطلب",
   "metadataVerificationInfoIntro": "یہ اشارے کیمرے اور خود ویڈیو فائل سے آتے ہیں۔ ویڈیو کے پاس جتنے زیادہ اشارے ہوں، ہم اس کے ماخذ کے بارے میں اتنا ہی زیادہ ثابت کر سکتے ہیں۔",
   "metadataVerificationInfoDeviceAttestation": "فون کے آپریٹنگ سسٹم نے اُس ایپ کی ضمانت دی جس نے یہ ریکارڈ کیا۔ یہ اس بات کا مضبوط ثبوت ہے کہ یہ کیمرے سے آیا، نہ کہ کسی کی اپ لوڈ کی ہوئی فائل سے۔",
@@ -4424,7 +4439,16 @@
   },
   "videoClipDelete": "کلپ حذف کریں",
   "inspiredByAttributionMultipleSemanticLabel": "{creatorName} +{additionalCreatorCount} سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔",
-  "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
+  "@inspiredByAttributionMultipleSemanticLabel": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      },
+      "additionalCreatorCount": {
+        "type": "int"
+      }
+    }
+  },
   "inspiredByAttributionSemanticLabel": "{creatorName} سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔",
   "@inspiredByAttributionSemanticLabel": {
     "placeholders": {
@@ -4568,12 +4592,18 @@
   "blueskyEnabledSubtitle": "آپ کی ویڈیوز Bluesky پر شائع ہوں گی",
   "blueskyDisabledSubtitle": "آپ کی ویڈیوز Bluesky پر شائع نہیں ہوں گی",
   "blueskyBackfillDisclosureTitle": "آپ کی پچھلی ویڈیوز بھی پوسٹ ہوں گی",
-  "@blueskyBackfillDisclosureTitle": {"description": "Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled."},
+  "@blueskyBackfillDisclosureTitle": {
+    "description": "Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled."
+  },
   "blueskyBackfillDisclosureSubtitle": "جب آپ اسے آن کریں گے تو Divine آپ کی پرانی ویڈیوز Bluesky پر بھیجنا شروع کرے گا، سب سے پرانی پہلے، روزانہ حد میں جلدی کیے بغیر۔",
-  "@blueskyBackfillDisclosureSubtitle": {"description": "Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill."},
+  "@blueskyBackfillDisclosureSubtitle": {
+    "description": "Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill."
+  },
   "blueskyHandle": "Bluesky ہینڈل",
   "blueskyDid": "Bluesky DID",
-  "@blueskyDid": {"description": "Label for the ATProto DID shown when a Bluesky account is provisioned."},
+  "@blueskyDid": {
+    "description": "Label for the ATProto DID shown when a Bluesky account is provisioned."
+  },
   "blueskyStatus": "اسٹیٹس",
   "blueskyStatusReady": "اکاؤنٹ تیار اور دستیاب ہے",
   "blueskyStatusPending": "اکاؤنٹ تیار ہو رہا ہے...",
@@ -6809,11 +6839,32 @@
   "crosspostingGenericError": "کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔",
   "crosspostingCallbackTimeoutError": "سائن ان صفحے سے کوئی جواب نہیں آیا۔ اگر آپ نے وہاں منسلک کر لیا ہے تو ریفریش کریں — ہو سکتا ہے آپ کا اکاؤنٹ پہلے ہی منسلک ہو۔",
   "crosspostingConnectionSuccess": "{platform} منسلک ہو گیا",
-  "@crosspostingConnectionSuccess": {"description": "Snackbar after returning from a successful platform connection.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionSuccess": {
+    "description": "Snackbar after returning from a successful platform connection.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "crosspostingConnectionFailed": "{platform} منسلک نہیں ہو سکا",
-  "@crosspostingConnectionFailed": {"description": "Snackbar after returning from a failed platform connection.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionFailed": {
+    "description": "Snackbar after returning from a failed platform connection.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "crosspostingConnectionDenied": "{platform} پر کنکشن منسوخ کر دیا گیا",
-  "@crosspostingConnectionDenied": {"description": "Snackbar when the user denied the connection on the provider's page.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionDenied": {
+    "description": "Snackbar when the user denied the connection on the provider's page.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "supporterTitle": "Divine سپورٹرز",
   "@supporterTitle": {
     "description": "Title of the supporter subscription settings screen and its settings tile."
@@ -6909,9 +6960,21 @@
   "soundSharedAs": "بطور شیئر کیا گیا",
   "soundOwnWork": "یہ ساؤنڈ میں نے بنایا ہے",
   "soundCreatorBy": "بذریعہ {creator}",
-  "@soundCreatorBy": {"placeholders": {"creator": {"type": "String"}}},
+  "@soundCreatorBy": {
+    "placeholders": {
+      "creator": {
+        "type": "String"
+      }
+    }
+  },
   "soundSharedBy": "{publisher} کی جانب سے شیئر کیا گیا",
-  "@soundSharedBy": {"placeholders": {"publisher": {"type": "String"}}},
+  "@soundSharedBy": {
+    "placeholders": {
+      "publisher": {
+        "type": "String"
+      }
+    }
+  },
   "soundRemixingAllowed": "ری مکسنگ کی اجازت ہے",
   "soundCreditOnly": "صرف کریڈٹ",
   "soundCreditTitleLabel": "ساؤنڈ کا عنوان",
@@ -7073,5 +7136,18 @@
   "dbFailureCancel": "منسوخ کریں",
   "dbFailureResetFailed": "یہ کام نہیں کیا۔ Divine بند کریں اور دوبارہ کوشش کریں۔",
   "dbFailureResetDoneTitle": "مقامی ڈیٹابیس ری سیٹ ہو گیا",
-  "dbFailureResetDoneBody": "Divine بند کریں اور دوبارہ کھولیں — اگلی بار شروع ہونے پر نیا مقامی ڈیٹابیس بنے گا۔"
+  "dbFailureResetDoneBody": "Divine بند کریں اور دوبارہ کھولیں — اگلی بار شروع ہونے پر نیا مقامی ڈیٹابیس بنے گا۔",
+  "videoEditorOverBudgetLabel": "Video exceeds max duration",
+  "@videoEditorOverBudgetLabel": {
+    "description": "Label shown when the total duration of all clips exceeds the maximum allowed duration in the video editor."
+  },
+  "videoEditorOverBudgetDescription": "This clip is longer than the {maxDuration}-second budget",
+  "@videoEditorOverBudgetDescription": {
+    "description": "Description of the over-budget state, explaining the maximum duration limit.",
+    "placeholders": {
+      "maxDuration": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -20865,6 +20865,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close Divine and open it again — the next launch builds a fresh local database.'**
   String get dbFailureResetDoneBody;
+
+  /// Label shown when the total duration of all clips exceeds the maximum allowed duration in the video editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Video exceeds max duration'**
+  String get videoEditorOverBudgetLabel;
+
+  /// Description of the over-budget state, explaining the maximum duration limit.
+  ///
+  /// In en, this message translates to:
+  /// **'This clip is longer than the {maxDuration}-second budget'**
+  String videoEditorOverBudgetDescription(int maxDuration);
 }
 
 class _AppLocalizationsDelegate

@@ -761,11 +761,17 @@
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
   "videoErrorAdultContentHiddenTitle": "Nội dung người lớn đang tắt",
-  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "@videoErrorAdultContentHiddenTitle": {
+    "description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."
+  },
   "videoErrorAdultContentHiddenBody": "Bật trong bộ lọc nội dung để xem video này.",
-  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "@videoErrorAdultContentHiddenBody": {
+    "description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."
+  },
   "videoErrorAdultContentHiddenAction": "Mở bộ lọc nội dung",
-  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
+  "@videoErrorAdultContentHiddenAction": {
+    "description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."
+  },
   "videoDetailLoadError": "Không thể tải video",
   "videoDetailLoadErrorBody": "Có gì đó trục trặc trên đường tới đây. Thử lại nhé.",
   "videoDetailNotFoundBody": "Có thể nó đã bị xoá, ngoài tầm với, hoặc bị ẩn bởi cài đặt của bạn.",
@@ -794,7 +800,16 @@
     "description": "Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound."
   },
   "videoInspiredByAttributionMultiple": "Lấy cảm hứng từ @{creatorName} +{additionalCreatorCount}",
-  "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
+  "@videoInspiredByAttributionMultiple": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      },
+      "additionalCreatorCount": {
+        "type": "int"
+      }
+    }
+  },
   "videoInspiredByAttribution": "Lấy cảm hứng từ @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -1024,7 +1039,7 @@
   "metadataC2paCredentials": "Chứng nhận nội dung C2PA",
   "metadataProofManifest": "Tệp chứng minh",
   "metadataVerificationInfoTooltip": "Những kiểm tra này nghĩa là gì?",
-    "metadataSectionInfoSemanticsLabel": "{section}. {question}",
+  "metadataSectionInfoSemanticsLabel": "{section}. {question}",
   "metadataVerificationInfoTitle": "Ý nghĩa của những kiểm tra này",
   "metadataVerificationInfoIntro": "Các tín hiệu này đến từ máy ảnh và từ chính tệp video. Video mang càng nhiều tín hiệu, chúng tôi càng chứng minh được nhiều điều về nguồn gốc của nó.",
   "metadataVerificationInfoDeviceAttestation": "Hệ điều hành của điện thoại đã bảo chứng cho ứng dụng đã quay video này. Bằng chứng mạnh cho thấy nó đến từ camera, không phải tệp ai đó tải lên.",
@@ -4424,7 +4439,16 @@
   },
   "videoClipDelete": "Xóa clip",
   "inspiredByAttributionMultipleSemanticLabel": "Lấy cảm hứng từ {creatorName} +{additionalCreatorCount}. Chạm để xem hồ sơ của họ.",
-  "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
+  "@inspiredByAttributionMultipleSemanticLabel": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      },
+      "additionalCreatorCount": {
+        "type": "int"
+      }
+    }
+  },
   "inspiredByAttributionSemanticLabel": "Lấy cảm hứng từ {creatorName}. Chạm để xem hồ sơ của họ.",
   "@inspiredByAttributionSemanticLabel": {
     "placeholders": {
@@ -4568,12 +4592,18 @@
   "blueskyEnabledSubtitle": "Video của bạn sẽ được đăng lên Bluesky",
   "blueskyDisabledSubtitle": "Video của bạn sẽ không được đăng lên Bluesky",
   "blueskyBackfillDisclosureTitle": "Video cũ của bạn cũng sẽ được đăng",
-  "@blueskyBackfillDisclosureTitle": {"description": "Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled."},
+  "@blueskyBackfillDisclosureTitle": {
+    "description": "Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled."
+  },
   "blueskyBackfillDisclosureSubtitle": "Khi bật tính năng này, Divine sẽ bắt đầu gửi các video cũ hơn của bạn lên Bluesky, từ cũ nhất trước, không vội chạm giới hạn hằng ngày.",
-  "@blueskyBackfillDisclosureSubtitle": {"description": "Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill."},
+  "@blueskyBackfillDisclosureSubtitle": {
+    "description": "Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill."
+  },
   "blueskyHandle": "Tên định danh Bluesky",
   "blueskyDid": "DID Bluesky",
-  "@blueskyDid": {"description": "Label for the ATProto DID shown when a Bluesky account is provisioned."},
+  "@blueskyDid": {
+    "description": "Label for the ATProto DID shown when a Bluesky account is provisioned."
+  },
   "blueskyStatus": "Trạng thái",
   "blueskyStatusReady": "Tài khoản đã cấp và sẵn sàng",
   "blueskyStatusPending": "Đang cấp tài khoản...",
@@ -6809,11 +6839,32 @@
   "crosspostingGenericError": "Có gì đó không ổn. Thử lại nhé.",
   "crosspostingCallbackTimeoutError": "Trang đăng nhập không phản hồi. Nếu bạn đã kết nối xong ở đó, hãy làm mới — tài khoản của bạn có thể đã được liên kết rồi.",
   "crosspostingConnectionSuccess": "Đã kết nối {platform}",
-  "@crosspostingConnectionSuccess": {"description": "Snackbar after returning from a successful platform connection.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionSuccess": {
+    "description": "Snackbar after returning from a successful platform connection.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "crosspostingConnectionFailed": "Không kết nối được {platform}",
-  "@crosspostingConnectionFailed": {"description": "Snackbar after returning from a failed platform connection.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionFailed": {
+    "description": "Snackbar after returning from a failed platform connection.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "crosspostingConnectionDenied": "Kết nối đã bị hủy trên {platform}",
-  "@crosspostingConnectionDenied": {"description": "Snackbar when the user denied the connection on the provider's page.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionDenied": {
+    "description": "Snackbar when the user denied the connection on the provider's page.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "supporterTitle": "Người ủng hộ Divine",
   "@supporterTitle": {
     "description": "Title of the supporter subscription settings screen and its settings tile."
@@ -6909,9 +6960,21 @@
   "soundSharedAs": "Chia sẻ dưới dạng",
   "soundOwnWork": "Tôi tạo ra âm thanh này",
   "soundCreatorBy": "Bởi {creator}",
-  "@soundCreatorBy": {"placeholders": {"creator": {"type": "String"}}},
+  "@soundCreatorBy": {
+    "placeholders": {
+      "creator": {
+        "type": "String"
+      }
+    }
+  },
   "soundSharedBy": "Chia sẻ bởi {publisher}",
-  "@soundSharedBy": {"placeholders": {"publisher": {"type": "String"}}},
+  "@soundSharedBy": {
+    "placeholders": {
+      "publisher": {
+        "type": "String"
+      }
+    }
+  },
   "soundRemixingAllowed": "Cho phép remix",
   "soundCreditOnly": "Chỉ ghi công",
   "soundCreditTitleLabel": "Tên âm thanh",
@@ -7073,5 +7136,18 @@
   "dbFailureCancel": "hủy",
   "dbFailureResetFailed": "Không thành công. Hãy đóng Divine và thử lại.",
   "dbFailureResetDoneTitle": "đã đặt lại cơ sở dữ liệu cục bộ",
-  "dbFailureResetDoneBody": "Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới."
+  "dbFailureResetDoneBody": "Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới.",
+  "videoEditorOverBudgetLabel": "Video exceeds max duration",
+  "@videoEditorOverBudgetLabel": {
+    "description": "Label shown when the total duration of all clips exceeds the maximum allowed duration in the video editor."
+  },
+  "videoEditorOverBudgetDescription": "This clip is longer than the {maxDuration}-second budget",
+  "@videoEditorOverBudgetDescription": {
+    "description": "Description of the over-budget state, explaining the maximum duration limit.",
+    "placeholders": {
+      "maxDuration": {
+        "type": "int"
+      }
+    }
+  }
 }

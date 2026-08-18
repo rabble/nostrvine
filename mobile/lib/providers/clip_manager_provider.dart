@@ -379,8 +379,24 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Insert a clip at a specific position.
   ///
   /// Adds [clip] at [index], shifting subsequent clips forward.
-  /// Returns the inserted clip.
+  /// If the clip duration exceeds the remaining budget, it is pre-trimmed
+  /// to fit within the max duration limit.
+  /// Returns the inserted clip (potentially trimmed).
   DivineVideoClip insertClip(int index, DivineVideoClip clip) {
+    final remainingDuration = this.remainingDuration;
+
+    // Check if clip needs to be pre-trimmed to fit within max duration
+    if (clip.duration > remainingDuration) {
+      final excessDuration = clip.duration - remainingDuration;
+      clip = clip.copyWith(trimEnd: excessDuration);
+      Log.info(
+        '✂️ Pre-trimmed over-budget clip ${clip.id}: '
+        'excess ${(excessDuration.inMilliseconds / 1000).toStringAsFixed(2)}s',
+        name: 'ClipManagerNotifier',
+        category: .video,
+      );
+    }
+
     _clips.insert(index, clip);
     Log.info(
       '📎 Insert clip: ${clip.id}, '

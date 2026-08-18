@@ -11587,4 +11587,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dbFailureResetDoneBody => '关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。';
+
+  @override
+  String get videoEditorOverBudgetLabel => 'Video exceeds max duration';
+
+  @override
+  String videoEditorOverBudgetDescription(int maxDuration) {
+    return 'This clip is longer than the $maxDuration-second budget';
+  }
 }

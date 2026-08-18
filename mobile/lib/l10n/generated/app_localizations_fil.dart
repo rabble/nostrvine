@@ -12424,4 +12424,12 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Isara ang Divine at buksan itong muli — gagawa ng bagong lokal na database sa susunod na paglulunsad.';
+
+  @override
+  String get videoEditorOverBudgetLabel => 'Video exceeds max duration';
+
+  @override
+  String videoEditorOverBudgetDescription(int maxDuration) {
+    return 'This clip is longer than the $maxDuration-second budget';
+  }
 }

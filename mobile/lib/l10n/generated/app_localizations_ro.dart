@@ -12558,4 +12558,12 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Închide Divine și deschide-l din nou — următoarea pornire creează o bază de date locală nouă.';
+
+  @override
+  String get videoEditorOverBudgetLabel => 'Video exceeds max duration';
+
+  @override
+  String videoEditorOverBudgetDescription(int maxDuration) {
+    return 'This clip is longer than the $maxDuration-second budget';
+  }
 }

@@ -11693,4 +11693,12 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Divine を閉じてもう一度開いてください。次回の起動で新しいローカルデータベースが作成されます。';
+
+  @override
+  String get videoEditorOverBudgetLabel => 'Video exceeds max duration';
+
+  @override
+  String videoEditorOverBudgetDescription(int maxDuration) {
+    return 'This clip is longer than the $maxDuration-second budget';
+  }
 }

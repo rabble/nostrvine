@@ -12257,4 +12257,12 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới.';
+
+  @override
+  String get videoEditorOverBudgetLabel => 'Video exceeds max duration';
+
+  @override
+  String videoEditorOverBudgetDescription(int maxDuration) {
+    return 'This clip is longer than the $maxDuration-second budget';
+  }
 }

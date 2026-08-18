@@ -11718,4 +11718,12 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Divine을 닫았다가 다시 여세요. 다음 실행에서 새 로컬 데이터베이스가 만들어집니다.';
+
+  @override
+  String get videoEditorOverBudgetLabel => 'Video exceeds max duration';
+
+  @override
+  String videoEditorOverBudgetDescription(int maxDuration) {
+    return 'This clip is longer than the $maxDuration-second budget';
+  }
 }

@@ -761,11 +761,17 @@
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
   "videoErrorAdultContentHiddenTitle": "成人内容已关闭",
-  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "@videoErrorAdultContentHiddenTitle": {
+    "description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."
+  },
   "videoErrorAdultContentHiddenBody": "在内容过滤中开启后就能看这个视频了。",
-  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "@videoErrorAdultContentHiddenBody": {
+    "description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."
+  },
   "videoErrorAdultContentHiddenAction": "打开内容过滤",
-  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
+  "@videoErrorAdultContentHiddenAction": {
+    "description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."
+  },
   "videoDetailLoadError": "视频加载失败",
   "videoDetailLoadErrorBody": "路上出了点岔子，再试一次吧。",
   "videoDetailNotFoundBody": "可能被删了，可能够不到，也可能被你的设置隐藏了。",
@@ -794,7 +800,16 @@
     "description": "Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound."
   },
   "videoInspiredByAttributionMultiple": "灵感来自 @{creatorName} +{additionalCreatorCount}",
-  "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
+  "@videoInspiredByAttributionMultiple": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      },
+      "additionalCreatorCount": {
+        "type": "int"
+      }
+    }
+  },
   "videoInspiredByAttribution": "灵感来自 @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -1024,7 +1039,7 @@
   "metadataC2paCredentials": "C2PA 内容凭证",
   "metadataProofManifest": "证明清单",
   "metadataVerificationInfoTooltip": "这些检查是什么意思？",
-    "metadataSectionInfoSemanticsLabel": "{section}。{question}",
+  "metadataSectionInfoSemanticsLabel": "{section}。{question}",
   "metadataVerificationInfoTitle": "这些检查的含义",
   "metadataVerificationInfoIntro": "这些信号来自摄像头和视频文件本身。一个视频带的信号越多，我们能证明的来源信息就越多。",
   "metadataVerificationInfoDeviceAttestation": "手机操作系统为录制这段视频的应用作了担保。这有力地表明它来自摄像头，而不是别人上传的文件。",
@@ -4424,7 +4439,16 @@
   },
   "videoClipDelete": "删除片段",
   "inspiredByAttributionMultipleSemanticLabel": "灵感来自 {creatorName} +{additionalCreatorCount}。点按查看 TA 的主页。",
-  "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
+  "@inspiredByAttributionMultipleSemanticLabel": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      },
+      "additionalCreatorCount": {
+        "type": "int"
+      }
+    }
+  },
   "inspiredByAttributionSemanticLabel": "灵感来自 {creatorName}。点按查看 TA 的主页。",
   "@inspiredByAttributionSemanticLabel": {
     "placeholders": {
@@ -4568,12 +4592,18 @@
   "blueskyEnabledSubtitle": "你的视频将发布到 Bluesky",
   "blueskyDisabledSubtitle": "你的视频不会发布到 Bluesky",
   "blueskyBackfillDisclosureTitle": "你以前的视频也会发布",
-  "@blueskyBackfillDisclosureTitle": {"description": "Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled."},
+  "@blueskyBackfillDisclosureTitle": {
+    "description": "Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled."
+  },
   "blueskyBackfillDisclosureSubtitle": "开启后，Divine 会开始把你的旧视频发送到 Bluesky，从最早的视频开始，不会急着用完每日限额。",
-  "@blueskyBackfillDisclosureSubtitle": {"description": "Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill."},
+  "@blueskyBackfillDisclosureSubtitle": {
+    "description": "Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill."
+  },
   "blueskyHandle": "Bluesky 用户名",
   "blueskyDid": "Bluesky DID",
-  "@blueskyDid": {"description": "Label for the ATProto DID shown when a Bluesky account is provisioned."},
+  "@blueskyDid": {
+    "description": "Label for the ATProto DID shown when a Bluesky account is provisioned."
+  },
   "blueskyStatus": "状态",
   "blueskyStatusReady": "账号已就绪",
   "blueskyStatusPending": "账号配置中...",
@@ -6809,11 +6839,32 @@
   "crosspostingGenericError": "出了点问题，再试一次。",
   "crosspostingCallbackTimeoutError": "登录页面一直没有回应。如果你已经在那边连接好了，刷新一下 —— 你的账号可能已经关联了。",
   "crosspostingConnectionSuccess": "已连接 {platform}",
-  "@crosspostingConnectionSuccess": {"description": "Snackbar after returning from a successful platform connection.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionSuccess": {
+    "description": "Snackbar after returning from a successful platform connection.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "crosspostingConnectionFailed": "无法连接 {platform}",
-  "@crosspostingConnectionFailed": {"description": "Snackbar after returning from a failed platform connection.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionFailed": {
+    "description": "Snackbar after returning from a failed platform connection.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "crosspostingConnectionDenied": "已在 {platform} 上取消连接",
-  "@crosspostingConnectionDenied": {"description": "Snackbar when the user denied the connection on the provider's page.", "placeholders": {"platform": {"type": "String"}}},
+  "@crosspostingConnectionDenied": {
+    "description": "Snackbar when the user denied the connection on the provider's page.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
   "supporterTitle": "Divine 支持者",
   "@supporterTitle": {
     "description": "Title of the supporter subscription settings screen and its settings tile."
@@ -6909,9 +6960,21 @@
   "soundSharedAs": "分享为",
   "soundOwnWork": "这个声音是我做的",
   "soundCreatorBy": "作者：{creator}",
-  "@soundCreatorBy": {"placeholders": {"creator": {"type": "String"}}},
+  "@soundCreatorBy": {
+    "placeholders": {
+      "creator": {
+        "type": "String"
+      }
+    }
+  },
   "soundSharedBy": "由 {publisher} 分享",
-  "@soundSharedBy": {"placeholders": {"publisher": {"type": "String"}}},
+  "@soundSharedBy": {
+    "placeholders": {
+      "publisher": {
+        "type": "String"
+      }
+    }
+  },
   "soundRemixingAllowed": "允许混剪",
   "soundCreditOnly": "仅署名",
   "soundCreditTitleLabel": "声音标题",
@@ -7073,5 +7136,18 @@
   "dbFailureCancel": "取消",
   "dbFailureResetFailed": "没有成功。请关闭 Divine 后重试。",
   "dbFailureResetDoneTitle": "本地数据库已重置",
-  "dbFailureResetDoneBody": "关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。"
+  "dbFailureResetDoneBody": "关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。",
+  "videoEditorOverBudgetLabel": "Video exceeds max duration",
+  "@videoEditorOverBudgetLabel": {
+    "description": "Label shown when the total duration of all clips exceeds the maximum allowed duration in the video editor."
+  },
+  "videoEditorOverBudgetDescription": "This clip is longer than the {maxDuration}-second budget",
+  "@videoEditorOverBudgetDescription": {
+    "description": "Description of the over-budget state, explaining the maximum duration limit.",
+    "placeholders": {
+      "maxDuration": {
+        "type": "int"
+      }
+    }
+  }
 }
