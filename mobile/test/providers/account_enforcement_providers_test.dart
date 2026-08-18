@@ -99,6 +99,43 @@ void main() {
     },
   );
 
+  test('refetches after nothing is listening, so a mid-session suspension '
+      'is seen', () async {
+    // The status a user opens Settings to check must be current. Without
+    // autoDispose the first read caches for the whole app session, so an
+    // account suspended after launch keeps reading "in good standing" until
+    // the app is restarted — the exact failure this surface exists to fix.
+    var requests = 0;
+    final authService = _MockAuthService();
+    when(
+      authService.activeAccountKeycastToken,
+    ).thenAnswer((_) async => 'tok123');
+
+    final container = ProviderContainer(
+      overrides: [
+        currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+        oauthClientProvider.overrideWithValue(
+          _oauthReturning(_activeBody, onCall: (_) => requests++),
+        ),
+        authServiceProvider.overrideWithValue(authService),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final first = container.listen(
+      accountEnforcementStatusProvider,
+      (_, _) {},
+    );
+    await container.read(accountEnforcementStatusProvider.future);
+    expect(requests, 1);
+
+    first.close();
+    await Future<void>.delayed(Duration.zero);
+
+    await container.read(accountEnforcementStatusProvider.future);
+    expect(requests, 2, reason: 'status must be refetched, not served stale');
+  });
+
   test('authenticated: an active account reports none', () async {
     final authService = _MockAuthService();
     when(

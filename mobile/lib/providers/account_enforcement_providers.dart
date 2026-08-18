@@ -28,12 +28,14 @@ final accountEnforcementRepositoryProvider =
 /// "no signal" is the truth, and `none` is a positive claim of good standing
 /// this provider is not entitled to make.
 ///
-/// This only recomputes when auth state changes. An account suspended
-/// mid-session will not refetch until the provider is invalidated, so call
-/// `ref.invalidate(accountEnforcementStatusProvider)` where fresh state
-/// matters — notably after a publish is refused.
+/// autoDispose so the status is re-read whenever nothing is listening any
+/// more, rather than cached for the life of the app. An account suspended
+/// after launch must not keep reading as being in good standing until the
+/// user restarts — that is the failure this surface exists to fix. Call
+/// `ref.invalidate(accountEnforcementStatusProvider)` to force a refresh
+/// while it is still being watched.
 final accountEnforcementStatusProvider =
-    FutureProvider<AccountEnforcementStatus>((ref) async {
+    FutureProvider.autoDispose<AccountEnforcementStatus>((ref) async {
       final authState = ref.watch(currentAuthStateProvider);
       if (authState != AuthState.authenticated) {
         return AccountEnforcementStatus.unknown();
@@ -45,10 +47,13 @@ final accountEnforcementStatusProvider =
 
 /// Convenience seam: true only on a *confirmed* enforced account.
 ///
+/// autoDispose so watching this seam cannot pin the status provider alive and
+/// defeat its refetch.
+///
 /// Unknown resolves to false. Consumers that must fail safe should read
 /// [accountEnforcementStatusProvider] and branch on the kind themselves rather
 /// than relying on this.
-final isAccountEnforcedProvider = Provider<bool>((ref) {
+final isAccountEnforcedProvider = Provider.autoDispose<bool>((ref) {
   return ref
       .watch(accountEnforcementStatusProvider)
       .maybeWhen(data: (s) => s.isEnforced, orElse: () => false);
