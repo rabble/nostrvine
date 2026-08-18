@@ -368,6 +368,15 @@ class C2paSigningService {
         );
 
         if (result.signedData.isEmpty) {
+          // The sole caller discards this result, so without a log the
+          // failure would be invisible in the field — the exact conditions
+          // that let #7739's debris go unnoticed.
+          Log.warning(
+            'Derived re-sign produced empty signed data; leaving '
+            '"$outputPath" unsigned',
+            name: 'C2paSigningService',
+            category: LogCategory.video,
+          );
           return C2paSigningResult(
             signedFilePath: outputPath,
             success: false,
