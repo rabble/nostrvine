@@ -5368,5 +5368,8 @@
     "dbFailureCancel": "ሰርዝ",
     "dbFailureResetFailed": "ያ አልሰራም። Divineን ዘግተው እንደገና ይሞክሩ።",
     "dbFailureResetDoneTitle": "የአካባቢ ዳታቤዝ ዳግም ተጀምሯል",
-    "dbFailureResetDoneBody": "Divineን ዝጋ እና እንደገና ክፈተው — ቀጣዩ ጅምር አዲስ የአካባቢ ዳታቤዝ ይገነባል።"
+    "dbFailureResetDoneBody": "Divineን ዝጋ እና እንደገና ክፈተው — ቀጣዩ ጅምር አዲስ የአካባቢ ዳታቤዝ ይገነባል።",
+  "authSignInOptionsInfo": "ስለ መግቢያ አማራጮች",
+  "authShowPassword": "የይለፍ ቃል አሳይ",
+  "authHidePassword": "የይለፍ ቃል ደብቅ"
 }

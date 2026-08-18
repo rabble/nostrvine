@@ -7073,5 +7073,8 @@
   "dbFailureCancel": "batal",
   "dbFailureResetFailed": "Itu tidak berjaya. Tutup Divine dan cuba lagi.",
   "dbFailureResetDoneTitle": "pangkalan data setempat ditetapkan semula",
-  "dbFailureResetDoneBody": "Tutup Divine dan buka semula — pelancaran seterusnya membina pangkalan data setempat yang baharu."
+  "dbFailureResetDoneBody": "Tutup Divine dan buka semula — pelancaran seterusnya membina pangkalan data setempat yang baharu.",
+  "authSignInOptionsInfo": "Tentang pilihan log masuk",
+  "authShowPassword": "Tunjukkan kata laluan",
+  "authHidePassword": "Sembunyikan kata laluan"
 }

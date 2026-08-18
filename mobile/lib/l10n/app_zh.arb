@@ -7073,5 +7073,8 @@
   "dbFailureCancel": "取消",
   "dbFailureResetFailed": "没有成功。请关闭 Divine 后重试。",
   "dbFailureResetDoneTitle": "本地数据库已重置",
-  "dbFailureResetDoneBody": "关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。"
+  "dbFailureResetDoneBody": "关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。",
+  "authSignInOptionsInfo": "关于登录选项",
+  "authShowPassword": "显示密码",
+  "authHidePassword": "隐藏密码"
 }

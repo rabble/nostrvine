@@ -7073,5 +7073,8 @@
   "dbFailureCancel": "hủy",
   "dbFailureResetFailed": "Không thành công. Hãy đóng Divine và thử lại.",
   "dbFailureResetDoneTitle": "đã đặt lại cơ sở dữ liệu cục bộ",
-  "dbFailureResetDoneBody": "Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới."
+  "dbFailureResetDoneBody": "Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới.",
+  "authSignInOptionsInfo": "Giới thiệu về tùy chọn đăng nhập",
+  "authShowPassword": "Hiện mật khẩu",
+  "authHidePassword": "Ẩn mật khẩu"
 }

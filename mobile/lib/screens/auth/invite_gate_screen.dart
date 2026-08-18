@@ -263,6 +263,9 @@ class _InviteCodeEntryPage extends StatelessWidget {
                                 alignment: AlignmentDirectional.centerStart,
                                 child: RoundedIconButton(
                                   onPressed: onBack,
+                                  semanticLabel: context.l10n.commonBack,
+                                  semanticIdentifier:
+                                      DiVineAppBarLeading.backButtonSemanticId,
                                   icon: DivineIcon(
                                     icon: DivineIconName.caretLeft,
                                     color: context.vineColors.onIconButton,

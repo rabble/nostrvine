@@ -319,6 +319,8 @@ class _PasswordStep extends StatelessWidget {
             if (!blocked) onSubmit();
           },
           onChanged: (_) => onEdited(),
+          showPasswordSemanticLabel: context.l10n.authShowPassword,
+          hidePasswordSemanticLabel: context.l10n.authHidePassword,
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,

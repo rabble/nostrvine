@@ -11985,4 +11985,13 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Divineን ዝጋ እና እንደገና ክፈተው — ቀጣዩ ጅምር አዲስ የአካባቢ ዳታቤዝ ይገነባል።';
+
+  @override
+  String get authSignInOptionsInfo => 'ስለ መግቢያ አማራጮች';
+
+  @override
+  String get authShowPassword => 'የይለፍ ቃል አሳይ';
+
+  @override
+  String get authHidePassword => 'የይለፍ ቃል ደብቅ';
 }

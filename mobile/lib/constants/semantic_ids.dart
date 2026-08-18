@@ -101,6 +101,12 @@ abstract class SemanticIds {
   static const String authUseAnotherAccountButton =
       'use_another_account_button';
 
+  /// Sign-in options screen. The info button opens the sheet explaining each
+  /// sign-in method; the back control there reuses
+  /// `DiVineAppBarLeading.backButtonSemanticId`.
+  static const String authSignInOptionsInfoButton =
+      'sign_in_options_info_button';
+
   /// Invite gate. Account creation is gated on a code here, so these two sit
   /// on the critical path of every flow that signs up.
   static const String authInviteCodeField = 'invite_code_field';

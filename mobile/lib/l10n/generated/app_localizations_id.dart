@@ -12219,4 +12219,13 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get dbFailureResetDoneBody =>
       'Tutup Divine lalu buka lagi — peluncuran berikutnya membangun basis data lokal yang baru.';
+
+  @override
+  String get authSignInOptionsInfo => 'Tentang opsi masuk';
+
+  @override
+  String get authShowPassword => 'Tampilkan sandi';
+
+  @override
+  String get authHidePassword => 'Sembunyikan sandi';
 }

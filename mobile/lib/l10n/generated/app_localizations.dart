@@ -20865,6 +20865,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close Divine and open it again — the next launch builds a fresh local database.'**
   String get dbFailureResetDoneBody;
+
+  /// Screen-reader label for the info button on the sign-in options screen, which opens a sheet explaining each sign-in method.
+  ///
+  /// In en, this message translates to:
+  /// **'About sign-in options'**
+  String get authSignInOptionsInfo;
+
+  /// Screen-reader label for the control that reveals the typed password.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get authShowPassword;
+
+  /// Screen-reader label for the control that re-masks the typed password.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get authHidePassword;
 }
 
 class _AppLocalizationsDelegate

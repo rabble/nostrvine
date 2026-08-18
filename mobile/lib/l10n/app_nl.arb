@@ -5243,5 +5243,8 @@
     "dbFailureCancel": "annuleren",
     "dbFailureResetFailed": "Dat werkte niet. Sluit Divine en probeer het opnieuw.",
     "dbFailureResetDoneTitle": "lokale database gereset",
-    "dbFailureResetDoneBody": "Sluit Divine en open het opnieuw — bij de volgende start wordt een nieuwe lokale database aangemaakt."
+    "dbFailureResetDoneBody": "Sluit Divine en open het opnieuw — bij de volgende start wordt een nieuwe lokale database aangemaakt.",
+  "authSignInOptionsInfo": "Over aanmeldopties",
+  "authShowPassword": "Wachtwoord tonen",
+  "authHidePassword": "Wachtwoord verbergen"
 }

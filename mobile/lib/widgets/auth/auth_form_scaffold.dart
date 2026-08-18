@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 
 /// A shared scaffold layout for authentication form screens.
@@ -184,6 +185,10 @@ class AuthFormScaffold extends StatelessWidget {
                                     errorText: passwordError,
                                     enabled: enabled,
                                     onChanged: onPasswordChanged,
+                                    showPasswordSemanticLabel:
+                                        context.l10n.authShowPassword,
+                                    hidePasswordSemanticLabel:
+                                        context.l10n.authHidePassword,
                                   ),
 
                                   if (confirmPasswordController != null) ...[
@@ -198,6 +203,10 @@ class AuthFormScaffold extends StatelessWidget {
                                       errorText: confirmPasswordError,
                                       enabled: enabled,
                                       onChanged: onConfirmPasswordChanged,
+                                      showPasswordSemanticLabel:
+                                          context.l10n.authShowPassword,
+                                      hidePasswordSemanticLabel:
+                                          context.l10n.authHidePassword,
                                     ),
                                   ],
                                 ],

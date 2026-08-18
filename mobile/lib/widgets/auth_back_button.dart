@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/rounded_icon_button.dart';
 
 /// A green rounded-square back button used in authentication flow screens.
@@ -38,6 +39,10 @@ class AuthBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return RoundedIconButton(
       onPressed: !enabled ? null : onPressed ?? () => _handleBackTap(context),
+      semanticLabel: context.l10n.commonBack,
+      // Matches DiVineAppBarLeading.backButtonSemanticId so E2E flows can
+      // address either back control by the same identifier.
+      semanticIdentifier: DiVineAppBarLeading.backButtonSemanticId,
       icon: DivineIcon(
         icon: DivineIconName.caretLeft,
         color: context.vineColors.onIconButton,

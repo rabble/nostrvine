@@ -4589,5 +4589,8 @@
     "dbFailureCancel": "취소",
     "dbFailureResetFailed": "실패했습니다. Divine을 닫고 다시 시도하세요.",
     "dbFailureResetDoneTitle": "로컬 데이터베이스가 초기화되었습니다",
-    "dbFailureResetDoneBody": "Divine을 닫았다가 다시 여세요. 다음 실행에서 새 로컬 데이터베이스가 만들어집니다."
+    "dbFailureResetDoneBody": "Divine을 닫았다가 다시 여세요. 다음 실행에서 새 로컬 데이터베이스가 만들어집니다.",
+  "authSignInOptionsInfo": "로그인 옵션 정보",
+  "authShowPassword": "비밀번호 표시",
+  "authHidePassword": "비밀번호 숨기기"
 }

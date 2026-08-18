@@ -5243,5 +5243,8 @@
     "dbFailureCancel": "Abbrechen",
     "dbFailureResetFailed": "Das hat nicht geklappt. Schließe Divine und versuche es erneut.",
     "dbFailureResetDoneTitle": "Lokale Datenbank zurückgesetzt",
-    "dbFailureResetDoneBody": "Schließe Divine und öffne es erneut — der nächste Start legt eine frische lokale Datenbank an."
+    "dbFailureResetDoneBody": "Schließe Divine und öffne es erneut — der nächste Start legt eine frische lokale Datenbank an.",
+  "authSignInOptionsInfo": "Über Anmeldeoptionen",
+  "authShowPassword": "Passwort anzeigen",
+  "authHidePassword": "Passwort ausblenden"
 }

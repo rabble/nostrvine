@@ -187,6 +187,10 @@ class _Form extends StatelessWidget {
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) => cubit.submit(),
                         onChanged: cubit.updatePassword,
+                        showPasswordSemanticLabel:
+                            context.l10n.authShowPassword,
+                        hidePasswordSemanticLabel:
+                            context.l10n.authHidePassword,
                       ),
                     ],
                   ),

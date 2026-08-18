@@ -1,8 +1,11 @@
 // ABOUTME: Tests for RoundedIconButton widget
-// ABOUTME: Verifies icon rendering, tap callback, and null onPressed
+// ABOUTME: Verifies icon rendering, tap callback, null onPressed, and semantics
+
+import 'dart:ui' show Tristate;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/rounded_icon_button.dart';
@@ -12,13 +15,20 @@ void main() {
     Widget createTestWidget({
       VoidCallback? onPressed,
       Widget icon = const Icon(Icons.chevron_left),
+      String semanticLabel = 'Back',
+      String? semanticIdentifier,
     }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: Scaffold(
-          body: RoundedIconButton(onPressed: onPressed, icon: icon),
+          body: RoundedIconButton(
+            onPressed: onPressed,
+            icon: icon,
+            semanticLabel: semanticLabel,
+            semanticIdentifier: semanticIdentifier,
+          ),
         ),
       );
     }
@@ -67,6 +77,53 @@ void main() {
         // Should not throw when tapped with null onPressed
         await tester.tap(find.byType(GestureDetector));
         await tester.pump();
+      });
+    });
+
+    group('accessibility', () {
+      // The button was a bare GestureDetector for its whole life, so every
+      // auth-screen control it powers announced nothing at all. Observed on
+      // device before the fix: the back control appeared in the semantics
+      // tree as `actions: tap, flags: isImage` with no label.
+      testWidgets('announces its label as a button', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          createTestWidget(onPressed: () {}, semanticLabel: 'Atrás'),
+        );
+
+        final node = tester.getSemantics(find.byType(RoundedIconButton));
+        expect(node.label, equals('Atrás'));
+        expect(node.flagsCollection.isButton, isTrue);
+        expect(node.flagsCollection.isEnabled, Tristate.isTrue);
+        handle.dispose();
+      });
+
+      testWidgets('exposes the identifier as a test anchor', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+            semanticIdentifier: 'back_button',
+          ),
+        );
+
+        expect(find.bySemanticsIdentifier('back_button'), findsOneWidget);
+        handle.dispose();
+      });
+
+      testWidgets('offers no tap action when onPressed is null', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(createTestWidget());
+
+        final node = tester.getSemantics(find.byType(RoundedIconButton));
+        expect(
+          node.getSemanticsData().hasAction(SemanticsAction.tap),
+          isFalse,
+        );
+        expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+        handle.dispose();
       });
     });
   });

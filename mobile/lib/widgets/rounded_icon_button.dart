@@ -15,7 +15,11 @@ import 'package:flutter/material.dart';
 /// ```dart
 /// RoundedIconButton(
 ///   onPressed: () => context.pop(),
-///   icon: Icon(Icons.chevron_left, color: VineTheme.vineGreenLight, size: 28),
+///   semanticLabel: context.l10n.commonBack,
+///   icon: DivineIcon(
+///     icon: DivineIconName.caretLeft,
+///     color: context.vineColors.onIconButton,
+///   ),
 /// )
 /// ```
 class RoundedIconButton extends StatelessWidget {
@@ -23,6 +27,8 @@ class RoundedIconButton extends StatelessWidget {
   const RoundedIconButton({
     required this.onPressed,
     required this.icon,
+    required this.semanticLabel,
+    this.semanticIdentifier,
     super.key,
   });
 
@@ -33,32 +39,50 @@ class RoundedIconButton extends StatelessWidget {
   /// The icon to display inside the button.
   final Widget icon;
 
+  /// Screen-reader label describing the action.
+  ///
+  /// Required: the icon alone carries no meaning, so a missing label leaves
+  /// the button announced as nothing at all. Pass a localized string.
+  final String semanticLabel;
+
+  /// Stable `Semantics(identifier:)` value used as a UI-test anchor.
+  final String? semanticIdentifier;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 48,
-        width: 48,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: context.vineColors.surfaceContainer,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.vineColors.outlineMuted, width: 2),
-          boxShadow: const [
-            BoxShadow(
-              color: VineTheme.innerShadow,
-              blurRadius: 0.6,
-              offset: Offset(0.4, 0.4),
+    return Semantics(
+      label: semanticLabel,
+      identifier: semanticIdentifier,
+      button: true,
+      enabled: onPressed != null,
+      child: GestureDetector(
+        onTap: onPressed,
+        child: Container(
+          height: 48,
+          width: 48,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: context.vineColors.surfaceContainer,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: context.vineColors.outlineMuted,
+              width: 2,
             ),
-            BoxShadow(
-              color: VineTheme.innerShadow,
-              blurRadius: 1,
-              offset: Offset(1, 1),
-            ),
-          ],
+            boxShadow: const [
+              BoxShadow(
+                color: VineTheme.innerShadow,
+                blurRadius: 0.6,
+                offset: Offset(0.4, 0.4),
+              ),
+              BoxShadow(
+                color: VineTheme.innerShadow,
+                blurRadius: 1,
+                offset: Offset(1, 1),
+              ),
+            ],
+          ),
+          child: icon,
         ),
-        child: icon,
       ),
     );
   }

@@ -154,6 +154,10 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                                         : null,
                                     textInputAction: TextInputAction.next,
                                     onChanged: cubit.updateCurrentPassword,
+                                    showPasswordSemanticLabel:
+                                        context.l10n.authShowPassword,
+                                    hidePasswordSemanticLabel:
+                                        context.l10n.authHidePassword,
                                   ),
                                   DivineAuthTextField(
                                     controller: _newPasswordController,
@@ -169,6 +173,10 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                                     ),
                                     textInputAction: TextInputAction.next,
                                     onChanged: cubit.updateNewPassword,
+                                    showPasswordSemanticLabel:
+                                        context.l10n.authShowPassword,
+                                    hidePasswordSemanticLabel:
+                                        context.l10n.authHidePassword,
                                   ),
                                   DivineAuthTextField(
                                     controller: _confirmPasswordController,
@@ -187,6 +195,10 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                                     textInputAction: TextInputAction.done,
                                     onSubmitted: (_) => cubit.submit(),
                                     onChanged: cubit.updateConfirmPassword,
+                                    showPasswordSemanticLabel:
+                                        context.l10n.authShowPassword,
+                                    hidePasswordSemanticLabel:
+                                        context.l10n.authHidePassword,
                                   ),
                                 ],
                               ),
