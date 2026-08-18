@@ -54,6 +54,29 @@ void main() {
         when(
           () => curatedListRepository.subscribedListsStream,
         ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => videosRepository.getNewVideos(
+            limit: any(named: 'limit'),
+            until: any(named: 'until'),
+            skipCache: any(named: 'skipCache'),
+            revalidate: any(named: 'revalidate'),
+          ),
+        ).thenAnswer((_) async => HomeFeedResult(videos: [_video('fresh')]));
+        when(
+          () => videosRepository.getClassicVideos(
+            limit: any(named: 'limit'),
+            cursor: any(named: 'cursor'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer((_) async => HomeFeedResult(videos: [_video('c')]));
+        when(
+          () => videosRepository.getRecommendedVideos(
+            userPubkey: any(named: 'userPubkey'),
+            until: any(named: 'until'),
+            skipCache: any(named: 'skipCache'),
+            revalidate: any(named: 'revalidate'),
+          ),
+        ).thenAnswer((_) async => HomeFeedResult(videos: [_video('rec')]));
       });
 
       VideoFeedBloc buildBloc() => VideoFeedBloc(
@@ -66,32 +89,36 @@ void main() {
       // The regression this pins (#7719): `_onStarted` used to call
       // `_loadVideos` with the default `skipCache: false`, so the fetch that
       // exists to refresh the feed was itself answered from the repository's
-      // in-memory cache — which carries no TTL. Reopening the app served
-      // hours-old videos until the user pulled to refresh.
+      // in-memory cache — which carries no TTL for the home, latest, and
+      // recommended first-page entries. Reopening the app served hours-old
+      // videos until the user pulled to refresh.
+      //
+      // The fetch revalidates (cache-read bypass) rather than full
+      // `skipCache`, because `skipCache` on New also triggers the
+      // pull-to-refresh relay merge, which does not belong on session start.
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'fetches past the cache on start so a reopen is not stale',
-        setUp: () {
-          when(
-            () => videosRepository.getNewVideos(
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-            ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: [_video('fresh')]));
-        },
+        'revalidates past the cache on start so a reopen is not stale',
         build: buildBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
-        wait: const Duration(milliseconds: 50),
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.latest));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state.source.mode == FeedMode.latest &&
+                state.status == VideoFeedStatus.success,
+          );
+        },
         verify: (_) {
-          verify(
+          final captured = verify(
             () => videosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: true,
+              skipCache: captureAny(named: 'skipCache'),
+              revalidate: true,
             ),
-          ).called(1);
+          ).captured;
+          expect(captured, [isFalse]);
           // Any additional call would mean the cache-answerable variant also
-          // ran; exactly one fetch, and it skipped the cache.
+          // ran; exactly one fetch, and it revalidated past the cache.
           verifyNoMoreInteractions(videosRepository);
         },
       );
@@ -101,38 +128,92 @@ void main() {
       // reads has no TTL either. Fixing only the cold start left #7719's
       // symptom alive here.
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'fetches past the cache when the user switches modes',
-        setUp: () {
-          when(
-            () => videosRepository.getNewVideos(
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-            ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: [_video('fresh')]));
-          when(
-            () => videosRepository.getClassicVideos(
-              limit: any(named: 'limit'),
-              cursor: any(named: 'cursor'),
-              skipCache: any(named: 'skipCache'),
-            ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: [_video('c')]));
-        },
+        'revalidates past the cache when the user switches modes',
         build: buildBloc,
         act: (bloc) async {
           bloc.add(const VideoFeedStarted(mode: FeedMode.classic));
-          await Future<void>.delayed(const Duration(milliseconds: 30));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state.source.mode == FeedMode.classic &&
+                state.status == VideoFeedStatus.success,
+          );
           bloc.add(const VideoFeedModeChanged(FeedMode.latest));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state.source.mode == FeedMode.latest &&
+                state.status == VideoFeedStatus.success,
+          );
         },
-        wait: const Duration(milliseconds: 80),
         verify: (_) {
-          verify(
+          final captured = verify(
             () => videosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: captureAny(named: 'skipCache'),
+              revalidate: true,
+            ),
+          ).captured;
+          expect(captured, [isFalse]);
+        },
+      );
+
+      // For You start revalidates without `skipCache`: `skipCache` would
+      // draw a new recommendation session seed and reshuffle the session,
+      // which is reserved for explicit pull-to-refresh.
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'revalidates For You on start without reseeding the session',
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state.source.mode == FeedMode.forYou &&
+                state.status == VideoFeedStatus.success,
+          );
+        },
+        verify: (_) {
+          final captured = verify(
+            () => videosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              until: any(named: 'until'),
+              skipCache: captureAny(named: 'skipCache'),
+              revalidate: true,
+            ),
+          ).captured;
+          expect(captured, [isFalse]);
+        },
+      );
+
+      // Classics keeps its deliberate 15-minute first-page cache on start:
+      // re-entry within the TTL resumes the same stable opening instead of
+      // re-shuffling, so the bloc must not bypass or revalidate it.
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'keeps the Classics first-page cache on start',
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.classic));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state.source.mode == FeedMode.classic &&
+                state.status == VideoFeedStatus.success,
+          );
+        },
+        verify: (_) {
+          final captured = verify(
+            () => videosRepository.getClassicVideos(
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              skipCache: captureAny(named: 'skipCache'),
+            ),
+          ).captured;
+          expect(captured, [isFalse]);
+          verifyNever(
+            () => videosRepository.getClassicVideos(
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
               skipCache: true,
             ),
-          ).called(1);
+          );
         },
       );
     });

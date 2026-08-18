@@ -699,12 +699,17 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     try {
       // `revalidate` serves the cached window *and* forces a fresh fetch.
       // `skipCache` alone cannot express that: it also suppresses the served
-      // window, which would blank the screen. Without it a warm start reads
-      // the repository's in-memory feed cache — which carries no TTL — so the
-      // follow-up fetch answers from the same entry it is meant to refresh.
+      // window, which would blank the screen, and at the repository layer it
+      // reseeds For You recommendations and triggers the New feed's
+      // pull-to-refresh relay merge — neither belongs on a session start.
+      // Without `revalidate` a warm start reads the repository's in-memory
+      // feed cache — which carries no TTL for the home, latest, and
+      // recommended first-page entries — so the follow-up fetch answers
+      // from the same entry it is meant to refresh.
       final result = await _fetchVideosForSource(
         source,
-        skipCache: skipCache || revalidate,
+        skipCache: skipCache,
+        revalidate: revalidate,
       );
       if (!_canEmitForSource(source, emit)) return;
 
@@ -896,11 +901,18 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// a previously cached result from the [InMemoryFeedCache] without
   /// a network round-trip. Pass `true` for refresh and auto-refresh
   /// flows that must hit the network.
+  ///
+  /// [revalidate] bypasses the in-memory cache read only, for session-start
+  /// revalidation: it does not reseed For You recommendations and does not
+  /// trigger the New feed's pull-to-refresh relay merge. Classics ignores
+  /// it — that source keeps its deliberate 15-minute cache so re-entry
+  /// resumes the same stable opening.
   Future<HomeFeedResult> _fetchVideosForSource(
     VideoFeedSource source, {
     int? until,
     String? paginationCursor,
     bool skipCache = false,
+    bool revalidate = false,
   }) => switch (source.type) {
     VideoFeedSourceType.forYou =>
       paginationCursor == null
@@ -908,17 +920,20 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
               userPubkey: _userPubkey,
               until: until,
               skipCache: skipCache,
+              revalidate: revalidate,
             )
           : _videosRepository.getRecommendedVideos(
               userPubkey: _userPubkey,
               cursor: paginationCursor,
               skipCache: skipCache,
+              revalidate: revalidate,
             ),
     VideoFeedSourceType.following => _videosRepository.getHomeFeedVideos(
       authors: _followRepository.followingPubkeys,
       userPubkey: _userPubkey,
       until: until,
       skipCache: skipCache,
+      revalidate: revalidate,
     ),
     VideoFeedSourceType.subscribedList =>
       _videosRepository
@@ -929,9 +944,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedSourceType.newVideos => _videosRepository.getNewVideos(
       until: until,
       skipCache: skipCache,
+      revalidate: revalidate,
     ),
     // Classics is offset-paginated behind an opaque cursor and has no
-    // time-window pagination, so `until` does not apply.
+    // time-window pagination, so `until` does not apply. `revalidate` does
+    // not apply either: the source's 15-minute first-page cache exists so
+    // re-entry resumes the same opening, and bypassing it would re-shuffle.
     VideoFeedSourceType.classic => _videosRepository.getClassicVideos(
       cursor: paginationCursor,
       skipCache: skipCache,
