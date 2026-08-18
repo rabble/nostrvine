@@ -4101,6 +4101,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Relay tidak menerima permintaan hapus ini. Coba lagi sebentar lagi.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Relay tidak bisa dihubungi. Periksa koneksimu dan coba lagi.';
 
@@ -7342,6 +7346,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'Kami tidak bisa memastikan penghapusan akun dengan relay mana pun. Periksa koneksimu dan coba lagi.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Hapus Semua Konten';

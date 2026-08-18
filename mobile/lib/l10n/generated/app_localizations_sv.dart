@@ -4165,6 +4165,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Relät accepterade inte den här raderingsbegäran. Försök igen om en stund.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Kunde inte nå relät. Kontrollera anslutningen och försök igen.';
 
@@ -7406,6 +7410,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'Vi kunde inte bekräfta kontoraderingen med något relä. Kontrollera anslutningen och försök igen.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Ta bort allt innehåll';

@@ -418,6 +418,8 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
+  'shareMenuDeleteFailedAccountRestricted',
+  'deleteAccountAccountRestricted',
   // Translation pass tracked in #7632.
   'analyticsConnectionIssue',
   'analyticsDiagnosticsFailedSources',

@@ -359,6 +359,50 @@ void main() {
         },
       );
 
+      test('classifies an explicit account restriction separately', () async {
+        final video = createTestVideoEvent(testPublicKey);
+        final deleteEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', video.id],
+            ['a', video.addressableId!],
+            ['k', '34236'],
+          ],
+          content: 'CONTENT DELETION',
+        );
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => deleteEvent);
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: deleteEvent.id,
+            acceptedBy: const [],
+            rejectedBy: const {
+              'wss://relay.example.com': 'blocked: pubkey is suspended',
+            },
+            noResponseFrom: const [],
+          ),
+        );
+
+        final result = await service.deleteContent(
+          video: video,
+          reason: 'Personal choice',
+        );
+
+        expect(result.failureKind, DeleteFailureKind.accountRestricted);
+        expect(service.deletionHistory, isEmpty);
+      });
+
       test('fails with relayNoResponse and does NOT save locally when no relay '
           'answers before timeout', () async {
         final video = createTestVideoEvent(testPublicKey);

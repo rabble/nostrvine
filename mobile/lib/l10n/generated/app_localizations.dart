@@ -7163,6 +7163,12 @@ abstract class AppLocalizations {
   /// **'The relay wouldn\'t accept this delete request. Try again in a moment.'**
   String get shareMenuDeleteFailedRelayRejected;
 
+  /// Shown when every responding relay explicitly rejects an owner's content-deletion request because the publishing account is suspended or banned.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.'**
+  String get shareMenuDeleteFailedAccountRestricted;
+
   /// No description provided for @shareMenuDeleteFailedRelayNoResponse.
   ///
   /// In en, this message translates to:
@@ -12787,6 +12793,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t confirm account deletion with a relay. Check your connection and try again.'**
   String get deleteAccountRelayConfirmationFailed;
+
+  /// Shown when every responding relay explicitly rejects the NIP-62 account-deletion request because the publishing account is suspended or banned.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.'**
+  String get deleteAccountAccountRestricted;
 
   /// No description provided for @deleteAccountDeleteAllContentButton.
   ///

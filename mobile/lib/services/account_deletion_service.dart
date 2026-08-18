@@ -7,6 +7,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/relay_rejection_classifier.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// User-facing class of an account deletion failure.
@@ -15,6 +16,7 @@ enum DeleteAccountFailureReason {
   noPubkey,
   signingFailed,
   vanishNotConfirmed,
+  accountRestricted,
   accountChanged,
   accountChangedAfterDeletion,
   unexpected,
@@ -129,6 +131,8 @@ class AccountDeletionService {
     timeout: Duration(seconds: 30),
     retryDelays: [Duration(seconds: 2), Duration(seconds: 5)],
   );
+  static const _interBatchDelay = Duration(milliseconds: 500);
+  static const _rateLimitRetryDelay = Duration(minutes: 1);
 
   /// Kinds this flow's own deletion machinery produces, excluded from the sweep.
   ///
@@ -250,7 +254,9 @@ class AccountDeletionService {
           category: LogCategory.system,
         );
         return DeleteAccountResult.failure(
-          DeleteAccountFailureReason.vanishNotConfirmed,
+          isAccountRestrictedOutcome(outcome)
+              ? DeleteAccountFailureReason.accountRestricted
+              : DeleteAccountFailureReason.vanishNotConfirmed,
           diagnosticError: outcome.summary,
         );
       }
@@ -334,6 +340,10 @@ class AccountDeletionService {
       }
 
       if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
+        return outcome;
+      }
+
+      if (isAccountRestrictedOutcome(outcome)) {
         return outcome;
       }
 
@@ -452,7 +462,9 @@ class AccountDeletionService {
       eventsByKind.putIfAbsent(event.kind, () => []).add(event);
     }
 
-    for (final entry in eventsByKind.entries) {
+    final batches = eventsByKind.entries.toList(growable: false);
+    for (var batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      final entry = batches[batchIndex];
       final kind = entry.key;
       final kindEvents = entry.value;
 
@@ -472,7 +484,12 @@ class AccountDeletionService {
       }
 
       if (deleteEvent != null) {
-        final outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+        var outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+        if (isRateLimitedOutcome(outcome)) {
+          await _retryDelay(_rateLimitRetryDelay);
+          _assertSignerMatches(expectedPubkey);
+          outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+        }
         try {
           _assertSignerMatches(expectedPubkey);
         } on AccountChangedDuringDeletion {
@@ -499,6 +516,10 @@ class AccountDeletionService {
       }
 
       onProgress?.call(successCount, total);
+      if (batchIndex < batches.length - 1) {
+        await _retryDelay(_interBatchDelay);
+        _assertSignerMatches(expectedPubkey);
+      }
     }
 
     return successCount;

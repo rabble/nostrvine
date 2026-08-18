@@ -4291,6 +4291,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Releul nu a acceptat această cerere de ștergere. Încearcă din nou în scurt timp.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Nu am putut contacta releul. Verifică conexiunea și încearcă din nou.';
 
@@ -7586,6 +7590,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'Nu am putut confirma ștergerea contului cu niciun releu. Verifică conexiunea și încearcă din nou.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';

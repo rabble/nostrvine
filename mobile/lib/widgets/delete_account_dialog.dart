@@ -796,6 +796,8 @@ Future<void> executeAccountDeletion({
                 accountChangedAfterDeletionText:
                     accountChangedAfterDeletionText,
                 relayConfirmationFailedText: relayConfirmationFailedText,
+                accountRestrictedText:
+                    context.l10n.deleteAccountAccountRestricted,
                 reauthRequiredText: context.l10n.deleteAccountReauthRequired,
                 genericFailureText:
                     context.l10n.deleteAccountContentDeletionFailed,
@@ -819,6 +821,7 @@ String _deleteAccountFailureText(
   required String accountChangedText,
   required String accountChangedAfterDeletionText,
   required String relayConfirmationFailedText,
+  required String accountRestrictedText,
   required String reauthRequiredText,
   required String genericFailureText,
 }) {
@@ -828,6 +831,7 @@ String _deleteAccountFailureText(
       accountChangedAfterDeletionText,
     DeleteAccountFailureReason.vanishNotConfirmed =>
       relayConfirmationFailedText,
+    DeleteAccountFailureReason.accountRestricted => accountRestrictedText,
     DeleteAccountFailureReason.notAuthenticated => reauthRequiredText,
     DeleteAccountFailureReason.noPubkey ||
     DeleteAccountFailureReason.signingFailed ||

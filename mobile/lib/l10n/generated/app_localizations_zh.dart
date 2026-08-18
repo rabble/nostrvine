@@ -3918,6 +3918,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuDeleteFailedRelayRejected => '中继拒绝了该删除请求，请稍后再试。';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse => '连不上中继。请检查网络连接后重试。';
 
   @override
@@ -7022,6 +7026,10 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       '我们无法通过中继确认账号删除。请检查网络连接后重试。';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => '删除所有内容';

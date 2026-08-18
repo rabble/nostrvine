@@ -660,6 +660,49 @@ void main() {
       },
     );
 
+    testWidgets('explains when an account restriction blocks deletion', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      ).thenAnswer(
+        (_) async => DeleteAccountResult.failure(
+          DeleteAccountFailureReason.accountRestricted,
+        ),
+      );
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(_englishL10n().deleteAccountAccountRestricted),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('shows failure when local data cleanup fails after sign-out', (
       tester,
     ) async {
@@ -1631,10 +1674,7 @@ void main() {
           find.text(l10n.deleteAccountAccountChangedAfterDeletion),
           findsOneWidget,
         );
-        expect(
-          find.text(l10n.deleteAccountAccountChanged),
-          findsNothing,
-        );
+        expect(find.text(l10n.deleteAccountAccountChanged), findsNothing);
         verifyNever(authService.deleteKeycastAccount);
       },
     );
@@ -1688,10 +1728,8 @@ void main() {
         );
         verifyNever(authService.deleteKeycastAccount);
         verifyNever(
-          () => authService.signOut(
-            deleteKeys: true,
-            deleteLocalUserData: true,
-          ),
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
         );
       },
     );
@@ -1746,10 +1784,7 @@ void main() {
       );
       verify(authService.deleteKeycastAccount).called(1);
       verifyNever(
-        () => authService.signOut(
-          deleteKeys: true,
-          deleteLocalUserData: true,
-        ),
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       );
     });
 
@@ -1810,10 +1845,8 @@ void main() {
         );
         expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
         verifyNever(
-          () => authService.signOut(
-            deleteKeys: true,
-            deleteLocalUserData: true,
-          ),
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
         );
       },
     );

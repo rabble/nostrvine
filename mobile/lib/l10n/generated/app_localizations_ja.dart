@@ -3920,6 +3920,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'リレーがこの削除リクエストを受け付けませんでした。少し待ってからもう一度お試しください。';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'リレーに接続できませんでした。接続を確認してもう一度お試しください。';
 
@@ -7046,6 +7050,10 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'どのリレーでもアカウント削除を確認できませんでした。接続を確認してもう一度お試しください。';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'すべてのコンテンツを削除';

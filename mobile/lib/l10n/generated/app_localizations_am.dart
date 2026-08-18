@@ -4082,6 +4082,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ሪሌው ይህን የመሰረዝ ጥያቄ አልተቀበለውም። ከጥቂት ቆይታ በኋላ እንደገና ሞክር።';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'ሪሌውን ማግኘት አልተቻለም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
 
@@ -7252,6 +7256,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'የመለያ መሰረዝን ከየትኛውም ሪሌ ጋር ማረጋገጥ አልቻልንም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';

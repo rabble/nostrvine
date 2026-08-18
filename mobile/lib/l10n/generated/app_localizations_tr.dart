@@ -4106,6 +4106,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Röle bu silme isteğini kabul etmedi. Birazdan tekrar dene.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact Support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Röleye ulaşılamadı. Bağlantını kontrol edip tekrar dene.';
 
@@ -7340,6 +7344,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'Hesap silmeyi hiçbir röleyle doğrulayamadık. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact Support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Tüm İçeriği Sil';
