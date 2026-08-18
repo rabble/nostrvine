@@ -265,7 +265,13 @@ class _QuickReactionButton extends StatelessWidget {
           width: 44,
           height: 44,
           child: Center(
-            child: Text(emoji, style: VineTheme.emojiFont(fontSize: 28)),
+            child: Text(
+              emoji,
+              style: VineTheme.emojiFont(
+                fontSize: 28,
+                color: context.vineColors.onSurface,
+              ),
+            ),
           ),
         ),
       ),

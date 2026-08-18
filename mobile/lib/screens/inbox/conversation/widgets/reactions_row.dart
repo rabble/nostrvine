@@ -274,7 +274,8 @@ class _ReactionPill extends StatelessWidget {
 /// 🔥 is painted by the platform colour-emoji font (Inter ships no emoji), so a
 /// forced line-height drops the glyph low on Android. Natural leading lets the
 /// Row centre the glyph box — mirrors reaction_picker_overlay.
-final TextStyle _emojiTextStyle = VineTheme.emojiFont(fontSize: 15);
+TextStyle _emojiTextStyleOf(BuildContext context) =>
+    VineTheme.emojiFont(fontSize: 15, color: context.vineColors.onSurface);
 
 /// Duration of the reaction glyph grow-in.
 const _emojiPopDuration = Duration(milliseconds: 180);
@@ -331,7 +332,7 @@ class _PoppingEmojiState extends State<_PoppingEmoji>
   Widget build(BuildContext context) {
     return ScaleTransition(
       scale: _scale,
-      child: DivineHeartText(widget.emoji, style: _emojiTextStyle),
+      child: DivineHeartText(widget.emoji, style: _emojiTextStyleOf(context)),
     );
   }
 }

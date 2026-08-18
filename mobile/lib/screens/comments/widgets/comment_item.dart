@@ -719,7 +719,13 @@ class _ReactionChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 4,
             children: [
-              Text(emoji, style: VineTheme.emojiFont(fontSize: 14)),
+              Text(
+                emoji,
+                style: VineTheme.emojiFont(
+                  fontSize: 14,
+                  color: context.vineColors.onSurface,
+                ),
+              ),
               Text(
                 count.formatScore,
                 style: VineTheme.labelMediumFont(
