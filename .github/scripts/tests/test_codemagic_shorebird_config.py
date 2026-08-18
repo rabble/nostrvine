@@ -13,14 +13,30 @@ WORKFLOWS_PATH = Path(__file__).resolve().parents[2] / "workflows"
 SHOREBIRD_DOC_PATH = (
     Path(__file__).resolve().parents[3] / "mobile" / "docs" / "SHOREBIRD_CODE_PUSH.md"
 )
+PROVENANCE_STORE_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "mobile"
+    / "scripts"
+    / "shorebird_provenance_store.sh"
+)
+CAPTION_GENERATOR_GRADLE_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "mobile"
+    / "packages"
+    / "caption_generator"
+    / "android"
+    / "build.gradle.kts"
+)
 
 
-class CodemagicAndroidBuildNumberTest(unittest.TestCase):
+class CodemagicShorebirdConfigTest(unittest.TestCase):
     def setUp(self) -> None:
         self.contents = CODEMAGIC_PATH.read_text()
         self.mobile_ci_contents = MOBILE_CI_PATH.read_text()
         self.mise_contents = MISE_PATH.read_text()
         self.shorebird_doc_contents = SHOREBIRD_DOC_PATH.read_text()
+        self.provenance_store_contents = PROVENANCE_STORE_PATH.read_text()
+        self.caption_generator_gradle_contents = CAPTION_GENERATOR_GRADLE_PATH.read_text()
 
     def test_codemagic_yaml_parses_with_aliases(self) -> None:
         result = subprocess.run(
@@ -72,12 +88,29 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
 
     def test_shorebird_install_reuses_only_the_expected_cached_version(self) -> None:
         self.assertIn('EXPECTED_SHOREBIRD_VERSION="Shorebird 1.6.117"', self.contents)
+        self.assertIn(
+            'EXPECTED_SHOREBIRD_REVISION="45facdd4e4b3c39e0d260107977584f0b7c66bec"',
+            self.contents,
+        )
         self.assertIn('if [ -x "$SHOREBIRD_BIN" ]; then', self.contents)
-        self.assertIn("bash -s -- --force", self.contents)
+        self.assertIn('git -C "$HOME/.shorebird" rev-parse HEAD', self.contents)
         self.assertRegex(
             self.contents,
             r"(?s)&shorebird_install.*?script: \|\n\s+set -euo pipefail\n",
         )
+
+    def test_shorebird_installer_and_cli_are_pinned_to_full_commits(self) -> None:
+        installer_url = re.search(r'INSTALLER_URL="([^"]+)"', self.contents)
+        self.assertIsNotNone(installer_url)
+        self.assertRegex(installer_url.group(1), r"/install/[0-9a-f]{40}/install\.sh$")
+        self.assertNotIn("/main/", installer_url.group(1))
+        self.assertRegex(
+            self.contents,
+            r'EXPECTED_SHOREBIRD_REVISION="[0-9a-f]{40}"',
+        )
+        self.assertIn("shasum -a 256 -c -", self.contents)
+        self.assertIn('checkout --quiet --detach FETCH_HEAD', self.contents)
+        self.assertNotIn("curl -sSf | bash", self.contents)
 
     def test_shorebird_release_commands_are_signed_and_preflighted(self) -> None:
         self.assertIn("*preflight_shorebird_ios_release", self.contents)
@@ -150,12 +183,41 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", self.contents)
         self.assertNotIn("--track=stable", self.contents)
 
-    def test_shorebird_patch_workflows_gate_branch_and_release_commit(self) -> None:
+    def test_shorebird_patch_workflows_use_private_provenance(self) -> None:
         self.assertIn('if [ "$CM_BRANCH" != "main" ]; then', self.contents)
         self.assertIn("RELEASE_COMMIT:", self.contents)
-        self.assertIn("git merge-base --is-ancestor", self.contents)
+        self.assertIn("*fetch_and_verify_shorebird_provenance", self.contents)
+        self.assertIn("shorebird_provenance_store.sh fetch", self.contents)
+        self.assertIn("shorebird_provenance.rb verify", self.contents)
         self.assertIn("git diff --name-only", self.contents)
         self.assertIn("*prepare_patch_source", self.contents)
+
+    def test_store_release_workflows_require_main_and_emit_provenance(self) -> None:
+        for workflow_name in ("ios-build", "android-build"):
+            workflow = self._workflow_block(workflow_name)
+            self.assertIn("- *verify_shorebird_release_source", workflow)
+            self.assertIn("- *emit_shorebird_provenance", workflow)
+        self.assertIn("shorebird_provenance_store.sh create", self.contents)
+        self.assertIn("refusing to overwrite it", self.provenance_store_contents.lower())
+
+    def test_existing_ios_release_has_verified_main_tree_equivalence(self) -> None:
+        baseline_commit = "2504f4d871a9c1790e3e39f8398027bdc5105d04"
+        expected_tree = "a17e0660a782e439c5d405c2d06dd49e5b7fbc81"
+        repo_root = CODEMAGIC_PATH.parent
+
+        result = subprocess.run(
+            ["git", "rev-parse", f"{baseline_commit}^{{tree}}"],
+            cwd=repo_root,
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(expected_tree, result.stdout.strip())
+
+    def test_caption_generator_names_missing_flutter_embedding_jar(self) -> None:
+        self.assertIn("if (!flutterDebugEmbeddingJar.isFile)", self.caption_generator_gradle_contents)
+        self.assertIn("Flutter debug embedding JAR not found at", self.caption_generator_gradle_contents)
+        self.assertIn("flutterDebugEmbeddingJar.absolutePath", self.caption_generator_gradle_contents)
 
     def test_shorebird_patch_workflows_block_native_asset_and_dependency_changes(self) -> None:
         self.assertIn("BLOCKED_PATCH_PATHS=$(git diff --name-only", self.contents)

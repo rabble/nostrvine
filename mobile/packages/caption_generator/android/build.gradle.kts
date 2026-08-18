@@ -17,6 +17,12 @@ val flutterRoot = providers.environmentVariable("FLUTTER_ROOT")
     ?: throw GradleException("FLUTTER_ROOT must be set to compile caption_generator")
 val flutterDebugEmbeddingJar =
     file("$flutterRoot/bin/cache/artifacts/engine/android-arm64/flutter.jar")
+if (!flutterDebugEmbeddingJar.isFile) {
+    throw GradleException(
+        "Flutter debug embedding JAR not found at ${flutterDebugEmbeddingJar.absolutePath}. " +
+            "Run 'flutter precache --android' for the FLUTTER_ROOT toolchain.",
+    )
+}
 
 android {
     namespace = "co.openvine.caption_generator"

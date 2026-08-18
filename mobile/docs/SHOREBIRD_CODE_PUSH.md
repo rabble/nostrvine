@@ -63,15 +63,21 @@ minor users.
 
 | Artifact | Built by | Patchable |
 |---|---|---|
-| Play AAB | `shorebird release android` | Yes |
-| App Store IPA | `shorebird release ios` | Yes |
-| Zapstore / GitHub per-ABI APKs | `flutter build apk --split-per-abi` | **No** — deliberate |
+| Play AAB | `shorebird release android` (Shorebird Flutter fork) | Yes |
+| App Store IPA | `shorebird release ios` (Shorebird Flutter fork) | Yes |
+| Zapstore / GitHub per-ABI APKs | `flutter build apk --split-per-abi` (stock Flutter engine) | **No** — deliberate |
 | macOS DMG | `flutter build macos` | No — not wired |
 
 The Zapstore APKs are an intentional exception: Shorebird has no
 `--split-per-abi`, and its universal APK would inflate the download for every
 sideload user. Those installs cannot receive patches. Play and App Store
 installs can.
+
+Because the Play AAB and direct-download APKs use different Flutter engines,
+engine-specific behavior can differ even when both artifacts come from the same
+Codemagic run. Their build numbers can differ too: the APK uses
+`PROJECT_BUILD_NUMBER`, while the AAB uses the higher of that value and the next
+available Play build number.
 
 `auto_update` is left at its default (on), so patches apply in the background
 on launch. `shorebird_code_push` is a runtime dependency. There is no in-app UI
@@ -115,8 +121,12 @@ Release commands pass `--public-key-path`, so every new store binary only
 accepts signed Shorebird patches. A release built without the public key cannot
 be retrofitted later; cut a new store release instead.
 
-**Record the version and build number of every release you promote** — e.g.
-`1.0.9+247` — and the git commit that produced it. A future patch needs both.
+After `shorebird release` succeeds, CI writes a create-only record to the
+private `divinevideo/divine-release-provenance` repository. It binds the
+platform and complete release version to the build commit, source tree, patch
+baseline, Flutter version, exact Shorebird CLI revision, and keyed fingerprints
+of every dart-define. The record contains no dart-define values. If recording
+fails, treat the release build as incomplete and do not patch that release.
 
 ## Shipping a patch
 
@@ -125,17 +135,19 @@ be retrofitted later; cut a new store release instead.
 1. Identify the target release: `shorebird patch` needs the version of the
    build that is actually live. `shorebird releases list`, or the Shorebird
    console, shows what exists.
-1. Identify the `RELEASE_COMMIT` that produced that store release. The patch
-   workflow refuses a release commit that is not an ancestor of the current
-   checkout, then prints every commit and Dart file included after that commit.
-   Read that list before treating the patch as safe: pure Dart merged since the
-   release is exactly what Shorebird can ship.
+1. The workflow retrieves the private provenance for `RELEASE_VERSION` and
+   derives the patch baseline from it. `RELEASE_COMMIT` is optional; when used
+   as an extra operator assertion, it must be the recorded build commit, the
+   recorded patch baseline, or another commit with the exact recorded tree.
+   The workflow prints every commit and Dart file included after the verified
+   baseline. Read that list before treating the patch as safe: pure Dart merged
+   since the release is exactly what Shorebird can ship.
    If the diff includes native, asset, dependency, or Shorebird config changes,
    the workflow refuses to patch and tells you to cut a normal store release.
 1. Run `ios-patch` or `android-patch` in Codemagic with:
    - `CONFIRM_PATCH` = `YES` (defaults to `NO`; the build aborts otherwise)
    - `RELEASE_VERSION` = the exact release string, e.g. `1.0.9+247`
-   - `RELEASE_COMMIT` = the git commit that produced the target release
+   - `RELEASE_COMMIT` = optional source assertion; normally leave it empty
    - `DEFAULT_ENV` = **the same value the release was built with**
 1. The workflow publishes to Shorebird's `staging` track, not directly to
    `stable`.
@@ -152,8 +164,23 @@ be retrofitted later; cut a new store release instead.
    automation.
 1. Both platforms need their own patch run. There is no combined workflow.
 
-`DEFAULT_ENV` is the easiest thing to get wrong. A mismatch does not fail the
-build — it silently repoints patched installs at a different environment.
+The patch workflow fingerprints the regenerated dart-defines with the same
+key used by the release and fails before compiling when any key differs. It
+prints key names only, never values or mismatched fingerprints. Restore the
+release configuration when the intended patch should preserve behavior; cut a
+new store release when the configuration change is intentional.
+
+Missing, malformed, overwritten, differently keyed, or explicitly unpatchable
+provenance fails closed. Do not recreate a missing record from current values.
+Recover it only from trustworthy release-build evidence; otherwise cut a new
+store release.
+
+The iOS `1.0.21+849` release predates automatic provenance. Its actual build
+commit is `a46851e924b183fa0cb2ce6c6cfaae7ed02cc189`; the equivalent reachable
+`main` baseline is `2504f4d871a9c1790e3e39f8398027bdc5105d04`. Both have tree
+`a17e0660a782e439c5d405c2d06dd49e5b7fbc81`, which CI verifies. Its private
+record is deliberately marked unpatchable because the historical dart-defines
+cannot be established from source control.
 
 ### A patch targets a release version, not a channel
 
@@ -183,11 +210,21 @@ The same group holds patch-signing key material:
 
 - `SHOREBIRD_PATCH_PUBLIC_KEY` — public PEM passed to `shorebird release`
 - `SHOREBIRD_PATCH_PRIVATE_KEY` — secure private PEM passed to `shorebird patch`
+- `SHOREBIRD_PROVENANCE_HMAC_KEY` — secure random key for dart-define
+  fingerprints
+- `SHOREBIRD_PROVENANCE_HMAC_KEY_ID` — non-secret key identifier
 
-Store both keys as single-line values with literal `\n` sequences between PEM
-lines. CI decodes and validates that envelope before invoking Shorebird. Release
-jobs only materialize the public key; patch jobs only materialize the private
-key.
+Store both patch-signing keys as single-line values with literal `\n` sequences
+between PEM lines. CI decodes and validates that envelope before invoking
+Shorebird. Release jobs only materialize the public key; patch jobs only
+materialize the private key.
+
+The `github_credentials` token used by release and patch jobs must have read
+and write access to the private `divinevideo/divine-release-provenance`
+repository. Provenance writes are create-only. Never delete or replace a record
+for a release that may still be patched. When rotating the HMAC key, retain the
+old key and identifier until every release fingerprinted with it is no longer
+patchable; select the matching credential for an older release.
 
 The token is currently generated from an individual's account. Moving it to a
 Divine service identity is tracked in #7200.
@@ -197,14 +234,25 @@ Divine service identity is tracked in #7200.
 Installing the CLI:
 
 ```
-if [ ! -x "$HOME/.shorebird/bin/shorebird" ]; then
-  curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
-fi
+EXPECTED_SHOREBIRD_REVISION=45facdd4e4b3c39e0d260107977584f0b7c66bec
+git init "$HOME/.shorebird"
+git -C "$HOME/.shorebird" remote add origin https://github.com/shorebirdtech/shorebird.git
+git -C "$HOME/.shorebird" fetch --depth 1 origin "$EXPECTED_SHOREBIRD_REVISION"
+git -C "$HOME/.shorebird" checkout --detach FETCH_HEAD
+"$HOME/.shorebird/bin/shorebird" --version
 ```
 
-The installer refuses to overwrite an existing installation. Existing installs
-do not need to rerun it; use `bash -s -- --force` only when deliberately
-replacing the installed CLI.
+CI also downloads the upstream installer from reviewed commit
+`153e5f17e27879183d8fa5b78b058b1be3551f75` and verifies SHA-256
+`068e61b0fe74d20ecc92645df9c414cdd0140041620f07460447f8d08011b20e`.
+It does not execute that installer because it clones and immediately runs the
+mutable `stable` branch. CI installs the exact CLI revision directly and checks
+both its git revision and friendly version output on every cache hit.
+
+To upgrade Shorebird, review a tagged CLI revision, update the 40-character CLI
+SHA and expected version together, review a newer immutable installer commit
+and digest if needed, then run the CI configuration tests. Never replace either
+pin with a branch or tag.
 
 Then `shorebird login`. You need access to the Divine organization; membership
 is managed in the Shorebird console.
