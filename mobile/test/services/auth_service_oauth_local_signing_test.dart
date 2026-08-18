@@ -540,5 +540,63 @@ void main() {
         expect(retainedCalls, equals(1));
       },
     );
+
+    test(
+      'unbound-session OAuth re-sign-in keeps retained signer open',
+      () async {
+        // A fresh code-exchange session (fromTokenResponse) carries no
+        // userPubkey, so the close decision at the top of
+        // signInWithDivineOAuth cannot know the pubkey yet. It must treat
+        // unknown as same: closing here would strand the live NostrClient
+        // holding the retained RPC — even when the sign-in itself later
+        // fails, the close has already happened.
+        var retainedCalls = 0;
+        final retainedRpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'retained_token',
+          httpClient: MockClient((request) async {
+            retainedCalls++;
+            return http.Response(jsonEncode({'result': 'ciphertext'}), 200);
+          }),
+        );
+        addTearDown(retainedRpc.close);
+
+        authService = createAuthService();
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(session),
+        );
+
+        authService.debugSetKeycastSigner(retainedRpc);
+        final retainedIdentity = KeycastNostrIdentity(
+          pubkey: matchingContainer.publicKeyHex,
+          rpcSigner: retainedRpc,
+        );
+        authService.debugSetIdentity(retainedIdentity);
+
+        final unboundSession = KeycastSession(
+          bunkerUrl: 'https://keycast.example.com',
+          accessToken: 'fresh_code_exchange_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          refreshToken: 'fresh_refresh_token',
+        );
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(unboundSession),
+        );
+
+        expect(
+          await retainedIdentity.nip44Encrypt(
+            otherContainer.publicKeyHex,
+            'hello',
+          ),
+          equals('ciphertext'),
+          reason:
+              'The RPC still held by the live NostrClient must survive a '
+              'same-pubkey re-sign-in whose session has not bound its '
+              'userPubkey yet.',
+        );
+        expect(retainedCalls, equals(1));
+      },
+    );
   });
 }

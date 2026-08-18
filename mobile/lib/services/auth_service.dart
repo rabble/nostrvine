@@ -804,8 +804,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           return;
         }
-        // Keep the signer held by the live NostrClient across #5909's
-        // same-pubkey re-emission; closing it strands the retained client.
+        // Same-pubkey re-emission: retain the live client's signer (#5909).
         _setKeycastSigner(_newKeycastSigner(refreshed), closePrevious: false);
         _currentIdentity = _buildIdentity();
         _hasExpiredOAuthSession = false;
@@ -2809,7 +2808,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _hasExpiredOAuthSession = false;
 
     try {
-      final closePrevious = session.userPubkey != currentPublicKeyHex;
+      // Unbound session: pubkey unknown here, treat as same — a wrong close
+      // strands the live client; a wrong retain leaks one HTTP client (#5909).
+      final closePrevious =
+          (session.userPubkey?.isNotEmpty ?? false) &&
+          session.userPubkey != currentPublicKeyHex;
       if (session.hasRpcAccess) {
         _setKeycastSigner(
           _newKeycastSigner(session),
@@ -2819,10 +2822,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         _setKeycastSigner(null, closePrevious: closePrevious);
       }
 
-      // Prefer the pubkey stored in the session over an RPC call.
-      // session.userPubkey is ground truth once populated — it is
-      // bound to the session at the first sign-in, so subsequent
-      // reads get a pubkey that cannot mismatch the token.
+      // Prefer the pubkey stored in the session over an RPC call:
+      // userPubkey is ground truth once bound at first sign-in, so
+      // subsequent reads cannot mismatch the token.
       String? publicKeyHex = session.userPubkey;
       if (publicKeyHex == null || publicKeyHex.isEmpty) {
         publicKeyHex = await _keycastSigner?.getPublicKey();
@@ -2831,11 +2833,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         throw Exception('Could not retrieve public key from server');
       }
 
-      // If the session was created before userPubkey was populated
-      // (legacy or fresh from fromTokenResponse), bind the pubkey now
-      // and re-save. This is the fix for Bug 2: every saved session
-      // must carry its owning pubkey so subsequent archive/restore
-      // operations can validate ownership.
+      // If userPubkey was never populated (legacy or fresh from
+      // fromTokenResponse), bind the resolved pubkey now and re-save so
+      // archive/restore can validate ownership.
       if (session.userPubkey == null || session.userPubkey!.isEmpty) {
         final boundSession = session.copyWith(userPubkey: publicKeyHex);
         await boundSession.save(_flutterSecureStorage);
