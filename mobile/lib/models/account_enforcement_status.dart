@@ -4,8 +4,16 @@
 import 'package:keycast_flutter/keycast_flutter.dart';
 
 enum AccountEnforcementKind {
-  /// No signal. A fetch failure, or no Keycast session (self-custody).
+  /// No signal: the status could not be read. Transient, so retrying helps.
   unknown,
+
+  /// Divine holds no enforcement state for this account.
+  ///
+  /// The key is self-custodied (imported, generated locally, or held by a
+  /// remote signer), so there is no Divine account to be suspended. Distinct
+  /// from [unknown]: this is a settled answer, not a failed lookup, and
+  /// retrying will never change it.
+  noAccountState,
 
   /// Confirmed in good standing.
   none,

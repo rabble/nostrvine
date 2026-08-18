@@ -6,13 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/account_enforcement_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/account_enforcement_status.dart';
 import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:openvine/utils/external_link_launcher.dart';
 
 /// Account status surface for s-t-s#200.
 ///
@@ -22,14 +24,33 @@ import 'package:url_launcher/url_launcher.dart';
 /// Renders from [AccountEnforcementKind] alone. Keycast also returns a
 /// `suspended_reason`, but it is free text written by whatever called its
 /// admin API, so it is deliberately never fetched into state or shown here.
-class AccountStatusScreen extends ConsumerWidget {
+class AccountStatusScreen extends ConsumerStatefulWidget {
   static const routeName = 'account-status';
   static const String path = RoutePaths.accountStatus;
 
   const AccountStatusScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AccountStatusScreen> createState() =>
+      _AccountStatusScreenState();
+}
+
+class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Refetch on every visit. autoDispose alone is not enough: Settings stays
+    // mounted underneath a pushed route and keeps watching
+    // isAccountEnforcedProvider, so the status provider is never released and
+    // would serve a value cached before the user was suspended. This is the
+    // screen someone opens *to* check, so it must not show a stale answer.
+    Future.microtask(
+      () => ref.invalidate(accountEnforcementStatusProvider),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final async = ref.watch(accountEnforcementStatusProvider);
 
@@ -37,7 +58,9 @@ class AccountStatusScreen extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: l10n.accountStatusTitle,
         showBackButton: true,
-        onBackPressed: () => Navigator.of(context).pop(),
+        // safePop: this screen has a registered path, so it can be reached by
+        // deep link with nothing beneath it to pop back to.
+        onBackPressed: () => context.safePop(fallback: SettingsScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: Align(
@@ -55,6 +78,8 @@ class AccountStatusScreen extends ConsumerWidget {
             ),
             data: (status) => _StatusBody(
               kind: status.kind,
+              // Retry is offered only where it can actually change the answer.
+              // noAccountState is settled: there is no Divine account to check.
               onRetry: status.kind == AccountEnforcementKind.unknown
                   ? () => ref.invalidate(accountEnforcementStatusProvider)
                   : null,
@@ -124,9 +149,12 @@ class _StatusBody extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           OutlinedButton(
-            onPressed: () => launchUrl(
-              Uri.parse(AppConstants.accountPortabilityUrl),
-              mode: LaunchMode.externalApplication,
+            // openExternalLink rather than a raw launchUrl: it checks the URL
+            // can be handled and routes divine.video links in-app, so the exit
+            // path does not silently do nothing on a device without a browser.
+            onPressed: () => openExternalLink(
+              context,
+              AppConstants.accountPortabilityUrl,
             ),
             child: Text(l10n.accountStatusMoveAccount),
           ),

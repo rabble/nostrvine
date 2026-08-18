@@ -17,6 +17,8 @@ extension AccountEnforcementL10n on AppLocalizations {
     switch (kind) {
       case AccountEnforcementKind.unknown:
         return accountStatusUnknownHeading;
+      case AccountEnforcementKind.noAccountState:
+        return accountStatusNoAccountStateHeading;
       case AccountEnforcementKind.none:
         return accountStatusOkHeading;
       case AccountEnforcementKind.suspended:
@@ -32,6 +34,8 @@ extension AccountEnforcementL10n on AppLocalizations {
     switch (kind) {
       case AccountEnforcementKind.unknown:
         return accountStatusUnknownBody;
+      case AccountEnforcementKind.noAccountState:
+        return accountStatusNoAccountStateBody;
       case AccountEnforcementKind.none:
         return accountStatusOkBody;
       case AccountEnforcementKind.suspended:

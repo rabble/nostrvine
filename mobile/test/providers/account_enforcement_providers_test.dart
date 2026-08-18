@@ -69,6 +69,7 @@ void main() {
     'authenticated: threads the session token and reports suspended',
     () async {
       final authService = _MockAuthService();
+      when(() => authService.isRegistered).thenReturn(true);
       when(
         authService.activeAccountKeycastToken,
       ).thenAnswer((_) async => 'tok123');
@@ -107,6 +108,7 @@ void main() {
     // the app is restarted — the exact failure this surface exists to fix.
     var requests = 0;
     final authService = _MockAuthService();
+    when(() => authService.isRegistered).thenReturn(true);
     when(
       authService.activeAccountKeycastToken,
     ).thenAnswer((_) async => 'tok123');
@@ -136,8 +138,39 @@ void main() {
     expect(requests, 2, reason: 'status must be refetched, not served stale');
   });
 
+  test(
+    'a self-custody account reports no account state, without fetching',
+    () async {
+      // Only a divineOAuth account has a Keycast session. An imported or locally
+      // generated key has no Divine account to be suspended, so "we could not
+      // check, try again" would be a lie: retrying can never resolve it.
+      var requests = 0;
+      final authService = _MockAuthService();
+      when(() => authService.isRegistered).thenReturn(false);
+
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          oauthClientProvider.overrideWithValue(
+            _oauthReturning(_activeBody, onCall: (_) => requests++),
+          ),
+          authServiceProvider.overrideWithValue(authService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final status = await container.read(
+        accountEnforcementStatusProvider.future,
+      );
+
+      expect(status.kind, AccountEnforcementKind.noAccountState);
+      expect(requests, 0, reason: 'no Keycast session to ask');
+    },
+  );
+
   test('authenticated: an active account reports none', () async {
     final authService = _MockAuthService();
+    when(() => authService.isRegistered).thenReturn(true);
     when(
       authService.activeAccountKeycastToken,
     ).thenAnswer((_) async => 'tok123');

@@ -41,6 +41,16 @@ accountEnforcementStatusProvider =
       if (authState != AuthState.authenticated) {
         return AccountEnforcementStatus.unknown();
       }
+      // Only a divineOAuth account has a Keycast session. Every other sign-in
+      // source is a key the user holds, so there is no Divine account state to
+      // report and no endpoint worth calling. Answering `unknown` here would
+      // render as "we could not check, try again" against a retry that can
+      // never succeed.
+      if (!ref.watch(authServiceProvider).isRegistered) {
+        return const AccountEnforcementStatus(
+          kind: AccountEnforcementKind.noAccountState,
+        );
+      }
       return ref
           .watch(accountEnforcementRepositoryProvider)
           .fetchCurrentStatus();
