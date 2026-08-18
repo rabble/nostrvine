@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 
 part 'locale_state.dart';
@@ -13,7 +14,8 @@ part 'locale_state.dart';
 ///
 /// Emits [LocaleState] with a [Locale] when the user has chosen a specific
 /// language, or `null` when following the device default.
-class LocaleCubit extends Cubit<LocaleState> {
+class LocaleCubit extends Cubit<LocaleState>
+    with CloseGuardedEmit<LocaleState> {
   /// Creates a [LocaleCubit] backed by [localePreferenceService].
   LocaleCubit({required LocalePreferenceService localePreferenceService})
     : _service = localePreferenceService,
@@ -33,12 +35,12 @@ class LocaleCubit extends Cubit<LocaleState> {
   /// Sets the app locale to [localeCode] (e.g. `'es'`, `'tr'`).
   Future<void> setLocale(String localeCode) async {
     await _service.setLocale(localeCode);
-    emit(LocaleState(locale: Locale(localeCode)));
+    emitIfOpen(LocaleState(locale: Locale(localeCode)));
   }
 
   /// Clears the custom locale, reverting to device default.
   Future<void> clearLocale() async {
     await _service.clearLocale();
-    emit(const LocaleState());
+    emitIfOpen(const LocaleState());
   }
 }

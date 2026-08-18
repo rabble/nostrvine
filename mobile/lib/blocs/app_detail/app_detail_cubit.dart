@@ -4,11 +4,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 part 'app_detail_state.dart';
 
 /// Resolves an [NostrAppDirectoryEntry] by slug.
-class AppDetailCubit extends Cubit<AppDetailState> {
+class AppDetailCubit extends Cubit<AppDetailState>
+    with CloseGuardedEmit<AppDetailState> {
   /// Creates the cubit.
   ///
   /// If [initialEntry] is non-null the cubit emits
@@ -35,14 +37,14 @@ class AppDetailCubit extends Cubit<AppDetailState> {
       final apps = await _directoryService.fetchApprovedApps();
       for (final app in apps) {
         if (app.slug == _slug) {
-          emit(AppDetailLoaded(app));
+          emitIfOpen(AppDetailLoaded(app));
           return;
         }
       }
-      emit(const AppDetailNotFound());
+      emitIfOpen(const AppDetailNotFound());
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(const AppDetailNotFound());
+      emitIfOpen(const AppDetailNotFound());
     }
   }
 }

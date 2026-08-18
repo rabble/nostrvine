@@ -3,6 +3,7 @@
 // ABOUTME: and persists per-label preference changes via ContentFilterService.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/content_filters/content_filters_state.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -14,7 +15,8 @@ import 'package:openvine/services/content_filter_service.dart';
 /// [ContentLabel]'s preference into state, and writes preference changes back
 /// through [ContentFilterService] (which itself enforces the adult-category age
 /// gate, so the persisted value is re-read after each write).
-class ContentFiltersCubit extends Cubit<ContentFiltersState> {
+class ContentFiltersCubit extends Cubit<ContentFiltersState>
+    with CloseGuardedEmit<ContentFiltersState> {
   ContentFiltersCubit({
     required ContentFilterService contentFilterService,
     required AgeVerificationService ageVerificationService,
@@ -26,10 +28,10 @@ class ContentFiltersCubit extends Cubit<ContentFiltersState> {
   final AgeVerificationService _ageVerificationService;
 
   Future<void> load() async {
-    emit(state.copyWith(status: ContentFiltersStatus.loading));
+    emitIfOpen(state.copyWith(status: ContentFiltersStatus.loading));
     await _contentFilterService.initialize();
     await _ageVerificationService.initialize();
-    emit(
+    emitIfOpen(
       state.copyWith(
         status: ContentFiltersStatus.ready,
         isAgeVerified: _ageVerificationService.isAdultContentVerified,
@@ -48,7 +50,7 @@ class ContentFiltersCubit extends Cubit<ContentFiltersState> {
     ContentFilterPreference preference,
   ) async {
     await _contentFilterService.setPreference(label, preference);
-    emit(
+    emitIfOpen(
       state.copyWith(
         preferences: {
           ...state.preferences,

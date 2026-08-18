@@ -7,6 +7,7 @@ import 'package:comments_repository/comments_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'inline_comment_composer_state.dart';
@@ -21,7 +22,8 @@ part 'inline_comment_composer_state.dart';
 /// just a single [InlineCommentComposerStatus] enum; the active video is
 /// supplied per-call to [submit] so the cubit holds no mutable video
 /// reference.
-class InlineCommentComposerCubit extends Cubit<InlineCommentComposerState> {
+class InlineCommentComposerCubit extends Cubit<InlineCommentComposerState>
+    with CloseGuardedEmit<InlineCommentComposerState> {
   InlineCommentComposerCubit({required CommentsRepository commentsRepository})
     : _commentsRepository = commentsRepository,
       super(const InlineCommentComposerState());
@@ -44,7 +46,7 @@ class InlineCommentComposerCubit extends Cubit<InlineCommentComposerState> {
     if (trimmed.isEmpty) return;
     if (state.status == InlineCommentComposerStatus.submitting) return;
 
-    emit(state.copyWith(status: InlineCommentComposerStatus.submitting));
+    emitIfOpen(state.copyWith(status: InlineCommentComposerStatus.submitting));
 
     try {
       await _commentsRepository.postComment(
@@ -54,7 +56,7 @@ class InlineCommentComposerCubit extends Cubit<InlineCommentComposerState> {
         rootEventAuthorPubkey: video.pubkey,
         rootAddressableId: video.addressableId,
       );
-      emit(state.copyWith(status: InlineCommentComposerStatus.submitted));
+      emitIfOpen(state.copyWith(status: InlineCommentComposerStatus.submitted));
     } catch (error, stackTrace) {
       Log.error(
         'Inline comment publish failed',
@@ -64,7 +66,7 @@ class InlineCommentComposerCubit extends Cubit<InlineCommentComposerState> {
         stackTrace: stackTrace,
       );
       addError(error, stackTrace);
-      emit(state.copyWith(status: InlineCommentComposerStatus.failure));
+      emitIfOpen(state.copyWith(status: InlineCommentComposerStatus.failure));
     }
   }
 
@@ -74,6 +76,6 @@ class InlineCommentComposerCubit extends Cubit<InlineCommentComposerState> {
   /// so the next tap-and-send cycle starts from a clean state.
   void acknowledge() {
     if (state.status == InlineCommentComposerStatus.idle) return;
-    emit(state.copyWith(status: InlineCommentComposerStatus.idle));
+    emitIfOpen(state.copyWith(status: InlineCommentComposerStatus.idle));
   }
 }
