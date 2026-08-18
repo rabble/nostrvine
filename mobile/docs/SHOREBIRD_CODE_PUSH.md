@@ -101,6 +101,12 @@ Run `ios-build` or `android-build` in Codemagic as usual. They now produce
 Shorebird releases as a side effect of building the store artifact — no extra
 step, no change to how you ship.
 
+Before starting a store build, update `mobile/pubspec.yaml` to the intended
+marketing version. The iOS preflight reads the latest approved App Store
+version and refuses a candidate that is equal or lower before Shorebird builds
+or records a release. Increasing only the build number cannot reopen a closed
+App Store version train.
+
 Publishing behaviour is unchanged: iOS stops at TestFlight
 (`submit_to_app_store: false`, internal groups), Android uploads to Play as a
 draft. Promotion to production stays manual in both stores.
@@ -221,6 +227,11 @@ later upload or symbol step fails, the store build-number lookup can derive the
 same version again, but Shorebird will refuse to create it twice. The preflight
 stops that retry before the long build. Delete the failed Shorebird release or
 bump the store build number before rerunning; do not bypass the preflight.
+
+**App Store Connect rejects builds for an approved marketing version.** Once
+Apple approves a version such as `1.0.20`, its pre-release train is closed and
+a higher build number does not reopen it. Bump the version in
+`mobile/pubspec.yaml`; the iOS preflight checks this before invoking Shorebird.
 
 **`shorebird init` fails with "Unable to initialize gradlew".** `gradlew` is
 gitignored, so a fresh worktree has no wrapper, and `init` calls it directly

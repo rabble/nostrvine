@@ -89,6 +89,19 @@ class CodemagicAndroidBuildNumberTest(unittest.TestCase):
         self.assertIn("--build-name=$BUILD_NAME", self.contents)
         self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", self.contents)
 
+    def test_ios_release_rejects_closed_app_store_version_before_shorebird(self) -> None:
+        workflow = self._workflow_block("ios-build")
+        self.assertIn(
+            "app-store-connect get-latest-app-store-build-number",
+            self.contents,
+        )
+        self.assertIn("--include-version --json", self.contents)
+        self.assertEqual(1, self.contents.count("ios_store_version_preflight.rb"))
+        self.assertLess(
+            workflow.index("- *preflight_shorebird_ios_release"),
+            workflow.index("- *build_ios"),
+        )
+
     def test_flutter_pins_match_current_shorebird_engine(self) -> None:
         mise_version = re.search(r'^flutter = "([^"]+)"$', self.mise_contents, re.MULTILINE)
         self.assertIsNotNone(mise_version)
