@@ -276,6 +276,26 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertNotRegex(self.contents, r"(?m)^\s+flutter build appbundle ")
         self.assertNotRegex(self.contents, r"(?m)^\s+flutter build ipa ")
 
+    def test_ios_release_uploads_without_automatic_review_submission(self) -> None:
+        workflow = self._workflow_block("ios-build")
+
+        self.assertIn("app_store_connect:", workflow)
+        self.assertIn("submit_to_testflight: false", workflow)
+        self.assertIn("submit_to_app_store: false", workflow)
+
+        self.assertRegex(
+            self.shorebird_doc_contents,
+            r"automatic internal TestFlight\s+distribution",
+        )
+        self.assertRegex(
+            self.shorebird_doc_contents,
+            r"manual external TestFlight promotion",
+        )
+        self.assertRegex(
+            self.shorebird_doc_contents,
+            r"manual\s+App Store promotion",
+        )
+
     def test_release_jobs_never_materialize_patch_private_key(self) -> None:
         self.assertIn("*write_shorebird_public_key", self._workflow_block("ios-build"))
         self.assertIn("*write_shorebird_public_key", self._workflow_block("android-build"))

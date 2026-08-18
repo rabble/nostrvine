@@ -963,13 +963,9 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Upload only; App Store Connect owns internal distribution and review gates.
+        submit_to_testflight: false
         submit_to_app_store: false
-        # Auto-distribute internal builds to assignable TestFlight groups.
-        beta_groups:
-          - "AOS"
-          - "GW"
-          - "rabblelabs"
 
   ios-simulator-build:
     name: iOS Simulator Build

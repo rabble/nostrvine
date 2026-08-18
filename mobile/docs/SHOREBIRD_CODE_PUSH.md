@@ -113,9 +113,27 @@ version and refuses a candidate that is equal or lower before Shorebird builds
 or records a release. Increasing only the build number cannot reopen a closed
 App Store version train.
 
-Publishing behaviour is unchanged: iOS stops at TestFlight
-(`submit_to_app_store: false`, internal groups), Android uploads to Play as a
-draft. Promotion to production stays manual in both stores.
+iOS publishing deliberately stops after uploading the Shorebird IPA to App
+Store Connect (`submit_to_testflight: false`, `submit_to_app_store: false`).
+App Store Connect, not Codemagic, provides automatic internal TestFlight
+distribution. This depends on configuration outside this repository: enable
+**Automatic Distribution** on every internal-only tester group that should
+receive each build without Beta App Review. Do not put external testers in
+those groups.
+
+A green Codemagic build confirms the IPA upload, not successful App Store
+Connect processing or tester distribution. After each iOS build, confirm the
+build finishes processing and reaches **Ready to Test**, then verify an internal
+tester can see it before treating internal delivery as complete.
+
+After internal testing passes, perform a manual external TestFlight promotion
+of the same build in App Store Connect: add it to the external groups and submit
+it for Beta App Review. After the full external cohort passes, perform a manual
+App Store promotion by selecting that exact build for the marketing version and
+submitting it for App Store Review. Do not rebuild between those gates; the
+binary reviewed for public release must be the Shorebird binary exercised by
+both tester cohorts. Android continues to upload to Play as a draft, with
+promotion to production remaining manual.
 
 Release commands pass `--public-key-path`, so every new store binary only
 accepts signed Shorebird patches. A release built without the public key cannot
