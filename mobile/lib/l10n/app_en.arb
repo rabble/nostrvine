@@ -332,7 +332,7 @@
       }
     }
   },
-  "profileFollowerCountUsers": "{count} users",
+  "profileFollowerCountUsers": "{count, plural, =1{{count} user} other{{count} users}}",
   "@profileFollowerCountUsers": {
     "placeholders": {
       "count": {
@@ -1455,7 +1455,7 @@
   },
   "relaySettingsFailedToRemoveRelay": "Failed to remove relay",
   "relaySettingsForcingReconnection": "Forcing relay reconnection...",
-  "relaySettingsConnectedToRelays": "Connected to {count} relay(s)!",
+  "relaySettingsConnectedToRelays": "{count, plural, =1{Connected to {count} relay!} other{Connected to {count} relays!}}",
   "@relaySettingsConnectedToRelays": {
     "placeholders": {
       "count": {
@@ -1504,7 +1504,7 @@
       }
     }
   },
-  "relaySettingsSubscriptionsSummary": "{count} subs",
+  "relaySettingsSubscriptionsSummary": "{count, plural, =1{{count} sub} other{{count} subs}}",
   "@relaySettingsSubscriptionsSummary": {
     "placeholders": {
       "count": {
@@ -1512,9 +1512,12 @@
       }
     }
   },
-  "relaySettingsEventsSummary": "{count} events",
+  "relaySettingsEventsSummary": "{countValue, plural, =1{{count} event} other{{count} events}}",
   "@relaySettingsEventsSummary": {
     "placeholders": {
+      "countValue": {
+        "type": "int"
+      },
       "count": {
         "type": "String"
       }
@@ -1589,7 +1592,7 @@
   "relayDiagnosticActiveSubscriptions": "Active Subscriptions",
   "relayDiagnosticExternalRelays": "External Relays",
   "relayDiagnosticConfigured": "Configured",
-  "relayDiagnosticRelayCount": "{count} relay(s)",
+  "relayDiagnosticRelayCount": "{count, plural, =1{{count} relay} other{{count} relays}}",
   "@relayDiagnosticRelayCount": {
     "placeholders": {
       "count": {
@@ -1611,7 +1614,7 @@
   },
   "relayDiagnosticVideoEvents": "Video Events",
   "relayDiagnosticHomeFeed": "Home Feed",
-  "relayDiagnosticVideosCount": "{count} videos",
+  "relayDiagnosticVideosCount": "{count, plural, =1{{count} video} other{{count} videos}}",
   "@relayDiagnosticVideosCount": {
     "placeholders": {
       "count": {
@@ -1655,7 +1658,7 @@
   "relayDiagnosticTroubleshootingGuide": "• Green status = Connected and working\n• Red status = Connection failed\n• If network test fails, check internet connection\n• If relays are configured but not connected, tap \"Retry Connection\"\n• Screenshot this screen for debugging",
   "relayDiagnosticAllEndpointsHealthy": "All REST endpoints healthy!",
   "relayDiagnosticSomeEndpointsFailed": "Some REST endpoints failed - see details above",
-  "relayDiagnosticFoundVideoEvents": "Found {count} video events in database",
+  "relayDiagnosticFoundVideoEvents": "{count, plural, =1{Found {count} video event in database} other{Found {count} video events in database}}",
   "@relayDiagnosticFoundVideoEvents": {
     "placeholders": {
       "count": {
@@ -1671,7 +1674,7 @@
       }
     }
   },
-  "relayDiagnosticConnectedToRelays": "Connected to {count} relay(s)!",
+  "relayDiagnosticConnectedToRelays": "{count, plural, =1{Connected to {count} relay!} other{Connected to {count} relays!}}",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
       "count": {
@@ -1797,25 +1800,34 @@
   "analyticsMostReposted": "Most reposted",
   "analyticsNoVideosYet": "No videos yet",
   "analyticsViewDataUnavailableShort": "View data unavailable",
-  "analyticsViewsCount": "{count} views",
+  "analyticsViewsCount": "{countValue, plural, =1{{count} view} other{{count} views}}",
   "@analyticsViewsCount": {
     "placeholders": {
+      "countValue": {
+        "type": "int"
+      },
       "count": {
         "type": "String"
       }
     }
   },
-  "analyticsCommentsCount": "{count} comments",
+  "analyticsCommentsCount": "{countValue, plural, =1{{count} comment} other{{count} comments}}",
   "@analyticsCommentsCount": {
     "placeholders": {
+      "countValue": {
+        "type": "int"
+      },
       "count": {
         "type": "String"
       }
     }
   },
-  "analyticsRepostsCount": "{count} reposts",
+  "analyticsRepostsCount": "{countValue, plural, =1{{count} repost} other{{count} reposts}}",
   "@analyticsRepostsCount": {
     "placeholders": {
+      "countValue": {
+        "type": "int"
+      },
       "count": {
         "type": "String"
       }
@@ -1827,9 +1839,12 @@
   "analyticsEngagementRateNoViews": "Engagement Rate needs view data; values show as N/A until views are available.",
   "analyticsEngagementLabel": "Engagement",
   "analyticsViewsUnavailable": "views unavailable",
-  "analyticsInteractionsCount": "{count} interactions",
+  "analyticsInteractionsCount": "{countValue, plural, =1{{count} interaction} other{{count} interactions}}",
   "@analyticsInteractionsCount": {
     "placeholders": {
+      "countValue": {
+        "type": "int"
+      },
       "count": {
         "type": "String"
       }
@@ -2808,7 +2823,7 @@
     }
   },
   "notificationsInviteSingular": "You have 1 invite to share with a friend!",
-  "notificationsInvitePlural": "You have {count} invites to share with friends!",
+  "notificationsInvitePlural": "{count, plural, =1{You have {count} invite to share with friends!} other{You have {count} invites to share with friends!}}",
   "@notificationsInvitePlural": {
     "placeholders": {
       "count": {
@@ -3124,7 +3139,7 @@
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "Close",
   "listAddToList": "Add to List",
-  "listVideoCount": "{count} videos",
+  "listVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}",
   "@listVideoCount": {
     "placeholders": {
       "count": {
@@ -3348,7 +3363,7 @@
   },
   "soundNoVideoCount": "No videos yet",
   "soundOneVideo": "1 video",
-  "soundVideoCount": "{count} videos",
+  "soundVideoCount": "{count, plural, =1{{count} video} other{{count} videos}}",
   "@soundVideoCount": {
     "placeholders": {
       "count": {
@@ -4010,9 +4025,12 @@
     }
   },
   "exploreSearchHint": "Search...",
-  "categoryVideoCount": "{count} videos",
+  "categoryVideoCount": "{countValue, plural, =1{{count} video} other{{count} videos}}",
   "@categoryVideoCount": {
     "placeholders": {
+      "countValue": {
+        "type": "int"
+      },
       "count": {
         "type": "String"
       }
@@ -4511,10 +4529,10 @@
   "messageRequestDeclineAndRemoveButton": "Decline and remove",
   "messageRequestLoadFailed": "Couldn't load this request.",
   "@messageRequestLoadFailed": {"description": "Shown in place of the request preview when its database read fails (#7335), next to a `commonRetry` button. The screen previously fell through to the loaded layout, so a failed read rendered a generated placeholder name, a count of 0, and live accept/decline buttons over an unknown sender."},
-  "messageRequestFollowersCount": "{count} Followers",
-  "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
-  "messageRequestVideosCount": "{count} videos",
-  "@messageRequestVideosCount": {"placeholders": {"count": {"type": "String"}}},
+  "messageRequestFollowersCount": "{countValue, plural, =1{{count} Follower} other{{count} Followers}}",
+  "@messageRequestFollowersCount": {"placeholders": {"countValue": {"type": "int"}, "count": {"type": "String"}}},
+  "messageRequestVideosCount": "{countValue, plural, =1{{count} video} other{{count} videos}}",
+  "@messageRequestVideosCount": {"placeholders": {"countValue": {"type": "int"}, "count": {"type": "String"}}},
   "messageRequestMessageCount": "{count, plural, =1{1 message} other{{count} messages}}",
   "@messageRequestMessageCount": {"placeholders": {"count": {"type": "int"}}},
   "messageRequestViewMessagesButton": "View messages",
@@ -5726,7 +5744,7 @@
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
   },
-  "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} frames per image",
+  "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count, plural, =1{{count} frame per image} other{{count} frames per image}}",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {
     "description": "Accessibility value announcing the current stop-motion hold length, in output frames per still.",
     "placeholders": {
@@ -6867,7 +6885,7 @@
     "@monetizationSettingsIntroTitle": {"description": "Heading explaining monetization links do not create in-app payments."},
     "monetizationSettingsIntroBody": "Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.",
     "@monetizationSettingsIntroBody": {"description": "Body copy explaining profile monetization links are external only."},
-    "monetizationSettingsConfiguredCount": "{count} active link(s) on your profile",
+    "monetizationSettingsConfiguredCount": "{count, plural, =1{{count} active link on your profile} other{{count} active links on your profile}}",
     "@monetizationSettingsConfiguredCount": {"description": "Summary of active monetization links configured on the profile.", "placeholders": {"count": {"type": "int"}}},
     "monetizationSettingsTipSection": "Send a tip",
     "@monetizationSettingsTipSection": {"description": "Section header for one-time tip link providers."},
@@ -6919,7 +6937,7 @@
     "@monetizationTipsSettingsIntroTitle": {"description": "App Store-safe heading explaining tip links are optional user-to-user gifts."},
     "monetizationTipsSettingsIntroBody": "Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.",
     "@monetizationTipsSettingsIntroBody": {"description": "App Store-safe body copy explaining tips do not unlock digital content or services."},
-    "monetizationTipsSettingsConfiguredCount": "{count} active tip link(s) on your profile",
+    "monetizationTipsSettingsConfiguredCount": "{count, plural, =1{{count} active tip link on your profile} other{{count} active tip links on your profile}}",
     "@monetizationTipsSettingsConfiguredCount": {"description": "App Store-safe summary of active tip links configured on the profile.", "placeholders": {"count": {"type": "int"}}},
     "monetizationTipsSettingsSave": "Save tip links",
     "@monetizationTipsSettingsSave": {"description": "App Store-safe button label to save optional tip links."},
@@ -6969,7 +6987,7 @@
   "@settingsStorageError": {"description": "Generic error shown when a storage operation fails."},
   "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
   "@settingsStorageMaxVideoCacheLabel": {"description": "Label above the slider that sets the maximum video-cache size."},
-  "settingsStorageApproxVideos": "≈ {count} videos",
+  "settingsStorageApproxVideos": "{count, plural, =1{≈ {count} video} other{≈ {count} videos}}",
   "@settingsStorageApproxVideos": {"description": "Approximate number of videos that fit in the chosen cache size.", "placeholders": {"count": {"type": "int"}}},
   "settingsStorageRemoveBrokenConfirmTitle": "Remove broken clips?",
   "@settingsStorageRemoveBrokenConfirmTitle": {"description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."},

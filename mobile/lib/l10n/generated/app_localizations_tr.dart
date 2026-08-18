@@ -2305,7 +2305,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count olay';
   }
 
@@ -2856,17 +2856,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'Görüntüleme verileri yok';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count görüntülenme';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count yorum';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count yeniden paylaşım';
   }
 
@@ -2892,7 +2892,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get analyticsViewsUnavailable => 'görüntüleme yok';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count etkileşim';
   }
 
@@ -6299,7 +6299,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get exploreSearchHint => 'Ara...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count video';
   }
 
@@ -7264,12 +7264,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get messageRequestLoadFailed => 'Bu istek yüklenemedi.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count Takipçi';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count video';
   }
 

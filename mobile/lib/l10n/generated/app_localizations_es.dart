@@ -2394,7 +2394,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count eventos';
   }
 
@@ -2952,17 +2952,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'Datos de visualizaciones no disponibles';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count visualizaciones';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count comentarios';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count reposts';
   }
 
@@ -2988,7 +2988,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get analyticsViewsUnavailable => 'visualizaciones no disponibles';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count interacciones';
   }
 
@@ -6418,7 +6418,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get exploreSearchHint => 'Buscar...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count videos';
   }
 
@@ -7406,12 +7406,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get messageRequestLoadFailed => 'No se pudo cargar esta solicitud.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count seguidores';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count videos';
   }
 

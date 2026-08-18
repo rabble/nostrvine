@@ -975,6 +975,7 @@ String _relayStatusSummary(BuildContext context, RelayStatistics? stats) {
   if (stats.eventsReceived > 0) {
     parts.add(
       context.l10n.relaySettingsEventsSummary(
+        stats.eventsReceived,
         CountFormatter.formatCompact(stats.eventsReceived),
       ),
     );

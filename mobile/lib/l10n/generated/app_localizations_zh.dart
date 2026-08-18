@@ -2229,7 +2229,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count 个事件';
   }
 
@@ -2752,17 +2752,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => '观看数据不可用';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count 次观看';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count 条评论';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count 次转发';
   }
 
@@ -2785,7 +2785,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get analyticsViewsUnavailable => '观看数据不可用';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count 次互动';
   }
 
@@ -6028,7 +6028,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exploreSearchHint => '搜索...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count 个视频';
   }
 
@@ -6948,12 +6948,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageRequestLoadFailed => '无法加载此请求。';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count 位粉丝';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count 个视频';
   }
 

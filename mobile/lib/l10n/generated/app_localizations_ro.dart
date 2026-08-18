@@ -2435,7 +2435,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count evenimente';
   }
 
@@ -3018,17 +3018,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Date de vizualizare indisponibile';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count vizualizări';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count comentarii';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count redistribuiri';
   }
 
@@ -3054,7 +3054,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get analyticsViewsUnavailable => 'vizualizări indisponibile';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count interacțiuni';
   }
 
@@ -6523,7 +6523,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreSearchHint => 'Caută...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count videoclipuri';
   }
 
@@ -7508,12 +7508,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get messageRequestLoadFailed => 'Nu am putut încărca această cerere.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count urmăritori';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count videoclipuri';
   }
 

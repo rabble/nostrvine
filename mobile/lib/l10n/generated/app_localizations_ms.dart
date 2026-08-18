@@ -2354,7 +2354,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count acara';
   }
 
@@ -2912,17 +2912,17 @@ class AppLocalizationsMs extends AppLocalizations {
       'Data tontonan tidak tersedia';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count tontonan';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count komen';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count siaran semula';
   }
 
@@ -2948,7 +2948,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get analyticsViewsUnavailable => 'tontonan tidak tersedia';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count interaksi';
   }
 
@@ -6378,7 +6378,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get exploreSearchHint => 'Cari...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count video';
   }
 
@@ -7353,12 +7353,12 @@ class AppLocalizationsMs extends AppLocalizations {
       'Permintaan ini tidak dapat dimuatkan.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count Pengikut';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count video';
   }
 

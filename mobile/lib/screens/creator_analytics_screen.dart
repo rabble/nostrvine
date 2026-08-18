@@ -778,10 +778,9 @@ class _PerformanceHighlights extends StatelessWidget {
                       context.l10n.analyticsNoVideosYet)
                 : context.l10n.analyticsViewDataUnavailableShort,
             metricText: summary.hasViewData && summary.mostViewed != null
-                ? context.l10n.analyticsViewsCount(
-                    StringUtils.formatCompactNumber(
-                      summary.mostViewed!.views ?? 0,
-                    ),
+                ? StringUtils.compactPlural(
+                    summary.mostViewed!.views ?? 0,
+                    context.l10n.analyticsViewsCount,
                   )
                 : context.l10n.analyticsNa,
             onTap: summary.mostViewed == null
@@ -792,10 +791,9 @@ class _PerformanceHighlights extends StatelessWidget {
           _HighlightRow(
             label: context.l10n.analyticsMostDiscussed,
             metricText: summary.hasEngagementData
-                ? context.l10n.analyticsCommentsCount(
-                    StringUtils.formatCompactNumber(
-                      summary.mostDiscussed?.comments ?? 0,
-                    ),
+                ? StringUtils.compactPlural(
+                    summary.mostDiscussed?.comments ?? 0,
+                    context.l10n.analyticsCommentsCount,
                   )
                 : context.l10n.analyticsNa,
             title: summary.hasEngagementData
@@ -810,10 +808,9 @@ class _PerformanceHighlights extends StatelessWidget {
           _HighlightRow(
             label: context.l10n.analyticsMostReposted,
             metricText: summary.hasEngagementData
-                ? context.l10n.analyticsRepostsCount(
-                    StringUtils.formatCompactNumber(
-                      summary.mostReposted?.reposts ?? 0,
-                    ),
+                ? StringUtils.compactPlural(
+                    summary.mostReposted?.reposts ?? 0,
+                    context.l10n.analyticsRepostsCount,
                   )
                 : context.l10n.analyticsNa,
             title: summary.hasEngagementData
@@ -999,8 +996,8 @@ class _TopVideoRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${performance.views != null ? context.l10n.analyticsViewsCount(StringUtils.formatCompactNumber(performance.views!)) : context.l10n.analyticsViewsUnavailable} \u2022 '
-                    '${hasEngagementData ? context.l10n.analyticsInteractionsCount(StringUtils.formatCompactNumber(performance.interactions)) : context.l10n.analyticsNa}',
+                    '${performance.views != null ? StringUtils.compactPlural(performance.views!, context.l10n.analyticsViewsCount) : context.l10n.analyticsViewsUnavailable} \u2022 '
+                    '${hasEngagementData ? StringUtils.compactPlural(performance.interactions, context.l10n.analyticsInteractionsCount) : context.l10n.analyticsNa}',
                     style: VineTheme.bodySmallFont(
                       color: context.vineColors.onSurfaceMuted,
                     ),

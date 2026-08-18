@@ -2325,7 +2325,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count ክስተቶች';
   }
 
@@ -2864,17 +2864,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'የእይታ ውሂብ አይገኝም';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count እይታዎች';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count አስተያየቶች';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count ድጋሚ ልጥፎች';
   }
 
@@ -2899,7 +2899,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get analyticsViewsUnavailable => 'እይታዎች አይገኙም።';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count መስተጋብር';
   }
 
@@ -6227,7 +6227,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreSearchHint => 'ይፈልጉ...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count ቪዲዮዎች';
   }
 
@@ -7177,12 +7177,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get messageRequestLoadFailed => 'ይህን ጥያቄ መጫን አልተቻለም።';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count ተከታዮች';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count ቪዲዮዎች';
   }
 

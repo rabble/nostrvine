@@ -369,6 +369,7 @@ class _StatsLine extends StatelessWidget {
     if (followerCount != null) {
       parts.add(
         context.l10n.messageRequestFollowersCount(
+          followerCount!,
           CountFormatter.formatCompact(followerCount!),
         ),
       );
@@ -376,6 +377,7 @@ class _StatsLine extends StatelessWidget {
     if (videoCount != null) {
       parts.add(
         context.l10n.messageRequestVideosCount(
+          videoCount!,
           CountFormatter.formatCompact(videoCount!),
         ),
       );

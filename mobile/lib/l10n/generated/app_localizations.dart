@@ -1029,7 +1029,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileFollowerCountUsers.
   ///
   /// In en, this message translates to:
-  /// **'{count} users'**
+  /// **'{count, plural, =1{{count} user} other{{count} users}}'**
   String profileFollowerCountUsers(int count);
 
   /// No description provided for @profileBlockTitle.
@@ -3946,7 +3946,7 @@ abstract class AppLocalizations {
   /// No description provided for @relaySettingsConnectedToRelays.
   ///
   /// In en, this message translates to:
-  /// **'Connected to {count} relay(s)!'**
+  /// **'{count, plural, =1{Connected to {count} relay!} other{Connected to {count} relays!}}'**
   String relaySettingsConnectedToRelays(int count);
 
   /// No description provided for @relaySettingsFailedToConnectCheck.
@@ -4054,14 +4054,14 @@ abstract class AppLocalizations {
   /// No description provided for @relaySettingsSubscriptionsSummary.
   ///
   /// In en, this message translates to:
-  /// **'{count} subs'**
+  /// **'{count, plural, =1{{count} sub} other{{count} subs}}'**
   String relaySettingsSubscriptionsSummary(int count);
 
   /// No description provided for @relaySettingsEventsSummary.
   ///
   /// In en, this message translates to:
-  /// **'{count} events'**
-  String relaySettingsEventsSummary(String count);
+  /// **'{countValue, plural, =1{{count} event} other{{count} events}}'**
+  String relaySettingsEventsSummary(int countValue, String count);
 
   /// No description provided for @relaySettingsTimeAgo.
   ///
@@ -4282,7 +4282,7 @@ abstract class AppLocalizations {
   /// No description provided for @relayDiagnosticRelayCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} relay(s)'**
+  /// **'{count, plural, =1{{count} relay} other{{count} relays}}'**
   String relayDiagnosticRelayCount(int count);
 
   /// No description provided for @relayDiagnosticConnectedLabel.
@@ -4312,7 +4312,7 @@ abstract class AppLocalizations {
   /// No description provided for @relayDiagnosticVideosCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} videos'**
+  /// **'{count, plural, =1{{count} video} other{{count} videos}}'**
   String relayDiagnosticVideosCount(int count);
 
   /// No description provided for @relayDiagnosticDiscovery.
@@ -4460,7 +4460,7 @@ abstract class AppLocalizations {
   /// No description provided for @relayDiagnosticFoundVideoEvents.
   ///
   /// In en, this message translates to:
-  /// **'Found {count} video events in database'**
+  /// **'{count, plural, =1{Found {count} video event in database} other{Found {count} video events in database}}'**
   String relayDiagnosticFoundVideoEvents(int count);
 
   /// No description provided for @relayDiagnosticQueryFailed.
@@ -4472,7 +4472,7 @@ abstract class AppLocalizations {
   /// No description provided for @relayDiagnosticConnectedToRelays.
   ///
   /// In en, this message translates to:
-  /// **'Connected to {count} relay(s)!'**
+  /// **'{count, plural, =1{Connected to {count} relay!} other{Connected to {count} relays!}}'**
   String relayDiagnosticConnectedToRelays(int count);
 
   /// No description provided for @relayDiagnosticFailedToConnect.
@@ -5030,20 +5030,20 @@ abstract class AppLocalizations {
   /// No description provided for @analyticsViewsCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} views'**
-  String analyticsViewsCount(String count);
+  /// **'{countValue, plural, =1{{count} view} other{{count} views}}'**
+  String analyticsViewsCount(int countValue, String count);
 
   /// No description provided for @analyticsCommentsCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} comments'**
-  String analyticsCommentsCount(String count);
+  /// **'{countValue, plural, =1{{count} comment} other{{count} comments}}'**
+  String analyticsCommentsCount(int countValue, String count);
 
   /// No description provided for @analyticsRepostsCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} reposts'**
-  String analyticsRepostsCount(String count);
+  /// **'{countValue, plural, =1{{count} repost} other{{count} reposts}}'**
+  String analyticsRepostsCount(int countValue, String count);
 
   /// No description provided for @analyticsTopContent.
   ///
@@ -5084,8 +5084,8 @@ abstract class AppLocalizations {
   /// No description provided for @analyticsInteractionsCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} interactions'**
-  String analyticsInteractionsCount(String count);
+  /// **'{countValue, plural, =1{{count} interaction} other{{count} interactions}}'**
+  String analyticsInteractionsCount(int countValue, String count);
 
   /// No description provided for @analyticsPostAnalytics.
   ///
@@ -7922,7 +7922,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationsInvitePlural.
   ///
   /// In en, this message translates to:
-  /// **'You have {count} invites to share with friends!'**
+  /// **'{count, plural, =1{You have {count} invite to share with friends!} other{You have {count} invites to share with friends!}}'**
   String notificationsInvitePlural(int count);
 
   /// No description provided for @notificationsVideoNotFound.
@@ -9008,7 +9008,7 @@ abstract class AppLocalizations {
   /// No description provided for @listVideoCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} videos'**
+  /// **'{count, plural, =1{{count} video} other{{count} videos}}'**
   String listVideoCount(int count);
 
   /// No description provided for @listPersonCount.
@@ -9644,7 +9644,7 @@ abstract class AppLocalizations {
   /// No description provided for @soundVideoCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} videos'**
+  /// **'{count, plural, =1{{count} video} other{{count} videos}}'**
   String soundVideoCount(int count);
 
   /// No description provided for @soundUnableToPreview.
@@ -11048,8 +11048,8 @@ abstract class AppLocalizations {
   /// No description provided for @categoryVideoCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} videos'**
-  String categoryVideoCount(String count);
+  /// **'{countValue, plural, =1{{count} video} other{{count} videos}}'**
+  String categoryVideoCount(int countValue, String count);
 
   /// No description provided for @discoverListsFailedToUpdateSubscription.
   ///
@@ -12686,14 +12686,14 @@ abstract class AppLocalizations {
   /// No description provided for @messageRequestFollowersCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} Followers'**
-  String messageRequestFollowersCount(String count);
+  /// **'{countValue, plural, =1{{count} Follower} other{{count} Followers}}'**
+  String messageRequestFollowersCount(int countValue, String count);
 
   /// No description provided for @messageRequestVideosCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} videos'**
-  String messageRequestVideosCount(String count);
+  /// **'{countValue, plural, =1{{count} video} other{{count} videos}}'**
+  String messageRequestVideosCount(int countValue, String count);
 
   /// No description provided for @messageRequestMessageCount.
   ///
@@ -16131,7 +16131,7 @@ abstract class AppLocalizations {
   /// Accessibility value announcing the current stop-motion hold length, in output frames per still.
   ///
   /// In en, this message translates to:
-  /// **'{count} frames per image'**
+  /// **'{count, plural, =1{{count} frame per image} other{{count} frames per image}}'**
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count);
 
   /// Accessibility label for the button that lengthens each stop-motion still's hold.
@@ -19207,7 +19207,7 @@ abstract class AppLocalizations {
   /// Summary of active monetization links configured on the profile.
   ///
   /// In en, this message translates to:
-  /// **'{count} active link(s) on your profile'**
+  /// **'{count, plural, =1{{count} active link on your profile} other{{count} active links on your profile}}'**
   String monetizationSettingsConfiguredCount(int count);
 
   /// Section header for one-time tip link providers.
@@ -19363,7 +19363,7 @@ abstract class AppLocalizations {
   /// App Store-safe summary of active tip links configured on the profile.
   ///
   /// In en, this message translates to:
-  /// **'{count} active tip link(s) on your profile'**
+  /// **'{count, plural, =1{{count} active tip link on your profile} other{{count} active tip links on your profile}}'**
   String monetizationTipsSettingsConfiguredCount(int count);
 
   /// App Store-safe button label to save optional tip links.
@@ -19513,7 +19513,7 @@ abstract class AppLocalizations {
   /// Approximate number of videos that fit in the chosen cache size.
   ///
   /// In en, this message translates to:
-  /// **'≈ {count} videos'**
+  /// **'{count, plural, =1{≈ {count} video} other{≈ {count} videos}}'**
   String settingsStorageApproxVideos(int count);
 
   /// Title of the confirmation sheet before permanently removing broken clips whose video file is gone.

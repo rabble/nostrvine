@@ -37,6 +37,18 @@ class StringUtils {
   static String formatCompactNumber(int number, {String? locale}) =>
       CountFormatter.formatCompact(number, locale: locale);
 
+  /// Render a compact-formatted count through an ICU plural lookup.
+  ///
+  /// [plural] is a generated `AppLocalizations` getter whose first parameter
+  /// selects the plural form and whose second is the displayed numeral, so the
+  /// grammar follows the raw [value] while the display stays compact (`1.2K`).
+  /// Evaluating [value] once keeps the two provably consistent.
+  static String compactPlural(
+    int value,
+    String Function(int, String) plural, {
+    String? locale,
+  }) => plural(value, formatCompactNumber(value, locale: locale));
+
   /// Strip unpaired UTF-16 surrogate code units from [input].
   ///
   /// Flutter's text rendering asserts that strings are well-formed UTF-16.

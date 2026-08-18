@@ -2344,7 +2344,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count sự kiện';
   }
 
@@ -2893,17 +2893,17 @@ class AppLocalizationsVi extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'Chưa có dữ liệu lượt xem';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count lượt xem';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count bình luận';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count lượt đăng lại';
   }
 
@@ -2928,7 +2928,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get analyticsViewsUnavailable => 'chưa có dữ liệu lượt xem';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count tương tác';
   }
 
@@ -6336,7 +6336,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exploreSearchHint => 'Tìm kiếm...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count video';
   }
 
@@ -7310,12 +7310,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get messageRequestLoadFailed => 'Không tải được yêu cầu này.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count người theo dõi';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count video';
   }
 
