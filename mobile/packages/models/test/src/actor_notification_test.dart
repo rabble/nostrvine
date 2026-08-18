@@ -314,5 +314,35 @@ void main() {
         expect(a, isNot(equals(b)));
       });
     });
+
+    group('UTF-16 well-formedness', () {
+      // The headless flutter_tester does not throw on a lone surrogate — only
+      // the real engine does — so this asserts the model value rather than the
+      // rendered quote.
+      test('replaces a lone surrogate in commentText', () {
+        final notification = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.reply,
+          actor: actor,
+          timestamp: timestamp,
+          commentText: 'nice${String.fromCharCode(0xDE00)} one',
+        );
+
+        expect(notification.commentText, equals('nice� one'));
+      });
+
+      test('keeps well-formed commentText identical', () {
+        const commentText = 'nice \u{1F600} one';
+        final notification = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.reply,
+          actor: actor,
+          timestamp: timestamp,
+          commentText: commentText,
+        );
+
+        expect(notification.commentText, same(commentText));
+      });
+    });
   });
 }

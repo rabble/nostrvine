@@ -7,6 +7,7 @@ import 'package:models/src/nostr_hex_utils.dart';
 import 'package:models/src/video_event.dart';
 import 'package:models/src/vine_sound.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// Kind number for audio file metadata events (NIP-94)
 const int audioEventKind = 1063;
@@ -37,8 +38,23 @@ enum AudioSourceKind {
 /// See NIP-94 for the full file metadata specification.
 @immutable
 class AudioEvent {
-  /// Creates a new AudioEvent with the specified fields.
-  const AudioEvent({
+  /// Creates a new AudioEvent, normalizing its display text to well-formed
+  /// UTF-16.
+  ///
+  /// Kind 1063 tags are remote text that reaches layout verbatim — the sound
+  /// detail screen and the public-credit editor render [title], [source],
+  /// [creatorName] and [licenseName] as plain `Text`, and [publicTags] as
+  /// chips. Flutter's paragraph builder throws `Invalid argument(s): string
+  /// is not well-formed UTF-16` on a lone surrogate, so this constructor is
+  /// the display boundary, matching `UserProfile` and `VideoEvent`. Every
+  /// factory below funnels through it, so a poisoned tag is repaired once at
+  /// the point the event becomes a typed model rather than at each widget.
+  ///
+  /// [url], [proxyId], [sha256], [mimeType] and the id/reference fields are
+  /// left untouched: they select a playback source or address an event, never
+  /// reach text layout, and rewriting a code unit inside one would change
+  /// which file is resolved.
+  AudioEvent({
     required this.id,
     required this.pubkey,
     required this.createdAt,
@@ -47,17 +63,17 @@ class AudioEvent {
     this.sha256,
     this.fileSize,
     this.duration,
-    this.title,
-    this.source,
+    String? title,
+    String? source,
     this.sourceVideoReference,
     this.sourceVideoRelay,
     this.externalSource,
-    this.creatorName,
+    String? creatorName,
     this.creatorPubkey,
     this.creatorUrl,
-    this.licenseName,
+    String? licenseName,
     this.licenseUrl,
-    this.publicTags = const [],
+    List<String> publicTags = const [],
     this.proxyId,
     this.proxyProtocol,
     this.startOffset = Duration.zero,
@@ -67,7 +83,11 @@ class AudioEvent {
     this.anchorClipId,
     this.allowsReuse = true,
     this.hasExplicitReuseConsent = false,
-  });
+  }) : title = sanitizeUtf16OrNull(title),
+       source = sanitizeUtf16OrNull(source),
+       creatorName = sanitizeUtf16OrNull(creatorName),
+       licenseName = sanitizeUtf16OrNull(licenseName),
+       publicTags = sanitizeUtf16List(publicTags);
 
   /// Parse an AudioEvent from a Nostr Event.
   ///
@@ -796,17 +816,26 @@ AudioExternalSource? _parseExternalSource(Object? value) {
 /// Normalized metadata for a sound result served by the sound library proxy.
 @immutable
 class AudioExternalSource {
-  const AudioExternalSource({
+  /// Creates external-source metadata, normalizing its display text to
+  /// well-formed UTF-16.
+  ///
+  /// The proxy normalizes third-party catalog data (Freesound, Openverse) but
+  /// does not own the strings inside it, and the sound detail screen renders
+  /// [providerName], [creatorName] and [catalogTags] directly. See
+  /// [AudioEvent] for why the constructor is the boundary.
+  AudioExternalSource({
     required this.provider,
     required this.providerSoundId,
-    required this.providerName,
+    required String providerName,
     required this.license,
-    this.creatorName,
+    String? creatorName,
     this.creatorUrl,
     this.sourceUrl,
     this.previewUrl,
-    this.catalogTags = const [],
-  });
+    List<String> catalogTags = const [],
+  }) : providerName = sanitizeUtf16(providerName),
+       creatorName = sanitizeUtf16OrNull(creatorName),
+       catalogTags = sanitizeUtf16List(catalogTags);
 
   factory AudioExternalSource.fromJson(Map<String, dynamic> json) {
     final licenseJson = json['license'];
@@ -902,14 +931,18 @@ bool _stringListsEqual(List<String> left, List<String> right) {
 /// License metadata that has already been normalized by the sound proxy.
 @immutable
 class AudioLicenseMetadata {
-  const AudioLicenseMetadata({
+  /// Creates license metadata, normalizing [name] to well-formed UTF-16.
+  ///
+  /// [name] is the human-readable licence label the credit UI renders;
+  /// [type] and [url] are machine values. See [AudioEvent].
+  AudioLicenseMetadata({
     required this.type,
-    required this.name,
+    required String name,
     required this.url,
     required this.allowsCommercialUse,
     required this.allowsDerivatives,
     required this.requiresAttribution,
-  });
+  }) : name = sanitizeUtf16(name);
 
   factory AudioLicenseMetadata.fromJson(Map<String, dynamic> json) {
     return AudioLicenseMetadata(

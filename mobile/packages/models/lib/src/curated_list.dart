@@ -4,6 +4,7 @@
 // ABOUTME: (event IDs + addressable coordinates).
 
 import 'package:equatable/equatable.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// Ordering options for playlist playback.
 enum PlayOrder {
@@ -66,15 +67,23 @@ extension PlayOrderExtension on PlayOrder {
 /// public list puts them in `e`/`a` tags, a private one seals them into the
 /// event content with NIP-44. Both are published, so both survive a device.
 class CuratedList extends Equatable {
-  /// Creates a curated list.
-  const CuratedList({
+  /// Creates a curated list, normalizing [name] and [description] to
+  /// well-formed UTF-16.
+  ///
+  /// Both come from a kind-30005 event that anyone may author — a
+  /// collaborative list, or someone else's list surfaced by search — and both
+  /// render as plain `Text`. A lone surrogate there throws `Invalid
+  /// argument(s): string is not well-formed UTF-16` out of Flutter's
+  /// paragraph builder, so the constructor is the display boundary, matching
+  /// `UserProfile` and `VideoEvent`.
+  CuratedList({
     required this.id,
-    required this.name,
+    required String name,
     required this.videoEventIds,
     required this.createdAt,
     required this.updatedAt,
     this.pubkey,
-    this.description,
+    String? description,
     this.imageUrl,
     this.isPublic = true,
     this.nostrEventId,
@@ -85,7 +94,8 @@ class CuratedList extends Equatable {
     this.thumbnailEventId,
     this.thumbnailUrls = const [],
     this.playOrder = PlayOrder.chronological,
-  });
+  }) : name = sanitizeUtf16(name),
+       description = sanitizeUtf16OrNull(description);
 
   /// Creates a [CuratedList] from a JSON map.
   factory CuratedList.fromJson(Map<String, dynamic> json) => CuratedList(

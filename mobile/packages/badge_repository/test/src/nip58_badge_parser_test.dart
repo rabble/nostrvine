@@ -147,6 +147,27 @@ void main() {
         'https://media.divine.video/badge-64.png',
       ]);
     });
+
+    // The headless flutter_tester does not throw on a lone surrogate — only
+    // the real engine does — so this asserts the parsed model value rather
+    // than a rendered badge row.
+    test('replaces lone surrogates in the badge name and description', () {
+      final event = _event(
+        id: _eventId(12),
+        pubkey: _pubkey(10),
+        kind: EventKind.badgeDefinition,
+        tags: [
+          ['d', 'diviner-of-the-day'],
+          ['name', 'Diviner${String.fromCharCode(0xD83D)}'],
+          ['description', 'loudest${String.fromCharCode(0xDE00)} loops'],
+        ],
+      );
+
+      final definition = Nip58BadgeParser.parseDefinition(event);
+
+      expect(definition!.name, 'Diviner�');
+      expect(definition.description, 'loudest� loops');
+    });
   });
 }
 

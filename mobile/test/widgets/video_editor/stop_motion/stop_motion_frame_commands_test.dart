@@ -196,13 +196,13 @@ void main() {
       tester,
     ) async {
       final captured = framesHeldFor(StopMotionFrameOps.defaultFramesPerImage);
-      const sound = AudioEvent(
+      final sound = AudioEvent(
         id: 'sound-1',
         pubkey: 'bundled',
         createdAt: 0,
         url: 'asset://sounds/loop.mp3',
         duration: 30,
-        endTime: Duration(milliseconds: 200),
+        endTime: const Duration(milliseconds: 200),
       );
       when(() => stateManager.activeMeta).thenReturn({
         VideoEditorConstants.audioStateHistoryKey: [sound.toJson()],

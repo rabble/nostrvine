@@ -17,6 +17,8 @@ dependencies:
   nostr_sdk:
     path: ../nostr_sdk
   shared_preferences: ^2.5.3
+  text_sanitizer:
+    path: ../text_sanitizer
 
 dev_dependencies:
   flutter_test:

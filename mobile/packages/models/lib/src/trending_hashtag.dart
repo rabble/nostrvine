@@ -2,20 +2,26 @@
 // ABOUTME: Represents a hashtag with usage metrics for discovery features.
 
 import 'package:meta/meta.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// A trending hashtag with associated metrics from the Funnelcake API.
 ///
 /// Used for hashtag discovery and the trending hashtags feed.
 @immutable
 class TrendingHashtag {
-  /// Creates a new [TrendingHashtag] instance.
-  const TrendingHashtag({
-    required this.tag,
+  /// Creates a new [TrendingHashtag], normalizing [tag] to well-formed
+  /// UTF-16.
+  ///
+  /// The API aggregates `t` tag values authored by anyone, and the trending
+  /// row renders each one as a chip label. A lone surrogate throws out of
+  /// Flutter's paragraph builder, so the constructor is the display boundary.
+  TrendingHashtag({
+    required String tag,
     required this.videoCount,
     this.uniqueCreators = 0,
     this.totalLoops = 0,
     this.lastUsed,
-  });
+  }) : tag = sanitizeUtf16(tag);
 
   /// Creates a [TrendingHashtag] from JSON response.
   ///

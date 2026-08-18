@@ -178,8 +178,12 @@ class VideoEvent {
   /// it would rewrite valid text a user typed — and stays on the display
   /// getters for that reason.
   ///
-  /// Identifier, URL, and tag fields are left untouched — they are either hex
-  /// (`id`, `pubkey`, `sha256`) or structural.
+  /// [hashtags] is sanitized element-wise for the same reason: `t` tag values
+  /// are free-form relay text and every hashtag chip renders one verbatim.
+  ///
+  /// The remaining identifier, URL, and tag fields are left untouched — they
+  /// are either hex (`id`, `pubkey`, `sha256`) or structural. [categories] is
+  /// derived locally and is always empty for relay-sourced events.
   VideoEvent({
     required this.id,
     required this.pubkey,
@@ -195,7 +199,7 @@ class VideoEvent {
     this.mimeType,
     this.sha256,
     this.fileSize,
-    this.hashtags = const [],
+    List<String> hashtags = const [],
     this.categories = const [],
     this.publishedAt,
     this.rawTags = const {},
@@ -240,7 +244,8 @@ class VideoEvent {
   }) : content = sanitizeUtf16(content),
        title = sanitizeUtf16OrNull(title),
        altText = sanitizeUtf16OrNull(altText),
-       authorName = sanitizeUtf16OrNull(authorName);
+       authorName = sanitizeUtf16OrNull(authorName),
+       hashtags = sanitizeUtf16List(hashtags);
 
   /// Reconstructs a [VideoEvent] from a map produced by [toJson].
   ///

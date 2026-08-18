@@ -206,7 +206,7 @@ void main() {
   });
 }
 
-const _sound = AudioEvent(
+final _sound = AudioEvent(
   id: 'sound-id',
   pubkey: 'pubkey',
   createdAt: 1704067200,

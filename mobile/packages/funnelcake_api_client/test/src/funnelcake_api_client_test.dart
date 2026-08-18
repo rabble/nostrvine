@@ -1972,6 +1972,20 @@ void main() {
         expect(hashtags, equals(['bitcoin', 'nostr']));
       });
 
+      // A lone surrogate in a chip label throws out of Flutter's paragraph
+      // builder, and the plain-string branch bypasses HashtagSearchResult.
+      // fromJson, so it needs the same normalization as the mapped one.
+      test('normalizes malformed UTF-16 in both response shapes', () async {
+        const malformedResponse = r'["bit\ud83dcoin", {"tag": "no\ud83dstr"}]';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(malformedResponse, 200));
+
+        final hashtags = await client.searchHashtags(query: 'bit');
+
+        expect(hashtags, equals(['bit�coin', 'no�str']));
+      });
+
       test('constructs correct URL with query parameter', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),

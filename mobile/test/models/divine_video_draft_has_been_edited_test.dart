@@ -173,7 +173,7 @@ void main() {
 
       test('returns true when draft has selectedSound', () {
         final draft = _minimalDraft().copyWith(
-          selectedSound: const AudioEvent(
+          selectedSound: AudioEvent(
             id: 'sound-id-12345678901234567890123456789012345678901234567890123',
             pubkey: _testPubkey,
             createdAt: 1700000000,
@@ -287,7 +287,7 @@ void main() {
             addressableId: '34236:$_testPubkey:dtag',
           ),
           inspiredByNpub: _testPubkey,
-          selectedSound: const AudioEvent(
+          selectedSound: AudioEvent(
             id:
                 'snd-1234567890123456789012345678901234'
                 '5678901234567890123456',

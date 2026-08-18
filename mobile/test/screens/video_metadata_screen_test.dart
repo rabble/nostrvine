@@ -348,7 +348,7 @@ void main() {
       testWidgets('shows provider credit read-only and honors license limits', (
         tester,
       ) async {
-        const providerSound = models.AudioEvent(
+        final providerSound = models.AudioEvent(
           id: 'external_provider_freesound_42',
           pubkey: models.AudioEvent.externalProviderMarker,
           createdAt: 1700000000,

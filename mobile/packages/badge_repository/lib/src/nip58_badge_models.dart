@@ -1,19 +1,39 @@
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 class Nip58BadgeDefinition {
-  const Nip58BadgeDefinition({
+  /// Creates a badge definition, normalizing [name] and [description] to
+  /// well-formed UTF-16.
+  ///
+  /// A kind-30009 definition can be authored by any pubkey, and the badge
+  /// dashboard, detail screen and profile badge sheet render both values as
+  /// plain `Text`. Flutter's paragraph builder throws `Invalid argument(s):
+  /// string is not well-formed UTF-16` on a lone surrogate, so the
+  /// constructor is the display boundary — the same shape `UserProfile` and
+  /// `VideoEvent` use.
+  Nip58BadgeDefinition({
     required this.event,
     required this.coordinate,
     required this.dTag,
-    this.name,
-    this.description,
+    String? name,
+    String? description,
     this.imageUrl,
     this.thumbnails = const [],
-  });
+  }) : name = sanitizeUtf16OrNull(name),
+       description = sanitizeUtf16OrNull(description);
 
   final Event event;
   final String coordinate;
+
+  /// The event's `d` tag, deliberately left raw.
+  ///
+  /// It addresses the definition: the coordinate is built from it and the
+  /// badge editor republishes it verbatim, so rewriting a code unit here
+  /// would edit a different badge. The one place it is rendered —
+  /// `CreatedBadgeViewData.displayName`, when the definition has no `name`
+  /// tag — sanitizes on the way out instead.
   final String dTag;
+
   final String? name;
   final String? description;
   final String? imageUrl;

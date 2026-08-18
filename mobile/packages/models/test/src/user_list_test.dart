@@ -142,5 +142,38 @@ void main() {
         expect(a, isNot(equals(b)));
       });
     });
+
+    group('UTF-16 well-formedness', () {
+      // The headless flutter_tester does not throw on a lone surrogate — only
+      // the real engine does — so this asserts the model value rather than a
+      // rendered widget.
+      test('replaces lone surrogates in name and description', () {
+        final list = UserList(
+          id: 'id',
+          name: 'Friends${String.fromCharCode(0xD83D)}',
+          description: 'people I${String.fromCharCode(0xDE00)} follow',
+          pubkeys: const [],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        expect(list.name, equals('Friends�'));
+        expect(list.description, equals('people I� follow'));
+      });
+
+      test('keeps a well-formed name identical', () {
+        const name = 'Friends \u{1F600}';
+        final list = UserList(
+          id: 'id',
+          name: name,
+          pubkeys: const [],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        expect(list.name, same(name));
+        expect(list.description, isNull);
+      });
+    });
   });
 }

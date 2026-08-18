@@ -39,7 +39,7 @@ void main() {
     late AudioEvent testAudio;
 
     setUp(() {
-      testAudio = const AudioEvent(
+      testAudio = AudioEvent(
         id: testAudioEventId,
         pubkey: testPubkey,
         createdAt: 1704067200,
@@ -475,7 +475,7 @@ void main() {
         (tester) async {
           const sourceVideoId =
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
-          const reusedSynth = AudioEvent(
+          final reusedSynth = AudioEvent(
             id: 'video_$sourceVideoId',
             pubkey: reusedCreatorPubkey,
             createdAt: 1704067200,

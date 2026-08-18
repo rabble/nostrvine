@@ -1508,6 +1508,37 @@ void main() {
         },
       );
 
+      // A definition with no `name` tag falls back to the identifier, which
+      // is raw event text. The headless flutter_tester does not throw on a
+      // lone surrogate — only the real engine does — so this asserts the
+      // value rather than a rendered badge row.
+      test(
+        'replaces a lone surrogate in the identifier fallback name',
+        () async {
+          final dTag = 'scene${String.fromCharCode(0xD83D)}stealer';
+          _stubQueries(nostrClient, {
+            'created:${_pubkey(1)}': [
+              // No `name` tag, so displayName falls back to the identifier.
+              _event(
+                id: _eventId(90),
+                pubkey: _pubkey(1),
+                kind: EventKind.badgeDefinition,
+                tags: [
+                  ['d', dTag],
+                ],
+              ),
+            ],
+          });
+
+          final created = await repository.loadCreatedBadges();
+
+          expect(created.single.displayName, 'scene\u{FFFD}stealer');
+          // The address keeps the raw identifier: sanitizing it would point
+          // at a badge that does not exist.
+          expect(created.single.coordinate, '30009:${_pubkey(1)}:$dTag');
+        },
+      );
+
       test('counts awards and distinct recipients per definition', () async {
         const coordinate = 'scene-stealer';
         _stubQueries(nostrClient, {
@@ -2890,6 +2921,33 @@ void main() {
       expect(viewData.displayName, 'daily-diviner');
       expect(viewData.description, isNull);
       expect(viewData.imageUrl, isNull);
+    });
+
+    // The coordinate comes from someone else's `a` tag, so the fallback name
+    // is remote text too. The headless flutter_tester does not throw on a lone
+    // surrogate — only the real engine does — so this asserts the value.
+    test('replaces a lone surrogate in the coordinate-derived name', () {
+      final coordinate =
+          '30009:${_pubkey(5)}:daily${String.fromCharCode(0xD83D)}diviner';
+      final viewData = ProfileBadgeViewData(
+        badge: Nip58ProfileBadgeRef(
+          definitionCoordinate: coordinate,
+          awardEventId: _eventId(40),
+        ),
+      );
+
+      expect(viewData.displayName, 'daily�diviner');
+    });
+
+    test('replaces a lone surrogate in a coordinate with no d-tag', () {
+      final viewData = ProfileBadgeViewData(
+        badge: Nip58ProfileBadgeRef(
+          definitionCoordinate: 'broken${String.fromCharCode(0xDE00)}',
+          awardEventId: _eventId(40),
+        ),
+      );
+
+      expect(viewData.displayName, 'broken�');
     });
   });
 

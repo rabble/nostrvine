@@ -35,13 +35,13 @@ DivineVideoDraft _createDraft({AudioEvent? selectedSound}) => DivineVideoDraft(
   proofManifestJson: '{"videoHash":"abc"}',
   selectedSound:
       selectedSound ??
-      const AudioEvent(
+      AudioEvent(
         id: 'sound-id-12345678901234567890123456789012345678901234567890123',
         pubkey: _testPubkey,
         createdAt: 1700000000,
         url: 'https://blossom.example/audio.aac',
         title: 'Test Sound',
-        startOffset: Duration(milliseconds: 2000),
+        startOffset: const Duration(milliseconds: 2000),
       ),
 );
 
@@ -94,7 +94,7 @@ void main() {
       test('replaces selectedSound when new value is provided', () {
         final draft = _createDraft();
 
-        const newSound = AudioEvent(
+        final newSound = AudioEvent(
           id: 'new-sound-1234567890123456789012345678901234567890123456789012',
           pubkey: _testPubkey,
           createdAt: 1700000001,
@@ -115,7 +115,7 @@ void main() {
       test('clearSelectedSound takes precedence over new selectedSound', () {
         final draft = _createDraft();
 
-        const newSound = AudioEvent(
+        final newSound = AudioEvent(
           id: 'ignored-id-123456789012345678901234567890123456789012345678901',
           pubkey: _testPubkey,
           createdAt: 1700000001,
@@ -131,12 +131,12 @@ void main() {
       });
 
       test('preserves selectedSound startOffset through copyWith', () {
-        const sound = AudioEvent(
+        final sound = AudioEvent(
           id: 'offset-sound-12345678901234567890123456789012345678901234567',
           pubkey: _testPubkey,
           createdAt: 1700000000,
           url: 'https://blossom.example/audio.aac',
-          startOffset: Duration(milliseconds: 3500),
+          startOffset: const Duration(milliseconds: 3500),
         );
 
         final draft = _createDraft(selectedSound: sound);

@@ -54,7 +54,7 @@ AudioEvent _sound({
     provider: 'freesound',
     providerSoundId: id,
     providerName: 'Freesound',
-    license: const AudioLicenseMetadata(
+    license: AudioLicenseMetadata(
       type: 'cc0',
       name: 'CC0',
       url: 'https://creativecommons.org/publicdomain/zero/1.0/',

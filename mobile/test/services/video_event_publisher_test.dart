@@ -476,7 +476,7 @@ void main() {
       registerFallbackValue(UploadStatus.pending);
       registerFallbackValue(File('fallback.mp3'));
       registerFallbackValue(
-        const AudioEvent(id: 'fallback', pubkey: 'fallback', createdAt: 0),
+        AudioEvent(id: 'fallback', pubkey: 'fallback', createdAt: 0),
       );
       registerFallbackValue(Duration.zero);
     });
@@ -862,7 +862,7 @@ void main() {
         // A bundled sound has no Nostr event to reference, so the video's own
         // audio is the user's to offer and "Publish this sound" must still
         // take effect instead of being silently dropped (#6185).
-        const bundledSound = AudioEvent(
+        final bundledSound = AudioEvent(
           id: '${AudioEvent.bundledMarker}_oh_no_no_no_crowd',
           pubkey: AudioEvent.bundledMarker,
           createdAt: 0,
@@ -1031,7 +1031,7 @@ void main() {
         () async {
           stubSignAndPublish();
 
-          const externalProviderSound = AudioEvent(
+          final externalProviderSound = AudioEvent(
             id: 'freesound:12345',
             pubkey: AudioEvent.externalProviderMarker,
             createdAt: 0,
@@ -1045,7 +1045,7 @@ void main() {
               creatorUrl: 'https://freesound.org/people/catalog-artist/',
               sourceUrl:
                   'https://freesound.org/people/catalog-artist/sounds/12345/',
-              catalogTags: ['birds', 'field-recording'],
+              catalogTags: const ['birds', 'field-recording'],
               license: AudioLicenseMetadata(
                 type: 'cc-by',
                 name: 'Creative Commons Attribution',
@@ -1115,7 +1115,7 @@ void main() {
         'provider bridge keeps reuse off when the video toggle is off',
         () async {
           stubSignAndPublish();
-          const externalProviderSound = AudioEvent(
+          final externalProviderSound = AudioEvent(
             id: 'freesound:12345',
             pubkey: AudioEvent.externalProviderMarker,
             createdAt: 0,
@@ -1165,7 +1165,7 @@ void main() {
 
     test('provider license can forbid further reuse', () async {
       stubSignAndPublish();
-      const sound = AudioEvent(
+      final sound = AudioEvent(
         id: 'freesound:locked',
         pubkey: AudioEvent.externalProviderMarker,
         createdAt: 0,
@@ -1259,7 +1259,7 @@ void main() {
 
     test('credits the provider when the catalog row has no creator', () async {
       stubSignAndPublish();
-      const thinCatalogRow = AudioEvent(
+      final thinCatalogRow = AudioEvent(
         id: 'freesound:thin',
         pubkey: AudioEvent.externalProviderMarker,
         createdAt: 0,
@@ -1803,7 +1803,7 @@ void main() {
 
 /// A catalog row with neither a creator nor a source URL — no durable public
 /// credit can be built from it.
-const _uncreditedProviderSound = AudioEvent(
+final _uncreditedProviderSound = AudioEvent(
   id: 'freesound:uncredited',
   pubkey: AudioEvent.externalProviderMarker,
   createdAt: 0,

@@ -219,6 +219,28 @@ void main() {
         expect(roundtripped, equals(original));
       });
     });
+
+    group('UTF-16 well-formedness', () {
+      // The headless flutter_tester does not throw on a lone surrogate — only
+      // the real engine does — so this asserts the model value rather than a
+      // rendered widget.
+      test('replaces lone surrogates in name and description', () {
+        final list = createSubject(
+          name: 'Skate${String.fromCharCode(0xD83D)} picks',
+          description: 'best of${String.fromCharCode(0xDE00)} 2025',
+        );
+
+        expect(list.name, equals('Skate� picks'));
+        expect(list.description, equals('best of� 2025'));
+      });
+
+      test('keeps well-formed name and description identical', () {
+        const name = 'Skate \u{1F600} picks';
+
+        expect(createSubject(name: name).name, same(name));
+        expect(createSubject(description: null).description, isNull);
+      });
+    });
   });
 
   group(PlayOrder, () {

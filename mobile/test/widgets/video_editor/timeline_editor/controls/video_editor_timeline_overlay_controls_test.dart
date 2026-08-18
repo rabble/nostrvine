@@ -713,21 +713,21 @@ void main() {
         'sound duplicate serializes updated tracks under the audio history key '
         'and selects the copy',
         (tester) async {
-          const trackA = AudioEvent(
+          final trackA = AudioEvent(
             id: 'sound-1',
             pubkey: 'pub',
             createdAt: 0,
-            startOffset: Duration(seconds: 2),
-            startTime: Duration(seconds: 3),
-            endTime: Duration(seconds: 8),
+            startOffset: const Duration(seconds: 2),
+            startTime: const Duration(seconds: 3),
+            endTime: const Duration(seconds: 8),
           );
-          const trackB = AudioEvent(
+          final trackB = AudioEvent(
             id: 'sound-2',
             pubkey: 'pub',
             createdAt: 1,
-            startOffset: Duration(seconds: 1),
-            startTime: Duration(seconds: 8),
-            endTime: Duration(seconds: 12),
+            startOffset: const Duration(seconds: 1),
+            startTime: const Duration(seconds: 8),
+            endTime: const Duration(seconds: 12),
           );
           when(() => mockStateManager.activeMeta).thenReturn({
             VideoEditorConstants.audioStateHistoryKey: [
@@ -784,13 +784,13 @@ void main() {
         'sound split sets startOffset of second segment to '
         'originalOffset + (splitAt - startTime)',
         (tester) async {
-          const track = AudioEvent(
+          final track = AudioEvent(
             id: 'sound-1',
             pubkey: 'pub',
             createdAt: 0,
-            startOffset: Duration(seconds: 2),
-            startTime: Duration(seconds: 3),
-            endTime: Duration(seconds: 8),
+            startOffset: const Duration(seconds: 2),
+            startTime: const Duration(seconds: 3),
+            endTime: const Duration(seconds: 8),
           );
           when(() => mockStateManager.activeMeta).thenReturn({
             VideoEditorConstants.audioStateHistoryKey: [track.toJson()],

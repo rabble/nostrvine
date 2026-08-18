@@ -292,7 +292,7 @@ void main() {
         // Note: testSound created inline in widget for direct testing
         await tester.pumpWidget(
           createTestWidget(
-            child: const SoundDetailScreen(
+            child: SoundDetailScreen(
               sound: AudioEvent(
                 id: 'sound1',
                 pubkey:
@@ -1099,7 +1099,7 @@ void main() {
       });
 
       testWidgets('shows snackbar when sound has no URL', (tester) async {
-        const testSound = AudioEvent(
+        final testSound = AudioEvent(
           id: 'sound1',
           pubkey:
               'test_pubkey_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -1111,7 +1111,7 @@ void main() {
 
         await tester.pumpWidget(
           createTestWidget(
-            child: const SoundDetailScreen(sound: testSound),
+            child: SoundDetailScreen(sound: testSound),
             overrides: [
               soundUsageCountProvider(
                 testSound.id,

@@ -4,6 +4,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:models/src/actor_info.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 part 'video_notification.dart';
 part 'actor_notification.dart';

@@ -131,7 +131,7 @@ VideoEvent _makeVideo({
   nostrEventTags: nostrEventTags,
 );
 
-const _testAudio = AudioEvent(
+final _testAudio = AudioEvent(
   id: _audioEventId,
   pubkey: _audioPubkey,
   createdAt: 1700000000,

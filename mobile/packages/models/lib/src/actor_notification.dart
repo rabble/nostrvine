@@ -9,8 +9,12 @@ part of 'notification_item.dart';
 /// No video reference; one row per event.
 @immutable
 class ActorNotification extends NotificationItem {
-  /// Creates an [ActorNotification].
-  const ActorNotification({
+  /// Creates an [ActorNotification], normalizing [commentText] to well-formed
+  /// UTF-16.
+  ///
+  /// [commentText] is the source event's body — relay text the row renders as
+  /// a quote. See [VideoNotification] for the boundary rationale.
+  ActorNotification({
     required super.id,
     required super.type,
     required this.actor,
@@ -19,11 +23,12 @@ class ActorNotification extends NotificationItem {
     super.targetEventId,
     super.sourceEventIds,
     super.notificationIds,
-    this.commentText,
+    String? commentText,
     this.isFollowingBack = false,
     this.videoAddressableId,
     this.hasCommentTarget = false,
-  }) : assert(
+  }) : commentText = sanitizeUtf16OrNull(commentText),
+       assert(
          type == NotificationKind.follow ||
              type == NotificationKind.like ||
              type == NotificationKind.mention ||

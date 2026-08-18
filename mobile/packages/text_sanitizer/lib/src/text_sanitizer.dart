@@ -49,6 +49,27 @@ String sanitizeUtf16(String text) {
 String? sanitizeUtf16OrNull(String? text) =>
     text == null ? null : sanitizeUtf16(text);
 
+/// Element-wise [sanitizeUtf16] for list-valued fields such as hashtags.
+///
+/// Returns [values] itself when every element is already well-formed, so a
+/// clean list keeps its identity — and, with it, any `unmodifiable` wrapper
+/// the caller built it with.
+List<String> sanitizeUtf16List(List<String> values) {
+  List<String>? result;
+
+  for (var i = 0; i < values.length; i++) {
+    final sanitized = sanitizeUtf16(values[i]);
+    if (identical(sanitized, values[i])) {
+      result?.add(sanitized);
+      continue;
+    }
+    result ??= values.sublist(0, i);
+    result.add(sanitized);
+  }
+
+  return result ?? values;
+}
+
 /// Normalizes malformed UTF-16 and caps combining diacritical characters per
 /// grapheme cluster to prevent Zalgo text from overflowing layout bounds.
 ///

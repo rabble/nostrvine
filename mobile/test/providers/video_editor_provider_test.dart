@@ -309,7 +309,7 @@ void main() {
       });
 
       test('selected absolute-path url is rendered as file audio', () {
-        const sound = AudioEvent(
+        final sound = AudioEvent(
           id: 'video_source_copy_3',
           pubkey: 'pk',
           createdAt: 1700000000,
@@ -326,7 +326,7 @@ void main() {
       });
 
       test('selected sound without a resolvable source is skipped', () {
-        const sound = AudioEvent(
+        final sound = AudioEvent(
           id: 'video_source_no_url',
           pubkey: 'pk',
           createdAt: 1700000000,
@@ -337,7 +337,7 @@ void main() {
       });
 
       test('selected sound without a known duration is skipped', () {
-        const sound = AudioEvent(
+        final sound = AudioEvent(
           id: 'video_source_no_duration',
           pubkey: 'pk',
           createdAt: 1700000000,
@@ -350,13 +350,13 @@ void main() {
       test(
         'selected sound with a start offset gets a valid composition window',
         () {
-          const sound = AudioEvent(
+          final sound = AudioEvent(
             id: 'video_selected_offset',
             pubkey: 'pk',
             createdAt: 1700000000,
             url: 'https://media.divine.video/abc',
             duration: 6.533,
-            startOffset: Duration(milliseconds: 292),
+            startOffset: const Duration(milliseconds: 292),
           );
 
           final track = audioTrackFromSoundForRender(sound);
@@ -380,14 +380,14 @@ void main() {
         'meta network original sound renders with its composition window and '
         'plays to file end',
         () {
-          const event = AudioEvent(
+          final event = AudioEvent(
             id: 'video_source_copy_1',
             pubkey: 'pk',
             createdAt: 1700000000,
             url: 'https://media.divine.video/abc123',
             duration: 6.533,
-            startOffset: Duration(milliseconds: 292),
-            endTime: Duration(milliseconds: 3966),
+            startOffset: const Duration(milliseconds: 292),
+            endTime: const Duration(milliseconds: 3966),
           );
 
           final track = audioTrackFromMetaForRender(event);
@@ -410,12 +410,12 @@ void main() {
         'meta track with an invalid window plays across the whole video',
         () {
           // A sound added before its duration was known persists endTime=0.
-          const event = AudioEvent(
+          final event = AudioEvent(
             id: 'video_source_no_window',
             pubkey: 'pk',
             createdAt: 1700000000,
             url: 'https://media.divine.video/abc123',
-            startOffset: Duration(milliseconds: 100),
+            startOffset: const Duration(milliseconds: 100),
           );
 
           final track = audioTrackFromMetaForRender(event);
@@ -434,7 +434,7 @@ void main() {
       );
 
       test('meta absolute-path url renders as file audio', () {
-        const event = AudioEvent(
+        final event = AudioEvent(
           id: 'video_source_copy_2',
           pubkey: 'pk',
           createdAt: 1700000000,
@@ -467,7 +467,7 @@ void main() {
       });
 
       test('meta track without a resolvable source is skipped', () {
-        const event = AudioEvent(
+        final event = AudioEvent(
           id: 'video_source_no_url',
           pubkey: 'pk',
           createdAt: 1700000000,

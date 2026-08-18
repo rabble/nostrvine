@@ -11,8 +11,18 @@ part of 'notification_item.dart';
 /// holds the full actor count.
 @immutable
 class VideoNotification extends NotificationItem {
-  /// Creates a [VideoNotification].
-  const VideoNotification({
+  /// Creates a [VideoNotification], normalizing its quoted text to
+  /// well-formed UTF-16.
+  ///
+  /// [videoTitle], [commentText] and [listTitle] are relay-authored strings —
+  /// a video's title, a commenter's body, someone else's curated-list name —
+  /// that the notification row renders straight into a `Text.rich` span. A
+  /// lone surrogate there throws `Invalid argument(s): string is not
+  /// well-formed UTF-16` out of Flutter's paragraph builder. The repository
+  /// builds these rows from four different sources (REST payload, Drift
+  /// placeholder rows, grouped merges, cache rehydration), so the constructor
+  /// is the one boundary all of them cross.
+  VideoNotification({
     required super.id,
     required super.type,
     required this.videoEventId,
@@ -23,13 +33,16 @@ class VideoNotification extends NotificationItem {
     super.sourceEventIds,
     super.notificationIds,
     this.videoThumbnailUrl,
-    this.videoTitle,
+    String? videoTitle,
     this.videoAddressableId,
-    this.commentText,
-    this.listTitle,
+    String? commentText,
+    String? listTitle,
     this.listCoordinate,
     this.addedVideoCount,
-  }) : assert(
+  }) : videoTitle = sanitizeUtf16OrNull(videoTitle),
+       commentText = sanitizeUtf16OrNull(commentText),
+       listTitle = sanitizeUtf16OrNull(listTitle),
+       assert(
          type == NotificationKind.like ||
              type == NotificationKind.likeComment ||
              type == NotificationKind.comment ||
@@ -40,7 +53,7 @@ class VideoNotification extends NotificationItem {
          'VideoNotification only supports like, likeComment, comment, '
          'mention, repost, newPost, listAdd',
        ),
-       assert(actors.length > 0, 'must have at least one actor'),
+       assert(actors.isNotEmpty, 'must have at least one actor'),
        assert(
          totalCount >= actors.length,
          'totalCount cannot be less than actors.length',

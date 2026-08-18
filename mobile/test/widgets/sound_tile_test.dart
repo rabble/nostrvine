@@ -16,7 +16,7 @@ void main() {
     late AudioEvent testSound;
 
     setUp(() {
-      testSound = const AudioEvent(
+      testSound = AudioEvent(
         id: 'test-audio-event-id-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
         pubkey:
             'test-pubkey-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -277,7 +277,7 @@ void main() {
       });
 
       testWidgets('handles null duration', (tester) async {
-        const nullDurationSound = AudioEvent(
+        final nullDurationSound = AudioEvent(
           id: 'null-duration-id-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           pubkey:
               'null-duration-pubkey-0123456789abcdef0123456789abcdef0123456789abcdef0123',
@@ -293,7 +293,7 @@ void main() {
       testWidgets('uses full Vine duration for legacy original sounds', (
         tester,
       ) async {
-        const legacyOriginalSound = AudioEvent(
+        final legacyOriginalSound = AudioEvent(
           id: 'video_legacy-original-id-0123456789abcdef0123456789abcdef0123456789abcdef',
           pubkey:
               'legacy-original-pubkey-0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -322,7 +322,7 @@ void main() {
 
     group('Title handling', () {
       testWidgets('displays fallback for null title', (tester) async {
-        const noTitleSound = AudioEvent(
+        final noTitleSound = AudioEvent(
           id: 'no-title-id-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           pubkey:
               'no-title-pubkey-0123456789abcdef0123456789abcdef0123456789abcdef01234567',

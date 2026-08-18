@@ -13,6 +13,7 @@ void main() {
     int createdAt = 1735689600,
     String? publishedAt,
     Map<String, String> rawTags = const {},
+    List<String> hashtags = const [],
   }) => VideoEvent(
     id: 'a' * 64,
     pubkey: 'b' * 64,
@@ -27,6 +28,7 @@ void main() {
     altText: altText,
     publishedAt: publishedAt,
     rawTags: rawTags,
+    hashtags: hashtags,
   );
 
   group('VideoEvent.displayTitle', () {
@@ -193,6 +195,20 @@ void main() {
       final video = build(altText: 'a${String.fromCharCode(0xDE00)}dog');
 
       expect(video.altText, equals('a�dog'));
+    });
+
+    test('replaces a lone surrogate in a hashtag', () {
+      final video = build(
+        hashtags: ['skate', 'sun${String.fromCharCode(0xD83D)}set'],
+      );
+
+      expect(video.hashtags, equals(['skate', 'sun�set']));
+    });
+
+    test('keeps the hashtag list identical when every tag is well-formed', () {
+      final hashtags = ['skate', 'sunset \u{1F600}'];
+
+      expect(build(hashtags: hashtags).hashtags, same(hashtags));
     });
 
     // Zalgo capping stays on the display getters so the raw field keeps the

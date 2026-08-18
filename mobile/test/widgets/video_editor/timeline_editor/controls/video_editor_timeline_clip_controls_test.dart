@@ -670,13 +670,13 @@ void main() {
       late _MockStateManager stateManager;
       late _MockTimelineOverlayBloc overlayBloc;
 
-      const coveringSound = AudioEvent(
+      final coveringSound = AudioEvent(
         id: 'sound-1',
         pubkey: 'bundled',
         createdAt: 0,
         url: 'asset://sounds/loop.mp3',
         duration: 30,
-        endTime: Duration(seconds: 3),
+        endTime: const Duration(seconds: 3),
       );
 
       setUp(() {

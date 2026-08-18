@@ -574,9 +574,9 @@ void main() {
         'spans the whole video when a sound has no endTime',
         build: TimelineOverlayBloc.new,
         act: (bloc) => bloc.add(
-          const TimelineOverlayItemsUpdate(
-            layers: <Layer>[],
-            filters: <FilterState>[],
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
             audioTracks: [
               // endTime omitted (null): a probe that never resolved leaves the
               // composition window open.
@@ -587,7 +587,7 @@ void main() {
                 title: 'Beat',
               ),
             ],
-            totalVideoDuration: Duration(seconds: 12),
+            totalVideoDuration: const Duration(seconds: 12),
           ),
         ),
         expect: () => [

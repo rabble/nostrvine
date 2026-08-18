@@ -30,7 +30,7 @@ class _FailingService extends SavedSoundsService {
   }
 }
 
-const _audio = AudioEvent(
+final _audio = AudioEvent(
   id: 'sound-id',
   pubkey: 'creator',
   createdAt: 1,

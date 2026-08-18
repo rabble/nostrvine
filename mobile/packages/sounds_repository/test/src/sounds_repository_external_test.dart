@@ -57,14 +57,14 @@ void main() {
     test(
       'searchExternalLibrary routes the request through to the API client',
       () async {
-        const externalSound = AudioEvent(
+        final externalSound = AudioEvent(
           id: 'freesound_1',
           pubkey: AudioEvent.externalProviderMarker,
           createdAt: 0,
           url: 'https://cdn.example.com/p.mp3',
           mimeType: 'audio/mpeg',
         );
-        const response = SoundLibrarySearchResponse(
+        final response = SoundLibrarySearchResponse(
           sounds: [externalSound],
           count: 1,
           nextPage: 2,
