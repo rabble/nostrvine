@@ -1155,6 +1155,9 @@ workflows:
         - github_credentials
         - shorebird_credentials
       vars:
+        # Must match `flutter:` above. Provenance verification compares this
+        # against the Flutter version recorded for the target release.
+        FLUTTER_VERSION: 3.44.9
         SHOREBIRD_PLATFORM: ios
         BUNDLE_ID: co.openvine.app
         IOS_EXTENSION_BUNDLE_IDS: >-
@@ -1235,6 +1238,9 @@ workflows:
         - github_credentials
         - shorebird_credentials
       vars:
+        # Must match `flutter:` above. Provenance verification compares this
+        # against the Flutter version recorded for the target release.
+        FLUTTER_VERSION: 3.44.9
         SHOREBIRD_PLATFORM: android
       android_signing:
         - divine_keystore

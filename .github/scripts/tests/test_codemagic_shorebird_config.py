@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 import unittest
@@ -191,6 +192,35 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("shorebird_provenance.rb verify", self.contents)
         self.assertIn("git diff --name-only", self.contents)
         self.assertIn("*prepare_patch_source", self.contents)
+
+    def test_shorebird_workflows_define_every_variable_their_scripts_read(self) -> None:
+        resolved = json.loads(
+            subprocess.run(
+                [
+                    "ruby",
+                    "-ryaml",
+                    "-rjson",
+                    "-e",
+                    "print JSON.generate(YAML.safe_load(File.read(ARGV[0]), aliases: true))",
+                    str(CODEMAGIC_PATH),
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout
+        )
+
+        for name in ("ios-build", "android-build", "ios-patch", "android-patch"):
+            workflow = resolved["workflows"][name]
+            declared = set(workflow["environment"].get("vars") or {})
+            scripts = "\n".join(
+                step.get("script", "") for step in workflow["scripts"] if isinstance(step, dict)
+            )
+            # Every provenance step runs under `set -u`, so a workflow-local
+            # variable its scripts read but never declare aborts the build.
+            for variable in ("FLUTTER_VERSION", "SHOREBIRD_PLATFORM"):
+                if re.search(rf"\${{?{variable}}}?\b", scripts):
+                    self.assertIn(variable, declared, f"{name} reads ${variable} without declaring it")
 
     def test_store_release_workflows_require_main_and_emit_provenance(self) -> None:
         for workflow_name in ("ios-build", "android-build"):
