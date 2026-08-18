@@ -39,6 +39,23 @@ void main() {
       expect(find.byType(DivineIcon), findsOneWidget);
     });
 
+    testWidgets('bounds painted hearts across runs split by tokens', (
+      tester,
+    ) async {
+      // The builder runs the splitter once per plain run between tokens, so
+      // a per-run cap would reset on every hashtag and an interleaved note
+      // (one heart per tag) would still build one SVG widget per heart.
+      // The budget is shared across the whole build instead.
+      await pump(
+        tester,
+        LinkifiedText(
+          text: '#tag $divineGreenHeart ' * (kDivineHeartMaxPainted + 2),
+        ),
+      );
+
+      expect(find.byType(DivineIcon), findsNWidgets(kDivineHeartMaxPainted));
+    });
+
     testWidgets('leaves text without a green heart on the plain path', (
       tester,
     ) async {

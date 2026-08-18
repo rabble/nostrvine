@@ -33,8 +33,17 @@ const int kDivineHeartMaxPainted = 32;
 ///
 /// Returns a single [TextSpan] when [text] holds no green heart, so callers
 /// pay nothing on the common path.
-List<InlineSpan> divineHeartSpans(String text, {required TextStyle style}) {
-  if (!text.contains(divineGreenHeart)) {
+///
+/// [maxPainted] bounds how many hearts this call turns into widgets; the
+/// rest stay on the platform font. Callers that split one string into
+/// several runs (the linkifier) must thread a shared budget through it —
+/// a per-call default would reset on every run.
+List<InlineSpan> divineHeartSpans(
+  String text, {
+  required TextStyle style,
+  int maxPainted = kDivineHeartMaxPainted,
+}) {
+  if (!text.contains(divineGreenHeart) || maxPainted <= 0) {
     return [TextSpan(text: text, style: style)];
   }
 
@@ -43,7 +52,7 @@ List<InlineSpan> divineHeartSpans(String text, {required TextStyle style}) {
 
   var rest = text;
   var painted = 0;
-  while (painted < kDivineHeartMaxPainted) {
+  while (painted < maxPainted) {
     final index = rest.indexOf(divineGreenHeart);
     if (index < 0) break;
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter/widgets.dart' show WidgetSpan;
 import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -107,10 +108,19 @@ class LinkifiedTextSpanBuilder {
     final safeText = sanitizeUtf16(text);
     final spans = <InlineSpan>[];
     var lastEnd = 0;
+    // The heart budget is shared across every run of one build: the splitter
+    // is invoked once per plain run between tokens, so a per-run cap would
+    // let an interleaved note (one heart per hashtag, say) reset it to full.
+    var heartBudget = kDivineHeartMaxPainted;
 
     for (final match in _combinedRegex.allMatches(safeText)) {
       if (match.start > lastEnd) {
-        spans.addAll(_plainSpans(safeText.substring(lastEnd, match.start)));
+        final run = _plainSpans(
+          safeText.substring(lastEnd, match.start),
+          heartBudget,
+        );
+        heartBudget -= run.whereType<WidgetSpan>().length;
+        spans.addAll(run);
       }
 
       final matchedUrl = match.group(1);
@@ -120,7 +130,9 @@ class LinkifiedTextSpanBuilder {
       final plainMention = match.group(5);
 
       if (matchedUrl != null) {
-        spans.addAll(_buildUrlSpans(matchedUrl));
+        final urlSpans = _buildUrlSpans(matchedUrl, heartBudget);
+        heartBudget -= urlSpans.whereType<WidgetSpan>().length;
+        spans.addAll(urlSpans);
       } else if (hashtag != null) {
         spans.add(_buildHashtagSpan(hashtag));
       } else if (nostrId != null) {
@@ -135,10 +147,12 @@ class LinkifiedTextSpanBuilder {
     }
 
     if (lastEnd < safeText.length) {
-      spans.addAll(_plainSpans(safeText.substring(lastEnd)));
+      final run = _plainSpans(safeText.substring(lastEnd), heartBudget);
+      heartBudget -= run.whereType<WidgetSpan>().length;
+      spans.addAll(run);
     }
 
-    if (spans.isEmpty) return _plainSpans(safeText);
+    if (spans.isEmpty) return _plainSpans(safeText, heartBudget);
     return spans;
   }
 
@@ -146,12 +160,21 @@ class LinkifiedTextSpanBuilder {
   /// brand green rather than the platform emoji font's own green — unless
   /// [allowWidgetSpans] is false, for surfaces where a widget span cannot
   /// survive, such as selectable text.
-  List<InlineSpan> _plainSpans(String value) {
-    if (!allowWidgetSpans) return [TextSpan(text: value, style: defaultStyle)];
-    return divineHeartSpans(value, style: defaultStyle);
+  ///
+  /// [heartBudget] is the shared per-build cap on painted hearts; past it,
+  /// hearts stay on the platform emoji font.
+  List<InlineSpan> _plainSpans(String value, int heartBudget) {
+    if (!allowWidgetSpans || heartBudget == 0) {
+      return [TextSpan(text: value, style: defaultStyle)];
+    }
+    return divineHeartSpans(
+      value,
+      style: defaultStyle,
+      maxPainted: heartBudget,
+    );
   }
 
-  List<InlineSpan> _buildUrlSpans(String matchedUrl) {
+  List<InlineSpan> _buildUrlSpans(String matchedUrl, int heartBudget) {
     final linkText = _trimTrailingUrlPunctuation(matchedUrl);
     final trailingText = matchedUrl.substring(linkText.length);
     return [
@@ -164,7 +187,7 @@ class LinkifiedTextSpanBuilder {
             if (callback != null) unawaited(callback(linkText));
           },
       ),
-      if (trailingText.isNotEmpty) ..._plainSpans(trailingText),
+      if (trailingText.isNotEmpty) ..._plainSpans(trailingText, heartBudget),
     ];
   }
 
