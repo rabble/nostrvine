@@ -1171,6 +1171,60 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'forwards an invalid-pubkey ArgumentError without wrapping it',
+        setUp: () {
+          when(() => mockFollowRepo.follow(_bobPubkey)).thenThrow(
+            ArgumentError.value(_bobPubkey, 'pubkey', 'Invalid key'),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedFollowBack(_bobPubkey)),
+        errors: () => [
+          isA<ArgumentError>().having(
+            (e) => e.invalidValue,
+            'invalidValue',
+            _bobPubkey,
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps a RangeError from follow as Reportable',
+        setUp: () {
+          when(
+            () => mockFollowRepo.follow(_bobPubkey),
+          ).thenThrow(RangeError.range(5, 0, 1));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedFollowBack(_bobPubkey)),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<RangeError>(),
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps an ArgumentError carrying our own pubkey as Reportable',
+        setUp: () {
+          when(() => mockFollowRepo.follow(_bobPubkey)).thenThrow(
+            ArgumentError.value(_alicePubkey, 'pubkey', 'Invalid key'),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedFollowBack(_bobPubkey)),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<ArgumentError>(),
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
         'wraps unexpected Error from follow as Reportable',
         setUp: () {
           when(

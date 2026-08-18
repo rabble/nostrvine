@@ -47,9 +47,10 @@ abstract class NotificationFeedBlocReportableSites {
   static const String clearAppBadge = '_clearAppBadge';
 
   /// `_onFollowBack` generic-catch arm — `Error` types that escape
-  /// `FollowRepository.follow`'s Exception-only throws, plus a
-  /// hypothetical `TypeError` from the post-await `_applyFollowState`
-  /// transform (impossible under the current pure-`copyWith` shape; the
-  /// wrap is defence-in-depth).
+  /// `FollowRepository.follow`, such as a signer `StateError` raised while
+  /// broadcasting the contact list, a `RangeError`, or an `ArgumentError`
+  /// carrying our own pubkey. The arm short-circuits just before the wrap
+  /// for the single matrix-NO case: `follow` rejecting the follow target's
+  /// malformed pubkey, which is input validation.
   static const String onFollowBack = '_onFollowBack';
 }

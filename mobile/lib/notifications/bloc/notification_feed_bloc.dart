@@ -481,8 +481,20 @@ class NotificationFeedBloc
       // are NOT Reportable.
       addError(e, s);
     } catch (e, s) {
-      // Errors (StateError, TypeError from the post-await
-      // `_applyFollowState` transform) — matrix-YES invariant.
+      if (e is ArgumentError && e.invalidValue == event.pubkey) {
+        // `FollowRepository.follow` rejects a malformed follow target before
+        // it can poison the Kind 3 list. The value comes off a
+        // relay/FunnelCake payload, so this is input validation — matrix-NO,
+        // not an invariant. Matching on the value keeps the arm to that one
+        // throw: `RangeError` and `IndexError` extend `ArgumentError`, and
+        // the Kind 3 broadcast throws the same type for our *own* pubkey.
+        // `follow` returns early on self-follow, so the two cannot collide.
+        addError(e, s);
+        return;
+      }
+      // Any other `Error` — a signer `StateError` raised while broadcasting
+      // the contact list, a `RangeError`, or an `ArgumentError` carrying our
+      // own pubkey — is a matrix-YES invariant.
       addError(
         Reportable(
           e,
