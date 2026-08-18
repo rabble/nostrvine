@@ -1,5 +1,9 @@
+// ABOUTME: Cubit for managing audio timing/offset selection in the video editor.
+// ABOUTME: Handles audio playback, clipping, and offset normalization.
+
 import 'dart:async';
 import 'dart:io';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent, AudioSourceKind;
