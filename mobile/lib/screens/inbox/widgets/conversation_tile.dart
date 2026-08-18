@@ -172,7 +172,7 @@ class ConversationTile extends ConsumerWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
+                            child: DivineHeartText(
                               displayName,
                               style: VineTheme.titleMediumFont(
                                 color: context.vineColors.primaryText,

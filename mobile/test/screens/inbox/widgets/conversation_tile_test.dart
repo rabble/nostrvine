@@ -122,6 +122,43 @@ void main() {
         expect(find.text('Alice'), findsOneWidget);
       });
 
+      testWidgets('paints a brand-green heart in a display name', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(
+          displayName: 'Alice $divineGreenHeart',
+        );
+        final testConversation = createTestConversation();
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final heartFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is DivineIcon && widget.icon == DivineIconName.heartFill,
+        );
+        expect(heartFinder, findsOneWidget);
+        expect(
+          tester.widget<DivineIcon>(heartFinder).color,
+          VineTheme.vineGreen,
+        );
+      });
+
       testWidgets('renders last message content', (tester) async {
         final testProfile = createTestProfile(displayName: 'Alice');
         final testConversation = createTestConversation(

@@ -364,7 +364,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                             .videoAuthorSemanticLabel(
                                               displayName,
                                             ),
-                                        child: Text(
+                                        child: DivineHeartText(
                                           displayName,
                                           style: VineTheme.titleSmallFont(
                                             color: VineTheme.whiteText,
