@@ -514,8 +514,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// Handle auto-refresh request (dispatched by UI on app resume).
   ///
   /// Only refreshes when:
-  /// - The current feed source type is [VideoFeedSourceType.following] or
-  ///   [VideoFeedSourceType.forYou]
+  /// - The current feed source type is [VideoFeedSourceType.following],
+  ///   [VideoFeedSourceType.forYou], or [VideoFeedSourceType.newVideos]
   /// - The data is stale (last refresh was longer ago than
   ///   [_autoRefreshMinInterval])
   ///
@@ -527,7 +527,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     Emitter<VideoFeedBlocState> emit,
   ) async {
     if (state.source.type != VideoFeedSourceType.following &&
-        state.source.type != VideoFeedSourceType.forYou) {
+        state.source.type != VideoFeedSourceType.forYou &&
+        state.source.type != VideoFeedSourceType.newVideos) {
       return;
     }
 
@@ -551,7 +552,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       ),
     );
 
-    await _loadVideos(state.source, emit, skipCache: true);
+    await _loadVideos(
+      state.source,
+      emit,
+      skipCache: state.source.type != VideoFeedSourceType.newVideos,
+      revalidate: state.source.type == VideoFeedSourceType.newVideos,
+    );
   }
 
   /// Handle following list changes from [FollowRepository].

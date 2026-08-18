@@ -2868,15 +2868,46 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'does nothing when mode is not home',
-        build: createBloc,
+        'revalidates New when data is stale',
+        setUp: () {
+          when(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+              revalidate: any(named: 'revalidate'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(videos: createTestVideos(pageSize)),
+          );
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          autoRefreshMinInterval: Duration.zero,
+        ),
         seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.latest,
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
-        expect: () => <VideoFeedBlocState>[],
+        expect: () => [
+          const VideoFeedBlocState(mode: FeedMode.latest),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              revalidate: true,
+            ),
+          ).called(1);
+        },
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(

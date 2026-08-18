@@ -265,12 +265,9 @@ class VideosRepository {
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
-  /// - [skipCache]: Full manual refresh — bypasses the in-memory
-  ///   first-page cache.
-  /// - [revalidate]: Bypasses the in-memory first-page cache read only,
-  ///   without any heavier refresh behavior. Use for session-start
-  ///   revalidation where a fresh page is wanted but [skipCache] semantics
-  ///   do not apply.
+  /// - [skipCache]: Indicates that the caller is performing a manual refresh.
+  /// - [revalidate]: Indicates that the caller is revalidating on session
+  ///   start. Following is always fetched because it has no repository cache.
   ///
   /// Returns a [HomeFeedResult] containing videos sorted by creation time
   /// (newest first) plus attribution metadata mapping videos to their
@@ -290,12 +287,6 @@ class VideosRepository {
       return const HomeFeedResult(videos: []);
     }
 
-    // Return in-memory cached result when available (initial page only).
-    if (!skipCache && !revalidate && until == null) {
-      final cached = _inMemoryFeedCache?.get('home');
-      if (cached != null) return _withSeenFreshnessOrdering(cached);
-    }
-
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
     final videos = await _fetchFollowingVideos(
       authors: authors,
@@ -308,8 +299,6 @@ class VideosRepository {
     if (videoRefs.isEmpty) {
       final ordered = await _orderBySeenFreshness(videos);
       final result = HomeFeedResult(videos: ordered);
-      if (until == null) _inMemoryFeedCache?.set('home', result);
-      // Still apply ordering to cached path on next call via cache gate below
       return result;
     }
 
@@ -324,7 +313,6 @@ class VideosRepository {
       videoListSources: merged.videoListSources,
       listOnlyVideoIds: merged.listOnlyVideoIds,
     );
-    if (until == null) _inMemoryFeedCache?.set('home', result);
     return result;
   }
 
@@ -2923,8 +2911,8 @@ class VideosRepository {
         await getPopularVideos(
           limit: limit,
           until: until,
-          // The popular fallback cache carries no heavier refresh semantics,
-          // so a revalidation bypasses it the same way a manual refresh does.
+          // This legacy, no-variant popular call has no heavier refresh
+          // semantics, so revalidation bypasses its cache like manual refresh.
           skipCache: skipCache || revalidate,
           preferredLanguages: preferredLanguages,
           viewerCountry: viewerCountry,
