@@ -1,6 +1,8 @@
 // ABOUTME: Tests for RoundedIconButton widget
 // ABOUTME: Verifies icon rendering, tap callback, and null onPressed
 
+import 'dart:ui' show Tristate;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -92,6 +94,7 @@ void main() {
         final node = tester.getSemantics(find.byType(RoundedIconButton));
         expect(node.label, equals('Atrás'));
         expect(node.flagsCollection.isButton, isTrue);
+        expect(node.flagsCollection.isEnabled, Tristate.isTrue);
         handle.dispose();
       });
 
@@ -119,6 +122,7 @@ void main() {
           node.getSemanticsData().hasAction(SemanticsAction.tap),
           isFalse,
         );
+        expect(node.flagsCollection.isEnabled, Tristate.isFalse);
         handle.dispose();
       });
     });

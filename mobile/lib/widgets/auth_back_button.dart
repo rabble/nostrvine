@@ -42,7 +42,7 @@ class AuthBackButton extends StatelessWidget {
       semanticLabel: context.l10n.commonBack,
       // Matches DiVineAppBarLeading.backButtonSemanticId so E2E flows can
       // address either back control by the same identifier.
-      semanticIdentifier: 'back_button',
+      semanticIdentifier: DiVineAppBarLeading.backButtonSemanticId,
       icon: DivineIcon(
         icon: DivineIconName.caretLeft,
         color: context.vineColors.onIconButton,

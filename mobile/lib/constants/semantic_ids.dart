@@ -100,6 +100,8 @@ abstract class SemanticIds {
   static const String authContinueAsButton = 'continue_as_button';
   static const String authUseAnotherAccountButton =
       'use_another_account_button';
+  static const String authSignInOptionsInfoButton =
+      'sign_in_options_info_button';
 
   /// Invite gate. Account creation is gated on a code here, so these two sit
   /// on the critical path of every flow that signs up.

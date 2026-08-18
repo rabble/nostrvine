@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show AndroidPlugin;
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -362,7 +363,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                               showNip07: isNip07Available,
                             ),
                       semanticLabel: context.l10n.authSignInOptionsInfo,
-                      semanticIdentifier: 'sign_in_options_info_button',
+                      semanticIdentifier:
+                          SemanticIds.authSignInOptionsInfoButton,
                       icon: DivineIcon(
                         icon: DivineIconName.info,
                         color: context.vineColors.onIconButton,
