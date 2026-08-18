@@ -367,6 +367,15 @@ class C2paSigningService {
           signer: signer,
         );
 
+        if (result.signedData.isEmpty) {
+          return C2paSigningResult(
+            signedFilePath: outputPath,
+            success: false,
+            error: 'Signed derived file is empty',
+            failureReason: C2paSigningFailureReason.outputMissing,
+          );
+        }
+
         await outputFile.writeAsBytes(result.signedData, flush: true);
 
         Log.info(
