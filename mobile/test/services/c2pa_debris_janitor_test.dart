@@ -111,6 +111,20 @@ void main() {
       expect(nested.existsSync(), isTrue);
     });
 
+    test('does not follow or delete symlinked debris', () {
+      final target = writeFile(
+        'link_target.bin',
+        age: C2paDebrisJanitor.staleDebrisAge + const Duration(seconds: 1),
+      );
+      final link = Link(p.join(tempDir.path, 'c2pa_signed_1786964993571.mp4'))
+        ..createSync(target.path);
+
+      C2paDebrisJanitor.deleteStaleDebris(tempDir, now: now);
+
+      expect(link.existsSync(), isTrue);
+      expect(target.existsSync(), isTrue);
+    });
+
     test('missing and invalid directories do not throw', () {
       final missing = Directory(p.join(tempDir.path, 'missing'));
       final regularFile = File(p.join(tempDir.path, 'not_a_directory'))
