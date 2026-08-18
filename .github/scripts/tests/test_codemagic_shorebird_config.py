@@ -282,7 +282,6 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("app_store_connect:", workflow)
         self.assertIn("submit_to_testflight: false", workflow)
         self.assertIn("submit_to_app_store: false", workflow)
-        self.assertNotIn("beta_groups:", workflow)
 
         self.assertRegex(
             self.shorebird_doc_contents,

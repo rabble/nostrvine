@@ -96,7 +96,7 @@ Signed store builds run on Codemagic (`codemagic.yaml`); GitHub Actions (`.githu
 
 Codemagic workflows and their publishing targets:
 
-- iOS build — `flutter build ipa --release`, published to App Store Connect (TestFlight / App Store); dSYMs uploaded to Firebase Crashlytics.
+- iOS build — `shorebird release ios`, uploaded to App Store Connect without automatic review submission; dSYMs uploaded to Firebase Crashlytics.
 - Android build — `flutter build appbundle --release` (and split-per-ABI APKs), published to Google Play.
 - macOS build — packaged as a DMG and published to a GitHub Release.
 - E2E smoke tests — Maestro flows on iOS Simulator and Android emulator.

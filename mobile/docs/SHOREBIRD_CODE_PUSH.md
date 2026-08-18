@@ -116,9 +116,15 @@ App Store version train.
 iOS publishing deliberately stops after uploading the Shorebird IPA to App
 Store Connect (`submit_to_testflight: false`, `submit_to_app_store: false`).
 App Store Connect, not Codemagic, provides automatic internal TestFlight
-distribution: enable **Automatic Distribution** on an internal-only tester
-group so every processed build is available there without Beta App Review.
-Do not put external testers in that group.
+distribution. This depends on configuration outside this repository: enable
+**Automatic Distribution** on every internal-only tester group that should
+receive each build without Beta App Review. Do not put external testers in
+those groups.
+
+A green Codemagic build confirms the IPA upload, not successful App Store
+Connect processing or tester distribution. After each iOS build, confirm the
+build finishes processing and reaches **Ready to Test**, then verify an internal
+tester can see it before treating internal delivery as complete.
 
 After internal testing passes, perform a manual external TestFlight promotion
 of the same build in App Store Connect: add it to the external groups and submit
