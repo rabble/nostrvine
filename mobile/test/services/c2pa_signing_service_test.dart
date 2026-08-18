@@ -52,6 +52,13 @@ void main() {
       return file;
     }
 
+    List<String> signedLeftovers() => tempDir
+        .listSync()
+        .whereType<File>()
+        .map((file) => file.uri.pathSegments.last)
+        .where((name) => name.startsWith('c2pa_signed_'))
+        .toList();
+
     group('failure classification', () {
       test('classifies iOS secure connection failures as TLS errors', () {
         final reason = C2paSigningService.classifyFailureReason(
@@ -163,13 +170,8 @@ void main() {
           // writing the signed file and for the cleanup to remove the orphan.
           await Future<void>.delayed(const Duration(milliseconds: 150));
 
-          final orphans = tempDir
-              .listSync()
-              .whereType<File>()
-              .where((f) => f.uri.pathSegments.last.startsWith('c2pa_signed_'))
-              .toList();
           expect(
-            orphans,
+            signedLeftovers(),
             isEmpty,
             reason:
                 'a signing call that finishes past the timeout must not leave '
@@ -180,6 +182,64 @@ void main() {
     });
 
     group('signVideo', () {
+      test(
+        'deletes the partial output when the native call throws (#7739)',
+        () async {
+          final video = writeFile('video.mp4', const [0, 1, 2, 3]);
+          final failingService = C2paSigningService(
+            c2pa: _WriteThenThrowC2pa(
+              const [7, 7, 7],
+              PlatformException(
+                code: 'ERROR',
+                message: 'Signature: internal error (COSE signature invalid)',
+              ),
+            ),
+          );
+
+          final result = await failingService.signVideo(videoPath: video.path);
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            C2paSigningFailureReason.signingCredential,
+          );
+          expect(result.signedFilePath, video.path);
+          expect(video.readAsBytesSync(), equals([0, 1, 2, 3]));
+          expect(
+            signedLeftovers(),
+            isEmpty,
+            reason:
+                'a signing call that throws after writing its output must not '
+                'leave a stray c2pa_signed_*.mp4 behind',
+          );
+        },
+      );
+
+      test(
+        'does not replace the recording with a zero-byte output (#7739)',
+        () async {
+          final video = writeFile('video.mp4', const [0, 1, 2, 3]);
+          final emptyOutputService = C2paSigningService(
+            c2pa: _WritingC2pa(const []),
+          );
+
+          final result = await emptyOutputService.signVideo(
+            videoPath: video.path,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.failureReason, C2paSigningFailureReason.outputMissing);
+          expect(result.signedFilePath, video.path);
+          expect(
+            video.readAsBytesSync(),
+            equals([0, 1, 2, 3]),
+            reason:
+                'an empty signing output must never overwrite the recording',
+          );
+          expect(signedLeftovers(), isEmpty);
+        },
+      );
+
       test(
         'replaces the original in place and leaves nothing else behind',
         () async {
@@ -290,6 +350,51 @@ void main() {
       });
 
       test(
+        'leaves the derived file untouched when signing returns empty bytes',
+        () async {
+          when(() => mockC2pa.readManifestFromFile(any())).thenAnswer(
+            (_) async => const ManifestStoreInfo(activeManifest: 'urn:c2pa:x'),
+          );
+
+          final builder = _MockManifestBuilder();
+          when(
+            () => mockC2pa.createBuilder(any()),
+          ).thenAnswer((_) async => builder);
+          when(
+            () => builder.addIngredient(
+              data: any(named: 'data'),
+              mimeType: any(named: 'mimeType'),
+              config: any(named: 'config'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => builder.sign(
+              sourceData: any(named: 'sourceData'),
+              mimeType: any(named: 'mimeType'),
+              signer: any(named: 'signer'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                BuilderSignResult(signedData: Uint8List(0), manifestSize: 0),
+          );
+
+          final output = writeFile('out.mp4', const [1, 2, 3]);
+          final source = writeFile('src.mp4', const [4, 5, 6]);
+
+          final result = await service.resignDerived(
+            outputPath: output.path,
+            sourcePath: source.path,
+            action: C2paEditActions.edited,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.failureReason, C2paSigningFailureReason.outputMissing);
+          expect(output.readAsBytesSync(), equals([1, 2, 3]));
+          verify(builder.dispose).called(1);
+        },
+      );
+
+      test(
         'returns failure without signing when the output does not exist',
         () async {
           final result = await service.resignDerived(
@@ -352,6 +457,26 @@ class _SlowWritingC2pa extends C2pa {
   }) async {
     await Future<void>.delayed(delay);
     File(destPath).writeAsBytesSync(const [7, 7, 7]);
+  }
+}
+
+/// Simulates a remote-signing call that fails *after* the native side has
+/// already created its output — the leak observed in #7739.
+class _WriteThenThrowC2pa extends C2pa {
+  _WriteThenThrowC2pa(this.bytes, this.error);
+
+  final List<int> bytes;
+  final Object error;
+
+  @override
+  Future<void> signFile({
+    required String sourcePath,
+    required String destPath,
+    required String manifestJson,
+    required C2paSigner signer,
+  }) async {
+    File(destPath).writeAsBytesSync(bytes);
+    throw error;
   }
 }
 
