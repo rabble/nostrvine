@@ -107,9 +107,10 @@
              - Skia: 13-16ms raster, 60 FPS, correct video rendering.
 
              Nothing upstream has changed since. That measurement was
-             taken on Flutter 3.44.0, the same pin this branch builds on,
-             with both cited issues already closed - so this is not a
-             re-evaluation after an engine upgrade. What changed is the
+             taken on Flutter 3.44.0, with both cited issues already
+             closed - so this is not a re-evaluation after an engine
+             upgrade. The Flutter pin has since moved to 3.44.9 (#7202),
+             which the profiling above predates. What changed is the
              requirement: the video editor's live chroma-key preview
              needs `ui.ImageFilter.shader`, which Skia does not implement
              at all. On Skia the preview degrades to the unkeyed video
