@@ -34,7 +34,8 @@ final accountEnforcementRepositoryProvider =
 /// user restarts — that is the failure this surface exists to fix. Call
 /// `ref.invalidate(accountEnforcementStatusProvider)` to force a refresh
 /// while it is still being watched.
-final accountEnforcementStatusProvider =
+final FutureProvider<AccountEnforcementStatus>
+accountEnforcementStatusProvider =
     FutureProvider.autoDispose<AccountEnforcementStatus>((ref) async {
       final authState = ref.watch(currentAuthStateProvider);
       if (authState != AuthState.authenticated) {
@@ -53,7 +54,9 @@ final accountEnforcementStatusProvider =
 /// Unknown resolves to false. Consumers that must fail safe should read
 /// [accountEnforcementStatusProvider] and branch on the kind themselves rather
 /// than relying on this.
-final isAccountEnforcedProvider = Provider.autoDispose<bool>((ref) {
+final Provider<bool> isAccountEnforcedProvider = Provider.autoDispose<bool>((
+  ref,
+) {
   return ref
       .watch(accountEnforcementStatusProvider)
       .maybeWhen(data: (s) => s.isEnforced, orElse: () => false);
