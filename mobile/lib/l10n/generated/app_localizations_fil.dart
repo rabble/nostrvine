@@ -7957,6 +7957,25 @@ class AppLocalizationsFil extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Hindi naiboto ang komento';
 
   @override
+  String get commentsErrorReactionFailed =>
+      'Hindi nagawa ang reaksyon sa komento';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Mag-react gamit ang $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count ang nag-react ng $emoji. Mag-react gamit ang $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count ang nag-react ng $emoji, kasama ka. Alisin ang iyong reaksyon';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Hindi na-report ang komento';
 
   @override

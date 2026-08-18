@@ -7898,6 +7898,24 @@ class AppLocalizationsUr extends AppLocalizations {
   String get commentsErrorVoteFailed => 'تبصرے پر ووٹ نہیں ہو سکا';
 
   @override
+  String get commentsErrorReactionFailed => 'تبصرے پر ردعمل نہیں دیا جا سکا';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return '$emoji کے ساتھ ردعمل دیں';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count نے $emoji کے ساتھ ردعمل دیا۔ $emoji کے ساتھ ردعمل دیں';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count نے $emoji کے ساتھ ردعمل دیا، بشمول آپ۔ اپنا ردعمل ہٹائیں';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'تبصرے کی رپورٹ نہیں ہو سکی';
 
   @override

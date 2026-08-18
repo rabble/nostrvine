@@ -7996,6 +7996,25 @@ class AppLocalizationsDe extends AppLocalizations {
       'Abstimmen über den Kommentar fehlgeschlagen';
 
   @override
+  String get commentsErrorReactionFailed =>
+      'Reaktion auf den Kommentar fehlgeschlagen';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Mit $emoji reagieren';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count haben mit $emoji reagiert. Mit $emoji reagieren';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count haben mit $emoji reagiert, auch du. Deine Reaktion entfernen';
+  }
+
+  @override
   String get commentsErrorReportFailed =>
       'Kommentar konnte nicht gemeldet werden';
 

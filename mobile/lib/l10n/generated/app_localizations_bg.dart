@@ -7968,6 +7968,24 @@ class AppLocalizationsBg extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Гласуването за коментара не мина';
 
   @override
+  String get commentsErrorReactionFailed => 'Неуспешна реакция на коментара';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Реагирай с $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count реагираха с $emoji. Реагирай с $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count реагираха с $emoji, включително ти. Премахни реакцията си';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Коментарът не беше докладван';
 
   @override

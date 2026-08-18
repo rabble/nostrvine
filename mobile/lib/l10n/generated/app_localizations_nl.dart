@@ -7930,6 +7930,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Stemmen op de reactie is mislukt';
 
   @override
+  String get commentsErrorReactionFailed =>
+      'Reageren op deze reactie is mislukt';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Reageer met $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count reageerden met $emoji. Reageer met $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count reageerden met $emoji, ook jij. Verwijder je reactie';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Reactie kon niet worden gemeld';
 
   @override

@@ -13440,6 +13440,30 @@ abstract class AppLocalizations {
   /// **'Failed to vote on comment'**
   String get commentsErrorVoteFailed;
 
+  /// Snackbar shown when adding or removing an emoji reaction on a comment fails to publish to the relay.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to react to comment'**
+  String get commentsErrorReactionFailed;
+
+  /// Screen-reader label for an emoji button in the comment reaction quick-row, and for a reaction chip the user has not joined yet.
+  ///
+  /// In en, this message translates to:
+  /// **'React with {emoji}'**
+  String commentReactWithEmojiSemanticLabel(String emoji);
+
+  /// Screen-reader label for a comment reaction chip the user has not joined. Activating it adds the user's reaction.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} reacted with {emoji}. React with {emoji}'**
+  String commentReactionChipSemanticLabel(int count, String emoji);
+
+  /// Screen-reader label for a comment reaction chip that includes the user's own reaction. Activating it removes the user's reaction.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} reacted with {emoji}, including you. Remove your reaction'**
+  String commentReactionChipOwnSemanticLabel(int count, String emoji);
+
   /// Snackbar shown when submitting an NIP-56 comment report fails.
   ///
   /// In en, this message translates to:

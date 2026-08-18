@@ -8081,6 +8081,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Nu am putut vota comentariul';
 
   @override
+  String get commentsErrorReactionFailed => 'Reacția la comentariu a eșuat';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Reacționează cu $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count au reacționat cu $emoji. Reacționează cu $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count au reacționat cu $emoji, inclusiv tu. Elimină-ți reacția';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Nu am putut raporta comentariul';
 
   @override

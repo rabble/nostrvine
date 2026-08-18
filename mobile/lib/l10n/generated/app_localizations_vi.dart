@@ -7866,6 +7866,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Không bình chọn được bình luận';
 
   @override
+  String get commentsErrorReactionFailed =>
+      'Không thể thả cảm xúc cho bình luận';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Thả cảm xúc $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count người đã thả $emoji. Thả cảm xúc $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count người đã thả $emoji, bao gồm bạn. Gỡ cảm xúc của bạn';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Không báo cáo được bình luận';
 
   @override

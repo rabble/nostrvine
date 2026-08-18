@@ -7458,6 +7458,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commentsErrorVoteFailed => '评论投票失败';
 
   @override
+  String get commentsErrorReactionFailed => '对评论添加表情回应失败';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return '用 $emoji 回应';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count 人用 $emoji 回应。用 $emoji 回应';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count 人用 $emoji 回应，包括你。移除你的回应';
+  }
+
+  @override
   String get commentsErrorReportFailed => '评论举报失败';
 
   @override

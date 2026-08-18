@@ -7822,6 +7822,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Yoruma oy verilemedi';
 
   @override
+  String get commentsErrorReactionFailed => 'Yoruma tepki verilemedi';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return '$emoji ile tepki ver';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count kişi $emoji ile tepki verdi. $emoji ile tepki ver';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count kişi $emoji ile tepki verdi, sen de dahil. Tepkini kaldır';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Yorum bildirilemedi';
 
   @override

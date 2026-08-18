@@ -7530,6 +7530,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commentsErrorVoteFailed => '댓글 투표에 실패했어요';
 
   @override
+  String get commentsErrorReactionFailed => '댓글에 반응을 남기지 못했어요';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return '$emoji(으)로 반응하기';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count명이 $emoji(으)로 반응했습니다. $emoji(으)로 반응하기';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count명이 $emoji(으)로 반응했습니다(나 포함). 내 반응 삭제';
+  }
+
+  @override
   String get commentsErrorReportFailed => '댓글을 신고하지 못했어요';
 
   @override

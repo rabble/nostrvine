@@ -7891,6 +7891,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Kunde inte rösta på kommentaren';
 
   @override
+  String get commentsErrorReactionFailed =>
+      'Det gick inte att reagera på kommentaren';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Reagera med $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count har reagerat med $emoji. Reagera med $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count har reagerat med $emoji, inklusive du. Ta bort din reaktion';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Kunde inte rapportera kommentaren';
 
   @override

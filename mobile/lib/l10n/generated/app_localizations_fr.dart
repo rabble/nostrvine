@@ -8006,6 +8006,25 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de voter pour le commentaire';
 
   @override
+  String get commentsErrorReactionFailed =>
+      'Échec de la réaction au commentaire';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Réagir avec $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count ont réagi avec $emoji. Réagir avec $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count ont réagi avec $emoji, dont vous. Retirer votre réaction';
+  }
+
+  @override
   String get commentsErrorReportFailed =>
       'Impossible de signaler le commentaire';
 

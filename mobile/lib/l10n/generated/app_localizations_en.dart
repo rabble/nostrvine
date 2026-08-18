@@ -8006,6 +8006,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Failed to vote on comment';
 
   @override
+  String get commentsErrorReactionFailed => 'Failed to react to comment';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'React with $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count reacted with $emoji. React with $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count reacted with $emoji, including you. Remove your reaction';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Failed to report comment';
 
   @override

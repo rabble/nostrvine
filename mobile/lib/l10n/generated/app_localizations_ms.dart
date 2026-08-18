@@ -7909,6 +7909,24 @@ class AppLocalizationsMs extends AppLocalizations {
   String get commentsErrorVoteFailed => 'Gagal mengundi komen';
 
   @override
+  String get commentsErrorReactionFailed => 'Gagal memberi reaksi pada komen';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'Beri reaksi $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count memberi reaksi $emoji. Beri reaksi $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count memberi reaksi $emoji, termasuk anda. Buang reaksi anda';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'Gagal melaporkan komen';
 
   @override

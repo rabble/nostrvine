@@ -7515,6 +7515,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commentsErrorVoteFailed => 'コメントへの投票に失敗しました';
 
   @override
+  String get commentsErrorReactionFailed => 'コメントへのリアクションに失敗しました';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return '$emojiでリアクション';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count人が$emojiでリアクションしました。$emojiでリアクション';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count人が$emojiでリアクションしました（あなたを含む）。リアクションを取り消す';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'コメントを報告できませんでした';
 
   @override

@@ -4533,6 +4533,43 @@
   "@commentsErrorVoteFailed": {
     "description": "Snackbar shown when up/down-voting a comment fails to publish to the relay."
   },
+  "commentsErrorReactionFailed": "Gagal memberi reaksi pada komen",
+  "@commentsErrorReactionFailed": {
+    "description": "Snackbar shown when adding or removing an emoji reaction on a comment fails to publish to the relay."
+  },
+  "commentReactWithEmojiSemanticLabel": "Beri reaksi {emoji}",
+  "@commentReactWithEmojiSemanticLabel": {
+    "description": "Screen-reader label for an emoji button in the comment reaction quick-row, and for a reaction chip the user has not joined yet.",
+    "placeholders": {
+      "emoji": {
+        "type": "String"
+      }
+    }
+  },
+  "commentReactionChipSemanticLabel": "{count} memberi reaksi {emoji}. Beri reaksi {emoji}",
+  "@commentReactionChipSemanticLabel": {
+    "description": "Screen-reader label for a comment reaction chip the user has not joined. Activating it adds the user's reaction.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "emoji": {
+        "type": "String"
+      }
+    }
+  },
+  "commentReactionChipOwnSemanticLabel": "{count} memberi reaksi {emoji}, termasuk anda. Buang reaksi anda",
+  "@commentReactionChipOwnSemanticLabel": {
+    "description": "Screen-reader label for a comment reaction chip that includes the user's own reaction. Activating it removes the user's reaction.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "emoji": {
+        "type": "String"
+      }
+    }
+  },
   "commentsErrorReportFailed": "Gagal melaporkan komen",
   "@commentsErrorReportFailed": {
     "description": "Snackbar shown when submitting an NIP-56 comment report fails."

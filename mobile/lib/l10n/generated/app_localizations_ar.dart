@@ -7845,6 +7845,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get commentsErrorVoteFailed => 'تعذّر التصويت على التعليق';
 
   @override
+  String get commentsErrorReactionFailed => 'تعذّر التفاعل مع التعليق';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'تفاعَل بـ $emoji';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count تفاعلوا بـ $emoji. تفاعَل بـ $emoji';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count تفاعلوا بـ $emoji، بمن فيهم أنت. أزِل تفاعلك';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'تعذّر الإبلاغ عن التعليق';
 
   @override

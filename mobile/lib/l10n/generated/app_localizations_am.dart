@@ -7722,6 +7722,24 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commentsErrorVoteFailed => 'በአስተያየቱ ላይ መምረጥ አልተሳካም';
 
   @override
+  String get commentsErrorReactionFailed => 'ለአስተያየቱ ምላሽ ማከል አልተሳካም';
+
+  @override
+  String commentReactWithEmojiSemanticLabel(String emoji) {
+    return 'በ$emoji ምላሽ ይስጡ';
+  }
+
+  @override
+  String commentReactionChipSemanticLabel(int count, String emoji) {
+    return '$count ሰዎች በ$emoji ምላሽ ሰጥተዋል። በ$emoji ምላሽ ይስጡ';
+  }
+
+  @override
+  String commentReactionChipOwnSemanticLabel(int count, String emoji) {
+    return '$count ሰዎች በ$emoji ምላሽ ሰጥተዋል፣ እርስዎን ጨምሮ። ምላሽዎን ያስወግዱ';
+  }
+
+  @override
   String get commentsErrorReportFailed => 'አስተያየቱን ሪፖርት ማድረግ አልተሳካም';
 
   @override
