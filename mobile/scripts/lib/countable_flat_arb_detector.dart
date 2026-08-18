@@ -14,8 +14,7 @@ RegExp _interpolation(String name) =>
 
 final _pluralSelector = RegExp(r'\{\s*\w+\s*,\s*plural\s*,');
 
-/// A key is a candidate when it interpolates a placeholder that is either
-/// declared numeric, or named like a count.
+/// Whether [key] with a placeholder of [declaredType] reads as a quantity.
 ///
 /// The numeric-type test is the reliable one. The name test exists because a
 /// count can legitimately be typed `String` when the display value is
@@ -26,6 +25,42 @@ bool _looksCountable(String key, String? declaredType) =>
     declaredType == 'num' ||
     declaredType == 'double' ||
     key.endsWith('Count');
+
+/// Returns the sorted keys of [arb] that interpolate a countable placeholder
+/// but express no ICU plural.
+///
+/// A key is exempt as soon as its value carries any `{x, plural, ...}`
+/// selector — the selector need not be on the countable placeholder itself,
+/// because a value can legitimately select on one argument while displaying
+/// another (see `analyticsViewsCount`).
+List<String> findCountableFlatKeys(Map<String, dynamic> arb) {
+  final offenders = <String>[];
+
+  for (final entry in arb.entries) {
+    final key = entry.key;
+    if (key.startsWith('@')) continue;
+    final value = entry.value;
+    if (value is! String) continue;
+    if (_pluralSelector.hasMatch(value)) continue;
+
+    final meta = arb['@$key'];
+    final placeholders = meta is Map ? meta['placeholders'] : null;
+    if (placeholders is! Map) continue;
+
+    for (final ph in placeholders.entries) {
+      final name = ph.key.toString();
+      if (!_interpolation(name).hasMatch(value)) continue;
+      final spec = ph.value;
+      final type = (spec is Map ? spec['type'] : null)?.toString();
+      if (_looksCountable(key, type)) {
+        offenders.add(key);
+        break;
+      }
+    }
+  }
+
+  return offenders..sort();
+}
 
 void main(List<String> args) {
   final detail = args.contains('--detail');
@@ -41,33 +76,7 @@ void main(List<String> args) {
   }
 
   final arb = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-  final offenders = <String, String>{};
-
-  for (final entry in arb.entries) {
-    final key = entry.key;
-    if (key.startsWith('@')) continue;
-    final value = entry.value;
-    if (value is! String) continue;
-    if (_pluralSelector.hasMatch(value)) continue;
-
-    final meta = arb['@$key'];
-    final placeholders = (meta is Map ? meta['placeholders'] : null);
-    if (placeholders is! Map) continue;
-
-    for (final ph in placeholders.entries) {
-      final name = ph.key.toString();
-      if (!_interpolation(name).hasMatch(value)) continue;
-      final spec = ph.value;
-      final type = (spec is Map ? spec['type'] : null)?.toString();
-      if (_looksCountable(key, type)) {
-        offenders[key] = value;
-        break;
-      }
-    }
-  }
-
-  final keys = offenders.keys.toList()..sort();
-  for (final k in keys) {
-    stdout.writeln(detail ? '$k\t${offenders[k]}' : k);
+  for (final key in findCountableFlatKeys(arb)) {
+    stdout.writeln(detail ? '$key\t${arb[key]}' : key);
   }
 }

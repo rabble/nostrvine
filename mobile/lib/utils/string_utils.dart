@@ -45,9 +45,8 @@ class StringUtils {
   /// Evaluating [value] once keeps the two provably consistent.
   static String compactPlural(
     int value,
-    String Function(int, String) plural, {
-    String? locale,
-  }) => plural(value, formatCompactNumber(value, locale: locale));
+    String Function(int, String) plural,
+  ) => plural(value, formatCompactNumber(value));
 
   /// Strip unpaired UTF-16 surrogate code units from [input].
   ///
