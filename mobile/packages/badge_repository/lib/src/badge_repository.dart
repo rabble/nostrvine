@@ -103,7 +103,16 @@ class CreatedBadgeViewData {
   final int recipientCount;
 
   String get coordinate => definition.coordinate;
-  String get displayName => definition.name ?? definition.dTag;
+
+  /// Badge name, falling back to the identifier when the definition carries
+  /// no `name` tag.
+  ///
+  /// [Nip58BadgeDefinition.dTag] stays raw on the model because the badge
+  /// editor republishes it as the event's `d` tag — rewriting a code unit
+  /// there would address a different badge. Sanitizing on the way out keeps
+  /// the rendered name well-formed without moving the address, the same split
+  /// [_definitionNameFromCoordinate] uses.
+  String get displayName => definition.name ?? sanitizeUtf16(definition.dTag);
   String? get imageUrl =>
       definition.imageUrl ??
       (definition.thumbnails.isNotEmpty ? definition.thumbnails.first : null);

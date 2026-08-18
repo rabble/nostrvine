@@ -1508,6 +1508,37 @@ void main() {
         },
       );
 
+      // A definition with no `name` tag falls back to the identifier, which
+      // is raw event text. The headless flutter_tester does not throw on a
+      // lone surrogate — only the real engine does — so this asserts the
+      // value rather than a rendered badge row.
+      test(
+        'replaces a lone surrogate in the identifier fallback name',
+        () async {
+          final dTag = 'scene${String.fromCharCode(0xD83D)}stealer';
+          _stubQueries(nostrClient, {
+            'created:${_pubkey(1)}': [
+              // No `name` tag, so displayName falls back to the identifier.
+              _event(
+                id: _eventId(90),
+                pubkey: _pubkey(1),
+                kind: EventKind.badgeDefinition,
+                tags: [
+                  ['d', dTag],
+                ],
+              ),
+            ],
+          });
+
+          final created = await repository.loadCreatedBadges();
+
+          expect(created.single.displayName, 'scene\u{FFFD}stealer');
+          // The address keeps the raw identifier: sanitizing it would point
+          // at a badge that does not exist.
+          expect(created.single.coordinate, '30009:${_pubkey(1)}:$dTag');
+        },
+      );
+
       test('counts awards and distinct recipients per definition', () async {
         const coordinate = 'scene-stealer';
         _stubQueries(nostrClient, {

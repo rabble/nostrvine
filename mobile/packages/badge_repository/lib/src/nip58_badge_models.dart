@@ -24,7 +24,16 @@ class Nip58BadgeDefinition {
 
   final Event event;
   final String coordinate;
+
+  /// The event's `d` tag, deliberately left raw.
+  ///
+  /// It addresses the definition: the coordinate is built from it and the
+  /// badge editor republishes it verbatim, so rewriting a code unit here
+  /// would edit a different badge. The one place it is rendered —
+  /// `CreatedBadgeViewData.displayName`, when the definition has no `name`
+  /// tag — sanitizes on the way out instead.
   final String dTag;
+
   final String? name;
   final String? description;
   final String? imageUrl;
