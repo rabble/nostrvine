@@ -56,13 +56,35 @@ void main() {
       expect(find.byType(DivineIcon), findsNothing);
     });
 
-    testWidgets('paints a green heart in selectable text', (tester) async {
+    testWidgets('keeps the platform glyph in selectable text so copy keeps '
+        'the character', (tester) async {
+      // SelectableText seeds its editing controller from the span plain
+      // text, where a WidgetSpan heart contributes U+FFFC — a copied bio
+      // would silently lose the character. That copy fidelity is why the
+      // PR leaves selectable surfaces on the platform emoji font.
       await pump(
         tester,
         const SelectableLinkifiedText(text: 'bio $divineGreenHeart'),
       );
 
-      expect(find.byType(DivineIcon), findsOneWidget);
+      expect(find.byType(DivineIcon), findsNothing);
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.controller.text, contains(divineGreenHeart));
+      expect(editable.controller.text.contains('\u{FFFC}'), isFalse);
+    });
+
+    testWidgets('keeps copy intact on the selectable rich path too', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        const SelectableLinkifiedText(text: 'bio $divineGreenHeart #vine'),
+      );
+
+      expect(find.byType(DivineIcon), findsNothing);
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.controller.text, contains(divineGreenHeart));
+      expect(editable.controller.text.contains('\u{FFFC}'), isFalse);
     });
   });
 }

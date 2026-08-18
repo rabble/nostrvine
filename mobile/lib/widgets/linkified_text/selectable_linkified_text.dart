@@ -75,6 +75,9 @@ class _SelectableLinkifiedTextState
       onVideoTap: (routeReference) => _navigateToVideo(context, routeReference),
       onMentionTap: (username) => _navigateToMention(context, username),
       onUrlTap: _handleUrlTap,
+      // A WidgetSpan seeds the editing controller with U+FFFC, so a copied
+      // bio would lose the character. Copy fidelity over brand color here.
+      allowWidgetSpans: false,
     ).build();
 
     if (!_hasClickableOrStylableToken(spans, defaultStyle)) {
@@ -143,8 +146,10 @@ class _SelectableLinkifiedTextState
     );
   }
 
-  /// A non-[TextSpan] — today a brand-green heart — cannot be painted by the
-  /// plain `SelectableText` fast path, so its presence forces the rich path.
+  /// Defensive: a non-[TextSpan] cannot be painted by the plain
+  /// `SelectableText` fast path. None is emitted for this widget today — the
+  /// builder runs with `allowWidgetSpans: false` — but if one ever arrives it
+  /// takes the rich path rather than being dropped.
   bool _hasClickableOrStylableToken(List<InlineSpan> spans, TextStyle style) =>
       spans.any(
         (span) =>

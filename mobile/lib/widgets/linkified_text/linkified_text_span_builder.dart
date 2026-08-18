@@ -39,6 +39,7 @@ class LinkifiedTextSpanBuilder {
     this.profileLabelForHex,
     this.profilePubkeyForMention,
     this.videoLabel,
+    this.allowWidgetSpans = true,
   });
 
   static final _combinedRegex = RegExp(
@@ -84,6 +85,14 @@ class LinkifiedTextSpanBuilder {
 
   /// Display label for video/event references.
   final String? videoLabel;
+
+  /// Whether plain runs may be split into non-text spans — today, the
+  /// brand-green heart.
+  ///
+  /// Selectable text seeds its editing controller from the span plain text,
+  /// where a [WidgetSpan] contributes U+FFFC, so a copied run silently loses
+  /// the character. Selectable callers pass false to keep copied text intact.
+  final bool allowWidgetSpans;
 
   /// Builds spans preserving the token precedence from [LinkifiedText].
   ///
@@ -134,9 +143,13 @@ class LinkifiedTextSpanBuilder {
   }
 
   /// Plain runs are split on the green heart so Divine paints it in the
-  /// brand green rather than the platform emoji font's own green.
-  List<InlineSpan> _plainSpans(String value) =>
-      divineHeartSpans(value, style: defaultStyle);
+  /// brand green rather than the platform emoji font's own green — unless
+  /// [allowWidgetSpans] is false, for surfaces where a widget span cannot
+  /// survive, such as selectable text.
+  List<InlineSpan> _plainSpans(String value) {
+    if (!allowWidgetSpans) return [TextSpan(text: value, style: defaultStyle)];
+    return divineHeartSpans(value, style: defaultStyle);
+  }
 
   List<InlineSpan> _buildUrlSpans(String matchedUrl) {
     final linkText = _trimTrailingUrlPunctuation(matchedUrl);
