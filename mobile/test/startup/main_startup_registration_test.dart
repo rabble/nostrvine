@@ -67,4 +67,17 @@ void main() {
       isEmpty,
     );
   });
+
+  test('runs C2PA debris cleanup as optional deferred startup work', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final coordinator = app.createStartupCoordinatorForTesting(container);
+    final registration = coordinator.serviceRegistrationForTesting(
+      'C2paDebrisSweep',
+    );
+
+    expect(registration?.phase, StartupPhase.deferred);
+    expect(registration?.optional, isTrue);
+  });
 }
