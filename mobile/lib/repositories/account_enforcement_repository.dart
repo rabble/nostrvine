@@ -8,10 +8,14 @@ import 'package:openvine/models/account_enforcement_status.dart';
 /// [KeycastOAuth.getAccountStatus]) and maps it to [AccountEnforcementStatus].
 ///
 /// [readAccessToken] supplies the current Keycast bearer token. A null/empty
-/// token means there is no Keycast session at all — a self-custody signer —
-/// and yields unknown, NOT "in good standing". Keycast holds no state for a
-/// self-custody account, so its enforcement signal is the relay's rejection
-/// reason on publish, not this endpoint.
+/// token yields unknown, NOT "in good standing".
+///
+/// Self-custody accounts never reach here: [accountEnforcementStatusProvider]
+/// short-circuits them to `noAccountState` before constructing a request. So
+/// the null-token branch means a *divineOAuth* account whose session is
+/// expired, unrefreshable, or bound to a different pubkey — a real and live
+/// path, not dead code. Unknown is the honest answer there: the account may
+/// well be restricted and we simply could not ask.
 ///
 /// Keycast reports only the caller's own account: the pubkey is taken from the
 /// bearer token and there is no pubkey parameter, so this cannot observe

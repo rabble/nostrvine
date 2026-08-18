@@ -15,6 +15,7 @@ import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/utils/external_link_launcher.dart';
+import 'package:openvine/utils/mounted_post_frame.dart';
 
 /// Account status surface for s-t-s#200.
 ///
@@ -44,9 +45,16 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
     // isAccountEnforcedProvider, so the status provider is never released and
     // would serve a value cached before the user was suspended. This is the
     // screen someone opens *to* check, so it must not show a stale answer.
-    Future.microtask(
-      () => ref.invalidate(accountEnforcementStatusProvider),
-    );
+    //
+    // Guarded against unmount because a post-frame `ref` touch on a disposed
+    // widget throws. Skipped entirely when nothing is cached yet (a cold deep
+    // link), where the first watch has already started a fetch that
+    // invalidating would only throw away and repeat.
+    addPostFrameCallbackIfMounted(() {
+      if (ref.read(accountEnforcementStatusProvider).hasValue) {
+        ref.invalidate(accountEnforcementStatusProvider);
+      }
+    });
   }
 
   @override
@@ -68,6 +76,11 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: async.when(
+            // Show the spinner while refreshing rather than Riverpod's default
+            // of holding the previous value on screen. A status cached before
+            // the user was suspended must not read as "in good standing" while
+            // the refetch is in flight; not knowing yet is the honest state.
+            skipLoadingOnRefresh: false,
             loading: () => const Center(child: CircularProgressIndicator()),
             // A failed read is not a claim about the account, so it renders the
             // same "we could not check" state as an explicit unknown rather

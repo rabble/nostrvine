@@ -1,6 +1,8 @@
 // ABOUTME: Widget tests for the account status screen: the appeal and exit
 // ABOUTME: paths appear for a restricted account and not for a healthy one.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,6 +87,60 @@ void main() {
 
       expect(find.text(l10n.accountStatusUnknownHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusRetry), findsOneWidget);
+    });
+
+    testWidgets('a refresh shows loading, never the previous answer', (
+      tester,
+    ) async {
+      // Riverpod's `when` defaults to skipLoadingOnRefresh: true, which renders
+      // the PREVIOUS value while a refresh is in flight. On this screen that
+      // means an account suspended after Settings resolved "none" would read
+      // "in good standing", with no appeal or exit path, until the refetch
+      // lands. Showing a spinner is the honest answer while we do not know.
+      var call = 0;
+      final pending = Completer<AccountEnforcementStatus>();
+      final container = ProviderContainer(
+        overrides: [
+          accountEnforcementStatusProvider.overrideWith((ref) {
+            call++;
+            if (call == 1) {
+              return Future.value(
+                const AccountEnforcementStatus(
+                  kind: AccountEnforcementKind.none,
+                ),
+              );
+            }
+            return pending.future;
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      tester.view.physicalSize = const Size(1080, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AccountStatusScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.accountStatusOkHeading), findsOneWidget);
+
+      container.invalidate(accountEnforcementStatusProvider);
+      await tester.pump();
+
+      expect(
+        find.text(l10n.accountStatusOkHeading),
+        findsNothing,
+        reason: 'a stale answer must not survive a refresh',
+      );
     });
 
     testWidgets('a self-custody account is told so, with no futile retry', (

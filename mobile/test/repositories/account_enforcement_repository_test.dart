@@ -56,9 +56,11 @@ void main() {
     test(
       'unknown when there is no access token (self-custody signer)',
       () async {
-        // A self-custody signer has no Keycast session, so there is no signal
-        // here at all. It must NOT read as a positive "in good standing" — the
-        // relay rejection reason is the enforcement signal for those accounts.
+        // A divineOAuth account whose session is expired, unrefreshable, or
+        // bound to another pubkey yields no token. That is an absent signal,
+        // not a clean bill of health: the account may well be restricted and
+        // we simply could not ask. (Self-custody never reaches here — the
+        // provider short-circuits it to noAccountState.)
         final repo = AccountEnforcementRepository(
           oauthClient: _oauthReturning(_suspendedBody, 200),
           readAccessToken: () async => null,
