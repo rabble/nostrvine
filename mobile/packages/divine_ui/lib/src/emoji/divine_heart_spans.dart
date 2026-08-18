@@ -20,6 +20,14 @@ const double kDivineHeartFontScale = 1.2;
 /// Size assumed for a run whose style carries no explicit font size.
 const double kDivineHeartFallbackFontSize = 14;
 
+/// The most hearts painted as brand-green widgets in a single run.
+///
+/// Each painted heart is a real widget — an SVG-backed [DivineIcon] — and
+/// user-authored text is arbitrary remote content, so an uncapped split is a
+/// jank vector a note author controls for free. Past the cap, remaining
+/// hearts fall back to the platform emoji font.
+const int kDivineHeartMaxPainted = 32;
+
 /// Splits [text] on [divineGreenHeart], painting each occurrence as a
 /// brand-green heart and leaving every other character to the platform.
 ///
@@ -33,11 +41,25 @@ List<InlineSpan> divineHeartSpans(String text, {required TextStyle style}) {
   final fontSize = style.fontSize ?? kDivineHeartFallbackFontSize;
   final spans = <InlineSpan>[];
 
-  for (final (index, segment) in text.split(divineGreenHeart).indexed) {
-    if (index > 0) spans.add(_heartSpan(fontSize));
+  var rest = text;
+  var painted = 0;
+  while (painted < kDivineHeartMaxPainted) {
+    final index = rest.indexOf(divineGreenHeart);
+    if (index < 0) break;
+
+    final segment = rest.substring(0, index);
     if (segment.isNotEmpty) spans.add(TextSpan(text: segment, style: style));
+    spans.add(_heartSpan(fontSize));
+    painted++;
+
+    rest = rest.substring(index + divineGreenHeart.length);
+    // A VS16 (U+FE0F) after a painted heart has no base character left and
+    // would apply to whatever follows it. Hearts left to the platform font
+    // keep theirs — there it is the standard emoji presentation sequence.
+    if (rest.startsWith('\u{FE0F}')) rest = rest.substring(1);
   }
 
+  if (rest.isNotEmpty) spans.add(TextSpan(text: rest, style: style));
   return spans;
 }
 

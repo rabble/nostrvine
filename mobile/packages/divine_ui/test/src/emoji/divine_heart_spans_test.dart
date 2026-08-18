@@ -73,6 +73,47 @@ void main() {
       expect((spans[1] as TextSpan).text, '!');
     });
 
+    test('consumes an orphaned VS16 after a painted heart', () {
+      // U+1F49A U+FE0F is the explicit emoji presentation sequence. Once the
+      // heart is a widget the VS16 has no base character; leaving it would
+      // apply it to whatever follows.
+      final spans = divineHeartSpans(
+        'a$divineGreenHeart\u{FE0F}b',
+        style: style,
+      );
+
+      expect(spans, hasLength(3));
+      expect((spans[0] as TextSpan).text, 'a');
+      expect(spans[1], isA<WidgetSpan>());
+      expect((spans[2] as TextSpan).text, 'b');
+    });
+
+    test('caps the painted hearts and leaves the rest to the platform', () {
+      // Each painted heart is a real SVG widget on arbitrary remote text, so
+      // the count must stay bounded no matter what a note contains.
+      final spans = divineHeartSpans(
+        divineGreenHeart * (kDivineHeartMaxPainted + 2),
+        style: style,
+      );
+
+      expect(spans.whereType<WidgetSpan>(), hasLength(kDivineHeartMaxPainted));
+      expect(spans.last, isA<TextSpan>());
+      expect(
+        (spans.last as TextSpan).text,
+        divineGreenHeart * 2,
+      );
+    });
+
+    test('keeps the VS16 on hearts left to the platform font', () {
+      final spans = divineHeartSpans(
+        '${divineGreenHeart * kDivineHeartMaxPainted}$divineGreenHeart\u{FE0F}',
+        style: style,
+      );
+
+      expect(spans.last, isA<TextSpan>());
+      expect((spans.last as TextSpan).text, '$divineGreenHeart\u{FE0F}');
+    });
+
     testWidgets('paints the heart in the Divine brand green', (tester) async {
       final spans = divineHeartSpans(divineGreenHeart, style: style);
 
