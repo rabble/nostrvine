@@ -4,6 +4,7 @@
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/blossom_settings/blossom_settings_state.dart';
 
 /// Cubit backing `BlossomSettingsScreen`.
@@ -20,7 +21,8 @@ import 'package:openvine/blocs/blossom_settings/blossom_settings_state.dart';
 ///  - Scheme must be `https`, except for the documented loopback exception
 ///    (10.0.2.2, localhost, 127.0.0.1) that keeps the local Docker stack
 ///    working under release native transport security (#3358 / #3788).
-class BlossomSettingsCubit extends Cubit<BlossomSettingsState> {
+class BlossomSettingsCubit extends Cubit<BlossomSettingsState>
+    with CloseGuardedEmit<BlossomSettingsState> {
   BlossomSettingsCubit({required BlossomUploadService blossomUploadService})
     : _service = blossomUploadService,
       super(const BlossomSettingsState());
@@ -44,7 +46,7 @@ class BlossomSettingsCubit extends Cubit<BlossomSettingsState> {
     try {
       final isEnabled = await _service.isBlossomEnabled();
       final serverUrl = await _service.getBlossomServer();
-      emit(
+      emitIfOpen(
         state.copyWith(
           status: BlossomSettingsStatus.ready,
           isBlossomEnabled: isEnabled,
@@ -53,7 +55,7 @@ class BlossomSettingsCubit extends Cubit<BlossomSettingsState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: BlossomSettingsStatus.ready));
+      emitIfOpen(state.copyWith(status: BlossomSettingsStatus.ready));
     }
   }
 
@@ -75,7 +77,7 @@ class BlossomSettingsCubit extends Cubit<BlossomSettingsState> {
     if (state.isBlossomEnabled && trimmed.isNotEmpty) {
       final validationError = _validateServerUrl(trimmed);
       if (validationError != null) {
-        emit(
+        emitIfOpen(
           state.copyWith(
             status: BlossomSettingsStatus.saveFailure,
             saveFailureMessageKey: validationError,
@@ -93,10 +95,10 @@ class BlossomSettingsCubit extends Cubit<BlossomSettingsState> {
       } else {
         await _service.setBlossomServer(null);
       }
-      emit(state.copyWith(status: BlossomSettingsStatus.saveSuccess));
+      emitIfOpen(state.copyWith(status: BlossomSettingsStatus.saveSuccess));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(
+      emitIfOpen(
         state.copyWith(
           status: BlossomSettingsStatus.saveFailure,
           saveFailureMessageKey: BlossomSaveFailureKey.genericFailure,
