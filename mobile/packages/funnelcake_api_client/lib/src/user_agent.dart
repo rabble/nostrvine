@@ -1,5 +1,5 @@
 // ABOUTME: Shared User-Agent builder for Divine mobile HTTP clients.
-// ABOUTME: Carries app version and platform on every backend request.
+// ABOUTME: Carries version and platform on Funnelcake and ApiService requests.
 
 import 'package:funnelcake_api_client/src/platform_label_stub.dart'
     if (dart.library.io) 'package:funnelcake_api_client/src/platform_label_io.dart'
@@ -12,17 +12,13 @@ import 'package:funnelcake_api_client/src/platform_label_stub.dart'
 /// between call sites. Funnelcake logs `user_agent.original` and branches on
 /// it, so the string must change with the shipped version and name the OS.
 ///
-/// Cache note: the corresponding server behavior is implemented by
-/// funnelcake#1047. `/api/videos` responses are edge-cached
-/// (`public, max-age=10`) and vary on `Accept-Encoding, X-Pubkey,
-/// Authorization, X-Divine-Platform`; default and `sort=recent` responses also
-/// vary on `User-Agent` there, so a legacy `OpenVine-Mobile/1.0` binary can never
-/// share a cached object with a browser or a platform-tokened client. The
-/// funnelcake branch and its `Vary` edits are one change and must land
-/// together, and before store binaries ship this header — otherwise the
-/// origin would serve per-platform responses while the edge stores one
-/// shared object, and iOS and Android clients would be served each other's
-/// cached videos.
+/// Cache note: funnelcake#1047 varies only plain-recent `/api/videos`
+/// responses on the bounded, edge-computed `X-Divine-News-Hack-Client` class.
+/// Raw `User-Agent` and `X-Divine-Platform` are deliberately not `Vary` values.
+/// Before that origin behavior deploys, divine-router must overwrite the class
+/// from these client signals before cache lookup. Shipping these headers first
+/// is inert; deploying the origin branch before the router classifier is live
+/// could let differently classified clients share one cached response.
 String buildDivineUserAgent({String? appVersion, String? platform}) {
   final trimmedVersion = appVersion?.trim();
   final effectiveVersion = trimmedVersion == null || trimmedVersion.isEmpty
@@ -31,11 +27,10 @@ String buildDivineUserAgent({String? appVersion, String? platform}) {
   return 'Divine-Mobile/$effectiveVersion (${platform ?? divinePlatformLabel})';
 }
 
-/// Builds the identity headers every Divine mobile HTTP client sends:
+/// Builds the identity headers used by `FunnelcakeApiClient` and `ApiService`:
 /// the shared [buildDivineUserAgent] User-Agent plus, on io platforms, the
-/// machine-readable `X-Divine-Platform` token Funnelcake prefers for
-/// platform branching (divine-mobile#7744; `ios` applies, anything else
-/// skips — Funnelcake compares case-insensitively).
+/// machine-readable `X-Divine-Platform` token used by the paired rollout
+/// (divine-mobile#7744; `ios` applies, anything else skips).
 ///
 /// Web builds send no `X-Divine-Platform`: it is not on the CORS safelist,
 /// so it would fail preflight against current backend CORS policy (see
