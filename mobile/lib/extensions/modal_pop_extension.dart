@@ -16,10 +16,19 @@ extension ModalPopExtension on BuildContext {
   /// happens and the tap silently does nothing, but `FlutterError.onError`
   /// files that no-op in Crashlytics as a fatal (#6512, #7291).
   ///
-  /// Skipping the pop is safe: the route is already closed, so the pop was
-  /// moot. Whatever awaited `showDialog` / `showModalBottomSheet` resolves off
-  /// that teardown with `null`, and every confirmation call site here already
-  /// reads `null` as "not confirmed".
+  /// Two separate things have to hold before popping, because `Navigator.pop`
+  /// takes the navigator's *topmost* route rather than this context's own:
+  ///
+  /// 1. The context is still mounted. Otherwise `Navigator.of` throws as above.
+  /// 2. This context's modal route is still the current one. A modal stays
+  ///    mounted for the length of its exit transition, so a second tap that
+  ///    lands in that window passes the mounted check and would pop whatever
+  ///    is underneath — the screen the modal was covering.
+  ///
+  /// Skipping the pop is safe in both cases: the route is already closed or
+  /// closing, so the pop was moot. Whatever awaited `showDialog` /
+  /// `showModalBottomSheet` resolves off that teardown with `null`, and every
+  /// confirmation call site here already reads `null` as "not confirmed".
   ///
   /// Returns whether the pop was attempted, so a callback that does more than
   /// pop can bail out of the rest for the same reason:
@@ -37,6 +46,9 @@ extension ModalPopExtension on BuildContext {
   /// that one from AppBar back buttons; reach for this one from inside a modal.
   bool popModalIfMounted<T extends Object?>([T? result]) {
     if (!mounted) {
+      return false;
+    }
+    if (ModalRoute.isCurrentOf(this) != true) {
       return false;
     }
     Navigator.of(this).pop<T>(result);
