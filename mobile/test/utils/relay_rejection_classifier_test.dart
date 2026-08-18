@@ -8,6 +8,19 @@ void main() {
     expect(isAccountRestrictedReason('BLOCKED: PUBKEY IS BANNED'), isTrue);
     expect(isAccountRestrictedReason('blocked: policy'), isFalse);
     expect(isAccountRestrictedReason('blocked: missing required tag'), isFalse);
+    // Near-misses: the match is exact, so a reason that merely contains or
+    // extends the restriction wording must not classify as a restriction.
+    // These pin the exact-match boundary against a `contains`/`startsWith`
+    // loosening.
+    expect(isAccountRestrictedReason('blocked: pubkey is suspended.'), isFalse);
+    expect(
+      isAccountRestrictedReason('blocked: pubkey is suspended for 24h'),
+      isFalse,
+    );
+    expect(
+      isAccountRestrictedReason('blocked: pubkey is not banned'),
+      isFalse,
+    );
   });
 
   test('requires every relay rejection to be an account restriction', () {
