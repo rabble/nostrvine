@@ -132,7 +132,7 @@ void main() {
 
       expect(classifyRecoverableFlutterError(details), (
         reason: 'Recoverable media load failure',
-        report: true,
+        report: false,
       ));
     });
 
@@ -152,7 +152,7 @@ void main() {
 
       expect(classifyRecoverableFlutterError(details), (
         reason: 'Recoverable media load failure',
-        report: true,
+        report: false,
       ));
     });
 
@@ -163,6 +163,18 @@ void main() {
         exception: HttpException(
           'Software caused connection abort',
           uri: Uri.parse('https://api.example.com/thing'),
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), isNull);
+    });
+
+    test('keeps aborted downloads from Divine non-media hosts fatal', () {
+      final details = FlutterErrorDetails(
+        exception: HttpException(
+          'Software caused connection abort',
+          uri: Uri.parse('https://api.divine.video/thing'),
         ),
         library: 'dart:_http',
       );
@@ -186,7 +198,7 @@ void main() {
 
       expect(classifyRecoverableFlutterError(details), (
         reason: 'Recoverable media load failure',
-        report: true,
+        report: false,
       ));
     });
 
@@ -207,7 +219,7 @@ void main() {
 
       expect(classifyRecoverableFlutterError(details), (
         reason: 'Recoverable media load failure',
-        report: true,
+        report: false,
       ));
     });
 

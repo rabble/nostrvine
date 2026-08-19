@@ -91,8 +91,8 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
   // non-2xx CachedNetworkImage thumbnail ('Invalid statusCode: 404', which no
   // string arm matches) is recoverable here rather than fatal.
   final isInterruptedMediaDownload =
-      hasRecoverableMediaHost &&
-      (details.exception is io.HttpException ||
+      _isRecoverableMediaHttpException(details.exception) ||
+      (hasRecoverableMediaHost &&
           error.contains('Connection closed while receiving data'));
 
   final isMissingHttpHost =
@@ -119,9 +119,15 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
     return (reason: _recoverableMediaLoadReason, report: false);
   }
 
+  // Interrupted downloads and non-2xx responses are expected network/IO
+  // failures. Keep them out of Crashlytics while still presenting the image
+  // fallback and recording the local warning.
+  if (isInterruptedMediaDownload) {
+    return (reason: _recoverableMediaLoadReason, report: false);
+  }
+
   if (isImageHttpFailure ||
       isMediaHostLookup ||
-      isInterruptedMediaDownload ||
       isMissingHttpHost ||
       isInvalidImageData) {
     return (reason: _recoverableMediaLoadReason, report: true);
@@ -143,6 +149,13 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
   }
 
   return null;
+}
+
+bool _isRecoverableMediaHttpException(Object exception) {
+  if (exception is! io.HttpException) return false;
+
+  final host = exception.uri?.host;
+  return host != null && _recoverableMediaHosts.contains(host);
 }
 
 bool _containsRecoverableMediaHost(String value) {
