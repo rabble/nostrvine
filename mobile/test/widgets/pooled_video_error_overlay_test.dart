@@ -268,7 +268,7 @@ void main() {
         tester,
       ) async {
         final playbackStatusCubit = VideoPlaybackStatusCubit(
-          canAutoAuthorizeAgeRestrictedMedia: () => true,
+          canAutoAuthorizeAgeRestrictedMedia: () async => true,
         );
 
         await tester.pumpWidget(
@@ -288,7 +288,7 @@ void main() {
         'auto-runs Verify age only once across overlay teardown and rebuild',
         (tester) async {
           final playbackStatusCubit = VideoPlaybackStatusCubit(
-            canAutoAuthorizeAgeRestrictedMedia: () => true,
+            canAutoAuthorizeAgeRestrictedMedia: () async => true,
           );
           var verifyAgeCalls = 0;
 
@@ -318,6 +318,54 @@ void main() {
 
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
+          await playbackStatusCubit.close();
+        },
+      );
+
+      testWidgets(
+        'preserves auto retry when the overlay unmounts during eligibility',
+        (tester) async {
+          final eligibility = Completer<bool>();
+          final playbackStatusCubit = VideoPlaybackStatusCubit(
+            canAutoAuthorizeAgeRestrictedMedia: () => eligibility.future,
+          );
+          var verifyAgeCalls = 0;
+
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              onVerifyAge: () => verifyAgeCalls++,
+              playbackStatusCubit: playbackStatusCubit,
+            ),
+          );
+          await tester.pump();
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          eligibility.complete(true);
+          await tester.pump();
+
+          expect(verifyAgeCalls, 0);
+          expect(
+            playbackStatusCubit.state.hasAutoRetryAttempted(divineVideo.id),
+            isFalse,
+          );
+
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              onVerifyAge: () => verifyAgeCalls++,
+              playbackStatusCubit: playbackStatusCubit,
+            ),
+          );
+          await tester.pump();
+
+          expect(verifyAgeCalls, 1);
+          expect(
+            playbackStatusCubit.state.hasAutoRetryAttempted(divineVideo.id),
+            isTrue,
+          );
+
+          await tester.pumpWidget(const SizedBox.shrink());
           await playbackStatusCubit.close();
         },
       );
@@ -520,7 +568,7 @@ void main() {
         'auto-runs verify action for moderation age restriction when already authorized',
         (tester) async {
           final playbackStatusCubit = VideoPlaybackStatusCubit(
-            canAutoAuthorizeAgeRestrictedMedia: () => true,
+            canAutoAuthorizeAgeRestrictedMedia: () async => true,
           );
 
           await tester.pumpWidget(

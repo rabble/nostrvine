@@ -321,6 +321,109 @@ void main() {
   });
 
   group('MediaAuthInterceptor - helper methods', () {
+    test(
+      'waits for moderation readiness before auto-auth gate checks',
+      () async {
+        final ageReady = Completer<void>();
+        final filterReady = Completer<void>();
+        when(
+          () => mockAgeVerificationService.initialized,
+        ).thenAnswer((_) => ageReady.future);
+        when(
+          () => mockContentFilterService.initialized,
+        ).thenAnswer((_) => filterReady.future);
+        when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
+        ).thenReturn(true);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
+        when(
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.show);
+        when(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+        );
+
+        final resultFuture = interceptor.createAutoAuthHeadersForAdultMedia(
+          sha256Hash: 'abc123',
+        );
+        await Future<void>.value();
+
+        verifyNever(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
+
+        ageReady.complete();
+        filterReady.complete();
+        final result = await resultFuture;
+
+        expect(result, isA<ViewerAuthAuthorized>());
+      },
+    );
+
+    test(
+      'waits for readiness before returning verified hide preference',
+      () async {
+        final ageReady = Completer<void>();
+        final filterReady = Completer<void>();
+        // Persisted verification is only available once the services finish
+        // initializing. Before then the in-memory default reads as unverified,
+        // which would route to the verify-dialog path. Reading the gate before
+        // awaiting readiness is exactly the cold-start bug this guards.
+        var loaded = false;
+        when(
+          () => mockAgeVerificationService.initialized,
+        ).thenAnswer((_) => ageReady.future);
+        when(
+          () => mockContentFilterService.initialized,
+        ).thenAnswer((_) => filterReady.future);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenAnswer((_) => loaded);
+        when(
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.hide);
+        when(() => mockContext.mounted).thenReturn(true);
+        when(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        ).thenAnswer((_) async => false);
+
+        final resultFuture = interceptor.handleUnauthorizedMedia(
+          context: mockContext,
+          sha256Hash: 'abc123',
+        );
+        await Future<void>.value();
+
+        // Until initialization completes the gate must not fall through to the
+        // verify-dialog path on the pre-load unverified default.
+        verifyNever(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        );
+
+        loaded = true;
+        ageReady.complete();
+        filterReady.complete();
+        final result = await resultFuture;
+
+        expect(result, isA<ViewerAuthBlockedByPreference>());
+        verifyNever(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        );
+      },
+    );
+
     test('canCreateAuthHeaders delegates to MediaViewerAuthService', () {
       // Arrange
       when(() => mockMediaViewerAuthService.canCreateHeaders).thenReturn(true);

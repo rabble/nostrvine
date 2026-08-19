@@ -22,18 +22,25 @@ class MediaAuthInterceptor {
   final ContentFilterService _contentFilterService;
   final MediaViewerAuthService _mediaViewerAuthService;
 
+  /// Awaits the persisted verification and content-filter state so gate
+  /// decisions read loaded values rather than cold-start in-memory defaults.
+  Future<void> _awaitModerationServicesReady() => Future.wait([
+    _ageVerificationService.initialized,
+    _contentFilterService.initialized,
+  ]);
+
   /// Whether an age-restricted media surface can retry with viewer auth without
   /// asking the user to verify again.
   ///
   /// `hide` remains a hard block. Verified users with `warn` or `show`
   /// preferences can reuse their existing verification for playback auth.
-  bool get shouldAutoAuthorizeAgeRestrictedMedia =>
-      _mediaViewerAuthService.canCreateHeaders &&
-      _ageVerificationService.isAdultContentVerified &&
-      _contentFilterService.adultPlaybackPreference !=
-          ContentFilterPreference.hide;
-
-  bool get canAutoAuthorizeAdultMedia => shouldAutoAuthorizeAgeRestrictedMedia;
+  Future<bool> canAutoAuthorizeAdultMedia() async {
+    await _awaitModerationServicesReady();
+    return _mediaViewerAuthService.canCreateHeaders &&
+        _ageVerificationService.isAdultContentVerified &&
+        _contentFilterService.adultPlaybackPreference !=
+            ContentFilterPreference.hide;
+  }
 
   /// Creates viewer-auth headers for passive thumbnail/background image loads.
   ///
@@ -46,10 +53,7 @@ class MediaAuthInterceptor {
     String? serverUrl,
   }) async {
     try {
-      await Future.wait([
-        _ageVerificationService.initialized,
-        _contentFilterService.initialized,
-      ]);
+      await _awaitModerationServicesReady();
 
       if (!_mediaViewerAuthService.canCreatePassiveHeaders ||
           !_ageVerificationService.isAdultContentVerified ||
@@ -90,7 +94,7 @@ class MediaAuthInterceptor {
     String? serverUrl,
   }) async {
     try {
-      if (!canAutoAuthorizeAdultMedia) {
+      if (!await canAutoAuthorizeAdultMedia()) {
         return const ViewerAuthUnavailable();
       }
 
@@ -134,6 +138,8 @@ class MediaAuthInterceptor {
         name: 'MediaAuthInterceptor',
         category: LogCategory.system,
       );
+
+      await _awaitModerationServicesReady();
 
       final playbackPreference = _contentFilterService.adultPlaybackPreference;
 
