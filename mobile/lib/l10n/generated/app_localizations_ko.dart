@@ -3164,7 +3164,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get authSecureAccountAlreadyRegistered =>
-      'Looks like an account already exists. Sign in to it, or contact support if you can\'t get back in.';
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
 
   @override
   String get authFailedToSendResetEmail => '재설정 이메일을 보내지 못했어요.';

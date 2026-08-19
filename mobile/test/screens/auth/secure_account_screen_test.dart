@@ -776,41 +776,77 @@ void main() {
         return router;
       }
 
-      testWidgets('shows in-place recovery choices instead of navigating away', (
+      testWidgets(
+        'shows in-place recovery choices instead of navigating away',
+        (
+          tester,
+        ) async {
+          final router = await pumpConflict(tester);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          // Stays on the screen and offers recovery choices rather than
+          // auto-bouncing.
+          expect(router.routeInformationProvider.value.uri.path, '/welcome');
+          expect(
+            find.text(l10n.authSecureAccountAlreadyRegistered),
+            findsOneWidget,
+          );
+          // Retry stays available (form is not locked) alongside the
+          // sign-in and contact-support doors.
+          expect(
+            find.widgetWithText(DivineButton, l10n.authSecureAccountTitle),
+            findsOneWidget,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authSignInButton),
+            findsOneWidget,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authContactSupport),
+            findsOneWidget,
+          );
+          // The form stays editable so a different email can be tried in place.
+          final emailField = tester.widget<TextField>(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+          );
+          expect(emailField.enabled, isTrue);
+          // The raw server sentence never reaches the user.
+          expect(find.textContaining('Nostr key'), findsNothing);
+        },
+      );
+
+      testWidgets('editing the email clears the conflict for a fresh retry', (
         tester,
       ) async {
-        final router = await pumpConflict(tester);
+        await pumpConflict(tester);
         final l10n = lookupAppLocalizations(const Locale('en'));
 
-        // Stays on the screen and offers both doors rather than auto-bouncing.
-        expect(router.routeInformationProvider.value.uri.path, '/welcome');
         expect(
           find.text(l10n.authSecureAccountAlreadyRegistered),
           findsOneWidget,
         );
-        expect(
-          find.widgetWithText(DivineButton, l10n.authSignInButton),
-          findsOneWidget,
-        );
-        expect(
-          find.widgetWithText(DivineButton, l10n.authContactSupport),
-          findsOneWidget,
-        );
-        // The submit is replaced by the recovery choices, not shown alongside.
-        expect(
-          find.widgetWithText(DivineButton, l10n.authSecureAccountTitle),
-          findsNothing,
-        );
-        // The form is disabled so the two choices are the only path forward.
-        final emailField = tester.widget<TextField>(
+
+        await tester.enterText(
           find.descendant(
             of: find.widgetWithText(DivineAuthTextField, 'Email'),
             matching: find.byType(TextField),
           ),
+          'different@example.com',
         );
-        expect(emailField.enabled, isFalse);
-        // The raw server sentence never reaches the user.
-        expect(find.textContaining('Nostr key'), findsNothing);
+        await tester.pump();
+
+        // The conflict message and its recovery doors clear on edit.
+        expect(
+          find.text(l10n.authSecureAccountAlreadyRegistered),
+          findsNothing,
+        );
+        expect(
+          find.widgetWithText(DivineButton, l10n.authContactSupport),
+          findsNothing,
+        );
       });
 
       testWidgets('Sign in routes to the recovery hub with the email', (

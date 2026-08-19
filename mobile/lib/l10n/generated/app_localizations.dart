@@ -5759,10 +5759,10 @@ abstract class AppLocalizations {
   /// **'Registration complete. Please check your email.'**
   String get authRegistrationComplete;
 
-  /// Shown in place on the Secure account screen when registration fails with a server CONFLICT, which covers both the key already being registered and the entered email already being taken. Deliberately does not assert the user owns the account, since the email case may belong to a different account. The screen offers Sign in and Contact support choices.
+  /// Shown in place on the Secure account screen when registration fails with a server CONFLICT, which covers both the key already being registered and the entered email already being taken. Deliberately does not assert the user owns the account, since the email case may belong to a different account. Presents two primary actions (retry with a different email, or sign in to the existing account) with Contact support as a fallback, not an equal option.
   ///
   /// In en, this message translates to:
-  /// **'Looks like an account already exists. Sign in to it, or contact support if you can\'t get back in.'**
+  /// **'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.'**
   String get authSecureAccountAlreadyRegistered;
 
   /// No description provided for @authFailedToSendResetEmail.

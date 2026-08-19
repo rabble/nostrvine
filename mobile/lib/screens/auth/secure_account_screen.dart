@@ -218,9 +218,18 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       emailError: _emailError,
       passwordError: _passwordError,
       confirmPasswordError: _confirmPasswordError,
-      enabled: !_isLoading && !_hasConflict,
+      enabled: !_isLoading,
       onEmailChanged: (_) {
-        if (_emailError != null) setState(() => _emailError = null);
+        if (_emailError == null && !_hasConflict) return;
+        setState(() {
+          _emailError = null;
+          // Editing the email clears the conflict so a different address can
+          // be retried in place (the email-already-registered case).
+          if (_hasConflict) {
+            _hasConflict = false;
+            _generalError = null;
+          }
+        });
       },
       onPasswordChanged: (_) {
         if (_passwordError != null || _confirmPasswordError != null) {
@@ -235,29 +244,60 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
           setState(() => _confirmPasswordError = null);
         }
       },
-      errorWidget: _generalError != null
+      // The conflict message rides at the top (above the fields) so it stays
+      // in view alongside the recovery choices; transient errors stay inline.
+      headerWidget: _hasConflict && _generalError != null
           ? AuthErrorBox(message: _generalError!)
           : null,
-      primaryButton: _hasConflict
-          ? DivineButton(
-              expanded: true,
-              label: context.l10n.authSignInButton,
-              onPressed: _onConflictSignIn,
-            )
-          : DivineButton(
-              expanded: true,
-              label: context.l10n.authSecureAccountTitle,
-              isLoading: _isLoading,
-              onPressed: _handleSubmit,
-            ),
+      errorWidget: !_hasConflict && _generalError != null
+          ? AuthErrorBox(message: _generalError!)
+          : null,
+      primaryButton: DivineButton(
+        expanded: true,
+        label: context.l10n.authSecureAccountTitle,
+        isLoading: _isLoading,
+        onPressed: _handleSubmit,
+      ),
       secondaryButton: _hasConflict
-          ? DivineButton(
-              expanded: true,
-              type: .secondary,
-              label: context.l10n.authContactSupport,
-              onPressed: _onConflictContactSupport,
+          ? _ConflictActions(
+              onSignIn: _onConflictSignIn,
+              onContactSupport: _onConflictContactSupport,
             )
           : null,
+    );
+  }
+}
+
+/// The sign-in and contact-support recovery actions shown below the retry
+/// button when Secure account hits an already-registered conflict.
+class _ConflictActions extends StatelessWidget {
+  const _ConflictActions({
+    required this.onSignIn,
+    required this.onContactSupport,
+  });
+
+  final VoidCallback onSignIn;
+  final VoidCallback onContactSupport;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 12,
+      children: [
+        DivineButton(
+          expanded: true,
+          type: .secondary,
+          label: context.l10n.authSignInButton,
+          onPressed: onSignIn,
+        ),
+        DivineButton(
+          expanded: true,
+          type: .link,
+          label: context.l10n.authContactSupport,
+          onPressed: onContactSupport,
+        ),
+      ],
     );
   }
 }
