@@ -1015,14 +1015,18 @@ class _ResendRow extends StatelessWidget {
               button: true,
               enabled: !disabled,
               label: label,
-              child: ExcludeSemantics(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: disabled
-                      ? null
-                      : () => context
-                            .read<EmailVerificationCubit>()
-                            .resendVerification(),
+              // `ExcludeSemantics` sits inside the detector, not around it:
+              // wrapping the detector drops its own `SemanticsAction.tap`
+              // along with the subtree, leaving a node that announces a
+              // button VoiceOver cannot activate.
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: disabled
+                    ? null
+                    : () => context
+                          .read<EmailVerificationCubit>()
+                          .resendVerification(),
+                child: ExcludeSemantics(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
                       minWidth: 48,

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1767,6 +1768,72 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.authVerificationPollingStopped), findsOneWidget);
+    });
+  });
+
+  group('resend affordance', () {
+    // `Semantics(button: true)` wrapping `ExcludeSemantics(child:
+    // GestureDetector(onTap: ...))` drops the detector's own
+    // `SemanticsAction.tap` along with the subtree, so the node announces a
+    // button VoiceOver cannot activate. `tester.tap` does not catch it — a
+    // real touch still reaches the handler — so assert the action itself.
+    testWidgets('exposes a tap action to assistive tech', (tester) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        initialState: const EmailVerificationState(
+          status: EmailVerificationStatus.polling,
+          pendingEmail: 'someone@example.test',
+        ),
+      );
+      await tester.pump();
+
+      final resend = tester.getSemantics(
+        find.bySemanticsLabel(l10n.authVerificationResend),
+      );
+      expect(
+        resend.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+        reason:
+            'the resend link announces itself as a button, so it has to carry '
+            'the tap action that activating it depends on',
+      );
+      handle.dispose();
+    });
+
+    // The cooldown state deliberately drops the action: the node stays
+    // labelled and flagged disabled rather than silently tappable.
+    testWidgets('drops the tap action while cooling down', (tester) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        initialState: const EmailVerificationState(
+          status: EmailVerificationStatus.polling,
+          pendingEmail: 'someone@example.test',
+          resendStatus: ResendStatus.cooldown,
+          resendCooldownSeconds: 120,
+        ),
+      );
+      await tester.pump();
+
+      final resend = tester.getSemantics(
+        find.bySemanticsLabel(l10n.authVerificationResendCooldown('2:00')),
+      );
+      expect(
+        resend.getSemanticsData().hasAction(SemanticsAction.tap),
+        isFalse,
+      );
+      handle.dispose();
     });
   });
 }
