@@ -51,6 +51,9 @@ class _ResultOnlyDownload extends CancellableDownload {
   final CancellableDownloadResult _result;
 
   @override
+  Stream<int> get progressBytes => const Stream.empty();
+
+  @override
   Future<CancellableDownloadResult> get result async => _result;
 
   @override
@@ -119,6 +122,34 @@ void main() {
         equals('Bearer token'),
       );
       expect(download.isCancelled, isFalse);
+    });
+
+    test('reports cumulative bytes as response chunks arrive', () async {
+      final controller = StreamController<List<int>>();
+      final client = _CallbackClient(
+        (_) async => http.StreamedResponse(controller.stream, 200),
+      );
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/progress.mp4');
+      final download = downloader.download(
+        url: 'https://example.com/progress.mp4',
+        targetFile: target,
+      );
+      final progress = <int>[];
+      final progressDone = Completer<void>();
+      download.progressBytes.listen(
+        progress.add,
+        onDone: progressDone.complete,
+      );
+
+      controller
+        ..add(const [1, 2, 3])
+        ..add(const [4, 5]);
+      await controller.close();
+
+      expect(await download.file, same(target));
+      await progressDone.future;
+      expect(progress, equals([3, 5]));
     });
 
     // Crashlytics 8ddf179042f3ca20d8b4c90ae75f8f77 (#7298): image cache keys
@@ -284,31 +315,28 @@ void main() {
       expect(client.closed, isTrue);
     });
 
-    test(
-      'cancelActiveDownloads aborts in-flight downloads without closing '
-      'the client',
-      () async {
-        final client = _CallbackClient((request) async {
-          await (request as http.AbortableRequest).abortTrigger;
-          throw http.RequestAbortedException(request.url);
-        });
-        final downloader = HttpCancellableDownloader(client);
-        final target = File('${tempDir.path}/cancel_active.mp4');
+    test('cancelActiveDownloads aborts in-flight downloads without closing '
+        'the client', () async {
+      final client = _CallbackClient((request) async {
+        await (request as http.AbortableRequest).abortTrigger;
+        throw http.RequestAbortedException(request.url);
+      });
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/cancel_active.mp4');
 
-        final download = downloader.download(
-          url: 'https://example.com/cancel_active.mp4',
-          targetFile: target,
-        );
-        await Future<void>.delayed(Duration.zero);
+      final download = downloader.download(
+        url: 'https://example.com/cancel_active.mp4',
+        targetFile: target,
+      );
+      await Future<void>.delayed(Duration.zero);
 
-        downloader.cancelActiveDownloads();
+      downloader.cancelActiveDownloads();
 
-        expect(await download.file, isNull);
-        expect(download.isCancelled, isTrue);
-        expect(client.closed, isFalse);
-        expect(target.existsSync(), isFalse);
-      },
-    );
+      expect(await download.file, isNull);
+      expect(download.isCancelled, isTrue);
+      expect(client.closed, isFalse);
+      expect(target.existsSync(), isFalse);
+    });
 
     test('cancelActiveDownloads cancels every concurrent download', () async {
       final client = _CallbackClient((request) async {

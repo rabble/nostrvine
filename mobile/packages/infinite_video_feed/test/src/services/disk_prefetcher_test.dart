@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/services/disk_prefetcher.dart';
 import 'package:media_cache/media_cache.dart';
@@ -519,11 +520,58 @@ void main() {
           );
 
           expect(stalledOp.isCancelled, isTrue);
-          expect(logs2.any((l) => l.contains('stalled')), isTrue);
+          expect(logs2.any((l) => l.contains('idle timeout')), isTrue);
           expect(logs2.any((l) => l.contains('completed')), isTrue);
           stallPrefetcher.dispose();
         },
       );
+
+      test('allows total download time beyond timeout while bytes arrive', () {
+        fakeAsync((async) {
+          final progressCache = _MockMediaCacheManager();
+          final progressLogs = <String>[];
+          final progressPrefetcher = DiskPrefetcher(
+            cache: progressCache,
+            log: progressLogs.add,
+          );
+          final operation = _ProgressOperation();
+          when(() => progressCache.getCachedFileSync(any())).thenReturn(null);
+          when(
+            () => progressCache.cacheFileCancellable(
+              any(),
+              key: any(named: 'key'),
+            ),
+          ).thenReturn(operation);
+
+          var completed = false;
+          unawaited(
+            progressPrefetcher
+                .run(
+                  startIndex: 0,
+                  endIndex: 0,
+                  videos: [_makeVideo('progressing')],
+                  resolveUrls: (_) => const ['https://example.com/video.mp4'],
+                )
+                .then((_) => completed = true),
+          );
+          async.flushMicrotasks();
+
+          for (var i = 1; i <= 3; i++) {
+            async.elapse(const Duration(seconds: 7));
+            operation.reportProgress(i * 100);
+            async.flushMicrotasks();
+            expect(operation.isCancelled, isFalse);
+          }
+
+          operation.complete(_MockFile());
+          async.flushMicrotasks();
+
+          expect(completed, isTrue);
+          expect(operation.isCancelled, isFalse);
+          expect(progressLogs.any((log) => log.contains('completed')), isTrue);
+          progressPrefetcher.dispose();
+        });
+      });
     });
 
     group('cancelActive', () {
@@ -607,6 +655,9 @@ class _PendingOperation implements CancellableCacheOperation {
   final Future<File?> _fileFuture;
 
   @override
+  Stream<int> get progressBytes => const Stream.empty();
+
+  @override
   Future<File?> get file => _fileFuture;
 
   @override
@@ -628,6 +679,9 @@ class _PendingResultOperation implements CancellableCacheOperation {
   final Future<CancellableDownloadResult> _resultFuture;
 
   @override
+  Stream<int> get progressBytes => const Stream.empty();
+
+  @override
   Future<File?> get file async => (await _resultFuture).file;
 
   @override
@@ -639,4 +693,38 @@ class _PendingResultOperation implements CancellableCacheOperation {
 
   @override
   void cancel() => _cancelled = true;
+}
+
+class _ProgressOperation implements CancellableCacheOperation {
+  final _resultCompleter = Completer<CancellableDownloadResult>();
+  final _progressController = StreamController<int>.broadcast(sync: true);
+
+  @override
+  Future<File?> get file async => (await result).file;
+
+  @override
+  Stream<int> get progressBytes => _progressController.stream;
+
+  @override
+  Future<CancellableDownloadResult> get result => _resultCompleter.future;
+
+  @override
+  bool get isCancelled => _cancelled;
+  bool _cancelled = false;
+
+  void reportProgress(int bytes) => _progressController.add(bytes);
+
+  void complete(File file) {
+    _resultCompleter.complete(CancellableDownloadResult(file: file));
+    unawaited(_progressController.close());
+  }
+
+  @override
+  void cancel() {
+    _cancelled = true;
+    if (!_resultCompleter.isCompleted) {
+      _resultCompleter.complete(const CancellableDownloadResult(file: null));
+    }
+    unawaited(_progressController.close());
+  }
 }

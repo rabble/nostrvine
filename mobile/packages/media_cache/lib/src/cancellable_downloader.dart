@@ -35,6 +35,9 @@ abstract class CancellableDownload {
   /// Resolves to the completed download result.
   Future<CancellableDownloadResult> get result;
 
+  /// Cumulative response-body bytes received while the download is active.
+  Stream<int> get progressBytes;
+
   /// Whether this download has been cancelled.
   bool get isCancelled;
 
@@ -150,6 +153,7 @@ class _HttpDownload implements CancellableDownload {
 
   final _completer = Completer<CancellableDownloadResult>();
   final _abortCompleter = Completer<void>();
+  final _progressController = StreamController<int>.broadcast(sync: true);
 
   /// Owned across the cancel / write-failure / stream lifecycle methods.
   StreamSubscription<List<int>>? _subscription;
@@ -157,9 +161,13 @@ class _HttpDownload implements CancellableDownload {
   bool _isCancelled = false;
   bool _isDone = false;
   bool _hasWriteFailure = false;
+  int _receivedBytes = 0;
 
   @override
   Future<CancellableDownloadResult> get result => _completer.future;
+
+  @override
+  Stream<int> get progressBytes => _progressController.stream;
 
   @override
   Future<File?> get file async => (await result).file;
@@ -237,6 +245,10 @@ class _HttpDownload implements CancellableDownload {
           if (_isCancelled) return;
           try {
             _sink?.add(chunk);
+            if (chunk.isNotEmpty) {
+              _receivedBytes += chunk.length;
+              _progressController.add(_receivedBytes);
+            }
           } on Object catch (_) {
             // Only guards the StateError from adding to a sink a
             // concurrent cancel already closed. A failed write surfaces
@@ -355,6 +367,7 @@ class _HttpDownload implements CancellableDownload {
   void _safeComplete(CancellableDownloadResult result) {
     if (_completer.isCompleted) return;
     _completer.complete(result);
+    unawaited(_progressController.close());
     onComplete(this);
   }
 
@@ -387,6 +400,9 @@ class _CompletedDownload implements CancellableDownload {
 
   @override
   final Future<CancellableDownloadResult> result;
+
+  @override
+  Stream<int> get progressBytes => const Stream.empty();
 
   @override
   Future<File?> get file async => (await result).file;

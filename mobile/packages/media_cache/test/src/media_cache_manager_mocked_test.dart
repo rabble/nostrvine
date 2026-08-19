@@ -960,6 +960,46 @@ void main() {
       });
 
       test(
+        'forwards progress to every operation joined to a download',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final downloader = FakeCancellableDownloader();
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(cacheKey: 'progress_$timestamp'),
+            downloaderOverride: downloader,
+          );
+
+          final first = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'shared_progress_key',
+          );
+          final second = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'shared_progress_key',
+          );
+          final firstProgress = <int>[];
+          final secondProgress = <int>[];
+          final firstSubscription = first.progressBytes.listen(
+            firstProgress.add,
+          );
+          final secondSubscription = second.progressBytes.listen(
+            secondProgress.add,
+          );
+
+          await pumpDownloads(downloader);
+          downloader.downloads.single.reportProgress(256);
+
+          expect(firstProgress, equals([256]));
+          expect(secondProgress, equals([256]));
+
+          downloader.downloads.single.completeNull();
+          await Future.wait([first.result, second.result]);
+          await firstSubscription.cancel();
+          await secondSubscription.cancel();
+        },
+      );
+
+      test(
         'file future completes with null when download yields no file',
         () async {
           final timestamp = DateTime.now().millisecondsSinceEpoch;

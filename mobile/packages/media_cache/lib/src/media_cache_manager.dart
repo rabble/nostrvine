@@ -419,8 +419,7 @@ class MediaCacheManager extends CacheManager {
   Future<void> _aliasWriteQueue = Future<void>.value();
 
   /// Tracks keys currently being cached to prevent duplicate requests.
-  final Map<String, Completer<CancellableDownloadResult>>
-  _pendingCacheOperations = {};
+  final Map<String, _PendingCacheOperation> _pendingCacheOperations = {};
 
   /// Tracks cancellable operations currently in-flight.
   final Set<CancellableCacheOperation> _activeCancellableOperations = {};
@@ -671,14 +670,15 @@ class MediaCacheManager extends CacheManager {
 
     // Check if already being cached
     if (_pendingCacheOperations.containsKey(key)) {
-      return _pendingCacheOperations[key]!.future.then(
+      return _pendingCacheOperations[key]!.completer.future.then(
         (result) => result.file,
       );
     }
 
     // Start caching
-    final completer = Completer<CancellableDownloadResult>();
-    _pendingCacheOperations[key] = completer;
+    final pendingOperation = _PendingCacheOperation();
+    final completer = pendingOperation.completer;
+    _pendingCacheOperations[key] = pendingOperation;
 
     unawaited(() async {
       try {
@@ -789,7 +789,8 @@ class MediaCacheManager extends CacheManager {
     // cacheFile or a prior cacheFileCancellable call) instead of launching
     // a second concurrent download that would orphan the first file on disk.
     if (_pendingCacheOperations.containsKey(key)) {
-      final sharedFuture = _pendingCacheOperations[key]!.future;
+      final pendingOperation = _pendingCacheOperations[key]!;
+      final sharedFuture = pendingOperation.completer.future;
       var localCancelled = false;
       final localCompleter = Completer<CancellableDownloadResult>();
       unawaited(
@@ -806,6 +807,7 @@ class MediaCacheManager extends CacheManager {
       final joinOp = CancellableCacheOperation.fromDownload(
         _DeferredDownload(
           future: localCompleter.future,
+          progressBytes: pendingOperation.progressBytes,
           cancel: () {
             if (localCancelled) return;
             localCancelled = true;
@@ -839,12 +841,14 @@ class MediaCacheManager extends CacheManager {
     // Shield the not-yet-registered file from a concurrent reclamation pass
     // (added before the file exists, removed once the download settles).
     _inFlightRelativePaths.add(relativePath);
-    final completer = Completer<CancellableDownloadResult>();
+    final pendingOperation = _PendingCacheOperation.withProgress();
+    final completer = pendingOperation.completer;
     // Register before the async download starts so any concurrent caller
     // (cacheFile or another cacheFileCancellable) for the same key joins
     // this operation instead of issuing a second download.
-    _pendingCacheOperations[key] = completer;
+    _pendingCacheOperations[key] = pendingOperation;
     CancellableDownload? activeDownload;
+    StreamSubscription<int>? progressSubscription;
     var cancelledBeforeStart = false;
     var completedDownload = false;
 
@@ -864,6 +868,9 @@ class MediaCacheManager extends CacheManager {
           headers: authHeaders,
         );
         activeDownload = download;
+        progressSubscription = download.progressBytes.listen(
+          pendingOperation.addProgress,
+        );
         final downloadResult = await download.result;
         final file = downloadResult.file;
         if (file != null && !download.isCancelled) {
@@ -904,6 +911,8 @@ class MediaCacheManager extends CacheManager {
           completer.complete(const CancellableDownloadResult(file: null));
         }
       } finally {
+        await progressSubscription?.cancel();
+        await pendingOperation.closeProgress();
         _pendingCacheOperations.remove(key);
         _inFlightRelativePaths.remove(relativePath);
         if (completedDownload) _recordSuccessfulDownload();
@@ -915,6 +924,7 @@ class MediaCacheManager extends CacheManager {
     final operation = CancellableCacheOperation.fromDownload(
       _DeferredDownload(
         future: completer.future,
+        progressBytes: pendingOperation.progressBytes,
         cancel: () {
           cancelledBeforeStart = true;
           activeDownload?.cancel();
@@ -1453,10 +1463,13 @@ class MediaCacheManager extends CacheManager {
     _activeCancellableOperations.clear();
 
     final pending = _pendingCacheOperations.values.toList(growable: false);
-    for (final completer in pending) {
-      if (!completer.isCompleted) {
-        completer.complete(const CancellableDownloadResult(file: null));
+    for (final operation in pending) {
+      if (!operation.completer.isCompleted) {
+        operation.completer.complete(
+          const CancellableDownloadResult(file: null),
+        );
       }
+      await operation.closeProgress();
     }
     _pendingCacheOperations.clear();
 
@@ -1489,18 +1502,24 @@ class _BudgetedCacheFile {
 class _DeferredDownload extends CancellableDownload {
   _DeferredDownload({
     required Future<CancellableDownloadResult> future,
+    required Stream<int> progressBytes,
     required void Function() cancel,
     required bool Function() isCancelledGetter,
   }) : _future = future,
+       _progressBytes = progressBytes,
        _cancel = cancel,
        _isCancelledGetter = isCancelledGetter;
 
   final Future<CancellableDownloadResult> _future;
+  final Stream<int> _progressBytes;
   final void Function() _cancel;
   final bool Function() _isCancelledGetter;
 
   @override
   Future<CancellableDownloadResult> get result => _future;
+
+  @override
+  Stream<int> get progressBytes => _progressBytes;
 
   // coverage:ignore-start
   @override
@@ -1513,6 +1532,9 @@ class _DeferredDownload extends CancellableDownload {
 
 class _CompletedNullDownload extends CancellableDownload {
   @override
+  Stream<int> get progressBytes => const Stream.empty();
+
+  @override
   Future<CancellableDownloadResult> get result async =>
       const CancellableDownloadResult(file: null);
 
@@ -1523,4 +1545,24 @@ class _CompletedNullDownload extends CancellableDownload {
 
   @override
   void cancel() {}
+}
+
+class _PendingCacheOperation {
+  _PendingCacheOperation() : _progressController = null;
+
+  _PendingCacheOperation.withProgress()
+    : _progressController = StreamController<int>.broadcast(sync: true);
+
+  final completer = Completer<CancellableDownloadResult>();
+  final StreamController<int>? _progressController;
+
+  Stream<int> get progressBytes =>
+      _progressController?.stream ?? const Stream.empty();
+
+  void addProgress(int bytes) => _progressController?.add(bytes);
+
+  Future<void> closeProgress() async {
+    final controller = _progressController;
+    if (controller != null && !controller.isClosed) await controller.close();
+  }
 }

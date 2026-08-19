@@ -14,7 +14,10 @@ import 'package:unified_logger/unified_logger.dart';
 
 class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
-class _MockCancellable extends Mock implements CancellableCacheOperation {}
+class _MockCancellable extends Mock implements CancellableCacheOperation {
+  @override
+  Stream<int> get progressBytes => const Stream.empty();
+}
 
 class _NativePlayerHarness {
   _NativePlayerHarness(this.tester);
