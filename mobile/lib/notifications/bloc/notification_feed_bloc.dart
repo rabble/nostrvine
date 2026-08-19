@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/notifications/bloc/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/app_badge_service.dart';
@@ -51,7 +52,7 @@ class NotificationFeedBloc
     // private event so emit() stays inside an event handler.
     _snapshotSubscription = _notificationRepository
         .watchSnapshot(filter: _filter)
-        .listen((page) => add(_SnapshotChanged(page)));
+        .listen((page) => addIfOpen(_SnapshotChanged(page)));
   }
 
   final NotificationRepository _notificationRepository;

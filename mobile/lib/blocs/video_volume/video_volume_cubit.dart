@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:volume_controller/volume_controller.dart';
@@ -51,7 +52,8 @@ class _PluginVolumeListener implements SystemVolumeListener {
 /// volume HUD across the entire app. This is intentional — Divine is a
 /// video-first app and the overlay conflicts with the in-app mute UI.
 /// Do not re-enable `showSystemUI` elsewhere without coordinating here.
-class VideoVolumeCubit extends Cubit<VideoVolumeState> {
+class VideoVolumeCubit extends Cubit<VideoVolumeState>
+    with CloseGuardedEmit<VideoVolumeState> {
   /// Creates a [VideoVolumeCubit] that reads the persisted volume from
   /// [sharedPreferences] synchronously — no async init needed.
   ///
@@ -101,11 +103,11 @@ class VideoVolumeCubit extends Cubit<VideoVolumeState> {
   void _onSystemVolumeChanged(double systemVolume) {
     if (systemVolume == 0 && state.volume > 0) {
       // Device muted → mute video
-      emit(const VideoVolumeState(volume: 0));
+      emitIfOpen(const VideoVolumeState(volume: 0));
       unawaited(_persist());
     } else if (systemVolume > 0 && state.volume == 0) {
       // Device unmuted → unmute video
-      emit(const VideoVolumeState());
+      emitIfOpen(const VideoVolumeState());
       unawaited(_persist());
     }
   }

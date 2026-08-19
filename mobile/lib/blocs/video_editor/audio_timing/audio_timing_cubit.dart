@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent, AudioSourceKind;
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
@@ -24,7 +25,8 @@ part 'audio_timing_state.dart';
 ///
 /// The fling physics animation remains in the widget layer since it
 /// requires a [TickerProvider].
-class AudioTimingCubit extends Cubit<AudioTimingState> {
+class AudioTimingCubit extends Cubit<AudioTimingState>
+    with CloseGuardedEmit<AudioTimingState> {
   /// Creates an [AudioTimingCubit].
   ///
   /// The [sound] is the audio event to edit timing for.
@@ -97,7 +99,7 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
       initialOffset = (startTimeSecs / scrollableAudioSecs).clamp(0.0, 1.0);
     }
 
-    emit(
+    emitIfOpen(
       AudioTimingState(
         startOffset: initialOffset,
         audioDuration: audioDuration,
@@ -114,13 +116,13 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
 
   /// Updates the start offset (e.g. from drag or fling animation).
   void updateOffset(double offset) {
-    emit(state.copyWith(startOffset: offset.clamp(0.0, 1.0)));
+    emitIfOpen(state.copyWith(startOffset: offset.clamp(0.0, 1.0)));
   }
 
   /// Pauses audio playback (e.g. when drag starts).
   Future<void> pausePlayback() async {
     await _clipPlayer.pause();
-    emit(state.copyWith(isPlaying: false));
+    emitIfOpen(state.copyWith(isPlaying: false));
   }
 
   /// Resumes audio playback from the current offset.
@@ -130,13 +132,13 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
   Future<void> resumePlayback() async {
     await _setClippedAudioSource();
     await _clipPlayer.play();
-    emit(state.copyWith(isPlaying: true));
+    emitIfOpen(state.copyWith(isPlaying: true));
   }
 
   /// Stops audio playback completely.
   Future<void> stopPlayback() async {
     await _clipPlayer.stop();
-    emit(state.copyWith(isPlaying: false));
+    emitIfOpen(state.copyWith(isPlaying: false));
   }
 
   /// Calculates the [Duration] start offset for the confirmed selection.
@@ -195,7 +197,7 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
       // Manual looping via _onPlaybackCompleted instead of LoopMode
       // because ClippingAudioSource + LoopMode.one can be unreliable
       await _clipPlayer.play();
-      emit(state.copyWith(isPlaying: true));
+      emitIfOpen(state.copyWith(isPlaying: true));
     } catch (e, s) {
       Log.error(
         'Failed to load audio: $e',

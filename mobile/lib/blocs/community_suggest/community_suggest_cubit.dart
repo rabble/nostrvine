@@ -3,6 +3,7 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/community_suggest/community_suggest_state.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/repositories/community_content_label_repository.dart';
@@ -14,7 +15,8 @@ import 'package:openvine/repositories/community_content_label_repository.dart';
 /// [CommunityContentLabelRepository]. Errors are reported via [addError] and
 /// surfaced to the UI as a [CommunitySuggestStatus.failure] status — never as
 /// error strings in state.
-class CommunitySuggestCubit extends Cubit<CommunitySuggestState> {
+class CommunitySuggestCubit extends Cubit<CommunitySuggestState>
+    with CloseGuardedEmit<CommunitySuggestState> {
   /// Creates the cubit for a specific [video] and the current viewer's
   /// [myPubkey].
   CommunitySuggestCubit({
@@ -35,7 +37,7 @@ class CommunitySuggestCubit extends Cubit<CommunitySuggestState> {
     emit(state.copyWith(status: CommunitySuggestStatus.loading));
     try {
       final existing = await _repository.mySuggestedLabels(_video, _myPubkey);
-      emit(
+      emitIfOpen(
         state.copyWith(
           status: CommunitySuggestStatus.ready,
           alreadySuggested: existing,
@@ -43,7 +45,7 @@ class CommunitySuggestCubit extends Cubit<CommunitySuggestState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: CommunitySuggestStatus.failure));
+      emitIfOpen(state.copyWith(status: CommunitySuggestStatus.failure));
     }
   }
 
@@ -72,7 +74,7 @@ class CommunitySuggestCubit extends Cubit<CommunitySuggestState> {
     emit(state.copyWith(status: CommunitySuggestStatus.submitting));
     try {
       await _repository.suggestLabels(video: _video, labels: state.selected);
-      emit(
+      emitIfOpen(
         state.copyWith(
           status: CommunitySuggestStatus.success,
           alreadySuggested: {
@@ -84,7 +86,7 @@ class CommunitySuggestCubit extends Cubit<CommunitySuggestState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: CommunitySuggestStatus.failure));
+      emitIfOpen(state.copyWith(status: CommunitySuggestStatus.failure));
     }
   }
 }

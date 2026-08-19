@@ -20,6 +20,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' as model show AspectRatio, AudioSourceKind;
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
@@ -177,7 +178,7 @@ class VideoRecorderBloc
         CameraService.create(
           onUpdateState: ({forceCameraRebuild}) {
             if (isClosed) return;
-            add(
+            addIfOpen(
               _VideoRecorderCameraStateChanged(
                 cameraRebuildCount: (forceCameraRebuild ?? false)
                     ? state.cameraRebuildCount + 1
@@ -897,7 +898,7 @@ class VideoRecorderBloc
             pendingStopAfterStart: false,
           ),
         );
-        add(const VideoRecorderRecordingStopRequested());
+        addIfOpen(const VideoRecorderRecordingStopRequested());
       } else {
         emit(state.copyWith(isStartingRecording: false));
       }

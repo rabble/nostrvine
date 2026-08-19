@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 /// Whether DM history recovery still owes the user messages.
 class DmRestoreStatusState extends Equatable {
@@ -44,7 +45,8 @@ class DmRestoreStatusState extends Equatable {
 /// pin exact `[loading, loaded]` lists and mark-as-read call counts — and
 /// recovery status is app-scoped, not per-conversation, so folding it in would
 /// couple two different lifetimes for no gain.
-class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState> {
+class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState>
+    with CloseGuardedEmit<DmRestoreStatusState> {
   DmRestoreStatusCubit({required DmRepository dmRepository})
     : _dmRepository = dmRepository,
       super(
@@ -60,7 +62,7 @@ class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState> {
       // request split, and it only flips on a clean drain exhaustion. A pass
       // that stops at the page cap, throws, or finds no connected relay ends
       // with isRestoring false while this stays false too.
-      emit(
+      emitIfOpen(
         DmRestoreStatusState(
           isRestoring: isRestoring,
           hasAttempted: _dmRepository.hasAttemptedHistoryRecovery,

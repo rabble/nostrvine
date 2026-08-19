@@ -7,6 +7,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 
 part 'people_lists_event.dart';
@@ -161,7 +162,8 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   ) async {
     await _ownerSubscription?.cancel();
     _ownerSubscription = _ownerPubkeyStream.listen(
-      (ownerPubkey) => add(PeopleListsOwnerChanged(ownerPubkey: ownerPubkey)),
+      (ownerPubkey) =>
+          addIfOpen(PeopleListsOwnerChanged(ownerPubkey: ownerPubkey)),
       onError: (Object error, StackTrace stackTrace) {
         addError(error, stackTrace);
       },
@@ -169,7 +171,8 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
 
     await _repositorySubscription?.cancel();
     _repositorySubscription = _repositoryStream.listen(
-      (repository) => add(PeopleListsRepositoryChanged(repository: repository)),
+      (repository) =>
+          addIfOpen(PeopleListsRepositoryChanged(repository: repository)),
       onError: (Object error, StackTrace stackTrace) {
         addError(error, stackTrace);
       },
@@ -177,7 +180,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
 
     await _enabledSubscription?.cancel();
     _enabledSubscription = _enabledStream.listen(
-      (enabled) => add(PeopleListsEnabledChanged(enabled: enabled)),
+      (enabled) => addIfOpen(PeopleListsEnabledChanged(enabled: enabled)),
       onError: (Object error, StackTrace stackTrace) {
         addError(error, stackTrace);
       },
@@ -185,7 +188,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
 
     final currentOwner = state.ownerPubkey;
     if (currentOwner != null && currentOwner.isNotEmpty) {
-      add(PeopleListsOwnerChanged(ownerPubkey: currentOwner));
+      addIfOpen(PeopleListsOwnerChanged(ownerPubkey: currentOwner));
     }
   }
 
@@ -225,7 +228,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     emit(state.copyWith(status: PeopleListsStatus.loading, enabled: true));
     // Re-subscribing goes through the owner bucket so [_onOwnerChanged] stays
     // the only handler that opens a lists subscription.
-    add(const PeopleListsOwnerChanged.rewire());
+    addIfOpen(const PeopleListsOwnerChanged.rewire());
   }
 
   /// Re-points the bloc at a freshly built repository.
@@ -246,7 +249,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   ) {
     if (identical(_repository, event.repository)) return;
     _repository = event.repository;
-    add(const PeopleListsOwnerChanged.rewire());
+    addIfOpen(const PeopleListsOwnerChanged.rewire());
   }
 
   /// Subscribes to [ownerPubkey]'s lists on the current repository.
@@ -254,7 +257,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     return _repository
         .watchLists(ownerPubkey: ownerPubkey)
         .listen(
-          (lists) => add(
+          (lists) => addIfOpen(
             PeopleListsRepositoryListsChanged(
               ownerPubkey: ownerPubkey,
               lists: lists,

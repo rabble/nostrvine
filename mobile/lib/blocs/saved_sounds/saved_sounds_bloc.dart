@@ -7,6 +7,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:creator_sync/creator_sync.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_event.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_reportable_sites.dart';
@@ -39,7 +40,7 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
        super(const SavedSoundsState()) {
     on<SavedSoundsEvent>(_onEvent, transformer: sequential());
     _syncRepositorySubscription = syncRepositoryStream.listen(
-      (repository) => add(SavedSoundSyncRepositoryChanged(repository)),
+      (repository) => addIfOpen(SavedSoundSyncRepositoryChanged(repository)),
       onError: (Object error, StackTrace stackTrace) {
         addError(error, stackTrace);
       },

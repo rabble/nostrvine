@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/voice_over_recorder_service.dart';
 import 'package:path/path.dart' as p;
@@ -22,7 +23,8 @@ part 'voice_over_state.dart';
 /// [AudioEvent.fromLocalImport]); the screen commits them to the editor
 /// timeline when the user taps Done. Recording is gated behind a microphone
 /// permission check using the injected [PermissionsService].
-class VoiceOverCubit extends Cubit<VoiceOverState> {
+class VoiceOverCubit extends Cubit<VoiceOverState>
+    with CloseGuardedEmit<VoiceOverState> {
   /// Creates a [VoiceOverCubit].
   ///
   /// [takeTitleBuilder] returns the localized title for a take given its
@@ -125,7 +127,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
         if (isClosed) return;
       }
       if (status != PermissionStatus.granted) {
-        emit(state.copyWith(status: VoiceOverStatus.permissionDenied));
+        emitIfOpen(state.copyWith(status: VoiceOverStatus.permissionDenied));
         return;
       }
       await _start();
@@ -202,7 +204,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       waveformBars: bars,
       currentDuration: state.currentDuration + amplitudeInterval,
     );
-    emit(next);
+    emitIfOpen(next);
     // Warn with a stronger pulse the moment the audio outgrows the video.
     if (!wasOver && next.isOverAvailable) {
       unawaited(HapticService.heavyImpact());

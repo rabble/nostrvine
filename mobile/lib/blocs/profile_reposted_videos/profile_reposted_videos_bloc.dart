@@ -11,6 +11,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
@@ -70,7 +71,7 @@ class ProfileRepostedVideosBloc
     );
     _removedVideoIdsSubscription = removedVideoIds.listen((videoId) {
       if (isClosed) return;
-      add(ProfileRepostedVideosVideoRemoved(videoId));
+      addIfOpen(ProfileRepostedVideosVideoRemoved(videoId));
     });
   }
 
@@ -492,7 +493,7 @@ class ProfileRepostedVideosBloc
           name: 'ProfileRepostedVideosBloc',
           category: LogCategory.video,
         );
-        add(ProfileRepostedVideosReconcileRequested(newIds));
+        addIfOpen(ProfileRepostedVideosReconcileRequested(newIds));
         return state;
       },
     );
