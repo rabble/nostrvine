@@ -163,6 +163,50 @@ class DmReactionsRepository {
     _messageService = null;
   }
 
+  /// Drop every reaction row this account holds for [conversationIds].
+  ///
+  /// Called by `DmRepository.removeConversation` from inside its removal
+  /// transaction, so a removed conversation leaves no queued reaction or
+  /// pending kind-5 removal behind (#7857). Without this the retry sweep
+  /// keeps re-driving those rows and publishes a gift wrap into a
+  /// conversation the user removed — [retryableReactions] and
+  /// [retryableDeletions] are owner-scoped only, and
+  /// [_resolveWrapRecipients] falls back to the target message's author
+  /// once the conversation row is gone.
+  ///
+  /// [ownerPubkey] is supplied by the caller rather than read from this
+  /// repository's mutable credentials so an account transition cannot change
+  /// the owner midway through the enclosing removal transaction.
+  ///
+  /// No-op when [conversationIds] is empty.
+  Future<void> deleteForConversations(
+    Iterable<String> conversationIds, {
+    required String ownerPubkey,
+  }) async {
+    await _reactionsDao.deleteForConversations(
+      conversationIds: conversationIds,
+      ownerPubkey: ownerPubkey,
+    );
+  }
+
+  /// Purge reaction rows stranded by a conversation removal that happened
+  /// before removal started dropping them (#7857).
+  ///
+  /// [deleteForConversations] only closes the leak going forward. An install
+  /// that removed a conversation on an older build still holds that
+  /// conversation's rows, and because the retry sweep selects by owner alone
+  /// they stay in the outgoing queue — the sweep's in-memory attempt budget
+  /// resets on every cold start, so they never age out on their own.
+  ///
+  /// Rows created after the removal marker are kept: they belong to a
+  /// conversation the counterparty has since recreated and are still owed
+  /// delivery.
+  ///
+  /// Idempotent — a no-op once the account has none left.
+  Future<int> purgeStrandedByRemoval({required String ownerPubkey}) {
+    return _reactionsDao.deleteSuppressedByRemoval(ownerPubkey: ownerPubkey);
+  }
+
   /// Reactive stream of every live reaction in [conversationId] for the
   /// current account, collapsed to at most one reaction per reactor per
   /// target message (the cap-at-one invariant — see [_collapsePerReactor]).
