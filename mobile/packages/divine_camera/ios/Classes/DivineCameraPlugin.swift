@@ -308,9 +308,21 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     private func disposeCamera(result: @escaping FlutterResult) {
         volumeKeyHandler?.release()
         volumeKeyHandler = nil
-        cameraController?.release()
+
+        guard let controller = cameraController else {
+            result(nil)
+            return
+        }
         cameraController = nil
-        result(nil)
+        // Return only once the capture sessions are actually stopped. The
+        // caller switches the shared AVAudioSession to playback immediately
+        // after this future resolves, and iOS refuses that category change
+        // with InsufficientPriority while the audio capture session is still
+        // running -- which left the editor playing back through the
+        // recorder's session configuration.
+        controller.release {
+            result(nil)
+        }
     }
     
     private func setRemoteRecordControlEnabled(enabled: Bool, result: @escaping FlutterResult) {
