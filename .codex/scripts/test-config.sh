@@ -615,9 +615,19 @@ exit 1
 EOF
 chmod +x "$BSD_STAT_BIN/stat"
 
-mkdir -p "$WT_LINK/mobile/build" "$WT_LINK/mobile/.dart_tool"
+# Carry the newline discrimination onto the in-place branch too. The staging
+# branch is pinned for it above, but the only other test that reaches the
+# in-place branch is the /dev/shm one below, which skips wherever /dev/shm is
+# absent or read-only -- every macOS run. Faking stat is what makes this pin
+# platform-independent.
+mkdir -p "$WT_LINK/mobile/build" \
+  "$WT_LINK/mobile/.dart_tool" \
+  "$NEWLINE_PKG/build" \
+  "$WT_LINK/mobile/pkg"
 touch "$WT_LINK/mobile/build/output.o" \
   "$WT_LINK/mobile/.dart_tool/package_config.json" \
+  "$NEWLINE_PKG/build/output.o" \
+  "$WT_LINK/mobile/pkg/PRECIOUS_SOURCE.dart" \
   "$gitdir/claude-purge"
 BSD_STAT_OUTPUT=$(cd "$WT_LINK" && \
   env PATH="$BSD_STAT_BIN:/usr/bin:/bin" \
@@ -627,7 +637,7 @@ BSD_STAT_OUTPUT=$(cd "$WT_LINK" && \
     "$CLAUDE_PURGE_HOOK" \
     <<< '{"reason":"prompt_input_exit"}' || true)
 printf '%s\n' "$BSD_STAT_OUTPUT" | jq -e \
-  '.systemMessage == "Purged 2 build/.dart_tool dirs from purge-linked"' >/dev/null || {
+  '.systemMessage == "Purged 3 build/.dart_tool dirs from purge-linked"' >/dev/null || {
   echo "Purge hook did not use the BSD stat fallback for device detection." >&2
   echo "Output was: $BSD_STAT_OUTPUT" >&2
   exit 1
@@ -637,11 +647,20 @@ if [ ! -f "$gitdir/claude-purge" ]; then
   exit 1
 fi
 for _ in $(seq 1 100); do
-  [ ! -d "$WT_LINK/mobile/build" ] && [ ! -d "$WT_LINK/mobile/.dart_tool" ] && break
+  [ ! -d "$WT_LINK/mobile/build" ] && [ ! -d "$WT_LINK/mobile/.dart_tool" ] \
+    && [ ! -d "$NEWLINE_PKG/build" ] && break
   sleep 0.1
 done
 if [ -d "$WT_LINK/mobile/build" ] || [ -d "$WT_LINK/mobile/.dart_tool" ]; then
   echo "BSD-stat cross-device purge did not delete the artifact dirs." >&2
+  exit 1
+fi
+if [ ! -f "$WT_LINK/mobile/pkg/PRECIOUS_SOURCE.dart" ]; then
+  echo "BSD-stat cross-device purge deleted a non-artifact path through a newline-split find line." >&2
+  exit 1
+fi
+if [ -d "$NEWLINE_PKG/build" ]; then
+  echo "BSD-stat cross-device purge left the newline-named build dir behind." >&2
   exit 1
 fi
 rm -f "$gitdir/claude-purge"
