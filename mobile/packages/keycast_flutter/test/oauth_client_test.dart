@@ -1649,6 +1649,39 @@ void main() {
         ]);
       });
 
+      test('keeps the 403 when the proof retry is refused', () async {
+        // Keycast strips a `Bearer ` prefix and answers every other scheme
+        // 401, so the retry this route allows is exactly the one it rejects.
+        // Adopting that 401 would replace the accurate "not authorized to
+        // delete" — plus the server's own prose — with "invalid or expired
+        // token", which is the misdiagnosis #4881 is about.
+        final sentAuthorizations = <String?>[];
+        final mockClient = MockClient((request) async {
+          sentAuthorizations.add(request.headers['Authorization']);
+          if (sentAuthorizations.length == 1) {
+            return http.Response(
+              jsonEncode({'message': 'Account deletion requires the app'}),
+              403,
+            );
+          }
+          return http.Response('Invalid or expired token', 401);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.deleteAccount(
+          'refreshed_token',
+          nip98Signer: (_) async => 'BASE64EVENT',
+        );
+
+        expect(sentAuthorizations, [
+          'Bearer refreshed_token',
+          'Nostr BASE64EVENT',
+        ]);
+        expect(result.success, isFalse);
+        expect(result.error, 'Account deletion requires the app');
+        expect(result.requiresReauthentication, isTrue);
+      });
+
       test('does not retry a 401 with a proof', () async {
         // 401 is what keycast answers when it cannot parse the credential.
         // Re-sending an unparseable scheme would only repeat the failure.

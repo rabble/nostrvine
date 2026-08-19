@@ -1032,7 +1032,7 @@ class KeycastOAuth {
   /// divergence makes the server reject the proof. Keycast closed keycast#323
   /// by preserving the first-party fact across refresh rotation instead of
   /// accepting proofs on this route, so until that changes the retry cannot
-  /// succeed and the original 403 is returned.
+  /// succeed — which is why only a 200 from it supersedes the original 403.
   ///
   /// Returns [DeleteAccountResult] with success status.
   Future<DeleteAccountResult> deleteAccount(
@@ -1047,7 +1047,14 @@ class KeycastOAuth {
       if (response.statusCode == 403 && nip98Signer != null) {
         final proof = await _signDeletionProof(nip98Signer, url);
         if (proof != null) {
-          response = await _sendAccountDeletion(url, 'Nostr $proof');
+          final retry = await _sendAccountDeletion(url, 'Nostr $proof');
+          // Only a success supersedes the 403. Today the route answers the
+          // `Nostr ` scheme 401, so adopting the retry unconditionally would
+          // replace an accurate "not authorized to delete" with "invalid or
+          // expired token" — the misdiagnosis this whole path exists to end.
+          if (retry.statusCode == 200) {
+            response = retry;
+          }
         }
       }
 
@@ -1071,7 +1078,8 @@ class KeycastOAuth {
         // The credential was read and refused: neither user-signed nor
         // carrying the server's first-party fact. The proof-of-key retry above
         // has already had its turn, so re-authenticating is what is left — this
-        // must never be reported as a connectivity problem.
+        // must never be reported as a connectivity problem, and the server's
+        // own prose here is the only thing that says which of the two it was.
         return DeleteAccountResult.error(
           _errorMessageFrom(response) ??
               'Account deletion requires signing in again',
