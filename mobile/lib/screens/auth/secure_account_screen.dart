@@ -142,9 +142,10 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     );
 
     if (!result.success) {
-      // CONFLICT means this key already has an account (the app fell back to
-      // anonymous while the registered key stayed on device). Route to the
-      // recovery hub instead of dead-ending on the raw server text.
+      // CONFLICT means the key or the entered email already has an account
+      // (the common case is a registered key the app forgot after falling back
+      // to anonymous). Route to the recovery hub instead of dead-ending on the
+      // raw server text.
       if (result.errorCode == 'CONFLICT') {
         if (!mounted) return;
         context.go(

@@ -3378,7 +3378,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authSecureAccountAlreadyRegistered =>
-      'You already have an account. Sign in or reset your password to get back in.';
+      'Looks like an account already exists. Sign in or reset your password to continue.';
 
   @override
   String get authFailedToSendResetEmail => 'Hindi naipadala ang reset email.';

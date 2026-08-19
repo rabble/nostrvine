@@ -762,19 +762,21 @@ void main() {
           await tester.tap(
             find.widgetWithText(DivineButton, 'Secure account'),
           );
+          // Let the exportNsec microtask, the headlessRegister future, and the
+          // resulting context.go settle without pumpAndSettle (avoids a hang).
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 100));
 
           final uri = router.routeInformationProvider.value.uri;
           final l10n = lookupAppLocalizations(const Locale('en'));
 
+          // Routes to the recovery hub with the localized message (not the raw
+          // server sentence), carrying the entered email.
           expect(uri.path, '/welcome/login-options');
           expect(
             uri.queryParameters['error'],
             l10n.authSecureAccountAlreadyRegistered,
           );
-          // The raw server sentence must not leak through to the user.
-          expect(uri.queryParameters['error'], isNot(contains('Nostr key')));
           expect(uri.queryParameters['email'], 'existing@example.com');
         },
       );
