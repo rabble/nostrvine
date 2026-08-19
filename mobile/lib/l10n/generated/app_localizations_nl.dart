@@ -10402,6 +10402,26 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Badge terugnemen';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Deze badge terugnemen?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Dit vraagt relays om de uitreiking aan deze persoon te laten vallen. Relays mogen weigeren, en als de badge al is vastgezet, blijft hij op het profiel staan tot die hem zelf weghaalt. Hoe dan ook krijgt diegene geen bericht.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Deze uitreiking ging in één keer naar meerdere mensen. Neem je hem bij één terug, dan krijgen de anderen een nieuwe uitreiking en moeten ze de badge opnieuw accepteren.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Terugnemen';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Badge teruggenomen';
+
+  @override
   String get badgeDetailBlockClaimantsAction =>
       'Iedereen met deze badge blokkeren';
 

@@ -10574,6 +10574,26 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Retrage insigna';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Retragi această insignă?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Asta cere releelor să renunțe la acordarea făcută acestei persoane. Releele pot refuza, iar dacă a fixat deja insigna, ea rămâne pe profil până o scoate singură. Oricum ar fi, nu primește nicio notificare.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Această acordare a plecat deodată către mai multe persoane. Dacă o retragi de la una, ceilalți primesc o acordare nouă și trebuie să accepte insigna din nou.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Retrage';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Insignă retrasă';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Blochează cine poartă insigna';
 
   @override

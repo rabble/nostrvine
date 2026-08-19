@@ -9861,6 +9861,26 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'バッジを取り消す';
+
+  @override
+  String get badgeDetailRevokeTitle => 'このバッジを取り消しますか？';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'この人に贈った授与の削除をリレーに依頼します。リレーは拒否できますし、すでにプロフィールに固定されている場合は本人が外すまで残ります。いずれにしても通知はされません。';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'この授与は複数の人へ一度に贈られました。1人から取り消すと、ほかの人には新しい授与が届き、バッジをもう一度受け取る必要があります。';
+
+  @override
+  String get badgeDetailRevokeConfirm => '取り消す';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'バッジを取り消しました';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'バッジの申請者をブロック';
 
   @override

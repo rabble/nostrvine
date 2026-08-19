@@ -9795,6 +9795,26 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => '收回徽章';
+
+  @override
+  String get badgeDetailRevokeTitle => '收回这枚徽章？';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      '这会请求中继删除你颁发给这个人的记录。中继可以拒绝，如果对方已经把徽章固定在资料页，它会一直留在那里，直到本人移除。无论哪种情况，对方都不会收到通知。';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      '这次颁发是一次性发给多个人的。从其中一人手上收回，其他人会收到一份新的颁发记录，需要重新接受这枚徽章。';
+
+  @override
+  String get badgeDetailRevokeConfirm => '收回';
+
+  @override
+  String get badgeDetailRevokeSuccess => '已收回徽章';
+
+  @override
   String get badgeDetailBlockClaimantsAction => '屏蔽佩戴该徽章的人';
 
   @override

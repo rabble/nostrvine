@@ -10557,6 +10557,26 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Odbierz odznakę';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Odebrać tę odznakę?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'To prosi przekaźniki o usunięcie przyznania, którego dokonałeś tej osobie. Przekaźniki mogą odmówić, a jeśli odznaka jest już przypięta, zostaje na profilu, dopóki sama jej nie usunie. Tak czy inaczej, nikt jej o tym nie powiadomi.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'To przyznanie poszło naraz do kilku osób. Odebranie go jednej sprawia, że pozostali dostają nowe przyznanie i muszą przyjąć odznakę jeszcze raz.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Odbierz';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Odznaka odebrana';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Zablokuj osoby z tą odznaką';
 
   @override

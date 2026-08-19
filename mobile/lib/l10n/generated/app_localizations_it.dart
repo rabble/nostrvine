@@ -10476,6 +10476,26 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Riprendi il badge';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Riprendere questo badge?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Questo chiede ai relay di rimuovere l\'assegnazione fatta a questa persona. I relay possono rifiutare, e se ha già messo il badge sul profilo lo tiene finché non lo toglie. In ogni caso non riceve alcun avviso.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Questa assegnazione è andata a più persone in una volta sola. Riprenderla a una significa che le altre ricevono una nuova assegnazione e devono accettare di nuovo il badge.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Riprendi';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Badge ripreso';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Blocca chi ha questo badge';
 
   @override

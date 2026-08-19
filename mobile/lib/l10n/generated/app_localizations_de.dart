@@ -10485,6 +10485,26 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Badge zurücknehmen';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Dieses Badge zurücknehmen?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Damit bitten wir die Relays, die Auszeichnung für diese Person zu entfernen. Relays können das ablehnen, und wer das Badge schon angepinnt hat, behält es im Profil, bis er es selbst entfernt. Eine Benachrichtigung gibt es so oder so nicht.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Diese Auszeichnung ging an mehrere Leute auf einmal. Nimmst du sie einer Person weg, bekommen die anderen eine neue Auszeichnung und müssen das Badge erneut annehmen.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Zurücknehmen';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Badge zurückgenommen';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Badge-Träger blockieren';
 
   @override

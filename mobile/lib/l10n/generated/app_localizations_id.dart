@@ -10278,6 +10278,26 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Tarik lencana';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Tarik lencana ini?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Ini meminta relai menghapus pemberian yang kamu lakukan untuk orang ini. Relai boleh menolak, dan kalau lencananya sudah disematkan, lencana itu tetap di profilnya sampai dia melepasnya. Bagaimanapun, dia tidak diberi tahu.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Pemberian ini keluar untuk beberapa orang sekaligus. Menariknya dari satu orang berarti yang lain mendapat pemberian baru dan harus menerima lencananya lagi.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Tarik';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Lencana ditarik';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Blokir pengklaim lencana';
 
   @override

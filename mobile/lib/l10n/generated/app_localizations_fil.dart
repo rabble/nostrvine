@@ -10444,6 +10444,26 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Bawiin ang badge';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Bawiin ang badge na ito?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Hinihiling nito sa mga relay na tanggalin ang ibinigay mo sa taong ito. Puwedeng tumanggi ang mga relay, at kung na-pin na nila ang badge, mananatili ito sa profile nila hangga\'t hindi nila inaalis. Alinman doon, hindi sila sasabihan.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Sabay-sabay na naibigay ito sa ilang tao. Kapag binawi mo sa isa, makakakuha ng bagong bigay ang iba at kailangan nilang tanggapin ulit ang badge.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Bawiin';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Nabawi ang badge';
+
+  @override
   String get badgeDetailBlockClaimantsAction =>
       'I-block ang nag-claim ng badge';
 

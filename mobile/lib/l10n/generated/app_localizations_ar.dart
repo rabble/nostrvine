@@ -10284,6 +10284,26 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'استرجاع الشارة';
+
+  @override
+  String get badgeDetailRevokeTitle => 'تسترجع هذه الشارة؟';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'يطلب هذا من المُرحِّلات إسقاط ما منحته لهذا الشخص. يمكن للمُرحِّلات أن ترفض، وإن كان قد ثبّت الشارة على ملفه فستبقى هناك حتى يزيلها بنفسه. وفي كل الأحوال لن يُخطر بذلك.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'خرج هذا المنح لعدة أشخاص دفعة واحدة. استرجاعه من واحد يعني أن الآخرين يحصلون على منح جديد وعليهم قبول الشارة من جديد.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'استرجاع';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'تم استرجاع الشارة';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'حظر من يضعون الشارة';
 
   @override

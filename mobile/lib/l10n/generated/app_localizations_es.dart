@@ -10459,6 +10459,26 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Quitar la insignia';
+
+  @override
+  String get badgeDetailRevokeTitle => '¿Quitarle esta insignia?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Esto les pide a los relés que saquen la entrega que le hiciste a esta persona. Los relés pueden negarse, y si ya fijó la insignia, la mantiene en su perfil hasta que la saque. En cualquier caso, no se le avisa.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Esta entrega salió para varias personas a la vez. Quitársela a una hace que el resto reciba una entrega nueva y tenga que aceptar la insignia otra vez.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Quitar';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Insignia retirada';
+
+  @override
   String get badgeDetailBlockClaimantsAction =>
       'Bloquear a quienes llevan la insignia';
 

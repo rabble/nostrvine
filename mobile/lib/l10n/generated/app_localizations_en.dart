@@ -10461,6 +10461,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Take badge back';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Take this badge back?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'This asks relays to drop the award you gave this person. Relays can refuse, and if they already pinned the badge it stays on their profile until they take it down. Either way, they are not told.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'This award went out to several people at once. Taking it back from one means the others get a fresh award and have to accept the badge again.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Take it back';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Badge taken back';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Block badge claimants';
 
   @override

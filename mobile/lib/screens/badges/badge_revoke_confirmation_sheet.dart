@@ -1,0 +1,69 @@
+// ABOUTME: Confirmation sheet for taking one recipient's badge award back,
+// ABOUTME: spelling out what a NIP-09 deletion request can and cannot reach.
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
+
+/// Asks the badge issuer to confirm taking an award back from one recipient.
+///
+/// [sharesAwardWithOthers] adds the line about the rest of a batched award
+/// having to accept again — the award event names several people and NIP-09
+/// deletes whole events, so revoking one rewrites the others' award too.
+///
+/// Resolves to `true` only when the user confirms; dismissing the sheet
+/// resolves to `null`.
+Future<bool?> showBadgeRevokeConfirmation(
+  BuildContext context, {
+  required bool sharesAwardWithOthers,
+}) {
+  final l10n = context.l10n;
+  return VineBottomSheet.show<bool>(
+    context: context,
+    scrollable: false,
+    contentTitle: l10n.badgeDetailRevokeTitle,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 16,
+          children: [
+            Text(
+              l10n.badgeDetailRevokeBody,
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
+            ),
+            if (sharesAwardWithOthers)
+              Text(
+                l10n.badgeDetailRevokeSharedNote,
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.onSurfaceVariant,
+                ),
+              ),
+            Row(
+              spacing: 12,
+              children: [
+                Expanded(
+                  child: DivineButton(
+                    label: l10n.commonCancel,
+                    type: DivineButtonType.secondary,
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                ),
+                Expanded(
+                  child: DivineButton(
+                    label: l10n.badgeDetailRevokeConfirm,
+                    type: DivineButtonType.error,
+                    onPressed: () => Navigator.of(context).pop(true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}

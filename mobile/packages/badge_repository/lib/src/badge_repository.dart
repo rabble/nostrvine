@@ -125,12 +125,19 @@ class BadgeRecipientViewData {
     required this.pubkey,
     required this.awardEventId,
     required this.isAccepted,
+    this.sharesAwardWithOthers = false,
   });
 
   final String pubkey;
 
   /// The award event that named this recipient.
   final String awardEventId;
+
+  /// Whether any award naming this recipient also names somebody else.
+  ///
+  /// True means [BadgeRepository.revokeAward] has to rewrite an award the
+  /// others are holding, so the confirmation can say so before it happens.
+  final bool sharesAwardWithOthers;
 
   /// Whether the recipient's profile badge list references [awardEventId].
   ///
@@ -703,6 +710,15 @@ class BadgeRepository {
       }
     }
 
+    // Everyone named by an award that names more than one person, taken
+    // across all their awards rather than just the newest: a revoke deletes
+    // every award naming them, so those are all the awards it has to rewrite.
+    final sharesAwardWithOthers = <String>{
+      for (final award in awards)
+        if (award.recipientPubkeys.toSet().length > 1)
+          ...award.recipientPubkeys,
+    };
+
     final checked = <String>{
       ...awardByRecipient.keys.take(recipientCheckLimit),
       if (viewerPubkey != null && awardByRecipient.containsKey(viewerPubkey))
@@ -718,6 +734,7 @@ class BadgeRepository {
           isAccepted: checked.contains(entry.key)
               ? _containsBadgeCoordinate(profileBadges[entry.key], entry.value)
               : null,
+          sharesAwardWithOthers: sharesAwardWithOthers.contains(entry.key),
         ),
     ];
 
@@ -888,6 +905,79 @@ class BadgeRepository {
       throw StateError('Signed badge award event is not parseable');
     }
     return award;
+  }
+
+  /// Takes the badge at [coordinate] back from [recipientPubkey], leaving
+  /// every other holder untouched.
+  ///
+  /// Every award naming them is revoked, not just their newest: the recipient
+  /// list resolves someone through their newest award, so an older one left
+  /// behind puts them straight back on it.
+  ///
+  /// NIP-58 has no per-recipient revoke and NIP-09 deletes whole events, so
+  /// an award that also names other people is replaced rather than merely
+  /// deleted — a fresh award for the remaining recipients goes out first, and
+  /// only then does the deletion request. That order matters: a refused
+  /// deletion strips the badge off nobody, where the reverse order would take
+  /// it off the bystanders too.
+  ///
+  /// The replacement carries a new event id while the remaining recipients'
+  /// profile badge lists still point at the old award, so they read as
+  /// not-yet-accepted until they accept again. The badge keeps rendering on
+  /// their profile in the meantime — [loadAcceptedBadgesForProfile] keeps a
+  /// pin whose award event is missing. Nobody is notified: a `kind:5` from
+  /// the issuer reaches no notification path.
+  ///
+  /// Does nothing when no award for [coordinate] names [recipientPubkey].
+  ///
+  /// Throws:
+  ///
+  /// * [ArgumentError] if [recipientPubkey] is not a hex pubkey.
+  /// * [StateError] if there is no current pubkey, the badge belongs to
+  ///   someone else, or an event cannot be signed.
+  /// * [BadgePublishException] when no relay accepts one of the events.
+  Future<void> revokeAward({
+    required BadgeCoordinate coordinate,
+    required String recipientPubkey,
+  }) async {
+    final pubkey = _requireCurrentPubkey();
+    if (coordinate.pubkey != pubkey) {
+      throw StateError('Cannot revoke a badge issued by someone else');
+    }
+    if (!isBadgePubkey(recipientPubkey)) {
+      throw ArgumentError.value(
+        recipientPubkey,
+        'recipientPubkey',
+        'Badge recipient must be a hex pubkey',
+      );
+    }
+
+    final awards = await _queryAwardsForCoordinate(coordinate);
+    final revoked = [
+      for (final award in awards)
+        if (award.recipientPubkeys.contains(recipientPubkey)) award,
+    ];
+    if (revoked.isEmpty) return;
+
+    final remaining = <String>{
+      for (final award in revoked)
+        for (final recipient in award.recipientPubkeys)
+          if (recipient != recipientPubkey) recipient,
+    }.toList(growable: false);
+    if (remaining.isNotEmpty) {
+      await awardBadge(coordinate: coordinate, recipientPubkeys: remaining);
+    }
+
+    // No `a` tag here, unlike [deleteBadge]: that one addresses the
+    // definition, and a revoke must leave the badge itself standing.
+    await _signAndPublish(
+      kind: EventKind.eventDeletion,
+      label: 'badge award revocation',
+      tags: [
+        for (final award in revoked) ['e', award.event.id],
+        ['k', '${EventKind.badgeAward}'],
+      ],
+    );
   }
 
   /// Requests deletion of the badge at [coordinate] and every award the

@@ -29,6 +29,9 @@ enum BadgeDetailActionStatus {
   /// The viewer's award is being removed from their profile.
   removing,
 
+  /// An award is being taken back from one recipient.
+  revoking,
+
   /// A deletion request is publishing.
   deleting,
 
@@ -41,14 +44,23 @@ enum BadgeDetailActionStatus {
   /// The last mutation completed.
   completed,
 
+  /// One recipient's award was taken back.
+  ///
+  /// Its own outcome rather than [completed] because the detail screen has
+  /// something to say about it — the row simply vanishing is no feedback to
+  /// a screen reader — while awarding, accepting and removing all show their
+  /// own result on screen.
+  revoked,
+
   /// The last mutation failed.
   failure,
 
-  /// A relay refused the deletion request outright.
+  /// A relay refused a deletion request outright.
   ///
-  /// Kept apart from [failure] because a refusal is usually transient: the
-  /// relay authorizes a badge deletion only against event ids it has already
-  /// indexed, so deleting a badge seconds after creating it is refused while
+  /// Covers both deleting a badge and revoking one award, which are the same
+  /// `kind:5` request. Kept apart from [failure] because a refusal is usually
+  /// transient: the relay authorizes a deletion only against event ids it has
+  /// already indexed, so deleting seconds after publishing is refused while
   /// the identical request succeeds a moment later.
   deleteRejected,
 }
@@ -80,6 +92,7 @@ class BadgeDetailState extends Equatable {
       actionStatus == BadgeDetailActionStatus.awarding ||
       actionStatus == BadgeDetailActionStatus.accepting ||
       actionStatus == BadgeDetailActionStatus.removing ||
+      actionStatus == BadgeDetailActionStatus.revoking ||
       actionStatus == BadgeDetailActionStatus.deleting ||
       actionStatus == BadgeDetailActionStatus.blockingClaimants;
 
@@ -89,6 +102,7 @@ class BadgeDetailState extends Equatable {
   /// pops the route, so a reload must leave both alone.
   bool get hasSettledAction =>
       actionStatus == BadgeDetailActionStatus.completed ||
+      actionStatus == BadgeDetailActionStatus.revoked ||
       actionStatus == BadgeDetailActionStatus.failure ||
       actionStatus == BadgeDetailActionStatus.deleteRejected;
 

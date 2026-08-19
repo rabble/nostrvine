@@ -10321,6 +10321,26 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Thu hồi huy hiệu';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Thu hồi huy hiệu này?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Thao tác này yêu cầu các relay bỏ lần trao mà bạn đã dành cho người này. Relay có thể từ chối, và nếu họ đã ghim huy hiệu thì nó vẫn nằm trên hồ sơ cho đến khi họ tự gỡ. Dù thế nào, họ cũng không được báo.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Lần trao này đã đi tới nhiều người cùng lúc. Thu hồi của một người nghĩa là những người còn lại nhận một lần trao mới và phải chấp nhận huy hiệu lần nữa.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Thu hồi';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Đã thu hồi huy hiệu';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Chặn những người gắn huy hiệu';
 
   @override

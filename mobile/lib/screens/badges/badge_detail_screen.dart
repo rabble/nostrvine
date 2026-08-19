@@ -1,5 +1,5 @@
-// ABOUTME: Badge detail page: artwork, description, awardees, and the owner's
-// ABOUTME: award/edit actions plus accept or remove for the viewer's own award.
+// ABOUTME: Badge detail page: artwork, description, awardees, the owner's
+// ABOUTME: award/edit/revoke actions, and accept or remove for the own award.
 
 import 'package:badge_repository/badge_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -15,6 +15,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/badges/badge_award_screen.dart';
 import 'package:openvine/screens/badges/badge_delete_confirmation_sheet.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
+import 'package:openvine/screens/badges/badge_revoke_confirmation_sheet.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/badges/widgets/badge_recipient_row.dart';
 import 'package:openvine/utils/share_sheet.dart';
@@ -76,6 +77,20 @@ class BadgeDetailView extends StatelessWidget {
           // A shared badge link opens this screen with nothing beneath it, so
           // popping is not always available; the dashboard is the way out.
           context.safePop(result: true, fallback: BadgesScreen.path);
+          return;
+        }
+        // Announced rather than left to the row disappearing: to a screen
+        // reader a row that is simply gone is no feedback at all.
+        if (state.actionStatus == BadgeDetailActionStatus.revoked) {
+          final message = l10n.badgeDetailRevokeSuccess;
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            message,
+            Directionality.of(context),
+          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(DivineSnackbarContainer.snackBar(message));
           return;
         }
         if (state.actionStatus == BadgeDetailActionStatus.deleteRejected) {
@@ -246,10 +261,17 @@ class _BadgeDetailBody extends StatelessWidget {
                       // awardee list, and every row resolves a profile.
                       SliverList.builder(
                         itemCount: detail.recipients.length,
-                        itemBuilder: (context, index) => BadgeRecipientRow(
-                          pubkey: detail.recipients[index].pubkey,
-                          isAccepted: detail.recipients[index].isAccepted,
-                        ),
+                        itemBuilder: (context, index) {
+                          final recipient = detail.recipients[index];
+                          return BadgeRecipientRow(
+                            pubkey: recipient.pubkey,
+                            isAccepted: recipient.isAccepted,
+                            showRevokeAction: detail.isOwner,
+                            onRevoke: state.isBusy
+                                ? null
+                                : () => _revoke(context, recipient),
+                          );
+                        },
                       ),
                   ],
                 ),
@@ -259,6 +281,19 @@ class _BadgeDetailBody extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static Future<void> _revoke(
+    BuildContext context,
+    BadgeRecipientViewData recipient,
+  ) async {
+    final cubit = context.read<BadgeDetailCubit>();
+    final confirmed = await showBadgeRevokeConfirmation(
+      context,
+      sharesAwardWithOthers: recipient.sharesAwardWithOthers,
+    );
+    if (!(confirmed ?? false) || cubit.isClosed) return;
+    await cubit.revokeAward(recipient.pubkey);
   }
 }
 

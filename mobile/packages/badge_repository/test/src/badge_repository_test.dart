@@ -2040,6 +2040,67 @@ void main() {
         expect(detail.viewerAward?.isAccepted, isTrue);
       });
 
+      test('flags recipients who share an award with somebody else', () async {
+        // Revoking rewrites the award the others hold, so the confirmation
+        // needs to know which recipients that is true for.
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(75),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(3), _pubkey(4)],
+            ),
+            _awardEvent(
+              id: _eventId(76),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(5)],
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(coordinate);
+
+        expect(
+          {
+            for (final recipient in detail.recipients)
+              recipient.pubkey: recipient.sharesAwardWithOthers,
+          },
+          {_pubkey(3): true, _pubkey(4): true, _pubkey(5): false},
+        );
+      });
+
+      test('flags a recipient whose older award named others too', () async {
+        // The newest award names them alone, but a revoke deletes every award
+        // naming them — including the shared older one.
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(77),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(3), _pubkey(4)],
+            ),
+            _awardEvent(
+              id: _eventId(78),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(3)],
+              createdAt: 2000,
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(coordinate);
+
+        final recipient = detail.recipients.firstWhere(
+          (candidate) => candidate.pubkey == _pubkey(3),
+        );
+        expect(recipient.awardEventId, _eventId(78));
+        expect(recipient.sharesAwardWithOthers, isTrue);
+      });
+
       test('marks a newer viewer re-award accepted by coordinate', () async {
         _stubQueries(nostrClient, {
           'definition:${coordinate.value}': [
@@ -2742,6 +2803,221 @@ void main() {
           );
         },
       );
+    });
+
+    group('revokeAward', () {
+      final coordinate = BadgeCoordinate(
+        pubkey: _pubkey(1),
+        identifier: 'scene-stealer',
+      );
+
+      test(
+        'republishes for the others before deleting the shared award',
+        () async {
+          _stubQueries(nostrClient, {
+            'awardsFor:${coordinate.value}': [
+              _awardEvent(
+                id: _eventId(60),
+                issuerPubkey: _pubkey(1),
+                definitionCoordinate: coordinate.value,
+                recipients: [_pubkey(2), _pubkey(3)],
+              ),
+              _awardEvent(
+                id: _eventId(61),
+                issuerPubkey: _pubkey(1),
+                definitionCoordinate: coordinate.value,
+                recipients: [_pubkey(4)],
+              ),
+            ],
+          });
+
+          await repository.revokeAward(
+            coordinate: coordinate,
+            recipientPubkey: _pubkey(2),
+          );
+
+          final published = verify(
+            () => nostrClient.publishEventAwaitOk(captureAny()),
+          ).captured.cast<Event>();
+          // The replacement goes first: a refused deletion then leaves
+          // everybody holding what they already had.
+          expect(published.map((event) => event.kind), [
+            EventKind.badgeAward,
+            EventKind.eventDeletion,
+          ]);
+          expect(published.first.tags, [
+            ['a', coordinate.value],
+            ['p', _pubkey(3)],
+          ]);
+          // Only the award naming the revoked recipient, and no `a` tag —
+          // that would take the badge definition down with it.
+          expect(published.last.tags, [
+            ['e', _eventId(60)],
+            ['k', '${EventKind.badgeAward}'],
+          ]);
+        },
+      );
+
+      test('deletes outright when nobody else was named', () async {
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(62),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(2)],
+            ),
+          ],
+        });
+
+        await repository.revokeAward(
+          coordinate: coordinate,
+          recipientPubkey: _pubkey(2),
+        );
+
+        final published = verify(
+          () => nostrClient.publishEventAwaitOk(captureAny()),
+        ).captured.cast<Event>();
+        expect(published, hasLength(1));
+        expect(published.single.kind, EventKind.eventDeletion);
+        expect(published.single.tags, [
+          ['e', _eventId(62)],
+          ['k', '${EventKind.badgeAward}'],
+        ]);
+      });
+
+      test('revokes every award naming them, not just the newest', () async {
+        // Leaving the older one behind would put them straight back on the
+        // recipient list, which resolves someone through their newest award.
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(63),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(2)],
+            ),
+            _awardEvent(
+              id: _eventId(64),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(2), _pubkey(3)],
+              createdAt: 2000,
+            ),
+          ],
+        });
+
+        await repository.revokeAward(
+          coordinate: coordinate,
+          recipientPubkey: _pubkey(2),
+        );
+
+        final published = verify(
+          () => nostrClient.publishEventAwaitOk(captureAny()),
+        ).captured.cast<Event>();
+        expect(published.last.tags, [
+          ['e', _eventId(64)],
+          ['e', _eventId(63)],
+          ['k', '${EventKind.badgeAward}'],
+        ]);
+      });
+
+      test('publishes nothing when no award names the recipient', () async {
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(65),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(3)],
+            ),
+          ],
+        });
+
+        await repository.revokeAward(
+          coordinate: coordinate,
+          recipientPubkey: _pubkey(2),
+        );
+
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test("refuses to revoke someone else's badge", () async {
+        await expectLater(
+          repository.revokeAward(
+            coordinate: BadgeCoordinate(
+              pubkey: _pubkey(2),
+              identifier: 'scene-stealer',
+            ),
+            recipientPubkey: _pubkey(3),
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'Cannot revoke a badge issued by someone else',
+            ),
+          ),
+        );
+        expect(lastSignedEvent(), isNull);
+      });
+
+      test('refuses a recipient that is not a hex pubkey', () async {
+        await expectLater(
+          repository.revokeAward(
+            coordinate: coordinate,
+            recipientPubkey: 'npub1notdecodedhere',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+        expect(lastSignedEvent(), isNull);
+      });
+
+      test('throws a StateError without a current pubkey', () async {
+        final anonymous = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => null,
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          anonymous.revokeAward(
+            coordinate: coordinate,
+            recipientPubkey: _pubkey(2),
+          ),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws a BadgePublishException when no relay accepts', () async {
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(66),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(2)],
+            ),
+          ],
+        });
+        when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          return _rejectedPublishOutcome(
+            invocation.positionalArguments.single as Event,
+          );
+        });
+
+        await expectLater(
+          repository.revokeAward(
+            coordinate: coordinate,
+            recipientPubkey: _pubkey(2),
+          ),
+          throwsA(isA<BadgePublishException>()),
+        );
+      });
     });
 
     group('deleteBadge', () {

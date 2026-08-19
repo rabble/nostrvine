@@ -10356,6 +10356,26 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Ta tillbaka badgen';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Ta tillbaka den här badgen?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Det här ber reläerna släppa utdelningen du gjorde till den här personen. Reläer kan neka, och om badgen redan är fäst ligger den kvar på profilen tills personen tar bort den. Hen får inget besked oavsett.';
+
+  @override
+  String get badgeDetailRevokeSharedNote =>
+      'Den här utdelningen gick ut till flera personer på en gång. Tar du tillbaka den från en får de andra en ny utdelning och måste acceptera badgen igen.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Ta tillbaka';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Badgen är tillbakatagen';
+
+  @override
   String get badgeDetailBlockClaimantsAction =>
       'Blockera alla med den här badgen';
 
