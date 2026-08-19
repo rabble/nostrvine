@@ -4966,6 +4966,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get supportFaqSubtitle => 'Sık sorulan sorular ve cevapları';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Ebeveynlerin ve gençlerin sağlıklı çevrimiçi alışkanlıklar kazanmasına yardımcı oluyoruz';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'Hesapları yaşa göre nasıl ele alıyoruz';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

@@ -4740,6 +4740,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportFaqSubtitle => '常见问题与解答';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle => '帮助家长和青少年养成健康的上网习惯';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => '我们如何按年龄区分处理账户';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

@@ -5055,6 +5055,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get supportFaqSubtitle => 'Perguntas e respostas comuns';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Ajudamos pais e adolescentes a criar hábitos saudáveis online';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'Como lidamos com contas por faixa etária';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

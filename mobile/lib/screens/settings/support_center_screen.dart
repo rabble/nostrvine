@@ -1,10 +1,11 @@
-// ABOUTME: Support center screen with bug report, feature request, logs, FAQ, and legal links
+// ABOUTME: Support center with help tools, resource links, and account deletion
 // ABOUTME: Replaces the old support dialog and drawer legal links
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
@@ -71,29 +72,10 @@ class SupportCenterScreen extends ConsumerWidget {
                 subtitle: l10n.supportSaveLogsSubtitle,
                 onTap: () => _exportLogs(context, bugReportService, userPubkey),
               ),
-              _SupportTile(
-                icon: DivineIconName.question,
-                title: l10n.supportFaq,
-                subtitle: l10n.supportFaqSubtitle,
-                onTap: () => _launchUrl(
-                  context,
-                  'https://divine.video/faq',
-                  l10n.supportFaq,
-                ),
-              ),
-              _SupportTile(
-                icon: DivineIconName.shieldCheck,
-                title: l10n.supportProofMode,
-                subtitle: l10n.supportProofModeSubtitle,
-                onTap: () => _launchUrl(
-                  context,
-                  'https://divine.video/proofmode',
-                  l10n.supportProofMode,
-                ),
-              ),
-
               // #6335 was filed from here by someone who could not find
-              // deletion, so it has to be reachable from here too.
+              // deletion, so it has to be reachable from here too. It sits
+              // above the outbound links rather than last so it stays on
+              // screen without scrolling on a 667pt phone.
               if (isAuthenticated)
                 _SupportTile(
                   icon: DivineIconName.trash,
@@ -108,6 +90,46 @@ class SupportCenterScreen extends ConsumerWidget {
                     screenName: 'SupportCenterScreen',
                   ),
                 ),
+              _SupportTile(
+                icon: DivineIconName.question,
+                title: l10n.supportFaq,
+                subtitle: l10n.supportFaqSubtitle,
+                onTap: () => _launchUrl(
+                  context,
+                  'https://divine.video/faq',
+                  l10n.supportFaq,
+                ),
+              ),
+              _SupportTile(
+                icon: DivineIconName.users,
+                title: l10n.supportFamily,
+                subtitle: l10n.supportFamilySubtitle,
+                onTap: () => _launchUrl(
+                  context,
+                  AppConstants.familyResourcesUrl,
+                  l10n.supportFamily,
+                ),
+              ),
+              _SupportTile(
+                icon: DivineIconName.userFocus,
+                title: l10n.supportKids,
+                subtitle: l10n.supportKidsSubtitle,
+                onTap: () => _launchUrl(
+                  context,
+                  AppConstants.kidsPolicyUrl,
+                  l10n.supportKids,
+                ),
+              ),
+              _SupportTile(
+                icon: DivineIconName.shieldCheck,
+                title: l10n.supportProofMode,
+                subtitle: l10n.supportProofModeSubtitle,
+                onTap: () => _launchUrl(
+                  context,
+                  'https://divine.video/proofmode',
+                  l10n.supportProofMode,
+                ),
+              ),
             ],
           ),
         ),

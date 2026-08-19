@@ -5061,6 +5061,20 @@ class AppLocalizationsFil extends AppLocalizations {
   String get supportFaqSubtitle => 'Mga karaniwang tanong at sagot';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Tumutulong sa mga magulang at teenager na bumuo ng malusog na gawi online';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle =>
+      'Kung paano namin pinangangasiwaan ang mga account ayon sa edad';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

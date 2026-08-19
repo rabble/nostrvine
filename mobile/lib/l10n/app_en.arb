@@ -3025,6 +3025,22 @@
   "supportSaveLogsSubtitle": "Export logs to file for manual sending",
   "supportFaq": "FAQ",
   "supportFaqSubtitle": "Common questions & answers",
+  "supportFamily": "Divine Family",
+  "@supportFamily": {
+    "description": "Title of the Support Center row linking to the Divine Family resource hub. Product name, left untranslated."
+  },
+  "supportFamilySubtitle": "Helping parents and teens build healthy habits online",
+  "@supportFamilySubtitle": {
+    "description": "Subtitle under the Divine Family row, describing resources that help parents and teenagers build healthy social media habits."
+  },
+  "supportKids": "Divine Kids",
+  "@supportKids": {
+    "description": "Title of the Support Center row linking to the Divine Kids policy page. Product name, left untranslated."
+  },
+  "supportKidsSubtitle": "How we handle accounts by age",
+  "@supportKidsSubtitle": {
+    "description": "Subtitle under the Divine Kids row, describing the policy for how accounts are handled differently depending on the account holder's age."
+  },
   "supportProofMode": "ProofMode",
   "supportProofModeSubtitle": "Learn about verification and authenticity",
   "supportLoginRequired": "Log in to contact support",

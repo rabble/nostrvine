@@ -5030,6 +5030,20 @@ class AppLocalizationsMs extends AppLocalizations {
   String get supportFaqSubtitle => 'Soalan & jawapan lazim';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Membantu ibu bapa dan remaja membina tabiat sihat dalam talian';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle =>
+      'Cara kami mengendalikan akaun mengikut umur';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

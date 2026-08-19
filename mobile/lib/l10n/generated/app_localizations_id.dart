@@ -4959,6 +4959,19 @@ class AppLocalizationsId extends AppLocalizations {
   String get supportFaqSubtitle => 'Pertanyaan & jawaban umum';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Membantu orang tua dan remaja membangun kebiasaan sehat online';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'Cara kami menangani akun berdasarkan usia';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override
