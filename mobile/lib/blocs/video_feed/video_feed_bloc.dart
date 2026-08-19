@@ -938,8 +938,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       authors: _followRepository.followingPubkeys,
       userPubkey: _userPubkey,
       until: until,
-      skipCache: skipCache,
-      revalidate: revalidate,
     ),
     VideoFeedSourceType.subscribedList =>
       _videosRepository

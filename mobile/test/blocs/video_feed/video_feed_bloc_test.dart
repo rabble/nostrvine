@@ -354,8 +354,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -393,8 +391,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: [compactVideo]));
         },
@@ -463,8 +459,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: [compactVideo]));
           when(
@@ -547,8 +541,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: [compactVideo]));
         },
@@ -649,8 +641,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           );
         },
@@ -701,8 +691,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
 
@@ -783,8 +771,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           );
 
@@ -814,8 +800,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
 
@@ -1129,8 +1113,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
@@ -1191,8 +1173,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -1222,8 +1202,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1250,8 +1228,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
@@ -1280,8 +1256,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1304,8 +1278,6 @@ void main() {
               userPubkey: 'user-pubkey',
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(1);
         },
@@ -1340,8 +1312,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async {
             callCount++;
@@ -1394,8 +1364,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(2);
         },
@@ -1426,8 +1394,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: followingVideos));
         },
@@ -1455,8 +1421,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(1);
         },
@@ -1480,8 +1444,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) => followingResult.future);
           when(
@@ -1528,8 +1490,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
@@ -1543,8 +1503,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(1);
         },
@@ -1594,8 +1552,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           );
         },
@@ -1788,8 +1744,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) => followingResult.future);
           when(
@@ -1863,8 +1817,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) => loadMoreResult.future);
           when(
@@ -2019,8 +1971,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           );
         },
@@ -2146,8 +2096,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: newerVideos));
         },
@@ -2188,8 +2136,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -2227,8 +2173,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: 1999,
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(1);
         },
@@ -2245,8 +2189,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -2292,8 +2234,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -2355,8 +2295,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -2441,8 +2379,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
@@ -2472,8 +2408,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(1);
         },
@@ -2539,8 +2473,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
@@ -2575,8 +2507,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
@@ -2617,8 +2547,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async {
             // Simulate network delay
@@ -2649,8 +2577,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(1);
         },
@@ -2678,8 +2604,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: overlappingVideos));
         },
@@ -2719,8 +2643,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -2758,8 +2680,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: freshVideos));
         },
@@ -2787,8 +2707,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(1);
         },
@@ -2807,8 +2725,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -2842,8 +2758,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3029,8 +2943,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3071,8 +2983,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3117,8 +3027,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3154,8 +3062,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3213,8 +3119,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3251,8 +3155,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3275,8 +3177,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(1);
         },
@@ -3299,8 +3199,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async {
             callCount++;
@@ -3337,8 +3235,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(2);
         },
@@ -3360,8 +3256,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3387,8 +3281,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).called(2);
         },
@@ -3420,8 +3312,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           );
         },
@@ -3543,8 +3433,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           );
         },
@@ -3585,8 +3473,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3628,8 +3514,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           );
         },
@@ -3652,8 +3536,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -3708,8 +3590,6 @@ void main() {
             userPubkey: any(named: 'userPubkey'),
             limit: any(named: 'limit'),
             until: any(named: 'until'),
-            skipCache: any(named: 'skipCache'),
-            revalidate: any(named: 'revalidate'),
           ),
         ).thenAnswer((_) async => HomeFeedResult(videos: videos));
 
@@ -3761,8 +3641,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3786,8 +3664,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -3813,8 +3689,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -3939,8 +3813,6 @@ void main() {
             userPubkey: any(named: 'userPubkey'),
             limit: any(named: 'limit'),
             until: any(named: 'until'),
-            skipCache: any(named: 'skipCache'),
-            revalidate: any(named: 'revalidate'),
           ),
         ).thenAnswer((_) async => HomeFeedResult(videos: videos));
       }
@@ -4061,8 +3933,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenThrow(Exception('network error'));
         },
@@ -4314,8 +4184,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
 
@@ -4379,8 +4247,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async {
             callCount++;
@@ -4475,8 +4341,6 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-              revalidate: any(named: 'revalidate'),
             ),
           ).thenAnswer((_) async {
             callCount++;

@@ -232,7 +232,7 @@ class VideosRepository {
   /// Clears the in-memory feed cache.
   ///
   /// When [key] is provided, only that feed mode's cache is removed
-  /// (e.g. `"home"`, `"latest"`, `"popular"`). When omitted, all
+  /// (e.g. `"latest"`, `"popular"`, `"classics"`). When omitted, all
   /// cached feeds are cleared.
   void clearInMemoryFeedCache({String? key}) {
     if (key != null) {
@@ -265,10 +265,6 @@ class VideosRepository {
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
-  /// - [skipCache]: Indicates that the caller is performing a manual refresh.
-  /// - [revalidate]: Indicates that the caller is revalidating on session
-  ///   start. Following is always fetched because it has no repository cache.
-  ///
   /// Returns a [HomeFeedResult] containing videos sorted by creation time
   /// (newest first) plus attribution metadata mapping videos to their
   /// source curated lists. Returns empty result if both [authors] is empty
@@ -280,8 +276,6 @@ class VideosRepository {
     String? userPubkey,
     int limit = _defaultLimit,
     int? until,
-    bool skipCache = false,
-    bool revalidate = false,
   }) async {
     if (authors.isEmpty && userPubkey == null) {
       return const HomeFeedResult(videos: []);
