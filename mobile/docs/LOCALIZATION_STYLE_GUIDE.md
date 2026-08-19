@@ -396,7 +396,10 @@ precisely what a reviewer who does not read the language otherwise lacks.
 |---|---|
 | Every locale defines every English key | `arb_consistency_test.dart` (+ `_knownUntranslatedDebt`) |
 | Placeholders survive translation | `arb_consistency_test.dart` |
-| ICU plural arms keep the categories the language needs | `countable_plural_test.dart`, `plural_arm_number_test.dart` |
+| No plural arm hardcodes a literal number, in any locale | `plural_arm_number_test.dart` |
+| A named list of countable keys inflects **in English** | `countable_plural_test.dart` |
+| `listVideoCount` / `profileFollowerCountUsers` keep their arms in `pl` and `ro` | `countable_plural_test.dart` (those two locales, those keys) |
+| **A non-English value has a plural block at all** | **nothing — see below** |
 | No wrong-script characters in a locale | `arb_script_integrity_test.dart` |
 | No value shared across unrelated scripts (stale/wrong-language paste) | `arb_script_integrity_test.dart` |
 | Named disclosures survive translation (`Divine`, `Nostr`, CSAM, Bluesky, Keycast) | `arb_consistency_test.dart`, per-key |
@@ -410,11 +413,33 @@ precisely what a reviewer who does not read the language otherwise lacks.
 A green CI proves the top half. It says nothing about the bottom half, which
 is the half this guide is about.
 
-One gap worth knowing about, because it looks like a Tier 1 problem and is
-not: a value that is *partly* translated passes every guard. It has the key,
-the placeholders, and the right script, so nothing fires.
+Two gaps are worth knowing about, because both look like Tier 1 problems and
+neither is.
+
+**A partly-translated value passes every guard.** It has the key, the
+placeholders and the right script, so nothing fires.
 `collaboratorInviteDmBody` still ends in the English sentence
 `Open diVine to review and accept.` in 19 of the 21 non-English locales.
+
+**A flattened plural passes every guard outside English.** `countable_plural_test.dart`
+proves the *English* value inflects, and spot-checks two keys in `pl` and one
+in `ro`; nothing asserts that the other locales kept a plural block. Seven keys
+that pair an int selector with a display string — `analyticsViewsCount`,
+`analyticsCommentsCount`, `analyticsRepostsCount`, `analyticsInteractionsCount`,
+`categoryVideoCount`, `messageRequestVideosCount`, `relaySettingsEventsSummary` —
+are flat in **all 21** non-English locales, so they render the plural noun at
+`n = 1`:
+
+```
+en  1 view          es  1 visualizaciones   de  1 Aufrufe
+fr  1 vues          pl  1 wyświetleń        pt  1 visualizações
+```
+
+`listVideoCount` is the control: it is one of the keys the `pl`/`ro`
+assertions cover, and it correctly renders `1 film` / `1 videoclip`. The bug
+sits exactly where the guard does not reach. Fixing it needs per-language
+plural categories (Polish one/few/many, Romanian one/few/other, Arabic six),
+so it is a translation change per the rules above, not a mechanical sweep.
 
 Related open work, so this guide does not duplicate it: #7248 (stale English
 revisions and wrong-language values that survive the parity guard), #7755 (ICU
