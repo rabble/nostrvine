@@ -1,10 +1,11 @@
-// ABOUTME: Support center screen with bug report, feature request, logs, FAQ, and legal links
+// ABOUTME: Support center with help tools, resource links, and account deletion
 // ABOUTME: Replaces the old support dialog and drawer legal links
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
@@ -87,7 +88,7 @@ class SupportCenterScreen extends ConsumerWidget {
                 subtitle: l10n.supportFamilySubtitle,
                 onTap: () => _launchUrl(
                   context,
-                  'https://divine.video/family',
+                  AppConstants.familyResourcesUrl,
                   l10n.supportFamily,
                 ),
               ),
@@ -97,7 +98,7 @@ class SupportCenterScreen extends ConsumerWidget {
                 subtitle: l10n.supportKidsSubtitle,
                 onTap: () => _launchUrl(
                   context,
-                  'https://divine.video/kids',
+                  AppConstants.kidsPolicyUrl,
                   l10n.supportKids,
                 ),
               ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -158,7 +159,7 @@ void main() {
 
         expect(
           launcher.launched.map((call) => call.url),
-          equals(['https://divine.video/family']),
+          equals([AppConstants.familyResourcesUrl]),
         );
       });
 
@@ -174,7 +175,7 @@ void main() {
 
         expect(
           launcher.launched.map((call) => call.url),
-          equals(['https://divine.video/kids']),
+          equals([AppConstants.kidsPolicyUrl]),
         );
       });
     });
