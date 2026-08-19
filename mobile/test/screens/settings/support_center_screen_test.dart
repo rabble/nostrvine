@@ -85,7 +85,6 @@ void main() {
       tester,
     ) async {
       await pump(tester);
-      await scrollToBottom(tester);
 
       expect(find.text(en.nostrSettingsDeleteAccount), findsOneWidget);
       expect(find.text(en.nostrSettingsDeleteAccountSubtitle), findsOneWidget);
@@ -98,12 +97,29 @@ void main() {
       tester,
     ) async {
       await pump(tester, locale: const Locale('de'));
-      await scrollToBottom(tester);
 
       final de = lookupAppLocalizations(const Locale('de'));
       expect(find.text(de.nostrSettingsDeleteAccount), findsOneWidget);
       expect(find.text(de.nostrSettingsDeleteAccountSubtitle), findsOneWidget);
       expect(find.text(en.nostrSettingsDeleteAccount), findsNothing);
+    });
+
+    // #6335 is a discoverability bug: the row is on this screen because a
+    // user could not find deletion. Two rows added above it in #7852 pushed
+    // it off the smallest phone Divine still supports, so pin the viewport.
+    testWidgets('keeps the delete-account entry on screen at 375x667', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 667);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await pump(tester);
+
+      final row = find.text(en.nostrSettingsDeleteAccount);
+      expect(row, findsOneWidget);
+      expect(tester.getRect(row).bottom, lessThan(667));
     });
 
     testWidgets('hides the delete-account entry when signed out', (
@@ -124,7 +140,6 @@ void main() {
       tester,
     ) async {
       await pump(tester);
-      await scrollToBottom(tester);
 
       await tester.tap(find.text(en.nostrSettingsDeleteAccount));
       await tester.pumpAndSettle();
@@ -137,6 +152,14 @@ void main() {
       // Placement is the requirement, not just presence: both rows sit
       // between FAQ and ProofMode.
       testWidgets('render between the FAQ and ProofMode rows', (tester) async {
+        // Tall enough that every row is laid out at once: ListView does not
+        // build what it cannot show, and scrolling to reach ProofMode would
+        // push FAQ back off the top.
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         await pump(tester);
 
         double topOf(String label) => tester.getTopLeft(find.text(label)).dy;

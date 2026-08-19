@@ -72,6 +72,24 @@ class SupportCenterScreen extends ConsumerWidget {
                 subtitle: l10n.supportSaveLogsSubtitle,
                 onTap: () => _exportLogs(context, bugReportService, userPubkey),
               ),
+              // #6335 was filed from here by someone who could not find
+              // deletion, so it has to be reachable from here too. It sits
+              // above the outbound links rather than last so it stays on
+              // screen without scrolling on a 667pt phone.
+              if (isAuthenticated)
+                _SupportTile(
+                  icon: DivineIconName.trash,
+                  title: l10n.nostrSettingsDeleteAccount,
+                  subtitle: l10n.nostrSettingsDeleteAccountSubtitle,
+                  iconColor: VineTheme.error,
+                  titleColor: VineTheme.error,
+                  trailingColor: VineTheme.error,
+                  onTap: () => startAccountDeletionFlow(
+                    context: context,
+                    ref: ref,
+                    screenName: 'SupportCenterScreen',
+                  ),
+                ),
               _SupportTile(
                 icon: DivineIconName.question,
                 title: l10n.supportFaq,
@@ -112,23 +130,6 @@ class SupportCenterScreen extends ConsumerWidget {
                   l10n.supportProofMode,
                 ),
               ),
-
-              // #6335 was filed from here by someone who could not find
-              // deletion, so it has to be reachable from here too.
-              if (isAuthenticated)
-                _SupportTile(
-                  icon: DivineIconName.trash,
-                  title: l10n.nostrSettingsDeleteAccount,
-                  subtitle: l10n.nostrSettingsDeleteAccountSubtitle,
-                  iconColor: VineTheme.error,
-                  titleColor: VineTheme.error,
-                  trailingColor: VineTheme.error,
-                  onTap: () => startAccountDeletionFlow(
-                    context: context,
-                    ref: ref,
-                    screenName: 'SupportCenterScreen',
-                  ),
-                ),
             ],
           ),
         ),
