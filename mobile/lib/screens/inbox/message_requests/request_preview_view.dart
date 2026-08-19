@@ -495,19 +495,30 @@ class _DeclineAndRemoveButton extends StatelessWidget {
     return _SecondaryActionButton(
       label: context.l10n.messageRequestDeclineAndRemoveButton,
       onTap: () async {
+        final cubit = context.read<MessageRequestActionsCubit>();
+        if (cubit.state.status == MessageRequestActionsStatus.processing) {
+          return;
+        }
         final messenger = ScaffoldMessenger.of(context);
+        final errorText = context.l10n.commonSomethingWentWrong;
         final name = displayName;
-        final snackText = name == null
+        final successText = name == null
             ? null
             : context.l10n.messageRequestDeclinedSnackbar(name);
-        await context.read<MessageRequestActionsCubit>().declineRequest(
-          conversationId,
-        );
+        await cubit.declineRequest(conversationId);
+        if (cubit.state.status != MessageRequestActionsStatus.success) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(errorText, error: true),
+          );
+          return;
+        }
         // safePop for the same reason as the app-bar back button above: this
         // route is deep-linkable, and a cold entry has nothing to pop (#6112).
         if (context.mounted) context.safePop(fallback: InboxPage.path);
-        if (snackText != null) {
-          messenger.showSnackBar(SnackBar(content: Text(snackText)));
+        if (successText != null) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(successText),
+          );
         }
       },
     );
@@ -530,16 +541,26 @@ class _BlockButton extends StatelessWidget {
     return _SecondaryActionButton(
       label: context.l10n.messageRequestBlockButton,
       onTap: () async {
+        final cubit = context.read<MessageRequestActionsCubit>();
+        if (cubit.state.status == MessageRequestActionsStatus.processing) {
+          return;
+        }
         final messenger = ScaffoldMessenger.of(context);
-        final snackText = context.l10n.messageRequestBlockedSnackbar(
+        final errorText = context.l10n.commonSomethingWentWrong;
+        final successText = context.l10n.messageRequestBlockedSnackbar(
           displayName,
         );
-        await context.read<MessageRequestActionsCubit>().blockAndRemoveRequest(
-          conversationId,
-          pubkey,
-        );
+        await cubit.blockAndRemoveRequest(conversationId, pubkey);
+        if (cubit.state.status != MessageRequestActionsStatus.success) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(errorText, error: true),
+          );
+          return;
+        }
         if (context.mounted) context.safePop(fallback: InboxPage.path);
-        messenger.showSnackBar(SnackBar(content: Text(snackText)));
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(successText),
+        );
       },
     );
   }

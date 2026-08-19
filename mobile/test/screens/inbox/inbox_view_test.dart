@@ -2432,5 +2432,55 @@ void main() {
         expect(find.text(l10n.inboxReportedUser('user')), findsNothing);
       });
     });
+
+    group('remove confirmation copy', () {
+      final conversation = DmConversation(
+        id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        participantPubkeys: const [currentPubkey, otherPubkey],
+        isGroup: false,
+        createdAt: nowUnix,
+        lastMessageContent: 'Hello',
+        lastMessageTimestamp: nowUnix,
+      );
+
+      Widget buildRemoveSubject() => buildSubject(
+        wrapInScaffold: true,
+        state: ConversationListState(
+          status: ConversationListStatus.loaded,
+          conversations: [conversation],
+          visibleConversations: [conversation],
+          hasMore: false,
+        ),
+        additionalOverrides: [
+          fetchUserProfileProvider(
+            otherPubkey,
+          ).overrideWith((ref) async => null),
+        ],
+      );
+
+      // The headline of #7881: the confirmation must describe what removing
+      // actually does (clears the inbox, a new message reopens it) rather than
+      // promise a permanent, irreversible delete the protocol cannot deliver.
+      testWidgets('tells the truth about what removing does', (tester) async {
+        await tester.pumpWidget(buildRemoveSubject());
+        await tester.pump();
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxActionRemove));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.inboxRemoveConfirmTitle), findsOneWidget);
+        expect(
+          find.text(l10n.inboxRemoveConfirmBody('user')),
+          findsOneWidget,
+        );
+      });
+    });
   });
 }

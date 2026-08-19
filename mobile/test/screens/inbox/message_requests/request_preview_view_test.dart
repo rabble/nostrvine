@@ -97,9 +97,14 @@ void main() {
       mockAuthService = _MockAuthService(currentPubkey);
       mockGoRouter = MockGoRouter();
 
-      when(
-        () => mockActionsCubit.state,
-      ).thenReturn(const MessageRequestActionsState());
+      // Default to the settled success status: the action buttons read this
+      // after awaiting to decide whether to confirm-and-pop or surface an
+      // error. Individual tests override it for the error / in-flight paths.
+      when(() => mockActionsCubit.state).thenReturn(
+        const MessageRequestActionsState(
+          status: MessageRequestActionsStatus.success,
+        ),
+      );
 
       when(() => mockPreviewCubit.state).thenReturn(
         const RequestPreviewState(
@@ -578,6 +583,89 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets(
+        'when the block fails, warns and keeps the user on the request',
+        (tester) async {
+          when(() => mockActionsCubit.state).thenReturn(
+            const MessageRequestActionsState(
+              status: MessageRequestActionsStatus.error,
+            ),
+          );
+          when(
+            () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
+          ).thenAnswer((_) async {});
+          when(mockGoRouter.canPop).thenReturn(true);
+          when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text(l10n.messageRequestBlockButton));
+          await tester.pump();
+
+          expect(find.text(l10n.commonSomethingWentWrong), findsOneWidget);
+          expect(
+            find.text(l10n.messageRequestBlockedSnackbar('TestUser')),
+            findsNothing,
+          );
+          verifyNever(() => mockGoRouter.pop());
+        },
+      );
+
+      testWidgets(
+        'when the decline fails, warns and does not claim success',
+        (tester) async {
+          when(() => mockActionsCubit.state).thenReturn(
+            const MessageRequestActionsState(
+              status: MessageRequestActionsStatus.error,
+            ),
+          );
+          when(
+            () => mockActionsCubit.declineRequest(any()),
+          ).thenAnswer((_) async {});
+          when(mockGoRouter.canPop).thenReturn(true);
+          when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          await tester.tap(
+            find.text(l10n.messageRequestDeclineAndRemoveButton),
+          );
+          await tester.pump();
+
+          expect(find.text(l10n.commonSomethingWentWrong), findsOneWidget);
+          expect(
+            find.text(l10n.messageRequestDeclinedSnackbar('TestUser')),
+            findsNothing,
+          );
+          verifyNever(() => mockGoRouter.pop());
+        },
+      );
+
+      testWidgets('ignores a second tap while an action is in flight', (
+        tester,
+      ) async {
+        when(() => mockActionsCubit.state).thenReturn(
+          const MessageRequestActionsState(
+            status: MessageRequestActionsStatus.processing,
+          ),
+        );
+        when(
+          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.messageRequestBlockButton));
+        await tester.pump();
+
+        verifyNever(
+          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
+        );
+      });
     });
 
     // #7335. `build` branched on `denied` only, so `loading` and `error` fell
@@ -753,6 +841,32 @@ void main() {
         await tester.pump();
 
         verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+
+      // With no resolved counterparty there is no name to put in the
+      // confirmation, so decline stays silent rather than naming a generated
+      // "Adjective Animal N" placeholder (the #7335 leak).
+      testWidgets('declining an unresolved request shows no snackbar', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async {});
+        when(mockGoRouter.canPop).thenReturn(true);
+        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        verify(() => mockActionsCubit.declineRequest(conversationId)).called(1);
+        expect(find.byType(SnackBar), findsNothing);
       });
 
       testWidgets('error does not name the sender or count its messages', (
