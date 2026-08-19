@@ -12447,12 +12447,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get analyticsWindowAll => 'Lahat';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'Sundan ang user $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'I-unfollow ang user $index';
   }
 

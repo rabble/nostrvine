@@ -12316,12 +12316,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get analyticsWindowAll => 'سب';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'صارف کو فالو کریں $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'صارف کو ان فالو کریں $index';
   }
 

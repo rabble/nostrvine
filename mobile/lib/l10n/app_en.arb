@@ -7703,9 +7703,9 @@
   "analyticsWindowAll": "All",
   "@analyticsWindowAll": {"description": "Creator-analytics time window covering all time, shown next to 7D / 28D / 90D."},
   "followUserIndexedSemanticLabel": "Follow user {index}",
-  "@followUserIndexedSemanticLabel": {"description": "Screen-reader label for the follow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.", "placeholders": {"index": {"type": "int"}}},
+  "@followUserIndexedSemanticLabel": {"description": "Screen-reader label for the follow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.", "placeholders": {"index": {"type": "String"}}},
   "unfollowUserIndexedSemanticLabel": "Unfollow user {index}",
-  "@unfollowUserIndexedSemanticLabel": {"description": "Screen-reader label for the unfollow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.", "placeholders": {"index": {"type": "int"}}},
+  "@unfollowUserIndexedSemanticLabel": {"description": "Screen-reader label for the unfollow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.", "placeholders": {"index": {"type": "String"}}},
   "supporterTierMonthlyLabel": "{title} — {price} / month",
   "@supporterTierMonthlyLabel": {"description": "Label on a supporter subscription button: the tier name, its price, and the monthly billing period.", "placeholders": {"title": {"type": "String"}, "price": {"type": "String"}}}
 }

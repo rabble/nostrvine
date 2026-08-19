@@ -12573,12 +12573,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get analyticsWindowAll => 'Wszystko';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'Obserwuj użytkownika $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'Przestań obserwować użytkownika $index';
   }
 

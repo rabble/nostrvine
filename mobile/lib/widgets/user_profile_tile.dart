@@ -234,7 +234,7 @@ class _FollowButton extends StatelessWidget {
         semanticIdentifier: 'unfollow_user',
         semanticLabel: position == null
             ? l10n.unfollowUserSemanticLabel
-            : l10n.unfollowUserIndexedSemanticLabel(position),
+            : l10n.unfollowUserIndexedSemanticLabel('$position'),
         onPressed: () => _confirmUnfollow(context),
       );
     }
@@ -245,7 +245,7 @@ class _FollowButton extends StatelessWidget {
       semanticIdentifier: 'follow_user',
       semanticLabel: position == null
           ? l10n.followUserSemanticLabel
-          : l10n.followUserIndexedSemanticLabel(position),
+          : l10n.followUserIndexedSemanticLabel('$position'),
       onPressed: onToggleFollow,
     );
   }

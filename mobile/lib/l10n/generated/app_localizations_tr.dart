@@ -12256,12 +12256,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get analyticsWindowAll => 'Tümü';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'Kullanıcıyı takip et $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'Kullanıcıyı takipten çık $index';
   }
 

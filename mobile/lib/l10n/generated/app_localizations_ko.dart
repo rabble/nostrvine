@@ -11741,12 +11741,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get analyticsWindowAll => '전체';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return '사용자 팔로우 $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return '사용자 팔로우 취소 $index';
   }
 

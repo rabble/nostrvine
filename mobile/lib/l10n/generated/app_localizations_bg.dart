@@ -12448,12 +12448,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get analyticsWindowAll => 'Всички';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'Последвай потребителя $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'Спри да следваш потребителя $index';
   }
 

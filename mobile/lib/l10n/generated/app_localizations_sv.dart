@@ -12328,12 +12328,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get analyticsWindowAll => 'Alla';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'Följ användare $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'Sluta följa användare $index';
   }
 

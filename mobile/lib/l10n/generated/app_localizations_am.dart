@@ -12008,12 +12008,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get analyticsWindowAll => 'ሁሉም';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'ተጠቃሚን ተከታተል $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'ተጠቃሚን መከታተል አቁም $index';
   }
 

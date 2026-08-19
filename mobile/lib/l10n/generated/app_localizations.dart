@@ -20912,13 +20912,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Follow user {index}'**
-  String followUserIndexedSemanticLabel(int index);
+  String followUserIndexedSemanticLabel(String index);
 
   /// Screen-reader label for the unfollow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.
   ///
   /// In en, this message translates to:
   /// **'Unfollow user {index}'**
-  String unfollowUserIndexedSemanticLabel(int index);
+  String unfollowUserIndexedSemanticLabel(String index);
 
   /// Label on a supporter subscription button: the tier name, its price, and the monthly billing period.
   ///

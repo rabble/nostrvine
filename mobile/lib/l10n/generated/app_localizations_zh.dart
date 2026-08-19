@@ -11610,12 +11610,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get analyticsWindowAll => '全部';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return '关注用户 $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return '取消关注用户 $index';
   }
 

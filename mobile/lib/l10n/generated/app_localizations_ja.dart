@@ -11716,12 +11716,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get analyticsWindowAll => 'すべて';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'ユーザーをフォロー $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'ユーザーのフォローを解除 $index';
   }
 

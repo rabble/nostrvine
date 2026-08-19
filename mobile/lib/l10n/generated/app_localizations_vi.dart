@@ -12280,12 +12280,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get analyticsWindowAll => 'Tất cả';
 
   @override
-  String followUserIndexedSemanticLabel(int index) {
+  String followUserIndexedSemanticLabel(String index) {
     return 'Theo dõi người dùng $index';
   }
 
   @override
-  String unfollowUserIndexedSemanticLabel(int index) {
+  String unfollowUserIndexedSemanticLabel(String index) {
     return 'Bỏ theo dõi người dùng $index';
   }
 
