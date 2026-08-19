@@ -1588,8 +1588,8 @@ void main() {
         ),
         findsOneWidget,
         reason:
-            'the X is a bare GestureDetector; without a Semantics wrapper a '
-            'screen reader reaches an unlabeled tap target',
+            'an icon-only X carries no meaning on its own; without '
+            '`semanticLabel` a screen reader reaches an unnamed tap target',
       );
       handle.dispose();
     });
@@ -1622,6 +1622,86 @@ void main() {
         findsOneWidget,
       );
       handle.dispose();
+    });
+  });
+
+  group('keyboard reachability', () {
+    // The screen sets `resizeToAvoidBottomInset: false`, so the layout does
+    // not shrink when the keyboard opens. Unless the scroll view owns the
+    // inset itself, the PIN field's submit button sits under the keyboard
+    // with no gesture that can reach it.
+    testWidgets('scrolls the PIN submit button clear of the keyboard', (
+      tester,
+    ) async {
+      const viewport = Size(390, 760);
+      const keyboardExtent = 300.0;
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = viewport;
+      tester.view.viewInsets = const FakeViewPadding(bottom: keyboardExtent);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final submit = find.widgetWithText(
+        DivineButton,
+        l10n.authVerificationPinSubmit,
+      );
+      expect(submit, findsOneWidget);
+
+      await tester.dragUntilVisible(
+        submit,
+        find.byType(CustomScrollView),
+        const Offset(0, -80),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getRect(submit).bottom,
+        lessThanOrEqualTo(viewport.height - keyboardExtent),
+        reason: 'the submit button must come to rest above the keyboard',
+      );
+    });
+
+    // Success and error are `Spacer`-centred columns. Before the screen owned
+    // the scrolling they had no scroll view at all, so a short viewport at a
+    // large text scale overflowed instead of scrolling.
+    testWidgets('scrolls the failure state instead of overflowing', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 480);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: createTestWidget(
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.failure,
+              errorCode: EmailVerificationError.pollFailed,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(CustomScrollView), findsOneWidget);
     });
   });
 
