@@ -3,6 +3,7 @@
 
 // TODO(#4339): Drop this compatibility barrel once consumers import the
 // feature-domain provider modules directly.
+export 'account_deletion_recovery_providers.dart';
 export 'auth_providers.dart';
 export 'bug_report_providers.dart';
 export 'minor_account_review_providers.dart';

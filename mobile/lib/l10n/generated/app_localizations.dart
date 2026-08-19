@@ -11606,6 +11606,48 @@ abstract class AppLocalizations {
   /// **'We couldn\'t finish deleting your account. Try again.'**
   String get deleteAccountDeletionIncomplete;
 
+  /// Title of the full-screen recovery gate shown when account deletion was interrupted after a username release was prepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish deleting your account'**
+  String get accountDeletionRecoveryTitle;
+
+  /// Explains that an interrupted deletion left the username safely reserved and recoverable.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.'**
+  String get accountDeletionRecoveryBody;
+
+  /// Button that cancels an interrupted account deletion and restores its pending username.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore my username'**
+  String get accountDeletionRestoreUsername;
+
+  /// Shown while the server is durably completing an immediate account deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Your deletion request is still being processed. Check again before leaving this screen.'**
+  String get accountDeletionFinishingBody;
+
+  /// Shown when rollback of a pending username release was not confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t restore your username yet. Check your connection and try again.'**
+  String get accountDeletionRecoveryFailed;
+
+  /// Confirms that cancelling an interrupted deletion restored the pending username.
+  ///
+  /// In en, this message translates to:
+  /// **'Your username is restored. Your account was not deleted.'**
+  String get accountDeletionUsernameRestored;
+
+  /// Shown when the app cannot load a durable account-deletion attempt.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check your deletion status. Check your connection and try again.'**
+  String get accountDeletionRecoveryStatusFailed;
+
   /// No description provided for @deleteAccountFinalConfirmationTitle.
   ///
   /// In en, this message translates to:

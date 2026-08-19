@@ -21,6 +21,7 @@ import 'package:openvine/router/product_analytics_navigation_observer.dart';
 import 'package:openvine/router/providers/redirect_provider.dart';
 import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/router/router_refresh_listenable.dart';
+import 'package:openvine/router/routes/account_deletion_recovery_routes.dart';
 import 'package:openvine/router/routes/apps_routes.dart';
 import 'package:openvine/router/routes/auth_routes.dart';
 import 'package:openvine/router/routes/library_routes.dart';
@@ -33,6 +34,7 @@ import 'package:openvine/router/routes/settings_routes.dart';
 import 'package:openvine/router/routes/shell.dart';
 import 'package:openvine/router/routes/video_routes.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
+import 'package:openvine/screens/account_deletion_recovery_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
@@ -123,6 +125,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     }
     refreshListenable.refresh();
   });
+  ref.listen(currentAccountDeletionAttemptProvider, (previous, next) {
+    final before = previous?.value?.requiresRecoveryScreen ?? false;
+    final after = next.value?.requiresRecoveryScreen ?? false;
+    if (before != after) refreshListenable.refresh();
+  });
   ref.onDispose(refreshListenable.dispose);
 
   final router = GoRouter(
@@ -152,6 +159,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ...shellRoutes(),
       ...searchRoutes(),
       ...messagingRoutes(),
+      ...accountDeletionRecoveryRoutes(),
       ...minorAccountReviewRoutes(),
       ...listsRoutes(ref),
       ...authRoutes(ref),

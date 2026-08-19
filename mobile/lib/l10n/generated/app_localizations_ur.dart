@@ -6754,6 +6754,32 @@ class AppLocalizationsUr extends AppLocalizations {
       'ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔';
 
   @override
+  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+
+  @override
+  String get accountDeletionRecoveryBody =>
+      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+
+  @override
+  String get accountDeletionRestoreUsername => 'Restore my username';
+
+  @override
+  String get accountDeletionFinishingBody =>
+      'Your deletion request is still being processed. Check again before leaving this screen.';
+
+  @override
+  String get accountDeletionRecoveryFailed =>
+      'We couldn\'t restore your username yet. Check your connection and try again.';
+
+  @override
+  String get accountDeletionUsernameRestored =>
+      'Your username is restored. Your account was not deleted.';
+
+  @override
+  String get accountDeletionRecoveryStatusFailed =>
+      'We couldn\'t check your deletion status. Check your connection and try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ آخری تصدیق';
 
   @override

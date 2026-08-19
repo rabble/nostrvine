@@ -497,6 +497,14 @@ const _knownUntranslatedDebt = <String>{
   // Restricted-account deletion guidance tracked in #7879.
   'shareMenuDeleteFailedAccountRestricted',
   'deleteAccountAccountRestricted',
+  // Cross-repo deletion recovery copy tracked in #7813.
+  'accountDeletionFinishingBody',
+  'accountDeletionRecoveryBody',
+  'accountDeletionRecoveryFailed',
+  'accountDeletionRecoveryStatusFailed',
+  'accountDeletionRecoveryTitle',
+  'accountDeletionRestoreUsername',
+  'accountDeletionUsernameRestored',
   // Translation pass tracked in #7632.
   'analyticsConnectionIssue',
   'analyticsDiagnosticsFailedSources',

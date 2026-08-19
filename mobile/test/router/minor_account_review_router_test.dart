@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
+import 'package:openvine/screens/account_deletion_recovery_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
@@ -129,6 +131,43 @@ void main() {
         MinorAccountReviewScreen.path,
       );
     });
+
+    testWidgets(
+      'interrupted deletion takes precedence over normal app routes',
+      (
+        tester,
+      ) async {
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(mockAuthService: mockAuthService),
+            nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+            currentMinorAccountReviewStatusProvider.overrideWith(
+              (_) async => MinorAccountReviewStatus.active(),
+            ),
+            currentAccountDeletionAttemptProvider.overrideWith(
+              (_) async => const AccountDeletionAttempt(
+                id: 'attempt-id',
+                status: AccountDeletionAttemptStatus.recoverable,
+                username: 'alice',
+              ),
+            ),
+          ],
+        );
+        registerContainerTearDown(tester, container);
+        await container.read(currentMinorAccountReviewStatusProvider.future);
+        await container.read(currentAccountDeletionAttemptProvider.future);
+        await pumpRouter(tester, container);
+
+        final router = container.read(goRouterProvider);
+        router.go(VideoFeedPage.pathForIndex(0));
+        await tester.pumpAndSettle();
+
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          AccountDeletionRecoveryScreen.path,
+        );
+      },
+    );
 
     testWidgets('allows parent contact route while restricted', (tester) async {
       final container = ProviderContainer(

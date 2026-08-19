@@ -32,7 +32,9 @@ Future<void> startAccountDeletionFlow({
 }) async {
   final deletionService = ref.read(accountDeletionServiceProvider);
   final authService = ref.read(authServiceProvider);
-  final profileRepository = ref.read(profileRepositoryProvider);
+  final deletionRecoveryRepository = ref.read(
+    accountDeletionRecoveryRepositoryProvider,
+  );
   final pubkey = authService.currentPublicKeyHex;
   if (pubkey == null || pubkey.isEmpty) return;
 
@@ -75,15 +77,18 @@ Future<void> startAccountDeletionFlow({
         ({
           required bool burnUsername,
           ({String name, String canonical})? ownedUsername,
-        }) => executeAccountDeletion(
-          context: context,
-          deletionService: deletionService,
-          authService: authService,
-          profileRepository: profileRepository,
-          burnUsername: burnUsername,
-          ownedUsername: ownedUsername,
-          confirmedPubkey: pubkey,
-          screenName: screenName,
-        ),
+        }) async {
+          await executeAccountDeletion(
+            context: context,
+            deletionService: deletionService,
+            authService: authService,
+            deletionRecoveryRepository: deletionRecoveryRepository,
+            burnUsername: burnUsername,
+            ownedUsername: ownedUsername,
+            confirmedPubkey: pubkey,
+            screenName: screenName,
+          );
+          ref.invalidate(currentAccountDeletionAttemptProvider);
+        },
   );
 }
