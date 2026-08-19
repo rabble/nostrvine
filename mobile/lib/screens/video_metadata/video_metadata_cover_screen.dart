@@ -105,7 +105,10 @@ class _VideoMetadataCoverScreenState
     if (!mounted) return;
     _videoDuration = metadata.duration;
 
-    final controller = DivineVideoPlayerController(useTexture: true);
+    final controller = DivineVideoPlayerController(
+      useTexture: true,
+      debugLabel: 'metadata_cover',
+    );
     try {
       await controller.initialize();
       if (!mounted) {

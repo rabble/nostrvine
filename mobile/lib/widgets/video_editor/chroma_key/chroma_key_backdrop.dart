@@ -185,6 +185,7 @@ class _VideoBackdropState extends State<_VideoBackdrop> {
     final controller = DivineVideoPlayerController(
       useTexture: true,
       exclusivePlayback: false,
+      debugLabel: 'editor_chroma_backdrop',
     );
     bool superseded() => !mounted || generation != _loadGeneration;
     try {

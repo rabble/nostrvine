@@ -74,7 +74,10 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
       return;
     }
 
-    final controller = DivineVideoPlayerController(useTexture: true);
+    final controller = DivineVideoPlayerController(
+      useTexture: true,
+      debugLabel: 'clip_preview',
+    );
     try {
       await controller.initialize();
       if (!mounted) {

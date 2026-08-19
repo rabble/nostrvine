@@ -91,7 +91,10 @@ class _VideoMetadataPreviewScreenState
     final video = widget.clip.video;
     if (video == null) return;
 
-    final controller = DivineVideoPlayerController(useTexture: true);
+    final controller = DivineVideoPlayerController(
+      useTexture: true,
+      debugLabel: 'metadata_preview',
+    );
     try {
       await controller.initialize();
       if (!mounted) {

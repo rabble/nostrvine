@@ -1222,6 +1222,27 @@ internal class DivineVideoPlayerInstance(
         sink.success(map)
     }
 
+    /** Human-readable name for a media3 `PLAY_WHEN_READY_CHANGE_REASON_*`. */
+    private fun playWhenReadyReasonName(reason: Int): String =
+        when (reason) {
+            Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST -> "user_request"
+            Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS -> "audio_focus_loss"
+            Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY -> "audio_becoming_noisy"
+            Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE -> "remote"
+            Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM -> "end_of_media_item"
+            else -> "unknown($reason)"
+        }
+
+    /** Human-readable name for a media3 `Player.STATE_*`. */
+    private fun playbackStateName(state: Int?): String =
+        when (state) {
+            Player.STATE_IDLE -> "idle"
+            Player.STATE_BUFFERING -> "buffering"
+            Player.STATE_READY -> "ready"
+            Player.STATE_ENDED -> "ended"
+            else -> "unknown($state)"
+        }
+
     private fun errorCodeFor(error: PlaybackException): String =
         when (error.errorCode) {
             PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> {
@@ -1384,11 +1405,39 @@ internal class DivineVideoPlayerInstance(
             sendStateUpdate()
         }
 
+        /**
+         * The decisive signal when a video stops with no user action: media3
+         * names *why* `playWhenReady` flipped, which separates our own
+         * `pause()` (`USER_REQUEST`) from the platform taking playback away
+         * (`AUDIO_FOCUS_LOSS`, `AUDIO_BECOMING_NOISY`, `REMOTE`).
+         */
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            val message =
+                "Player $playerId playWhenReady=$playWhenReady " +
+                    "(${playWhenReadyReasonName(reason)})"
+            if (playWhenReady) {
+                DivineVideoPlayerLog.debug(message, name = "DivineVideoPlayer.Playback")
+            } else {
+                DivineVideoPlayerLog.info(message, name = "DivineVideoPlayer.Playback")
+            }
+        }
+
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             if (isPlaying) {
                 syncAudioOverlays()
             } else {
                 audioOverlayManager.pauseAndDeactivateAll()
+                // Still asked to play, yet no longer playing: nobody paused
+                // this one, it stalled or ran out of media by itself. The
+                // buffering watchdog only fires after 8s, so a shorter stall
+                // would otherwise leave no trace at all.
+                if (player?.playWhenReady == true) {
+                    DivineVideoPlayerLog.info(
+                        "Player $playerId stopped playing while still requested to " +
+                            "play (state=${playbackStateName(player?.playbackState)})",
+                        name = "DivineVideoPlayer.Playback",
+                    )
+                }
             }
             sendStateUpdate()
         }

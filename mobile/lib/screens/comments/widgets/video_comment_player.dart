@@ -90,7 +90,10 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
     }
 
     setState(() => _isInitializing = true);
-    final controller = DivineVideoPlayerController(useTexture: true);
+    final controller = DivineVideoPlayerController(
+      useTexture: true,
+      debugLabel: 'comments',
+    );
     try {
       await controller.initialize();
       await controller.setSource(VideoClip.network(widget.videoUrl));

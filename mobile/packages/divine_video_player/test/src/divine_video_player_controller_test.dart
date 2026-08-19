@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,14 @@ void main() {
         createDefaultWebVideoPlayerBackend;
     await eventController.close();
   });
+
+  /// The most recent log line emitted by the exclusive-playback rule.
+  LogEntry? latestExclusivePauseLog() {
+    final matches = LogCaptureService().getRecentLogs().where(
+      (entry) => entry.message.contains('exclusive playback pausing'),
+    );
+    return matches.isEmpty ? null : matches.last;
+  }
 
   /// Registers platform channel mocks and initializes the controller.
   ///
@@ -396,6 +405,36 @@ void main() {
         await controller.play();
 
         expect(playerCalls.map((call) => call.method), equals(['play']));
+      });
+
+      test('play names the siblings the exclusive rule paused', () async {
+        final editor = DivineVideoPlayerController(debugLabel: 'cover');
+        addTearDown(editor.dispose);
+        await editor.initialize();
+
+        await editor.play();
+
+        final entry = latestExclusivePauseLog();
+        expect(entry, isNotNull);
+        // The victim is identified so a stopped player in a bug report can be
+        // traced back to the screen that stopped it.
+        expect(entry!.message, contains('Player ${controller.playerId}'));
+        expect(
+          entry.message,
+          contains('Player ${editor.playerId} (cover)'),
+        );
+      });
+
+      test('play logs no sibling pause when it is the only player', () async {
+        await controller.dispose();
+        final solo = DivineVideoPlayerController(debugLabel: 'solo');
+        addTearDown(solo.dispose);
+        await solo.initialize();
+        await LogCaptureService().clearAllLogs();
+
+        await solo.play();
+
+        expect(latestExclusivePauseLog(), isNull);
       });
 
       test('pause invokes native method', () async {

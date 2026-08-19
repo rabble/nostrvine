@@ -117,7 +117,10 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
 
     // Re-check `mounted` after every await and tear the controller down when
     // this screen went away mid-load, rather than leaking it.
-    final player = DivineVideoPlayerController(useTexture: true);
+    final player = DivineVideoPlayerController(
+      useTexture: true,
+      debugLabel: 'editor_chroma_key',
+    );
     try {
       await player.initialize();
       if (!mounted) return await player.dispose();
