@@ -337,6 +337,7 @@ definitions:
     - &prepare_patch_source
       name: Verify patch source
       script: |
+        set -euo pipefail
         if [ "$CM_BRANCH" != "main" ]; then
           echo "Refusing to load the patch workflow from branch '$CM_BRANCH'."
           echo "Start the manual workflow on main; PATCH_BRANCH selects the isolated release source."

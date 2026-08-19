@@ -202,6 +202,16 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn('git checkout --detach "refs/remotes/origin/${{ inputs.PATCH_BRANCH }}"', self.contents)
         self.assertIn("*prepare_patch_source", self.contents)
 
+    def test_prepare_patch_source_fails_closed(self) -> None:
+        # Codemagic does not abort a multi-line script when a command fails, so
+        # the step must set -e: a rejected identity check or a failed
+        # fetch/checkout must never leave the build validating and patching the
+        # main checkout it started on.
+        start = self.contents.index("- &prepare_patch_source")
+        end = self.contents.index("- &", start + 1)
+        step = self.contents[start:end]
+        self.assertIn("script: |\n        set -euo pipefail\n", step)
+
     def test_shorebird_workflows_define_every_variable_their_scripts_read(self) -> None:
         resolved = json.loads(
             subprocess.run(
