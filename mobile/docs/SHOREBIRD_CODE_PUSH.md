@@ -207,7 +207,10 @@ test-backed.
 1. Cherry-pick the already-reviewed `main` fix onto the patch line. Do not add
    cleanup, refactors, features, merge commits, or unrelated generated output.
    If a backport needs adaptation, revise and review the portable fix on `main`
-   first, then backport it.
+   first, then backport it. Use plain `git cherry-pick <sha>`, never
+   `--ff` or a fast-forward merge: those put `main`'s own commit object on the
+   line, and the patch-source validator correctly refuses any line containing
+   a commit that is already on `main`.
 1. If the release already has a patch, start from its existing patch line and
    add the next fix. A Shorebird patch replaces the release's Dart program and
    only one patch is active at a time, so every later patch must retain all

@@ -187,6 +187,11 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
     def test_accepts_cherry_pick_when_baseline_is_main_tip(self) -> None:
         # Branching at a baseline that is still main's tip is fine: the
         # backport arrives as a cherry-pick, a new object absent from main.
+        # The fixture uses a plain commit rather than a real `git cherry-pick`
+        # on purpose: a cherry-pick can bit-for-bit reproduce the source
+        # commit's SHA when tree, parent, and author/committer identity and
+        # second all coincide, which would (correctly) trip the on-main check
+        # and make this test intermittently red.
         self._commit("lib/fix.dart", "const fixed = true;\n", "fix")
 
         result = self._run()
