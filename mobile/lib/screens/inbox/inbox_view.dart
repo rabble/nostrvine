@@ -1150,7 +1150,7 @@ class _FilteredEmptyContent extends StatelessWidget {
   }
 }
 
-/// Pinned header carrying [UnreadFilterChips].
+/// Pinned header carrying [InboxFilterChips].
 ///
 /// Pinned rather than scrolled away so the user can always drop back to All
 /// after narrowing to Unread without hunting for the chip. Opaque, because the
