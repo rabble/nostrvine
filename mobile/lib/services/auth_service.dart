@@ -3177,13 +3177,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
       }
 
-      // Prefer a NIP-98 proof-of-key over the bearer token.
-      // [activeAccountKeycastToken] above may have just minted a refreshed
-      // token, and a refreshed token no longer carries the server's first-party
-      // fact — so the bearer path is exactly the one that gets refused, after
-      // the irreversible NIP-62 vanish has already been published. Signing
-      // proves key control instead. Falls back to the bearer token when signing
-      // is unavailable, so this can ship before the server accepts proofs.
+      // The bearer token authorizes this; the signer is only a 403 retry.
+      // Keycast's delete route parses `Bearer ` and rejects every other
+      // scheme, so leading with a NIP-98 proof gets a 401 back before the
+      // proof is read at all — after the irreversible NIP-62 vanish has
+      // already been published. keycast#331 closed keycast#323 by preserving
+      // the first-party fact across refresh rotation instead of accepting
+      // proofs here, which is what makes the refreshed bearer token usable.
       // See #5756 / #4881 / keycast#323.
       final result = await _oauthClient.deleteAccount(
         accessToken,
@@ -3236,16 +3236,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   /// Sign a NIP-98 proof-of-key for the account-deletion request at [url].
   ///
-  /// Returns the base64 event body, or null when a proof cannot be produced —
-  /// in which case the caller falls back to the bearer token. Never throws:
-  /// failing to sign must not abort a deletion that the bearer path could still
-  /// complete.
+  /// Only reached once the bearer attempt came back 403. Returns the base64
+  /// event body, or null when a proof cannot be produced — in which case the
+  /// 403 stands. Never throws: failing to sign must not turn a refused
+  /// deletion into a reported network error.
   ///
   /// The signer must still be alive here. It is: the flow signs and publishes
   /// the kind-62 vanish moments earlier, so a working signer is a precondition
-  /// of reaching this point at all. If that ordering ever changes, this returns
-  /// null and the call silently degrades to the bearer token — which is the
-  /// behavior this exists to avoid, so keep the ordering.
+  /// of reaching this point at all.
   Future<String?> _signAccountDeletionProof(String url) async {
     try {
       final token = await _nip98Auth.createAuthToken(

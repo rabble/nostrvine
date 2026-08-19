@@ -983,20 +983,56 @@ class KeycastOAuth {
     }
   }
 
+  /// One `DELETE /api/user/account` attempt carrying [authorization].
+  Future<http.Response> _sendAccountDeletion(
+    String url,
+    String authorization,
+  ) {
+    return _client
+        .delete(
+          Uri.parse(url),
+          headers: {
+            'Authorization': authorization,
+            'Content-Type': 'application/json',
+          },
+        )
+        .timeout(requestTimeout);
+  }
+
+  /// The NIP-98 proof for [url], or null when [signer] cannot produce one.
+  ///
+  /// Swallows a throwing signer so the 403 that triggered the retry stays the
+  /// response the caller sees, rather than a misleading network error.
+  static Future<String?> _signDeletionProof(
+    Future<String?> Function(String url) signer,
+    String url,
+  ) async {
+    try {
+      return await signer(url);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Delete the user's account permanently from Keycast
   ///
   /// This is a destructive action that cannot be undone.
   ///
-  /// Authorization prefers a **NIP-98 proof-of-key** when [nip98Signer] is
-  /// supplied and succeeds, falling back to the bearer [token] otherwise.
-  /// The proof matters because a bearer token minted by a *refresh* no longer
-  /// carries the server's first-party fact, so it is refused — while a
-  /// signature proves key control regardless of how old the session is.
+  /// Authorization uses the bearer [token]. Keycast's `DELETE /user/account`
+  /// hands the header straight to UCAN validation, which strips a `Bearer `
+  /// prefix and rejects every other scheme — so a NIP-98 proof is answered
+  /// with 401 before it is ever read.
   ///
-  /// [nip98Signer] receives the exact request URL and returns the base64 event
-  /// body (without the `Nostr ` scheme), or null if it cannot sign. The URL is
-  /// passed in rather than rebuilt by the caller because NIP-98 binds the
-  /// signature to it: any divergence makes the server reject the proof.
+  /// [nip98Signer] is therefore a **retry** credential, used only after a
+  /// **403**: that is the code the server returns once it has read and refused
+  /// a credential, which is the case a proof-of-key would cure. It receives
+  /// the exact request URL and returns the base64 event body (without the
+  /// `Nostr ` scheme), or null if it cannot sign. The URL is passed in rather
+  /// than rebuilt by the caller because NIP-98 binds the signature to it: any
+  /// divergence makes the server reject the proof. Keycast closed keycast#323
+  /// by preserving the first-party fact across refresh rotation instead of
+  /// accepting proofs on this route, so until that changes the retry cannot
+  /// succeed and the original 403 is returned.
   ///
   /// Returns [DeleteAccountResult] with success status.
   Future<DeleteAccountResult> deleteAccount(
@@ -1005,19 +1041,15 @@ class KeycastOAuth {
   }) async {
     try {
       final url = '${config.serverUrl}/api/user/account';
-      final nip98Token = nip98Signer == null ? null : await nip98Signer(url);
 
-      final response = await _client
-          .delete(
-            Uri.parse(url),
-            headers: {
-              'Authorization': nip98Token != null
-                  ? 'Nostr $nip98Token'
-                  : 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(requestTimeout);
+      var response = await _sendAccountDeletion(url, 'Bearer $token');
+
+      if (response.statusCode == 403 && nip98Signer != null) {
+        final proof = await _signDeletionProof(nip98Signer, url);
+        if (proof != null) {
+          response = await _sendAccountDeletion(url, 'Nostr $proof');
+        }
+      }
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1036,10 +1068,10 @@ class KeycastOAuth {
       }
 
       if (response.statusCode == 403) {
-        // The credential is valid but not authorized to delete — currently
-        // because a refreshed access token no longer carries the server's
-        // first-party fact. Re-authenticating fixes it, so this must never be
-        // reported as a connectivity problem or retried unchanged.
+        // The credential was read and refused: neither user-signed nor
+        // carrying the server's first-party fact. The proof-of-key retry above
+        // has already had its turn, so re-authenticating is what is left — this
+        // must never be reported as a connectivity problem.
         return DeleteAccountResult.error(
           _errorMessageFrom(response) ??
               'Account deletion requires signing in again',

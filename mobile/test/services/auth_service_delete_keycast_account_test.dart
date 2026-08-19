@@ -287,13 +287,12 @@ void main() {
       },
     );
 
-    // Without a proof-of-key the request falls back to the bearer token, and a
-    // refreshed bearer token is exactly what keycast refuses (#4881) — after
-    // the irreversible NIP-62 vanish has already been published. If this
-    // regresses, deletion silently goes back to failing for every returning
-    // user.
+    // The bearer token authorizes the delete; the signer is the client's only
+    // recourse if keycast ever refuses it with a 403 again (#4881) — which
+    // lands after the irreversible NIP-62 vanish has already been published.
+    // Dropping it would leave that path with nothing to retry.
     test(
-      'supplies a NIP-98 signer so a refreshed session can still delete',
+      'supplies a NIP-98 signer as the 403 retry credential',
       () async {
         final (authService, pubkeyHex) = await signedInAuthService();
         when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
