@@ -42,8 +42,8 @@ place, the video editor.
 - **Romanian** and **Portuguese** drift in the same corner — `ro`'s polite
   2nd-person plural and `pt`'s European forms both cluster in the video editor
   and chroma-key screens.
-- **Japanese** uses casual sentence-final よ/ね — `ネットに接続できないよ。` —
-  where the surrounding app is です/ます polite.
+- **Japanese** mixes casual sentence-final よ/ね — `ネットに接続できないよ。` —
+  with a large corpus of です/ます polite copy.
 - **Bulgarian** switches inside a single string:
   `Докосни произволно място, за да започнете да записвате` opens with a
   familiar imperative and closes with a polite one.
@@ -116,6 +116,17 @@ produces copy that reads as rude, not as friendly.
 | `vi` Vietnamese | `bạn` | consistent | |
 | `zh` Chinese | `你` | consistent | Never `您`. Simplified script, mainland vocabulary — see below. |
 
+The unreconciled `split` rows are tracked separately so their native-speaker
+review cannot disappear into this guide: [`am` #7906](https://github.com/divinevideo/divine-mobile/issues/7906),
+[`bg` #7907](https://github.com/divinevideo/divine-mobile/issues/7907),
+[`es` #7908](https://github.com/divinevideo/divine-mobile/issues/7908),
+[`ja` #7909](https://github.com/divinevideo/divine-mobile/issues/7909),
+[`ko` #7910](https://github.com/divinevideo/divine-mobile/issues/7910),
+[`pt` #7911](https://github.com/divinevideo/divine-mobile/issues/7911), and
+[`tr` #7912](https://github.com/divinevideo/divine-mobile/issues/7912).
+The Spanish tracker first requires the product decision between the current
+voseo majority and the provisional pan-regional tuteo target.
+
 "Current tree" is the shape of today's corpus, measured with the checks in
 [Checks you can run](#checks-you-can-run-without-speaking-the-language) —
 counts are floors, since a wider marker list finds more. Where it says
@@ -168,7 +179,8 @@ One `pt` file serves Brazil and Portugal, and today it is Brazilian:
 (`utilizador`, `ficheiro`, `ecrã`, `telemóvel`) anywhere in the file. Keep
 that base rather than mixing a second variety into it.
 
-- **Address: `você`.** Eight keys currently use European `tu` forms —
+- **Address: `você`.** At least 16 keys currently use European `tu` forms or
+  vocabulary —
   `Verifica a tua ligação`, `o teu comentário`, `Adiciona tags` — and are the
   exception, not a precedent.
 - Where a word splits hardest between the two varieties, prefer a phrasing
@@ -214,7 +226,7 @@ substitute a *different* joke — you are inventing untested brand voice in a
 language nobody on the review path can check. Plain and correct beats clever
 and unverifiable. `authWelcomeToDivine` is the counter-example: English
 "Welcome to Divine!" became Japanese `やった！入れたよ！` ("Yes! I'm in!"),
-which is charming, casual in a file that is otherwise polite, and no longer
+which is charming, casual beside a large polite corpus, and no longer
 contains the product name or the "Welcome Home" arrival language the brand
 guide asks for.
 
@@ -227,8 +239,8 @@ because "paid" is load-bearing and a softened rendering discloses nothing.
 
 **Do not add emphasis the source did not have.** Exclamation marks, ALL CAPS
 and emoji are decisions made in `app_en.arb`. Match them; do not introduce
-them. The English source currently uses exactly one emoji, in
-`videoFeedLoopCountLabel`.
+them. The English source currently uses emoji in two keys:
+`videoFeedLoopCountLabel` and `deleteAccountFinalConfirmationTitle`.
 
 ---
 
@@ -256,6 +268,8 @@ The casing rule is currently broken at the source: seven keys in `app_en.arb`
 `invitesShareWithPeople`, `invitesShareMessage`, `invitesShareSubject`) write
 `DiVine` or `diVine`, and every locale faithfully mirrored it. Fix that in
 English first — a translator copying the source is doing the right thing.
+The source-side correction and locale mirrors are tracked in
+[#7904](https://github.com/divinevideo/divine-mobile/issues/7904).
 
 ### Everything else: consistent within a locale
 
@@ -372,8 +386,10 @@ PY
 Swap the pattern for the locale you are reviewing: `de` `\b(Sie|Ihnen|Ihre?)\b`,
 `nl` `\b(u|uw)\b`, `it` `\b(Lei|Suo|Sua)\b` **case-sensitively**, `es` voseo
 `\b(vos|sos|tenés|podés|Revisá|Probá|Elegí|Usá|Compartí)\b`, `ja`
-`(だよ|してね|するよ|ないよ)`, `ko` `(습니다|ㅂ니다)` and `(있어$|없어$|이야$)`,
-`zh` `您`, `id` `\bAnda\b`.
+`(だよ|してね|するよ|ないよ)`, `ko` `(습니다|ㅂ니다)` and
+`(있어|없어|이야)`, `zh` `您`, `id` `\bAnda\b`. The Korean 반말 pattern is
+deliberately unanchored: real values carry punctuation, and this command is a
+candidate finder rather than a claim that every occurrence is sentence-final.
 
 ### Where a pronoun grep lies
 
@@ -485,7 +501,9 @@ neither is.
 **A partly-translated value passes every guard.** It has the key, the
 placeholders and the right script, so nothing fires.
 `collaboratorInviteDmBody` still ends in the English sentence
-`Open diVine to review and accept.` in 19 of the 21 non-English locales.
+`Open diVine to review and accept.` in 19 of the 21 non-English locales. The
+translation pass is tracked in
+[#7905](https://github.com/divinevideo/divine-mobile/issues/7905).
 
 **A flattened plural passes every guard outside English.** `countable_plural_test.dart`
 proves the *English* value inflects, and spot-checks two keys in `pl` and one
