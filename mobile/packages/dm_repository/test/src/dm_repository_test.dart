@@ -12678,6 +12678,103 @@ void main() {
         );
 
         await controller.close();
+        test(
+          'a NIP-04 event ignored by database dedup is recorded so redelivery '
+          'skips decrypt',
+          () async {
+            when(
+              () => mockDirectMessagesDao.hasMatchingMessage(
+                conversationId: any(named: 'conversationId'),
+                senderPubkey: _validPubkeyB,
+                content: 'Retried NIP-04 message',
+                createdAt: 1700000000,
+                ownerPubkey: any(named: 'ownerPubkey'),
+              ),
+            ).thenAnswer((_) async => false);
+            when(
+              () => mockDirectMessagesDao.insertMessage(
+                id: any(named: 'id'),
+                conversationId: any(named: 'conversationId'),
+                senderPubkey: any(named: 'senderPubkey'),
+                content: any(named: 'content'),
+                createdAt: any(named: 'createdAt'),
+                giftWrapId: any(named: 'giftWrapId'),
+                messageKind: any(named: 'messageKind'),
+                replyToId: any(named: 'replyToId'),
+                subject: any(named: 'subject'),
+                fileType: any(named: 'fileType'),
+                encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+                decryptionKey: any(named: 'decryptionKey'),
+                decryptionNonce: any(named: 'decryptionNonce'),
+                fileHash: any(named: 'fileHash'),
+                originalFileHash: any(named: 'originalFileHash'),
+                fileSize: any(named: 'fileSize'),
+                dimensions: any(named: 'dimensions'),
+                blurhash: any(named: 'blurhash'),
+                thumbnailUrl: any(named: 'thumbnailUrl'),
+                ownerPubkey: any(named: 'ownerPubkey'),
+                tagsJson: any(named: 'tagsJson'),
+                sendBatchId: any(named: 'sendBatchId'),
+              ),
+            ).thenAnswer((_) async => false);
+
+            final syncState = _FakeDmSyncState();
+            var decryptCount = 0;
+            final repository = createRepository(
+              processedGiftWrapsDao: ledger,
+              syncState: syncState,
+              nip04Decryptor: (_, _) async {
+                decryptCount++;
+                return 'Retried NIP-04 message';
+              },
+            );
+            await repository.startListening();
+
+            // For NIP-04, we create a regular kind 4 event
+            final nip04Event = Event.fromJson({
+              'id': 'nip04-event-id-12345',
+              'pubkey': _validPubkeyB,
+              'created_at': 1700000000,
+              'kind': 4, // NIP-04 direct message
+              'tags': [
+                ['p', _validPubkeyA],
+              ],
+              'content': 'encrypted-content-here',
+              'sig': '',
+            });
+
+            controller.add(nip04Event);
+            await Future<void>.delayed(Duration.zero);
+            await Future<void>.delayed(Duration.zero);
+            controller.add(nip04Event);
+            await Future<void>.delayed(Duration.zero);
+            await Future<void>.delayed(Duration.zero);
+
+            expect(decryptCount, 1);
+            expect(ledger.recorded, contains(nip04Event.id));
+            expect(syncState.recorded, isEmpty);
+            verifyNever(
+              () => mockConversationsDao.upsertConversation(
+                id: any(named: 'id'),
+                participantPubkeys: any(named: 'participantPubkeys'),
+                isGroup: any(named: 'isGroup'),
+                createdAt: any(named: 'createdAt'),
+                lastMessageContent: any(named: 'lastMessageContent'),
+                lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+                lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+                subject: any(named: 'subject'),
+                isRead: any(named: 'isRead'),
+                currentUserHasSent: any(named: 'currentUserHasSent'),
+                ownerPubkey: any(named: 'ownerPubkey'),
+                dmProtocol: any(named: 'dmProtocol'),
+              ),
+            );
+
+            await controller.close();
+            await repository.stopListening();
+          },
+        );
+
         await repository.stopListening();
       });
 
