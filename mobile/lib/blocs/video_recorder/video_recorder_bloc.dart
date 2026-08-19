@@ -898,7 +898,7 @@ class VideoRecorderBloc
             pendingStopAfterStart: false,
           ),
         );
-        add(const VideoRecorderRecordingStopRequested());
+        addIfOpen(const VideoRecorderRecordingStopRequested());
       } else {
         emit(state.copyWith(isStartingRecording: false));
       }

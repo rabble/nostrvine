@@ -204,7 +204,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState>
       waveformBars: bars,
       currentDuration: state.currentDuration + amplitudeInterval,
     );
-    emit(next);
+    emitIfOpen(next);
     // Warn with a stronger pulse the moment the audio outgrows the video.
     if (!wasOver && next.isOverAvailable) {
       unawaited(HapticService.heavyImpact());

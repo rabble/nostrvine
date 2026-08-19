@@ -99,7 +99,7 @@ class AudioTimingCubit extends Cubit<AudioTimingState>
       initialOffset = (startTimeSecs / scrollableAudioSecs).clamp(0.0, 1.0);
     }
 
-    emit(
+    emitIfOpen(
       AudioTimingState(
         startOffset: initialOffset,
         audioDuration: audioDuration,

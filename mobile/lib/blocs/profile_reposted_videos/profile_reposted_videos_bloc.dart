@@ -493,7 +493,7 @@ class ProfileRepostedVideosBloc
           name: 'ProfileRepostedVideosBloc',
           category: LogCategory.video,
         );
-        add(ProfileRepostedVideosReconcileRequested(newIds));
+        addIfOpen(ProfileRepostedVideosReconcileRequested(newIds));
         return state;
       },
     );

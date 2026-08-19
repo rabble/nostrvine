@@ -257,7 +257,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     return _repository
         .watchLists(ownerPubkey: ownerPubkey)
         .listen(
-          (lists) => add(
+          (lists) => addIfOpen(
             PeopleListsRepositoryListsChanged(
               ownerPubkey: ownerPubkey,
               lists: lists,
