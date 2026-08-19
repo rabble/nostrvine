@@ -362,10 +362,6 @@ dependencies:
   volume_controller: ^3.4.4
   meta: ^1.18.0
 
-  bloc: any
-  collection: any
-  reposts_repository: any
-  path: any
 dependency_overrides:
   # TODO(#3638): Keep device_info_plus on 10.x until the app is ready for the
   # transitive 11.x platform interface changes.
@@ -418,6 +414,7 @@ dev_dependencies:
   # riverpod_lint: ^2.3.10  # Depends on custom_lint
   freezed: ^3.0.0
   json_serializable: ^6.8.0
+  path: any
   yaml: any
   golden_toolkit: ^0.15.0
   alchemist: ^0.12.1
