@@ -1,6 +1,8 @@
-// ABOUTME: Widget tests for VerifiedAccountChip — render + tap launches URL.
+// ABOUTME: Widget tests for interactive and informational verified-account chips.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/profile/verified_account_chip.dart';
@@ -60,7 +62,7 @@ void main() {
       expect(launched.toString(), equals('https://github.com/octocat'));
     });
 
-    testWidgets('mastodon claims route through verifier lookup', (
+    testWidgets('mastodon claims launch the public profile', (
       tester,
     ) async {
       Uri? launched;
@@ -83,13 +85,70 @@ void main() {
       await tester.pump();
       await tester.tap(find.byType(InkWell));
       await tester.pumpAndSettle();
-      expect(launched, isNotNull);
-      expect(launched!.host, equals('verifier.divine.video'));
-      expect(launched!.queryParameters['platform'], equals('mastodon'));
-      expect(
-        launched!.queryParameters['identity'],
-        equals('fosstodon.org/@alice'),
+      expect(launched, Uri.parse('https://fosstodon.org/@alice'));
+    });
+
+    testWidgets('youtube channel claims launch the channel profile', (
+      tester,
+    ) async {
+      Uri? launched;
+      await tester.pumpWidget(
+        _wrap(
+          VerifiedAccountChip(
+            claim: const IdentityClaim(
+              pubkey: _hex64,
+              platform: 'youtube',
+              identity: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
+              proof: 'abc',
+            ),
+            launcher: (uri) async {
+              launched = uri;
+              return true;
+            },
+          ),
+        ),
       );
+      await tester.tap(find.byType(InkWell));
+      await tester.pumpAndSettle();
+      expect(
+        launched,
+        Uri.parse(
+          'https://www.youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw',
+        ),
+      );
+    });
+
+    testWidgets('discord claims are visible but not interactive', (
+      tester,
+    ) async {
+      var launches = 0;
+      await tester.pumpWidget(
+        _wrap(
+          VerifiedAccountChip(
+            claim: const IdentityClaim(
+              pubkey: _hex64,
+              platform: 'discord',
+              identity: 'alice',
+              proof: 'abc',
+            ),
+            launcher: (_) async {
+              launches++;
+              return true;
+            },
+          ),
+        ),
+      );
+
+      expect(find.textContaining('discord'), findsOneWidget);
+      expect(find.byType(InkWell), findsNothing);
+      expect(find.byType(DivineIcon), findsNothing);
+
+      final semantics = tester.getSemantics(find.byType(VerifiedAccountChip));
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isFalse,
+      );
+      expect(launches, isZero);
     });
   });
 }
