@@ -2362,7 +2362,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count händelser';
   }
 
@@ -2912,17 +2912,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'Visningsdata otillgänglig';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count visningar';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count kommentarer';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count återpubliceringar';
   }
 
@@ -2948,7 +2948,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get analyticsViewsUnavailable => 'visningar otillgängliga';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count interaktioner';
   }
 
@@ -6358,7 +6358,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get exploreSearchHint => 'Sök...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count videor';
   }
 
@@ -7330,12 +7330,12 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte läsa in den här förfrågan.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count följare';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count videor';
   }
 

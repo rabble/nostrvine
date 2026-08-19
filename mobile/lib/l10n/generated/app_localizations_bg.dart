@@ -2408,7 +2408,7 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count събития';
   }
 
@@ -2962,17 +2962,17 @@ class AppLocalizationsBg extends AppLocalizations {
       'Данните за гледанията са недостъпни';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count показвания';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count коментара';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count репоста';
   }
 
@@ -2998,7 +2998,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get analyticsViewsUnavailable => 'Гледанията не са налични';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count взаимодействия';
   }
 
@@ -6419,7 +6419,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get exploreSearchHint => 'Търсене...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count видеа';
   }
 
@@ -7407,12 +7407,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get messageRequestLoadFailed => 'Заявката не можа да се зареди.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count последователи';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count видеа';
   }
 

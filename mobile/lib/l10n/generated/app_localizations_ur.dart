@@ -2370,7 +2370,7 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count ایونٹس';
   }
 
@@ -2917,17 +2917,17 @@ class AppLocalizationsUr extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'ویوز ڈیٹا دستیاب نہیں';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count ویوز';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count تبصرے';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count ریپوسٹس';
   }
 
@@ -2953,7 +2953,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get analyticsViewsUnavailable => 'ویوز دستیاب نہیں';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count تفاعلات';
   }
 
@@ -6367,7 +6367,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get exploreSearchHint => 'تلاش کریں...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count ویڈیوز';
   }
 
@@ -7335,12 +7335,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get messageRequestLoadFailed => 'یہ درخواست لوڈ نہیں ہو سکی۔';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count فالوورز';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count ویڈیوز';
   }
 

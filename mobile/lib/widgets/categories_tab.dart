@@ -194,6 +194,7 @@ class _CategoryTile extends StatelessWidget {
                         ),
                         Text(
                           context.l10n.categoryVideoCount(
+                            category.videoCount,
                             _formatCount(category.videoCount),
                           ),
                           style: VineTheme.labelMediumFont(

@@ -209,7 +209,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsDeveloperModeTapsRemaining(int count) {
-    return '$count more taps to enable developer mode';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more taps to enable developer mode',
+      one: '$count more tap to enable developer mode',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -598,7 +604,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String profileFollowerCountUsers(int count) {
-    return '$count users';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count users',
+      one: '$count user',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2291,7 +2303,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relaySettingsConnectedToRelays(int count) {
-    return 'Connected to $count relay(s)!';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Connected to $count relays!',
+      one: 'Connected to $count relay!',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2361,12 +2379,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relaySettingsSubscriptionsSummary(int count) {
-    return '$count subs';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count subs',
+      one: '$count sub',
+    );
+    return '$_temp0';
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
-    return '$count events';
+  String relaySettingsEventsSummary(int countValue, String count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      countValue,
+      locale: localeName,
+      other: '$count events',
+      one: '$count event',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2495,7 +2525,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relayDiagnosticRelayCount(int count) {
-    return '$count relay(s)';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count relays',
+      one: '$count relay',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2514,7 +2550,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relayDiagnosticVideosCount(int count) {
-    return '$count videos';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '$count video',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2597,7 +2639,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relayDiagnosticFoundVideoEvents(int count) {
-    return 'Found $count video events in database';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Found $count video events in database',
+      one: 'Found $count video event in database',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2607,7 +2655,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
-    return 'Connected to $count relay(s)!';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Connected to $count relays!',
+      one: 'Connected to $count relay!',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2915,18 +2969,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'View data unavailable';
 
   @override
-  String analyticsViewsCount(String count) {
-    return '$count views';
+  String analyticsViewsCount(int countValue, String count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      countValue,
+      locale: localeName,
+      other: '$count views',
+      one: '$count view',
+    );
+    return '$_temp0';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
-    return '$count comments';
+  String analyticsCommentsCount(int countValue, String count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      countValue,
+      locale: localeName,
+      other: '$count comments',
+      one: '$count comment',
+    );
+    return '$_temp0';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
-    return '$count reposts';
+  String analyticsRepostsCount(int countValue, String count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      countValue,
+      locale: localeName,
+      other: '$count reposts',
+      one: '$count repost',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2950,8 +3022,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get analyticsViewsUnavailable => 'views unavailable';
 
   @override
-  String analyticsInteractionsCount(String count) {
-    return '$count interactions';
+  String analyticsInteractionsCount(int countValue, String count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      countValue,
+      locale: localeName,
+      other: '$count interactions',
+      one: '$count interaction',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3937,7 +4015,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
-    return '$count follow sets available';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count follow sets available',
+      one: '$count follow set available',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4119,7 +4203,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String shareMenuVideoCount(int count) {
-    return '$count videos';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '$count video',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4612,7 +4702,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String notificationsInvitePlural(int count) {
-    return 'You have $count invites to share with friends!';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You have $count invites to share with friends!',
+      one: 'You have $count invite to share with friends!',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5212,7 +5308,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String listVideoCount(int count) {
-    return '$count videos';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '$count video',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5582,7 +5684,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String soundVideoCount(int count) {
-    return '$count videos';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '$count video',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6355,8 +6463,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exploreSearchHint => 'Search...';
 
   @override
-  String categoryVideoCount(String count) {
-    return '$count videos';
+  String categoryVideoCount(int countValue, String count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      countValue,
+      locale: localeName,
+      other: '$count videos',
+      one: '$count video',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -7321,13 +7435,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageRequestLoadFailed => 'Couldn\'t load this request.';
 
   @override
-  String messageRequestFollowersCount(String count) {
-    return '$count Followers';
+  String messageRequestFollowersCount(int countValue, String count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      countValue,
+      locale: localeName,
+      other: '$count Followers',
+      one: '$count Follower',
+    );
+    return '$_temp0';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
-    return '$count videos';
+  String messageRequestVideosCount(int countValue, String count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      countValue,
+      locale: localeName,
+      other: '$count videos',
+      one: '$count video',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -7689,7 +7815,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String videoFeedLoopCountLabel(int count) {
-    return '🔁 $count loops';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '🔁 $count loops',
+      one: '🔁 $count loop',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -9382,7 +9514,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
-    return '$count frames per image';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count frames per image',
+      one: '$count frame per image',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11236,7 +11374,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String monetizationSettingsConfiguredCount(int count) {
-    return '$count active link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active links on your profile',
+      one: '$count active link on your profile',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11322,7 +11466,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String monetizationTipsSettingsConfiguredCount(int count) {
-    return '$count active tip link(s) on your profile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active tip links on your profile',
+      one: '$count active tip link on your profile',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11408,7 +11558,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsStorageApproxVideos(int count) {
-    return '≈ $count videos';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '≈ $count videos',
+      one: '≈ $count video',
+    );
+    return '$_temp0';
   }
 
   @override

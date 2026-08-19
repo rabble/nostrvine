@@ -2349,7 +2349,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count حدث';
   }
 
@@ -2891,17 +2891,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'بيانات المشاهدة غير متاحة';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count مشاهدة';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count تعليق';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count إعادة نشر';
   }
 
@@ -2926,7 +2926,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get analyticsViewsUnavailable => 'المشاهدات غير متاحة';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count تفاعل';
   }
 
@@ -6311,7 +6311,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get exploreSearchHint => 'بحث...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count فيديو';
   }
 
@@ -7277,12 +7277,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get messageRequestLoadFailed => 'تعذّر تحميل هذا الطلب.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count متابِع';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count فيديو';
   }
 

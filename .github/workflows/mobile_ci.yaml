@@ -297,6 +297,17 @@ jobs:
           # widget under test happens to reach it. Prefer testMaterialApp(...)
           # from test/helpers/test_provider_overrides.dart.
           bash scripts/check_l10n_delegates_ceiling.sh
+      - name: 🔢 Verify countable ARB keys carry ICU plurals (l10n ratchet)
+        run: |
+          # Issue #3633. Freezes the set of app_en.arb keys that interpolate a
+          # count but have no ICU plural. A flat countable key still renders the
+          # number — it just stops inflecting the noun, so English ships
+          # "1 videos". Nothing else catches this: arb_consistency_test checks
+          # key and placeholder parity, and plural_arm_number_test (#7153) only
+          # fires on arms that already exist. Most baseline entries are
+          # permanent (units, percentages, ordinals, ratios) and must NEVER be
+          # pluralized — each carries a trailing '# reason'.
+          bash scripts/check_countable_plural_floor.sh
       - name: 🔐 Verify no profile publish reaches the ungated read provider (#6423)
         run: bash scripts/check_profile_read_write_split.sh
       - name: 🔨 Verify generated files are up-to-date

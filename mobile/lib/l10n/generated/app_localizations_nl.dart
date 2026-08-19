@@ -2378,7 +2378,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count gebeurtenissen';
   }
 
@@ -2929,17 +2929,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Weergavedata niet beschikbaar';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count weergaven';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count reacties';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count reposts';
   }
 
@@ -2965,7 +2965,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get analyticsViewsUnavailable => 'weergaven niet beschikbaar';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count interacties';
   }
 
@@ -6391,7 +6391,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreSearchHint => 'Zoeken...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count video\'s';
   }
 
@@ -7367,12 +7367,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit berichtverzoek kon niet worden geladen.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count volgers';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count video\'s';
   }
 

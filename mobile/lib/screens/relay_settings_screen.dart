@@ -17,6 +17,7 @@ import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -981,8 +982,9 @@ String _relayStatusSummary(BuildContext context, RelayStatistics? stats) {
   }
   if (stats.eventsReceived > 0) {
     parts.add(
-      context.l10n.relaySettingsEventsSummary(
-        CountFormatter.formatCompact(stats.eventsReceived),
+      StringUtils.compactPlural(
+        stats.eventsReceived,
+        context.l10n.relaySettingsEventsSummary,
       ),
     );
   }

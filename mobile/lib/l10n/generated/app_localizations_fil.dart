@@ -2375,7 +2375,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count events';
   }
 
@@ -2934,17 +2934,17 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi available ang view data';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count views';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count komento';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count reposts';
   }
 
@@ -2970,7 +2970,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get analyticsViewsUnavailable => 'hindi available ang views';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count interaksyon';
   }
 
@@ -6410,7 +6410,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get exploreSearchHint => 'Maghanap...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count na video';
   }
 
@@ -7392,12 +7392,12 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi na-load ang message request na ito.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count Follower';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count video';
   }
 

@@ -48,5 +48,30 @@ void main() {
         expect(result, equals('😀\uFFFD😀'));
       });
     });
+
+    group('compactPlural', () {
+      test('selects the plural form from the raw value', () {
+        String plural(int n, String display) =>
+            n == 1 ? '$display view' : '$display views';
+
+        expect(StringUtils.compactPlural(1, plural), '1 view');
+        expect(StringUtils.compactPlural(2, plural), '2 views');
+      });
+
+      test('displays the compact rendering, not the raw value', () {
+        String plural(int n, String display) => display;
+
+        expect(StringUtils.compactPlural(1200, plural), '1.2K');
+        expect(StringUtils.compactPlural(1500000, plural), '1.5M');
+      });
+
+      test('selects on the raw value even once the display is abbreviated', () {
+        // The regression this guards: selecting the plural on the *formatted*
+        // string would make every count above 999 look like the same value.
+        String plural(int n, String display) => '$n|$display';
+
+        expect(StringUtils.compactPlural(1000, plural), '1000|1K');
+      });
+    });
   });
 }

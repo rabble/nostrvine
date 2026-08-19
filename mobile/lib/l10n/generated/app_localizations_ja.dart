@@ -2208,7 +2208,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '$count件のイベント';
   }
 
@@ -2733,17 +2733,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => '視聴データなし';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '$count回視聴';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '$count件のコメント';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '$count件のリポスト';
   }
 
@@ -2768,7 +2768,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get analyticsViewsUnavailable => '視聴データなし';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '$count件のインタラクション';
   }
 
@@ -6047,7 +6047,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exploreSearchHint => '検索...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '$count本の動画';
   }
 
@@ -6972,12 +6972,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get messageRequestLoadFailed => 'このリクエストを読み込めませんでした。';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '$count人のフォロワー';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '$count本の動画';
   }
 

@@ -1,7 +1,6 @@
 // ABOUTME: View for the message request preview screen.
 // ABOUTME: Shows sender profile info, message count, and accept/decline actions.
 
-import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +22,7 @@ import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// View for the message request preview screen.
@@ -368,15 +368,17 @@ class _StatsLine extends StatelessWidget {
     final parts = <String>[];
     if (followerCount != null) {
       parts.add(
-        context.l10n.messageRequestFollowersCount(
-          CountFormatter.formatCompact(followerCount!),
+        StringUtils.compactPlural(
+          followerCount!,
+          context.l10n.messageRequestFollowersCount,
         ),
       );
     }
     if (videoCount != null) {
       parts.add(
-        context.l10n.messageRequestVideosCount(
-          CountFormatter.formatCompact(videoCount!),
+        StringUtils.compactPlural(
+          videoCount!,
+          context.l10n.messageRequestVideosCount,
         ),
       );
     }

@@ -2219,7 +2219,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String relaySettingsEventsSummary(String count) {
+  String relaySettingsEventsSummary(int countValue, String count) {
     return '이벤트 $count개';
   }
 
@@ -2746,17 +2746,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => '조회 데이터 없음';
 
   @override
-  String analyticsViewsCount(String count) {
+  String analyticsViewsCount(int countValue, String count) {
     return '조회수 $count';
   }
 
   @override
-  String analyticsCommentsCount(String count) {
+  String analyticsCommentsCount(int countValue, String count) {
     return '댓글 $count';
   }
 
   @override
-  String analyticsRepostsCount(String count) {
+  String analyticsRepostsCount(int countValue, String count) {
     return '리포스트 $count';
   }
 
@@ -2780,7 +2780,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get analyticsViewsUnavailable => '조회수 없음';
 
   @override
-  String analyticsInteractionsCount(String count) {
+  String analyticsInteractionsCount(int countValue, String count) {
     return '상호작용 $count';
   }
 
@@ -6069,7 +6069,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exploreSearchHint => '검색...';
 
   @override
-  String categoryVideoCount(String count) {
+  String categoryVideoCount(int countValue, String count) {
     return '영상 $count개';
   }
 
@@ -7000,12 +7000,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get messageRequestLoadFailed => '이 요청을 불러오지 못했어요.';
 
   @override
-  String messageRequestFollowersCount(String count) {
+  String messageRequestFollowersCount(int countValue, String count) {
     return '팔로워 $count명';
   }
 
   @override
-  String messageRequestVideosCount(String count) {
+  String messageRequestVideosCount(int countValue, String count) {
     return '영상 $count개';
   }
 
