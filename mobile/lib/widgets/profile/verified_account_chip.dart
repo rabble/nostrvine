@@ -1,5 +1,5 @@
 // ABOUTME: VerifiedAccountChip — single chip for one verified identity claim.
-// ABOUTME: Tapping opens the platform profile in the system browser.
+// ABOUTME: Public profiles are tappable; claims without a URL are informational.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -41,15 +41,18 @@ class VerifiedAccountChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 6,
         children: [
-          DivineIcon(
-            icon: DivineIconName.globe,
-            size: 14,
-            color: context.vineColors.mutedText,
-          ),
+          if (uri != null)
+            DivineIcon(
+              icon: DivineIconName.globe,
+              size: 14,
+              color: context.vineColors.mutedText,
+            ),
           Text(
             '${claim.platform}/${claim.identity}',
             style: VineTheme.labelMediumFont(
-              color: context.vineColors.primaryText,
+              color: uri == null
+                  ? context.vineColors.mutedText
+                  : context.vineColors.primaryText,
             ),
           ),
         ],

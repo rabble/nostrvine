@@ -10,9 +10,14 @@ Uri? platformProfileUrl(String platform, String identity) {
   if (normalizedIdentity.isEmpty) return null;
 
   return switch (platform.trim().toLowerCase()) {
-    'github' => _httpsUri('github.com', [normalizedIdentity]),
+    'github' => _httpsUri('github.com', [
+      _withoutLeadingAt(normalizedIdentity),
+    ]),
     'twitter' => _handleUri('x.com', normalizedIdentity),
-    'bluesky' => _httpsUri('bsky.app', ['profile', normalizedIdentity]),
+    'bluesky' => _httpsUri('bsky.app', [
+      'profile',
+      _withoutLeadingAt(normalizedIdentity),
+    ]),
     'tiktok' => _handleUri(
       'www.tiktok.com',
       normalizedIdentity,
@@ -20,7 +25,7 @@ Uri? platformProfileUrl(String platform, String identity) {
     ),
     'telegram' => _handleUri('t.me', normalizedIdentity),
     'youtube' =>
-      normalizedIdentity.startsWith('UC')
+      _youtubeChannelId.hasMatch(normalizedIdentity)
           ? _httpsUri('www.youtube.com', ['channel', normalizedIdentity])
           : _handleUri(
               'www.youtube.com',
@@ -57,7 +62,7 @@ Uri? _mastodonUri(String identity) {
       origin.path.isNotEmpty ||
       origin.hasQuery ||
       origin.hasFragment ||
-      origin.authority != instance) {
+      origin.authority != instance.toLowerCase()) {
     return null;
   }
 
@@ -66,3 +71,8 @@ Uri? _mastodonUri(String identity) {
 
 Uri _httpsUri(String host, List<String> pathSegments) =>
     Uri(scheme: 'https', host: host, pathSegments: pathSegments);
+
+String _withoutLeadingAt(String identity) =>
+    identity.startsWith('@') ? identity.substring(1) : identity;
+
+final _youtubeChannelId = RegExp(r'^UC[A-Za-z0-9_-]{22}$');

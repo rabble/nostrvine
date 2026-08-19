@@ -1,5 +1,6 @@
-// ABOUTME: Widget tests for VerifiedAccountChip — render + tap launches URL.
+// ABOUTME: Widget tests for interactive and informational verified-account chips.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -140,6 +141,7 @@ void main() {
 
       expect(find.textContaining('discord'), findsOneWidget);
       expect(find.byType(InkWell), findsNothing);
+      expect(find.byType(DivineIcon), findsNothing);
 
       final semantics = tester.getSemantics(find.byType(VerifiedAccountChip));
       expect(

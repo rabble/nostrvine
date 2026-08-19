@@ -11,6 +11,10 @@ void main() {
         platformProfileUrl('github', 'octocat'),
         Uri.parse('https://github.com/octocat'),
       );
+      expect(
+        platformProfileUrl('github', '@octocat'),
+        Uri.parse('https://github.com/octocat'),
+      );
     });
 
     test('builds an X profile URL', () {
@@ -23,6 +27,10 @@ void main() {
     test('builds a Bluesky profile URL', () {
       expect(
         platformProfileUrl('bluesky', 'alice.bsky.social'),
+        Uri.parse('https://bsky.app/profile/alice.bsky.social'),
+      );
+      expect(
+        platformProfileUrl('bluesky', '@alice.bsky.social'),
         Uri.parse('https://bsky.app/profile/alice.bsky.social'),
       );
     });
@@ -65,6 +73,10 @@ void main() {
         platformProfileUrl('youtube', '@alice'),
         Uri.parse('https://www.youtube.com/@alice'),
       );
+      expect(
+        platformProfileUrl('youtube', 'UCLA'),
+        Uri.parse('https://www.youtube.com/@UCLA'),
+      );
     });
 
     test('builds a Mastodon URL from an at-prefixed username', () {
@@ -78,6 +90,13 @@ void main() {
       expect(
         platformProfileUrl('mastodon', 'fosstodon.org/alice'),
         Uri.parse('https://fosstodon.org/@alice'),
+      );
+    });
+
+    test('accepts a mixed-case Mastodon instance', () {
+      expect(
+        platformProfileUrl('mastodon', 'Mastodon.Social/@alice'),
+        Uri.parse('https://mastodon.social/@alice'),
       );
     });
 
