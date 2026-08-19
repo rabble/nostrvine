@@ -1,3 +1,7 @@
+import 'dart:io'
+    if (dart.library.js_interop) 'package:openvine/utils/platform_io_web.dart'
+    as io;
+
 import 'package:flutter/material.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:openvine/utils/expected_network_error.dart';
@@ -75,9 +79,21 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
   final isMediaHostLookup =
       error.contains('SocketException') && hasRecoverableMediaHost;
 
+  // A media download the transport tears down mid-flight is recoverable — the
+  // widget falls back to a placeholder. dart:io words these differently per
+  // platform and per abort point ('Connection closed while receiving data'
+  // when the parser runs dry, 'Software caused connection abort' when the OS
+  // kills the socket), so gate on the HttpException type rather than
+  // enumerating messages that keep arriving one Crashlytics issue at a time.
+  // The string arm stays because a codec-wrapped load arrives already
+  // stringified, with the typed exception no longer reachable. Being an `is`
+  // check it also takes flutter_cache_manager's HttpExceptionWithStatus, so a
+  // non-2xx CachedNetworkImage thumbnail ('Invalid statusCode: 404', which no
+  // string arm matches) is recoverable here rather than fatal.
   final isInterruptedMediaDownload =
-      error.contains('Connection closed while receiving data') &&
-      hasRecoverableMediaHost;
+      _isRecoverableMediaHttpException(details.exception) ||
+      (hasRecoverableMediaHost &&
+          error.contains('Connection closed while receiving data'));
 
   final isMissingHttpHost =
       library == 'dart:_http' && error.contains('No host specified in URI');
@@ -103,9 +119,15 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
     return (reason: _recoverableMediaLoadReason, report: false);
   }
 
+  // Interrupted downloads and non-2xx responses are expected network/IO
+  // failures. Keep them out of Crashlytics while still presenting the image
+  // fallback and recording the local warning.
+  if (isInterruptedMediaDownload) {
+    return (reason: _recoverableMediaLoadReason, report: false);
+  }
+
   if (isImageHttpFailure ||
       isMediaHostLookup ||
-      isInterruptedMediaDownload ||
       isMissingHttpHost ||
       isInvalidImageData) {
     return (reason: _recoverableMediaLoadReason, report: true);
@@ -127,6 +149,13 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
   }
 
   return null;
+}
+
+bool _isRecoverableMediaHttpException(Object exception) {
+  if (exception is! io.HttpException) return false;
+
+  final host = exception.uri?.host;
+  return host != null && _recoverableMediaHosts.contains(host);
 }
 
 bool _containsRecoverableMediaHost(String value) {

@@ -125,6 +125,27 @@ class SocketException implements Exception {
   String toString() => 'SocketException: $message';
 }
 
+// HttpException stub for web platform. Web has no dart:io HTTP client, so this
+// is never thrown or instantiated — it exists so `is HttpException` checks
+// compile for web and correctly evaluate to false. `toString()` mirrors
+// `dart:io`'s, which appends the uri only when one was supplied.
+class HttpException implements Exception {
+  const HttpException(this.message, {this.uri});
+
+  final String message;
+  final Uri? uri;
+
+  @override
+  String toString() {
+    final buffer = StringBuffer('HttpException: ')..write(message);
+    final uri = this.uri;
+    if (uri != null) {
+      buffer.write(', uri = $uri');
+    }
+    return buffer.toString();
+  }
+}
+
 // Process stub for web platform
 class Process {
   static Future<ProcessResult> run(

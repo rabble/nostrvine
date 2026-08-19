@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart'
+    show HttpExceptionWithStatus;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
@@ -130,7 +132,94 @@ void main() {
 
       expect(classifyRecoverableFlutterError(details), (
         reason: 'Recoverable media load failure',
-        report: true,
+        report: false,
+      ));
+    });
+
+    // The abort message dart:io uses when the OS kills the socket mid-download
+    // rather than the parser running dry. It reached Crashlytics as a FATAL
+    // (issue 198b20e41b65c26f4d7dcbd83993a011, 1.0.20) because the branch
+    // matched only the parser's wording, even though the failure is the same
+    // recoverable thumbnail load.
+    test('classifies aborted Divine media downloads as recoverable', () {
+      final details = FlutterErrorDetails(
+        exception: HttpException(
+          'Software caused connection abort',
+          uri: Uri.parse('https://media.divine.video/hash'),
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: false,
+      ));
+    });
+
+    // The type arm must not swallow an HttpException from anywhere else — a
+    // failing app API call is not a placeholder-recoverable thumbnail.
+    test('keeps aborted downloads from other hosts fatal', () {
+      final details = FlutterErrorDetails(
+        exception: HttpException(
+          'Software caused connection abort',
+          uri: Uri.parse('https://api.example.com/thing'),
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), isNull);
+    });
+
+    test('keeps aborted downloads from Divine non-media hosts fatal', () {
+      final details = FlutterErrorDetails(
+        exception: HttpException(
+          'Software caused connection abort',
+          uri: Uri.parse('https://api.divine.video/thing'),
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), isNull);
+    });
+
+    // Pins the string arm, which the type arm cannot stand in for: a
+    // codec-wrapped load arrives already stringified as a plain Exception, so
+    // `is HttpException` is false. Every other interrupted-download test now
+    // passes through the type arm, and without this one the string arm can be
+    // deleted with the suite still green.
+    test('keeps stringified interrupted media downloads recoverable', () {
+      final details = FlutterErrorDetails(
+        exception: Exception(
+          'HttpException: Connection closed while receiving data, '
+          'uri = https://media.divine.video/hash',
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: false,
+      ));
+    });
+
+    // flutter_cache_manager reports every non-2xx as HttpExceptionWithStatus,
+    // a dart:io HttpException subclass whose 'Invalid statusCode' wording no
+    // string arm matches — so a dead CachedNetworkImage thumbnail was fatal
+    // before the type arm and is recoverable after it. Pins the arm as a
+    // subtype check rather than an exact-type one.
+    test('classifies cached-image non-2xx failures as recoverable', () {
+      final details = FlutterErrorDetails(
+        exception: HttpExceptionWithStatus(
+          404,
+          'Invalid statusCode: 404',
+          uri: Uri.parse('https://media.divine.video/hash'),
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: false,
       ));
     });
 
