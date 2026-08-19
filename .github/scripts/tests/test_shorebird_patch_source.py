@@ -26,6 +26,9 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
         )
         self._commit("lib/release.dart", "const release = true;\n", "release")
         self.baseline = self._git("rev-parse", "HEAD")
+        # The validator compares the patch range against main's remote-tracking
+        # ref; fixtures start with main sitting exactly on the baseline.
+        self._git("update-ref", "refs/remotes/origin/main", self.baseline)
 
     def _git(self, *arguments: str) -> str:
         return subprocess.run(
@@ -165,6 +168,39 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn("lib/fix.dart", result.stdout)
+
+    def test_rejects_branch_cut_from_advanced_main(self) -> None:
+        # main advances past the baseline...
+        self._commit("lib/advanced.dart", "const advanced = true;\n", "advanced main")
+        self._git(
+            "update-ref", "refs/remotes/origin/main", self._git("rev-parse", "HEAD")
+        )
+        # ...and the operator cuts the patch branch at main's tip instead of
+        # branching from the baseline and cherry-picking.
+        self._commit("lib/fix.dart", "const fixed = true;\n", "fix")
+
+        result = self._run()
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("contains commits already on main", result.stderr)
+
+    def test_accepts_cherry_pick_when_baseline_is_main_tip(self) -> None:
+        # Branching at a baseline that is still main's tip is fine: the
+        # backport arrives as a cherry-pick, a new object absent from main.
+        self._commit("lib/fix.dart", "const fixed = true;\n", "fix")
+
+        result = self._run()
+
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_rejects_when_main_ref_is_unavailable(self) -> None:
+        self._git("update-ref", "-d", "refs/remotes/origin/main")
+        self._commit("lib/fix.dart", "const fixed = true;\n", "fix")
+
+        result = self._run()
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("fetch main before validating", result.stderr)
 
     def test_rejects_empty_dart_diff(self) -> None:
         self._commit("README.md", "documentation only\n", "docs")

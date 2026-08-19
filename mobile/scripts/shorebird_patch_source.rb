@@ -68,6 +68,20 @@ range = "#{baseline}..HEAD"
 merge_commits = git('rev-list', '--merges', range).lines(chomp: true)
 abort_with('patch source contains merge commits; use a linear backport history') unless merge_commits.empty?
 
+# The patch line must be rooted at the recorded baseline and carry only
+# backports. Backports are cherry-picks, so every commit in the range is a new
+# object absent from main; a branch cut from main's tip instead contains main's
+# own commits. Ancestry alone cannot tell those apart on a linear main.
+main_ref = 'refs/remotes/origin/main'
+unless system('git', 'rev-parse', '--verify', '--quiet', "#{main_ref}^{commit}", out: File::NULL, err: File::NULL)
+  abort_with("#{main_ref} is unavailable; fetch main before validating the patch source")
+end
+range_commits = git('rev-list', range).lines(chomp: true)
+patch_only_commits = git('rev-list', range, '--not', main_ref).lines(chomp: true)
+unless range_commits.size == patch_only_commits.size
+  abort_with('patch source contains commits already on main; branch from the recorded release baseline and cherry-pick the backported fixes instead')
+end
+
 # git diff --name-only prints repository-root-relative paths regardless of the
 # current directory, while the patch workflows run with working_directory
 # mobile/. Normalize to mobile-relative so the blocked-path checks below match

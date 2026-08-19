@@ -353,6 +353,8 @@ definitions:
           --identity-only
         git fetch --quiet origin \
           "refs/heads/${{ inputs.PATCH_BRANCH }}:refs/remotes/origin/${{ inputs.PATCH_BRANCH }}"
+        git fetch --quiet origin \
+          "refs/heads/main:refs/remotes/origin/main"
         git checkout --detach "refs/remotes/origin/${{ inputs.PATCH_BRANCH }}"
         ruby build/shorebird/shorebird_patch_source.rb \
           --baseline "$SHOREBIRD_PATCH_BASELINE_COMMIT" \

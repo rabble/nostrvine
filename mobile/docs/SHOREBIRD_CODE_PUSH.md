@@ -239,7 +239,8 @@ test-backed.
    - `DEFAULT_ENV` = **the same value the release was built with**
 1. The workflow authenticates provenance and configuration before fetching the
    exact remote patch branch. It then verifies the branch name, release
-   ancestry, linear history, blocked paths, and non-empty Dart diff. It prints
+   ancestry, linear history, that no patch commit is already on main, blocked
+   paths, and non-empty Dart diff. It prints
    every included commit and Dart file. The incident owner and a mobile
    reviewer must read that complete output before proceeding; the relevant iOS
    or Android platform owner must approve promotion.

@@ -212,6 +212,16 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         step = self.contents[start:end]
         self.assertIn("script: |\n        set -euo pipefail\n", step)
 
+    def test_prepare_patch_source_fetches_main_ref_deterministically(self) -> None:
+        # The validator rejects patch sources that contain commits already on
+        # main; that check needs refs/remotes/origin/main to exist at
+        # validation time, so the step fetches it explicitly rather than
+        # relying on the provenance step's opportunistic ref update.
+        start = self.contents.index("- &prepare_patch_source")
+        end = self.contents.index("- &", start + 1)
+        step = self.contents[start:end]
+        self.assertIn('"refs/heads/main:refs/remotes/origin/main"', step)
+
     def test_shorebird_workflows_define_every_variable_their_scripts_read(self) -> None:
         resolved = json.loads(
             subprocess.run(
