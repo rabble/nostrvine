@@ -731,6 +731,20 @@ class VideosRepository {
   /// more behind it.
   ///
   /// Returns an empty result if no videos are found or on error.
+  /// Fetches the newest videos, newest first.
+  ///
+  /// Deliberately does not apply seen-freshness reordering. This feed is
+  /// surfaced as "New", and that label is a chronological promise: a video
+  /// watched in the last 24 hours keeps its position rather than sinking
+  /// below older ones. Because reordering ran after pagination it also
+  /// partitioned each page on its own, so timestamps descended, jumped
+  /// backwards at the page's recently-seen block, then descended again from
+  /// the next page's top — the feed read as unsorted rather than merely
+  /// re-prioritised.
+  ///
+  /// Discovery surfaces that do want the bias keep it: [getHomeFeedVideos]
+  /// still demotes via [prioritizeNotRecentlySeenVideos], and classics drop
+  /// recently-seen entirely via [filterOutRecentlySeenVideos].
   Future<HomeFeedResult> getNewVideos({
     int limit = _defaultLimit,
     int? until,
@@ -740,9 +754,8 @@ class VideosRepository {
     if (!skipCache && until == null) {
       final cached = _inMemoryFeedCache?.get('latest');
       if (cached != null) {
-        final ordered = await _orderBySeenFreshness(cached.videos);
         return HomeFeedResult(
-          videos: ordered,
+          videos: cached.videos,
           hasMore: cached.hasMore,
           paginationCursor: cached.paginationCursor,
         );
@@ -764,9 +777,8 @@ class VideosRepository {
             : page.videos;
         // Hydrate views/loops — list endpoint omits them for some rows.
         final hydrated = await _hydrateVideosWithBulkStats(mergedVideos);
-        final ordered = await _orderBySeenFreshness(hydrated);
         return _recentVideosResult(
-          ordered,
+          hydrated,
           limit: limit,
           until: until,
           serverHasMore: page.serverHasMore,
@@ -782,8 +794,7 @@ class VideosRepository {
       until: until,
     );
     final hydrated = await _hydrateVideosWithBulkStats(videos);
-    final ordered = await _orderBySeenFreshness(hydrated);
-    return _recentVideosResult(ordered, limit: limit, until: until);
+    return _recentVideosResult(hydrated, limit: limit, until: until);
   }
 
   /// Wraps a latest-feed page, recording whether more sits behind it so

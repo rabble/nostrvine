@@ -127,7 +127,13 @@ void main() {
       expect(result.videos.map((v) => v.id).toList(), [unseenId, seenId]);
     });
 
-    test('getNewVideos demotes recently seen', () async {
+    // The New feed is chronological by contract: the label promises recency,
+    // so a recently-seen video keeps its place instead of sinking. Demotion
+    // partitioned each page independently, which produced a sawtooth —
+    // timestamps descended, jumped back at the page's seen block, then
+    // descended again from the next page's top. Discovery surfaces that do
+    // want the bias still use the shared helper (see getHomeFeedVideos above).
+    test('getNewVideos preserves source order for recently seen', () async {
       final seen = _stats('seen-new');
       final unseen = _stats('unseen-new');
       when(
@@ -156,8 +162,44 @@ void main() {
 
       final result = await repo.getNewVideos();
       expect(result.videos.map((v) => v.id).toList(), [
-        'unseen-new',
         'seen-new',
+        'unseen-new',
+      ]);
+    });
+
+    test('getNewVideos preserves source order on a paginated page', () async {
+      final seen = _stats('seen-page2');
+      final unseen = _stats('unseen-page2');
+      when(
+        () => mockFunnelcake.getRecentVideosPage(
+          limit: any(named: 'limit'),
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => RecentVideosResponse(
+          videos: [seen, unseen],
+          serverItemCount: 2,
+        ),
+      );
+      when(
+        () => mockFunnelcake.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+
+      final repo = VideosRepository(
+        nostrClient: mockNostr,
+        funnelcakeApiClient: mockFunnelcake,
+        seenVideoLookup: SeenVideoLookup(
+          wasSeenRecently: (id, {within = const Duration(hours: 24)}) =>
+              id == 'seen-page2',
+        ),
+      );
+
+      // Page 2 must not re-partition: independent per-page partitioning is
+      // what made the feed read as unsorted across page boundaries.
+      final result = await repo.getNewVideos(until: 1704067200);
+      expect(result.videos.map((v) => v.id).toList(), [
+        'seen-page2',
+        'unseen-page2',
       ]);
     });
 
