@@ -173,6 +173,7 @@ void main() {
         await pump(tester);
 
         expect(find.text(en.supportFamilySubtitle), findsOneWidget);
+        await scrollToBottom(tester);
         expect(find.text(en.supportKidsSubtitle), findsOneWidget);
       });
 
@@ -187,6 +188,7 @@ void main() {
 
         final de = lookupAppLocalizations(const Locale('de'));
         expect(find.text(de.supportFamilySubtitle), findsOneWidget);
+        await scrollToBottom(tester);
         expect(find.text(de.supportKidsSubtitle), findsOneWidget);
         expect(find.text(en.supportFamilySubtitle), findsNothing);
         expect(find.text(en.supportKidsSubtitle), findsNothing);
@@ -215,6 +217,7 @@ void main() {
         addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
 
         await pump(tester);
+        await scrollToBottom(tester);
         await tester.tap(find.text(en.supportKids));
         await tester.pumpAndSettle();
 
