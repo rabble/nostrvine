@@ -228,7 +228,8 @@ and unverifiable. `authWelcomeToDivine` is the counter-example: English
 "Welcome to Divine!" became Japanese `やった！入れたよ！` ("Yes! I'm in!"),
 which is charming, casual beside a large polite corpus, and no longer
 contains the product name or the "Welcome Home" arrival language the brand
-guide asks for.
+guide asks for. Restoring the missing product name across affected locales is
+tracked in [#7913](https://github.com/divinevideo/divine-mobile/issues/7913).
 
 **Never soften a load-bearing word.** Safety, consent, money, deletion and age
 copy carry meaning that a friendlier synonym destroys. The repo already treats
@@ -425,7 +426,9 @@ this guide, so treat a clean pronoun grep as *no information*, not as a pass:
   comma-below; `app_ro.arb` holds 1,681 comma-below and exactly one cedilla —
   which is a real corruption. A lint that bans one codepoint globally would
   flag 976 correct Turkish keys; a lint that allows it globally cannot see the
-  Romanian defect. Any diacritic rule has to be per-locale.
+  Romanian defect. Any diacritic rule has to be per-locale. The Romanian
+  corrections are tracked in
+  [#7914](https://github.com/divinevideo/divine-mobile/issues/7914).
 
 If the locale you are reviewing is in that list and you only ran the pronoun
 grep, say so in the review rather than reporting the file as clean.
@@ -535,10 +538,10 @@ Fixing the copy needs per-language plural categories (Polish one/few/many,
 Romanian one/few/other, Arabic six), so it is a translation change per the
 rules above, not a mechanical sweep.
 
-Related open work, so this guide does not duplicate it: #7248 (stale English
-revisions and wrong-language values that survive the parity guard), #7755 (ICU
-plural categories missing per CLDR), #6913 (orphaned ARB keys), #7632
-(remaining deferred translation debt).
+Related open work, so this guide does not duplicate it: #3633 (keys with no
+plural syntax at all), #7248 (stale English revisions and wrong-language values
+that survive the parity guard), #7755 (ICU plural categories missing per CLDR),
+#6913 (orphaned ARB keys), #7632 (remaining deferred translation debt).
 
 ---
 
