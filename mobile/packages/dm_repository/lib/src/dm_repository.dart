@@ -2675,12 +2675,11 @@ class DmRepository {
         return;
       }
 
-      // NIP-04 created_at values are not randomized (unlike NIP-17 gift
-      // wraps) so the event timestamp is safe to use directly.
-      await _syncState?.recordSeen(
-        _userPubkey,
-        createdAt: nip04Event.createdAt,
-      );
+      // Record successfully-inserted event in processed-wrap ledger so
+      // redelivery skips decrypt. Matches NIP-17 behavior where all outcomes
+      // (message row or ledger row) prevent re-decryption on subsequent
+      // deliveries. #7882
+      await _recordProcessedWrap(nip04Event.id);
 
       Log.debug(
         'Persisted NIP-04 DM ${nip04Event.id} '
