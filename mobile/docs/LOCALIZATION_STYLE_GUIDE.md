@@ -395,7 +395,7 @@ precisely what a reviewer who does not read the language otherwise lacks.
 | Rule | Enforced by |
 |---|---|
 | Every locale defines every English key | `arb_consistency_test.dart` (+ `_knownUntranslatedDebt`) |
-| Placeholders survive translation | `arb_consistency_test.dart` |
+| Every placeholder the English value actually substitutes survives translation | `arb_consistency_test.dart` (selector-only arguments are deliberately exempt — see below) |
 | No plural arm hardcodes a literal number, in any locale | `plural_arm_number_test.dart` |
 | A named list of countable keys inflects **in English** | `countable_plural_test.dart` |
 | `listVideoCount` / `profileFollowerCountUsers` keep their arms in `pl` and `ro` | `countable_plural_test.dart` (those two locales, those keys) |
@@ -437,9 +437,19 @@ fr  1 vues          pl  1 wyświetleń        pt  1 visualizações
 
 `listVideoCount` is the control: it is one of the keys the `pl`/`ro`
 assertions cover, and it correctly renders `1 film` / `1 videoclip`. The bug
-sits exactly where the guard does not reach. Fixing it needs per-language
-plural categories (Polish one/few/many, Romanian one/few/other, Arabic six),
-so it is a translation change per the rules above, not a mechanical sweep.
+sits exactly where the guard does not reach.
+
+The placeholder guard does not catch it either, and for a defensible reason.
+It exempts selector-only arguments — the `count` in `{count, plural, …}`
+substitutes no text of its own — because "a language without that distinction
+may legitimately render a bare noun instead". That is right for Japanese,
+Korean, Chinese and Vietnamese. It is not right for Polish, Spanish, German,
+French or Portuguese, which all have the distinction and lost it anyway. The
+exemption is sound; its blast radius is wider than its reason.
+
+Fixing the copy needs per-language plural categories (Polish one/few/many,
+Romanian one/few/other, Arabic six), so it is a translation change per the
+rules above, not a mechanical sweep.
 
 Related open work, so this guide does not duplicate it: #7248 (stale English
 revisions and wrong-language values that survive the parity guard), #7755 (ICU
