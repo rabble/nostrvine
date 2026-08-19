@@ -1718,17 +1718,23 @@ class NotificationRepository {
       // creator's video under "mentioned you".
       final trustsRootPayload =
           !isVideoMention || trustedRootAddressableId != null;
+      final groupRootEventPubkey = _groupRootEventPubkey(
+        group,
+        entry.key.eventId,
+      );
       final addressableId = isVideoMention
           ? trustedRootAddressableId ?? _sourceVideoAddressableId(video: video)
           : isListAdd
-          ? _listAddVideoAddressableId(group.first, dTag: dTag, video: video)
+          ? _listAddVideoAddressableId(
+              group.first,
+              dTag: dTag,
+              video: video,
+              rootEventPubkey: groupRootEventPubkey,
+            )
           : _recipientScopedVideoAddressableId(
               dTag: dTag,
               video: video,
-              rootEventPubkey: _groupRootEventPubkey(
-                group,
-                entry.key.eventId,
-              ),
+              rootEventPubkey: groupRootEventPubkey,
             );
       // Normal video rows prefer payload media because it is stable after
       // metadata updates. Video mentions prefer the resolved source video, and
@@ -2521,24 +2527,27 @@ class NotificationRepository {
     return n.referencedEventId;
   }
 
+  /// [rootEventPubkey] is the group-derived root author from
+  /// [_groupRootEventPubkey], which already restricts the evidence to members
+  /// whose thread root IS the anchor. Deriving it across the group rather than
+  /// sampling [notification] matters for the same reason it does for comments:
+  /// a list-add group shares an anchor across several adders, and a transient
+  /// Funnelcake gap can leave the newest member's `root_event_pubkey` empty
+  /// while an older member carries the foreign one.
   String? _listAddVideoAddressableId(
     RelayNotification notification, {
     required String? dTag,
     required VideoStats? video,
+    String? rootEventPubkey,
   }) {
     final addressableId = _trustedListAddRootAddressableId(notification);
     if (addressableId != null) {
       return addressableId;
     }
-    // The payload's root author only describes the added video when the
-    // anchor is the thread root itself (no distinct `referenced_event_id`).
-    final anchorIsRoot =
-        _nonEmpty(notification.referencedEventId) == null ||
-        notification.referencedEventId == notification.rootEventId;
     return _recipientScopedVideoAddressableId(
       dTag: dTag,
       video: video,
-      rootEventPubkey: anchorIsRoot ? notification.rootEventPubkey : null,
+      rootEventPubkey: rootEventPubkey,
     );
   }
 

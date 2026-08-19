@@ -2081,6 +2081,58 @@ void main() {
       );
 
       test(
+        'list_add group stays guarded when the newest member omits '
+        'root_event_pubkey but an older member carries a foreign one (#6369)',
+        () async {
+          // Same transient Funnelcake gap the comment path guards against:
+          // list_add notifications sharing an anchor can disagree, and the
+          // newest member is the one the row samples. Deriving the root author
+          // across the group is what keeps the guard order-independent.
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_newest_gap',
+              sourcePubkey: 'pub_a',
+              sourceEventId: 'list_evt_newest_gap',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventId: 'foreign_root',
+              rootEventPubkey: '',
+              referencedDTag: 'foreign-vine',
+              listTitle: 'Literature',
+              listCoordinate: '30005:pubkey_alice:literature',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'list_add_older_evidence',
+              sourcePubkey: 'pub_b',
+              sourceEventId: 'list_evt_older_evidence',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventId: 'foreign_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'foreign-vine',
+              listTitle: 'Literature',
+              listCoordinate: '30005:pubkey_alice:literature',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.listAdd));
+          expect(item.videoEventId, equals('foreign_root'));
+          expect(item.videoAddressableId, isNull);
+        },
+      );
+
+      test(
         "list_add of the user's own video reply keeps the recipient-scoped "
         'route when the thread root belongs to another creator',
         () async {
