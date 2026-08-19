@@ -71,7 +71,13 @@ class ConversationListBloc
   /// Swappable: `profileRepositoryProvider` is nullable-gated on Nostr
   /// readiness and hands over the real instance after cold start. Re-pointed
   /// by [ConversationListProfileRepositoryChanged] rather than by recreating
-  /// the bloc. Mirrors `NotificationBadgeCubit.setRepository`.
+  /// the bloc.
+  ///
+  /// Exception to state_management.md ("No Mutable Instance Variables in BLoC"):
+  /// recreating the bloc on repository swap would reset visible conversations,
+  /// search query, and scroll position. This mirrors `NotificationBadgeCubit.
+  /// setRepository` precedent. The field is only modified via
+  /// [ConversationListProfileRepositoryChanged] event handlers.
   ProfileRepository? _profileRepository;
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
 
