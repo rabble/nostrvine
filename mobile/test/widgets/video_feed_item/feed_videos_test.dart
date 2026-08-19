@@ -202,6 +202,7 @@ extension _PlaybackCubitStub on _MockVideoPlaybackStatusCubit {
         any(),
         isAgeRestricted: any(named: 'isAgeRestricted'),
         hasVerifyAction: any(named: 'hasVerifyAction'),
+        isConsumerActive: any(named: 'isConsumerActive'),
       ),
     ).thenAnswer((_) async => false);
     whenListen(this, const Stream<VideoPlaybackStatusState>.empty());
