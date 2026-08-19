@@ -99,6 +99,42 @@ cwd and `/tmp/cc-socks*/<pid>.sock`, so it cannot see later `cd` calls
 inside tool shells and can become a silent no-op if Claude changes that
 internal socket path.
 
+### Build artifacts are purged from linked worktrees at session end
+
+Abandoned worktrees are what actually fill the disk — a typical tree
+carries ~8 GB of `build` and `.dart_tool`, and `flutter clean` leaves
+roughly 3 GB of that behind: `mobile/` is a pub workspace and the tool
+clears only `mobile/build` and `mobile/.dart_tool`, never recursing into
+`mobile/packages/*`.
+
+`.claude/hooks/session-end-purge-build-artifacts.sh` deletes those
+directories outright when a session ends. Unlike the worktree guard
+above, it **is** registered in the team `.claude/settings.json`, so it
+runs for everyone — it is deliberately not opt-in, because
+`settings.local.json` exists only in the main checkout, which is the one
+place this hook refuses to touch.
+
+What bounds it:
+
+- **Linked worktrees only.** The main checkout keeps its build cache.
+- **Terminal exits only** — `logout`, `prompt_input_exit`, and
+  `bypass_permissions_disabled`. `/clear`, session resume, and the
+  ambiguous `other` (which covers headless runs) do not purge.
+- **divine-mobile checkouts only**, gated on `mobile/pubspec.yaml`.
+- Nothing tracked is eligible; recovery is `cd mobile && flutter pub get`.
+
+The cost to know about: **there is no mid-run interlock.** A second
+session or a plain terminal building in the same worktree loses its
+build cache when the first session exits. The concurrent-session guard
+above warns at session *start* only (#7272); nothing watches for a build
+in flight. If you are mid-build in a worktree someone else is also
+sitting in, expect to re-run `flutter pub get`.
+
+A purged worktree would otherwise make the analyzer report every package
+as missing, so `.claude/hooks/post-edit-analyze.sh` skips analysis with
+an explanatory message when `mobile/.dart_tool/package_config.json` is
+gone, rather than blocking on ~1000 phantom errors.
+
 ---
 
 ## 2. Rebase when publishing, finalizing, or resolving conflicts
