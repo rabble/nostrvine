@@ -1682,6 +1682,61 @@ void main() {
         expect(result.requiresReauthentication, isTrue);
       });
 
+      test('keeps the 403 when the proof retry cannot be sent', () async {
+        // A dropped socket on the retry must not escape to the network-error
+        // handler: that clears `requiresReauthentication`, which is the only
+        // thing the UI branches on, so the user would be told to check their
+        // connection after the irreversible vanish had already published.
+        final mockClient = MockClient((request) async {
+          if (request.headers['Authorization']!.startsWith('Bearer ')) {
+            return http.Response(
+              jsonEncode({'message': 'Account deletion requires the app'}),
+              403,
+            );
+          }
+          throw const SocketException('connection reset');
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.deleteAccount(
+          'refreshed_token',
+          nip98Signer: (_) async => 'BASE64EVENT',
+        );
+
+        expect(result.error, 'Account deletion requires the app');
+        expect(result.requiresReauthentication, isTrue);
+      });
+
+      test('keeps the 403 when the proof retry hangs', () async {
+        // Same contract for the timeout path, which is the likelier one: the
+        // signer sits between the two requests, so the connection can idle
+        // long enough for the retry to open on a dead one.
+        final mockClient = MockClient((request) {
+          if (request.headers['Authorization']!.startsWith('Bearer ')) {
+            return Future.value(
+              http.Response(
+                jsonEncode({'message': 'Account deletion requires the app'}),
+                403,
+              ),
+            );
+          }
+          return Completer<http.Response>().future;
+        });
+
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: mockClient,
+          requestTimeout: const Duration(milliseconds: 50),
+        );
+        final result = await oauth.deleteAccount(
+          'refreshed_token',
+          nip98Signer: (_) async => 'BASE64EVENT',
+        );
+
+        expect(result.error, 'Account deletion requires the app');
+        expect(result.requiresReauthentication, isTrue);
+      });
+
       test('does not retry a 401 with a proof', () async {
         // 401 is what keycast answers when it cannot parse the credential.
         // Re-sending an unparseable scheme would only repeat the failure.

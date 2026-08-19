@@ -1032,7 +1032,8 @@ class KeycastOAuth {
   /// divergence makes the server reject the proof. Keycast closed keycast#323
   /// by preserving the first-party fact across refresh rotation instead of
   /// accepting proofs on this route, so until that changes the retry cannot
-  /// succeed — which is why only a 200 from it supersedes the original 403.
+  /// succeed — which is why neither its status nor a throw out of it may
+  /// displace the refusal the bearer attempt already earned.
   ///
   /// Returns [DeleteAccountResult] with success status.
   Future<DeleteAccountResult> deleteAccount(
@@ -1047,13 +1048,19 @@ class KeycastOAuth {
       if (response.statusCode == 403 && nip98Signer != null) {
         final proof = await _signDeletionProof(nip98Signer, url);
         if (proof != null) {
-          final retry = await _sendAccountDeletion(url, 'Nostr $proof');
-          // Only a success supersedes the 403. Today the route answers the
-          // `Nostr ` scheme 401, so adopting the retry unconditionally would
-          // replace an accurate "not authorized to delete" with "invalid or
-          // expired token" — the misdiagnosis this whole path exists to end.
-          if (retry.statusCode == 200) {
-            response = retry;
+          // Best-effort, in both directions. Only a 200 supersedes the 403,
+          // and a timeout or dropped socket on the retry must not escape to
+          // the network-error handler below: either would discard the refusal
+          // the server actually sent, and `requiresReauthentication` is the
+          // only thing the UI branches on — so the user would be told to check
+          // their connection after the irreversible vanish had gone out.
+          try {
+            final retry = await _sendAccountDeletion(url, 'Nostr $proof');
+            if (retry.statusCode == 200) {
+              response = retry;
+            }
+          } catch (_) {
+            // Keep the refusal the bearer attempt already earned.
           }
         }
       }
@@ -1078,8 +1085,9 @@ class KeycastOAuth {
         // The credential was read and refused: neither user-signed nor
         // carrying the server's first-party fact. The proof-of-key retry above
         // has already had its turn, so re-authenticating is what is left — this
-        // must never be reported as a connectivity problem, and the server's
-        // own prose here is the only thing that says which of the two it was.
+        // must never be reported as a connectivity problem. The server's prose
+        // is what separates the two refusals, in the log; the UI reads only
+        // `requiresReauthentication`, which 401 and 403 both set.
         return DeleteAccountResult.error(
           _errorMessageFrom(response) ??
               'Account deletion requires signing in again',
