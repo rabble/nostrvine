@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1588,8 +1589,8 @@ void main() {
         ),
         findsOneWidget,
         reason:
-            'the X is a bare GestureDetector; without a Semantics wrapper a '
-            'screen reader reaches an unlabeled tap target',
+            'an icon-only X carries no meaning on its own; without '
+            '`semanticLabel` a screen reader reaches an unnamed tap target',
       );
       handle.dispose();
     });
@@ -1625,6 +1626,119 @@ void main() {
     });
   });
 
+  group('keyboard reachability', () {
+    // The screen sets `resizeToAvoidBottomInset: false`, so the layout does
+    // not shrink when the keyboard opens. Unless the scroll view owns the
+    // inset itself, the PIN field's submit button sits under the keyboard
+    // with no gesture that can reach it.
+    testWidgets('scrolls the PIN submit button clear of the keyboard', (
+      tester,
+    ) async {
+      const viewport = Size(390, 760);
+      const keyboardExtent = 300.0;
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = viewport;
+      tester.view.viewInsets = const FakeViewPadding(bottom: keyboardExtent);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final submit = find.widgetWithText(
+        DivineButton,
+        l10n.authVerificationPinSubmit,
+      );
+      expect(submit, findsOneWidget);
+
+      await tester.dragUntilVisible(
+        submit,
+        find.byType(CustomScrollView),
+        const Offset(0, -80),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getRect(submit).bottom,
+        lessThanOrEqualTo(viewport.height - keyboardExtent),
+        reason: 'the submit button must come to rest above the keyboard',
+      );
+    });
+
+    // The floating close button clears the content by a padding derived from
+    // the button's own box, which follows the icon text scale. A fixed value
+    // lets the button sit on the content once the scale grows.
+    testWidgets('keeps the close button clear of the content at large text', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(360, 560);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: createTestWidget(
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            email: 'user@example.com',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.polling,
+              pendingEmail: 'user@example.com',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getRect(find.byType(DivineIconButton)).bottom,
+        lessThanOrEqualTo(tester.getRect(find.byType(DivineSticker)).top),
+        reason: 'the close button must not overlap the content it floats over',
+      );
+    });
+
+    // Success and error are `Spacer`-centred columns. Before the screen owned
+    // the scrolling they had no scroll view at all, so a short viewport at a
+    // large text scale overflowed instead of scrolling.
+    testWidgets('scrolls the failure state instead of overflowing', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 480);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: createTestWidget(
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.failure,
+              errorCode: EmailVerificationError.pollFailed,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(CustomScrollView), findsOneWidget);
+    });
+  });
+
   group('token mode', () {
     // Reachable via token + persisted record: the screen latches token mode,
     // then `_initTokenModeWithPersistenceCheck` calls `startPolling`, arming
@@ -1654,6 +1768,72 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.authVerificationPollingStopped), findsOneWidget);
+    });
+  });
+
+  group('resend affordance', () {
+    // `Semantics(button: true)` wrapping `ExcludeSemantics(child:
+    // GestureDetector(onTap: ...))` drops the detector's own
+    // `SemanticsAction.tap` along with the subtree, so the node announces a
+    // button VoiceOver cannot activate. `tester.tap` does not catch it — a
+    // real touch still reaches the handler — so assert the action itself.
+    testWidgets('exposes a tap action to assistive tech', (tester) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        initialState: const EmailVerificationState(
+          status: EmailVerificationStatus.polling,
+          pendingEmail: 'someone@example.test',
+        ),
+      );
+      await tester.pump();
+
+      final resend = tester.getSemantics(
+        find.bySemanticsLabel(l10n.authVerificationResend),
+      );
+      expect(
+        resend.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+        reason:
+            'the resend link announces itself as a button, so it has to carry '
+            'the tap action that activating it depends on',
+      );
+      handle.dispose();
+    });
+
+    // The cooldown state deliberately drops the action: the node stays
+    // labelled and flagged disabled rather than silently tappable.
+    testWidgets('drops the tap action while cooling down', (tester) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        initialState: const EmailVerificationState(
+          status: EmailVerificationStatus.polling,
+          pendingEmail: 'someone@example.test',
+          resendStatus: ResendStatus.cooldown,
+          resendCooldownSeconds: 120,
+        ),
+      );
+      await tester.pump();
+
+      final resend = tester.getSemantics(
+        find.bySemanticsLabel(l10n.authVerificationResendCooldown('2:00')),
+      );
+      expect(
+        resend.getSemanticsData().hasAction(SemanticsAction.tap),
+        isFalse,
+      );
+      handle.dispose();
     });
   });
 }

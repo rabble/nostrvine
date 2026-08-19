@@ -80,6 +80,16 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 
 class _EmailVerificationScreenState
     extends ConsumerState<EmailVerificationScreen> {
+  /// Offset of the floating close button from the top-start corner.
+  static const double _closeButtonInset = 16;
+
+  /// Clears the floating close button: its inset plus the box a small
+  /// [DivineIconButton] occupies. That box is `scaleSize(48)`, so it grows
+  /// with the icon text scale and a fixed 64 would let the button sit on the
+  /// content at large accessibility sizes.
+  double _contentTopPadding(BuildContext context) =>
+      _closeButtonInset + DivineIcon.scaleSize(context, 48);
+
   bool _isTokenMode = false;
   StreamSubscription<AuthState>? _authSubscription;
   late final EmailVerificationCubit _cubit;
@@ -531,111 +541,100 @@ class _EmailVerificationScreenState
                   state.status != EmailVerificationStatus.success;
               final startsOver =
                   state.status == EmailVerificationStatus.failure;
-              return Column(
+              return Stack(
                 children: [
-                  // Close button (hidden on success)
-                  if (showCloseButton)
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: _CloseButton(
-                          onPressed: startsOver
-                              ? _handleStartOver
-                              : _handleCancel,
-                          label: startsOver
-                              ? context.l10n.authStartOver
-                              : context.l10n.commonClose,
-                        ),
-                      ),
-                    )
-                  else
-                    const SizedBox(height: 76),
-
-                  // Main content
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: switch (state.status) {
-                        EmailVerificationStatus.initial => _PollingContent(
-                          email: null,
-                          isPollingMode: widget.isPollingMode || !_isTokenMode,
-                        ),
-                        EmailVerificationStatus.polling => _PollingContent(
-                          email: state.pendingEmail,
-                          isPollingMode: widget.isPollingMode || !_isTokenMode,
-                        ),
-                        EmailVerificationStatus.pollingTimedOut =>
-                          _PollingContent(
-                            email: state.pendingEmail,
-                            isPollingMode:
-                                widget.isPollingMode || !_isTokenMode,
-                            isActivelyPolling: false,
+                  // Main content. The keyboard is not resized away
+                  // (`resizeToAvoidBottomInset: false`), so shrink the scroll
+                  // viewport by the inset instead: PIN entry and its submit
+                  // button stay reachable while the keyboard is up.
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.viewInsetsOf(context).bottom,
+                    ),
+                    child: CustomScrollView(
+                      slivers: [
+                        // Fills the viewport so the content's `Spacer`s can
+                        // center it, and scrolls once it no longer fits.
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              24,
+                              _contentTopPadding(context),
+                              24,
+                              32,
+                            ),
+                            child: switch (state.status) {
+                              EmailVerificationStatus.initial =>
+                                _PollingContent(
+                                  email: null,
+                                  isPollingMode:
+                                      widget.isPollingMode || !_isTokenMode,
+                                ),
+                              EmailVerificationStatus.polling =>
+                                _PollingContent(
+                                  email: state.pendingEmail,
+                                  isPollingMode:
+                                      widget.isPollingMode || !_isTokenMode,
+                                ),
+                              EmailVerificationStatus.pollingTimedOut =>
+                                _PollingContent(
+                                  email: state.pendingEmail,
+                                  isPollingMode:
+                                      widget.isPollingMode || !_isTokenMode,
+                                  isActivelyPolling: false,
+                                ),
+                              EmailVerificationStatus.success =>
+                                const _SuccessContent(),
+                              EmailVerificationStatus.failure => _ErrorContent(
+                                errorCode: state.errorCode,
+                                onStartOver: _handleStartOver,
+                                onSignInInstead:
+                                    state.errorCode ==
+                                        EmailVerificationError
+                                            .emailAlreadyRegistered
+                                    ? () => _handleSignInRecovery(
+                                        state.pendingEmail,
+                                        state.errorCode!,
+                                      )
+                                    : null,
+                                onReturnToInviteGate:
+                                    state.showInviteGateRecovery &&
+                                        state.inviteRecoveryCode != null
+                                    ? () => _handleInviteRecovery(
+                                        state.inviteRecoveryCode!,
+                                        state.errorCode,
+                                      )
+                                    : null,
+                              ),
+                            },
                           ),
-                        EmailVerificationStatus.success =>
-                          const _SuccessContent(),
-                        EmailVerificationStatus.failure => _ErrorContent(
-                          errorCode: state.errorCode,
-                          onStartOver: _handleStartOver,
-                          onSignInInstead:
-                              state.errorCode ==
-                                  EmailVerificationError.emailAlreadyRegistered
-                              ? () => _handleSignInRecovery(
-                                  state.pendingEmail,
-                                  state.errorCode!,
-                                )
-                              : null,
-                          onReturnToInviteGate:
-                              state.showInviteGateRecovery &&
-                                  state.inviteRecoveryCode != null
-                              ? () => _handleInviteRecovery(
-                                  state.inviteRecoveryCode!,
-                                  state.errorCode,
-                                )
-                              : null,
                         ),
-                      },
+                      ],
                     ),
                   ),
+
+                  // Close affordance (hidden on success), floating above the
+                  // scrolling content so it never shifts with it.
+                  if (showCloseButton)
+                    PositionedDirectional(
+                      top: _closeButtonInset,
+                      start: _closeButtonInset,
+                      child: DivineIconButton(
+                        type: .secondary,
+                        onPressed: startsOver
+                            ? _handleStartOver
+                            : _handleCancel,
+                        size: .small,
+                        icon: .x,
+                        semanticLabel: startsOver
+                            ? context.l10n.authStartOver
+                            : context.l10n.commonClose,
+                      ),
+                    ),
                 ],
               );
             },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Close button (X) for the verification screen.
-class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onPressed, required this.label});
-
-  final VoidCallback onPressed;
-
-  /// Names the action, which differs by state: this is the only exit from the
-  /// polling screen, and the expired-resend copy tells the user to start again
-  /// without an icon-only X being able to say so.
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      child: GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: context.vineColors.surfaceContainer,
-            shape: BoxShape.circle,
-          ),
-          child: DivineIcon(
-            icon: DivineIconName.x,
-            color: context.vineColors.onIconButton,
-            size: 20,
           ),
         ),
       ),
@@ -766,126 +765,113 @@ class _PollingContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Scroll-safe so the added PIN entry never overflows on short screens,
-    // while still vertically centering the content on tall ones.
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
-              child: Column(
-                children: [
-                  const Spacer(),
+    return Column(
+      children: [
+        const Spacer(),
 
-                  // Email sticker
-                  Transform.rotate(
-                    angle: -8 * pi / 180,
-                    child: const DivineSticker(
-                      sticker: DivineStickerName.email,
-                      size: 120,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Title
-                  Text(
-                    isPollingMode
-                        ? context.l10n.authCompleteRegistration
-                        : context.l10n.authVerifying,
-                    style: TextStyle(
-                      fontFamily: VineTheme.fontFamilyBricolage,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: context.vineColors.primaryText,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-
-                  if (isPollingMode && email != null && email!.isNotEmpty) ...[
-                    Text(
-                      context.l10n.authVerificationLinkSent,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: context.vineColors.secondaryText,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email!,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: context.vineColors.primaryText,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.l10n.authClickVerificationLink,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.vineColors.secondaryText,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ] else ...[
-                    Text(
-                      context.l10n.authPleaseWaitVerifying,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: context.vineColors.secondaryText,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-
-                  const Spacer(),
-
-                  // Status + action buttons at bottom
-                  Padding(
-                    padding: const EdgeInsets.only(top: 32, bottom: 32),
-                    child: Column(
-                      children: [
-                        if (isPollingMode) ...[
-                          const _PinEntrySection(),
-                          const SizedBox(height: 20),
-                        ],
-                        if (isActivelyPolling)
-                          _StatusButton(
-                            label: context.l10n.authWaitingForVerification,
-                          )
-                        else
-                          Text(
-                            context.l10n.authVerificationPollingStopped,
-                            style: VineTheme.bodySmallFont(
-                              color: context.vineColors.secondaryText,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        if (isPollingMode) ...[
-                          const SizedBox(height: 20),
-                          DivineButton(
-                            expanded: true,
-                            type: DivineButtonType.secondary,
-                            label: context.l10n.authOpenEmailApp,
-                            onPressed: _openEmailApp,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        // Email sticker
+        Transform.rotate(
+          angle: -8 * pi / 180,
+          child: const DivineSticker(
+            sticker: DivineStickerName.email,
+            size: 120,
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 32),
+
+        // Title
+        Text(
+          isPollingMode
+              ? context.l10n.authCompleteRegistration
+              : context.l10n.authVerifying,
+          style: TextStyle(
+            fontFamily: VineTheme.fontFamilyBricolage,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: context.vineColors.primaryText,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+
+        if (isPollingMode && email != null && email!.isNotEmpty) ...[
+          Text(
+            context.l10n.authVerificationLinkSent,
+            style: TextStyle(
+              fontSize: 16,
+              color: context.vineColors.secondaryText,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            email!,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: context.vineColors.primaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.authClickVerificationLink,
+            style: TextStyle(
+              fontSize: 14,
+              color: context.vineColors.secondaryText,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ] else ...[
+          Text(
+            context.l10n.authPleaseWaitVerifying,
+            style: TextStyle(
+              fontSize: 16,
+              color: context.vineColors.secondaryText,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+
+        const Spacer(),
+
+        // Status + action buttons at bottom
+        Padding(
+          padding: const EdgeInsets.only(top: 32),
+          child: Column(
+            children: [
+              if (isPollingMode) ...[
+                const _PinEntrySection(),
+                const SizedBox(height: 20),
+              ],
+              if (isActivelyPolling)
+                _StatusButton(
+                  label: context.l10n.authWaitingForVerification,
+                )
+              else
+                Text(
+                  context.l10n.authVerificationPollingStopped,
+                  style: VineTheme.bodySmallFont(
+                    color: context.vineColors.secondaryText,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              if (isPollingMode) ...[
+                const SizedBox(height: 20),
+                DivineButton(
+                  expanded: true,
+                  type: DivineButtonType.secondary,
+                  label: context.l10n.authOpenEmailApp,
+                  onPressed: _openEmailApp,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1029,14 +1015,18 @@ class _ResendRow extends StatelessWidget {
               button: true,
               enabled: !disabled,
               label: label,
-              child: ExcludeSemantics(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: disabled
-                      ? null
-                      : () => context
-                            .read<EmailVerificationCubit>()
-                            .resendVerification(),
+              // `ExcludeSemantics` sits inside the detector, not around it:
+              // wrapping the detector drops its own `SemanticsAction.tap`
+              // along with the subtree, leaving a node that announces a
+              // button VoiceOver cannot activate.
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: disabled
+                    ? null
+                    : () => context
+                          .read<EmailVerificationCubit>()
+                          .resendVerification(),
+                child: ExcludeSemantics(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
                       minWidth: 48,
@@ -1127,10 +1117,7 @@ class _SuccessContent extends StatelessWidget {
         const Spacer(),
 
         // Signing you in status button
-        Padding(
-          padding: const EdgeInsets.only(bottom: 32),
-          child: _StatusButton(label: context.l10n.authSigningYouIn),
-        ),
+        _StatusButton(label: context.l10n.authSigningYouIn),
       ],
     );
   }
@@ -1188,17 +1175,14 @@ class _ErrorContent extends StatelessWidget {
         const Spacer(),
 
         // Start over button
-        Padding(
-          padding: const EdgeInsets.only(bottom: 32),
-          child: DivineButton(
-            expanded: true,
-            label: onSignInInstead != null
-                ? l10n.authSignInButton
-                : onReturnToInviteGate == null
-                ? l10n.authStartOver
-                : l10n.authBackToInviteCode,
-            onPressed: onSignInInstead ?? onReturnToInviteGate ?? onStartOver,
-          ),
+        DivineButton(
+          expanded: true,
+          label: onSignInInstead != null
+              ? l10n.authSignInButton
+              : onReturnToInviteGate == null
+              ? l10n.authStartOver
+              : l10n.authBackToInviteCode,
+          onPressed: onSignInInstead ?? onReturnToInviteGate ?? onStartOver,
         ),
       ],
     );
