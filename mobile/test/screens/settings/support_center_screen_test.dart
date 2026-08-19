@@ -43,6 +43,7 @@ void main() {
     Future<void> pump(
       WidgetTester tester, {
       AuthState authState = AuthState.authenticated,
+      Locale locale = const Locale('en'),
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -59,10 +60,11 @@ void main() {
             profileRepositoryProvider.overrideWithValue(null),
             profileReadRepositoryProvider.overrideWithValue(null),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
+            locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: SupportCenterScreen(),
+            home: const SupportCenterScreen(),
           ),
         ),
       );
@@ -139,12 +141,22 @@ void main() {
 
         expect(find.text(en.supportFamilySubtitle), findsOneWidget);
         expect(find.text(en.supportKidsSubtitle), findsOneWidget);
+      });
 
-        // The titles are product names and identical in every locale, so the
-        // subtitles are what prove these rows are not hardcoded English.
+      // Rendering the same screen in another locale is what proves the
+      // subtitles come from l10n: a hardcoded English literal would not
+      // change with the locale, and asserting the German string is absent
+      // from an English render would pass either way.
+      testWidgets('translate their subtitles when the locale changes', (
+        tester,
+      ) async {
+        await pump(tester, locale: const Locale('de'));
+
         final de = lookupAppLocalizations(const Locale('de'));
-        expect(find.text(de.supportFamilySubtitle), findsNothing);
-        expect(find.text(de.supportKidsSubtitle), findsNothing);
+        expect(find.text(de.supportFamilySubtitle), findsOneWidget);
+        expect(find.text(de.supportKidsSubtitle), findsOneWidget);
+        expect(find.text(en.supportFamilySubtitle), findsNothing);
+        expect(find.text(en.supportKidsSubtitle), findsNothing);
       });
 
       testWidgets('open the Divine Family page', (tester) async {
