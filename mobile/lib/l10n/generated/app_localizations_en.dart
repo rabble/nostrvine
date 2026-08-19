@@ -5118,6 +5118,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportFaqSubtitle => 'Common questions & answers';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Helping parents and teens build healthy habits online';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'How we handle accounts by age';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

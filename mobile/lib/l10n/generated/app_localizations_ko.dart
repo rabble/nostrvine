@@ -4768,6 +4768,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportFaqSubtitle => '일반적인 질문과 답변';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle => '부모와 청소년이 건강한 온라인 습관을 기르도록 돕기';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => '연령에 따라 계정을 다루는 방식';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

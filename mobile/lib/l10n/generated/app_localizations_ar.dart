@@ -4983,6 +4983,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get supportFaqSubtitle => 'الأسئلة والأجوبة الشائعة';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'مساعدة الآباء والمراهقين على بناء عادات صحية على الإنترنت';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'كيف نتعامل مع الحسابات حسب العمر';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

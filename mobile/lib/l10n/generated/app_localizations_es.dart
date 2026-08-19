@@ -5074,6 +5074,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get supportFaqSubtitle => 'Preguntas y respuestas comunes';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Ayudamos a padres y adolescentes a crear hábitos saludables en línea';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle =>
+      'Cómo gestionamos las cuentas según la edad';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

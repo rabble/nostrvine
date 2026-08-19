@@ -5021,6 +5021,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get supportFaqSubtitle => 'Vanliga frågor och svar';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Hjälper föräldrar och tonåringar att bygga sunda vanor online';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'Så hanterar vi konton utifrån ålder';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

@@ -4749,6 +4749,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get supportFaqSubtitle => 'よくある質問と回答';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle => '保護者とティーンが健全なオンライン習慣を築くために';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => '年齢に応じたアカウントの扱いについて';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

@@ -5043,6 +5043,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get supportFaqSubtitle => 'Veelgestelde vragen & antwoorden';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Ouders en tieners helpen gezonde online gewoonten op te bouwen';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'Hoe we accounts per leeftijd behandelen';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override
