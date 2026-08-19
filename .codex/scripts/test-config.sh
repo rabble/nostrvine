@@ -454,6 +454,25 @@ if grep -q '^analyze ' "$CALL_LOG"; then
   exit 1
 fi
 
+# Skipping is only half the contract. Without this, widening the guard so it
+# always skips -- silently disabling post-edit analysis everywhere -- passes.
+: > "$CALL_LOG"
+mkdir -p "$TEST_REPO/mobile/.dart_tool"
+touch "$TEST_REPO/mobile/.dart_tool/package_config.json"
+CLAUDE_ANALYZE_RESOLVED=$(cd "$TEST_REPO" && \
+  env PATH="$BIN_DIR:/usr/bin:/bin" \
+    DART_CALL_LOG="$CALL_LOG" \
+    "$CLAUDE_ANALYZE_HOOK" <<< "$CLAUDE_ANALYZE_PAYLOAD")
+if ! grep -q '^analyze ' "$CALL_LOG"; then
+  echo "Claude post-edit analyze hook skipped dart analyze despite package_config.json." >&2
+  exit 1
+fi
+if [ -n "$CLAUDE_ANALYZE_RESOLVED" ]; then
+  echo "Claude post-edit analyze hook reported diagnostics for a clean file." >&2
+  echo "Output was: $CLAUDE_ANALYZE_RESOLVED" >&2
+  exit 1
+fi
+
 NON_DIVINE_MAIN="$SCRATCH_DIR/non-divine-main"
 NON_DIVINE_LINK="$SCRATCH_DIR/non-divine-linked"
 mkdir -p "$NON_DIVINE_MAIN/mobile/build"
