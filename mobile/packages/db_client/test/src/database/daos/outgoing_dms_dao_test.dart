@@ -157,6 +157,19 @@ void main() {
       expect(await dao.getById('owner-a-second'), isNull);
       expect(await dao.getById('owner-b-first'), isNotNull);
     });
+
+    test('an empty selection deletes nothing', () async {
+      await dao.enqueue(makeDm(id: 'owner-a-queued'));
+
+      expect(
+        await dao.deleteForConversations(
+          conversationIds: const [],
+          ownerPubkey: ownerA,
+        ),
+        0,
+      );
+      expect(await dao.getById('owner-a-queued'), isNotNull);
+    });
   });
 
   group('OutgoingDmsDao', () {
