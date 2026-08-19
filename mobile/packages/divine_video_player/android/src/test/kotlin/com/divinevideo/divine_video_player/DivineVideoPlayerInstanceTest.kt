@@ -469,6 +469,50 @@ class DivineVideoPlayerInstanceTest {
         verify(exactly = 0) { result.success(any()) }
     }
 
+    /**
+     * Installs a [DivineVideoPlayerLog] sink around [action] and returns the
+     * `(level, message)` of the unrequested-stop line it emitted, or null.
+     */
+    private fun captureUnrequestedStopLog(action: () -> Unit): Pair<String, String>? {
+        val entries = mutableListOf<Pair<String, String>>()
+        DivineVideoPlayerLog.sink = { level, message, _ -> entries.add(level to message) }
+        try {
+            action()
+        } finally {
+            DivineVideoPlayerLog.sink = null
+        }
+        return entries.lastOrNull {
+            it.second.contains("stopped playing while still requested to play")
+        }
+    }
+
+    @Test
+    fun `reportUnrequestedStop stays at debug for a requested stop (STATE_IDLE)`() {
+        val listener = capturePlayerListener()
+        every { mockPlayer.playWhenReady } returns true
+        every { mockPlayer.playbackState } returns Player.STATE_IDLE
+
+        val entry = captureUnrequestedStopLog { listener.onIsPlayingChanged(false) }
+
+        // A requested stop() (Dart, Activity detach, or a fatal error) lands
+        // in STATE_IDLE with playWhenReady still set — not the "stopped for no
+        // reason we asked for" the info line is reserved for.
+        assertEquals("debug", entry?.first)
+    }
+
+    @Test
+    fun `reportUnrequestedStop reports a genuine mid-play stall at info`() {
+        val listener = capturePlayerListener()
+        every { mockPlayer.playWhenReady } returns true
+        every { mockPlayer.playbackState } returns Player.STATE_BUFFERING
+
+        val entry = captureUnrequestedStopLog { listener.onIsPlayingChanged(false) }
+
+        // Buffering with no seek in flight is the anomaly the info line exists
+        // to surface — the STATE_IDLE guard must not silence this.
+        assertEquals("info", entry?.first)
+    }
+
     @Test
     fun `onPlayerError completes pending setClips result with error`() {
         val listener = capturePlayerListener()

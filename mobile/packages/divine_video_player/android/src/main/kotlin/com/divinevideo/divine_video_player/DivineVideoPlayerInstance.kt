@@ -1441,11 +1441,14 @@ internal class DivineVideoPlayerInstance(
          * stopped on its own. The buffering watchdog only fires after 8s, so
          * a shorter stall would otherwise leave no trace at all.
          *
-         * Two routine transitions reach the same callback and are not
+         * Three routine transitions reach the same callback and are not
          * anomalies: a seek drives the player through `STATE_BUFFERING` on
-         * its way to the new position, and a non-looping clip reaching its
-         * end lands in `STATE_ENDED`. Both are reported at debug so the info
-         * line keeps meaning "stopped for no reason we asked for".
+         * its way to the new position, a non-looping clip reaching its end
+         * lands in `STATE_ENDED`, and a requested `stop()` lands in
+         * `STATE_IDLE`. The last covers Dart's `stop()`, Activity detach, and
+         * a fatal error — none of which clear `playWhenReady`, and the error
+         * is already reported by [onPlayerError]. All are reported at debug so
+         * the info line keeps meaning "stopped for no reason we asked for".
          */
         private fun reportUnrequestedStop() {
             val exoPlayer = player ?: return
@@ -1453,7 +1456,9 @@ internal class DivineVideoPlayerInstance(
 
             val state = exoPlayer.playbackState
             val expected =
-                seekCompletionResult != null || state == Player.STATE_ENDED
+                seekCompletionResult != null ||
+                    state == Player.STATE_ENDED ||
+                    state == Player.STATE_IDLE
             val message =
                 "$logTarget stopped playing while still requested to play " +
                     "(state=${playbackStateName(state)}" +
