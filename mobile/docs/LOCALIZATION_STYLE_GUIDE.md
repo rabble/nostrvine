@@ -402,6 +402,14 @@ this guide, so treat a clean pronoun grep as *no information*, not as a pass:
 - **`str.lower()` is not safe in Turkish.** Python lowercases `İ` to `i` plus
   a combining dot, so `'İptal Et'.lower()` does not contain `iptal et`. Use
   `re.IGNORECASE` rather than pre-lowering.
+- **The same character is correct in one locale and a defect in the next.**
+  Turkish `ş`/`ţ` are cedilla (U+015F / U+0163); Romanian `ș`/`ț` are
+  comma-below (U+0219 / U+021B). They look identical and **neither NFC nor NFD
+  unifies them**. `app_tr.arb` holds 1,312 cedilla characters and zero
+  comma-below; `app_ro.arb` holds 1,681 comma-below and exactly one cedilla —
+  which is a real corruption. A lint that bans one codepoint globally would
+  flag 976 correct Turkish keys; a lint that allows it globally cannot see the
+  Romanian defect. Any diacritic rule has to be per-locale.
 
 If the locale you are reviewing is in that list and you only ran the pronoun
 grep, say so in the review rather than reporting the file as clean.
