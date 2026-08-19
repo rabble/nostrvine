@@ -1733,10 +1733,10 @@ class NotificationRepository {
           : isListAdd
           ? _listAddVideoAddressableId(group.first, dTag: dTag, video: video)
           : _recipientScopedVideoAddressableId(
-          dTag: dTag,
-          video: video,
-          rootEventPubkey: group.first.rootEventPubkey,
-        );
+              dTag: dTag,
+              video: video,
+              rootEventPubkey: group.first.rootEventPubkey,
+            );
       // Normal video rows prefer payload media because it is stable after
       // metadata updates. Video mentions prefer the resolved source video, and
       // only accept payload media when the root coordinate was trusted.
