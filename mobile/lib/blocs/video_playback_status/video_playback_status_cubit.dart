@@ -75,6 +75,7 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
     String eventId, {
     required bool isAgeRestricted,
     required bool hasVerifyAction,
+    bool Function()? isConsumerActive,
   }) async {
     if (!isAgeRestricted || !hasVerifyAction) return false;
     if (state.isVerifying(eventId)) return false;
@@ -84,7 +85,11 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
     if (!canAutoAuthorize) {
       return false;
     }
-    if (isClosed || state.isVerifying(eventId)) return false;
+    if (isClosed ||
+        !(isConsumerActive?.call() ?? true) ||
+        state.isVerifying(eventId)) {
+      return false;
+    }
     return consumeAutoRetryAttempt(eventId);
   }
 

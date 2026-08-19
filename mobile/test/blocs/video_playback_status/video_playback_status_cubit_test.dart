@@ -288,6 +288,26 @@ void main() {
           expect(cubit.state.hasAutoRetryAttempted(id1), isTrue);
         },
       );
+
+      test('does not emit when closed while eligibility is pending', () async {
+        final eligibility = Completer<bool>();
+        final cubit = VideoPlaybackStatusCubit(
+          canAutoAuthorizeAgeRestrictedMedia: () => eligibility.future,
+        );
+
+        final resultFuture = cubit.consumeAgeRestrictedAutoRetryIfEligible(
+          id1,
+          isAgeRestricted: true,
+          hasVerifyAction: true,
+        );
+        await Future<void>.value();
+        await cubit.close();
+
+        eligibility.complete(true);
+
+        expect(await resultFuture, isFalse);
+        expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
+      });
     });
 
     group('authenticated retry exhaustion', () {

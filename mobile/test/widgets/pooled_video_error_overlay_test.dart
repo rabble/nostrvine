@@ -322,6 +322,54 @@ void main() {
         },
       );
 
+      testWidgets(
+        'preserves auto retry when the overlay unmounts during eligibility',
+        (tester) async {
+          final eligibility = Completer<bool>();
+          final playbackStatusCubit = VideoPlaybackStatusCubit(
+            canAutoAuthorizeAgeRestrictedMedia: () => eligibility.future,
+          );
+          var verifyAgeCalls = 0;
+
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              onVerifyAge: () => verifyAgeCalls++,
+              playbackStatusCubit: playbackStatusCubit,
+            ),
+          );
+          await tester.pump();
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          eligibility.complete(true);
+          await tester.pump();
+
+          expect(verifyAgeCalls, 0);
+          expect(
+            playbackStatusCubit.state.hasAutoRetryAttempted(divineVideo.id),
+            isFalse,
+          );
+
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              onVerifyAge: () => verifyAgeCalls++,
+              playbackStatusCubit: playbackStatusCubit,
+            ),
+          );
+          await tester.pump();
+
+          expect(verifyAgeCalls, 1);
+          expect(
+            playbackStatusCubit.state.hasAutoRetryAttempted(divineVideo.id),
+            isTrue,
+          );
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await playbackStatusCubit.close();
+        },
+      );
+
       testWidgets('does not auto-run Verify age when adult content is hidden', (
         tester,
       ) async {

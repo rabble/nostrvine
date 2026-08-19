@@ -91,10 +91,10 @@ class _PooledVideoErrorOverlayState
         widget.video.id,
         isAgeRestricted: showVerifyAge,
         hasVerifyAction: widget.onVerifyAge != null,
+        isConsumerActive: () => mounted,
       )) {
         return;
       }
-      if (!mounted) return;
       widget.onVerifyAge?.call();
     });
   }

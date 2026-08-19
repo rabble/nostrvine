@@ -807,6 +807,52 @@ void main() {
   });
 
   group('autoRetryAgeRestrictedPooledVideo', () {
+    testWidgets('stops when the caller unmounts during eligibility', (
+      tester,
+    ) async {
+      final eligibility = Completer<bool>();
+      final hostVisible = ValueNotifier<bool>(true);
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      var retryCount = 0;
+      addTearDown(hostVisible.dispose);
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+      ).thenAnswer((_) => eligibility.future);
+
+      await tester.pumpWidget(
+        _AutoRetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          retryPlayback: (_) {
+            retryCount++;
+            return _retryRecovered;
+          },
+          hostVisible: hostVisible,
+        ),
+      );
+
+      await tester.tap(find.text('Auto retry'));
+      await tester.pump();
+      hostVisible.value = false;
+      await tester.pump();
+
+      eligibility.complete(true);
+      await tester.pump();
+
+      expect(retryCount, 0);
+      expect(playbackStatusCubit.state.isVerifying(_videoId), isFalse);
+      verifyNever(
+        () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
+          sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      );
+    });
+
     testWidgets('marks authenticated retry exhausted silently when playback '
         'still fails', (tester) async {
       final mediaAuthInterceptor = _MockMediaAuthInterceptor();
@@ -1019,11 +1065,13 @@ class _AutoRetryHarness extends StatelessWidget {
     required this.mediaAuthInterceptor,
     required this.playbackStatusCubit,
     required this.retryPlayback,
+    this.hostVisible,
   });
 
   final MediaAuthInterceptor mediaAuthInterceptor;
   final VideoPlaybackStatusCubit playbackStatusCubit;
   final PooledRetryPlayback retryPlayback;
+  final ValueListenable<bool>? hostVisible;
 
   @override
   Widget build(BuildContext context) {
@@ -1037,18 +1085,25 @@ class _AutoRetryHarness extends StatelessWidget {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                return TextButton(
-                  onPressed: () => autoRetryAgeRestrictedPooledVideo(
-                    context: context,
-                    ref: ref,
-                    video: _video,
-                    index: 0,
-                    resolveSha256: _resolveSha256,
-                    retryPlayback: retryPlayback,
-                  ),
-                  child: const Text('Auto retry'),
+            body: ValueListenableBuilder<bool>(
+              valueListenable:
+                  hostVisible ?? const AlwaysStoppedAnimation<bool>(true),
+              builder: (_, hostVisible, _) {
+                if (!hostVisible) return const SizedBox.shrink();
+                return Consumer(
+                  builder: (context, ref, _) {
+                    return TextButton(
+                      onPressed: () => autoRetryAgeRestrictedPooledVideo(
+                        context: context,
+                        ref: ref,
+                        video: _video,
+                        index: 0,
+                        resolveSha256: _resolveSha256,
+                        retryPlayback: retryPlayback,
+                      ),
+                      child: const Text('Auto retry'),
+                    );
+                  },
                 );
               },
             ),
