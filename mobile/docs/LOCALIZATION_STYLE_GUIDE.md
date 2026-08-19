@@ -25,22 +25,34 @@ nobody who reviews a translation PR reads the language it changes, so review
 defaults to "the ARB parity guard is green", which proves a key exists, not
 that it sounds like Divine.
 
-Individually reasonable choices then accumulate. Two examples from the current
-tree, both from a single translation pass (#5565, which localized the
-`publishError*` family):
+Individually reasonable choices then accumulate, and they accumulate in a
+pattern. **The drift is feature-shaped, not key-shaped**: in five locales the
+register that departs from the file's own baseline is concentrated in the same
+place, the video editor.
 
-- **Spanish** picked Rioplatense *voseo* — `Revisá tu Wi-Fi`, `Probá con una
-  conexión más estable`, `No tenés permiso` — while the rest of the file is
-  *tuteo*: `Vuelve pronto`, `Si tienes 16 años o más`. Roughly 200 keys lean
-  one way and 240 the other, and the `auth*` family alone mixes both, so a
-  single sign-up flow switches dialect between screens.
-- **Japanese** picked casual sentence-final よ/ね — `ネットに接続できないよ。`,
-  `もう一回試してみて。` — where the surrounding app is です/ます polite.
+- **Spanish** ships two dialects. Its baseline is Rioplatense *voseo* —
+  `Revisá tu Wi-Fi`, `Ingresá tu código`, `No tenés permiso` — present since
+  the original l10n commit (#2930). *Tuteo* (`Inténtalo de nuevo`) arrived
+  later through feature work and clusters in the video editor. Counting only
+  markers that actually discriminate, roughly 230 keys are voseo and 25 are
+  unambiguously tuteo.
+- **Turkish** answers the same action two ways: `publishErrorServerUnreachable`
+  says `Lütfen birazdan tekrar dene` (informal) and `videoEditorSplitFailed`
+  says `Lütfen tekrar deneyin` (formal).
+- **Romanian** and **Portuguese** drift in the same corner — `ro`'s polite
+  2nd-person plural and `pt`'s European forms both cluster in the video editor
+  and chroma-key screens.
+- **Japanese** uses casual sentence-final よ/ね — `ネットに接続できないよ。` —
+  where the surrounding app is です/ます polite.
+- **Bulgarian** switches inside a single string:
+  `Докосни произволно място, за да започнете да записвате` opens with a
+  familiar imperative and closes with a polite one.
 
-Neither is a bad translation. Both are a different app's voice arriving one PR
-at a time. This guide exists so the next pass has an answer to check itself
-against, and so a reviewer who does not speak the language still has something
-to review.
+None of these is a bad translation. Each is a different app's voice arriving
+one PR at a time, and the fact that five unrelated languages drift in the same
+feature points at one upstream pipeline rather than five translators. This
+guide exists so the next pass has an answer to check itself against, and so a
+reviewer who does not speak the language still has something to review.
 
 ---
 
@@ -82,32 +94,36 @@ produces copy that reads as rude, not as friendly.
 
 | Locale | Address the reader as | Current tree | Notes |
 |---|---|---|---|
-| `am` Amharic | Polite እርስዎ / -ዎ; avoid gendered singular | consistent | 2nd-person singular is gendered (አንተ / አንቺ), so the polite form is also the safe form. Prefer verbal nouns over guessing the reader's gender. |
+| `am` Amharic | Polite እርስዎ / -ዎ; avoid gendered singular | **split** | Familiar and polite forms both appear, and they flip per verb: `ሰርዝ` 55 / `ይሰርዙ` 4 for delete, but `ተመልከት` 4 / `ይመልከቱ` 40 for watch. Adjacent keys disagree — `authCreateNewAccount` is polite, `authCreateNewAccountShort` familiar. Every familiar form is **masculine**; the feminine is used zero times, so those strings address every reader as male. That is the reason to prefer the polite form or a verbal noun, not tidiness. |
 | `ar` Arabic | MSA; impersonal phrasing, masculine-singular imperative where a verb is unavoidable | consistent | No feminine or plural address anywhere in the file today. Prefer the verbal noun (الإرسال) to a command (أرسل) in new copy. No dialect. |
-| `bg` Bulgarian | `ти` | consistent | Never the courtesy `Вие`. |
+| `bg` Bulgarian | `ти` + familiar imperatives | **split** | The pronoun `Вие` is absent, but courtesy in Bulgarian is the 2nd-person **plural verb**, and it appears — including inside single strings: `Докосни ... за да започнете` and `Докосни за редактиране. Задръжте и плъзнете`. Checking the pronoun alone reports this file as clean. |
 | `de` German | `du` | consistent | A handful of `Sie`/`Ihr` hits are pronoun ambiguity, not courtesy address. |
 | `es` Spanish | `tú` (tuteo) | **split** | See [Variety and dialect](#variety-and-dialect). No *voseo*, no *vosotros*. |
 | `fil` Filipino | Informal — no `po`/`kayo` | consistent | Taglish is the register: ~750 keys carry an English tech noun. Do not "purify" those into coined Filipino. |
-| `fr` French | `tu` | **~36 keys use `vous`** | `vous` is correct only as a real plural ("vous pouvez collaborer"). |
+| `fr` French | `tu` | **36 keys use `vous`** | Almost all are genuine vouvoiement drift, not plural. Only `userPickerEmptyFollowListBody` ("vous pouvez collaborer" = you-and-them) is a true plural; the two `minorAccountReview*EmailBody` keys are email templates the user sends to support, where formal is correct. The rest cluster in the video editor, recorder and database-failure copy. |
 | `id` Indonesian | `kamu` | mostly consistent | ~13 keys use formal `Anda`, and `feedForYouEmpty` manages both in one sentence: `Feed Untuk Anda kamu kosong.` |
-| `it` Italian | `tu` | consistent | Never the courtesy `Lei`. |
+| `it` Italian | `tu` | consistent | Zero courtesy forms — a case-sensitive sweep for `Lei`/`Suo`/`Sua`/`Voi` returns nothing. Lowercase `suo`/`sua` appears but is third-person ("il **suo** profilo" = *their* profile), so do not grep case-insensitively here. |
 | `ja` Japanese | です/ます polite; noun form for labels | **split** | No だ / よ / ね sentence endings. Politeness is the neutral register, not stiffness. |
 | `ko` Korean | 해요체 | **split** | ~117 keys use 합니다체 across product surfaces, not just developer screens (`videoEngagementLikersEmpty`, `videoErrorVerifyAgeFailed`); ~17 use 반말 (`네 크루는 밖에 있어`), which is never correct in product copy. |
 | `ms` Malay | `anda` | consistent | Deliberately different from Indonesian: `anda` is Malay's unmarked form. |
 | `nl` Dutch | `je` | consistent | Never `u`. |
 | `pl` Polish | `ty` + 2nd-person singular imperatives | consistent | Never `Pan`/`Pani`. |
-| `pt` Portuguese | `você` | mostly consistent | 8 keys use European `tu` forms (`Verifica a tua ligação`, `o teu comentário`). See [Variety and dialect](#variety-and-dialect). |
-| `ro` Romanian | `tu` | consistent | Never `dumneavoastră`. |
+| `pt` Portuguese | `você` | **split** | At least 16 keys carry European forms — `tu`-imperatives (`Verifica a tua ligação`), `utilizador`, and the chroma-key and people-lists screens. `userPickerConfirmSemanticLabel` says `utilizadores` beside `userPickerUnavailable`'s `usuários`, on one screen. See [Variety and dialect](#variety-and-dialect). |
+| `ro` Romanian | `tu` | mostly consistent | `dumneavoastră` is absent, but Romanian politeness also lives in the verb: at least 7 keys use polite 2nd-person plural (`încercați`, `vă rugăm`), again clustered in the video editor. |
 | `sv` Swedish | `du` | consistent | Sweden is du-reformed; `ni` reads as archaic. |
-| `tr` Turkish | `sen` | consistent | Register lives in the suffix, so check the imperative: `Tekrar Dene`, not `Tekrar deneyin` (one key, `videoRecorderStopMotionAssembleFailed`, still uses the formal form). |
+| `tr` Turkish | `sen` | **split** | Register lives in the suffix, not the pronoun. At least 26 keys use formal 2nd-person plural forms, clustered in the video editor, sound-sync, database-failure and auth copy. Direct collision for the same action: `publishErrorServerUnreachable` = `...tekrar dene`, `videoEditorSplitFailed` = `...tekrar deneyin`. |
 | `ur` Urdu | `آپ` | consistent | `آپ` is the neutral form. `تم` reads as brusque, not friendly. |
 | `vi` Vietnamese | `bạn` | consistent | |
 | `zh` Chinese | `你` | consistent | Never `您`. Simplified script, mainland vocabulary — see below. |
 
-"Current tree" is the shape of today's corpus per the greps in
-[Checks you can run](#checks-you-can-run-without-speaking-the-language), not a
-linguistic audit. Where it says **split**, the decision in this table is the
-target and the file has not been reconciled yet.
+"Current tree" is the shape of today's corpus, measured with the checks in
+[Checks you can run](#checks-you-can-run-without-speaking-the-language) —
+counts are floors, since a wider marker list finds more. Where it says
+**split**, the decision in this table is the target and the file has not been
+reconciled yet. Several rows read "consistent" only until someone greps the
+verb instead of the pronoun; see
+[Where a pronoun grep lies](#where-a-pronoun-grep-lies) before trusting a
+clean result.
 
 **When the table and the file disagree, follow the table for the keys you are
 touching.** Do not reconcile the rest of the file in the same PR — a 400-key
@@ -122,9 +138,20 @@ is its own change, with its own issue and its own native-speaker review.
 
 One `es` file serves every Spanish-speaking market we ship to.
 
-- **Address: `tú`.** No *voseo* (`Revisá`, `Sumate`, `tenés`) — it is
-  Rioplatense and reads as foreign everywhere else. No *vosotros* — it is
-  Spain-only, and the corpus already contains none.
+**Read this before "fixing" the register.** The file's baseline is *voseo*, not
+*tuteo*. `git log -S'Probá' -- mobile/lib/l10n/app_es.arb` traces it to #2930,
+the original l10n commit; tuteo (`Inténtalo`) enters later, at #3142 and other
+video-editor work. So the majority register is the Rioplatense one, and the
+minority is standard tuteo — the opposite of what a quick read suggests.
+
+- **Address: `tú` (tuteo).** This is a product decision, not a drift cleanup,
+  and it is worth stating plainly: *voseo* is Rioplatense, so it reads as
+  regional to the large majority of Spanish speakers, while `tú` is understood
+  everywhere. Choosing it means rewriting the file's baseline (~230 keys), not
+  patching an outlier — schedule it as its own change with native review, and
+  do not half-apply it. If a maintainer prefers to keep voseo, change this row
+  instead; what is not defensible is shipping both.
+- **No *vosotros*** — it is Spain-only, and the corpus already contains none.
 - **Vocabulary: whichever word is understood everywhere.** Prefer the
   pan-regional term over a marked one in either direction: not `ordenador`
   (Spain) and not `computadora` where `dispositivo` works.
@@ -343,10 +370,41 @@ PY
 ```
 
 Swap the pattern for the locale you are reviewing: `de` `\b(Sie|Ihnen|Ihre?)\b`,
-`nl` `\b(u|uw)\b`, `it` `\b(Lei|Suo|Sua)\b`, `es` voseo
+`nl` `\b(u|uw)\b`, `it` `\b(Lei|Suo|Sua)\b` **case-sensitively**, `es` voseo
 `\b(vos|sos|tenés|podés|Revisá|Probá|Elegí|Usá|Compartí)\b`, `ja`
 `(だよ|してね|するよ|ないよ)`, `ko` `(습니다|ㅂ니다)` and `(있어$|없어$|이야$)`,
-`zh` `您`, `ur` `\bتم\b`, `id` `\bAnda\b`.
+`zh` `您`, `id` `\bAnda\b`.
+
+### Where a pronoun grep lies
+
+The snippet above is a starting point, and in five of our locales it is not
+enough. Every one of these produced a wrong answer during the audit that wrote
+this guide, so treat a clean pronoun grep as *no information*, not as a pass:
+
+- **Register can live in the verb, not the pronoun.** Turkish, Bulgarian,
+  Romanian and Amharic all carry politeness in the verb ending. Bulgarian's
+  courtesy pronoun `Вие` appears **zero** times in a file that nonetheless
+  switches register mid-sentence. Grep the imperative — `dene` vs `deneyin`,
+  `Докосни` vs `Докоснете`, `încearcă` vs `încercați`.
+- **A possessive can belong to both registers.** Spanish `tu`/`tus` is shared
+  by tuteo *and* voseo — there is no `vuestro` in voseo — so counting `tu` as a
+  tuteo marker scores voseo strings as tuteo. 72 keys carry both. Use only
+  markers the other register cannot produce: accented `tú`, `tienes`/`puedes`,
+  or the accent-final imperatives `Revisá`/`Probá`.
+- **Case-insensitive matching invents findings.** Italian `Suo`/`Sua` is
+  courtesy; lowercase `suo`/`sua` is ordinary third person. Matching without
+  case reports 15 offenders in a file that has none.
+- **Short words match inside longer ones in unspaced scripts.** Urdu `تم`
+  looks like the informal pronoun and appears in 51 keys — every one of them
+  inside `ختم`, `تمام`, `مشتمل` or `تمباکو`. Word-boundary matching finds
+  zero. Amharic `ህ` behaves the same way. Anchor on whole words or whole
+  imperative forms.
+- **`str.lower()` is not safe in Turkish.** Python lowercases `İ` to `i` plus
+  a combining dot, so `'İptal Et'.lower()` does not contain `iptal et`. Use
+  `re.IGNORECASE` rather than pre-lowering.
+
+If the locale you are reviewing is in that list and you only ran the pronoun
+grep, say so in the review rather than reporting the file as clean.
 
 ```bash
 # Locked terms: did a translation drop a name or a protocol token?
