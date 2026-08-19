@@ -2672,6 +2672,15 @@ class VideosRepository {
       }
     }
 
+    // Every candidate is exhausted here and nowhere else: the per-candidate
+    // helper cannot tell a miss that a later fallback rescues from a net
+    // failure, so it reports at INFO and this is the only WARNING.
+    Log.warning(
+      'Route lookup failed for every candidate: ${attempted.join(', ')}',
+      name: 'VideosRepository',
+      category: LogCategory.video,
+    );
+
     final failure = apiFailure;
     if (failure != null) throw failure;
 
@@ -2682,10 +2691,34 @@ class VideosRepository {
     String routeId,
   ) async {
     final candidate = _VideoRouteCandidate.parse(routeId);
-    if (candidate == null) return null;
+    if (candidate == null) {
+      Log.warning(
+        'Route lookup could not parse route id: $routeId',
+        name: 'VideosRepository',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    // Sources that answered "no", in the order they were tried. A null from
+    // this method renders a permanent "video not found", so the misses are
+    // reported alongside whichever source finally answered — otherwise the
+    // failure is indistinguishable from the video genuinely not existing.
+    final missed = <String>[];
+
+    VideoEvent resolved(String source, VideoEvent video) {
+      Log.info(
+        'Route lookup resolved $routeId via $source'
+        '${missed.isEmpty ? '' : ' (missed: ${missed.join(', ')})'}',
+        name: 'VideosRepository',
+        category: LogCategory.video,
+      );
+      return video;
+    }
 
     final cached = await _fetchRouteVideoFromLocalCache(candidate);
-    if (cached != null) return cached;
+    if (cached != null) return resolved('localCache', cached);
+    missed.add('localCache');
 
     FunnelcakeException? apiFailure;
     final funnelcakeRouteId = candidate.stableId ?? candidate.eventId;
@@ -2696,7 +2729,10 @@ class VideosRepository {
           expectedPubkey: candidate.addressablePubkey,
           permissive: true,
         );
-        if (byFunnelcake != null) return byFunnelcake;
+        if (byFunnelcake != null) {
+          return resolved('funnelcake', byFunnelcake);
+        }
+        missed.add('funnelcake');
       } on FunnelcakeException catch (e, stackTrace) {
         Log.error(
           'Funnelcake route lookup failed; falling back to relay',
@@ -2705,6 +2741,7 @@ class VideosRepository {
           error: e,
           stackTrace: stackTrace,
         );
+        missed.add('funnelcake=error');
         apiFailure = e;
       }
     }
@@ -2713,22 +2750,36 @@ class VideosRepository {
       final byEventId = await _fetchRouteVideoByEventIdFromRelay(
         candidate.eventId!,
       );
-      if (byEventId != null) return byEventId;
+      if (byEventId != null) return resolved('relayEventId', byEventId);
+      missed.add('relayEventId');
     }
 
     if (candidate.addressableId != null) {
       final byAddressable = await _fetchAddressableVideoFromRelay(
         candidate.addressableId!,
       );
-      if (byAddressable != null) return byAddressable;
+      if (byAddressable != null) {
+        return resolved('relayAddressable', byAddressable);
+      }
+      missed.add('relayAddressable');
     }
 
     if (candidate.stableId != null) {
       final byStableId = await _fetchVideoByStableIdFromRelay(
         candidate.stableId!,
       );
-      if (byStableId != null) return byStableId;
+      if (byStableId != null) return resolved('relayStableId', byStableId);
+      missed.add('relayStableId');
     }
+
+    Log.info(
+      'Route lookup exhausted every source for $routeId '
+      '(eventId=${candidate.eventId}, '
+      'addressableId=${candidate.addressableId}, '
+      'stableId=${candidate.stableId}); missed: ${missed.join(', ')}',
+      name: 'VideosRepository',
+      category: LogCategory.video,
+    );
 
     // Nothing answered. When the API was unreachable we cannot claim the video
     // is missing: null renders a permanent "could be gone, out of reach, or

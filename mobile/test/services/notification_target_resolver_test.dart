@@ -4,6 +4,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -294,6 +295,63 @@ void main() {
       );
 
       expect(resolved, isNull);
+    });
+
+    group('diagnostics', () {
+      List<String> logsMentioning(String targetId) => LogCaptureService()
+          .getRecentLogs()
+          .where((e) => e.message.contains(targetId))
+          .map((e) => e.message)
+          .toList();
+
+      test('logs the tag that resolved the target', () async {
+        const targetId = 'comment_logged_resolved';
+        const rootId = 'root_video_logged';
+        when(() => videoEventService.getVideoById(targetId)).thenReturn(null);
+        when(() => nostrClient.fetchEventById(targetId)).thenAnswer(
+          (_) async => Event('a' * 64, 1111, const [
+            ['E', rootId],
+          ], 'comment'),
+        );
+
+        await resolver.resolveVideoEventIdFromNotificationTarget(targetId);
+
+        expect(
+          logsMentioning(targetId).join('\n'),
+          contains('nip22RootEvent'),
+          reason: 'a successful walk must name the tag it used',
+        );
+      });
+
+      test('logs where the walk stopped when nothing resolves', () async {
+        const targetId = 'comment_logged_unresolvable';
+        when(() => videoEventService.getVideoById(targetId)).thenReturn(null);
+        when(
+          () => nostrClient.fetchEventById(targetId),
+        ).thenAnswer((_) async => null);
+
+        final resolved = await resolver
+            .resolveVideoEventIdFromNotificationTarget(targetId);
+
+        expect(resolved, isNull);
+        expect(
+          logsMentioning(targetId).join('\n'),
+          contains('targetEventNotFound'),
+          reason: 'a silent fallback to the profile must leave a trace',
+        );
+      });
+
+      test('logs the full target id without truncating it', () async {
+        final targetId = 'f' * 64;
+        when(() => videoEventService.getVideoById(targetId)).thenReturn(null);
+        when(
+          () => nostrClient.fetchEventById(targetId),
+        ).thenAnswer((_) async => null);
+
+        await resolver.resolveVideoEventIdFromNotificationTarget(targetId);
+
+        expect(logsMentioning(targetId).join('\n'), contains(targetId));
+      });
     });
   });
 }
