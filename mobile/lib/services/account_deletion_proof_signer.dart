@@ -61,7 +61,19 @@ class AccountDeletionProofSigner {
         method: HttpMethod.delete,
       );
 
-      // The check that carries the weight: the one above only proves the
+      // Ordered before the account check so a signer that produced nothing is
+      // not reported as a proof being discarded.
+      if (token == null) {
+        Log.warning(
+          'Could not sign NIP-98 proof for account deletion; '
+          'the refused bearer attempt stands',
+          name: 'AccountDeletionProofSigner',
+          category: LogCategory.auth,
+        );
+        return null;
+      }
+
+      // The check that carries the weight: the entry check only proves the
       // accounts matched before a call that can take seconds.
       if (_activePubkey() != tokenOwnerPubkey) {
         Log.warning(
@@ -73,15 +85,8 @@ class AccountDeletionProofSigner {
         );
         return null;
       }
-      if (token == null) {
-        Log.warning(
-          'Could not sign NIP-98 proof for account deletion; '
-          'the refused bearer attempt stands',
-          name: 'AccountDeletionProofSigner',
-          category: LogCategory.auth,
-        );
-      }
-      return token?.token;
+
+      return token.token;
     } catch (e) {
       Log.warning(
         'NIP-98 proof signing threw for account deletion: $e',
