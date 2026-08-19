@@ -116,6 +116,7 @@ class _VideoMetadataEditStackContentState
     final path = await Navigator.push<String?>(
       context,
       PageRouteBuilder<String?>(
+        settings: const RouteSettings(name: 'video_metadata_cover'),
         transitionDuration: duration,
         reverseTransitionDuration: duration,
         pageBuilder: (_, _, _) => VideoMetadataCoverScreen(

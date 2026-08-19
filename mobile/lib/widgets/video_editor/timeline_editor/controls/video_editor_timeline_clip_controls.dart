@@ -139,6 +139,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
 
     final transform = await Navigator.of(context).push<ExportTransform>(
       PageRouteBuilder<ExportTransform>(
+        settings: const RouteSettings(name: 'video_clip_transform'),
         opaque: false,
         barrierColor: context.vineColors.surfaceContainerHigh,
         pageBuilder: (_, _, _) => VideoClipTransformScreen(clip: clip),
@@ -171,6 +172,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     // and would not otherwise find it. Nothing comes back through the pop.
     await Navigator.of(context).push<void>(
       PageRouteBuilder<void>(
+        settings: const RouteSettings(name: 'video_clip_chroma_key'),
         opaque: false,
         barrierColor: VineTheme.backgroundCamera,
         pageBuilder: (_, _, _) => BlocProvider<ClipEditorBloc>.value(

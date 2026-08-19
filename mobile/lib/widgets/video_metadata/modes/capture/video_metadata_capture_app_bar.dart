@@ -27,6 +27,7 @@ class VideoMetadataCaptureAppBar extends ConsumerWidget
     await Navigator.push(
       context,
       PageRouteBuilder<void>(
+        settings: const RouteSettings(name: 'video_metadata_preview'),
         pageBuilder: (_, _, _) => VideoMetadataPreviewScreen(clip: clip),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);

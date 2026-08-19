@@ -32,6 +32,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
     await Navigator.push(
       context,
       PageRouteBuilder<void>(
+        settings: const RouteSettings(name: 'video_metadata_cover'),
         transitionDuration: duration,
         reverseTransitionDuration: duration,
         pageBuilder: (_, _, _) => VideoMetadataCoverScreen(clip: clip),

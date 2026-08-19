@@ -344,6 +344,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     final result = await Navigator.push<bool>(
       context,
       PageRouteBuilder<bool>(
+        settings: const RouteSettings(name: 'video_recorder'),
         opaque: false,
         barrierDismissible: true,
         barrierColor: VineTheme.transparent,
@@ -585,6 +586,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     final result = await Navigator.push<TextLayer>(
       context,
       PageRouteBuilder<TextLayer>(
+        settings: const RouteSettings(name: 'video_text_editor'),
         opaque: false,
         barrierDismissible: true,
         barrierColor: VineTheme.transparent,
@@ -762,6 +764,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     mainBloc.add(const VideoEditorExternalPauseRequested(isPaused: true));
     final takes = await Navigator.of(context).push<List<AudioEvent>>(
       PageRouteBuilder<List<AudioEvent>>(
+        settings: const RouteSettings(name: 'voice_over_recorder'),
         pageBuilder: (_, _, _) => VoiceOverRecorderScreen(
           availableDuration: availableDuration,
           priorTakeCount: priorTakeCount,

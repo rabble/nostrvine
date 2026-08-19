@@ -105,6 +105,7 @@ Future<void> transformStopMotionFrame(
 
   final bytes = await Navigator.of(context).push<Uint8List>(
     PageRouteBuilder<Uint8List>(
+      settings: const RouteSettings(name: 'stop_motion_frame_transform'),
       opaque: false,
       barrierColor: context.vineColors.surfaceContainerHigh,
       pageBuilder: (_, _, _) => StopMotionFrameTransformScreen(
