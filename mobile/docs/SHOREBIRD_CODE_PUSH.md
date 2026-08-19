@@ -230,6 +230,18 @@ test-backed.
    git push -u origin shorebird-patch/<platform>/<release-version>
    ```
 
+   A brand-new worktree treats its `mobile/mise.toml` as untrusted because
+   mise trust is keyed to the config file's path. Every pre-push hook step
+   runs through `mise exec`, so the hook otherwise stops with
+   `mise ERROR Config files in .../mobile/mise.toml are not trusted.` Run
+   `mise trust` in the patch worktree's `mobile/` directory first. Then run
+   `flutter pub get` explicitly and confirm `git status --short` is clean so
+   no lockfile churn joins the patch payload — `flutter analyze` would
+   resolve dependencies itself, but a `pubspec.lock` change is a blocked path
+   and would fail the patch-source validator. The hook also warns that
+   `shorebird` is not a semantic branch prefix; that warning is expected on a
+   patch line, which never becomes a PR. Never reach for `--no-verify`.
+
 ### Build, validate, and promote
 
 1. Start `ios-patch` or `android-patch` manually **from `main`** in Codemagic.
@@ -397,6 +409,25 @@ cd mobile && flutter build apk --config-only   # injects the wrapper
 
 `init` also needs a JDK for that call, which a machine set up only for iOS
 work will not have.
+
+**The patch-source validator does not exist on older patch lines.** A release
+whose baseline predates #7844 has no `mobile/scripts/shorebird_patch_source.rb`
+in its tree, which is the design: the patch workflow copies the script from
+`main` into `build/shorebird/` *before* checking out the patch branch, so the
+rules that gate a patch always come from current trusted `main` rather than
+from the release being patched. To dry-run the same checks locally, invoke
+`main`'s copy against the patch worktree rather than looking for the script
+inside it:
+
+```bash
+cd <patch-worktree>/mobile && ruby <main-checkout>/mobile/scripts/shorebird_patch_source.rb \
+  --baseline <patch-baseline-commit> \
+  --platform <platform> \
+  --release-version <release-version> \
+  --branch shorebird-patch/<platform>/<release-version>
+```
+
+It reads `refs/remotes/origin/main`, so fetch `main` first.
 
 **`shorebird init` invents a `divineuitests` flavor.** Its iOS detection treats
 every shared Xcode scheme that is not `Runner` as a product flavor, and picks up
