@@ -286,6 +286,13 @@ void main() {
         expect(find.text('Decline and remove'), findsOneWidget);
       });
 
+      testWidgets('renders "Block" button', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.messageRequestBlockButton), findsOneWidget);
+      });
+
       testWidgets('renders message count description', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
@@ -506,6 +513,70 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+    });
+
+    group('block and decline feedback', () {
+      testWidgets('blocks the sender and pops when "Block" tapped', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
+        ).thenAnswer((_) async {});
+        when(mockGoRouter.canPop).thenReturn(true);
+        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.messageRequestBlockButton));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockActionsCubit.blockAndRemoveRequest(
+            conversationId,
+            otherPubkey,
+          ),
+        ).called(1);
+        verify(() => mockGoRouter.pop()).called(1);
+      });
+
+      testWidgets('confirms with a snackbar after declining', (tester) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async {});
+        when(mockGoRouter.canPop).thenReturn(true);
+        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        expect(
+          find.text(l10n.messageRequestDeclinedSnackbar('TestUser')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('confirms with a snackbar after blocking', (tester) async {
+        when(
+          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
+        ).thenAnswer((_) async {});
+        when(mockGoRouter.canPop).thenReturn(true);
+        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.messageRequestBlockButton));
+        await tester.pump();
+
+        expect(
+          find.text(l10n.messageRequestBlockedSnackbar('TestUser')),
+          findsOneWidget,
+        );
       });
     });
 

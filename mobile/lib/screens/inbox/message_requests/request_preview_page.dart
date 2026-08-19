@@ -57,7 +57,10 @@ class RequestPreviewPage extends ConsumerWidget {
           )..load(),
         ),
         BlocProvider(
-          create: (_) => MessageRequestActionsCubit(dmRepository: dmRepository),
+          create: (_) => MessageRequestActionsCubit(
+            dmRepository: dmRepository,
+            blocklistRepository: ref.watch(contentBlocklistRepositoryProvider),
+          ),
         ),
         BlocProvider(
           create: (_) => CollaboratorInviteActionsCubit(

@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,21 +12,33 @@ import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
+
 const _testConversationId1 =
     'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 const _testConversationId2 =
     'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3';
+const _testSenderPubkey =
+    'c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4';
+const _testOwnerPubkey =
+    'd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5';
 
 void main() {
   group(MessageRequestActionsCubit, () {
     late _MockDmRepository mockDmRepository;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
+      when(() => mockDmRepository.userPubkey).thenReturn(_testOwnerPubkey);
     });
 
-    MessageRequestActionsCubit createCubit() =>
-        MessageRequestActionsCubit(dmRepository: mockDmRepository);
+    MessageRequestActionsCubit createCubit() => MessageRequestActionsCubit(
+      dmRepository: mockDmRepository,
+      blocklistRepository: mockBlocklistRepository,
+    );
 
     test('does not emit or throw when closed mid-decline', () async {
       final completer = Completer<void>();
@@ -94,6 +107,74 @@ void main() {
             status: MessageRequestActionsStatus.error,
           ),
         ],
+      );
+    });
+
+    group('blockAndRemoveRequest', () {
+      blocTest<MessageRequestActionsCubit, MessageRequestActionsState>(
+        'blocks the sender then removes the conversation, in that order',
+        setUp: () {
+          when(
+            () => mockBlocklistRepository.blockUser(
+              _testSenderPubkey,
+              ourPubkey: _testOwnerPubkey,
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.removeConversation(_testConversationId1),
+          ).thenAnswer((_) async {});
+        },
+        build: createCubit,
+        act: (cubit) => cubit.blockAndRemoveRequest(
+          _testConversationId1,
+          _testSenderPubkey,
+        ),
+        expect: () => [
+          const MessageRequestActionsState(
+            status: MessageRequestActionsStatus.processing,
+          ),
+          const MessageRequestActionsState(
+            status: MessageRequestActionsStatus.success,
+          ),
+        ],
+        verify: (_) {
+          verifyInOrder([
+            () => mockBlocklistRepository.blockUser(
+              _testSenderPubkey,
+              ourPubkey: _testOwnerPubkey,
+            ),
+            () => mockDmRepository.removeConversation(_testConversationId1),
+          ]);
+        },
+      );
+
+      blocTest<MessageRequestActionsCubit, MessageRequestActionsState>(
+        'does not remove the conversation when the block fails',
+        setUp: () {
+          when(
+            () => mockBlocklistRepository.blockUser(
+              _testSenderPubkey,
+              ourPubkey: _testOwnerPubkey,
+            ),
+          ).thenThrow(Exception('publish failure'));
+        },
+        build: createCubit,
+        act: (cubit) => cubit.blockAndRemoveRequest(
+          _testConversationId1,
+          _testSenderPubkey,
+        ),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          const MessageRequestActionsState(
+            status: MessageRequestActionsStatus.processing,
+          ),
+          const MessageRequestActionsState(
+            status: MessageRequestActionsStatus.error,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockDmRepository.removeConversation(any()));
+        },
       );
     });
 

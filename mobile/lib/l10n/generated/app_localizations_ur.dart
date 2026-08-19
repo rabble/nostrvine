@@ -7357,6 +7357,19 @@ class AppLocalizationsUr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'انکار کر کے ہٹائیں';
 
   @override
+  String get messageRequestBlockButton => 'Block';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Declined $displayName\'s request';
+  }
+
+  @override
+  String messageRequestBlockedSnackbar(String displayName) {
+    return 'Blocked $displayName';
+  }
+
+  @override
   String get messageRequestLoadFailed => 'یہ درخواست لوڈ نہیں ہو سکی۔';
 
   @override

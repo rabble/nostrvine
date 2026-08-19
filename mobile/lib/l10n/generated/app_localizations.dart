@@ -10616,7 +10616,7 @@ abstract class AppLocalizations {
   /// No description provided for @inboxRemoveConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'This will delete your conversation with {displayName}. This action cannot be undone.'**
+  /// **'This removes your conversation with {displayName} from your inbox. If they message you again, a new conversation starts.'**
   String inboxRemoveConfirmBody(String displayName);
 
   /// No description provided for @inboxRemoveConfirmConfirm.
@@ -12718,6 +12718,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Decline and remove'**
   String get messageRequestDeclineAndRemoveButton;
+
+  /// No description provided for @messageRequestBlockButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get messageRequestBlockButton;
+
+  /// No description provided for @messageRequestDeclinedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined {displayName}\'s request'**
+  String messageRequestDeclinedSnackbar(String displayName);
+
+  /// No description provided for @messageRequestBlockedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked {displayName}'**
+  String messageRequestBlockedSnackbar(String displayName);
 
   /// Shown in place of the request preview when its database read fails (#7335), next to a `commonRetry` button. The screen previously fell through to the loaded layout, so a failed read rendered a generated placeholder name, a count of 0, and live accept/decline buttons over an unknown sender.
   ///

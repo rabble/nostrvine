@@ -128,7 +128,10 @@ class RequestPreviewView extends ConsumerWidget {
                 messages: messages,
               ),
             ),
-            _ActionButtons(participantPubkeys: participantPubkeys),
+            _ActionButtons(
+              participantPubkeys: participantPubkeys,
+              displayName: displayName,
+            ),
           ],
         ),
       ),
@@ -443,13 +446,18 @@ class _ActionBar extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.participantPubkeys});
+  const _ActionButtons({
+    required this.participantPubkeys,
+    required this.displayName,
+  });
 
   final List<String> participantPubkeys;
+  final String displayName;
 
   @override
   Widget build(BuildContext context) {
     final conversationId = context.read<RequestPreviewCubit>().conversationId;
+    final otherPubkey = participantPubkeys.first;
 
     return _ActionBar(
       children: [
@@ -463,7 +471,8 @@ class _ActionButtons extends StatelessWidget {
             );
           },
         ),
-        const _DeclineAndRemoveButton(),
+        _DeclineAndRemoveButton(displayName: displayName),
+        _BlockButton(pubkey: otherPubkey, displayName: displayName),
       ],
     );
   }
@@ -471,8 +480,13 @@ class _ActionButtons extends StatelessWidget {
 
 /// The one action that survives an unresolved counterparty: `declineRequest`
 /// takes the conversation ID, not the participants.
+///
+/// [displayName] is null on the unresolved-counterparty states, where there is
+/// no name to put in the confirmation snackbar; the decline still runs.
 class _DeclineAndRemoveButton extends StatelessWidget {
-  const _DeclineAndRemoveButton();
+  const _DeclineAndRemoveButton({this.displayName});
+
+  final String? displayName;
 
   @override
   Widget build(BuildContext context) {
@@ -481,12 +495,51 @@ class _DeclineAndRemoveButton extends StatelessWidget {
     return _SecondaryActionButton(
       label: context.l10n.messageRequestDeclineAndRemoveButton,
       onTap: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        final name = displayName;
+        final snackText = name == null
+            ? null
+            : context.l10n.messageRequestDeclinedSnackbar(name);
         await context.read<MessageRequestActionsCubit>().declineRequest(
           conversationId,
         );
         // safePop for the same reason as the app-bar back button above: this
         // route is deep-linkable, and a cold entry has nothing to pop (#6112).
         if (context.mounted) context.safePop(fallback: InboxPage.path);
+        if (snackText != null) {
+          messenger.showSnackBar(SnackBar(content: Text(snackText)));
+        }
+      },
+    );
+  }
+}
+
+/// The hard stop next to the soft one: blocks the sender and removes the
+/// request. The blocklist filter keeps future messages out of the inbox while
+/// leaving them readable behind the Blocked filter (#7026).
+class _BlockButton extends StatelessWidget {
+  const _BlockButton({required this.pubkey, required this.displayName});
+
+  final String pubkey;
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    final conversationId = context.read<RequestPreviewCubit>().conversationId;
+
+    return _SecondaryActionButton(
+      label: context.l10n.messageRequestBlockButton,
+      onTap: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        final snackText = context.l10n.messageRequestBlockedSnackbar(
+          displayName,
+        );
+        await context.read<MessageRequestActionsCubit>().blockAndRemoveRequest(
+          conversationId,
+          pubkey,
+        );
+        if (context.mounted) context.safePop(fallback: InboxPage.path);
+        messenger.showSnackBar(SnackBar(content: Text(snackText)));
       },
     );
   }

@@ -436,6 +436,11 @@ const _knownUntranslatedDebt = <String>{
   'exploreFeaturedSponsoredPillSemanticLabel',
   // The four social-proof keys and searchUserVideoCount left this list when
   // this branch translated them into every locale.
+  // Message-request block/decline copy is new; translation pass tracked in
+  // #7881.
+  'messageRequestBlockButton',
+  'messageRequestDeclinedSnackbar',
+  'messageRequestBlockedSnackbar',
 };
 
 const _profileBadgeSheetKeys = <String>{

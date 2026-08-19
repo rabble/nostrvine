@@ -7387,6 +7387,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Weigeren en verwijderen';
 
   @override
+  String get messageRequestBlockButton => 'Block';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Declined $displayName\'s request';
+  }
+
+  @override
+  String messageRequestBlockedSnackbar(String displayName) {
+    return 'Blocked $displayName';
+  }
+
+  @override
   String get messageRequestLoadFailed =>
       'Dit berichtverzoek kon niet worden geladen.';
 
