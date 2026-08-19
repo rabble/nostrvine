@@ -6166,12 +6166,12 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'آپ کو $title پر تعاون کی دعوت دی گئی: $url\n\nOpen diVine to review and accept.';
+    return 'آپ کو $title پر تعاون کی دعوت دی گئی: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'آپ کو ایک ویڈیو پر تعاون کی دعوت دی گئی: $url\n\nOpen diVine to review and accept.';
+    return 'آپ کو ایک ویڈیو پر تعاون کی دعوت دی گئی: $url\n\nOpen Divine to review and accept.';
   }
 
   @override

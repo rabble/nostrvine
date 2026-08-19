@@ -1182,7 +1182,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'معاينة صورة الملف الشخصي';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine مبني على Nostr،';
+  String get nostrInfoIntroBuiltOn => 'Divine مبني على Nostr،';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5234,7 +5234,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get listAddCollaboratorTitle => 'إضافة متعاون';
 
   @override
-  String get listCollaboratorSearchHint => 'ابحث في diVine...';
+  String get listCollaboratorSearchHint => 'ابحث في Divine...';
 
   @override
   String get listNameLabel => 'اسم القائمة';
@@ -6107,12 +6107,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'تمت دعوتك للتعاون على $title: $url\n\nOpen diVine to review and accept.';
+    return 'تمت دعوتك للتعاون على $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'تمت دعوتك للتعاون على فيديو: $url\n\nOpen diVine to review and accept.';
+    return 'تمت دعوتك للتعاون على فيديو: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8090,14 +8090,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invitesNoneAvailable => 'لا توجد دعوات متاحة الآن';
 
   @override
-  String get invitesShareWithPeople => 'شارك diVine مع من تعرفهم';
+  String get invitesShareWithPeople => 'شارك Divine مع من تعرفهم';
 
   @override
   String get invitesUsedInvites => 'الدعوات المستخدمة';
 
   @override
   String invitesShareMessage(String code) {
-    return 'انضمّ إليّ على diVine! استخدم رمز الدعوة $code للبدء:\nhttps://divine.video/invite/$code';
+    return 'انضمّ إليّ على Divine! استخدم رمز الدعوة $code للبدء:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8110,7 +8110,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invitesShareInvite => 'مشاركة الدعوة';
 
   @override
-  String get invitesShareSubject => 'انضمّ إليّ على diVine';
+  String get invitesShareSubject => 'انضمّ إليّ على Divine';
 
   @override
   String get invitesClaimed => 'تم استخدامها';

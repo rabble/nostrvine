@@ -933,8 +933,8 @@ class _MessageList extends StatelessWidget {
         // bubbles that read "Open diVine to review and accept" — useless
         // copy inside diVine, and the structured fields needed to render
         // an actionable card are not recoverable from plaintext alone.
-        if (message.content.endsWith(
-          CollaboratorInviteService.invitePlaintextSuffix,
+        if (CollaboratorInviteService.hasInvitePlaintextSuffix(
+          message.content,
         )) {
           return const SizedBox.shrink();
         }

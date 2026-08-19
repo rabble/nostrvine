@@ -2085,7 +2085,7 @@ abstract class AppLocalizations {
   /// No description provided for @nostrInfoIntroBuiltOn.
   ///
   /// In en, this message translates to:
-  /// **'DiVine is built on Nostr,'**
+  /// **'Divine is built on Nostr,'**
   String get nostrInfoIntroBuiltOn;
 
   /// No description provided for @nostrInfoIntroDescription.
@@ -9104,7 +9104,7 @@ abstract class AppLocalizations {
   /// No description provided for @listCollaboratorSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search diVine...'**
+  /// **'Search Divine...'**
   String get listCollaboratorSearchHint;
 
   /// No description provided for @listNameLabel.
@@ -10709,22 +10709,22 @@ abstract class AppLocalizations {
   /// **'Invitation sent'**
   String get inboxCollabInviteSentStatus;
 
-  /// Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine.
+  /// Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open Divine to review and accept') is misleading inside Divine.
   ///
   /// In en, this message translates to:
   /// **'Collaborator invite'**
   String get inboxConversationCollabInvitePreview;
 
-  /// Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.
+  /// Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open Divine to review and accept.' sentence MUST stay verbatim — Divine uses it as a marker to suppress legacy plaintext invites in conversation views.
   ///
   /// In en, this message translates to:
-  /// **'You were invited to collaborate on {title}: {url}\n\nOpen diVine to review and accept.'**
+  /// **'You were invited to collaborate on {title}: {url}\n\nOpen Divine to review and accept.'**
   String collaboratorInviteDmBody(String title, String url);
 
-  /// Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.
+  /// Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open Divine to review and accept.' sentence MUST stay verbatim — Divine uses it as a marker to suppress legacy plaintext invites in conversation views.
   ///
   /// In en, this message translates to:
-  /// **'You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.'**
+  /// **'You were invited to collaborate on a video: {url}\n\nOpen Divine to review and accept.'**
   String collaboratorInviteDmBodyUntitled(String url);
 
   /// No description provided for @videoPublishCollaboratorInviteWarning.
@@ -13973,7 +13973,7 @@ abstract class AppLocalizations {
   /// No description provided for @invitesShareWithPeople.
   ///
   /// In en, this message translates to:
-  /// **'Share diVine with people you know'**
+  /// **'Share Divine with people you know'**
   String get invitesShareWithPeople;
 
   /// No description provided for @invitesUsedInvites.
@@ -13985,7 +13985,7 @@ abstract class AppLocalizations {
   /// No description provided for @invitesShareMessage.
   ///
   /// In en, this message translates to:
-  /// **'Join me on diVine! Use invite code {code} to get started:\nhttps://divine.video/invite/{code}'**
+  /// **'Join me on Divine! Use invite code {code} to get started:\nhttps://divine.video/invite/{code}'**
   String invitesShareMessage(String code);
 
   /// No description provided for @invitesCopyInvite.
@@ -14009,7 +14009,7 @@ abstract class AppLocalizations {
   /// No description provided for @invitesShareSubject.
   ///
   /// In en, this message translates to:
-  /// **'Join me on diVine'**
+  /// **'Join me on Divine'**
   String get invitesShareSubject;
 
   /// No description provided for @invitesClaimed.

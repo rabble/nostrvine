@@ -1190,7 +1190,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'Preview ng profile picture';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'Ang DiVine ay binuo sa Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Ang Divine ay binuo sa Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5318,7 +5318,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Magdagdag ng collaborator';
 
   @override
-  String get listCollaboratorSearchHint => 'Maghanap sa diVine...';
+  String get listCollaboratorSearchHint => 'Maghanap sa Divine...';
 
   @override
   String get listNameLabel => 'Pangalan ng Listahan';
@@ -6206,12 +6206,12 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'In-imbita ka bilang collaborator sa $title: $url\n\nOpen diVine to review and accept.';
+    return 'In-imbita ka bilang collaborator sa $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'In-imbita ka bilang collaborator sa isang video: $url\n\nOpen diVine to review and accept.';
+    return 'In-imbita ka bilang collaborator sa isang video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8211,14 +8211,14 @@ class AppLocalizationsFil extends AppLocalizations {
   String get invitesNoneAvailable => 'Walang available na invite ngayon';
 
   @override
-  String get invitesShareWithPeople => 'I-share ang diVine sa mga kakilala mo';
+  String get invitesShareWithPeople => 'I-share ang Divine sa mga kakilala mo';
 
   @override
   String get invitesUsedInvites => 'Mga nagamit na invite';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Sumali sa akin sa diVine! Gamitin ang invite code $code para magsimula:\nhttps://divine.video/invite/$code';
+    return 'Sumali sa akin sa Divine! Gamitin ang invite code $code para magsimula:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8231,7 +8231,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get invitesShareInvite => 'I-share ang invite';
 
   @override
-  String get invitesShareSubject => 'Sumali sa akin sa diVine';
+  String get invitesShareSubject => 'Sumali sa akin sa Divine';
 
   @override
   String get invitesClaimed => 'Na-claim';

@@ -455,7 +455,7 @@
     "profileSetupUseOwnNip05": "Gebruik je eigen NIP-05-adres",
     "profileSetupNip05AddressLabel": "NIP-05-adres",
     "profileSetupProfilePicturePreview": "Voorbeeld profielfoto",
-    "nostrInfoIntroBuiltOn": "DiVine is gebouwd op Nostr,",
+    "nostrInfoIntroBuiltOn": "Divine is gebouwd op Nostr,",
     "nostrInfoIntroDescription": " een censuurbestendig open protocol waarmee mensen online kunnen communiceren zonder afhankelijk te zijn van één bedrijf of platform. ",
     "nostrInfoIntroIdentity": "Als je je aanmeldt bij Divine krijg je een nieuwe Nostr-identiteit.",
     "nostrInfoOwnership": "Met Nostr heb je je eigen inhoud, identiteit en sociale graaf in handen, die je in veel apps kunt gebruiken. Resultaat: meer keuze, minder lock-in en een gezonder, veerkrachtiger sociaal internet.",
@@ -2052,7 +2052,7 @@
     "listNewPeopleList": "Nieuwe personenlijst",
     "listCollaboratorsNone": "Geen",
     "listAddCollaboratorTitle": "Medewerker toevoegen",
-    "listCollaboratorSearchHint": "Zoek in diVine...",
+    "listCollaboratorSearchHint": "Zoek in Divine...",
     "listNameLabel": "Lijstnaam",
     "listDescriptionLabel": "Beschrijving (optioneel)",
     "listPublicList": "Openbare lijst",
@@ -2429,8 +2429,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "Je bent uitgenodigd om samen te werken aan {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "Je bent uitgenodigd om samen te werken aan een video: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "Je bent uitgenodigd om samen te werken aan {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Je bent uitgenodigd om samen te werken aan een video: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "Uitnodiging verzonden",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3919,9 +3919,9 @@
   "blueskySetUpHandle": "Instellen",
     "blueskyTemporarilyUnavailable": "Publiceren op Bluesky is tijdelijk niet beschikbaar. Probeer het opnieuw.",
     "invitesNoneAvailable": "Op dit moment geen uitnodigingen beschikbaar",
-    "invitesShareWithPeople": "Deel diVine met mensen die je kent",
+    "invitesShareWithPeople": "Deel Divine met mensen die je kent",
     "invitesUsedInvites": "Gebruikte uitnodigingen",
-    "invitesShareMessage": "Doe met me mee op diVine! Gebruik invite-code {code} om te beginnen:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Doe met me mee op Divine! Gebruik invite-code {code} om te beginnen:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3932,7 @@
     "invitesCopyInvite": "Uitnodiging kopiëren",
     "invitesCopied": "Uitnodiging gekopieerd!",
     "invitesShareInvite": "Uitnodiging delen",
-    "invitesShareSubject": "Doe met me mee op diVine",
+    "invitesShareSubject": "Doe met me mee op Divine",
     "invitesClaimed": "Geclaimd",
     "invitesCouldNotLoad": "Uitnodigingen konden niet geladen worden",
     "invitesRetry": "Opnieuw proberen",

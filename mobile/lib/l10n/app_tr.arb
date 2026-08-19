@@ -455,7 +455,7 @@
     "profileSetupUseOwnNip05": "Kendi NIP-05 adresini kullan",
     "profileSetupNip05AddressLabel": "NIP-05 Adresi",
     "profileSetupProfilePicturePreview": "Profil resmi önizlemesi",
-    "nostrInfoIntroBuiltOn": "DiVine Nostr üzerine kuruludur,",
+    "nostrInfoIntroBuiltOn": "Divine Nostr üzerine kuruludur,",
     "nostrInfoIntroDescription": " tek bir şirkete veya platforma bağlı kalmadan insanların çevrimiçi iletişim kurmasını sağlayan, sansüre dayanıklı açık bir protokoldür. ",
     "nostrInfoIntroIdentity": "Divine'e kaydolduğunda yeni bir Nostr kimliği alırsın.",
     "nostrInfoOwnership": "Nostr, içeriğine, kimliğine ve sosyal grafiğine sahip olmana izin verir ve bunları birçok uygulamada kullanabilirsin. Sonuç: daha fazla seçenek, daha az kilitlenme ve daha sağlıklı, dayanıklı bir sosyal internet.",
@@ -2051,7 +2051,7 @@
     "listNewPeopleList": "Yeni kişi listesi",
     "listCollaboratorsNone": "Yok",
     "listAddCollaboratorTitle": "Ortak ekle",
-    "listCollaboratorSearchHint": "diVine'da ara...",
+    "listCollaboratorSearchHint": "Divine'da ara...",
     "listNameLabel": "Liste Adı",
     "listDescriptionLabel": "Açıklama (opsiyonel)",
     "listPublicList": "Herkese Açık Liste",
@@ -2428,8 +2428,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "{title} üzerinde işbirliği yapmaya davet edildin: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "Bir videoda işbirliği yapmaya davet edildin: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "{title} üzerinde işbirliği yapmaya davet edildin: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Bir videoda işbirliği yapmaya davet edildin: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "Davet gönderildi",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3919,9 +3919,9 @@
   "blueskySetUpHandle": "Ayarla",
     "blueskyTemporarilyUnavailable": "Bluesky'da paylaşım geçici olarak kullanılamıyor. Lütfen tekrar dene.",
     "invitesNoneAvailable": "Şu anda kullanılabilir davet yok",
-    "invitesShareWithPeople": "diVine'i tanıdığın insanlarla paylaş",
+    "invitesShareWithPeople": "Divine'i tanıdığın insanlarla paylaş",
     "invitesUsedInvites": "Kullanılmış davetler",
-    "invitesShareMessage": "diVine'de bana katıl! Başlamak için {code} davet kodunu kullan:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Divine'de bana katıl! Başlamak için {code} davet kodunu kullan:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3932,7 @@
     "invitesCopyInvite": "Daveti kopyala",
     "invitesCopied": "Davet kopyalandı!",
     "invitesShareInvite": "Daveti paylaş",
-    "invitesShareSubject": "diVine'de bana katıl",
+    "invitesShareSubject": "Divine'de bana katıl",
     "invitesClaimed": "Kullanıldı",
     "invitesCouldNotLoad": "Davetler yüklenemedi",
     "invitesRetry": "Tekrar dene",

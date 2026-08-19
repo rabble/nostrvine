@@ -3342,11 +3342,11 @@
   },
   "inboxConversationCollabInvitePreview": "合作邀请",
   "@inboxConversationCollabInvitePreview": {
-    "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
+    "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open Divine to review and accept') is misleading inside Divine."
   },
-  "collaboratorInviteDmBody": "你受邀参与合作制作 {title}：{url}\n\n打开 diVine 查看并接受。",
+  "collaboratorInviteDmBody": "你受邀参与合作制作 {title}：{url}\n\n打开 Divine 查看并接受。",
   "@collaboratorInviteDmBody": {
-    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open Divine to review and accept.' sentence MUST stay verbatim — Divine uses it as a marker to suppress legacy plaintext invites in conversation views.",
     "placeholders": {
       "title": {
         "type": "String",
@@ -3358,9 +3358,9 @@
       }
     }
   },
-  "collaboratorInviteDmBodyUntitled": "你受邀参与合作制作一个视频：{url}\n\n打开 diVine 查看并接受。",
+  "collaboratorInviteDmBodyUntitled": "你受邀参与合作制作一个视频：{url}\n\n打开 Divine 查看并接受。",
   "@collaboratorInviteDmBodyUntitled": {
-    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open Divine to review and accept.' sentence MUST stay verbatim — Divine uses it as a marker to suppress legacy plaintext invites in conversation views.",
     "placeholders": {
       "url": {
         "type": "String",

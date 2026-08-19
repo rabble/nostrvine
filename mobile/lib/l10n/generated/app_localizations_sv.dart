@@ -1192,7 +1192,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Förhandsvisning av profilbild';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine är byggt på Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine är byggt på Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5274,7 +5274,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Lägg till medarbetare';
 
   @override
-  String get listCollaboratorSearchHint => 'Sök i diVine...';
+  String get listCollaboratorSearchHint => 'Sök i Divine...';
 
   @override
   String get listNameLabel => 'Listnamn';
@@ -6154,12 +6154,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Du har bjudits in att samarbeta på $title: $url\n\nOpen diVine to review and accept.';
+    return 'Du har bjudits in att samarbeta på $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Du har bjudits in att samarbeta på en video: $url\n\nOpen diVine to review and accept.';
+    return 'Du har bjudits in att samarbeta på en video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8139,14 +8139,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get invitesNoneAvailable => 'Inga inbjudningar tillgängliga just nu';
 
   @override
-  String get invitesShareWithPeople => 'Dela diVine med folk du känner';
+  String get invitesShareWithPeople => 'Dela Divine med folk du känner';
 
   @override
   String get invitesUsedInvites => 'Använda inbjudningar';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Häng med mig på diVine! Använd inbjudningskoden $code för att komma igång:\nhttps://divine.video/invite/$code';
+    return 'Häng med mig på Divine! Använd inbjudningskoden $code för att komma igång:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8159,7 +8159,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get invitesShareInvite => 'Dela inbjudan';
 
   @override
-  String get invitesShareSubject => 'Häng med mig på diVine';
+  String get invitesShareSubject => 'Häng med mig på Divine';
 
   @override
   String get invitesClaimed => 'Inlöst';

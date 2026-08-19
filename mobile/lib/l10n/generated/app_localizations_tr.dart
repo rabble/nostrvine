@@ -1143,7 +1143,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'Profil resmi önizlemesi';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine Nostr üzerine kuruludur,';
+  String get nostrInfoIntroBuiltOn => 'Divine Nostr üzerine kuruludur,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5219,7 +5219,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Ortak ekle';
 
   @override
-  String get listCollaboratorSearchHint => 'diVine\'da ara...';
+  String get listCollaboratorSearchHint => 'Divine\'da ara...';
 
   @override
   String get listNameLabel => 'Liste Adı';
@@ -6096,12 +6096,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return '$title üzerinde işbirliği yapmaya davet edildin: $url\n\nOpen diVine to review and accept.';
+    return '$title üzerinde işbirliği yapmaya davet edildin: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Bir videoda işbirliği yapmaya davet edildin: $url\n\nOpen diVine to review and accept.';
+    return 'Bir videoda işbirliği yapmaya davet edildin: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8072,14 +8072,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get invitesNoneAvailable => 'Şu anda kullanılabilir davet yok';
 
   @override
-  String get invitesShareWithPeople => 'diVine\'i tanıdığın insanlarla paylaş';
+  String get invitesShareWithPeople => 'Divine\'i tanıdığın insanlarla paylaş';
 
   @override
   String get invitesUsedInvites => 'Kullanılmış davetler';
 
   @override
   String invitesShareMessage(String code) {
-    return 'diVine\'de bana katıl! Başlamak için $code davet kodunu kullan:\nhttps://divine.video/invite/$code';
+    return 'Divine\'de bana katıl! Başlamak için $code davet kodunu kullan:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8092,7 +8092,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get invitesShareInvite => 'Daveti paylaş';
 
   @override
-  String get invitesShareSubject => 'diVine\'de bana katıl';
+  String get invitesShareSubject => 'Divine\'de bana katıl';
 
   @override
   String get invitesClaimed => 'Kullanıldı';

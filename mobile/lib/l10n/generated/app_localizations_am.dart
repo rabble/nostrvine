@@ -5160,7 +5160,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get listAddCollaboratorTitle => 'ተባባሪ ጨምር';
 
   @override
-  String get listCollaboratorSearchHint => 'diVine ፈልግ...';
+  String get listCollaboratorSearchHint => 'Divine ፈልግ...';
 
   @override
   String get listNameLabel => 'የዝርዝር ስም';
@@ -6028,12 +6028,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'በ$title ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen diVine to review and accept.';
+    return 'በ$title ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen diVine to review and accept.';
+    return 'በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -7966,14 +7966,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get invitesNoneAvailable => 'አሁን ምንም ግብዣዎች የሉም';
 
   @override
-  String get invitesShareWithPeople => 'diVineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ';
+  String get invitesShareWithPeople => 'Divineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ';
 
   @override
   String get invitesUsedInvites => 'ያገለገሉ ግብዣዎች';
 
   @override
   String invitesShareMessage(String code) {
-    return 'diVine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ $code ተጠቀም፦\nhttps://divine.video/invite/$code';
+    return 'Divine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ $code ተጠቀም፦\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -7986,7 +7986,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get invitesShareInvite => 'ግብዣ አጋራ';
 
   @override
-  String get invitesShareSubject => 'diVine ላይ አብረኝ ግባ';
+  String get invitesShareSubject => 'Divine ላይ አብረኝ ግባ';
 
   @override
   String get invitesClaimed => 'ተጠቅመዋል';

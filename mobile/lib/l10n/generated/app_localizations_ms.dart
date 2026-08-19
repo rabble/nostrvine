@@ -6174,12 +6174,12 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Anda dijemput untuk berkolaborasi pada $title: $url\n\nOpen diVine to review and accept.';
+    return 'Anda dijemput untuk berkolaborasi pada $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Anda dijemput untuk berkolaborasi pada video: $url\n\nOpen diVine to review and accept.';
+    return 'Anda dijemput untuk berkolaborasi pada video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override

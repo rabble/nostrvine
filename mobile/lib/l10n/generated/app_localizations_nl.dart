@@ -1207,7 +1207,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'Voorbeeld profielfoto';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine is gebouwd op Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine is gebouwd op Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5299,7 +5299,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Medewerker toevoegen';
 
   @override
-  String get listCollaboratorSearchHint => 'Zoek in diVine...';
+  String get listCollaboratorSearchHint => 'Zoek in Divine...';
 
   @override
   String get listNameLabel => 'Lijstnaam';
@@ -6187,12 +6187,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Je bent uitgenodigd om samen te werken aan $title: $url\n\nOpen diVine to review and accept.';
+    return 'Je bent uitgenodigd om samen te werken aan $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Je bent uitgenodigd om samen te werken aan een video: $url\n\nOpen diVine to review and accept.';
+    return 'Je bent uitgenodigd om samen te werken aan een video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8180,14 +8180,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Op dit moment geen uitnodigingen beschikbaar';
 
   @override
-  String get invitesShareWithPeople => 'Deel diVine met mensen die je kent';
+  String get invitesShareWithPeople => 'Deel Divine met mensen die je kent';
 
   @override
   String get invitesUsedInvites => 'Gebruikte uitnodigingen';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Doe met me mee op diVine! Gebruik invite-code $code om te beginnen:\nhttps://divine.video/invite/$code';
+    return 'Doe met me mee op Divine! Gebruik invite-code $code om te beginnen:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8200,7 +8200,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get invitesShareInvite => 'Uitnodiging delen';
 
   @override
-  String get invitesShareSubject => 'Doe met me mee op diVine';
+  String get invitesShareSubject => 'Doe met me mee op Divine';
 
   @override
   String get invitesClaimed => 'Geclaimd';

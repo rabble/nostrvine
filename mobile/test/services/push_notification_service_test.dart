@@ -1101,7 +1101,7 @@ void main() {
 
         verify(
           () => mockNotificationService.sendLocal(
-            title: 'diVine',
+            title: 'Divine',
             body: 'Someone liked your video',
             payload: any(named: 'payload'),
           ),

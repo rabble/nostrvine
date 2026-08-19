@@ -455,7 +455,7 @@
     "profileSetupUseOwnNip05": "自分の NIP-05 アドレスを使う",
     "profileSetupNip05AddressLabel": "NIP-05 アドレス",
     "profileSetupProfilePicturePreview": "プロフィール画像のプレビュー",
-    "nostrInfoIntroBuiltOn": "DiVine は Nostr の上に作られてるよ。",
+    "nostrInfoIntroBuiltOn": "Divine は Nostr の上に作られてるよ。",
     "nostrInfoIntroDescription": " 検閲に強いオープンなプロトコルで、特定の企業やプラットフォームに縛られずにコミュニケーションできるんだ。 ",
     "nostrInfoIntroIdentity": "Divine にサインアップすると、新しい Nostr ID が作られるよ。",
     "nostrInfoOwnership": "Nostr なら自分のコンテンツ、ID、ソーシャルグラフを自分のものにできて、いろんなアプリで使い回せる。選択肢が増えてロックインが減って、もっと健全なソーシャルインターネットになるんだ。",
@@ -2044,7 +2044,7 @@
     "listNewPeopleList": "新しい人リスト",
     "listCollaboratorsNone": "なし",
     "listAddCollaboratorTitle": "コラボレーターを追加",
-    "listCollaboratorSearchHint": "diVineを検索...",
+    "listCollaboratorSearchHint": "Divineを検索...",
     "listNameLabel": "リスト名",
     "listDescriptionLabel": "説明 (任意)",
     "listPublicList": "公開リスト",
@@ -2421,8 +2421,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "{title}のコラボに招待されたよ：{url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "動画のコラボに招待されたよ：{url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "{title}のコラボに招待されたよ：{url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "動画のコラボに招待されたよ：{url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "招待を送ったよ",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3919,9 +3919,9 @@
   "blueskySetUpHandle": "設定する",
     "blueskyTemporarilyUnavailable": "Bluesky への投稿は一時的に利用できません。もう一度お試しください。",
     "invitesNoneAvailable": "今は使える招待がないよ",
-    "invitesShareWithPeople": "diVine を周りの人にシェアしよう",
+    "invitesShareWithPeople": "Divine を周りの人にシェアしよう",
     "invitesUsedInvites": "使用済みの招待",
-    "invitesShareMessage": "diVine に参加しよう！招待コード {code} で始められるよ:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Divine に参加しよう！招待コード {code} で始められるよ:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3932,7 @@
     "invitesCopyInvite": "招待をコピー",
     "invitesCopied": "招待をコピーしたよ！",
     "invitesShareInvite": "招待をシェア",
-    "invitesShareSubject": "diVine に参加しよう",
+    "invitesShareSubject": "Divine に参加しよう",
     "invitesClaimed": "受け取り済み",
     "invitesCouldNotLoad": "招待の読み込みに失敗",
     "invitesRetry": "もう一回",

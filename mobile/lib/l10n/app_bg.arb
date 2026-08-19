@@ -2254,7 +2254,7 @@
     "listNewPeopleList": "Нов списък с хора",
     "listCollaboratorsNone": "Няма",
     "listAddCollaboratorTitle": "Добави сътрудник",
-    "listCollaboratorSearchHint": "Търсене diVine...",
+    "listCollaboratorSearchHint": "Търсене Divine...",
     "listNameLabel": "Име на списък",
     "listDescriptionLabel": "Описание (по избор)",
     "listPublicList": "Публичен списък",
@@ -2628,10 +2628,10 @@
     },
     "inboxConversationCollabInvitePreview": "Покана за сътрудник",
     "@inboxConversationCollabInvitePreview": {
-        "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
+        "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open Divine to review and accept') is misleading inside Divine."
     },
-    "collaboratorInviteDmBody": "Поканени сте да си сътрудничите по {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "Поканени сте да си сътрудничите по видеоклип: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "Поканени сте да си сътрудничите по {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Поканени сте да си сътрудничите по видеоклип: {url}\n\nOpen Divine to review and accept.",
     "dmSendNoRecipientMessage": "Не разбрахме с кого е този разговор. Отвори го пак от входящите.",
     "dmSendBlockedMessage": "Можеш да пишеш само на официални профили на Divine",
     "dmSendBlockedRetiredMessage": "Никой не чете този разговор. Вместо това пишете на Divine Moderation.",
@@ -4050,9 +4050,9 @@
   "blueskySetUpHandle": "Настрой",
     "blueskyTemporarilyUnavailable": "Публикуването в Bluesky временно не е достъпно. Опитай пак.",
     "invitesNoneAvailable": "В момента няма налични покани",
-    "invitesShareWithPeople": "Сподели diVine с хора, които познаваш",
+    "invitesShareWithPeople": "Сподели Divine с хора, които познаваш",
     "invitesUsedInvites": "Използвани покани",
-    "invitesShareMessage": "Присъедини се към мен в diVine! Използвай код за покана {code}, за да започнеш:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Присъедини се към мен в Divine! Използвай код за покана {code}, за да започнеш:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -4063,7 +4063,7 @@
     "invitesCopyInvite": "Копирай поканата",
     "invitesCopied": "Поканата е копирана!",
     "invitesShareInvite": "Сподели поканата",
-    "invitesShareSubject": "Присъедини се към мен в diVine",
+    "invitesShareSubject": "Присъедини се към мен в Divine",
     "invitesClaimed": "Използвана",
     "invitesCouldNotLoad": "Поканите не се заредиха",
     "invitesRetry": "Опитай пак",

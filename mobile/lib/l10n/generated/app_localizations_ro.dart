@@ -1244,7 +1244,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Previzualizare poză de profil';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine e construit pe Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine e construit pe Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5426,7 +5426,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Adaugă un colaborator';
 
   @override
-  String get listCollaboratorSearchHint => 'Caută în diVine...';
+  String get listCollaboratorSearchHint => 'Caută în Divine...';
 
   @override
   String get listNameLabel => 'Numele listei';
@@ -6320,12 +6320,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Ai fost invitat(ă) să colaborezi la $title: $url\n\nOpen diVine to review and accept.';
+    return 'Ai fost invitat(ă) să colaborezi la $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Ai fost invitat(ă) să colaborezi la un videoclip: $url\n\nOpen diVine to review and accept.';
+    return 'Ai fost invitat(ă) să colaborezi la un videoclip: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8330,14 +8330,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get invitesShareWithPeople =>
-      'Partajează diVine cu oameni pe care îi cunoști';
+      'Partajează Divine cu oameni pe care îi cunoști';
 
   @override
   String get invitesUsedInvites => 'Invitații folosite';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Vino cu mine pe diVine! Folosește codul de invitație $code ca să începi:\nhttps://divine.video/invite/$code';
+    return 'Vino cu mine pe Divine! Folosește codul de invitație $code ca să începi:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8350,7 +8350,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get invitesShareInvite => 'Partajează invitația';
 
   @override
-  String get invitesShareSubject => 'Vino cu mine pe diVine';
+  String get invitesShareSubject => 'Vino cu mine pe Divine';
 
   @override
   String get invitesClaimed => 'Revendicată';

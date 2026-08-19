@@ -1094,7 +1094,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupProfilePicturePreview => '프로필 사진 미리보기';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine은 Nostr를 기반으로 만들어졌어요,';
+  String get nostrInfoIntroBuiltOn => 'Divine은 Nostr를 기반으로 만들어졌어요,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5006,7 +5006,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get listAddCollaboratorTitle => '협업자 추가';
 
   @override
-  String get listCollaboratorSearchHint => 'diVine 검색...';
+  String get listCollaboratorSearchHint => 'Divine 검색...';
 
   @override
   String get listNameLabel => '목록 이름';
@@ -5870,12 +5870,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return '$title 콜라보에 초대받았어요: $url\n\nOpen diVine to review and accept.';
+    return '$title 콜라보에 초대받았어요: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return '동영상 콜라보에 초대받았어요: $url\n\nOpen diVine to review and accept.';
+    return '동영상 콜라보에 초대받았어요: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -7770,14 +7770,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get invitesNoneAvailable => '지금은 사용할 수 있는 초대장이 없어요';
 
   @override
-  String get invitesShareWithPeople => 'diVine을 아는 사람들과 나눠봐요';
+  String get invitesShareWithPeople => 'Divine을 아는 사람들과 나눠봐요';
 
   @override
   String get invitesUsedInvites => '사용된 초대장';
 
   @override
   String invitesShareMessage(String code) {
-    return 'diVine에 함께해요! 초대 코드 $code로 시작해보세요:\nhttps://divine.video/invite/$code';
+    return 'Divine에 함께해요! 초대 코드 $code로 시작해보세요:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -7790,7 +7790,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get invitesShareInvite => '초대장 공유';
 
   @override
-  String get invitesShareSubject => 'diVine에 함께해요';
+  String get invitesShareSubject => 'Divine에 함께해요';
 
   @override
   String get invitesClaimed => '사용됨';

@@ -84,7 +84,7 @@ class _AudioAttributionContent extends ConsumerWidget {
 
     if (audio.isBundled) {
       // For bundled sounds, use the source field (e.g. "ThePauny via Freesound")
-      publisherName = audio.source ?? 'diVine';
+      publisherName = audio.source ?? 'Divine';
     } else {
       // The Kind 1063 signer may be sharing another creator's work.
       final publisherProfile = ref

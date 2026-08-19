@@ -1090,7 +1090,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'プロフィール画像のプレビュー';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine は Nostr の上に作られてるよ。';
+  String get nostrInfoIntroBuiltOn => 'Divine は Nostr の上に作られてるよ。';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -4987,7 +4987,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get listAddCollaboratorTitle => 'コラボレーターを追加';
 
   @override
-  String get listCollaboratorSearchHint => 'diVineを検索...';
+  String get listCollaboratorSearchHint => 'Divineを検索...';
 
   @override
   String get listNameLabel => 'リスト名';
@@ -5849,12 +5849,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return '$titleのコラボに招待されたよ：$url\n\nOpen diVine to review and accept.';
+    return '$titleのコラボに招待されたよ：$url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return '動画のコラボに招待されたよ：$url\n\nOpen diVine to review and accept.';
+    return '動画のコラボに招待されたよ：$url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -7745,14 +7745,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get invitesNoneAvailable => '今は使える招待がないよ';
 
   @override
-  String get invitesShareWithPeople => 'diVine を周りの人にシェアしよう';
+  String get invitesShareWithPeople => 'Divine を周りの人にシェアしよう';
 
   @override
   String get invitesUsedInvites => '使用済みの招待';
 
   @override
   String invitesShareMessage(String code) {
-    return 'diVine に参加しよう！招待コード $code で始められるよ:\nhttps://divine.video/invite/$code';
+    return 'Divine に参加しよう！招待コード $code で始められるよ:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -7765,7 +7765,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get invitesShareInvite => '招待をシェア';
 
   @override
-  String get invitesShareSubject => 'diVine に参加しよう';
+  String get invitesShareSubject => 'Divine に参加しよう';
 
   @override
   String get invitesClaimed => '受け取り済み';

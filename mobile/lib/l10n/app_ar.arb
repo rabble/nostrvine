@@ -455,7 +455,7 @@
     "profileSetupUseOwnNip05": "استخدم عنوان NIP-05 الخاص بك",
     "profileSetupNip05AddressLabel": "عنوان NIP-05",
     "profileSetupProfilePicturePreview": "معاينة صورة الملف الشخصي",
-    "nostrInfoIntroBuiltOn": "DiVine مبني على Nostr،",
+    "nostrInfoIntroBuiltOn": "Divine مبني على Nostr،",
     "nostrInfoIntroDescription": " بروتوكول مفتوح مقاوم للرقابة يسمح للناس بالتواصل عبر الإنترنت دون الاعتماد على شركة أو منصّة واحدة. ",
     "nostrInfoIntroIdentity": "عند التسجيل في Divine، تحصل على هوية Nostr جديدة.",
     "nostrInfoOwnership": "Nostr يسمح لك بامتلاك محتواك وهويتك وشبكتك الاجتماعية، والتي يمكنك استخدامها في تطبيقات عديدة. النتيجة خيارات أكثر، واحتكار أقل، وإنترنت اجتماعي أكثر صحة ومرونة.",
@@ -2044,7 +2044,7 @@
     "listNewPeopleList": "قائمة أشخاص جديدة",
     "listCollaboratorsNone": "لا أحد",
     "listAddCollaboratorTitle": "إضافة متعاون",
-    "listCollaboratorSearchHint": "ابحث في diVine...",
+    "listCollaboratorSearchHint": "ابحث في Divine...",
     "listNameLabel": "اسم القائمة",
     "listDescriptionLabel": "الوصف (اختياري)",
     "listPublicList": "قائمة عامة",
@@ -2421,8 +2421,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "تمت دعوتك للتعاون على {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "تمت دعوتك للتعاون على فيديو: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "تمت دعوتك للتعاون على {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "تمت دعوتك للتعاون على فيديو: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "تم إرسال الدعوة",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3919,9 +3919,9 @@
   "blueskySetUpHandle": "إعداد",
     "blueskyTemporarilyUnavailable": "النشر على Bluesky غير متاح مؤقتًا. حاول مرة أخرى.",
     "invitesNoneAvailable": "لا توجد دعوات متاحة الآن",
-    "invitesShareWithPeople": "شارك diVine مع من تعرفهم",
+    "invitesShareWithPeople": "شارك Divine مع من تعرفهم",
     "invitesUsedInvites": "الدعوات المستخدمة",
-    "invitesShareMessage": "انضمّ إليّ على diVine! استخدم رمز الدعوة {code} للبدء:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "انضمّ إليّ على Divine! استخدم رمز الدعوة {code} للبدء:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3932,7 @@
     "invitesCopyInvite": "نسخ الدعوة",
     "invitesCopied": "تم نسخ الدعوة!",
     "invitesShareInvite": "مشاركة الدعوة",
-    "invitesShareSubject": "انضمّ إليّ على diVine",
+    "invitesShareSubject": "انضمّ إليّ على Divine",
     "invitesClaimed": "تم استخدامها",
     "invitesCouldNotLoad": "تعذّر تحميل الدعوات",
     "invitesRetry": "إعادة المحاولة",

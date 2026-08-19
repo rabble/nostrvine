@@ -1231,7 +1231,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aperçu de la photo de profil';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine tourne sur Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine tourne sur Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5355,7 +5355,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Ajouter un collaborateur';
 
   @override
-  String get listCollaboratorSearchHint => 'Rechercher dans diVine...';
+  String get listCollaboratorSearchHint => 'Rechercher dans Divine...';
 
   @override
   String get listNameLabel => 'Nom de la liste';
@@ -6243,12 +6243,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Tu as été invité(e) à collaborer sur $title : $url\n\nOpen diVine to review and accept.';
+    return 'Tu as été invité(e) à collaborer sur $title : $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Tu as été invité(e) à collaborer sur une vidéo : $url\n\nOpen diVine to review and accept.';
+    return 'Tu as été invité(e) à collaborer sur une vidéo : $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8258,14 +8258,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get invitesShareWithPeople =>
-      'Partage diVine avec les gens que tu connais';
+      'Partage Divine avec les gens que tu connais';
 
   @override
   String get invitesUsedInvites => 'Invitations utilisées';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Rejoins-moi sur diVine ! Utilise le code d\'invitation $code pour démarrer :\nhttps://divine.video/invite/$code';
+    return 'Rejoins-moi sur Divine ! Utilise le code d\'invitation $code pour démarrer :\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8278,7 +8278,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get invitesShareInvite => 'Partager l\'invitation';
 
   @override
-  String get invitesShareSubject => 'Rejoins-moi sur diVine';
+  String get invitesShareSubject => 'Rejoins-moi sur Divine';
 
   @override
   String get invitesClaimed => 'Utilisée';

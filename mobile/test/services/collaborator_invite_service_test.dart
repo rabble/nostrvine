@@ -159,6 +159,43 @@ void main() {
     },
   );
 
+  group('hasInvitePlaintextSuffix', () {
+    test('matches the current wire text', () {
+      expect(
+        CollaboratorInviteService.hasInvitePlaintextSuffix(
+          'You were invited to collaborate on Skate loop: https://x\n\n'
+          'Open Divine to review and accept.',
+        ),
+        isTrue,
+      );
+    });
+
+    test('still matches invites published before the brand-casing fix', () {
+      // Nostr events are immutable: correcting the ARB casing did not
+      // rewrite invites already on relays. Matching only the new spelling
+      // would un-suppress every one of them and put the useless plaintext
+      // bubble back in the conversation (#3559).
+      for (final legacy
+          in CollaboratorInviteService.legacyInvitePlaintextSuffixes) {
+        expect(
+          CollaboratorInviteService.hasInvitePlaintextSuffix(
+            'You were invited to collaborate on Skate loop: https://x\n\n'
+            '$legacy',
+          ),
+          isTrue,
+          reason: 'legacy wire text $legacy must stay suppressed',
+        );
+      }
+    });
+
+    test('leaves an ordinary message alone', () {
+      expect(
+        CollaboratorInviteService.hasInvitePlaintextSuffix('hey, see this?'),
+        isFalse,
+      );
+    });
+  });
+
   test('includes divine.video URL when title is missing', () async {
     when(
       () => dmRepository.sendMessage(
