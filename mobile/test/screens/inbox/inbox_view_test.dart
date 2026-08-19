@@ -1560,14 +1560,20 @@ void main() {
       // engine uses to turn `preferredContentSizeCategory` into
       // `textScaleFactor`.
       //
-      // `TextScaler.linear` is a stand-in for the real thing: on device
-      // `MediaQuery.textScalerOf` is a `SystemTextScaler`, whose `scale()`
-      // defers to `PlatformDispatcher.scaleFontSize` — an engine-defined
-      // curve, not a multiplication. Measured on an iPhone at extraLarge, a
-      // 14pt/1.4x paragraph lays out at 22.0 either way, so the ladder is
-      // faithful where it has been checked. That the real curve cannot be
-      // reproduced by arithmetic at all is the point: measuring the child is
-      // immune to it, and any declared extent is not.
+      // `TextScaler.linear` is a stand-in: on device `MediaQuery.textScalerOf`
+      // is a `SystemTextScaler`, whose `scale()` defers to
+      // `PlatformDispatcher.scaleFontSize`. That falls back to
+      // `size * textScaleFactor` only while the platform sends no
+      // `configurationId` — otherwise it asks the engine for a per-size curve,
+      // which is the Android 14+ non-linear path. Measured on an iPhone at
+      // extraLarge, a 14pt/1.4x paragraph lays out at 22.0, matching the
+      // linear form, so the ladder is faithful where it has been checked.
+      //
+      // Neither form is what a declared extent has to match, though: the
+      // child's height comes from a laid-out line box that snaps to whole
+      // pixels, and no arithmetic over `scale()` reproduces that rounding.
+      // Measuring the child is immune to all of it; a declared extent is not,
+      // on either platform.
       //
       // The header used to declare its own extent as arithmetic over
       // `textScaler.scale(20)` while its child settled on whatever the font
@@ -1626,10 +1632,11 @@ void main() {
           // that is a different geometry path — scrollOffset above zero,
           // layoutExtent shrinking toward zero — than the initial layout.
           // `PinnedHeaderSliver` derives paintExtent as
-          // `remainingPaintExtent - overlap` with no lower clamp, which is
-          // safe here only because nothing pinned sits above this header and
-          // `overlap` stays at zero. Adding one would put paintExtent back
-          // under layoutExtent and blank the pane again, so pin it.
+          // `min(childExtent, remainingPaintExtent - overlap)`. That second
+          // term has no lower clamp, so it is safe here only because nothing
+          // pinned sits above this header and `overlap` stays at zero. Adding
+          // one would put paintExtent back under layoutExtent and blank the
+          // pane again, so pin it.
           await tester.drag(
             find.byType(CustomScrollView),
             const Offset(0, -400),
