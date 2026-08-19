@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
-import 'generated/schema_v8.dart' as v8;
+import 'generated/schema_v9.dart' as v9;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -144,9 +144,9 @@ void main() {
     test('v2 identity_events rows survive the upgrade unstamped', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 2,
-        newVersion: 8,
+        newVersion: 9,
         createOld: v2.DatabaseAtV2.new,
-        createNew: v8.DatabaseAtV8.new,
+        createNew: v9.DatabaseAtV9.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) => batch.insert(
           oldDb.identityEvents,
@@ -214,9 +214,9 @@ void main() {
     test('v6 copies a distinct pre-v5 vine id into the d-tag column', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 3,
-        newVersion: 8,
+        newVersion: 9,
         createOld: v3.DatabaseAtV3.new,
-        createNew: v8.DatabaseAtV8.new,
+        createNew: v9.DatabaseAtV9.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) {
           batch
