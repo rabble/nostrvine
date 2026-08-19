@@ -13,6 +13,10 @@ abstract interface class SimpleAudioPlayer {
   /// Loads an asset at [assetPath] and returns the audio duration.
   Future<Duration?> setAsset(String assetPath);
 
+  /// Sets the playback volume, where `0.0` is silent and `1.0` plays the
+  /// asset at its own level.
+  Future<void> setVolume(double volume);
+
   /// Seeks to the given [position].
   Future<void> seek(Duration position);
 
@@ -58,6 +62,9 @@ class JustAudioSimplePlayer implements SimpleAudioPlayer {
 
   @override
   Future<Duration?> setAsset(String assetPath) => _player.setAsset(assetPath);
+
+  @override
+  Future<void> setVolume(double volume) => _player.setVolume(volume);
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);

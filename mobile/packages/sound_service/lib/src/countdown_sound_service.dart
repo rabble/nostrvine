@@ -26,7 +26,9 @@ typedef AudioPlayerFactory = SimpleAudioPlayer Function();
 ///
 /// for (var i = 3; i > 0; i--) {
 ///   await service.playShortBeep();
-///   await Future.delayed(Duration(seconds: 1));
+///   await Future.delayed(
+///     i > 1 ? const Duration(seconds: 1) : service.finalTickLeadIn,
+///   );
 /// }
 ///
 /// await service.playLongBeepAndWait();
@@ -39,11 +41,25 @@ class CountdownSoundService {
   CountdownSoundService({AudioPlayerFactory? audioPlayerFactory})
     : _audioPlayerFactory = audioPlayerFactory ?? JustAudioSimplePlayer.new;
 
-  /// Duration of the short countdown tick beep.
-  static const shortBeepDuration = Duration(milliseconds: 15);
+  /// Playback volume applied to both countdown beeps.
+  ///
+  /// The beeps leave the speaker while the camera microphone is already
+  /// capturing, and on iPhone the bottom speaker sits centimetres from the
+  /// bottom mic. Both assets peak at -7.4 dBFS, so at full level the "go"
+  /// beep drives the input near clipping and the automatic gain control
+  /// that `AVAudioSessionMode.videoRecording` leaves enabled clamps the mic
+  /// gain moments before capture starts. Its release curve runs for
+  /// seconds — that is the progressive volume ramp reported in #4539.
+  /// Attenuating by ~10 dB puts the beep peak near -18 dBFS while keeping
+  /// it clearly audible.
+  static const beepVolume = 0.3;
 
-  /// Duration of the long "go" beep played after countdown reaches zero.
-  static const longBeepDuration = Duration(milliseconds: 60);
+  /// Play-out duration assumed for the long "go" beep before [preload] has
+  /// measured the asset.
+  ///
+  /// Matches `countdown_beep_long.wav`; [longBeepDuration] reports the real
+  /// value once the player has loaded it.
+  static const longBeepFallbackDuration = Duration(milliseconds: 600);
 
   /// Buffer added after long beep playback to ensure audio fully completes.
   ///
@@ -63,26 +79,53 @@ class CountdownSoundService {
   final AudioPlayerFactory _audioPlayerFactory;
   SimpleAudioPlayer? _shortBeepPlayer;
   SimpleAudioPlayer? _longBeepPlayer;
+  Duration _longBeepDuration = longBeepFallbackDuration;
   bool _isDisposed = false;
+
+  /// Play-out duration of the long "go" beep, as reported by the player
+  /// during [preload].
+  Duration get longBeepDuration => _longBeepDuration;
+
+  /// How long to hold the final countdown tick before starting the "go"
+  /// beep, so that beep plus [postPlaybackBuffer] lands exactly one second
+  /// after the tick appeared.
+  ///
+  /// Clamped at [Duration.zero] for assets longer than that second.
+  Duration get finalTickLeadIn {
+    final leadIn =
+        const Duration(seconds: 1) - _longBeepDuration - postPlaybackBuffer;
+    return leadIn.isNegative ? Duration.zero : leadIn;
+  }
 
   /// Pre-loads both countdown sound assets for instant playback.
   ///
-  /// Call this once before the countdown loop begins.
+  /// Call this once before the countdown loop begins. Players left over
+  /// from an earlier countdown are released first.
   ///
   /// Throws [Exception] if assets fail to load (caller should handle
   /// gracefully — countdown sounds are best-effort).
   Future<void> preload() async {
+    await _disposePlayers();
+
     try {
       _shortBeepPlayer = _audioPlayerFactory();
       _longBeepPlayer = _audioPlayerFactory();
 
-      await Future.wait([
+      final durations = await Future.wait([
         _shortBeepPlayer!.setAsset(shortBeepAsset),
         _longBeepPlayer!.setAsset(longBeepAsset),
       ]);
 
+      await Future.wait([
+        _shortBeepPlayer!.setVolume(beepVolume),
+        _longBeepPlayer!.setVolume(beepVolume),
+      ]);
+
+      _longBeepDuration = durations.last ?? longBeepFallbackDuration;
+
       Log.debug(
-        'Countdown sounds preloaded',
+        'Countdown sounds preloaded '
+        '(long beep ${_longBeepDuration.inMilliseconds}ms)',
         name: 'CountdownSoundService',
         category: LogCategory.video,
       );
@@ -143,6 +186,10 @@ class CountdownSoundService {
   /// Releases audio player resources.
   Future<void> dispose() async {
     _isDisposed = true;
+    await _disposePlayers();
+  }
+
+  Future<void> _disposePlayers() async {
     await _shortBeepPlayer?.dispose();
     await _longBeepPlayer?.dispose();
     _shortBeepPlayer = null;

@@ -793,11 +793,11 @@ class VideoRecorderBloc
         emit(state.copyWith(countdownValue: i));
 
         unawaited(_countdownSoundService!.playShortBeep());
+        // The last tick is shortened by exactly as long as the "go" beep
+        // takes to play out, so recording still starts on the second.
         final delay = i > 1
             ? const Duration(seconds: 1)
-            : const Duration(seconds: 1) -
-                  CountdownSoundService.longBeepDuration -
-                  CountdownSoundService.postPlaybackBuffer;
+            : _countdownSoundService!.finalTickLeadIn;
         await Future<void>.delayed(delay);
       }
 

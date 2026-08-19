@@ -1,6 +1,7 @@
 // ABOUTME: Tests for CountdownSoundService - countdown beep playback.
-// ABOUTME: Covers preload, playShortBeep, playLongBeepAndWait, dispose,
-// ABOUTME: and error/edge-case handling using mocktail SimpleAudioPlayer mocks.
+// ABOUTME: Covers preload, beep attenuation, tick timing, playShortBeep,
+// ABOUTME: playLongBeepAndWait, dispose, and error/edge-case handling using
+// ABOUTME: mocktail SimpleAudioPlayer mocks.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,6 +32,12 @@ void main() {
           return factoryCallCount == 1 ? mockShortPlayer : mockLongPlayer;
         },
       );
+
+      for (final player in [mockShortPlayer, mockLongPlayer]) {
+        when(
+          () => player.setVolume(CountdownSoundService.beepVolume),
+        ).thenAnswer((_) async {});
+      }
     });
 
     group('preload', () {
@@ -51,6 +58,80 @@ void main() {
         verify(
           () => mockLongPlayer.setAsset(CountdownSoundService.longBeepAsset),
         ).called(1);
+      });
+
+      test('attenuates both beeps so they cannot clamp the mic AGC', () async {
+        when(
+          () => mockShortPlayer.setAsset(any()),
+        ).thenAnswer((_) async => .zero);
+        when(
+          () => mockLongPlayer.setAsset(any()),
+        ).thenAnswer((_) async => .zero);
+
+        await service.preload();
+
+        verify(
+          () => mockShortPlayer.setVolume(CountdownSoundService.beepVolume),
+        ).called(1);
+        verify(
+          () => mockLongPlayer.setVolume(CountdownSoundService.beepVolume),
+        ).called(1);
+        expect(CountdownSoundService.beepVolume, lessThan(1.0));
+      });
+
+      test('records the long beep duration reported by the player', () async {
+        when(
+          () => mockShortPlayer.setAsset(any()),
+        ).thenAnswer((_) async => const Duration(milliseconds: 120));
+        when(
+          () => mockLongPlayer.setAsset(any()),
+        ).thenAnswer((_) async => const Duration(milliseconds: 600));
+
+        await service.preload();
+
+        expect(
+          service.longBeepDuration,
+          equals(const Duration(milliseconds: 600)),
+        );
+      });
+
+      test('falls back when the player reports no duration', () async {
+        when(
+          () => mockShortPlayer.setAsset(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockLongPlayer.setAsset(any()),
+        ).thenAnswer((_) async => null);
+
+        await service.preload();
+
+        expect(
+          service.longBeepDuration,
+          equals(CountdownSoundService.longBeepFallbackDuration),
+        );
+      });
+
+      test('releases the players created by an earlier preload', () async {
+        final players = List.generate(4, (_) => _MockSimpleAudioPlayer());
+        var index = 0;
+        for (final player in players) {
+          when(() => player.setAsset(any())).thenAnswer((_) async => .zero);
+          when(
+            () => player.setVolume(CountdownSoundService.beepVolume),
+          ).thenAnswer((_) async {});
+          when(player.dispose).thenAnswer((_) async {});
+        }
+        final reused = CountdownSoundService(
+          audioPlayerFactory: () => players[index++],
+        );
+
+        await reused.preload();
+        await reused.preload();
+
+        verify(players[0].dispose).called(1);
+        verify(players[1].dispose).called(1);
+        verifyNever(players[2].dispose);
+        verifyNever(players[3].dispose);
       });
 
       test('disposes players and rethrows when setAsset fails', () async {
@@ -174,6 +255,48 @@ void main() {
         await service.dispose();
         // Second dispose should not throw (players are null).
         await expectLater(service.dispose(), completes);
+      });
+    });
+
+    group('finalTickLeadIn', () {
+      test('defaults to the declared asset duration before preload', () {
+        expect(
+          service.finalTickLeadIn,
+          equals(
+            const Duration(seconds: 1) -
+                CountdownSoundService.longBeepFallbackDuration -
+                CountdownSoundService.postPlaybackBuffer,
+          ),
+        );
+      });
+
+      test('shortens the final tick by the measured go beep', () async {
+        when(
+          () => mockShortPlayer.setAsset(any()),
+        ).thenAnswer((_) async => .zero);
+        when(
+          () => mockLongPlayer.setAsset(any()),
+        ).thenAnswer((_) async => const Duration(milliseconds: 400));
+
+        await service.preload();
+
+        expect(
+          service.finalTickLeadIn,
+          equals(const Duration(milliseconds: 450)),
+        );
+      });
+
+      test('clamps to zero for a go beep longer than the tick', () async {
+        when(
+          () => mockShortPlayer.setAsset(any()),
+        ).thenAnswer((_) async => .zero);
+        when(
+          () => mockLongPlayer.setAsset(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 2));
+
+        await service.preload();
+
+        expect(service.finalTickLeadIn, equals(Duration.zero));
       });
     });
 
