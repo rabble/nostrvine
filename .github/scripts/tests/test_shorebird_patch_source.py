@@ -140,6 +140,42 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn(blocked_path, result.stderr)
 
+    def test_rejects_native_paths_in_a_vendored_dependency_override(self) -> None:
+        # overrides/ holds path-based dependency_overrides forks whose Kotlin,
+        # Swift and podspec sources compile into the app exactly like a
+        # first-party plugin's, but they are not reachable through packages/.
+        blocked_paths = (
+            "overrides/app_device_integrity-1.1.0/ios/Classes/Plugin.swift",
+            "overrides/app_device_integrity-1.1.0/android/build.gradle",
+            "overrides/app_device_integrity-1.1.0/pubspec.yaml",
+        )
+        for index, blocked_path in enumerate(blocked_paths):
+            with self.subTest(path=blocked_path):
+                self._git("reset", "--hard", self.baseline)
+                self._commit(blocked_path, f"blocked {index}\n", "blocked")
+                self._commit("lib/fix.dart", "const fixed = true;\n", "fix")
+
+                result = self._run()
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(blocked_path, result.stderr)
+
+    def test_accepts_dart_only_change_inside_a_vendored_override(self) -> None:
+        # Blocking an override's native surfaces must not block a Dart-only
+        # backport inside the same vendored package.
+        self._commit(
+            "overrides/app_device_integrity-1.1.0/lib/plugin.dart",
+            "const fixed = true;\n",
+            "dart-only override fix",
+        )
+
+        result = self._run()
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn(
+            "overrides/app_device_integrity-1.1.0/lib/plugin.dart", result.stdout
+        )
+
     def test_rejects_blocked_paths_under_mobile_directory(self) -> None:
         # Mirrors the real layout and Codemagic's working_directory: the app
         # lives under mobile/, and git diff --name-only still prints

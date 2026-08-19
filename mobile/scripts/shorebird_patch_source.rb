@@ -7,10 +7,13 @@ require 'optparse'
 HEX_SHA = /\A[0-9a-f]{40}\z/
 RELEASE_VERSION = /\A[0-9A-Za-z][0-9A-Za-z._+-]*\z/
 PATCHABLE_PLATFORMS = %w[android ios].freeze
-BLOCKED_ROOTS = %w[android ios macos web assets scripts shaders].freeze
+BLOCKED_ROOTS = %w[android assets ios linux macos scripts shaders web windows].freeze
 BLOCKED_FILES = %w[pubspec.yaml pubspec.lock shorebird.yaml].freeze
-BLOCKED_PACKAGE_PATH = %r{\Apackages/[^/]+/(?:android|assets|shaders|darwin|ios|macos)(?:/|\z)}
-BLOCKED_PACKAGE_PUBSPEC = %r{\Apackages/[^/]+/pubspec\.yaml\z}
+# packages/ holds first-party plugins and overrides/ holds vendored
+# dependency_overrides forks. Both compile native code into the app, so both
+# carry the same blocked surfaces.
+BLOCKED_PACKAGE_PATH = %r{\A(?:packages|overrides)/[^/]+/(?:android|assets|shaders|darwin|ios|linux|macos|windows)(?:/|\z)}
+BLOCKED_PACKAGE_PUBSPEC = %r{\A(?:packages|overrides)/[^/]+/pubspec\.(?:yaml|lock)\z}
 
 def abort_with(message)
   warn("ERROR: #{message}")
