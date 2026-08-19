@@ -116,15 +116,33 @@ App Store version train.
 iOS publishing deliberately stops after uploading the Shorebird IPA to App
 Store Connect (`submit_to_testflight: false`, `submit_to_app_store: false`).
 App Store Connect, not Codemagic, provides automatic internal TestFlight
-distribution. This depends on configuration outside this repository: enable
-**Automatic Distribution** on every internal-only tester group that should
-receive each build without Beta App Review. Do not put external testers in
-those groups.
+distribution. This depends on configuration outside this repository.
+
+There is exactly one internal tester group: **Divine Internal**. It must have
+**Automatic Distribution** enabled, and it must contain no external testers —
+adding one turns every build into a Beta App Review submission. Codemagic no
+longer names the group, because it stopped assigning beta groups when
+publishing became upload-only, so nothing in this repository fails if that
+toggle is turned off or the group is renamed. Manage membership in App Store
+Connect; the group is recorded here only so the dependency stays reviewable.
+
+Because it is a single group, it is also a single point of failure: if its
+Automatic Distribution is off, no internal tester receives any build, and
+every Codemagic run still reports success.
 
 A green Codemagic build confirms the IPA upload, not successful App Store
-Connect processing or tester distribution. After each iOS build, confirm the
-build finishes processing and reaches **Ready to Test**, then verify an internal
-tester can see it before treating internal delivery as complete.
+Connect processing or tester distribution. After each iOS build, work through
+this before treating internal delivery as complete:
+
+1. Confirm the build finishes processing in App Store Connect and reaches
+   **Ready to Test**. Codemagic reports success as soon as the upload lands,
+   which is several minutes earlier.
+2. Confirm the build was distributed to **Divine Internal**.
+3. Confirm an internal tester actually sees it in TestFlight.
+
+A build that uploaded but never reached testers looks identical to a healthy
+one from Codemagic alone, which is why this is a checklist rather than a
+closing remark.
 
 After internal testing passes, perform a manual external TestFlight promotion
 of the same build in App Store Connect: add it to the external groups and submit
