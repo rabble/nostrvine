@@ -762,7 +762,12 @@ void main() {
           'SecurePass123!',
         );
 
-        await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
+        await tester.tap(
+          find.widgetWithText(
+            DivineButton,
+            lookupAppLocalizations(const Locale('en')).authSecureAccountTitle,
+          ),
+        );
         // Settle the exportNsec microtask + headlessRegister future without
         // pumpAndSettle (avoids a hang on the loading spinner).
         await tester.pump();
@@ -791,6 +796,19 @@ void main() {
           find.widgetWithText(DivineButton, l10n.authContactSupport),
           findsOneWidget,
         );
+        // The submit is replaced by the recovery choices, not shown alongside.
+        expect(
+          find.widgetWithText(DivineButton, l10n.authSecureAccountTitle),
+          findsNothing,
+        );
+        // The form is disabled so the two choices are the only path forward.
+        final emailField = tester.widget<TextField>(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(emailField.enabled, isFalse);
         // The raw server sentence never reaches the user.
         expect(find.textContaining('Nostr key'), findsNothing);
       });

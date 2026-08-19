@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -170,6 +171,13 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
           _hasConflict = true;
           _generalError = context.l10n.authSecureAccountAlreadyRegistered;
         });
+        // The state change disables the form and swaps the buttons; announce it
+        // so a screen-reader user knows registration hit a recoverable conflict.
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          context.l10n.authSecureAccountAlreadyRegistered,
+          Directionality.of(context),
+        );
         return;
       }
       _setGeneralError(
