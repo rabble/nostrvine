@@ -1557,7 +1557,17 @@ void main() {
 
       // Every Dynamic Type size iOS can hand us, as the ratio of that
       // category's body point size to the 17pt default — the mapping the
-      // engine uses to turn `preferredContentSizeCategory` into a text scale.
+      // engine uses to turn `preferredContentSizeCategory` into
+      // `textScaleFactor`.
+      //
+      // `TextScaler.linear` is a stand-in for the real thing: on device
+      // `MediaQuery.textScalerOf` is a `SystemTextScaler`, whose `scale()`
+      // defers to `PlatformDispatcher.scaleFontSize` — an engine-defined
+      // curve, not a multiplication. Measured on an iPhone at extraLarge, a
+      // 14pt/1.4x paragraph lays out at 22.0 either way, so the ladder is
+      // faithful where it has been checked. That the real curve cannot be
+      // reproduced by arithmetic at all is the point: measuring the child is
+      // immune to it, and any declared extent is not.
       //
       // The header used to declare its own extent as arithmetic over
       // `textScaler.scale(20)` while its child settled on whatever the font
@@ -1610,6 +1620,27 @@ void main() {
           // The canary: this finder walks the onstage element tree, which is
           // exactly what null-crashes when a sliver was left unlaid-out. It
           // failing IS the blank pane.
+          expect(find.byType(ConversationTile), findsWidgets);
+
+          // Pinning only engages once there is something to pin against, and
+          // that is a different geometry path — scrollOffset above zero,
+          // layoutExtent shrinking toward zero — than the initial layout.
+          // `PinnedHeaderSliver` derives paintExtent as
+          // `remainingPaintExtent - overlap` with no lower clamp, which is
+          // safe here only because nothing pinned sits above this header and
+          // `overlap` stays at zero. Adding one would put paintExtent back
+          // under layoutExtent and blank the pane again, so pin it.
+          await tester.drag(
+            find.byType(CustomScrollView),
+            const Offset(0, -400),
+          );
+          await tester.pump();
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'the header must survive scrolling to its pinned edge',
+          );
           expect(find.byType(ConversationTile), findsWidgets);
         });
       }
