@@ -51,6 +51,7 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
         platform: str = "ios",
         release_version: str = "1.2.3+456",
         branch: str = "shorebird-patch/ios/1.2.3+456",
+        cwd: Path | None = None,
     ) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [
@@ -65,7 +66,7 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
                 "--branch",
                 branch,
             ],
-            cwd=self.root,
+            cwd=cwd or self.root,
             check=False,
             text=True,
             capture_output=True,
@@ -103,7 +104,13 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
         self.assertIn("unsafe in a branch name", result.stderr)
 
     def test_rejects_history_not_descended_from_release(self) -> None:
-        unrelated = "0" * 40
+        main_branch = self._git("branch", "--show-current")
+        self._git("checkout", "--orphan", "unrelated-root")
+        self._git("rm", "-rf", "--quiet", ".")
+        self._commit("UNRELATED.md", "unrelated\n", "unrelated root")
+        unrelated = self._git("rev-parse", "HEAD")
+        self._git("checkout", main_branch)
+
         result = self._run(baseline=unrelated)
 
         self.assertNotEqual(0, result.returncode)
@@ -115,6 +122,7 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
             "ios/Runner/AppDelegate.swift",
             "assets/icon.png",
             "pubspec.yaml",
+            "scripts/deploy.sh",
             "packages/divine_ui/ios/plugin.swift",
             "packages/divine_ui/pubspec.yaml",
         )
@@ -128,6 +136,35 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
 
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn(blocked_path, result.stderr)
+
+    def test_rejects_blocked_paths_under_mobile_directory(self) -> None:
+        # Mirrors the real layout and Codemagic's working_directory: the app
+        # lives under mobile/, and git diff --name-only still prints
+        # repository-root-relative paths.
+        mobile = self.root / "mobile"
+        for index, blocked_path in enumerate(
+            ("mobile/ios/Runner/AppDelegate.swift", "mobile/scripts/deploy.sh")
+        ):
+            with self.subTest(path=blocked_path):
+                self._git("reset", "--hard", self.baseline)
+                self._commit(blocked_path, f"blocked {index}\n", "blocked")
+                self._commit("mobile/lib/fix.dart", "const fixed = true;\n", "fix")
+
+                for cwd in (self.root, mobile):
+                    with self.subTest(cwd=cwd):
+                        result = self._run(cwd=cwd)
+                        self.assertNotEqual(0, result.returncode)
+                        self.assertIn(
+                            blocked_path.removeprefix("mobile/"), result.stderr
+                        )
+
+    def test_accepts_dart_fix_from_mobile_working_directory(self) -> None:
+        self._commit("mobile/lib/fix.dart", "const fixed = true;\n", "fix")
+
+        result = self._run(cwd=self.root / "mobile")
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("lib/fix.dart", result.stdout)
 
     def test_rejects_empty_dart_diff(self) -> None:
         self._commit("README.md", "documentation only\n", "docs")

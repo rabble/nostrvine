@@ -276,7 +276,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("flutterDebugEmbeddingJar.absolutePath", self.caption_generator_gradle_contents)
 
     def test_shorebird_patch_workflows_block_native_asset_and_dependency_changes(self) -> None:
-        self.assertIn("BLOCKED_ROOTS = %w[android ios macos web assets shaders]", self.patch_source_contents)
+        self.assertIn("BLOCKED_ROOTS = %w[android ios macos web assets scripts shaders]", self.patch_source_contents)
         self.assertIn("pubspec.yaml pubspec.lock shorebird.yaml", self.patch_source_contents)
         self.assertIn("android|assets|shaders|darwin|ios|macos", self.patch_source_contents)
         self.assertIn("cut a normal store release instead of a Shorebird patch", self.patch_source_contents)

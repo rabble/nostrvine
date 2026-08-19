@@ -7,7 +7,7 @@ require 'optparse'
 HEX_SHA = /\A[0-9a-f]{40}\z/
 RELEASE_VERSION = /\A[0-9A-Za-z][0-9A-Za-z._+-]*\z/
 PATCHABLE_PLATFORMS = %w[android ios].freeze
-BLOCKED_ROOTS = %w[android ios macos web assets shaders].freeze
+BLOCKED_ROOTS = %w[android ios macos web assets scripts shaders].freeze
 BLOCKED_FILES = %w[pubspec.yaml pubspec.lock shorebird.yaml].freeze
 BLOCKED_PACKAGE_PATH = %r{\Apackages/[^/]+/(?:android|assets|shaders|darwin|ios|macos)(?:/|\z)}
 BLOCKED_PACKAGE_PUBSPEC = %r{\Apackages/[^/]+/pubspec\.yaml\z}
@@ -68,10 +68,16 @@ range = "#{baseline}..HEAD"
 merge_commits = git('rev-list', '--merges', range).lines(chomp: true)
 abort_with('patch source contains merge commits; use a linear backport history') unless merge_commits.empty?
 
-changed_paths = git('diff', '--name-only', range).lines(chomp: true)
+# git diff --name-only prints repository-root-relative paths regardless of the
+# current directory, while the patch workflows run with working_directory
+# mobile/. Normalize to mobile-relative so the blocked-path checks below match
+# in both layouts.
+changed_paths = git('diff', '--name-only', range).lines(chomp: true).map do |path|
+  path.sub(%r{\Amobile/}, '')
+end
 blocked_paths = changed_paths.select { |path| blocked_path?(path) }
 unless blocked_paths.empty?
-  warn('ERROR: refusing to patch: this diff contains native, asset, dependency, or Shorebird configuration changes.')
+  warn('ERROR: refusing to patch: this diff contains native, asset, dependency, build script, or Shorebird configuration changes.')
   warn
   blocked_paths.each { |path| warn(path) }
   warn
