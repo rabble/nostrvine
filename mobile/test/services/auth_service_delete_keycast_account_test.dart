@@ -291,14 +291,47 @@ void main() {
     // recourse if keycast ever refuses it with a 403 again (#4881) — which
     // lands after the irreversible NIP-62 vanish has already been published.
     // Dropping it would leave that path with nothing to retry.
+    test('supplies a NIP-98 signer as the 403 retry credential', () async {
+      final (authService, pubkeyHex) = await signedInAuthService();
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+      when(
+        () => mockOAuthClient.refreshSession(userPubkey: pubkeyHex),
+      ).thenAnswer(
+        (_) async => session(owner: pubkeyHex, token: testAccessToken),
+      );
+
+      Future<String?> Function(String)? capturedSigner;
+      when(
+        () => mockOAuthClient.deleteAccount(
+          testAccessToken,
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedSigner =
+            invocation.namedArguments[#nip98Signer]
+                as Future<String?> Function(String)?;
+        return DeleteAccountResult(success: true, message: 'deleted');
+      });
+
+      await authService.deleteKeycastAccount();
+
+      expect(
+        capturedSigner,
+        isNotNull,
+        reason: 'deleteKeycastAccount must offer a proof-of-key signer',
+      );
+    });
+
+    // The token is minted for one account and the proof is signed by whoever
+    // is live at signing time — a remote RPC for a Keycast identity, so an
+    // account switch can land in between. Pairing account A's token with
+    // account B's proof on an irreversible delete must not depend on the
+    // server happening to reject it.
     test(
-      'supplies a NIP-98 signer as the 403 retry credential',
+      'refuses to sign a proof once the signed-in account changes',
       () async {
         final (authService, pubkeyHex) = await signedInAuthService();
-        when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
-        when(
-          () => mockOAuthClient.refreshSession(userPubkey: pubkeyHex),
-        ).thenAnswer(
+        when(() => mockOAuthClient.getSession()).thenAnswer(
           (_) async => session(owner: pubkeyHex, token: testAccessToken),
         );
 
@@ -316,11 +349,19 @@ void main() {
         });
 
         await authService.deleteKeycastAccount();
+        expect(capturedSigner, isNotNull);
+
+        // Stand in for the switch the real flow can hit mid-signing.
+        await ignoringDiscoveryErrors(
+          () => authService.importFromNsec(
+            Nip19.encodePrivateKey(generatePrivateKey()),
+          ),
+        );
+        expect(authService.currentPublicKeyHex, isNot(pubkeyHex));
 
         expect(
-          capturedSigner,
-          isNotNull,
-          reason: 'deleteKeycastAccount must offer a proof-of-key signer',
+          await capturedSigner!('https://keycast.test/api/user/account'),
+          isNull,
         );
       },
     );

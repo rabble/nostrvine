@@ -3162,6 +3162,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // runs before this call, and refuses a session the signed-in account
       // cannot claim — deletion is irreversible, so the account it lands on
       // has to be the one that asked for it.
+      //
+      // Sampled before minting, not after: [activeAccountKeycastToken] reads
+      // the same getter on entry, so this names the account it validates the
+      // session against. Sampling afterwards would name the *new* account if
+      // a switch landed in between, and the pin below would then approve the
+      // very mismatch it exists to catch.
+      final tokenOwnerPubkey = currentPublicKeyHex;
       final accessToken = await activeAccountKeycastToken();
       if (accessToken == null) {
         Log.warning(
@@ -3187,7 +3194,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // See #5756 / #4881 / keycast#323.
       final result = await _oauthClient.deleteAccount(
         accessToken,
-        nip98Signer: _signAccountDeletionProof,
+        nip98Signer: (url) =>
+            _signAccountDeletionProof(url, tokenOwnerPubkey: tokenOwnerPubkey),
       );
 
       if (result.success) {
@@ -3244,12 +3252,46 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// The signer must still be alive here. It is: the flow signs and publishes
   /// the kind-62 vanish moments earlier, so a working signer is a precondition
   /// of reaching this point at all.
-  Future<String?> _signAccountDeletionProof(String url) async {
+  ///
+  /// Refuses unless the signer still belongs to [tokenOwnerPubkey], the
+  /// account the bearer token was minted for. Signing is a remote RPC for a
+  /// Keycast identity, so an account switch can land mid-flight — and pairing
+  /// one account's token with another's proof on an irreversible delete is not
+  /// a mistake worth leaving to whether the server happens to reject it.
+  Future<String?> _signAccountDeletionProof(
+    String url, {
+    required String? tokenOwnerPubkey,
+  }) async {
     try {
+      if (tokenOwnerPubkey == null || currentPublicKeyHex != tokenOwnerPubkey) {
+        Log.warning(
+          'Refusing to sign a deletion proof for a different account than the '
+          'token was minted for: token owner '
+          '${tokenOwnerPubkey ?? "unknown"}, signed-in account '
+          '${currentPublicKeyHex ?? "none"}',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return null;
+      }
+
       final token = await _nip98Auth.createAuthToken(
         url: url,
         method: HttpMethod.delete,
       );
+
+      // The check that carries the weight: the one above only proves the
+      // accounts matched before a call that can take seconds.
+      if (currentPublicKeyHex != tokenOwnerPubkey) {
+        Log.warning(
+          'Discarding a deletion proof signed for $tokenOwnerPubkey: the '
+          'signed-in account changed to ${currentPublicKeyHex ?? "none"} '
+          'while it was being signed',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return null;
+      }
       if (token == null) {
         Log.warning(
           'Could not sign NIP-98 proof for account deletion; '
